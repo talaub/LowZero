@@ -1,0 +1,15 @@
+---
+AllowShortBlocksOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: 'false'
+AlwaysBreakAfterReturnType: None
+BreakBeforeBraces: Mozilla
+CompactNamespaces: 'false'
+FixNamespaceComments: 'true'
+KeepEmptyLinesAtTheStartOfBlocks: 'true'
+Language: Cpp
+SortIncludes: 'false'
+NamespaceIndentation: All
+TabWidth: '2'
+UseTab: Never

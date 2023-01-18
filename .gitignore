@@ -1,0 +1,10 @@
+build/
+*#*
+*~*
+.vscode
+.vs
+/.cache
+/compile_commands.json
+/cmake-build-debug-visual-studio
+/.idea
+/packman-repo
