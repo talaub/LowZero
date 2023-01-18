@@ -6,5 +6,11 @@
 namespace Low {
   namespace Math {
     LOW_EXPORT float magnitude_squared(Vector3 &p_Vector);
-  }
+    LOW_EXPORT float magnitude(Vector3 &p_Vector);
+
+    LOW_EXPORT float distance_squared(Vector3 &p_Start, Vector3 &p_End);
+    LOW_EXPORT float distance(Vector3 &p_Start, Vector3 &p_End);
+
+    LOW_EXPORT Vector3 normalize(Vector3 &p_Vector);
+  } // namespace Math
 } // namespace Low
