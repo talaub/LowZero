@@ -11,6 +11,10 @@ set(LOWCORE_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
+target_compile_definitions(LowCore PRIVATE
+  LOW_MODULE_NAME="lowcore"
+)
+
 include_directories(
   ${LOWCORE_INCLUDE_DIRS}
 )

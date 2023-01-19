@@ -11,6 +11,10 @@ set(LOWMATH_INCLUDE_DIRS
 
 set_target_properties(LowMath PROPERTIES OUTPUT_NAME "lowmath")
 
+target_compile_definitions(LowMath PRIVATE
+  LOW_MODULE_NAME="lowmath"
+)
+
 target_include_directories(LowMath PUBLIC
   ${LOWMATH_INCLUDE_DIRS}
 )

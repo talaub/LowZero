@@ -15,6 +15,9 @@ target_include_directories(LowUtil PUBLIC
   ${LOWUTIL_INCLUDE_DIRS}
 )
 
+target_compile_definitions(LowUtil PRIVATE
+  LOW_MODULE_NAME="lowutil"
+)
 
 set(EASTL_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/EASTL")
 target_include_directories (LowUtil PUBLIC
