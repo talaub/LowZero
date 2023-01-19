@@ -21,7 +21,7 @@ namespace Low {
       LOW_EXPORT void close(File &p_File);
       LOW_EXPORT uint32_t read_sync(File &p_File, char *p_Buffer);
       LOW_EXPORT uint32_t size_sync(File &p_File);
-      LOW_EXPORT uint64_t modifieed_sync(const char *p_Path);
+      LOW_EXPORT uint64_t modified_sync(const char *p_Path);
 
       struct LOW_EXPORT File
       {

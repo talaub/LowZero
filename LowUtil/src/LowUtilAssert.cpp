@@ -12,8 +12,8 @@ namespace Low {
                                const char *p_Function)
       {
         std::string l_Message = "";
-        l_Message += std::string("ASSERTION FAILED - File: ") + p_File + ":" +
-                     std::to_string(p_Line);
+        l_Message += std::string("\x1B[31mASSERTION FAILED\033[0m - ") +
+                     p_File + ":" + std::to_string(p_Line);
 
         if (p_Message) {
           l_Message += std::string(", Message: ") + p_Message;

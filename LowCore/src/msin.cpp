@@ -8,15 +8,12 @@
 
 #include "LowUtilLogger.h"
 #include "LowUtilAssert.h"
+#include "LowUtilFileIO.h"
 
 #include <stdint.h>
 
 int main()
 {
-  std::cout << "Hello world" << std::endl;
-  std::cout << hello() << std::endl;
-  Low::Util::test();
-
   Low::Math::Vector3 vec(0.0f, 1.0f, 0.0f);
   Low::Math::Vector3 voc;
 
@@ -27,13 +24,19 @@ int main()
   testvec.push_back(8);
   testvec.push_back(15);
 
-  LOW_LOG_INFO("Startup");
-  LOW_LOG_INFO("Startup");
-  LOW_LOG_INFO("Startup");
-  LOW_LOG_INFO("Startup");
+  LOW_ASSERT(false, "This is a test");
 
-  LOW_ASSERT_WARN(false, "Testassert");
-  LOW_ASSERT(false, "Testassert");
+  {
+    using namespace Low::Util::FileIO;
+
+    Low::Util::FileIO::File l_File = Low::Util::FileIO::open(
+        "P:\\.gitignore", Low::Util::FileIO::FileMode::READ_BYTES);
+
+    char text[1024];
+    read_sync(l_File, text);
+
+    LOW_LOG_DEBUG(text);
+  }
 
   return 0;
 }
