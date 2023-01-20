@@ -9,6 +9,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilAssert.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilYaml.h"
 
 #include <stdint.h>
 
@@ -23,20 +24,6 @@ int main()
   eastl::vector<int> testvec;
   testvec.push_back(8);
   testvec.push_back(15);
-
-  LOW_ASSERT(false, "This is a test");
-
-  {
-    using namespace Low::Util::FileIO;
-
-    Low::Util::FileIO::File l_File = Low::Util::FileIO::open(
-        "P:\\.gitignore", Low::Util::FileIO::FileMode::READ_BYTES);
-
-    char text[1024];
-    read_sync(l_File, text);
-
-    LOW_LOG_DEBUG(text);
-  }
 
   return 0;
 }

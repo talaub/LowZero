@@ -33,4 +33,5 @@ add_custom_target(NatVis SOURCES ${EASTL_ROOT_DIR}/doc/EASTL.natvis)
 
 target_link_libraries(LowUtil PUBLIC
   "${CMAKE_BINARY_DIR}/LowDependencies/EASTL/build/${CMAKE_BUILD_TYPE}/EASTL.lib"
+  yaml-cpp
 )
