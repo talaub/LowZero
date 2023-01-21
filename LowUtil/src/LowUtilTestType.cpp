@@ -12,11 +12,6 @@ namespace Low {
     Low::Util::List<TestType> TestType::ms_LivingInstances =
         Low::Util::List<TestType>();
 
-    void TestType::initialize_buffer()
-    {
-      LOW_LOG_DEBUG("Initializing buffer");
-    }
-
     TestType::TestType() : Low::Util::Handle(0ull)
     {
     }
@@ -63,6 +58,17 @@ namespace Low {
         }
       }
       _LOW_ASSERT(l_LivingInstanceFound);
+    }
+
+    void TestType::cleanup()
+    {
+      TestType *l_Instances = living_instances();
+      bool l_LivingInstanceFound = false;
+      for (uint32_t i = 0u; i < living_count(); ++i) {
+        l_Instances[i].destroy();
+      }
+      free(ms_Buffer);
+      free(ms_Slots);
     }
 
     bool TestType::is_alive() const

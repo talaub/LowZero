@@ -32,6 +32,7 @@ namespace Low {
                                           uint32_t p_Capacity);
 
       void initialize();
+      void cleanup();
 
     } // namespace Instances
 

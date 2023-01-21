@@ -149,8 +149,6 @@ function generate_header(p_Type) {
     t += empty();
     t += line(`static Low::Util::List<${p_Type.name}> ms_LivingInstances;`, n);
     t += empty();
-    t += line(`static void initialize_buffer();`, n);
-    t += empty();
 
     t += line('public:', --n);
     n++;
@@ -164,6 +162,8 @@ function generate_header(p_Type) {
 
     t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
     t += line(`void destroy();`);
+    t += empty();
+    t += line(`static void cleanup();`);
     
     t += empty();
     t += line('static uint32_t living_count() {');
@@ -219,11 +219,6 @@ function generate_source(p_Type) {
     t += line(`Low::Util::Instances::Slot *${p_Type.name}::ms_Slots = 0;`, n);
     t += line(`Low::Util::List<${p_Type.name}> ${p_Type.name}::ms_LivingInstances = Low::Util::List<${p_Type.name}>();`, n);
     t += empty();
-    t += line(`void ${p_Type.name}::initialize_buffer()`, n);
-    t += line('{', n++);
-    t += line(`LOW_LOG_DEBUG("Initializing buffer");`, n);
-    t += line('}', --n);
-    t += empty();
 
     t += line(`${p_Type.name}::${p_Type.name}(): Low::Util::Handle(0ull){`);
     t += line('}');
@@ -273,6 +268,16 @@ function generate_source(p_Type) {
     t += line('}');
     t += line('}');
     t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
+    t += line('}');
+    t += empty();
+    t += line(`void ${p_Type.name}::cleanup() {`);
+    t += line(`${p_Type.name} *l_Instances = living_instances();`);
+    t += line(`bool l_LivingInstanceFound = false;`);
+    t += line(`for (uint32_t i = 0u; i < living_count(); ++i) {`);
+    t += line(`l_Instances[i].destroy();`);
+    t += line('}');
+    t += line('free(ms_Buffer);');
+    t += line('free(ms_Slots);');
     t += line('}');
     t += empty();
 
@@ -407,6 +412,17 @@ function generate_type_initializer(p_Types) {
     }
 
     t += line('LOW_LOG_DEBUG("Type buffers initialized");');
+    
+    t += line('}');
+
+    t += line('void cleanup() {');
+
+    for (let i_Type of p_Types) {
+	t += line(`${i_Type.namespace_string}::${i_Type.name}::cleanup();`);
+	t += empty();
+    }
+
+    t += line('LOW_LOG_DEBUG("Cleaned up type buffers");');
     
     t += line('}');
     

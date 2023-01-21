@@ -30,8 +30,6 @@ namespace Low {
 
       static Low::Util::List<TestType> ms_LivingInstances;
 
-      static void initialize_buffer();
-
     public:
       const static uint16_t TYPE_ID;
 
@@ -41,6 +39,8 @@ namespace Low {
 
       static TestType make(Low::Util::Name p_Name);
       void destroy();
+
+      static void cleanup();
 
       static uint32_t living_count()
       {

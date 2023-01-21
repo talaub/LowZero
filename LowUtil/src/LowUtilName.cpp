@@ -60,6 +60,13 @@ namespace Low {
       LOW_LOG_DEBUG("Name buffer setup completed");
     }
 
+    void Name::cleanup()
+    {
+      free(g_StringBuffer);
+
+      LOW_LOG_DEBUG("Cleaned up Name buffer");
+    }
+
     uint32_t Name::to_hash(const char *p_String)
     {
       int i, j;

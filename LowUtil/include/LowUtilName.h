@@ -26,6 +26,8 @@ namespace Low {
       char *c_str() const;
 
       static void initialize();
+      static void cleanup();
+
       static uint32_t to_hash(const char *p_String);
 
     private:

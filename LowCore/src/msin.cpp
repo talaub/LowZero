@@ -30,5 +30,7 @@ int main()
 
   float x = toast.get_age();
 
+  Low::Util::cleanup();
+
   return 0;
 }

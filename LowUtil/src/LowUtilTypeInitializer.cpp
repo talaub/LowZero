@@ -17,6 +17,12 @@ namespace Low {
 
         LOW_LOG_DEBUG("Type buffers initialized");
       }
+      void cleanup()
+      {
+        Low::Util::TestType::cleanup();
+
+        LOW_LOG_DEBUG("Cleaned up type buffers");
+      }
     } // namespace Instances
   }   // namespace Util
 } // namespace Low
