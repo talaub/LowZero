@@ -11,3 +11,9 @@ types:
         dirty_flag: dirty
       happy:
         type: bool
+    functions:
+      toast:
+        return_type: int
+        parameters:
+          - name: input
+            type: int

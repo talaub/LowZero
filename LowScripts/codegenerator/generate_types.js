@@ -61,6 +61,10 @@ function find_end_marker_end(p_Text, p_Name) {
     return l_Index + l_Marker.length;
 }
 
+function capitalize_first_letter(p_String) {
+  return p_String.charAt(0).toUpperCase() + p_String.slice(1);
+}
+
 function is_reference_type(t) {
     return !([
 	'void',
@@ -82,6 +86,17 @@ function is_reference_type(t) {
 
 function get_plain_type(p_Type) {
     return p_Type;
+}
+
+function get_accessor_type(p_Type, p_Handle) {
+    const l_PlainType = get_plain_type(p_Type);
+    let l_AccessorType = l_PlainType + ' ';
+
+    if (is_reference_type(p_Type) && !p_Handle) {
+	l_AccessorType += '&';
+    }
+
+    return l_AccessorType;
 }
 
 function line(l, n = 0) {
@@ -203,6 +218,24 @@ function generate_header(p_Type) {
 	    t += line(`void ${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value);`, n);
 	}
 	t += empty();
+    }
+
+    if (p_Type.functions) {
+	for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
+	    t += write(`${i_Func.accessor_type}${i_Func.name}(`);
+	    for (let i = 0; i < i_Func.parameters.length; ++i) {
+		if (i > 0) {
+		    t += write(', ');
+		}
+		const i_Param = i_Func.parameters[i];
+		t += write(`${i_Param.accessor_type}${i_Param.name}`);
+	    }
+	    t += write(')');
+	    if (i_Func.constant) {
+		t += write(' const');
+	    }
+	    t += line(';');
+	}
     }
     
     t += line('};', --n);
@@ -370,9 +403,44 @@ function generate_source(p_Type) {
 	}
 	t += empty();
     }
+
+    if (p_Type.functions) {
+	for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
+	    const l_MarkerName = `CUSTOM:FUNCTION_${i_FuncName}`;
+
+	    const i_FunctionBeginMarker = get_marker_begin(l_MarkerName);
+	    const i_FunctionEndMarker = get_marker_end(l_MarkerName);
+
+	    const i_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	    let i_CustomCode = '';
+
+	    if (i_BeginMarkerIndex >= 0) {
+		const i_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+		
+		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
+	    }
+	    t += write(`${i_Func.accessor_type}${p_Type.name}::${i_Func.name}(`);
+	    for (let i = 0; i < i_Func.parameters.length; ++i) {
+		if (i > 0) {
+		    t += write(', ');
+		}
+		const i_Param = i_Func.parameters[i];
+		t += write(`${i_Param.accessor_type}${i_Param.name}`);
+	    }
+	    t += write(')');
+	    if (i_Func.constant) {
+		t += write(' const');
+	    }
+	    t += line('{');
+	    t += line(i_FunctionBeginMarker);
+	    t += i_CustomCode;
+	    t += line(i_FunctionEndMarker);
+	    t += line('}');
+	    t += empty();
+	}
+    }
     
-
-
     for (let i_Namespace of p_Type.namespace) {
 	t += line('}', --n);
     }
@@ -453,10 +521,17 @@ function process_file(p_FileName) {
 	    }
 
 	    i_Prop.plain_type = get_plain_type(i_Prop.type);
-	    i_Prop.accessor_type = i_Prop.plain_type + ' ';
+	    i_Prop.accessor_type = get_accessor_type(i_Prop.type, i_Prop.handle);
+	}
 
-	    if (is_reference_type(i_Prop.type) && !i_Prop.accessor) {
-		i_Prop.accessor_type += '&';
+	if (i_Type.functions) {
+	    for (let [i_FuncName, i_Func] of Object.entries(i_Type.functions)) {
+		i_Func.accessor_type = get_accessor_type(i_Func.return_type, i_Func.return_handle);
+		i_Func.name = i_FuncName;
+		for (let i_Param of i_Func.parameters) {
+		    i_Param.accessor_type = get_accessor_type(i_Param.type, i_Param.handle);
+		    i_Param.name = `p_${capitalize_first_letter(i_Param.name)}`;
+		}
 	    }
 	}
 

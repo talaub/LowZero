@@ -16,6 +16,8 @@ namespace Low {
     typedef glm::vec3 ColorRGB;
     typedef glm::vec4 Color;
 
+    typedef glm::uvec2 UVector2;
+
     typedef glm::quat Quaternion;
 
     typedef glm::mat4 Matrix4x4;

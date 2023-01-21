@@ -67,6 +67,8 @@ namespace Low {
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
+
+      int toast(int p_Input);
     };
   } // namespace Util
 } // namespace Low

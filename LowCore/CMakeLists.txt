@@ -5,7 +5,11 @@ file(GLOB_RECURSE INCLUDES "include/*.h")
 
 add_executable(LowCore ${SOURCES})
 
-add_dependencies(LowCore LowUtil)
+add_dependencies(LowCore
+  LowUtil
+  LowMath
+  LowRenderer
+)
 
 set(LOWCORE_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -25,4 +29,5 @@ set_target_properties(LowCore PROPERTIES OUTPUT_NAME "game")
 target_link_libraries(LowCore PRIVATE
   LowUtil
   LowMath
+  LowRenderer
 )

@@ -162,5 +162,12 @@ namespace Low {
       }
     }
 
+    int TestType::toast(int p_Input)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_toast
+      return p_Input * 2;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_toast
+    }
+
   } // namespace Util
 } // namespace Low

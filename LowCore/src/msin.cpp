@@ -12,6 +12,8 @@
 #include "LowUtilYaml.h"
 #include "LowUtilName.h"
 
+#include "LowRendererWindow.h"
+
 #include <stdint.h>
 
 #include "LowUtilTestType.h"
@@ -20,15 +22,18 @@ int main()
 {
   Low::Util::initialize();
 
-  Low::Util::TestType toast = Low::Util::TestType::make(N(Hiiii));
+  Low::Renderer::Window l_Window;
+  Low::Renderer::WindowInit l_WindowInit;
+  l_WindowInit.dimensions.x = 1280;
+  l_WindowInit.dimensions.y = 820;
+  l_WindowInit.title = "Low Editor";
+  Low::Renderer::window_initialize(l_Window, l_WindowInit);
 
-  bool o = toast.is_happy();
+  while (l_Window.is_open()) {
+    l_Window.tick();
+  }
 
-  toast.set_age(52.12f);
-
-  LOW_LOG_DEBUG(toast.get_name().c_str());
-
-  float x = toast.get_age();
+  l_Window.cleanup();
 
   Low::Util::cleanup();
 
