@@ -24,7 +24,7 @@ function get_marker_begin(p_Name) {
 }
 
 function get_marker_end(p_Name) {
-    return `// LOW_CODEGEN:END:${p_Name}`;
+    return `// LOW_CODEGEN::END::${p_Name}`;
 }
 
 function find_begin_marker_start(p_Text, p_Name) {
@@ -35,8 +35,13 @@ function find_begin_marker_start(p_Text, p_Name) {
 
 function find_begin_marker_end(p_Text, p_Name) {
     const l_Marker = get_marker_begin(p_Name);
+    const l_Index = p_Text.indexOf(l_Marker);
 
-    return p_Text.indexOf(l_Marker) + l_Marker.length;
+    if (l_Index < 0) {
+	return -1;
+    }
+
+    return l_Index + l_Marker.length + 1;
 }
 
 function find_end_marker_start(p_Text, p_Name) {
@@ -47,8 +52,13 @@ function find_end_marker_start(p_Text, p_Name) {
 
 function find_end_marker_end(p_Text, p_Name) {
     const l_Marker = get_marker_end(p_Name);
+    const l_Index = p_Text.indexOf(l_Marker);
 
-    return p_Text.indexOf(l_Marker) + l_Marker.length;
+    if (l_Index < 0) {
+	return -1;
+    }
+
+    return l_Index + l_Marker.length;
 }
 
 function is_reference_type(t) {
@@ -307,6 +317,12 @@ function generate_source(p_Type) {
     t += line('}');
     t += empty();
 
+    l_OldCode = '';
+
+    if (fs.existsSync(p_Type.source_file_path)) {
+	l_OldCode = read_file(p_Type.source_file_path);
+    }
+
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	if (!i_Prop.no_getter) {
 	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() const`, n);
@@ -316,6 +332,21 @@ function generate_source(p_Type) {
 	    t += line('}', --n);
 	}
 	if (!i_Prop.no_setter) {
+	    const l_MarkerName = `CUSTOM:SETTER_${i_PropName}`;
+
+	    const i_SetterBeginMarker = get_marker_begin(l_MarkerName);
+	    const i_SetterEndMarker = get_marker_end(l_MarkerName);
+
+	    const i_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	    let i_CustomCode = '';
+
+	    if (i_BeginMarkerIndex >= 0) {
+		const i_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+		
+		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
+	    }
+	    
 	    t += line(`void ${p_Type.name}::${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value)`, n);
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
@@ -330,6 +361,10 @@ function generate_source(p_Type) {
 	    }
 	    t += line('// Set new value');
 	    t += line(`TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.plain_type}) = p_Value;`, n);
+	    t += empty();
+	    t += line(i_SetterBeginMarker);
+	    t += i_CustomCode;
+	    t += line(i_SetterEndMarker);
 	    t += line('}');
 	    t += line('}', --n);
 	}
@@ -342,7 +377,9 @@ function generate_source(p_Type) {
 	t += line('}', --n);
     }
 
-    save_file(p_Type.source_file_path, t);
+    if (t !== l_OldCode) {
+	save_file(p_Type.source_file_path, t);
+    }
 }
 
 function process_file(p_FileName) {

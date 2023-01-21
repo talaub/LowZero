@@ -102,6 +102,9 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(TestType, age, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_age
+        // LOW_CODEGEN::END::CUSTOM:SETTER_age
       }
     }
 
@@ -117,6 +120,9 @@ namespace Low {
       if (is_happy() != p_Value) {
         // Set new value
         TYPE_SOA(TestType, happy, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_happy
+        // LOW_CODEGEN::END::CUSTOM:SETTER_happy
       }
     }
 
@@ -132,6 +138,9 @@ namespace Low {
       if (is_dirty() != p_Value) {
         // Set new value
         TYPE_SOA(TestType, dirty, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+        // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
       }
     }
 
@@ -147,6 +156,9 @@ namespace Low {
       if (get_name() != p_Value) {
         // Set new value
         TYPE_SOA(TestType, name, Low::Util::Name) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+        // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
     }
 
