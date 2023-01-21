@@ -160,7 +160,12 @@ function generate_header(p_Type) {
     t += line(`${p_Type.name}(${p_Type.name} &p_Copy);`);
     t += empty();
 
-    t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
+    if (p_Type.component) {
+	t += line(`static ${p_Type.name} make();`);
+    }
+    else {
+	t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
+    }
     t += line(`void destroy();`);
     t += empty();
     t += line(`static void cleanup();`);
@@ -228,7 +233,12 @@ function generate_source(p_Type) {
     t += line('}');
     
     t += empty();
-    t += line(`${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name){`);
+    if (p_Type.component) {
+	t += line(`${p_Type.name} ${p_Type.name}::make(){`);
+    }
+    else {
+	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name){`);
+    }
     t += line(`uint32_t l_Index = Low::Util::Instances::create_instance(ms_Buffer, ms_Slots, get_capacity());`);
     t += empty();
     t += line(`${p_Type.name} l_Handle;`);
@@ -245,8 +255,10 @@ function generate_source(p_Type) {
 	}
     }
     t += empty();
-    t += line('l_Handle.set_name(p_Name);');
-    t += empty();
+    if (!p_Type.component) {
+	t += line('l_Handle.set_name(p_Name);');
+	t += empty();
+    }
     t += line('return l_Handle;');
 
     t += line('}');
@@ -307,7 +319,18 @@ function generate_source(p_Type) {
 	    t += line(`void ${p_Type.name}::${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value)`, n);
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
+	    t += empty();
+	    t += line(`if (${i_Prop.getter_name}() != p_Value) {`);
+	    if (i_Prop.dirty_flag) {
+		t += line('// Set dirty flags');
+		for (var i_Flag of i_Prop.dirty_flag) {
+		    t += line(`TYPE_SOA(${p_Type.name}, ${i_Flag}, bool) = true;`, n);
+		}
+		t += empty();
+	    }
+	    t += line('// Set new value');
 	    t += line(`TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.plain_type}) = p_Value;`, n);
+	    t += line('}');
 	    t += line('}', --n);
 	}
 	t += empty();
@@ -336,6 +359,31 @@ function process_file(p_FileName) {
 
 	i_Type.namespace_string = '';
 
+	const l_DirtyFlags = [];
+	for (let [i_PropName, i_Prop] of Object.entries(i_Type.properties)) {
+	    if (!i_Prop.dirty_flag) {
+		continue;
+	    }
+	    if (Array.isArray(i_Prop.dirty_flag)) {
+		for (let i_Flag of i_Prop.dirty_flag) {
+		    if (!l_DirtyFlags.includes(i_Flag)) {
+			l_DirtyFlags.push(i_Flag);
+		    }
+		}
+	    }
+	    else if (!l_DirtyFlags.includes(i_Prop.dirty_flag)) {
+		l_DirtyFlags.push(i_Prop.dirty_flag);
+	    }
+	}
+
+	i_Type.dirty_flags = l_DirtyFlags;
+
+	for (let i_Flag of i_Type.dirty_flags) {
+	    i_Type.properties[i_Flag] = {
+		type: 'bool'
+	    }
+	}
+
 	if (!i_Type.component) {
 	    i_Type.properties['name'] = {
 		'type': 'Low::Util::Name'
@@ -361,6 +409,10 @@ function process_file(p_FileName) {
 	    }
 	    if (!i_Prop.setter_name) {
 		i_Prop.setter_name = `set_${i_PropName}`;
+	    }
+
+	    if (i_Prop.dirty_flag && !Array.isArray(i_Prop.dirty_flag)) {
+		i_Prop.dirty_flag = [i_Prop.dirty_flag];
 	    }
 
 	    i_Prop.plain_type = get_plain_type(i_Prop.type);

@@ -33,6 +33,7 @@ namespace Low {
       l_Handle.m_Data.m_Type = TestType::TYPE_ID;
 
       ACCESSOR_TYPE_SOA(l_Handle, TestType, happy, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, TestType, dirty, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, TestType, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -94,7 +95,14 @@ namespace Low {
     void TestType::set_age(float p_Value)
     {
       _LOW_ASSERT(is_alive());
-      TYPE_SOA(TestType, age, float) = p_Value;
+
+      if (get_age() != p_Value) {
+        // Set dirty flags
+        TYPE_SOA(TestType, dirty, bool) = true;
+
+        // Set new value
+        TYPE_SOA(TestType, age, float) = p_Value;
+      }
     }
 
     bool TestType::is_happy() const
@@ -105,7 +113,26 @@ namespace Low {
     void TestType::set_happy(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
-      TYPE_SOA(TestType, happy, bool) = p_Value;
+
+      if (is_happy() != p_Value) {
+        // Set new value
+        TYPE_SOA(TestType, happy, bool) = p_Value;
+      }
+    }
+
+    bool TestType::is_dirty() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(TestType, dirty, bool);
+    }
+    void TestType::set_dirty(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      if (is_dirty() != p_Value) {
+        // Set new value
+        TYPE_SOA(TestType, dirty, bool) = p_Value;
+      }
     }
 
     Low::Util::Name TestType::get_name() const
@@ -116,7 +143,11 @@ namespace Low {
     void TestType::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
-      TYPE_SOA(TestType, name, Low::Util::Name) = p_Value;
+
+      if (get_name() != p_Value) {
+        // Set new value
+        TYPE_SOA(TestType, name, Low::Util::Name) = p_Value;
+      }
     }
 
   } // namespace Util

@@ -12,6 +12,7 @@ namespace Low {
     {
       float age;
       bool happy;
+      bool dirty;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -60,6 +61,9 @@ namespace Low {
 
       bool is_happy() const;
       void set_happy(bool p_Value);
+
+      bool is_dirty() const;
+      void set_dirty(bool p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

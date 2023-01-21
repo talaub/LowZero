@@ -8,5 +8,6 @@ types:
     properties:
       age:
         type: float
+        dirty_flag: dirty
       happy:
         type: bool
