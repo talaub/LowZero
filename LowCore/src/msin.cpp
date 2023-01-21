@@ -2,28 +2,33 @@
 
 #include "test.h"
 
-#include "LowUtilTest.h"
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
+#include "LowUtil.h"
 #include "LowUtilLogger.h"
 #include "LowUtilAssert.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilYaml.h"
+#include "LowUtilName.h"
 
 #include <stdint.h>
 
+#include "LowUtilTestType.h"
+
 int main()
 {
-  Low::Math::Vector3 vec(0.0f, 1.0f, 0.0f);
-  Low::Math::Vector3 voc;
+  Low::Util::initialize();
 
-  float mag = Low::Math::VectorUtil::magnitude_squared(vec);
-  float mag2 = Low::Math::VectorUtil::magnitude_squared(voc);
+  Low::Util::TestType toast = Low::Util::TestType::make(N(Hiiii));
 
-  eastl::vector<int> testvec;
-  testvec.push_back(8);
-  testvec.push_back(15);
+  bool o = toast.is_happy();
+
+  toast.set_age(52.12f);
+
+  LOW_LOG_DEBUG(toast.get_name().c_str());
+
+  float x = toast.get_age();
 
   return 0;
 }

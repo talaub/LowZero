@@ -1,0 +1,12 @@
+module: LowUtil
+namespace:
+  - Low
+  - Util
+dll_macro: LOW_EXPORT
+types:
+  TestType:
+    properties:
+      age:
+        type: float
+      happy:
+        type: bool

@@ -2,11 +2,8 @@
 
 #include "LowUtilApi.h"
 
-#include "LowUtilCompatibility.h"
-#include "EASTL/vector.h"
-
 namespace Low {
   namespace Util {
-    LOW_EXPORT void test();
+    LOW_EXPORT void initialize();
   }
 } // namespace Low

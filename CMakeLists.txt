@@ -4,7 +4,7 @@ project(LowEngineZero)
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_CONFIGURATION_TYPES "Debug")
+set(CMAKE_CONFIGURATION_TYPES "Debug" "Release")
 set(TARGET_BUILD_PLATFORM "windows")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -31,11 +31,12 @@ foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
     set( CMAKE_PDB_OUTPUT_DIRECTORY_${OUTPUTCONFIG} ${PDB_OUTPUT_DIR} )
 endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
+
 FILE(GLOB SUBFOLDERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 SET(SUBPROJECTS "")
 SET(FOUND "")
 
-add_compile_definitions(LOW_EDITOR_BUILD)
+add_compile_definitions(LOW_EDITOR_BUILD LOW_DATA_PATH="${CMAKE_SOURCE_DIR}data")
 
 # Excluded directories
 # These directorories are not part of the build tree
@@ -69,3 +70,5 @@ SET(PROJECT_LINK_LIBS "")
 FOREACH(project ${SUBPROJECTS})
   add_subdirectory(${project})
 ENDFOREACH()
+
+

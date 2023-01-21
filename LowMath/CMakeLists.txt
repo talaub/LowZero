@@ -13,6 +13,7 @@ set_target_properties(LowMath PROPERTIES OUTPUT_NAME "lowmath")
 
 target_compile_definitions(LowMath PRIVATE
   LOW_MODULE_NAME="lowmath"
+  lowmath_EXPORTS
 )
 
 target_include_directories(LowMath PUBLIC
