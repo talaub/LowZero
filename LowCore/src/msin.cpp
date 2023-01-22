@@ -12,7 +12,7 @@
 #include "LowUtilYaml.h"
 #include "LowUtilName.h"
 
-#include "LowRendererWindow.h"
+#include "LowRenderer.h"
 
 #include <stdint.h>
 
@@ -22,18 +22,13 @@ int main()
 {
   Low::Util::initialize();
 
-  Low::Renderer::Window l_Window;
-  Low::Renderer::WindowInit l_WindowInit;
-  l_WindowInit.dimensions.x = 1280;
-  l_WindowInit.dimensions.y = 820;
-  l_WindowInit.title = "Low Editor";
-  Low::Renderer::window_initialize(l_Window, l_WindowInit);
+  Low::Renderer::initialize();
 
-  while (l_Window.is_open()) {
-    l_Window.tick();
+  while (Low::Renderer::window_is_open()) {
+    Low::Renderer::tick(0.0f);
   }
 
-  l_Window.cleanup();
+  Low::Renderer::cleanup();
 
   Low::Util::cleanup();
 

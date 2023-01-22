@@ -1,5 +1,11 @@
 # Dev setup
 
+## Prereqs
+
+- Install Vulkan SDK
+
+## Steps
+
 1. Clone repo
 2. Run `git submodule init`
 3. Enter `cd LowDependencies\EASTL`

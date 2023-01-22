@@ -7,13 +7,10 @@ add_library(LowRenderer SHARED ${SOURCES})
 
 add_dependencies(LowRenderer LowUtil LowMath glfw)
 
+STRING(REGEX REPLACE "\\\\" "/" VULKAN_SDK_PATH $ENV{VK_SDK_PATH}) 
+
 set(LOWRENDERER_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-set(LOWRENDERER_PRIV_INCLUDE_DIRS
-  "${CMAKE_CURRENT_SOURCE_DIR}/backend/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/backend/vulkan/include"
 )
 
 set_target_properties(LowRenderer PROPERTIES OUTPUT_NAME "lowrenderer")
@@ -27,6 +24,7 @@ target_compile_definitions(LowRenderer PRIVATE
 
 target_include_directories(LowRenderer PUBLIC
   ${LOWRENDERER_INCLUDE_DIRS}
+  $ENV{VK_SDK_PATH}/Include
 )
 
 target_link_libraries(LowRenderer PRIVATE
@@ -34,6 +32,11 @@ target_link_libraries(LowRenderer PRIVATE
   LowMath
 )
 
+target_link_directories(LowRenderer PUBLIC
+  ${VULKAN_SDK_PATH}/Lib
+)
+
 target_link_libraries(LowRenderer PUBLIC
   glfw
+  vulkan-1
 )
