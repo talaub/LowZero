@@ -48,8 +48,7 @@ namespace Low {
         }
 
         static SwapChainSupportDetails
-        query_swap_chain_support(VulkanContext &p_Context,
-                                 VkPhysicalDevice p_Device)
+        query_swap_chain_support(Context &p_Context, VkPhysicalDevice p_Device)
         {
           SwapChainSupportDetails l_Details;
 
@@ -100,7 +99,7 @@ namespace Low {
         }
 
         static Utils::QueueFamilyIndices
-        find_queue_families(VulkanContext &p_Context, VkPhysicalDevice p_Device)
+        find_queue_families(Context &p_Context, VkPhysicalDevice p_Device)
         {
           QueueFamilyIndices l_Indices;
 
@@ -244,7 +243,7 @@ namespace Low {
           }
         }
 
-        static void create_instance(VulkanContext &p_Context)
+        static void create_instance(Context &p_Context)
         {
           // Setup appinfo parameter struct
           VkApplicationInfo l_AppInfo{};
@@ -296,7 +295,7 @@ namespace Low {
           LOW_ASSERT(l_Result == VK_SUCCESS, "Vulkan instance creation failed");
         }
 
-        static void setup_debug_messenger(VulkanContext &p_Context)
+        static void setup_debug_messenger(Context &p_Context)
         {
           if (!p_Context.m_ValidationEnabled)
             return;
@@ -342,7 +341,7 @@ namespace Low {
           return l_RequiredExtensions.empty();
         }
 
-        static int rate_device_suitability(VulkanContext &p_Context,
+        static int rate_device_suitability(Context &p_Context,
                                            VkPhysicalDevice p_Device)
         {
           VkPhysicalDeviceProperties l_DeviceProperties;
@@ -390,7 +389,7 @@ namespace Low {
           return l_Score;
         }
 
-        static void select_physical_device(VulkanContext &p_Context)
+        static void select_physical_device(Context &p_Context)
         {
           uint32_t l_DeviceCount = 0u;
           vkEnumeratePhysicalDevices(p_Context.m_Instance, &l_DeviceCount,
@@ -415,7 +414,7 @@ namespace Low {
           LOW_LOG_DEBUG("Physical device selected");
         }
 
-        static void create_logical_device(VulkanContext &p_Context)
+        static void create_logical_device(Context &p_Context)
         {
           Utils::QueueFamilyIndices l_Indices =
               Utils::find_queue_families(p_Context, p_Context.m_PhysicalDevice);
@@ -476,17 +475,17 @@ namespace Low {
       } // namespace ContextUtils
 
       void vk_context_create(Backend::Context &p_Context,
-                             Backend::ContextInit &p_Init)
+                             Backend::ContextCreateParams &p_Params)
       {
         // Check for validation layer support
-        if (p_Init.validation_enabled) {
+        if (p_Params.validation_enabled) {
           LOW_ASSERT(ContextUtils::check_validation_layer_support(),
                      "Validation layers requested, but not available");
           LOW_LOG_DEBUG("Validation layers enabled");
         }
 
-        p_Context.vk.m_ValidationEnabled = p_Init.validation_enabled;
-        p_Context.m_Window = *(p_Init.window);
+        p_Context.vk.m_ValidationEnabled = p_Params.validation_enabled;
+        p_Context.m_Window = *(p_Params.window);
 
         ContextUtils::create_instance(p_Context.vk);
 
@@ -503,7 +502,7 @@ namespace Low {
 
       void vk_context_cleanup(Backend::Context &p_Context)
       {
-        VulkanContext l_Context = p_Context.vk;
+        Context l_Context = p_Context.vk;
 
         vkDestroyDevice(l_Context.m_Device, nullptr);
 
@@ -517,6 +516,266 @@ namespace Low {
         vkDestroyInstance(l_Context.m_Instance, nullptr);
       }
 
+      void vk_framebuffer_create(Backend::Framebuffer &p_Framebuffer,
+                                 Backend::FramebufferCreateParams &p_Params)
+      {
+        p_Framebuffer.context = p_Params.context;
+
+        Util::List<VkImageView> l_Attachments;
+        l_Attachments.resize(p_Params.renderTargetCount);
+
+        for (int i_Iter = 0; i_Iter < p_Params.renderTargetCount; i_Iter++) {
+          l_Attachments[i_Iter] = p_Params.renderTargets[i_Iter].vk.m_ImageView;
+        }
+
+        VkFramebufferCreateInfo l_FramebufferInfo{};
+        l_FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        l_FramebufferInfo.renderPass = p_Params.renderpass->vk.m_Handle;
+        l_FramebufferInfo.attachmentCount =
+            static_cast<uint32_t>(l_Attachments.size());
+        l_FramebufferInfo.pAttachments = l_Attachments.data();
+        l_FramebufferInfo.width = p_Params.dimensions.x;
+        l_FramebufferInfo.height = p_Params.dimensions.y;
+        l_FramebufferInfo.layers = 1;
+
+        LOW_ASSERT(vkCreateFramebuffer(
+                       p_Params.context->vk.m_Device, &l_FramebufferInfo,
+                       nullptr, &(p_Framebuffer.vk.m_Handle)) == VK_SUCCESS,
+                   "Failed to create framebuffer");
+
+        p_Framebuffer.vk.m_Dimensions.x = p_Params.dimensions.x;
+        p_Framebuffer.vk.m_Dimensions.y = p_Params.dimensions.y;
+
+        LOW_LOG_DEBUG("Framebuffer created");
+      }
+
+      void vk_framebuffer_get_dimensions(Backend::Framebuffer &p_Framebuffer,
+                                         Math::UVector2 &p_Dimensions)
+      {
+        p_Dimensions.x = p_Framebuffer.vk.m_Dimensions.x;
+        p_Dimensions.y = p_Framebuffer.vk.m_Dimensions.y;
+      }
+
+      void vk_framebuffer_cleanup(Backend::Framebuffer &p_Framebuffer)
+      {
+        vkDestroyFramebuffer(p_Framebuffer.context->vk.m_Device,
+                             p_Framebuffer.vk.m_Handle, nullptr);
+      }
+
+      void vk_commandpool_create(Backend::CommandPool &p_CommandPool,
+                                 Backend::CommandPoolCreateParams &p_Params)
+      {
+        p_CommandPool.context = p_Params.context;
+
+        Utils::QueueFamilyIndices l_QueueFamilyIndices =
+            Utils::find_queue_families(p_Params.context->vk,
+                                       p_Params.context->vk.m_PhysicalDevice);
+
+        VkCommandPoolCreateInfo l_PoolInfo{};
+        l_PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        l_PoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        l_PoolInfo.queueFamilyIndex =
+            l_QueueFamilyIndices.m_GraphicsFamily.value();
+
+        LOW_ASSERT(vkCreateCommandPool(
+                       p_Params.context->vk.m_Device, &l_PoolInfo, nullptr,
+                       &(p_CommandPool.vk.m_Handle)) == VK_SUCCESS,
+                   "Failed to create command pool");
+
+        LOW_LOG_DEBUG("Command pool created");
+      }
+
+      void vk_commandpool_cleanup(Backend::CommandPool &p_CommandPool)
+      {
+        vkDestroyCommandPool(p_CommandPool.context->vk.m_Device,
+                             p_CommandPool.vk.m_Handle, nullptr);
+      }
+
+      void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
+                                Backend::RenderpassCreateParams &p_Params)
+      {
+        p_Renderpass.clearDepth = p_Params.clearDepth;
+        p_Renderpass.formatCount = p_Params.formatCount;
+        p_Renderpass.useDepth = p_Params.useDepth;
+        p_Renderpass.clearTarget =
+            (bool *)calloc(p_Params.formatCount, sizeof(bool));
+
+        Low::Util::List<VkAttachmentDescription> l_Attachments;
+        Low::Util::List<VkAttachmentReference> l_ColorAttachmentRefs;
+
+        VkAttachmentDescription l_DepthAttachment{};
+        VkAttachmentReference l_DepthAttachmentRef{};
+
+        VkSubpassDescription l_Subpass{};
+        l_Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+        for (uint32_t i = 0u; i < p_Params.formatCount; ++i) {
+          ImageFormat &i_ImageFormat = p_Params.formats[i].vk;
+
+          p_Renderpass.clearTarget[i] = p_Params.clearTarget[i];
+
+          VkAttachmentDescription l_ColorAttachment{};
+          l_ColorAttachment.format = i_ImageFormat.m_Handle;
+          l_ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+          l_ColorAttachment.loadOp = p_Params.clearTarget[i]
+                                         ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                         : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+          l_ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+          l_ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+          l_ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+          l_ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+          l_ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+          l_Attachments.push_back(l_ColorAttachment);
+
+          VkAttachmentReference l_ColorAttachmentRef{};
+          l_ColorAttachmentRef.attachment = i;
+          l_ColorAttachmentRef.layout =
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+          l_ColorAttachmentRefs.push_back(l_ColorAttachmentRef);
+        }
+
+        if (p_Params.useDepth) {
+          l_DepthAttachment.format =
+              Utils::find_depth_format(p_Params.context->vk);
+          l_DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+          l_DepthAttachment.loadOp = p_Params.clearDepth
+                                         ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                         : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+          l_DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+          l_DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+          l_DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+          l_DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+          l_DepthAttachment.finalLayout =
+              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+          l_DepthAttachmentRef.attachment = p_Params.formatCount;
+          l_DepthAttachmentRef.layout =
+              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+          l_Attachments.push_back(l_DepthAttachment);
+
+          l_Subpass.pDepthStencilAttachment = &l_DepthAttachmentRef;
+        } else {
+          l_Subpass.pDepthStencilAttachment = nullptr;
+        }
+
+        l_Subpass.colorAttachmentCount = l_ColorAttachmentRefs.size();
+        l_Subpass.pColorAttachments = l_ColorAttachmentRefs.data();
+
+        VkSubpassDependency l_Dependency{};
+        l_Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        l_Dependency.dstSubpass = 0;
+        if (p_Params.useDepth) {
+          l_Dependency.srcStageMask =
+              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        } else {
+          l_Dependency.srcStageMask =
+              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        }
+        l_Dependency.srcAccessMask = 0;
+        if (p_Params.useDepth) {
+          l_Dependency.dstStageMask =
+              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+          l_Dependency.dstAccessMask =
+              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        } else {
+          l_Dependency.dstStageMask =
+              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+          l_Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        }
+
+        VkRenderPassCreateInfo l_RenderpassInfo{};
+        l_RenderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        l_RenderpassInfo.attachmentCount =
+            static_cast<uint32_t>(l_Attachments.size());
+        l_RenderpassInfo.pAttachments = l_Attachments.data();
+        l_RenderpassInfo.subpassCount = 1;
+        l_RenderpassInfo.pSubpasses = &l_Subpass;
+        l_RenderpassInfo.dependencyCount = 1;
+        l_RenderpassInfo.pDependencies = &l_Dependency;
+
+        LOW_ASSERT(vkCreateRenderPass(
+                       p_Params.context->vk.m_Device, &l_RenderpassInfo,
+                       nullptr, &(p_Renderpass.vk.m_Handle)) == VK_SUCCESS,
+                   "Failed to create render pass");
+
+        LOW_LOG_DEBUG("Renderpass created");
+      }
+
+      void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass)
+      {
+        vkDestroyRenderPass(p_Renderpass.context->vk.m_Device,
+                            p_Renderpass.vk.m_Handle, nullptr);
+
+        free(p_Renderpass.clearTarget);
+      }
+
+      void vk_renderpass_start(Backend::Renderpass &p_Renderpass,
+                               Backend::RenderpassStartParams &p_Params)
+      {
+        VkRenderPassBeginInfo l_RenderpassInfo{};
+        l_RenderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        l_RenderpassInfo.renderPass = p_Renderpass.vk.m_Handle;
+        l_RenderpassInfo.framebuffer = p_Params.framebuffer->vk.m_Handle;
+        l_RenderpassInfo.renderArea.offset = {0, 0};
+
+        Math::UVector2 l_Dimensions;
+        Backend::framebuffer_get_dimensions(*p_Params.framebuffer,
+                                            l_Dimensions);
+
+        VkExtent2D l_ActualExtent = {static_cast<uint32_t>(l_Dimensions.x),
+                                     static_cast<uint32_t>(l_Dimensions.y)};
+
+        l_RenderpassInfo.renderArea.extent = l_ActualExtent;
+
+        Low::Util::List<VkClearValue> l_ClearValues;
+
+        for (uint32_t i = 0u; i < p_Renderpass.formatCount; ++i) {
+          VkClearValue l_ClearColor = {
+              {{p_Params.clearColorValues[i].r, p_Params.clearColorValues[i].g,
+                p_Params.clearColorValues[i].b,
+                p_Params.clearColorValues[i].a}}};
+          l_ClearValues.push_back(l_ClearColor);
+        }
+        if (p_Renderpass.clearDepth) {
+          l_ClearValues.push_back(
+              {p_Params.clearDepthValue.r,
+               p_Params.clearDepthValue
+                   .y}); // TL TODO: Passed value currently ignored
+        }
+
+        l_RenderpassInfo.clearValueCount = l_ClearValues.size();
+        l_RenderpassInfo.pClearValues = l_ClearValues.data();
+
+        vkCmdBeginRenderPass(p_Params.commandBuffer->vk.m_Handle,
+                             &l_RenderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        VkViewport l_Viewport{};
+        l_Viewport.x = 0.f;
+        l_Viewport.y = 0.f;
+        l_Viewport.width = static_cast<float>(l_ActualExtent.width);
+        l_Viewport.height = static_cast<float>(l_ActualExtent.height);
+        l_Viewport.minDepth = 0.f;
+        l_Viewport.maxDepth = 1.f;
+        vkCmdSetViewport(p_Params.commandBuffer->vk.m_Handle, 0, 1,
+                         &l_Viewport);
+
+        VkRect2D l_Scissor{};
+        l_Scissor.offset = {0, 0};
+        l_Scissor.extent = l_ActualExtent;
+        vkCmdSetScissor(p_Params.commandBuffer->vk.m_Handle, 0, 1, &l_Scissor);
+      }
+
+      void vk_renderpass_stop(Backend::Renderpass &p_Renderpass,
+                              Backend::RenderpassStopParams &p_Params)
+      {
+        vkCmdEndRenderPass(p_Params.commandBuffer->vk.m_Handle);
+      }
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

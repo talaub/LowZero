@@ -20,7 +20,7 @@ namespace Low {
 
       window_initialize(l_Window, l_WindowInit);
 
-      Backend::ContextInit l_ContextInit;
+      Backend::ContextCreateParams l_ContextInit;
       l_ContextInit.validation_enabled = true;
       l_ContextInit.window = &l_Window;
 

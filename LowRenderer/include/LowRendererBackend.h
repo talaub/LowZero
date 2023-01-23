@@ -7,24 +7,148 @@
 namespace Low {
   namespace Renderer {
     namespace Backend {
+      struct Framebuffer;
+      struct CommandBuffer;
+
+      struct ImageFormat
+      {
+        union
+        {
+          Vulkan::ImageFormat vk;
+        };
+      };
+
       struct Context
       {
         union
         {
-          Vulkan::VulkanContext vk;
+          Vulkan::Context vk;
         };
         Window m_Window;
       };
 
-      struct ContextInit
+      struct ContextCreateParams
       {
         Window *window;
         bool validation_enabled;
       };
 
-      void context_create(Context &p_Context, ContextInit &p_Init);
+      void context_create(Context &p_Context, ContextCreateParams &p_Params);
       void context_cleanup(Context &p_Context);
       void context_wait_idle(Context &p_Context);
+
+      struct Renderpass
+      {
+        union
+        {
+          Vulkan::Renderpass vk;
+        };
+        Context *context;
+        uint8_t formatCount;
+        bool *clearTarget;
+        bool useDepth;
+        bool clearDepth;
+      };
+
+      struct RenderpassCreateParams
+      {
+        Context *context;
+        ImageFormat *formats;
+        uint8_t formatCount;
+        bool *clearTarget;
+        bool useDepth;
+        bool clearDepth;
+      };
+
+      struct RenderpassStartParams
+      {
+
+        Framebuffer *framebuffer;
+        CommandBuffer *commandBuffer;
+        Math::Color *clearColorValues;
+        Math::Vector2 clearDepthValue;
+      };
+
+      struct RenderpassStopParams
+      {
+        CommandBuffer *commandBuffer;
+      };
+
+      struct Framebuffer
+      {
+        union
+        {
+          Vulkan::Framebuffer vk;
+        };
+        Context *context;
+      };
+
+      struct FramebufferCreateParams
+      {
+        Context *context;
+        Image2D *renderTargets;
+        uint8_t renderTargetCount;
+        uint8_t framesInFlight;
+        Math::UVector2 dimensions;
+        Renderpass *renderpass;
+      };
+
+      void framebuffer_create(Framebuffer &p_Framebuffer,
+                              FramebufferCreateParams &p_Params);
+      void framebuffer_get_dimensions(Framebuffer &p_Framebuffer,
+                                      Math::UVector2 &p_Dimensions);
+      void framebuffer_cleanup(Framebuffer &p_Framebuffer);
+
+      struct Image2D
+      {
+        union
+        {
+          Vulkan::Image2D vk;
+        };
+        Context *context;
+      };
+
+      struct CommandBuffer
+      {
+        union
+        {
+          Vulkan::CommandBuffer vk;
+        };
+        Context *context;
+      };
+
+      struct Swapchain
+      {
+        union
+        {
+          Vulkan::Swapchain vk;
+        };
+        Context *context;
+      };
+
+      struct SwapchainCreateParams
+      {
+        Context *context;
+        CommandPool *commandPool;
+      };
+
+      struct CommandPool
+      {
+        union
+        {
+          Vulkan::CommandPool vk;
+        };
+        Context *context;
+      };
+
+      struct CommandPoolCreateParams
+      {
+        Context *context;
+      };
+
+      void commandpool_create(CommandPool &p_CommandPool,
+                              CommandPoolCreateParams &p_Params);
+      void commandpool_cleanup(CommandPool &p_CommandPool);
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low
