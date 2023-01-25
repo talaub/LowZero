@@ -24,6 +24,8 @@ namespace Low {
       struct CommandPool;
       struct CommandPoolCreateParams;
 
+      struct CommandBuffer;
+
       struct Renderpass;
       struct RenderpassCreateParams;
       struct RenderpassStartParams;
@@ -35,6 +37,9 @@ namespace Low {
       {
         VkFormat m_Handle;
       };
+
+      void vk_imageformat_get_depth(Backend::Context &p_Context,
+                                    Backend::ImageFormat &p_Format);
 
       struct Context
       {
@@ -101,8 +106,8 @@ namespace Low {
         VkSemaphore *m_ImageAvailableSemaphores;
         VkSemaphore *m_RenderFinishedSemaphores;
         VkFence *m_InFlightFences;
-        Image2D *m_RenderTargets;
-        Renderpass m_Renderpass;
+        Backend::Image2D *m_RenderTargets;
+        Backend::CommandBuffer *m_CommandBuffers;
       };
 
       void vk_swapchain_create(Backend::Swapchain &p_Swapchain,

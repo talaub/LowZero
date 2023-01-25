@@ -818,32 +818,6 @@ namespace Low {
       }
 
       namespace SwapchainUtils {
-        static void create_render_targets(Context &p_Context,
-                                          Swapchain &p_Swapchain,
-                                          Low::Util::List<VkImage> &p_Images)
-        {
-          p_Swapchain.m_RenderTargets = (Backend::Image2D *)calloc(
-              p_Images.size(), sizeof(Backend::Image2D));
-
-          Low::Math::UVector2 l_Dimensions = p_Swapchain.m_Dimensions;
-
-          RenderTargetConfig l_RenderTargetConfig;
-
-          for (size_t i_Iter = 0; i_Iter < p_Swapchain.m_RenderTargets.size();
-               i_Iter++) {
-            p_Swapchain.m_RenderTargets[i_Iter]
-                .m_Handle.vk_RenderTarget.m_Image = p_Images[i_Iter];
-            p_Swapchain.m_RenderTargets[i_Iter]
-                .m_Handle.vk_RenderTarget.m_ImageInitialized = true;
-
-            Vulkan::create_vulkan_render_target(
-                p_Context, p_Swapchain.m_RenderTargets[i_Iter], l_Dimensions,
-                p_Swapchain.m_ImageFormat, l_RenderTargetConfig);
-          }
-
-          LOW_LOG_DEBUG("Swapchain render targets created");
-        }
-
         static VkExtent2D
         choose_swap_extent(Backend::Context &p_Context,
                            const VkSurfaceCapabilitiesKHR &p_Capabilities)
@@ -923,17 +897,16 @@ namespace Low {
 
           VkCommandBufferAllocateInfo l_AllocInfo{};
           l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-          l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
+          l_AllocInfo.commandPool =
+              p_CommandPool.vk.m_Handle;
           l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-          l_AllocInfo.commandBufferCount = 1;
+          l_AllocInfo.commandBufferCount = p_Swapchain.m_FramesInFlight;
 
-          for (uint8_t i = 0; i < p_Swapchain.m_FramesInFlight; ++i) {
-            LOW_ASSERT(vkAllocateCommandBuffers(
-                           p_Context.vk.m_Device, &l_AllocInfo,
-                           &(p_Swapchain.m_CommandBuffers[i].vk.m_Handle)) ==
-                           VK_SUCCESS,
-                       "Failed to allocate command buffer");
-          }
+          LOW_ASSERT(vkAllocateCommandBuffers(
+                         p_Context.m_Handle.vk_Context.m_Device, &l_AllocInfo,
+                         &p_CommandBuffer.m_Handle.vk_CommandBuffer.m_Handle) ==
+                         VK_SUCCESS,
+                     "Failed to allocate command buffers");
 
           LOW_LOG_INFO("Swapchain commandbuffers created");
         }
@@ -1026,22 +999,6 @@ namespace Low {
         l_Swapchain.m_ImageFormat.m_Handle = l_SurfaceFormat.format;
         l_Swapchain.m_Dimensions =
             Math::UVector2(l_Extent.width, l_Extent.height);
-
-        Backend::RenderpassCreateParams l_RenderPassParams;
-        l_RenderPassParams.context = p_Params.context;
-        l_RenderPassParams.formatCount = 1;
-        Backend::ImageFormat l_RenderpassImageFormat;
-        l_RenderpassImageFormat.vk = l_Swapchain.m_ImageFormat;
-        l_RenderPassParams.formats = &l_RenderpassImageFormat;
-        bool l_ClearRenderpassImage = true;
-        l_RenderPassParams.clearTarget = &l_ClearRenderpassImage;
-        l_RenderPassParams.useDepth = false;
-
-        vk_renderpass_create(p_Swapchain.renderpass, l_RenderPassParams);
-
-        SwapchainUtils::create_sync_objects(p_Params.context->vk, l_Swapchain);
-        SwapchainUtils::create_command_buffers(
-            *p_Params.context, *p_Params.commandPool, l_Swapchain);
       }
     } // namespace Vulkan
   }   // namespace Renderer

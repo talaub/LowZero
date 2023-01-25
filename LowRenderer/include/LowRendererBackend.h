@@ -18,6 +18,8 @@ namespace Low {
         };
       };
 
+      void imageformat_get_depth(Context &p_Context, ImageFormat &p_Format);
+
       struct Context
       {
         union
@@ -99,6 +101,19 @@ namespace Low {
                                       Math::UVector2 &p_Dimensions);
       void framebuffer_cleanup(Framebuffer &p_Framebuffer);
 
+      namespace ImageState {
+        enum Enum
+        {
+          UNDEFINED,
+          RENDERTARGET,
+          STORAGE,
+          SAMPLE,
+          SOURCE,
+          DESTINATION,
+          DEPTH_RENDERTARGET
+        };
+      }
+
       struct Image2D
       {
         union
@@ -106,7 +121,20 @@ namespace Low {
           Vulkan::Image2D vk;
         };
         Context *context;
+        uint8_t state;
       };
+
+      struct Image2DCreateParams
+      {
+        Context *context;
+        Math::UVector2 p_Dimensions;
+        ImageFormat *p_Format;
+        bool writable;
+        bool depth;
+      };
+
+      // Transition methode here
+      // void image_state_transition_rendertarget(Image2D &p_Image);
 
       struct CommandBuffer
       {
@@ -124,6 +152,7 @@ namespace Low {
           Vulkan::Swapchain vk;
         };
         Context *context;
+        Renderpass renderpass;
       };
 
       struct SwapchainCreateParams
@@ -131,6 +160,9 @@ namespace Low {
         Context *context;
         CommandPool *commandPool;
       };
+
+      void swapchain_create(Swapchain &p_Swapchain,
+                            SwapchainCreateParams &p_Params);
 
       struct CommandPool
       {

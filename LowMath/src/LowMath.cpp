@@ -25,6 +25,17 @@ namespace Low {
       {
         return std::abs(p_Num);
       }
+
+      float clamp(float p_Num, float p_Low, float p_High)
+      {
+        if (p_Num > p_High) {
+          return p_High;
+        }
+        if (p_Num < p_Low) {
+          return p_Low;
+        }
+        return p_Num;
+      }
     } // namespace Util
   }   // namespace Math
 } // namespace Low

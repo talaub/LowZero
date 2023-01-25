@@ -18,6 +18,15 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 namespace Low {
   namespace Renderer {
     namespace Backend {
+      void imageformat_get_depth(Context &p_Context, ImageFormat &p_Format)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_imageformat_get_depth(p_Context, p_Format);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void context_create(Context &p_Context, ContextCreateParams &p_Params)
       {
 #ifdef LOW_RENDERER_API_VULKAN
@@ -80,6 +89,16 @@ namespace Low {
       {
 #ifdef LOW_RENDERER_API_VULKAN
         Vulkan::vk_commandpool_cleanup(p_CommandPool);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void swapchain_create(Swapchain &p_Swapchain,
+                            SwapchainCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_swapchain_create(p_Swapchain, p_Params);
 #else
         LOW_ASSERT(false, "No valid graphics api set");
 #endif
