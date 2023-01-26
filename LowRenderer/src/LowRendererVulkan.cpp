@@ -39,6 +39,24 @@ namespace Low {
           }
         };
 
+        uint32_t find_memory_type(Context &p_Context, uint32_t p_TypeFilter,
+                                  VkMemoryPropertyFlags p_Properties)
+        {
+          VkPhysicalDeviceMemoryProperties l_MemProperties;
+          vkGetPhysicalDeviceMemoryProperties(p_Context.m_PhysicalDevice,
+                                              &l_MemProperties);
+
+          for (uint32_t i_Iter = 0; i_Iter < l_MemProperties.memoryTypeCount;
+               i_Iter++) {
+            if ((p_TypeFilter & (1 << i_Iter)) &&
+                (l_MemProperties.memoryTypes[i_Iter].propertyFlags &
+                 p_Properties) == p_Properties) {
+              return i_Iter;
+            }
+          }
+          LOW_ASSERT(false, "Failed to find suitable memory type");
+        }
+
         static VkSurfaceFormatKHR choose_swap_surface_format(
             const Low::Util::List<VkSurfaceFormatKHR> &p_AvailableFormats)
         {
@@ -818,27 +836,31 @@ namespace Low {
       }
 
       namespace SwapchainUtils {
-        static void create_render_targets(Context &p_Context,
-                                          Swapchain &p_Swapchain,
+        static void create_render_targets(Backend::Swapchain &p_Swapchain,
                                           Low::Util::List<VkImage> &p_Images)
         {
-          p_Swapchain.m_RenderTargets = (Backend::Image2D *)calloc(
+          Swapchain &l_Swapchain = p_Swapchain.vk;
+
+          l_Swapchain.m_RenderTargets = (Backend::Image2D *)calloc(
               p_Images.size(), sizeof(Backend::Image2D));
 
-          Low::Math::UVector2 l_Dimensions = p_Swapchain.m_Dimensions;
+          Low::Math::UVector2 l_Dimensions = l_Swapchain.m_Dimensions;
 
-          RenderTargetConfig l_RenderTargetConfig;
+          Backend::Image2DCreateParams l_Params;
+          l_Params.context = p_Swapchain.context;
+          l_Params.create_image = false;
+          l_Params.depth = false;
+          l_Params.writable = false;
+          l_Params.dimensions.x = l_Dimensions.x;
+          l_Params.dimensions.y = l_Dimensions.y;
+          Backend::ImageFormat l_Format;
+          l_Format.vk = p_Swapchain.vk.m_ImageFormat;
+          l_Params.format = &l_Format;
 
-          for (size_t i_Iter = 0; i_Iter < p_Swapchain.m_RenderTargets.size();
-               i_Iter++) {
-            p_Swapchain.m_RenderTargets[i_Iter]
-                .m_Handle.vk_RenderTarget.m_Image = p_Images[i_Iter];
-            p_Swapchain.m_RenderTargets[i_Iter]
-                .m_Handle.vk_RenderTarget.m_ImageInitialized = true;
+          for (size_t i_Iter = 0; i_Iter < p_Images.size(); i_Iter++) {
+            l_Swapchain.m_RenderTargets[i_Iter].vk.m_Image = p_Images[i_Iter];
 
-            Vulkan::create_vulkan_render_target(
-                p_Context, p_Swapchain.m_RenderTargets[i_Iter], l_Dimensions,
-                p_Swapchain.m_ImageFormat, l_RenderTargetConfig);
+            vk_image2d_create(l_Swapchain.m_RenderTargets[i_Iter], l_Params);
           }
 
           LOW_LOG_DEBUG("Swapchain render targets created");
@@ -936,6 +958,36 @@ namespace Low {
           }
 
           LOW_LOG_INFO("Swapchain commandbuffers created");
+        }
+
+        static void create_framebuffers(Backend::Context &p_Context,
+                                        Backend::Swapchain &p_Swapchain)
+        {
+
+          p_Swapchain.vk.m_Framebuffers = (Backend::Framebuffer *)calloc(
+              p_Swapchain.vk.m_FramesInFlight, sizeof(Backend::Framebuffer));
+
+          Low::Math::UVector2 l_Dimensions(p_Swapchain.vk.m_Dimensions.x,
+                                           p_Swapchain.vk.m_Dimensions.y);
+
+          for (size_t i_Iter = 0; i_Iter < p_Swapchain.vk.m_FramesInFlight;
+               i_Iter++) {
+
+            Backend::FramebufferCreateParams i_FramebufferParams;
+            i_FramebufferParams.context = &p_Context;
+            i_FramebufferParams.renderTargets =
+                &(p_Swapchain.vk.m_RenderTargets[i_Iter]);
+            i_FramebufferParams.renderpass = &p_Swapchain.renderpass;
+            i_FramebufferParams.dimensions = l_Dimensions;
+            i_FramebufferParams.renderTargetCount = 1;
+            i_FramebufferParams.framesInFlight =
+                p_Swapchain.vk.m_FramesInFlight;
+
+            vk_framebuffer_create(p_Swapchain.vk.m_Framebuffers[i_Iter],
+                                  i_FramebufferParams);
+          }
+
+          LOW_LOG_DEBUG("Swapchain framebuffers created");
         }
       } // namespace SwapchainUtils
 
@@ -1039,9 +1091,146 @@ namespace Low {
 
         vk_renderpass_create(p_Swapchain.renderpass, l_RenderPassParams);
 
+        SwapchainUtils::create_render_targets(p_Swapchain, l_Images);
+
         SwapchainUtils::create_sync_objects(p_Params.context->vk, l_Swapchain);
         SwapchainUtils::create_command_buffers(
             *p_Params.context, *p_Params.commandPool, l_Swapchain);
+      }
+
+      namespace Image2DUtils {
+        static void create_image_view(Backend::Context &p_Context,
+                                      Backend::Image2D &p_Image2d,
+                                      ImageFormat &p_Format, bool p_Depth)
+        {
+
+          VkImageViewCreateInfo l_CreateInfo{};
+          l_CreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+          l_CreateInfo.image = p_Image2d.vk.m_Image;
+          l_CreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+          l_CreateInfo.format = p_Format.m_Handle;
+
+          l_CreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+          l_CreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+          l_CreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+          l_CreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+          l_CreateInfo.subresourceRange.aspectMask =
+              p_Depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+          l_CreateInfo.subresourceRange.baseMipLevel = 0;
+          l_CreateInfo.subresourceRange.levelCount = 1;
+          l_CreateInfo.subresourceRange.baseArrayLayer = 0;
+          l_CreateInfo.subresourceRange.layerCount = 1;
+
+          LOW_ASSERT(vkCreateImageView(p_Context.vk.m_Device, &l_CreateInfo,
+                                       nullptr, &(p_Image2d.vk.m_ImageView)) ==
+                         VK_SUCCESS,
+                     "Could not create image view");
+
+          LOW_LOG_DEBUG("Image view created");
+        }
+
+        static void create_2d_sampler(Backend::Context &p_Context,
+                                      Backend::Image2D &p_RenderTarget)
+        {
+          VkSamplerCreateInfo l_SamplerInfo{};
+          l_SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+          l_SamplerInfo.magFilter = VK_FILTER_LINEAR;
+          l_SamplerInfo.minFilter = VK_FILTER_LINEAR;
+          l_SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+          l_SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+          l_SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+          l_SamplerInfo.anisotropyEnable = VK_TRUE;
+
+          VkPhysicalDeviceProperties l_Properties{};
+          vkGetPhysicalDeviceProperties(p_Context.vk.m_PhysicalDevice,
+                                        &l_Properties);
+
+          l_SamplerInfo.maxAnisotropy =
+              l_Properties.limits.maxSamplerAnisotropy;
+          l_SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+          l_SamplerInfo.unnormalizedCoordinates = VK_FALSE;
+          l_SamplerInfo.compareEnable = VK_FALSE;
+          l_SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+          l_SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+          l_SamplerInfo.mipLodBias = 0.f;
+          l_SamplerInfo.minLod = 0.f;
+          l_SamplerInfo.maxLod = 0.f;
+
+          LOW_ASSERT(vkCreateSampler(p_Context.vk.m_Device, &l_SamplerInfo,
+                                     nullptr, &(p_RenderTarget.vk.m_Sampler)) ==
+                         VK_SUCCESS,
+                     "Failed to create image2d sampler");
+        }
+
+        void create_image(Backend::Context &p_Context, uint32_t p_Width,
+                          uint32_t p_Height, VkFormat p_Format,
+                          VkImageTiling p_Tiling, VkImageUsageFlags p_Usage,
+                          VkMemoryPropertyFlags p_Properties, VkImage &p_Image,
+                          VkDeviceMemory &p_ImageMemory)
+        {
+          VkImageCreateInfo l_ImageInfo{};
+          l_ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+          l_ImageInfo.imageType = VK_IMAGE_TYPE_2D;
+          l_ImageInfo.extent.width = p_Width;
+          l_ImageInfo.extent.height = p_Height;
+          l_ImageInfo.extent.depth = 1;
+          l_ImageInfo.mipLevels = 1;
+          l_ImageInfo.arrayLayers = 1;
+          l_ImageInfo.format = p_Format;
+          l_ImageInfo.tiling = p_Tiling;
+          l_ImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+          l_ImageInfo.usage = p_Usage;
+          l_ImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+          l_ImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+          l_ImageInfo.flags = 0;
+
+          LOW_ASSERT(vkCreateImage(p_Context.vk.m_Device, &l_ImageInfo, nullptr,
+                                   &p_Image) == VK_SUCCESS,
+                     "Failed to create image");
+
+          VkMemoryRequirements l_MemRequirements;
+          vkGetImageMemoryRequirements(p_Context.vk.m_Device, p_Image,
+                                       &l_MemRequirements);
+
+          VkMemoryAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+          l_AllocInfo.allocationSize = l_MemRequirements.size;
+          l_AllocInfo.memoryTypeIndex = Utils::find_memory_type(
+              p_Context.vk, l_MemRequirements.memoryTypeBits, p_Properties);
+
+          LOW_ASSERT(vkAllocateMemory(p_Context.vk.m_Device, &l_AllocInfo,
+                                      nullptr, &p_ImageMemory) == VK_SUCCESS,
+                     "Failed to allocate image memory");
+
+          vkBindImageMemory(p_Context.vk.m_Device, p_Image, p_ImageMemory, 0);
+        }
+
+      } // namespace Image2DUtils
+
+      void vk_image2d_create(Backend::Image2D &p_Image2d,
+                             Backend::Image2DCreateParams &p_Params)
+      {
+        VkImageUsageFlags l_UsageFlags =
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        if (p_Params.writable) {
+          l_UsageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
+        }
+
+        if (p_Params.create_image) {
+          Image2DUtils::create_image(
+              *p_Params.context, p_Params.dimensions.x, p_Params.dimensions.y,
+              p_Params.format->vk.m_Handle, VK_IMAGE_TILING_OPTIMAL,
+              l_UsageFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+              p_Image2d.vk.m_Image, p_Image2d.vk.m_Memory);
+        }
+
+        Image2DUtils::create_image_view(*p_Params.context, p_Image2d,
+                                        p_Params.format->vk, p_Params.depth);
+
+        Image2DUtils::create_2d_sampler(*p_Params.context, p_Image2d);
       }
     } // namespace Vulkan
   }   // namespace Renderer

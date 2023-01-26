@@ -127,10 +127,11 @@ namespace Low {
       struct Image2DCreateParams
       {
         Context *context;
-        Math::UVector2 p_Dimensions;
-        ImageFormat *p_Format;
+        Math::UVector2 dimensions;
+        ImageFormat *format;
         bool writable;
         bool depth;
+        bool create_image;
       };
 
       // Transition methode here

@@ -20,6 +20,7 @@ namespace Low {
       struct FramebufferCreateParams;
 
       struct Image2D;
+      struct Image2DCreateParams;
 
       struct CommandPool;
       struct CommandPoolCreateParams;
@@ -78,6 +79,9 @@ namespace Low {
         VkDeviceMemory m_Memory;
       };
 
+      void vk_image2d_create(Backend::Image2D &p_Image2d,
+                             Backend::Image2DCreateParams &p_Params);
+
       struct Renderpass
       {
         VkRenderPass m_Handle;
@@ -108,6 +112,7 @@ namespace Low {
         VkFence *m_InFlightFences;
         Backend::Image2D *m_RenderTargets;
         Backend::CommandBuffer *m_CommandBuffers;
+        Backend::Framebuffer *m_Framebuffers;
       };
 
       void vk_swapchain_create(Backend::Swapchain &p_Swapchain,
