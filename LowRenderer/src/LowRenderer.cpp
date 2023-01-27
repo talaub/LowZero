@@ -9,6 +9,8 @@
 namespace Low {
   namespace Renderer {
     Backend::Context g_Context;
+    Backend::CommandPool g_CommandPool;
+    Backend::Swapchain g_Swapchain;
 
     void initialize()
     {
@@ -26,6 +28,15 @@ namespace Low {
 
       Backend::context_create(g_Context, l_ContextInit);
 
+      Backend::CommandPoolCreateParams l_CommandPoolParams;
+      l_CommandPoolParams.context = &g_Context;
+      Backend::commandpool_create(g_CommandPool, l_CommandPoolParams);
+
+      Backend::SwapchainCreateParams l_SwapchainParams;
+      l_SwapchainParams.context = &g_Context;
+      l_SwapchainParams.commandPool = &g_CommandPool;
+      Backend::swapchain_create(g_Swapchain, l_SwapchainParams);
+
       LOW_LOG_INFO("Renderer initialized");
     }
 
@@ -41,6 +52,8 @@ namespace Low {
 
     void cleanup()
     {
+      Backend::swapchain_cleanup(g_Swapchain);
+      Backend::commandpool_cleanup(g_CommandPool);
       Backend::context_cleanup(g_Context);
     }
   } // namespace Renderer

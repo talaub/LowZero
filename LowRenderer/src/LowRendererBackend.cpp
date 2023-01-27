@@ -103,6 +103,15 @@ namespace Low {
         LOW_ASSERT(false, "No valid graphics api set");
 #endif
       }
+
+      void swapchain_cleanup(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_swapchain_cleanup(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

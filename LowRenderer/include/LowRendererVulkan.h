@@ -81,6 +81,7 @@ namespace Low {
 
       void vk_image2d_create(Backend::Image2D &p_Image2d,
                              Backend::Image2DCreateParams &p_Params);
+      void vk_image2d_cleanup(Backend::Image2D &p_Image2d);
 
       struct Renderpass
       {
@@ -104,6 +105,7 @@ namespace Low {
       {
         VkSwapchainKHR m_Handle;
         uint8_t m_FramesInFlight;
+        uint8_t m_ImageCount;
         uint8_t m_CurrentFrameIndex;
         ImageFormat m_ImageFormat;
         Math::UVector2 m_Dimensions;
@@ -117,6 +119,7 @@ namespace Low {
 
       void vk_swapchain_create(Backend::Swapchain &p_Swapchain,
                                Backend::SwapchainCreateParams &p_Params);
+      void vk_swapchain_cleanup(Backend::Swapchain &p_Swapchain);
 
       struct CommandPool
       {

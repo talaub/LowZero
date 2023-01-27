@@ -122,6 +122,7 @@ namespace Low {
         };
         Context *context;
         uint8_t state;
+        bool swapchainImage;
       };
 
       struct Image2DCreateParams
@@ -164,6 +165,7 @@ namespace Low {
 
       void swapchain_create(Swapchain &p_Swapchain,
                             SwapchainCreateParams &p_Params);
+      void swapchain_cleanup(Swapchain &p_Swapchain);
 
       struct CommandPool
       {

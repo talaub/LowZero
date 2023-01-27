@@ -861,6 +861,7 @@ namespace Low {
             l_Swapchain.m_RenderTargets[i_Iter].vk.m_Image = p_Images[i_Iter];
 
             vk_image2d_create(l_Swapchain.m_RenderTargets[i_Iter], l_Params);
+            l_Swapchain.m_RenderTargets[i_Iter].swapchainImage = true;
           }
 
           LOW_LOG_DEBUG("Swapchain render targets created");
@@ -900,11 +901,11 @@ namespace Low {
 
         {
           p_Swapchain.m_ImageAvailableSemaphores = (VkSemaphore *)calloc(
-              p_Swapchain.m_FramesInFlight, sizeof(VkSemaphore));
+              p_Swapchain.m_ImageCount, sizeof(VkSemaphore));
           p_Swapchain.m_RenderFinishedSemaphores = (VkSemaphore *)calloc(
-              p_Swapchain.m_FramesInFlight, sizeof(VkSemaphore));
+              p_Swapchain.m_ImageCount, sizeof(VkSemaphore));
           p_Swapchain.m_InFlightFences =
-              (VkFence *)calloc(p_Swapchain.m_FramesInFlight, sizeof(VkFence));
+              (VkFence *)calloc(p_Swapchain.m_ImageCount, sizeof(VkFence));
 
           VkSemaphoreCreateInfo l_SemaphoreInfo{};
           l_SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -915,8 +916,7 @@ namespace Low {
               VK_FENCE_CREATE_SIGNALED_BIT; // Set to resolved immidiately to
                                             // not get stuck on frame one
 
-          for (size_t i_Iter = 0; i_Iter < p_Swapchain.m_FramesInFlight;
-               i_Iter++) {
+          for (size_t i_Iter = 0; i_Iter < p_Swapchain.m_ImageCount; i_Iter++) {
             LOW_ASSERT(vkCreateSemaphore(
                            p_Context.m_Device, &l_SemaphoreInfo, nullptr,
                            &(p_Swapchain.m_ImageAvailableSemaphores[i_Iter])) ==
@@ -957,7 +957,7 @@ namespace Low {
                        "Failed to allocate command buffer");
           }
 
-          LOW_LOG_INFO("Swapchain commandbuffers created");
+          LOW_LOG_DEBUG("Swapchain commandbuffers created");
         }
 
         static void create_framebuffers(Backend::Context &p_Context,
@@ -965,12 +965,12 @@ namespace Low {
         {
 
           p_Swapchain.vk.m_Framebuffers = (Backend::Framebuffer *)calloc(
-              p_Swapchain.vk.m_FramesInFlight, sizeof(Backend::Framebuffer));
+              p_Swapchain.vk.m_ImageCount, sizeof(Backend::Framebuffer));
 
           Low::Math::UVector2 l_Dimensions(p_Swapchain.vk.m_Dimensions.x,
                                            p_Swapchain.vk.m_Dimensions.y);
 
-          for (size_t i_Iter = 0; i_Iter < p_Swapchain.vk.m_FramesInFlight;
+          for (size_t i_Iter = 0; i_Iter < p_Swapchain.vk.m_ImageCount;
                i_Iter++) {
 
             Backend::FramebufferCreateParams i_FramebufferParams;
@@ -1016,6 +1016,8 @@ namespace Low {
 
         uint32_t l_ImageCount =
             l_SwapChainSupportDetails.m_Capabilities.minImageCount + 1;
+
+        l_Swapchain.m_ImageCount = l_ImageCount;
 
         // Clamp the imagecount to not exceed the maximum
         // A set maximum of 0 means that there is no maximum
@@ -1092,10 +1094,43 @@ namespace Low {
         vk_renderpass_create(p_Swapchain.renderpass, l_RenderPassParams);
 
         SwapchainUtils::create_render_targets(p_Swapchain, l_Images);
+        SwapchainUtils::create_framebuffers(*p_Params.context, p_Swapchain);
 
         SwapchainUtils::create_sync_objects(p_Params.context->vk, l_Swapchain);
         SwapchainUtils::create_command_buffers(
             *p_Params.context, *p_Params.commandPool, l_Swapchain);
+
+        LOW_LOG_INFO("Swapchain initialized");
+      }
+
+      void vk_swapchain_cleanup(Backend::Swapchain &p_Swapchain)
+      {
+        Swapchain &l_Swapchain = p_Swapchain.vk;
+        Context &l_Context = p_Swapchain.context->vk;
+
+        for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
+          vkDestroySemaphore(l_Context.m_Device,
+                             l_Swapchain.m_ImageAvailableSemaphores[i],
+                             nullptr);
+          vkDestroySemaphore(l_Context.m_Device,
+                             l_Swapchain.m_RenderFinishedSemaphores[i],
+                             nullptr);
+          vkDestroyFence(l_Context.m_Device, l_Swapchain.m_InFlightFences[i],
+                         nullptr);
+        }
+
+        for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
+          vk_image2d_cleanup(l_Swapchain.m_RenderTargets[i]);
+        }
+
+        vk_renderpass_cleanup(p_Swapchain.renderpass);
+
+        for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
+          vk_framebuffer_cleanup(l_Swapchain.m_Framebuffers[i]);
+        }
+
+        vkDestroySwapchainKHR(l_Context.m_Device, l_Swapchain.m_Handle,
+                              nullptr);
       }
 
       namespace Image2DUtils {
@@ -1211,6 +1246,8 @@ namespace Low {
       void vk_image2d_create(Backend::Image2D &p_Image2d,
                              Backend::Image2DCreateParams &p_Params)
       {
+        p_Image2d.context = p_Params.context;
+
         VkImageUsageFlags l_UsageFlags =
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -1231,6 +1268,22 @@ namespace Low {
                                         p_Params.format->vk, p_Params.depth);
 
         Image2DUtils::create_2d_sampler(*p_Params.context, p_Image2d);
+
+        p_Image2d.swapchainImage = false;
+      }
+
+      void vk_image2d_cleanup(Backend::Image2D &p_Image2d)
+      {
+        Context &l_Context = p_Image2d.context->vk;
+        Image2D &l_Image2d = p_Image2d.vk;
+
+        vkDestroySampler(l_Context.m_Device, l_Image2d.m_Sampler, nullptr);
+        vkDestroyImageView(l_Context.m_Device, l_Image2d.m_ImageView, nullptr);
+
+        if (!p_Image2d.swapchainImage) {
+          vkDestroyImage(l_Context.m_Device, l_Image2d.m_Image, nullptr);
+          vkFreeMemory(l_Context.m_Device, l_Image2d.m_Memory, nullptr);
+        }
       }
     } // namespace Vulkan
   }   // namespace Renderer
