@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vulkan/vulkan_core.h"
+#include <stdint.h>
 #include <vulkan/vulkan.h>
 
 #include "LowMath.h"
@@ -107,6 +108,7 @@ namespace Low {
         uint8_t m_FramesInFlight;
         uint8_t m_ImageCount;
         uint8_t m_CurrentFrameIndex;
+        uint8_t m_CurrentImageIndex;
         ImageFormat m_ImageFormat;
         Math::UVector2 m_Dimensions;
         VkSemaphore *m_ImageAvailableSemaphores;
@@ -120,6 +122,10 @@ namespace Low {
       void vk_swapchain_create(Backend::Swapchain &p_Swapchain,
                                Backend::SwapchainCreateParams &p_Params);
       void vk_swapchain_cleanup(Backend::Swapchain &p_Swapchain);
+      uint8_t vk_swapchain_prepare(Backend::Swapchain &p_Swapchain);
+      void vk_swapchain_swap(Backend::Swapchain &p_Swapchain);
+      Backend::CommandBuffer &
+      vk_swapchain_get_current_commandbuffer(Backend::Swapchain &p_Swapchain);
 
       struct CommandPool
       {

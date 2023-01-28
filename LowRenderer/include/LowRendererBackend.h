@@ -163,6 +163,15 @@ namespace Low {
         CommandPool *commandPool;
       };
 
+      namespace SwapchainState {
+        enum Enum
+        {
+          SUCCESS,
+          FAILED,
+          OUT_OF_DATE
+        };
+      }
+
       void swapchain_create(Swapchain &p_Swapchain,
                             SwapchainCreateParams &p_Params);
       void swapchain_cleanup(Swapchain &p_Swapchain);

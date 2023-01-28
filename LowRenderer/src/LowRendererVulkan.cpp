@@ -13,6 +13,7 @@
 #include <GLFW/glfw3.h>
 
 #include <corecrt_malloc.h>
+#include <stdint.h>
 #include <string>
 
 #define SKIP_DEBUG_LEVEL true
@@ -1131,6 +1132,112 @@ namespace Low {
 
         vkDestroySwapchainKHR(l_Context.m_Device, l_Swapchain.m_Handle,
                               nullptr);
+      }
+
+      uint8_t vk_swapchain_prepare(Backend::Swapchain &p_Swapchain)
+      {
+        vkWaitForFences(
+            p_Swapchain.context->vk.m_Device, 1,
+            &p_Swapchain.vk
+                 .m_InFlightFences[p_Swapchain.vk.m_CurrentFrameIndex],
+            VK_TRUE, UINT64_MAX);
+
+        uint32_t l_CurrentImage;
+
+        VkResult l_Result = vkAcquireNextImageKHR(
+            p_Swapchain.context->vk.m_Device, p_Swapchain.vk.m_Handle,
+            UINT64_MAX,
+            p_Swapchain.vk
+                .m_ImageAvailableSemaphores[p_Swapchain.vk.m_CurrentFrameIndex],
+            VK_NULL_HANDLE, &l_CurrentImage);
+
+        p_Swapchain.vk.m_CurrentImageIndex = l_CurrentImage;
+
+        // Handle window resize
+        if (l_Result == VK_ERROR_OUT_OF_DATE_KHR) {
+          return Backend::SwapchainState::OUT_OF_DATE;
+        }
+
+        LOW_ASSERT(l_Result == VK_SUCCESS || l_Result == VK_SUBOPTIMAL_KHR,
+                   "Failed to acquire swapchain image");
+
+        vkResetFences(
+            p_Swapchain.context->vk.m_Device, 1,
+            &p_Swapchain.vk
+                 .m_InFlightFences[p_Swapchain.vk.m_CurrentFrameIndex]);
+
+        return Backend::SwapchainState::SUCCESS;
+      }
+
+      void vk_swapchain_swap(Backend::Swapchain &p_Swapchain)
+      {
+        Swapchain &l_Swapchain = p_Swapchain.vk;
+
+        VkSubmitInfo l_SubmitInfo{};
+        l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+        VkSemaphore l_WaitSemaphores[] = {
+            l_Swapchain
+                .m_ImageAvailableSemaphores[l_Swapchain.m_CurrentFrameIndex]};
+        VkPipelineStageFlags l_WaitStages[] = {
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        l_SubmitInfo.waitSemaphoreCount = 1;
+        l_SubmitInfo.pWaitSemaphores = l_WaitSemaphores;
+        l_SubmitInfo.pWaitDstStageMask = l_WaitStages;
+        l_SubmitInfo.commandBufferCount = 1;
+        l_SubmitInfo.pCommandBuffers =
+            &(vk_swapchain_get_current_commandbuffer(p_Swapchain).vk.m_Handle);
+
+        VkSemaphore l_SignalSemaphores[] = {
+            l_Swapchain
+                .m_RenderFinishedSemaphores[l_Swapchain.m_CurrentFrameIndex]};
+        l_SubmitInfo.signalSemaphoreCount = 1;
+        l_SubmitInfo.pSignalSemaphores = l_SignalSemaphores;
+
+        VkResult l_SubmitResult = vkQueueSubmit(
+            p_Swapchain.context->vk.m_GraphicsQueue, 1, &l_SubmitInfo,
+            l_Swapchain.m_InFlightFences[l_Swapchain.m_CurrentFrameIndex]);
+
+        LOW_ASSERT(l_SubmitResult == VK_SUCCESS,
+                   "Failed to submit draw command buffer");
+
+        VkPresentInfoKHR l_PresentInfo{};
+        l_PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        l_PresentInfo.waitSemaphoreCount = 1;
+        l_PresentInfo.pWaitSemaphores = l_SignalSemaphores;
+
+        VkSwapchainKHR l_Swapchains[] = {l_Swapchain.m_Handle};
+        l_PresentInfo.swapchainCount = 1;
+        l_PresentInfo.pSwapchains = l_Swapchains;
+        l_PresentInfo.pImageIndices =
+            (uint32_t *)&p_Swapchain.vk.m_CurrentImageIndex;
+        l_PresentInfo.pResults = nullptr;
+
+        VkResult l_Result = vkQueuePresentKHR(
+            p_Swapchain.context->vk.m_PresentQueue, &l_PresentInfo);
+
+        // Handle window resize
+        if (l_Result == VK_ERROR_OUT_OF_DATE_KHR ||
+            l_Result == VK_SUBOPTIMAL_KHR || /*g_FramebufferResized*/ false) {
+          // g_FramebufferResized = false;
+          // recreate_swapchain();
+          // TODO: Handle reconfigure renderer
+        } else {
+          LOW_ASSERT(l_Result == VK_SUCCESS,
+                     "Failed to present swapchain image");
+        }
+
+        p_Swapchain.vk.m_CurrentFrameIndex =
+            (p_Swapchain.vk.m_CurrentFrameIndex + 1) %
+            p_Swapchain.vk.m_FramesInFlight;
+      }
+
+      Backend::CommandBuffer &
+      vk_swapchain_get_current_commandbuffer(Backend::Swapchain &p_Swapchain)
+      {
+        return p_Swapchain.vk
+            .m_CommandBuffers[p_Swapchain.vk.m_CurrentFrameIndex];
       }
 
       namespace Image2DUtils {
