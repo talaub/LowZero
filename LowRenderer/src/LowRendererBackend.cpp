@@ -46,6 +46,16 @@ namespace Low {
         p_Context.m_Window.cleanup();
       }
 
+      void context_wait_idle(Context &p_Context)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_context_wait_idle(p_Context);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+        p_Context.m_Window.cleanup();
+      }
+
       void framebuffer_create(Framebuffer &p_Framebuffer,
                               FramebufferCreateParams &p_Params)
       {
@@ -112,6 +122,105 @@ namespace Low {
         LOW_ASSERT(false, "No valid graphics api set");
 #endif
       }
+
+      uint8_t swapchain_prepare(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_prepare(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        return 0;
+#endif
+      }
+
+      void swapchain_swap(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_swapchain_swap(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      CommandBuffer &swapchain_get_current_commandbuffer(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_get_current_commandbuffer(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        CommandBuffer l_CmpBfr;
+        return l_CmpBfr;
+#endif
+      }
+
+      Framebuffer &swapchain_get_current_framebuffer(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_get_current_framebuffer(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        Framebuffer l_Framebuffer;
+        return l_Framebuffer;
+#endif
+      }
+
+      void renderpass_create(Renderpass &p_Renderpass,
+                             RenderpassCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_renderpass_create(p_Renderpass, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void renderpass_cleanup(Renderpass &p_Renderpass)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_renderpass_cleanup(p_Renderpass);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void renderpass_start(Renderpass &p_Renderpass,
+                            RenderpassStartParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_renderpass_start(p_Renderpass, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void renderpass_stop(Renderpass &p_Renderpass,
+                           RenderpassStopParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_renderpass_stop(p_Renderpass, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void commandbuffer_start(CommandBuffer &p_CommandBuffer)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_commandbuffer_start(p_CommandBuffer);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void commandbuffer_stop(CommandBuffer &p_CommandBuffer)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_commandbuffer_stop(p_CommandBuffer);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

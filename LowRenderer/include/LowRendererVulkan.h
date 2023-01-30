@@ -102,6 +102,9 @@ namespace Low {
         VkCommandBuffer m_Handle;
       };
 
+      void vk_commandbuffer_start(Backend::CommandBuffer &p_CommandBuffer);
+      void vk_commandbuffer_stop(Backend::CommandBuffer &p_CommandBuffer);
+
       struct Swapchain
       {
         VkSwapchainKHR m_Handle;
@@ -126,6 +129,8 @@ namespace Low {
       void vk_swapchain_swap(Backend::Swapchain &p_Swapchain);
       Backend::CommandBuffer &
       vk_swapchain_get_current_commandbuffer(Backend::Swapchain &p_Swapchain);
+      Backend::Framebuffer &
+      vk_swapchain_get_current_framebuffer(Backend::Swapchain &p_Swapchain);
 
       struct CommandPool
       {

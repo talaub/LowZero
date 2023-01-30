@@ -562,6 +562,11 @@ namespace Low {
         vkDestroyInstance(l_Context.m_Instance, nullptr);
       }
 
+      void vk_context_wait_idle(Backend::Context &p_Context)
+      {
+        vkDeviceWaitIdle(p_Context.vk.m_Device);
+      }
+
       void vk_framebuffer_create(Backend::Framebuffer &p_Framebuffer,
                                  Backend::FramebufferCreateParams &p_Params)
       {
@@ -1210,8 +1215,8 @@ namespace Low {
         VkSwapchainKHR l_Swapchains[] = {l_Swapchain.m_Handle};
         l_PresentInfo.swapchainCount = 1;
         l_PresentInfo.pSwapchains = l_Swapchains;
-        l_PresentInfo.pImageIndices =
-            (uint32_t *)&p_Swapchain.vk.m_CurrentImageIndex;
+        uint32_t l_ImageIndex = p_Swapchain.vk.m_CurrentImageIndex;
+        l_PresentInfo.pImageIndices = &l_ImageIndex;
         l_PresentInfo.pResults = nullptr;
 
         VkResult l_Result = vkQueuePresentKHR(
@@ -1238,6 +1243,32 @@ namespace Low {
       {
         return p_Swapchain.vk
             .m_CommandBuffers[p_Swapchain.vk.m_CurrentFrameIndex];
+      }
+
+      Backend::Framebuffer &
+      vk_swapchain_get_current_framebuffer(Backend::Swapchain &p_Swapchain)
+      {
+        return p_Swapchain.vk
+            .m_Framebuffers[p_Swapchain.vk.m_CurrentImageIndex];
+      }
+
+      void vk_commandbuffer_start(Backend::CommandBuffer &p_CommandBuffer)
+      {
+        VkCommandBufferBeginInfo l_BeginInfo{};
+        l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        l_BeginInfo.flags = 0;
+        l_BeginInfo.pInheritanceInfo = nullptr;
+
+        LOW_ASSERT(vkBeginCommandBuffer(p_CommandBuffer.vk.m_Handle,
+                                        &l_BeginInfo) == VK_SUCCESS,
+                   "Failed to begin recording command buffer");
+      }
+
+      void vk_commandbuffer_stop(Backend::CommandBuffer &p_CommandBuffer)
+      {
+        LOW_ASSERT(vkEndCommandBuffer(p_CommandBuffer.vk.m_Handle) ==
+                       VK_SUCCESS,
+                   "Failed to stop recording the command buffer");
       }
 
       namespace Image2DUtils {

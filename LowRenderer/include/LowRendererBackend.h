@@ -3,6 +3,7 @@
 #include "LowRendererWindow.h"
 
 #include "LowRendererVulkan.h"
+#include <stdint.h>
 
 namespace Low {
   namespace Renderer {
@@ -76,6 +77,14 @@ namespace Low {
         CommandBuffer *commandBuffer;
       };
 
+      void renderpass_create(Renderpass &p_Renderpass,
+                             RenderpassCreateParams &p_Params);
+      void renderpass_cleanup(Renderpass &p_Renderpass);
+      void renderpass_start(Renderpass &p_Renderpass,
+                            RenderpassStartParams &p_Params);
+      void renderpass_stop(Renderpass &p_Renderpass,
+                           RenderpassStopParams &p_Params);
+
       struct Framebuffer
       {
         union
@@ -147,6 +156,9 @@ namespace Low {
         Context *context;
       };
 
+      void commandbuffer_start(CommandBuffer &p_CommandBuffer);
+      void commandbuffer_stop(CommandBuffer &p_CommandBuffer);
+
       struct Swapchain
       {
         union
@@ -175,6 +187,11 @@ namespace Low {
       void swapchain_create(Swapchain &p_Swapchain,
                             SwapchainCreateParams &p_Params);
       void swapchain_cleanup(Swapchain &p_Swapchain);
+      uint8_t swapchain_prepare(Swapchain &p_Swapchain);
+      void swapchain_swap(Swapchain &p_Swapchain);
+      CommandBuffer &
+      swapchain_get_current_commandbuffer(Swapchain &p_Swapchain);
+      Framebuffer &swapchain_get_current_framebuffer(Swapchain &p_Swapchain);
 
       struct CommandPool
       {

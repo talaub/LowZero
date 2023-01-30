@@ -43,6 +43,33 @@ namespace Low {
     void tick(float p_Delta)
     {
       g_Context.m_Window.tick();
+
+      Backend::swapchain_prepare(g_Swapchain);
+
+      Backend::commandbuffer_start(
+          Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+
+      Backend::RenderpassStartParams l_RpParams;
+      l_RpParams.framebuffer =
+          &(Backend::swapchain_get_current_framebuffer(g_Swapchain));
+      l_RpParams.commandBuffer =
+          &(Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+      l_RpParams.clearDepthValue.x = 1.0f;
+      l_RpParams.clearDepthValue.y = 0.0f;
+      Math::Color l_ClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+      l_RpParams.clearColorValues = &l_ClearColor;
+      Backend::renderpass_start(g_Swapchain.renderpass, l_RpParams);
+
+      Backend::RenderpassStopParams l_RpStopParams;
+      l_RpStopParams.commandBuffer =
+          &(Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+
+      Backend::renderpass_stop(g_Swapchain.renderpass, l_RpStopParams);
+
+      Backend::commandbuffer_stop(
+          Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+
+      Backend::swapchain_swap(g_Swapchain);
     }
 
     bool window_is_open()
@@ -52,6 +79,8 @@ namespace Low {
 
     void cleanup()
     {
+      Backend::context_wait_idle(g_Context);
+
       Backend::swapchain_cleanup(g_Swapchain);
       Backend::commandpool_cleanup(g_CommandPool);
       Backend::context_cleanup(g_Context);
