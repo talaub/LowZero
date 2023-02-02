@@ -15,34 +15,35 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct FramebufferCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT GraphicsPipelineData
+      struct LOW_EXPORT FramebufferData
       {
-        Low::Renderer::Backend::Pipeline pipeline;
+        Low::Renderer::Backend::Framebuffer framebuffer;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(GraphicsPipelineData);
+          return sizeof(FramebufferData);
         }
       };
 
-      struct LOW_EXPORT GraphicsPipeline : public Low::Util::Handle
+      struct LOW_EXPORT Framebuffer : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<GraphicsPipeline> ms_LivingInstances;
+        static Low::Util::List<Framebuffer> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        GraphicsPipeline();
-        GraphicsPipeline(uint64_t p_Id);
-        GraphicsPipeline(GraphicsPipeline &p_Copy);
+        Framebuffer();
+        Framebuffer(uint64_t p_Id);
+        Framebuffer(Framebuffer &p_Copy);
 
-        static GraphicsPipeline make(Low::Util::Name p_Name);
+        static Framebuffer make(Low::Util::Name p_Name);
         void destroy();
 
         static void cleanup();
@@ -51,7 +52,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static GraphicsPipeline *living_instances()
+        static Framebuffer *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -60,10 +61,14 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Low::Renderer::Backend::Pipeline &get_pipeline() const;
+        Low::Renderer::Backend::Framebuffer &get_framebuffer() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
+
+        static Framebuffer make(Util::Name p_Name,
+                                FramebufferCreateParams &p_Params);
+        void get_dimensions(Math::UVector2 &p_Dimensions);
       };
     } // namespace Interface
   }   // namespace Renderer

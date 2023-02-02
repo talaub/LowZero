@@ -1,6 +1,12 @@
 #include "LowRendererBackend.h"
 
+#include "LowRendererGraphicsPipeline.h"
+
+#include "LowUtilLogger.h"
+#include "LowUtilAssert.h"
+
 #include <stdlib.h>
+#include <string>
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -221,6 +227,24 @@ namespace Low {
 #endif
       }
 
+      void pipeline_graphics_create(Pipeline &p_Pipeline,
+                                    GraphicsPipelineCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_pipeline_graphics_create(p_Pipeline, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void pipeline_cleanup(Pipeline &p_Pipeline)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_pipeline_cleanup(p_Pipeline);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

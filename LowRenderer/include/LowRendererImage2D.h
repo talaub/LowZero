@@ -15,34 +15,35 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct Image2DCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT GraphicsPipelineData
+      struct LOW_EXPORT Image2DData
       {
-        Low::Renderer::Backend::Pipeline pipeline;
+        Low::Renderer::Backend::Image2D image2d;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(GraphicsPipelineData);
+          return sizeof(Image2DData);
         }
       };
 
-      struct LOW_EXPORT GraphicsPipeline : public Low::Util::Handle
+      struct LOW_EXPORT Image2D : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<GraphicsPipeline> ms_LivingInstances;
+        static Low::Util::List<Image2D> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        GraphicsPipeline();
-        GraphicsPipeline(uint64_t p_Id);
-        GraphicsPipeline(GraphicsPipeline &p_Copy);
+        Image2D();
+        Image2D(uint64_t p_Id);
+        Image2D(Image2D &p_Copy);
 
-        static GraphicsPipeline make(Low::Util::Name p_Name);
+        static Image2D make(Low::Util::Name p_Name);
         void destroy();
 
         static void cleanup();
@@ -51,7 +52,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static GraphicsPipeline *living_instances()
+        static Image2D *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -60,10 +61,12 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Low::Renderer::Backend::Pipeline &get_pipeline() const;
+        Low::Renderer::Backend::Image2D &get_image2d() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
+
+        static Image2D make(Util::Name p_Name, Image2DCreateParams &p_Params);
       };
     } // namespace Interface
   }   // namespace Renderer

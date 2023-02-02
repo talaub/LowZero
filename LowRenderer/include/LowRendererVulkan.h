@@ -165,6 +165,7 @@ namespace Low {
           Backend::Pipeline &p_Pipeline,
           Backend::GraphicsPipelineCreateParams &p_Params);
 
+      void vk_pipeline_cleanup(Backend::Pipeline &p_Pipeline);
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

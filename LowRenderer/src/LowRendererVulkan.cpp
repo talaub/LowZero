@@ -1782,6 +1782,12 @@ namespace Low {
         vkDestroyShaderModule(p_Params.context->vk.m_Device,
                               l_VertexShaderModule, nullptr);
       }
+
+      void vk_pipeline_cleanup(Backend::Pipeline &p_Pipeline)
+      {
+        vkDestroyPipeline(p_Pipeline.context->vk.m_Device,
+                          p_Pipeline.vk.m_Handle, nullptr);
+      }
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

@@ -1,4 +1,4 @@
-#include "LowRendererGraphicsPipeline.h"
+#include "LowRendererCommandPool.h"
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -9,35 +9,34 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t GraphicsPipeline::TYPE_ID = 8;
-      uint8_t *GraphicsPipeline::ms_Buffer = 0;
-      Low::Util::Instances::Slot *GraphicsPipeline::ms_Slots = 0;
-      Low::Util::List<GraphicsPipeline> GraphicsPipeline::ms_LivingInstances =
-          Low::Util::List<GraphicsPipeline>();
+      const uint16_t CommandPool::TYPE_ID = 6;
+      uint8_t *CommandPool::ms_Buffer = 0;
+      Low::Util::Instances::Slot *CommandPool::ms_Slots = 0;
+      Low::Util::List<CommandPool> CommandPool::ms_LivingInstances =
+          Low::Util::List<CommandPool>();
 
-      GraphicsPipeline::GraphicsPipeline() : Low::Util::Handle(0ull)
+      CommandPool::CommandPool() : Low::Util::Handle(0ull)
       {
       }
-      GraphicsPipeline::GraphicsPipeline(uint64_t p_Id)
-          : Low::Util::Handle(p_Id)
+      CommandPool::CommandPool(uint64_t p_Id) : Low::Util::Handle(p_Id)
       {
       }
-      GraphicsPipeline::GraphicsPipeline(GraphicsPipeline &p_Copy)
+      CommandPool::CommandPool(CommandPool &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
-      GraphicsPipeline GraphicsPipeline::make(Low::Util::Name p_Name)
+      CommandPool CommandPool::make(Low::Util::Name p_Name)
       {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        GraphicsPipeline l_Handle;
+        CommandPool l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
-        l_Handle.m_Data.m_Type = GraphicsPipeline::TYPE_ID;
+        l_Handle.m_Data.m_Type = CommandPool::TYPE_ID;
 
-        ACCESSOR_TYPE_SOA(l_Handle, GraphicsPipeline, name, Low::Util::Name) =
+        ACCESSOR_TYPE_SOA(l_Handle, CommandPool, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
         l_Handle.set_name(p_Name);
@@ -45,18 +44,17 @@ namespace Low {
         return l_Handle;
       }
 
-      void GraphicsPipeline::destroy()
+      void CommandPool::destroy()
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-        pipeline_cleanup(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-        const GraphicsPipeline *l_Instances = living_instances();
+        const CommandPool *l_Instances = living_instances();
         bool l_LivingInstanceFound = false;
         for (uint32_t i = 0u; i < living_count(); ++i) {
           if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
@@ -68,9 +66,9 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
-      void GraphicsPipeline::cleanup()
+      void CommandPool::cleanup()
       {
-        GraphicsPipeline *l_Instances = living_instances();
+        CommandPool *l_Instances = living_instances();
         bool l_LivingInstanceFound = false;
         for (uint32_t i = 0u; i < living_count(); ++i) {
           l_Instances[i].destroy();
@@ -79,39 +77,39 @@ namespace Low {
         free(ms_Slots);
       }
 
-      bool GraphicsPipeline::is_alive() const
+      bool CommandPool::is_alive() const
       {
-        return m_Data.m_Type == GraphicsPipeline::TYPE_ID &&
-               check_alive(ms_Slots, GraphicsPipeline::get_capacity());
+        return m_Data.m_Type == CommandPool::TYPE_ID &&
+               check_alive(ms_Slots, CommandPool::get_capacity());
       }
 
-      uint32_t GraphicsPipeline::get_capacity()
+      uint32_t CommandPool::get_capacity()
       {
         static uint32_t l_Capacity = 0u;
         if (l_Capacity == 0u) {
-          l_Capacity = Low::Util::Config::get_capacity(N(GraphicsPipeline));
+          l_Capacity = Low::Util::Config::get_capacity(N(CommandPool));
         }
         return l_Capacity;
       }
 
-      Low::Renderer::Backend::Pipeline &GraphicsPipeline::get_pipeline() const
+      Low::Renderer::Backend::CommandPool &CommandPool::get_commandpool() const
       {
         _LOW_ASSERT(is_alive());
-        return TYPE_SOA(GraphicsPipeline, pipeline,
-                        Low::Renderer::Backend::Pipeline);
+        return TYPE_SOA(CommandPool, commandpool,
+                        Low::Renderer::Backend::CommandPool);
       }
 
-      Low::Util::Name GraphicsPipeline::get_name() const
+      Low::Util::Name CommandPool::get_name() const
       {
         _LOW_ASSERT(is_alive());
-        return TYPE_SOA(GraphicsPipeline, name, Low::Util::Name);
+        return TYPE_SOA(CommandPool, name, Low::Util::Name);
       }
-      void GraphicsPipeline::set_name(Low::Util::Name p_Value)
+      void CommandPool::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
 
         // Set new value
-        TYPE_SOA(GraphicsPipeline, name, Low::Util::Name) = p_Value;
+        TYPE_SOA(CommandPool, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name

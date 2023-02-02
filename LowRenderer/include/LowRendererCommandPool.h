@@ -17,32 +17,32 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT GraphicsPipelineData
+      struct LOW_EXPORT CommandPoolData
       {
-        Low::Renderer::Backend::Pipeline pipeline;
+        Low::Renderer::Backend::CommandPool commandpool;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(GraphicsPipelineData);
+          return sizeof(CommandPoolData);
         }
       };
 
-      struct LOW_EXPORT GraphicsPipeline : public Low::Util::Handle
+      struct LOW_EXPORT CommandPool : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<GraphicsPipeline> ms_LivingInstances;
+        static Low::Util::List<CommandPool> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        GraphicsPipeline();
-        GraphicsPipeline(uint64_t p_Id);
-        GraphicsPipeline(GraphicsPipeline &p_Copy);
+        CommandPool();
+        CommandPool(uint64_t p_Id);
+        CommandPool(CommandPool &p_Copy);
 
-        static GraphicsPipeline make(Low::Util::Name p_Name);
+        static CommandPool make(Low::Util::Name p_Name);
         void destroy();
 
         static void cleanup();
@@ -51,7 +51,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static GraphicsPipeline *living_instances()
+        static CommandPool *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -60,7 +60,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Low::Renderer::Backend::Pipeline &get_pipeline() const;
+        Low::Renderer::Backend::CommandPool &get_commandpool() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

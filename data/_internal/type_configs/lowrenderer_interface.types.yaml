@@ -1,0 +1,145 @@
+module: LowRenderer
+namespace:
+  - Low
+  - Renderer
+  - Interface
+dll_macro: LOW_EXPORT
+types:
+  Context:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      context:
+        type: Low::Renderer::Backend::Context
+        no_setter: true
+    functions:
+      make:
+        return_type: Context
+        return_handle: true
+        static: true
+        parameters:
+          - name: name 
+            type: Util::Name
+          - name: params
+            type: ContextCreateParams
+      wait_idle:
+        return_type: void
+
+  Swapchain:
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      pipeline:
+        type: Low::Renderer::Backend::Swapchain
+        no_setter: true
+
+  Renderpass:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      renderpass:
+        type: Low::Renderer::Backend::Renderpass
+        no_setter: true
+    functions:
+      make:
+        return_type: Renderpass
+        return_handle: true
+        static: true
+        parameters:
+          - name: name 
+            type: Util::Name
+          - name: params
+            type: RenderpassCreateParams
+      start:
+        return_type: void
+        parameters:
+          - name: params
+            type: RenderpassStartParams
+      stop:
+        return_type: void
+        parameters:
+          - name: params
+            type: RenderpassStopParams
+
+  Framebuffer:
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      framebuffer:
+        type: Low::Renderer::Backend::Framebuffer
+        no_setter: true
+    functions:
+      make:
+        return_type: Framebuffer
+        return_handle: true
+        static: true
+        parameters:
+          - name: name 
+            type: Util::Name
+          - name: params
+            type: FramebufferCreateParams
+      get_dimensions:
+        return_type: void
+        parameters:
+          - name: dimensions
+            type: Math::UVector2
+
+  CommandBuffer:
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      commandbuffer:
+        type: Low::Renderer::Backend::CommandBuffer
+        no_setter: true
+
+  CommandPool:
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      commandpool:
+        type: Low::Renderer::Backend::CommandPool
+        no_setter: true
+
+  Image2D:
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      image2d:
+        type: Low::Renderer::Backend::Image2D
+        no_setter: true
+    functions:
+      make:
+        return_type: Image2D
+        return_handle: true
+        static: true
+        parameters:
+          - name: name 
+            type: Util::Name
+          - name: params
+            type: Image2DCreateParams
+
+  GraphicsPipeline:
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      pipeline:
+        type: Low::Renderer::Backend::Pipeline
+        no_setter: true

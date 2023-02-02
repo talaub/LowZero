@@ -17,15 +17,15 @@ namespace Low {
     static void initialize_backend_types()
     {
       initialize_buffer(
-          &Low::Renderer::Backend::GraphicsPipeline::ms_Buffer,
-          Low::Renderer::Backend::GraphicsPipelineData::get_size(),
-          Low::Renderer::Backend::GraphicsPipeline::get_capacity(),
-          &Low::Renderer::Backend::GraphicsPipeline::ms_Slots);
+          &Low::Renderer::Interface::GraphicsPipeline::ms_Buffer,
+          Low::Renderer::Interface::GraphicsPipelineData::get_size(),
+          Low::Renderer::Interface::GraphicsPipeline::get_capacity(),
+          &Low::Renderer::Interface::GraphicsPipeline::ms_Slots);
     }
 
     static void cleanup_backend_types()
     {
-      Low::Renderer::Backend::GraphicsPipeline::cleanup();
+      Low::Renderer::Interface::GraphicsPipeline::cleanup();
     }
 
     void initialize()

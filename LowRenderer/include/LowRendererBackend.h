@@ -5,11 +5,14 @@
 #include "LowRendererVulkan.h"
 #include <stdint.h>
 
+#include "LowUtilName.h"
+
 namespace Low {
   namespace Renderer {
     namespace Backend {
       struct Framebuffer;
       struct CommandBuffer;
+      struct GraphicsPipeline;
 
       struct ImageFormat
       {
@@ -291,8 +294,8 @@ namespace Low {
       void pipeline_graphics_create(Pipeline &p_Pipeline,
                                     GraphicsPipelineCreateParams &p_Params);
 
-      namespace PipelineManager {
-      }
+      void pipeline_cleanup(Pipeline &p_Pipeline);
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

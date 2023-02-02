@@ -15,34 +15,38 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct ContextCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT GraphicsPipelineData
+      struct LOW_EXPORT ContextData
       {
-        Low::Renderer::Backend::Pipeline pipeline;
+        Low::Renderer::Backend::Context context;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(GraphicsPipelineData);
+          return sizeof(ContextData);
         }
       };
 
-      struct LOW_EXPORT GraphicsPipeline : public Low::Util::Handle
+      struct LOW_EXPORT Context : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<GraphicsPipeline> ms_LivingInstances;
+        static Low::Util::List<Context> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        GraphicsPipeline();
-        GraphicsPipeline(uint64_t p_Id);
-        GraphicsPipeline(GraphicsPipeline &p_Copy);
+        Context();
+        Context(uint64_t p_Id);
+        Context(Context &p_Copy);
 
-        static GraphicsPipeline make(Low::Util::Name p_Name);
+      private:
+        static Context make(Low::Util::Name p_Name);
+
+      public:
         void destroy();
 
         static void cleanup();
@@ -51,7 +55,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static GraphicsPipeline *living_instances()
+        static Context *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -60,10 +64,13 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Low::Renderer::Backend::Pipeline &get_pipeline() const;
+        Low::Renderer::Backend::Context &get_context() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
+
+        static Context make(Util::Name p_Name, ContextCreateParams &p_Params);
+        void wait_idle();
       };
     } // namespace Interface
   }   // namespace Renderer

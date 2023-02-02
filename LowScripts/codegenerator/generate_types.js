@@ -72,6 +72,7 @@ function is_reference_type(t) {
         'float',
         'Name',
         'Low::Util::Name',
+        'Util::Name',
         'bool',
         'uint8_t',
         'uint16_t',
@@ -131,6 +132,11 @@ function generate_header(p_Type) {
     let t = '';
     let n = 0;
 
+    let l_OldCode = '';
+    if (fs.existsSync(p_Type.header_file_path)) {
+	l_OldCode = read_file(p_Type.header_file_path);
+    }
+
     t += line('#pragma once');
     t += empty();
     t += include(`${p_Type.module}Api.h`);
@@ -147,8 +153,50 @@ function generate_header(p_Type) {
 	t += empty();
     }
 
+    if (true) {
+	const l_MarkerName = `CUSTOM:HEADER_CODE`;
+
+	const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+	const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+	const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	let l_CustomCode = '';
+
+	if (l_BeginMarkerIndex >= 0) {
+	    const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+	    l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+	}
+	t += line(l_CustomBeginMarker);
+	t += l_CustomCode;
+	t += line(l_CustomEndMarker);
+	t += empty();
+    }
+
     for (let i_Namespace of p_Type.namespace) {
 	t += line(`namespace ${i_Namespace} {`, n++);
+    }
+
+    if (true) {
+	const l_MarkerName = `CUSTOM:NAMESPACE_CODE`;
+
+	const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+	const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+	const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	let l_CustomCode = '';
+
+	if (l_BeginMarkerIndex >= 0) {
+	    const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+	    l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+	}
+	t += line(l_CustomBeginMarker);
+	t += l_CustomCode;
+	t += line(l_CustomEndMarker);
+	t += empty();
     }
 
     t += line(`struct ${p_Type.dll_macro} ${p_Type.name}Data`, n);
@@ -185,11 +233,17 @@ function generate_header(p_Type) {
     t += line(`${p_Type.name}(${p_Type.name} &p_Copy);`);
     t += empty();
 
+    if (p_Type.private_make) {
+	t += line('private:');
+    }
     if (p_Type.component) {
 	t += line(`static ${p_Type.name} make();`);
     }
     else {
 	t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
+    }
+    if (p_Type.private_make) {
+	t += line('public:');
     }
     t += line(`void destroy();`);
     t += empty();
@@ -222,13 +276,18 @@ function generate_header(p_Type) {
 
     if (p_Type.functions) {
 	for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
+	    if (i_Func.static) {
+		t += write('static ');
+	    }
 	    t += write(`${i_Func.accessor_type}${i_Func.name}(`);
-	    for (let i = 0; i < i_Func.parameters.length; ++i) {
-		if (i > 0) {
-		    t += write(', ');
+	    if (i_Func.parameters) {
+		for (let i = 0; i < i_Func.parameters.length; ++i) {
+		    if (i > 0) {
+			t += write(', ');
+		    }
+		    const i_Param = i_Func.parameters[i];
+		    t += write(`${i_Param.accessor_type}${i_Param.name}`);
 		}
-		const i_Param = i_Func.parameters[i];
-		t += write(`${i_Param.accessor_type}${i_Param.name}`);
 	    }
 	    t += write(')');
 	    if (i_Func.constant) {
@@ -251,12 +310,23 @@ function generate_source(p_Type) {
     let t = '';
     let n = 0;
 
+    let l_OldCode = '';
+    if (fs.existsSync(p_Type.source_file_path)) {
+	l_OldCode = read_file(p_Type.source_file_path);
+    }
+
     t += include(p_Type.header_file_name, n);
     t += empty();
     t += include("LowUtilAssert.h", n);
     t += include("LowUtilLogger.h", n);
     t += include("LowUtilConfig.h", n);
     t += empty();
+    if (p_Type.source_imports) {
+	for (const i_Include of p_Type.source_imports) {
+	    t += include(i_Include);
+	}
+	t += empty();
+    }
 
     for (let i_Namespace of p_Type.namespace) {
 	t += line(`namespace ${i_Namespace} {`, n++);
@@ -310,6 +380,24 @@ function generate_source(p_Type) {
     t += line(`void ${p_Type.name}::destroy(){`);
     t += line('LOW_ASSERT(is_alive(), "Cannot destroy dead object");');
     t += empty();
+    const l_MarkerName = `CUSTOM:DESTROY`;
+
+    const l_DestroyBeginMarker = get_marker_begin(l_MarkerName);
+    const l_DestroyEndMarker = get_marker_end(l_MarkerName);
+
+    const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+    let l_CustomCode = '';
+
+    if (l_BeginMarkerIndex >= 0) {
+	const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+	l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+    }
+    t += line(l_DestroyBeginMarker);
+    t += l_CustomCode;
+    t += line(l_DestroyEndMarker);
+    t += empty();
     t += line('ms_Slots[this->m_Data.m_Index].m_Occupied = false;');
     t += line('ms_Slots[this->m_Data.m_Index].m_Generation++;');
     t += empty();
@@ -339,7 +427,7 @@ function generate_source(p_Type) {
     t += line(`bool ${p_Type.name}::is_alive() const {`);
     t += line(`return m_Data.m_Type == ${p_Type.name}::TYPE_ID && check_alive(ms_Slots, ${p_Type.name}::get_capacity());`);
     t += line(`}`);
-    
+
     t += empty();
     t += line(`uint32_t ${p_Type.name}::get_capacity(){`);
     t += line('static uint32_t l_Capacity = 0u;');
@@ -349,12 +437,6 @@ function generate_source(p_Type) {
     t += line('return l_Capacity;');
     t += line('}');
     t += empty();
-
-    l_OldCode = '';
-
-    if (fs.existsSync(p_Type.source_file_path)) {
-	l_OldCode = read_file(p_Type.source_file_path);
-    }
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	if (!i_Prop.no_getter) {
@@ -423,12 +505,14 @@ function generate_source(p_Type) {
 		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
 	    }
 	    t += write(`${i_Func.accessor_type}${p_Type.name}::${i_Func.name}(`);
-	    for (let i = 0; i < i_Func.parameters.length; ++i) {
-		if (i > 0) {
-		    t += write(', ');
+	    if (i_Func.parameters) {
+		for (let i = 0; i < i_Func.parameters.length; ++i) {
+		    if (i > 0) {
+			t += write(', ');
+		    }
+		    const i_Param = i_Func.parameters[i];
+		    t += write(`${i_Param.accessor_type}${i_Param.name}`);
 		}
-		const i_Param = i_Func.parameters[i];
-		t += write(`${i_Param.accessor_type}${i_Param.name}`);
 	    }
 	    t += write(')');
 	    if (i_Func.constant) {
@@ -530,9 +614,11 @@ function process_file(p_FileName) {
 	    for (let [i_FuncName, i_Func] of Object.entries(i_Type.functions)) {
 		i_Func.accessor_type = get_accessor_type(i_Func.return_type, i_Func.return_handle);
 		i_Func.name = i_FuncName;
-		for (let i_Param of i_Func.parameters) {
-		    i_Param.accessor_type = get_accessor_type(i_Param.type, i_Param.handle);
-		    i_Param.name = `p_${capitalize_first_letter(i_Param.name)}`;
+		if (i_Func.parameters) {
+		    for (let i_Param of i_Func.parameters) {
+			i_Param.accessor_type = get_accessor_type(i_Param.type, i_Param.handle);
+			i_Param.name = `p_${capitalize_first_letter(i_Param.name)}`;
+		    }
 		}
 	    }
 	}
