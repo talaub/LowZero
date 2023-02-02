@@ -13,8 +13,6 @@
 
 #include <stdint.h>
 
-#include "LowUtilTestType.h"
-
 int main()
 {
   Low::Util::initialize();

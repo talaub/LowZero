@@ -23,8 +23,15 @@ namespace Low {
           &Low::Renderer::Backend::GraphicsPipeline::ms_Slots);
     }
 
+    static void cleanup_backend_types()
+    {
+      Low::Renderer::Backend::GraphicsPipeline::cleanup();
+    }
+
     void initialize()
     {
+      initialize_backend_types();
+
       Window l_Window;
       WindowInit l_WindowInit;
       l_WindowInit.dimensions.x = 1280;
@@ -90,6 +97,8 @@ namespace Low {
 
     void cleanup()
     {
+      cleanup_backend_types();
+
       Backend::context_wait_idle(g_Context);
 
       Backend::swapchain_cleanup(g_Swapchain);
