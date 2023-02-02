@@ -6,11 +6,22 @@
 #include "LowRendererBackend.h"
 #include "LowRendererWindow.h"
 
+#include "LowRendererGraphicsPipeline.h"
+
 namespace Low {
   namespace Renderer {
     Backend::Context g_Context;
     Backend::CommandPool g_CommandPool;
     Backend::Swapchain g_Swapchain;
+
+    static void initialize_backend_types()
+    {
+      initialize_buffer(
+          &Low::Renderer::Backend::GraphicsPipeline::ms_Buffer,
+          Low::Renderer::Backend::GraphicsPipelineData::get_size(),
+          Low::Renderer::Backend::GraphicsPipeline::get_capacity(),
+          &Low::Renderer::Backend::GraphicsPipeline::ms_Slots);
+    }
 
     void initialize()
     {

@@ -133,12 +133,19 @@ function generate_header(p_Type) {
 
     t += line('#pragma once');
     t += empty();
-    t += include('LowUtilApi.h');
+    t += include(`${p_Type.module}Api.h`);
     t += empty();
     t += include('LowUtilHandle.h');
     t += include('LowUtilName.h');
     t += include('LowUtilContainers.h');
     t += empty();
+
+    if (p_Type.header_imports) {
+	for (const i_Import of p_Type.header_imports) {
+	    t += include(i_Import);
+	}
+	t += empty();
+    }
 
     for (let i_Namespace of p_Type.namespace) {
 	t += line(`namespace ${i_Namespace} {`, n++);
@@ -163,20 +170,13 @@ function generate_header(p_Type) {
 
     t += line(`struct ${p_Type.dll_macro} ${p_Type.name}: public Low::Util::Handle`, n);
     t += line('{', n++);
-    t += line('friend void Low::Util::Instances::initialize();');
-    t += empty();
-
-    t += line('private:', --n);
+    t += line('public:', --n);
     n++;
-
     t += line('static uint8_t *ms_Buffer;', n);
     t += line('static Low::Util::Instances::Slot *ms_Slots;', n);
     t += empty();
     t += line(`static Low::Util::List<${p_Type.name}> ms_LivingInstances;`, n);
     t += empty();
-
-    t += line('public:', --n);
-    n++;
     t += line('const static uint16_t TYPE_ID;', n);
 
     t += empty();
@@ -384,8 +384,8 @@ function generate_source(p_Type) {
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
 	    t += empty();
-	    t += line(`if (${i_Prop.getter_name}() != p_Value) {`);
 	    if (i_Prop.dirty_flag) {
+		t += line(`if (${i_Prop.getter_name}() != p_Value) {`);
 		t += line('// Set dirty flags');
 		for (var i_Flag of i_Prop.dirty_flag) {
 		    t += line(`TYPE_SOA(${p_Type.name}, ${i_Flag}, bool) = true;`, n);
@@ -398,7 +398,9 @@ function generate_source(p_Type) {
 	    t += line(i_SetterBeginMarker);
 	    t += i_CustomCode;
 	    t += line(i_SetterEndMarker);
-	    t += line('}');
+	    if (i_Prop.dirty_flag) {
+		t += line('}');
+	    }
 	    t += line('}', --n);
 	}
 	t += empty();
@@ -560,7 +562,7 @@ function generate_type_initializer(p_Types) {
     t += empty();
 
     for (let i_Type of p_Types) {
-	t += include(`${i_Type.module}${i_Type.name}.h`);
+	t += include(`../../${i_Type.module}/include/${i_Type.module}${i_Type.name}.h`);
     }
     t += empty();
 
@@ -608,7 +610,7 @@ function main () {
 	}
     }
 
-    generate_type_initializer(l_Types);
+    // generate_type_initializer(l_Types);
 }
 
 main();

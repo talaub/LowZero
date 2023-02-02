@@ -210,6 +210,89 @@ namespace Low {
       void commandpool_create(CommandPool &p_CommandPool,
                               CommandPoolCreateParams &p_Params);
       void commandpool_cleanup(CommandPool &p_CommandPool);
+
+      struct PipelineInterface
+      {
+        union
+        {
+          Vulkan::PipelineInterface vk;
+        };
+        Context *context;
+      };
+
+      struct PipelineInterfaceCreateParams
+      {
+        Context *context;
+      };
+
+      void pipeline_interface_create(PipelineInterface &p_PipelineInterface,
+                                     PipelineInterfaceCreateParams &p_Params);
+
+      struct Pipeline
+      {
+        union
+        {
+          Vulkan::Pipeline vk;
+        };
+
+        Context *context;
+      };
+
+      namespace PipelineRasterizerCullMode {
+        enum Enum
+        {
+          BACK,
+          FRONT
+        };
+      }
+
+      namespace PipelineRasterizerFrontFace {
+        enum Enum
+        {
+          CLOCKWISE,
+          COUNTER_CLOCKWISE
+        };
+      }
+
+      namespace PipelineRasterizerPolygonMode {
+        enum Enum
+        {
+          FILL,
+          LINE
+        };
+      }
+
+#define LOW_RENDERER_COLOR_WRITE_BIT_RED 1
+#define LOW_RENDERER_COLOR_WRITE_BIT_GREEN 2
+#define LOW_RENDERER_COLOR_WRITE_BIT_BLUE 4
+#define LOW_RENDERER_COLOR_WRITE_BIT_ALPHA 8
+
+      struct GraphicsPipelineColorTarget
+      {
+        bool blendEnable;
+        uint32_t wirteMask;
+      };
+
+      struct GraphicsPipelineCreateParams
+      {
+        Context *context;
+        const char *vertexShaderPath;
+        const char *fragmentShaderPath;
+        PipelineInterface *interface;
+        Renderpass *renderpass;
+        Math::UVector2 dimensions;
+        uint8_t cullMode;
+        uint8_t frontFace;
+        uint8_t polygonMode;
+        GraphicsPipelineColorTarget *colorTargets;
+        uint8_t colorTargetCount;
+      };
+
+      void pipeline_graphics_create(Pipeline &p_Pipeline,
+                                    GraphicsPipelineCreateParams &p_Params);
+
+      namespace PipelineManager {
+      }
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

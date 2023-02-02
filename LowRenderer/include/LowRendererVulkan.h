@@ -32,6 +32,12 @@ namespace Low {
       struct RenderpassCreateParams;
       struct RenderpassStartParams;
       struct RenderpassStopParams;
+
+      struct PipelineInterface;
+      struct PipelineInterfaceCreateParams;
+
+      struct Pipeline;
+      struct GraphicsPipelineCreateParams;
     } // namespace Backend
 
     namespace Vulkan {
@@ -140,6 +146,25 @@ namespace Low {
       void vk_commandpool_create(Backend::CommandPool &p_CommandPool,
                                  Backend::CommandPoolCreateParams &p_Params);
       void vk_commandpool_cleanup(Backend::CommandPool &p_CommandPool);
+
+      struct PipelineInterface
+      {
+        VkPipelineLayout m_Handle;
+      };
+
+      void vk_pipeline_interface_create(
+          Backend::PipelineInterface &p_PipelineInterface,
+          Backend::PipelineInterfaceCreateParams &p_Params);
+
+      struct Pipeline
+      {
+        VkPipeline m_Handle;
+      };
+
+      void vk_pipeline_graphics_create(
+          Backend::Pipeline &p_Pipeline,
+          Backend::GraphicsPipelineCreateParams &p_Params);
+
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

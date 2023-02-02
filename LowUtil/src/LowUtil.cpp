@@ -10,14 +10,14 @@ namespace Low {
     {
       Name::initialize();
       Config::initialize();
-      Instances::initialize();
+      // Instances::initialize();
 
       LOW_LOG_INFO("Util initialized");
     }
 
     void cleanup()
     {
-      Instances::cleanup();
+      // Instances::cleanup();
       Name::cleanup();
 
       LOW_LOG_INFO("Util shutdown");

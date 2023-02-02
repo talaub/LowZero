@@ -6,7 +6,7 @@
 
 namespace Low {
   namespace Util {
-    const uint16_t TestType::TYPE_ID = 1;
+    const uint16_t TestType::TYPE_ID = 2;
     uint8_t *TestType::ms_Buffer = 0;
     Low::Util::Instances::Slot *TestType::ms_Slots = 0;
     Low::Util::List<TestType> TestType::ms_LivingInstances =
