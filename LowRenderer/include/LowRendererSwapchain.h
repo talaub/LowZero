@@ -7,6 +7,7 @@
 #include "LowUtilContainers.h"
 
 #include "LowRendererBackend.h"
+#include "LowRendererCommandBuffer.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -15,11 +16,13 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct SwapchainCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_EXPORT SwapchainData
       {
-        Low::Renderer::Backend::Swapchain pipeline;
+        Low::Renderer::Backend::Swapchain swapchain;
+        Util::List<CommandBuffer> commandbuffers;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -43,6 +46,11 @@ namespace Low {
         Swapchain(Swapchain &p_Copy);
 
         static Swapchain make(Low::Util::Name p_Name);
+        explicit Swapchain(const Swapchain &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();
@@ -60,10 +68,15 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Low::Renderer::Backend::Swapchain &get_pipeline() const;
+        Low::Renderer::Backend::Swapchain &get_swapchain() const;
+
+        Util::List<CommandBuffer> &get_commandbuffers() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
+
+        static Swapchain make(Util::Name p_Name,
+                              SwapchainCreateParams &p_Params);
       };
     } // namespace Interface
   }   // namespace Renderer

@@ -43,6 +43,11 @@ namespace Low {
         GraphicsPipeline(GraphicsPipeline &p_Copy);
 
         static GraphicsPipeline make(Low::Util::Name p_Name);
+        explicit GraphicsPipeline(const GraphicsPipeline &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();

@@ -135,8 +135,13 @@ namespace Low {
       void vk_swapchain_swap(Backend::Swapchain &p_Swapchain);
       Backend::CommandBuffer &
       vk_swapchain_get_current_commandbuffer(Backend::Swapchain &p_Swapchain);
+      Backend::CommandBuffer &
+      vk_swapchain_get_commandbuffer(Backend::Swapchain &p_Swapchain,
+                                     uint8_t p_Index);
       Backend::Framebuffer &
       vk_swapchain_get_current_framebuffer(Backend::Swapchain &p_Swapchain);
+      uint8_t
+      vk_swapchain_get_frames_in_flight(Backend::Swapchain &p_Swapchain);
 
       struct CommandPool
       {

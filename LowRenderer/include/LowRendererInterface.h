@@ -58,6 +58,12 @@ namespace Low {
         bool depth;
         bool create_image;
       };
+
+      struct SwapchainCreateParams
+      {
+        Context context;
+        CommandPool commandPool;
+      };
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

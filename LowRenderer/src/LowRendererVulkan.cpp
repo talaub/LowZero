@@ -1246,11 +1246,23 @@ namespace Low {
             .m_CommandBuffers[p_Swapchain.vk.m_CurrentFrameIndex];
       }
 
+      Backend::CommandBuffer &
+      vk_swapchain_get_commandbuffer(Backend::Swapchain &p_Swapchain,
+                                     uint8_t p_Index)
+      {
+        return p_Swapchain.vk.m_CommandBuffers[p_Index];
+      }
+
       Backend::Framebuffer &
       vk_swapchain_get_current_framebuffer(Backend::Swapchain &p_Swapchain)
       {
         return p_Swapchain.vk
             .m_Framebuffers[p_Swapchain.vk.m_CurrentImageIndex];
+      }
+
+      uint8_t vk_swapchain_get_frames_in_flight(Backend::Swapchain &p_Swapchain)
+      {
+        return p_Swapchain.vk.m_FramesInFlight;
       }
 
       void vk_commandbuffer_start(Backend::CommandBuffer &p_CommandBuffer)

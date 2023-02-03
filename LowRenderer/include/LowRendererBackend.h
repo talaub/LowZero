@@ -194,7 +194,10 @@ namespace Low {
       void swapchain_swap(Swapchain &p_Swapchain);
       CommandBuffer &
       swapchain_get_current_commandbuffer(Swapchain &p_Swapchain);
+      CommandBuffer &swapchain_get_commandbuffer(Swapchain &p_Swapchain,
+                                                 uint8_t p_Index);
       Framebuffer &swapchain_get_current_framebuffer(Swapchain &p_Swapchain);
+      uint8_t swapchain_get_frames_in_flight(Swapchain &p_Swapchain);
 
       struct CommandPool
       {

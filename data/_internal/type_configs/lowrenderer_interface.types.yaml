@@ -31,12 +31,26 @@ types:
   Swapchain:
     header_imports:
       - LowRendererBackend.h
+      - LowRendererCommandBuffer.h
     source_imports:
       - LowRendererInterface.h
     properties:
-      pipeline:
+      swapchain:
         type: Low::Renderer::Backend::Swapchain
         no_setter: true
+      commandbuffers:
+        type: Util::List<CommandBuffer>
+        no_setter: true
+    functions:
+      make:
+        return_type: Swapchain
+        return_handle: true
+        static: true
+        parameters:
+          - name: name 
+            type: Util::Name
+          - name: params
+            type: SwapchainCreateParams
 
   Renderpass:
     private_make: true
@@ -102,7 +116,6 @@ types:
     properties:
       commandbuffer:
         type: Low::Renderer::Backend::CommandBuffer
-        no_setter: true
 
   CommandPool:
     header_imports:

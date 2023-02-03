@@ -48,6 +48,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Backend::swapchain_cleanup(get_swapchain());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -91,10 +92,17 @@ namespace Low {
         return l_Capacity;
       }
 
-      Low::Renderer::Backend::Swapchain &Swapchain::get_pipeline() const
+      Low::Renderer::Backend::Swapchain &Swapchain::get_swapchain() const
       {
         _LOW_ASSERT(is_alive());
-        return TYPE_SOA(Swapchain, pipeline, Low::Renderer::Backend::Swapchain);
+        return TYPE_SOA(Swapchain, swapchain,
+                        Low::Renderer::Backend::Swapchain);
+      }
+
+      Util::List<CommandBuffer> &Swapchain::get_commandbuffers() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(Swapchain, commandbuffers, Util::List<CommandBuffer>);
       }
 
       Low::Util::Name Swapchain::get_name() const
@@ -111,6 +119,35 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+      }
+
+      Swapchain Swapchain::make(Util::Name p_Name,
+                                SwapchainCreateParams &p_Params)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+        Swapchain l_Swapchain = Swapchain::make(p_Name);
+
+        Backend::SwapchainCreateParams l_Params;
+        l_Params.commandPool = &(p_Params.commandPool.get_commandpool());
+        l_Params.context = &(p_Params.context.get_context());
+
+        Backend::swapchain_create(l_Swapchain.get_swapchain(), l_Params);
+
+        uint8_t l_FramesInFlight = Backend::swapchain_get_frames_in_flight(
+            l_Swapchain.get_swapchain());
+
+        for (uint8_t i = 0; i < l_FramesInFlight; ++i) {
+          Backend::CommandBuffer l_Cb = Backend::swapchain_get_commandbuffer(
+              l_Swapchain.get_swapchain(), i);
+
+          CommandBuffer l_CommandBuffer = CommandBuffer::make(p_Name);
+          l_CommandBuffer.set_commandbuffer(l_Cb);
+
+          l_Swapchain.get_commandbuffers().push_back(l_CommandBuffer);
+        }
+
+        return l_Swapchain;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
     } // namespace Interface

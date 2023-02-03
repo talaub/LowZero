@@ -245,6 +245,9 @@ function generate_header(p_Type) {
     if (p_Type.private_make) {
 	t += line('public:');
     }
+    t += line(`explicit ${p_Type.name}(const ${p_Type.name}& p_Copy): Low::Util::Handle(p_Copy.m_Id) {`);
+    t += line(`}`);
+    t += empty();
     t += line(`void destroy();`);
     t += empty();
     t += line(`static void cleanup();`);

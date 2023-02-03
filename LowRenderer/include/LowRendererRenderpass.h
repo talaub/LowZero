@@ -49,6 +49,11 @@ namespace Low {
         static Renderpass make(Low::Util::Name p_Name);
 
       public:
+        explicit Renderpass(const Renderpass &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();

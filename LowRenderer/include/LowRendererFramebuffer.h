@@ -44,6 +44,11 @@ namespace Low {
         Framebuffer(Framebuffer &p_Copy);
 
         static Framebuffer make(Low::Util::Name p_Name);
+        explicit Framebuffer(const Framebuffer &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();

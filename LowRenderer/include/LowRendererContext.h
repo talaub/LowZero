@@ -47,6 +47,10 @@ namespace Low {
         static Context make(Low::Util::Name p_Name);
 
       public:
+        explicit Context(const Context &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();

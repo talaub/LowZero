@@ -99,6 +99,18 @@ namespace Low {
         return TYPE_SOA(CommandBuffer, commandbuffer,
                         Low::Renderer::Backend::CommandBuffer);
       }
+      void CommandBuffer::set_commandbuffer(
+          Low::Renderer::Backend::CommandBuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(CommandBuffer, commandbuffer,
+                 Low::Renderer::Backend::CommandBuffer) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_commandbuffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_commandbuffer
+      }
 
       Low::Util::Name CommandBuffer::get_name() const
       {

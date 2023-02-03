@@ -43,6 +43,11 @@ namespace Low {
         CommandBuffer(CommandBuffer &p_Copy);
 
         static CommandBuffer make(Low::Util::Name p_Name);
+        explicit CommandBuffer(const CommandBuffer &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();
@@ -61,6 +66,7 @@ namespace Low {
         static uint32_t get_capacity();
 
         Low::Renderer::Backend::CommandBuffer &get_commandbuffer() const;
+        void set_commandbuffer(Low::Renderer::Backend::CommandBuffer &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

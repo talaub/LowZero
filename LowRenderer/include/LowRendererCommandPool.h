@@ -43,6 +43,11 @@ namespace Low {
         CommandPool(CommandPool &p_Copy);
 
         static CommandPool make(Low::Util::Name p_Name);
+        explicit CommandPool(const CommandPool &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();

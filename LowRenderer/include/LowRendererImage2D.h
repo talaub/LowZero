@@ -44,6 +44,10 @@ namespace Low {
         Image2D(Image2D &p_Copy);
 
         static Image2D make(Low::Util::Name p_Name);
+        explicit Image2D(const Image2D &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+        {
+        }
+
         void destroy();
 
         static void cleanup();
