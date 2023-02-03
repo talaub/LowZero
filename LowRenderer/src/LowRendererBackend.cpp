@@ -171,6 +171,18 @@ namespace Low {
 #endif
       }
 
+      Framebuffer &swapchain_get_framebuffer(Swapchain &p_Swapchain,
+                                             uint8_t p_Index)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_get_framebuffer(p_Swapchain, p_Index);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        Framebuffer l_Bfr;
+        return l_Bfr;
+#endif
+      }
+
       Framebuffer &swapchain_get_current_framebuffer(Swapchain &p_Swapchain)
       {
 #ifdef LOW_RENDERER_API_VULKAN
@@ -186,6 +198,36 @@ namespace Low {
       {
 #ifdef LOW_RENDERER_API_VULKAN
         return Vulkan::vk_swapchain_get_frames_in_flight(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        return 0;
+#endif
+      }
+
+      uint8_t swapchain_get_image_count(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_get_image_count(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        return 0;
+#endif
+      }
+
+      uint8_t swapchain_get_current_frame_index(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_get_current_frame_index(p_Swapchain);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+        return 0;
+#endif
+      }
+
+      uint8_t swapchain_get_current_image_index(Swapchain &p_Swapchain)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        return Vulkan::vk_swapchain_get_current_image_index(p_Swapchain);
 #else
         LOW_ASSERT(false, "No valid graphics api set");
         return 0;

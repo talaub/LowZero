@@ -51,6 +51,7 @@ namespace Low {
 
         void destroy();
 
+        static void initialize();
         static void cleanup();
 
         static uint32_t living_count()
@@ -67,6 +68,7 @@ namespace Low {
         static uint32_t get_capacity();
 
         Low::Renderer::Backend::Framebuffer &get_framebuffer() const;
+        void set_framebuffer(Low::Renderer::Backend::Framebuffer &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

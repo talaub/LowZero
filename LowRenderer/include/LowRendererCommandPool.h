@@ -15,6 +15,7 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct CommandPoolCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_EXPORT CommandPoolData
@@ -42,7 +43,10 @@ namespace Low {
         CommandPool(uint64_t p_Id);
         CommandPool(CommandPool &p_Copy);
 
+      private:
         static CommandPool make(Low::Util::Name p_Name);
+
+      public:
         explicit CommandPool(const CommandPool &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -50,6 +54,7 @@ namespace Low {
 
         void destroy();
 
+        static void initialize();
         static void cleanup();
 
         static uint32_t living_count()
@@ -69,6 +74,9 @@ namespace Low {
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
+
+        static CommandPool make(Util::Name p_Name,
+                                CommandPoolCreateParams &p_Params);
       };
     } // namespace Interface
   }   // namespace Renderer

@@ -40,6 +40,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -66,11 +68,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void Image2D::initialize()
+      {
+        initialize_buffer(&ms_Buffer, Image2DData::get_size(), get_capacity(),
+                          &ms_Slots);
+      }
+
       void Image2D::cleanup()
       {
-        Image2D *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<Image2D> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);

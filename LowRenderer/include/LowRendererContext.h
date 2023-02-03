@@ -53,6 +53,7 @@ namespace Low {
 
         void destroy();
 
+        static void initialize();
         static void cleanup();
 
         static uint32_t living_count()
@@ -75,6 +76,7 @@ namespace Low {
 
         static Context make(Util::Name p_Name, ContextCreateParams &p_Params);
         void wait_idle();
+        Window &get_window();
       };
     } // namespace Interface
   }   // namespace Renderer

@@ -41,6 +41,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -66,11 +68,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void CommandBuffer::initialize()
+      {
+        initialize_buffer(&ms_Buffer, CommandBufferData::get_size(),
+                          get_capacity(), &ms_Slots);
+      }
+
       void CommandBuffer::cleanup()
       {
-        CommandBuffer *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<CommandBuffer> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);
@@ -126,6 +133,20 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+      }
+
+      void CommandBuffer::start()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_start
+        Backend::commandbuffer_start(get_commandbuffer());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_start
+      }
+
+      void CommandBuffer::stop()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_stop
+        Backend::commandbuffer_stop(get_commandbuffer());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_stop
       }
 
     } // namespace Interface

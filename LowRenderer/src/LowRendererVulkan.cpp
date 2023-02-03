@@ -1130,12 +1130,6 @@ namespace Low {
           vk_image2d_cleanup(l_Swapchain.m_RenderTargets[i]);
         }
 
-        vk_renderpass_cleanup(p_Swapchain.renderpass);
-
-        for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
-          vk_framebuffer_cleanup(l_Swapchain.m_Framebuffers[i]);
-        }
-
         vkDestroySwapchainKHR(l_Context.m_Device, l_Swapchain.m_Handle,
                               nullptr);
       }
@@ -1254,6 +1248,13 @@ namespace Low {
       }
 
       Backend::Framebuffer &
+      vk_swapchain_get_framebuffer(Backend::Swapchain &p_Swapchain,
+                                   uint8_t p_Index)
+      {
+        return p_Swapchain.vk.m_Framebuffers[p_Index];
+      }
+
+      Backend::Framebuffer &
       vk_swapchain_get_current_framebuffer(Backend::Swapchain &p_Swapchain)
       {
         return p_Swapchain.vk
@@ -1263,6 +1264,23 @@ namespace Low {
       uint8_t vk_swapchain_get_frames_in_flight(Backend::Swapchain &p_Swapchain)
       {
         return p_Swapchain.vk.m_FramesInFlight;
+      }
+
+      uint8_t vk_swapchain_get_image_count(Backend::Swapchain &p_Swapchain)
+      {
+        return p_Swapchain.vk.m_ImageCount;
+      }
+
+      uint8_t
+      vk_swapchain_get_current_frame_index(Backend::Swapchain &p_Swapchain)
+      {
+        return p_Swapchain.vk.m_CurrentFrameIndex;
+      }
+
+      uint8_t
+      vk_swapchain_get_current_image_index(Backend::Swapchain &p_Swapchain)
+      {
+        return p_Swapchain.vk.m_CurrentImageIndex;
       }
 
       void vk_commandbuffer_start(Backend::CommandBuffer &p_CommandBuffer)

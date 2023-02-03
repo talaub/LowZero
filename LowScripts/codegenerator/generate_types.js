@@ -250,6 +250,7 @@ function generate_header(p_Type) {
     t += empty();
     t += line(`void destroy();`);
     t += empty();
+    t += line(`static void initialize();`);
     t += line(`static void cleanup();`);
     
     t += empty();
@@ -375,6 +376,8 @@ function generate_source(p_Type) {
 	t += line('l_Handle.set_name(p_Name);');
 	t += empty();
     }
+    t += line(`ms_LivingInstances.push_back(l_Handle);`);
+    t += empty();
     t += line('return l_Handle;');
 
     t += line('}');
@@ -416,10 +419,15 @@ function generate_source(p_Type) {
     t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
     t += line('}');
     t += empty();
+    t += line(`void ${p_Type.name}::initialize() {`);
+    t += line(`initialize_buffer(`);
+    t += line(`&ms_Buffer, ${p_Type.name}Data::get_size(), get_capacity(), &ms_Slots`);
+    t += line(`);`);
+    t += line('}');
+    t += empty();
     t += line(`void ${p_Type.name}::cleanup() {`);
-    t += line(`${p_Type.name} *l_Instances = living_instances();`);
-    t += line(`bool l_LivingInstanceFound = false;`);
-    t += line(`for (uint32_t i = 0u; i < living_count(); ++i) {`);
+    t += line(`Low::Util::List<${p_Type.name}> l_Instances = ms_LivingInstances;`);
+    t += line(`for (uint32_t i = 0u; i < l_Instances.size(); ++i) {`);
     t += line(`l_Instances[i].destroy();`);
     t += line('}');
     t += line('free(ms_Buffer);');

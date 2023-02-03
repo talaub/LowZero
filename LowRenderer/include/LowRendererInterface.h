@@ -6,6 +6,7 @@
 #include "LowRendererCommandPool.h"
 #include "LowRendererImage2D.h"
 #include "LowRendererRenderpass.h"
+#include "LowRendererSwapchain.h"
 
 #include "LowUtilContainers.h"
 
@@ -16,6 +17,11 @@ namespace Low {
       {
         Window *window;
         bool validation_enabled;
+      };
+
+      struct CommandPoolCreateParams
+      {
+        Context context;
       };
 
       struct RenderpassCreateParams
@@ -31,7 +37,7 @@ namespace Low {
       {
         Framebuffer framebuffer;
         CommandBuffer commandbuffer;
-        Util::List<Math::Color> clearColorsValues;
+        Util::List<Math::Color> clearColorValues;
         Math::Vector2 clearDepthValue;
       };
 

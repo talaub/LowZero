@@ -40,6 +40,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -66,11 +68,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void Context::initialize()
+      {
+        initialize_buffer(&ms_Buffer, ContextData::get_size(), get_capacity(),
+                          &ms_Slots);
+      }
+
       void Context::cleanup()
       {
-        Context *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<Context> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);
@@ -134,6 +141,13 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_wait_idle
         Backend::context_wait_idle(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_wait_idle
+      }
+
+      Window &Context::get_window()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_window
+        return get_context().m_Window;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_window
       }
 
     } // namespace Interface

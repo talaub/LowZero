@@ -41,6 +41,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -67,11 +69,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void Framebuffer::initialize()
+      {
+        initialize_buffer(&ms_Buffer, FramebufferData::get_size(),
+                          get_capacity(), &ms_Slots);
+      }
+
       void Framebuffer::cleanup()
       {
-        Framebuffer *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<Framebuffer> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);
@@ -98,6 +105,18 @@ namespace Low {
         _LOW_ASSERT(is_alive());
         return TYPE_SOA(Framebuffer, framebuffer,
                         Low::Renderer::Backend::Framebuffer);
+      }
+      void
+      Framebuffer::set_framebuffer(Low::Renderer::Backend::Framebuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(Framebuffer, framebuffer,
+                 Low::Renderer::Backend::Framebuffer) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_framebuffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_framebuffer
       }
 
       Low::Util::Name Framebuffer::get_name() const

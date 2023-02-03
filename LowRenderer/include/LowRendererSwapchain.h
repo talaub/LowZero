@@ -8,6 +8,8 @@
 
 #include "LowRendererBackend.h"
 #include "LowRendererCommandBuffer.h"
+#include "LowRendererFramebuffer.h"
+#include "LowRendererRenderpass.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -23,6 +25,8 @@ namespace Low {
       {
         Low::Renderer::Backend::Swapchain swapchain;
         Util::List<CommandBuffer> commandbuffers;
+        Util::List<Framebuffer> framebuffers;
+        Renderpass renderpass;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -45,7 +49,10 @@ namespace Low {
         Swapchain(uint64_t p_Id);
         Swapchain(Swapchain &p_Copy);
 
+      private:
         static Swapchain make(Low::Util::Name p_Name);
+
+      public:
         explicit Swapchain(const Swapchain &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -53,6 +60,7 @@ namespace Low {
 
         void destroy();
 
+        static void initialize();
         static void cleanup();
 
         static uint32_t living_count()
@@ -72,11 +80,20 @@ namespace Low {
 
         Util::List<CommandBuffer> &get_commandbuffers() const;
 
+        Util::List<Framebuffer> &get_framebuffers() const;
+
+        Renderpass &get_renderpass() const;
+        void set_renderpass(Renderpass &p_Value);
+
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
         static Swapchain make(Util::Name p_Name,
                               SwapchainCreateParams &p_Params);
+        uint8_t prepare();
+        void swap();
+        CommandBuffer get_current_commandbuffer();
+        Framebuffer get_current_framebuffer();
       };
     } // namespace Interface
   }   // namespace Renderer

@@ -3,29 +3,40 @@
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 
-#include "LowRendererBackend.h"
 #include "LowRendererWindow.h"
+
+#include "LowRendererInterface.h"
 
 #include "LowRendererGraphicsPipeline.h"
 
 namespace Low {
   namespace Renderer {
-    Backend::Context g_Context;
-    Backend::CommandPool g_CommandPool;
-    Backend::Swapchain g_Swapchain;
+    Interface::Context g_Context;
+    Interface::CommandPool g_CommandPool;
+    Interface::Swapchain g_Swapchain;
 
     static void initialize_backend_types()
     {
-      initialize_buffer(
-          &Low::Renderer::Interface::GraphicsPipeline::ms_Buffer,
-          Low::Renderer::Interface::GraphicsPipelineData::get_size(),
-          Low::Renderer::Interface::GraphicsPipeline::get_capacity(),
-          &Low::Renderer::Interface::GraphicsPipeline::ms_Slots);
+      Interface::Context::initialize();
+      Interface::CommandPool::initialize();
+      Interface::CommandBuffer::initialize();
+      Interface::Framebuffer::initialize();
+      Interface::Renderpass::initialize();
+      Interface::Swapchain::initialize();
+      Interface::Image2D::initialize();
+      Interface::GraphicsPipeline::initialize();
     }
 
     static void cleanup_backend_types()
     {
-      Low::Renderer::Interface::GraphicsPipeline::cleanup();
+      Interface::GraphicsPipeline::cleanup();
+      Interface::Image2D::cleanup();
+      Interface::Swapchain::cleanup();
+      Interface::Renderpass::cleanup();
+      Interface::Framebuffer::cleanup();
+      Interface::CommandBuffer::cleanup();
+      Interface::CommandPool::cleanup();
+      Interface::Context::cleanup();
     }
 
     void initialize()
@@ -40,70 +51,61 @@ namespace Low {
 
       window_initialize(l_Window, l_WindowInit);
 
-      Backend::ContextCreateParams l_ContextInit;
+      Interface::ContextCreateParams l_ContextInit;
       l_ContextInit.validation_enabled = true;
       l_ContextInit.window = &l_Window;
+      g_Context = Interface::Context::make(N(MainContext), l_ContextInit);
 
-      Backend::context_create(g_Context, l_ContextInit);
+      Interface::CommandPoolCreateParams l_CommandPoolParams;
+      l_CommandPoolParams.context = g_Context;
+      g_CommandPool =
+          Interface::CommandPool::make(N(MainCommandPool), l_CommandPoolParams);
 
-      Backend::CommandPoolCreateParams l_CommandPoolParams;
-      l_CommandPoolParams.context = &g_Context;
-      Backend::commandpool_create(g_CommandPool, l_CommandPoolParams);
-
-      Backend::SwapchainCreateParams l_SwapchainParams;
-      l_SwapchainParams.context = &g_Context;
-      l_SwapchainParams.commandPool = &g_CommandPool;
-      Backend::swapchain_create(g_Swapchain, l_SwapchainParams);
+      Interface::SwapchainCreateParams l_SwapchainParams;
+      l_SwapchainParams.context = g_Context;
+      l_SwapchainParams.commandPool = g_CommandPool;
+      g_Swapchain =
+          Interface::Swapchain::make(N(MainSwapchain), l_SwapchainParams);
 
       LOW_LOG_INFO("Renderer initialized");
     }
 
     void tick(float p_Delta)
     {
-      g_Context.m_Window.tick();
+      g_Context.get_window().tick();
 
-      Backend::swapchain_prepare(g_Swapchain);
+      g_Swapchain.prepare();
 
-      Backend::commandbuffer_start(
-          Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+      g_Swapchain.get_current_commandbuffer().start();
 
-      Backend::RenderpassStartParams l_RpParams;
-      l_RpParams.framebuffer =
-          &(Backend::swapchain_get_current_framebuffer(g_Swapchain));
-      l_RpParams.commandBuffer =
-          &(Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+      Interface::RenderpassStartParams l_RpParams;
+      l_RpParams.framebuffer = g_Swapchain.get_current_framebuffer();
+      l_RpParams.commandbuffer = g_Swapchain.get_current_commandbuffer();
       l_RpParams.clearDepthValue.x = 1.0f;
       l_RpParams.clearDepthValue.y = 0.0f;
       Math::Color l_ClearColor(0.0f, 1.0f, 0.0f, 1.0f);
-      l_RpParams.clearColorValues = &l_ClearColor;
-      Backend::renderpass_start(g_Swapchain.renderpass, l_RpParams);
+      l_RpParams.clearColorValues.push_back(l_ClearColor);
+      g_Swapchain.get_renderpass().start(l_RpParams);
 
-      Backend::RenderpassStopParams l_RpStopParams;
-      l_RpStopParams.commandBuffer =
-          &(Backend::swapchain_get_current_commandbuffer(g_Swapchain));
+      Interface::RenderpassStopParams l_RpStopParams;
+      l_RpStopParams.commandbuffer = g_Swapchain.get_current_commandbuffer();
+      g_Swapchain.get_renderpass().stop(l_RpStopParams);
 
-      Backend::renderpass_stop(g_Swapchain.renderpass, l_RpStopParams);
+      g_Swapchain.get_current_commandbuffer().stop();
 
-      Backend::commandbuffer_stop(
-          Backend::swapchain_get_current_commandbuffer(g_Swapchain));
-
-      Backend::swapchain_swap(g_Swapchain);
+      g_Swapchain.swap();
     }
 
     bool window_is_open()
     {
-      return g_Context.m_Window.is_open();
+      return g_Context.get_window().is_open();
     }
 
     void cleanup()
     {
+      g_Context.wait_idle();
+
       cleanup_backend_types();
-
-      Backend::context_wait_idle(g_Context);
-
-      Backend::swapchain_cleanup(g_Swapchain);
-      Backend::commandpool_cleanup(g_CommandPool);
-      Backend::context_cleanup(g_Context);
     }
   } // namespace Renderer
 } // namespace Low

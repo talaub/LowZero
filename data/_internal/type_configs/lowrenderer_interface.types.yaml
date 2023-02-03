@@ -27,11 +27,16 @@ types:
             type: ContextCreateParams
       wait_idle:
         return_type: void
+      get_window:
+        return_type: Window
 
   Swapchain:
+    private_make: true
     header_imports:
       - LowRendererBackend.h
       - LowRendererCommandBuffer.h
+      - LowRendererFramebuffer.h
+      - LowRendererRenderpass.h
     source_imports:
       - LowRendererInterface.h
     properties:
@@ -41,6 +46,11 @@ types:
       commandbuffers:
         type: Util::List<CommandBuffer>
         no_setter: true
+      framebuffers:
+        type: Util::List<Framebuffer>
+        no_setter: true
+      renderpass:
+        type: Renderpass
     functions:
       make:
         return_type: Swapchain
@@ -51,9 +61,18 @@ types:
             type: Util::Name
           - name: params
             type: SwapchainCreateParams
+      prepare:
+        return_type: uint8_t
+      swap:
+        return_type: void
+      get_current_commandbuffer:
+        return_type: CommandBuffer
+        return_handle: true
+      get_current_framebuffer:
+        return_type: Framebuffer
+        return_handle: true
 
   Renderpass:
-    private_make: true
     header_imports:
       - LowRendererBackend.h
     source_imports:
@@ -61,7 +80,6 @@ types:
     properties:
       renderpass:
         type: Low::Renderer::Backend::Renderpass
-        no_setter: true
     functions:
       make:
         return_type: Renderpass
@@ -91,7 +109,6 @@ types:
     properties:
       framebuffer:
         type: Low::Renderer::Backend::Framebuffer
-        no_setter: true
     functions:
       make:
         return_type: Framebuffer
@@ -116,8 +133,14 @@ types:
     properties:
       commandbuffer:
         type: Low::Renderer::Backend::CommandBuffer
+    functions:
+      start:
+        return_type: void
+      stop:
+        return_type: void
 
   CommandPool:
+    private_make: true
     header_imports:
       - LowRendererBackend.h
     source_imports:
@@ -126,6 +149,16 @@ types:
       commandpool:
         type: Low::Renderer::Backend::CommandPool
         no_setter: true
+    functions:
+      make:
+        return_type: CommandPool
+        return_handle: true
+        static: true
+        parameters:
+          - name: name 
+            type: Util::Name
+          - name: params
+            type: CommandPoolCreateParams
 
   Image2D:
     header_imports:

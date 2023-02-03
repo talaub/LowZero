@@ -42,6 +42,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -68,11 +70,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void GraphicsPipeline::initialize()
+      {
+        initialize_buffer(&ms_Buffer, GraphicsPipelineData::get_size(),
+                          get_capacity(), &ms_Slots);
+      }
+
       void GraphicsPipeline::cleanup()
       {
-        GraphicsPipeline *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<GraphicsPipeline> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);

@@ -45,10 +45,7 @@ namespace Low {
         Renderpass(uint64_t p_Id);
         Renderpass(Renderpass &p_Copy);
 
-      private:
         static Renderpass make(Low::Util::Name p_Name);
-
-      public:
         explicit Renderpass(const Renderpass &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -56,6 +53,7 @@ namespace Low {
 
         void destroy();
 
+        static void initialize();
         static void cleanup();
 
         static uint32_t living_count()
@@ -72,6 +70,7 @@ namespace Low {
         static uint32_t get_capacity();
 
         Low::Renderer::Backend::Renderpass &get_renderpass() const;
+        void set_renderpass(Low::Renderer::Backend::Renderpass &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

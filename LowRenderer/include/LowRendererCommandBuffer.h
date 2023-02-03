@@ -50,6 +50,7 @@ namespace Low {
 
         void destroy();
 
+        static void initialize();
         static void cleanup();
 
         static uint32_t living_count()
@@ -70,6 +71,9 @@ namespace Low {
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
+
+        void start();
+        void stop();
       };
     } // namespace Interface
   }   // namespace Renderer

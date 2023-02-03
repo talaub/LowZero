@@ -41,6 +41,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -49,6 +51,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Backend::commandpool_cleanup(get_commandpool());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -66,11 +69,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void CommandPool::initialize()
+      {
+        initialize_buffer(&ms_Buffer, CommandPoolData::get_size(),
+                          get_capacity(), &ms_Slots);
+      }
+
       void CommandPool::cleanup()
       {
-        CommandPool *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<CommandPool> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);
@@ -113,6 +121,21 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+      }
+
+      CommandPool CommandPool::make(Util::Name p_Name,
+                                    CommandPoolCreateParams &p_Params)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+        CommandPool l_CommandPool = CommandPool::make(p_Name);
+
+        Backend::CommandPoolCreateParams l_Params;
+        l_Params.context = &(p_Params.context.get_context());
+
+        Backend::commandpool_create(l_CommandPool.get_commandpool(), l_Params);
+
+        return l_CommandPool;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
     } // namespace Interface

@@ -41,6 +41,8 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
+        ms_LivingInstances.push_back(l_Handle);
+
         return l_Handle;
       }
 
@@ -67,11 +69,16 @@ namespace Low {
         _LOW_ASSERT(l_LivingInstanceFound);
       }
 
+      void Renderpass::initialize()
+      {
+        initialize_buffer(&ms_Buffer, RenderpassData::get_size(),
+                          get_capacity(), &ms_Slots);
+      }
+
       void Renderpass::cleanup()
       {
-        Renderpass *l_Instances = living_instances();
-        bool l_LivingInstanceFound = false;
-        for (uint32_t i = 0u; i < living_count(); ++i) {
+        Low::Util::List<Renderpass> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
         free(ms_Buffer);
@@ -98,6 +105,18 @@ namespace Low {
         _LOW_ASSERT(is_alive());
         return TYPE_SOA(Renderpass, renderpass,
                         Low::Renderer::Backend::Renderpass);
+      }
+      void
+      Renderpass::set_renderpass(Low::Renderer::Backend::Renderpass &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(Renderpass, renderpass, Low::Renderer::Backend::Renderpass) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderpass
+        // LOW_CODEGEN::END::CUSTOM:SETTER_renderpass
       }
 
       Low::Util::Name Renderpass::get_name() const
@@ -149,7 +168,7 @@ namespace Low {
         l_Params.framebuffer = &(p_Params.framebuffer.get_framebuffer());
         l_Params.commandBuffer = &(p_Params.commandbuffer.get_commandbuffer());
         l_Params.clearDepthValue = p_Params.clearDepthValue;
-        l_Params.clearColorValues = p_Params.clearColorsValues.data();
+        l_Params.clearColorValues = p_Params.clearColorValues.data();
 
         Backend::renderpass_start(get_renderpass(), l_Params);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_start

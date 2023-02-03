@@ -1,2 +1,8 @@
-TestType: 512
 GraphicsPipeline: 128
+Context: 2
+Swapchain: 2
+Image2D: 256
+CommandBuffer: 4
+CommandPool: 2
+Framebuffer: 64
+Renderpass: 16
