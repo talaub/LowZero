@@ -104,6 +104,12 @@ namespace Low {
 
       void draw(DrawParams &p_Params);
 
+      struct UniformScopeInterfaceCreateParams
+      {
+        Context context;
+        Util::List<Backend::UniformInterface> uniformInterfaces;
+      };
+
       namespace ShaderProgramUtils {
         Util::String compile(Util::String p_Path);
 

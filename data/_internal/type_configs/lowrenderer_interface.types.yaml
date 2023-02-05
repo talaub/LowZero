@@ -228,3 +228,24 @@ types:
           - name: commandBuffer
             type: CommandBuffer
             handle: true
+
+  UniformScopeInterface:
+    private_mave: true
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      interface:
+        type: Backend::UniformScopeInterface
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: UniformScopeInterface
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: UniformScopeInterfaceCreateParams
