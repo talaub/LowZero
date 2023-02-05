@@ -125,15 +125,14 @@ namespace Low {
 
       g_Pipeline.bind(g_Swapchain.get_current_commandbuffer());
 
-      Backend::DrawParams l_Params;
-      l_Params.commandBuffer =
-          &(g_Swapchain.get_current_commandbuffer().get_commandbuffer());
+      Interface::DrawParams l_Params;
+      l_Params.commandBuffer = g_Swapchain.get_current_commandbuffer();
       l_Params.firstInstance = 0;
       l_Params.firstVertex = 0;
       l_Params.vertexCount = 3;
       l_Params.instanceCount = 1;
 
-      Backend::draw(l_Params);
+      Interface::draw(l_Params);
 
       Interface::RenderpassStopParams l_RpStopParams;
       l_RpStopParams.commandbuffer = g_Swapchain.get_current_commandbuffer();

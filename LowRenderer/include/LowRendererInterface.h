@@ -93,6 +93,17 @@ namespace Low {
         Context context;
       };
 
+      struct DrawParams
+      {
+        CommandBuffer commandBuffer;
+        uint32_t vertexCount;
+        uint32_t instanceCount;
+        uint32_t firstVertex;
+        uint32_t firstInstance;
+      };
+
+      void draw(DrawParams &p_Params);
+
       namespace ShaderProgramUtils {
         Util::String compile(Util::String p_Path);
 

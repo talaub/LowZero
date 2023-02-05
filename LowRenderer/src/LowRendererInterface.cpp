@@ -9,6 +9,19 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
+
+      void draw(DrawParams &p_Params)
+      {
+        Backend::DrawParams l_Params;
+        l_Params.commandBuffer = &(p_Params.commandBuffer.get_commandbuffer());
+        l_Params.firstInstance = p_Params.firstInstance;
+        l_Params.firstVertex = p_Params.firstVertex;
+        l_Params.vertexCount = p_Params.vertexCount;
+        l_Params.instanceCount = p_Params.instanceCount;
+
+        Backend::draw(l_Params);
+      }
+
       namespace ShaderProgramUtils {
         struct GraphicsPipelineOutputPaths
         {
