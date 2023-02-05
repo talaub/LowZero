@@ -176,6 +176,39 @@ namespace Low {
           LOW_ASSERT(false, "Failed to find supported format");
           return {};
         }
+
+        void create_buffer(Backend::Context &p_Context, VkDeviceSize p_Size,
+                           VkBufferUsageFlags p_Usage,
+                           VkMemoryPropertyFlags p_Properties,
+                           VkBuffer &p_Buffer, VkDeviceMemory &p_BufferMemory)
+        {
+          VkBufferCreateInfo l_BufferInfo{};
+          l_BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+          l_BufferInfo.size = p_Size;
+          l_BufferInfo.usage = p_Usage;
+          l_BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+          LOW_ASSERT(vkCreateBuffer(p_Context.vk.m_Device, &l_BufferInfo,
+                                    nullptr, &p_Buffer) == VK_SUCCESS,
+                     "Failed to create buffer");
+
+          VkMemoryRequirements l_MemoryRequirements;
+          vkGetBufferMemoryRequirements(p_Context.vk.m_Device, p_Buffer,
+                                        &l_MemoryRequirements);
+
+          VkMemoryAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+          l_AllocInfo.allocationSize = l_MemoryRequirements.size;
+          l_AllocInfo.memoryTypeIndex = find_memory_type(
+              p_Context.vk, l_MemoryRequirements.memoryTypeBits, p_Properties);
+
+          LOW_ASSERT(vkAllocateMemory(p_Context.vk.m_Device, &l_AllocInfo,
+                                      nullptr, &p_BufferMemory) == VK_SUCCESS,
+                     "Failed to allocate buffer memor");
+
+          vkBindBufferMemory(p_Context.vk.m_Device, p_Buffer, p_BufferMemory,
+                             0);
+        }
       } // namespace Utils
 
       namespace ContextUtils {
@@ -1943,6 +1976,59 @@ namespace Low {
                        p_Params.context->vk.m_Device, &l_LayoutInfo, nullptr,
                        &(p_Interface.vk.m_Layout)) == VK_SUCCESS,
                    "Failed to create descriptor set layout");
+      }
+
+      void
+      vk_uniform_buffer_create(Backend::Uniform &p_Uniform,
+                               Backend::UniformBufferCreateParams &p_Params)
+      {
+        p_Uniform.context = p_Params.context;
+        p_Uniform.framesInFlight =
+            Backend::swapchain_get_frames_in_flight(*p_Params.swapchain);
+
+        p_Uniform.vk.bufferSize = p_Params.bufferSize;
+
+        VkDeviceSize l_BufferSize = p_Params.bufferSize;
+
+        p_Uniform.vk.buffers =
+            (VkBuffer *)malloc(sizeof(VkBuffer) * p_Uniform.framesInFlight);
+        p_Uniform.vk.bufferMemories = (VkDeviceMemory *)malloc(
+            sizeof(VkDeviceMemory) * p_Uniform.framesInFlight);
+
+        for (uint8_t i = 0; i < p_Uniform.framesInFlight; ++i) {
+          VkBufferUsageFlags i_Usage;
+
+          if (p_Params.bufferType ==
+              Backend::UniformBufferType::STORAGE_BUFFER) {
+            i_Usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+          } else if (p_Params.bufferType ==
+                     Backend::UniformBufferType::UNIFORM_BUFFER) {
+            i_Usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+          } else {
+            LOW_ASSERT(false, "Unknown uniform buffer type");
+          }
+
+          Utils::create_buffer(*p_Params.context, l_BufferSize, i_Usage,
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                               p_Uniform.vk.buffers[i],
+                               p_Uniform.vk.bufferMemories[i]);
+        }
+      }
+
+      void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
+                                 Backend::UniformBufferSetParams &p_Params)
+      {
+        uint8_t l_CurrentFrame =
+            Backend::swapchain_get_current_frame_index(*p_Params.swapchain);
+
+        void *l_Data;
+        vkMapMemory(p_Params.context->vk.m_Device,
+                    p_Uniform.vk.bufferMemories[l_CurrentFrame], 0,
+                    p_Uniform.vk.bufferSize, 0, &l_Data);
+        memcpy(l_Data, p_Params.value, p_Uniform.vk.bufferSize);
+        vkUnmapMemory(p_Params.context->vk.m_Device,
+                      p_Uniform.vk.bufferMemories[l_CurrentFrame]);
       }
     } // namespace Vulkan
   }   // namespace Renderer

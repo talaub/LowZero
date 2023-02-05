@@ -44,6 +44,10 @@ namespace Low {
 
       struct UniformScopeInterface;
       struct UniformScopeInterfaceCreateParams;
+
+      struct Uniform;
+      struct UniformBufferCreateParams;
+      struct UniformBufferSetParams;
     } // namespace Backend
 
     namespace Vulkan {
@@ -202,6 +206,26 @@ namespace Low {
       void vk_uniform_scope_interface_create(
           Backend::UniformScopeInterface &p_Interface,
           Backend::UniformScopeInterfaceCreateParams &p_Params);
+
+      struct Uniform
+      {
+        union
+        {
+          struct
+          {
+            VkBuffer *buffers;
+            VkDeviceMemory *bufferMemories;
+            uint32_t bufferSize;
+          };
+        };
+      };
+
+      void
+      vk_uniform_buffer_create(Backend::Uniform &p_Uniform,
+                               Backend::UniformBufferCreateParams &p_Params);
+
+      void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
+                                 Backend::UniformBufferSetParams &p_Params);
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

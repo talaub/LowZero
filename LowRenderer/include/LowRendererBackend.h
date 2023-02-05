@@ -373,6 +373,46 @@ namespace Low {
           UniformScopeInterface &p_Interface,
           UniformScopeInterfaceCreateParams &p_Params);
 
+      struct Uniform
+      {
+        union
+        {
+          Vulkan::Uniform vk;
+        };
+
+        Context *context;
+        uint8_t framesInFlight;
+      };
+
+      namespace UniformBufferType {
+        enum Enum
+        {
+          UNIFORM_BUFFER,
+          STORAGE_BUFFER
+        };
+      }
+
+      struct UniformBufferCreateParams
+      {
+        Context *context;
+        Swapchain *swapchain;
+        uint8_t bufferType;
+        size_t bufferSize;
+      };
+
+      struct UniformBufferSetParams
+      {
+        Context *context;
+        Swapchain *swapchain;
+        void *value;
+      };
+
+      void uniform_buffer_create(Uniform &p_Uniform,
+                                 UniformBufferCreateParams &p_Params);
+
+      void uniform_buffer_set(Uniform &p_Uniform,
+                              UniformBufferSetParams &p_Params);
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low
