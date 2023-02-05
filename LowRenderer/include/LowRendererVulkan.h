@@ -41,6 +41,9 @@ namespace Low {
       struct PipelineBindParams;
 
       struct DrawParams;
+
+      struct UniformScopeInterface;
+      struct UniformScopeInterfaceCreateParams;
     } // namespace Backend
 
     namespace Vulkan {
@@ -190,6 +193,15 @@ namespace Low {
                             Backend::PipelineBindParams &p_Params);
 
       void vk_draw(Backend::DrawParams &p_Params);
+
+      struct UniformScopeInterface
+      {
+        VkDescriptorSetLayout m_Layout;
+      };
+
+      void vk_uniform_scope_interface_create(
+          Backend::UniformScopeInterface &p_Interface,
+          Backend::UniformScopeInterfaceCreateParams &p_Params);
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

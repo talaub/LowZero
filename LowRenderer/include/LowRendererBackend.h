@@ -325,6 +325,54 @@ namespace Low {
 
       void draw(DrawParams &p_Params);
 
+      struct UniformScopeInterface
+      {
+        union
+        {
+          Vulkan::UniformScopeInterface vk;
+        };
+
+        Context *context;
+      };
+
+      namespace UniformPipelineStep {
+        enum Enum
+        {
+          GRAPHICS,
+          COMPUTE,
+          VERTEX,
+          FRAGMENT
+        };
+      }
+
+      namespace UniformInterfaceType {
+        enum Enum
+        {
+          SAMPLER,
+          RENDERTARGET,
+          UNIFORM_BUFFER,
+          STORAGE_BUFFER
+        };
+      }
+
+      struct UniformInterface
+      {
+        uint8_t pipelineStep;
+        uint8_t type;
+        uint32_t uniformCount;
+      };
+
+      struct UniformScopeInterfaceCreateParams
+      {
+        Context *context;
+        UniformInterface *uniformInterfaces;
+        uint32_t uniformInterfaceCount;
+      };
+
+      void uniform_scope_interface_create(
+          UniformScopeInterface &p_Interface,
+          UniformScopeInterfaceCreateParams &p_Params);
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

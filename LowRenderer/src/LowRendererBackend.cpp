@@ -347,6 +347,17 @@ namespace Low {
 #endif
       }
 
+      void uniform_scope_interface_create(
+          UniformScopeInterface &p_Interface,
+          UniformScopeInterfaceCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_scope_interface_create(p_Interface, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

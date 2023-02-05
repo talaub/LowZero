@@ -1880,6 +1880,70 @@ namespace Low {
                   p_Params.instanceCount, p_Params.firstVertex,
                   p_Params.firstInstance);
       }
+
+      void vk_uniform_scope_interface_create(
+          Backend::UniformScopeInterface &p_Interface,
+          Backend::UniformScopeInterfaceCreateParams &p_Params)
+      {
+        p_Interface.context = p_Params.context;
+
+        Util::List<VkDescriptorSetLayoutBinding> l_Bindings;
+
+        for (uint32_t i = 0u; i < p_Params.uniformInterfaceCount; ++i) {
+          Backend::UniformInterface &i_Uniform = p_Params.uniformInterfaces[i];
+
+          VkDescriptorSetLayoutBinding i_Binding;
+          i_Binding.binding = i;
+
+          i_Binding.descriptorCount = i_Uniform.uniformCount;
+
+          if (i_Uniform.pipelineStep == Backend::UniformPipelineStep::COMPUTE) {
+            i_Binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+          } else if (i_Uniform.pipelineStep ==
+                     Backend::UniformPipelineStep::VERTEX) {
+            i_Binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+          } else if (i_Uniform.pipelineStep ==
+                     Backend::UniformPipelineStep::FRAGMENT) {
+            i_Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+          } else if (i_Uniform.pipelineStep ==
+                     Backend::UniformPipelineStep::GRAPHICS) {
+            i_Binding.stageFlags =
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+          } else {
+            LOW_ASSERT(false, "Unknown pipeline step");
+          }
+
+          if (i_Uniform.type == Backend::UniformInterfaceType::UNIFORM_BUFFER) {
+            i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+          } else if (i_Uniform.type ==
+                     Backend::UniformInterfaceType::STORAGE_BUFFER) {
+            i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+          } else if (i_Uniform.type ==
+                     Backend::UniformInterfaceType::RENDERTARGET) {
+            i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+          } else if (i_Uniform.type == Backend::UniformInterfaceType::SAMPLER) {
+            i_Binding.descriptorType =
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          } else {
+            LOW_ASSERT(false, "Unknown uniform interface type");
+          }
+
+          i_Binding.pImmutableSamplers = nullptr;
+
+          l_Bindings.push_back(i_Binding);
+        }
+
+        VkDescriptorSetLayoutCreateInfo l_LayoutInfo{};
+        l_LayoutInfo.sType =
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        l_LayoutInfo.bindingCount = l_Bindings.size();
+        l_LayoutInfo.pBindings = l_Bindings.data();
+
+        LOW_ASSERT(vkCreateDescriptorSetLayout(
+                       p_Params.context->vk.m_Device, &l_LayoutInfo, nullptr,
+                       &(p_Interface.vk.m_Layout)) == VK_SUCCESS,
+                   "Failed to create descriptor set layout");
+      }
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low
