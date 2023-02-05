@@ -1460,6 +1460,27 @@ namespace Low {
         typedef Low::Util::List<VkVertexInputAttributeDescription>(
             InputAttributeCallback)();
 
+        namespace VertexEmpty {
+          static VkVertexInputBindingDescription get_binding_description()
+          {
+            VkVertexInputBindingDescription l_BindingDescription{};
+            l_BindingDescription.binding = 0;
+            l_BindingDescription.stride = 0;
+            l_BindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+            return l_BindingDescription;
+          }
+
+          static Low::Util::List<VkVertexInputAttributeDescription>
+          get_attribute_descriptions()
+          {
+            Low::Util::List<VkVertexInputAttributeDescription>
+                l_AttributeDescriptions;
+
+            return l_AttributeDescriptions;
+          }
+        } // namespace VertexEmpty
+
         namespace VertexBasic {
           static VkVertexInputBindingDescription get_binding_description()
           {
@@ -1566,6 +1587,13 @@ namespace Low {
                    "Failed to create pipeline layout");
       }
 
+      void vk_pipeline_interface_cleanup(
+          Backend::PipelineInterface &p_PipelineInterface)
+      {
+        vkDestroyPipelineLayout(p_PipelineInterface.context->vk.m_Device,
+                                p_PipelineInterface.vk.m_Handle, nullptr);
+      }
+
       void vk_pipeline_graphics_create(
           Backend::Pipeline &p_Pipeline,
           Backend::GraphicsPipelineCreateParams &p_Params)
@@ -1613,20 +1641,37 @@ namespace Low {
 
         VkPipelineVertexInputStateCreateInfo l_VertexInputInfo{};
 
-        VkVertexInputBindingDescription l_BindingDescription =
-            PipelineUtils::VertexBasic::get_binding_description();
+        VkVertexInputBindingDescription l_BindingDescription;
         Low::Util::List<VkVertexInputAttributeDescription>
-            l_AttributeDescription =
-                PipelineUtils::VertexBasic::get_attribute_descriptions();
+            l_AttributeDescription;
+
+        if (p_Params.vertexInput) {
+          l_BindingDescription =
+              PipelineUtils::VertexBasic::get_binding_description();
+          l_AttributeDescription =
+              PipelineUtils::VertexBasic::get_attribute_descriptions();
+        } else {
+          l_BindingDescription =
+              PipelineUtils::VertexEmpty::get_binding_description();
+          l_AttributeDescription =
+              PipelineUtils::VertexEmpty::get_attribute_descriptions();
+        }
 
         l_VertexInputInfo.sType =
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        l_VertexInputInfo.vertexBindingDescriptionCount = 1;
-        l_VertexInputInfo.pVertexBindingDescriptions = &l_BindingDescription;
-        l_VertexInputInfo.vertexAttributeDescriptionCount =
-            l_AttributeDescription.size();
-        l_VertexInputInfo.pVertexAttributeDescriptions =
-            l_AttributeDescription.data();
+        if (p_Params.vertexInput) {
+          l_VertexInputInfo.vertexBindingDescriptionCount = 1;
+          l_VertexInputInfo.pVertexBindingDescriptions = &l_BindingDescription;
+          l_VertexInputInfo.vertexAttributeDescriptionCount =
+              l_AttributeDescription.size();
+          l_VertexInputInfo.pVertexAttributeDescriptions =
+              l_AttributeDescription.data();
+        } else {
+          l_VertexInputInfo.vertexBindingDescriptionCount = 0;
+          l_VertexInputInfo.pVertexBindingDescriptions = nullptr;
+          l_VertexInputInfo.vertexAttributeDescriptionCount = 0;
+          l_VertexInputInfo.pVertexAttributeDescriptions = nullptr;
+        }
 
         VkPipelineInputAssemblyStateCreateInfo l_InputAssembly{};
         l_InputAssembly.sType =
@@ -1729,21 +1774,23 @@ namespace Low {
           Backend::GraphicsPipelineColorTarget &i_Target =
               p_Params.colorTargets[i];
 
+          int test = i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_RED;
+
           VkColorComponentFlags l_WriteMask = 0;
           if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_RED) ==
-              ~LOW_RENDERER_COLOR_WRITE_BIT_RED) {
+              LOW_RENDERER_COLOR_WRITE_BIT_RED) {
             l_WriteMask |= VK_COLOR_COMPONENT_R_BIT;
           }
           if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_GREEN) ==
-              ~LOW_RENDERER_COLOR_WRITE_BIT_GREEN) {
+              LOW_RENDERER_COLOR_WRITE_BIT_GREEN) {
             l_WriteMask |= VK_COLOR_COMPONENT_G_BIT;
           }
           if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_BLUE) ==
-              ~LOW_RENDERER_COLOR_WRITE_BIT_BLUE) {
+              LOW_RENDERER_COLOR_WRITE_BIT_BLUE) {
             l_WriteMask |= VK_COLOR_COMPONENT_B_BIT;
           }
           if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) ==
-              ~LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) {
+              LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) {
             l_WriteMask |= VK_COLOR_COMPONENT_A_BIT;
           }
 
@@ -1817,6 +1864,21 @@ namespace Low {
       {
         vkDestroyPipeline(p_Pipeline.context->vk.m_Device,
                           p_Pipeline.vk.m_Handle, nullptr);
+      }
+
+      void vk_pipeline_bind(Backend::Pipeline &p_Pipeline,
+                            Backend::PipelineBindParams &p_Params)
+      {
+        vkCmdBindPipeline(p_Params.commandBuffer->vk.m_Handle,
+                          VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          p_Pipeline.vk.m_Handle);
+      }
+
+      void vk_draw(Backend::DrawParams &p_Params)
+      {
+        vkCmdDraw(p_Params.commandBuffer->vk.m_Handle, p_Params.vertexCount,
+                  p_Params.instanceCount, p_Params.firstVertex,
+                  p_Params.firstInstance);
       }
     } // namespace Vulkan
   }   // namespace Renderer

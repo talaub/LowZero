@@ -180,12 +180,51 @@ types:
           - name: params
             type: Image2DCreateParams
 
-  GraphicsPipeline:
+  PipelineInterface:
+    private_make: true
     header_imports:
       - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      interface:
+        type: Low::Renderer::Backend::PipelineInterface
+        no_setter: true
+    functions:
+      make:
+        return_type: PipelineInterface
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: PipelineInterfaceCreateParams
+
+  GraphicsPipeline:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+      - LowRendererCommandBuffer.h
     source_imports:
       - LowRendererInterface.h
     properties:
       pipeline:
         type: Low::Renderer::Backend::Pipeline
         no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: GraphicsPipeline
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: GraphicsPipelineCreateParams
+      bind:
+        return_type: void
+        parameters:
+          - name: commandBuffer
+            type: CommandBuffer
+            handle: true

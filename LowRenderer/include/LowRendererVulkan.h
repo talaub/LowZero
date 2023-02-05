@@ -38,6 +38,9 @@ namespace Low {
 
       struct Pipeline;
       struct GraphicsPipelineCreateParams;
+      struct PipelineBindParams;
+
+      struct DrawParams;
     } // namespace Backend
 
     namespace Vulkan {
@@ -169,6 +172,9 @@ namespace Low {
           Backend::PipelineInterface &p_PipelineInterface,
           Backend::PipelineInterfaceCreateParams &p_Params);
 
+      void vk_pipeline_interface_cleanup(
+          Backend::PipelineInterface &p_PipelineInterface);
+
       struct Pipeline
       {
         VkPipeline m_Handle;
@@ -179,6 +185,11 @@ namespace Low {
           Backend::GraphicsPipelineCreateParams &p_Params);
 
       void vk_pipeline_cleanup(Backend::Pipeline &p_Pipeline);
+
+      void vk_pipeline_bind(Backend::Pipeline &p_Pipeline,
+                            Backend::PipelineBindParams &p_Params);
+
+      void vk_draw(Backend::DrawParams &p_Params);
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

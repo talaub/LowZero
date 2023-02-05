@@ -239,6 +239,8 @@ namespace Low {
       void pipeline_interface_create(PipelineInterface &p_PipelineInterface,
                                      PipelineInterfaceCreateParams &p_Params);
 
+      void pipeline_interface_cleanup(PipelineInterface &p_PipelineInterface);
+
       struct Pipeline
       {
         union
@@ -297,12 +299,31 @@ namespace Low {
         uint8_t polygonMode;
         GraphicsPipelineColorTarget *colorTargets;
         uint8_t colorTargetCount;
+        bool vertexInput;
+      };
+
+      struct PipelineBindParams
+      {
+        CommandBuffer *commandBuffer;
       };
 
       void pipeline_graphics_create(Pipeline &p_Pipeline,
                                     GraphicsPipelineCreateParams &p_Params);
 
       void pipeline_cleanup(Pipeline &p_Pipeline);
+
+      void pipeline_bind(Pipeline &p_Pipeline, PipelineBindParams &p_Params);
+
+      struct DrawParams
+      {
+        CommandBuffer *commandBuffer;
+        uint32_t vertexCount;
+        uint32_t instanceCount;
+        uint32_t firstVertex;
+        uint32_t firstInstance;
+      };
+
+      void draw(DrawParams &p_Params);
 
     } // namespace Backend
   }   // namespace Renderer

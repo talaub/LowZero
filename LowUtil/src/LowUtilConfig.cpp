@@ -15,6 +15,7 @@ namespace Low {
 
       static void load_capacities()
       {
+        LOW_LOG_DEBUG(LOW_DATA_PATH);
         std::string l_FilePath =
             std::string(LOW_DATA_PATH) + "/_internal/type_capacities.yaml";
 

@@ -291,6 +291,25 @@ namespace Low {
 #endif
       }
 
+      void pipeline_interface_create(PipelineInterface &p_PipelineInterface,
+                                     PipelineInterfaceCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_pipeline_interface_create(p_PipelineInterface, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void pipeline_interface_cleanup(PipelineInterface &p_PipelineInterface)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_pipeline_interface_cleanup(p_PipelineInterface);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void pipeline_graphics_create(Pipeline &p_Pipeline,
                                     GraphicsPipelineCreateParams &p_Params)
       {
@@ -309,6 +328,25 @@ namespace Low {
         LOW_ASSERT(false, "No valid graphics api set");
 #endif
       }
+
+      void pipeline_bind(Pipeline &p_Pipeline, PipelineBindParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_pipeline_bind(p_Pipeline, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void draw(DrawParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_draw(p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

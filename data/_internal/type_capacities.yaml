@@ -6,3 +6,4 @@ CommandBuffer: 4
 CommandPool: 2
 Framebuffer: 64
 Renderpass: 16
+PipelineInterface: 64

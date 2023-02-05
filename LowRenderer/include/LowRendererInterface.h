@@ -7,6 +7,8 @@
 #include "LowRendererImage2D.h"
 #include "LowRendererRenderpass.h"
 #include "LowRendererSwapchain.h"
+#include "LowRendererGraphicsPipeline.h"
+#include "LowRendererPipelineInterface.h"
 
 #include "LowUtilContainers.h"
 
@@ -70,6 +72,37 @@ namespace Low {
         Context context;
         CommandPool commandPool;
       };
-    } // namespace Interface
-  }   // namespace Renderer
+
+      struct GraphicsPipelineCreateParams
+      {
+        Context context;
+        PipelineInterface interface;
+        Util::String vertexPath;
+        Util::String fragmentPath;
+        Renderpass renderpass;
+        Math::UVector2 dimensions;
+        uint8_t cullMode;
+        uint8_t frontFace;
+        uint8_t polygonMode;
+        Util::List<Backend::GraphicsPipelineColorTarget> colorTargets;
+        bool vertexInput;
+      };
+
+      struct PipelineInterfaceCreateParams
+      {
+        Context context;
+      };
+
+      namespace ShaderProgramUtils {
+        Util::String compile(Util::String p_Path);
+
+        void register_graphics_pipeline(GraphicsPipeline p_Pipeline,
+                                        GraphicsPipelineCreateParams &p_Params);
+
+        void delist_graphics_pipeline(GraphicsPipeline p_Pipeline);
+
+        void tick(float p_Delta);
+      }; // namespace ShaderProgramUtils
+    }    // namespace Interface
+  }      // namespace Renderer
 } // namespace Low

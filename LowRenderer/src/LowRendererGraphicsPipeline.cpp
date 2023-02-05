@@ -9,7 +9,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t GraphicsPipeline::TYPE_ID = 8;
+      const uint16_t GraphicsPipeline::TYPE_ID = 9;
       uint8_t *GraphicsPipeline::ms_Buffer = 0;
       Low::Util::Instances::Slot *GraphicsPipeline::ms_Slots = 0;
       Low::Util::List<GraphicsPipeline> GraphicsPipeline::ms_LivingInstances =
@@ -52,6 +52,8 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        ShaderProgramUtils::delist_graphics_pipeline(*this);
+
         pipeline_cleanup(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -122,6 +124,29 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+      }
+
+      GraphicsPipeline
+      GraphicsPipeline::make(Util::Name p_Name,
+                             GraphicsPipelineCreateParams &p_Params)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+        GraphicsPipeline l_Pipeline = GraphicsPipeline::make(p_Name);
+
+        ShaderProgramUtils::register_graphics_pipeline(l_Pipeline, p_Params);
+
+        return l_Pipeline;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+      }
+
+      void GraphicsPipeline::bind(CommandBuffer p_CommandBuffer)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind
+        Backend::PipelineBindParams l_Params;
+        l_Params.commandBuffer = &(p_CommandBuffer.get_commandbuffer());
+
+        Backend::pipeline_bind(get_pipeline(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind
       }
 
     } // namespace Interface

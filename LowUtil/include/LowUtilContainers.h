@@ -6,6 +6,8 @@
 #include <EASTL/map.h>
 #include <EASTL/optional.h>
 
+#include <EASTL/string.h>
+
 namespace Low {
   namespace Util {
     template <typename T> using List = eastl::vector<T>;
@@ -18,6 +20,8 @@ namespace Low {
     template <typename T> using Set = eastl::set<T>;
 
     template <typename T> using Optional = eastl::optional<T>;
+
+    typedef eastl::string String;
 
   } // namespace Util
 } // namespace Low
