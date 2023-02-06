@@ -372,6 +372,7 @@ namespace Low {
       void uniform_scope_interface_create(
           UniformScopeInterface &p_Interface,
           UniformScopeInterfaceCreateParams &p_Params);
+      void uniform_scope_interface_cleanup(UniformScopeInterface &p_Interface);
 
       struct Uniform
       {

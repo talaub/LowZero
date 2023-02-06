@@ -212,6 +212,8 @@ namespace Low {
       void vk_uniform_scope_interface_create(
           Backend::UniformScopeInterface &p_Interface,
           Backend::UniformScopeInterfaceCreateParams &p_Params);
+      void vk_uniform_scope_interface_cleanup(
+          Backend::UniformScopeInterface &p_Interface);
 
       struct Uniform
       {

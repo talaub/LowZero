@@ -17,6 +17,7 @@ namespace Low {
 
     Interface::GraphicsPipeline g_Pipeline;
     Interface::UniformPool g_UniformPool;
+    Interface::UniformScopeInterface g_UniformScopeInterface;
 
     static void initialize_backend_types()
     {
@@ -28,6 +29,7 @@ namespace Low {
       Interface::Swapchain::initialize();
       Interface::Image2D::initialize();
       Interface::UniformPool::initialize();
+      Interface::UniformScopeInterface::initialize();
       Interface::PipelineInterface::initialize();
       Interface::GraphicsPipeline::initialize();
     }
@@ -36,6 +38,7 @@ namespace Low {
     {
       Interface::GraphicsPipeline::cleanup();
       Interface::PipelineInterface::cleanup();
+      Interface::UniformScopeInterface::cleanup();
       Interface::UniformPool::cleanup();
       Interface::Image2D::cleanup();
       Interface::Swapchain::cleanup();
@@ -87,6 +90,19 @@ namespace Low {
 
         g_UniformPool =
             Interface::UniformPool::make(N(TestUniformPool), l_PoolParams);
+
+        Interface::UniformScopeInterfaceCreateParams l_UParams;
+        l_UParams.context = g_Context;
+        {
+          l_UParams.uniformInterfaces.resize(1);
+          l_UParams.uniformInterfaces[0].uniformCount = 1;
+          l_UParams.uniformInterfaces[0].pipelineStep =
+              Backend::UniformPipelineStep::GRAPHICS;
+          l_UParams.uniformInterfaces[0].type =
+              Backend::UniformInterfaceType::UNIFORM_BUFFER;
+        }
+        g_UniformScopeInterface = Interface::UniformScopeInterface::make(
+            N(UniformScopeInterfaceTest), l_UParams);
 
         Interface::PipelineInterfaceCreateParams l_InterParams;
         l_InterParams.context = g_Context;

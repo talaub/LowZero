@@ -10,6 +10,7 @@
 #include "LowRendererGraphicsPipeline.h"
 #include "LowRendererPipelineInterface.h"
 #include "LowRendererUniformPool.h"
+#include "LowRendererUniformScopeInterface.h"
 
 #include "LowUtilContainers.h"
 

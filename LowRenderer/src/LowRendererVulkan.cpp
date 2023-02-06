@@ -1978,6 +1978,13 @@ namespace Low {
                    "Failed to create descriptor set layout");
       }
 
+      void vk_uniform_scope_interface_cleanup(
+          Backend::UniformScopeInterface &p_Interface)
+      {
+        vkDestroyDescriptorSetLayout(p_Interface.context->vk.m_Device,
+                                     p_Interface.vk.m_Layout, nullptr);
+      }
+
       void
       vk_uniform_buffer_create(Backend::Uniform &p_Uniform,
                                Backend::UniformBufferCreateParams &p_Params)
