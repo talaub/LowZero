@@ -2030,6 +2030,82 @@ namespace Low {
         vkUnmapMemory(p_Params.context->vk.m_Device,
                       p_Uniform.vk.bufferMemories[l_CurrentFrame]);
       }
+
+      void vk_uniform_pool_create(Backend::UniformPool &p_Pool,
+                                  Backend::UniformPoolCreateParams &p_Params)
+      {
+        p_Pool.context = p_Params.context;
+
+        Util::List<VkDescriptorPoolSize> l_PoolSizes;
+        if (p_Params.rendertargetCount > 0u) {
+          VkDescriptorPoolSize l_Size;
+          l_Size.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+          l_Size.descriptorCount = p_Params.rendertargetCount;
+          l_PoolSizes.push_back(l_Size);
+        }
+        if (p_Params.uniformBufferCount > 0u) {
+          VkDescriptorPoolSize l_Size;
+          l_Size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+          l_Size.descriptorCount = p_Params.uniformBufferCount;
+          l_PoolSizes.push_back(l_Size);
+        }
+        if (p_Params.samplerCount > 0u) {
+          VkDescriptorPoolSize l_Size;
+          l_Size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          l_Size.descriptorCount = p_Params.samplerCount;
+          l_PoolSizes.push_back(l_Size);
+        }
+        if (p_Params.storageBufferCount > 0u) {
+          VkDescriptorPoolSize l_Size;
+          l_Size.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+          l_Size.descriptorCount = p_Params.storageBufferCount;
+          l_PoolSizes.push_back(l_Size);
+        }
+
+        VkDescriptorPoolCreateInfo l_PoolInfo{};
+        l_PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        l_PoolInfo.poolSizeCount = static_cast<uint32_t>(l_PoolSizes.size());
+        l_PoolInfo.pPoolSizes = l_PoolSizes.data();
+        l_PoolInfo.maxSets = p_Params.scopeCount;
+
+        LOW_ASSERT(vkCreateDescriptorPool(p_Params.context->vk.m_Device,
+                                          &l_PoolInfo, nullptr,
+                                          &(p_Pool.vk.handle)) == VK_SUCCESS,
+                   "Failed to create descriptor pools");
+
+        LOW_LOG_DEBUG("Descriptor pool created");
+      }
+
+      void vk_uniform_pool_cleanup(Backend::UniformPool &p_Pool)
+      {
+        vkDestroyDescriptorPool(p_Pool.context->vk.m_Device, p_Pool.vk.handle,
+                                nullptr);
+      }
+
+      void vk_uniform_scope_create(Backend::UniformScope &p_Scope,
+                                   Backend::UniformScopeCreateParams &p_Params)
+      {
+        p_Scope.context = p_Params.context;
+        p_Scope.framesInFlight =
+            Backend::swapchain_get_frames_in_flight(*p_Params.swapchain);
+
+        Util::List<VkDescriptorSetLayout> l_Layouts(
+            p_Scope.framesInFlight, p_Params.interface->vk.m_Layout);
+
+        VkDescriptorSetAllocateInfo l_AllocInfo{};
+        l_AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        l_AllocInfo.descriptorPool = p_Params.pool->vk.handle;
+        l_AllocInfo.descriptorSetCount =
+            static_cast<uint32_t>(p_Scope.framesInFlight);
+        l_AllocInfo.pSetLayouts = l_Layouts.data();
+
+        p_Scope.vk.sets = (VkDescriptorSet *)malloc(sizeof(VkDescriptorSet) *
+                                                    p_Scope.framesInFlight);
+        LOW_ASSERT(vkAllocateDescriptorSets(p_Params.context->vk.m_Device,
+                                            &l_AllocInfo,
+                                            p_Scope.vk.sets) == VK_SUCCESS,
+                   "Failed to allocate descriptor sets");
+      }
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

@@ -11,12 +11,18 @@ function read_file(p_FilePath) {
     return fs.readFileSync(p_FilePath, {encoding:'utf8', flag:'r'});
 }
 
+function format(p_FilePath, p_Content) {
+    const l_TmpPath = `${p_FilePath}.tmp`;
+
+    fs.writeFileSync(l_TmpPath, p_Content);
+    const l_Formatted = exec(`clang-format ${l_TmpPath}`).toString();
+    fs.unlinkSync(l_TmpPath);
+
+    return l_Formatted;
+}
+
 function save_file(p_FilePath, p_Content) {
     fs.writeFileSync(p_FilePath, p_Content);
-
-    const l_Formatted = exec(`clang-format ${p_FilePath}`);
-
-    fs.writeFileSync(p_FilePath, l_Formatted);
 }
 
 function get_marker_begin(p_Name) {
@@ -307,7 +313,13 @@ function generate_header(p_Type) {
 	t += line('}', --n);
     }
 
-    save_file(p_Type.header_file_path, t);
+    const l_Formatted = format(p_Type.header_file_path, t);
+
+    if (l_Formatted !== l_OldCode) {
+	save_file(p_Type.header_file_path, l_Formatted);
+	return true
+    }
+    return false
 }
 
 function generate_source(p_Type) {
@@ -542,9 +554,15 @@ function generate_source(p_Type) {
 	t += line('}', --n);
     }
 
-    if (t !== l_OldCode) {
-	save_file(p_Type.source_file_path, t);
+    const l_Formatted = format(p_Type.source_file_path, t);
+
+    if (l_Formatted !== l_OldCode) {
+	save_file(p_Type.source_file_path, l_Formatted);
+
+	return true;
     }
+
+    return false
 }
 
 function process_file(p_FileName) {
@@ -640,8 +658,19 @@ function process_file(p_FileName) {
 	i_Type.source_file_path = `${i_Type.module_path}\\src\\${i_Type.module}${i_Type.name}.cpp`;
 	i_Type.dll_macro = l_Config.dll_macro;
 
-	generate_header(i_Type);
-	generate_source(i_Type);
+	const changed_header = generate_header(i_Type);
+	const changed_source = generate_source(i_Type);
+
+	if (changed_header || changed_source) {
+	    let change_string = `${changed_header ? 'HEADER' : ''}`;
+	    if (changed_header && changed_source) {
+		change_string += ', ';
+	    }
+	    if (changed_source) {
+		change_string += 'SOURCE';
+	    }
+	    console.log(`${i_Type.name} -> ${change_string}`);
+	}
 
 	l_Types.push(i_Type);
     }

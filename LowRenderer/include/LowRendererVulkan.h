@@ -48,6 +48,12 @@ namespace Low {
       struct Uniform;
       struct UniformBufferCreateParams;
       struct UniformBufferSetParams;
+
+      struct UniformPool;
+      struct UniformPoolCreateParams;
+
+      struct UniformScope;
+      struct UniformScopeCreateParams;
     } // namespace Backend
 
     namespace Vulkan {
@@ -226,6 +232,24 @@ namespace Low {
 
       void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
                                  Backend::UniformBufferSetParams &p_Params);
+
+      struct UniformPool
+      {
+        VkDescriptorPool handle;
+      };
+
+      void vk_uniform_pool_create(Backend::UniformPool &p_Pool,
+                                  Backend::UniformPoolCreateParams &p_Params);
+
+      void vk_uniform_pool_cleanup(Backend::UniformPool &p_Scope);
+
+      struct UniformScope
+      {
+        VkDescriptorSet *sets;
+      };
+
+      void vk_uniform_scope_create(Backend::UniformScope &p_Scope,
+                                   Backend::UniformScopeCreateParams &p_Params);
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

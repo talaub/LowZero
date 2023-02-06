@@ -378,6 +378,35 @@ namespace Low {
 #endif
       }
 
+      void uniform_pool_create(UniformPool &p_Pool,
+                               UniformPoolCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_pool_create(p_Pool, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void uniform_pool_cleanup(UniformPool &p_Pool)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_pool_cleanup(p_Pool);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void uniform_scope_create(UniformScope &p_Scope,
+                                UniformScopeCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_scope_create(p_Scope, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

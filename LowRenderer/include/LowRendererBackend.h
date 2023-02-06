@@ -413,6 +413,53 @@ namespace Low {
       void uniform_buffer_set(Uniform &p_Uniform,
                               UniformBufferSetParams &p_Params);
 
+      struct UniformPool
+      {
+        union
+        {
+          Vulkan::UniformPool vk;
+        };
+
+        Context *context;
+      };
+
+      struct UniformPoolCreateParams
+      {
+        Context *context;
+        uint32_t uniformBufferCount;
+        uint32_t storageBufferCount;
+        uint32_t samplerCount;
+        uint32_t rendertargetCount;
+        uint32_t scopeCount;
+      };
+
+      void uniform_pool_create(UniformPool &p_Pool,
+                               UniformPoolCreateParams &p_Params);
+      void uniform_pool_cleanup(UniformPool &p_Pool);
+
+      struct UniformScope
+      {
+        union
+        {
+          Vulkan::UniformScope vk;
+        };
+
+        Context *context;
+        uint8_t framesInFlight;
+      };
+
+      struct UniformScopeCreateParams
+      {
+        Context *context;
+        Swapchain *swapchain;
+        UniformPool *pool;
+        Uniform *uniforms;
+        uint32_t uniformCount;
+        UniformScopeInterface *interface;
+      };
+
+      void uniform_scope_create(UniformScope &p_Scope,
+                                UniformScopeCreateParams &p_Params);
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

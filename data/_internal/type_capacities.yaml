@@ -7,3 +7,7 @@ CommandPool: 2
 Framebuffer: 64
 Renderpass: 16
 PipelineInterface: 64
+UniformScopeInterface: 64
+UniformScope: 128
+Uniform: 256
+UniformPool: 64

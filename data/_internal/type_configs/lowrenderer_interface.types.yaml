@@ -249,3 +249,24 @@ types:
             type: Util::Name
           - name: params
             type: UniformScopeInterfaceCreateParams
+
+  UniformPool:
+    private_mave: true
+    header_imports:
+      - LowRendererBackend.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      pool:
+        type: Backend::UniformPool
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: UniformPool
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: UniformPoolCreateParams

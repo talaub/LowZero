@@ -14,7 +14,9 @@ namespace Low {
     Interface::Context g_Context;
     Interface::CommandPool g_CommandPool;
     Interface::Swapchain g_Swapchain;
+
     Interface::GraphicsPipeline g_Pipeline;
+    Interface::UniformPool g_UniformPool;
 
     static void initialize_backend_types()
     {
@@ -25,6 +27,7 @@ namespace Low {
       Interface::Renderpass::initialize();
       Interface::Swapchain::initialize();
       Interface::Image2D::initialize();
+      Interface::UniformPool::initialize();
       Interface::PipelineInterface::initialize();
       Interface::GraphicsPipeline::initialize();
     }
@@ -33,6 +36,7 @@ namespace Low {
     {
       Interface::GraphicsPipeline::cleanup();
       Interface::PipelineInterface::cleanup();
+      Interface::UniformPool::cleanup();
       Interface::Image2D::cleanup();
       Interface::Swapchain::cleanup();
       Interface::Renderpass::cleanup();
@@ -73,6 +77,17 @@ namespace Low {
       LOW_LOG_INFO("Renderer initialized");
 
       {
+        Interface::UniformPoolCreateParams l_PoolParams;
+        l_PoolParams.uniformBufferCount = 10;
+        l_PoolParams.storageBufferCount = 0;
+        l_PoolParams.samplerCount = 0;
+        l_PoolParams.rendertargetCount = 0;
+        l_PoolParams.scopeCount = 20;
+        l_PoolParams.context = g_Context;
+
+        g_UniformPool =
+            Interface::UniformPool::make(N(TestUniformPool), l_PoolParams);
+
         Interface::PipelineInterfaceCreateParams l_InterParams;
         l_InterParams.context = g_Context;
         Interface::PipelineInterface l_Interface =

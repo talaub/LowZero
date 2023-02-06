@@ -9,6 +9,7 @@
 #include "LowRendererSwapchain.h"
 #include "LowRendererGraphicsPipeline.h"
 #include "LowRendererPipelineInterface.h"
+#include "LowRendererUniformPool.h"
 
 #include "LowUtilContainers.h"
 
@@ -108,6 +109,16 @@ namespace Low {
       {
         Context context;
         Util::List<Backend::UniformInterface> uniformInterfaces;
+      };
+
+      struct UniformPoolCreateParams
+      {
+        Context context;
+        uint32_t uniformBufferCount;
+        uint32_t storageBufferCount;
+        uint32_t samplerCount;
+        uint32_t rendertargetCount;
+        uint32_t scopeCount;
       };
 
       namespace ShaderProgramUtils {
