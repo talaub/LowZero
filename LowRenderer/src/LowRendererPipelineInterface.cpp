@@ -135,6 +135,17 @@ namespace Low {
         Backend::PipelineInterfaceCreateParams l_Params;
         l_Params.context = &(p_Params.context.get_context());
 
+        Util::List<Backend::UniformScopeInterface> l_UniformScopeInterfaces;
+        l_UniformScopeInterfaces.resize(p_Params.uniformScopeInterfaces.size());
+        for (uint32_t i = 0u; i < p_Params.uniformScopeInterfaces.size(); ++i) {
+          l_UniformScopeInterfaces[i] =
+              p_Params.uniformScopeInterfaces[i].get_interface();
+        }
+
+        l_Params.uniformScopeInterfaceCount =
+            p_Params.uniformScopeInterfaces.size();
+        l_Params.uniformScopeInterfaces = l_UniformScopeInterfaces.data();
+
         Backend::pipeline_interface_create(l_Interface.get_interface(),
                                            l_Params);
 

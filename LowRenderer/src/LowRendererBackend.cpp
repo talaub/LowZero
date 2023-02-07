@@ -59,7 +59,6 @@ namespace Low {
 #else
         LOW_ASSERT(false, "No valid graphics api set");
 #endif
-        p_Context.m_Window.cleanup();
       }
 
       void framebuffer_create(Framebuffer &p_Framebuffer,
@@ -411,6 +410,15 @@ namespace Low {
       {
 #ifdef LOW_RENDERER_API_VULKAN
         Vulkan::vk_uniform_scope_create(p_Scope, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void uniform_scopes_bind(UniformScopeBindParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_scopes_bind(p_Params);
 #else
         LOW_ASSERT(false, "No valid graphics api set");
 #endif

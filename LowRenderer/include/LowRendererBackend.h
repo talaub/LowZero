@@ -234,6 +234,8 @@ namespace Low {
       struct PipelineInterfaceCreateParams
       {
         Context *context;
+        UniformScopeInterface *uniformScopeInterfaces;
+        uint32_t uniformScopeInterfaceCount;
       };
 
       void pipeline_interface_create(PipelineInterface &p_PipelineInterface,
@@ -249,6 +251,7 @@ namespace Low {
         };
 
         Context *context;
+        PipelineInterface *interface;
       };
 
       namespace PipelineRasterizerCullMode {
@@ -466,6 +469,18 @@ namespace Low {
 
       void uniform_scope_create(UniformScope &p_Scope,
                                 UniformScopeCreateParams &p_Params);
+
+      struct UniformScopeBindParams
+      {
+        UniformScope *scopes;
+        uint32_t scopeCount;
+        Context *context;
+        Swapchain *swapchain;
+        uint32_t startIndex;
+        Pipeline *pipeline;
+      };
+
+      void uniform_scopes_bind(UniformScopeBindParams &p_Params);
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

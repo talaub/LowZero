@@ -93,6 +93,7 @@ namespace Low {
       struct PipelineInterfaceCreateParams
       {
         Context context;
+        Util::List<Interface::UniformScopeInterface> uniformScopeInterfaces;
       };
 
       struct DrawParams

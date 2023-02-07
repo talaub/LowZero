@@ -1605,11 +1605,24 @@ namespace Low {
       {
         p_PipelineInterface.context = p_Params.context;
 
+        Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+        l_DescriptorSetLayouts.resize(p_Params.uniformScopeInterfaceCount);
+        for (uint32_t i = 0u; i < p_Params.uniformScopeInterfaceCount; ++i) {
+          l_DescriptorSetLayouts[i] =
+              p_Params.uniformScopeInterfaces[i].vk.m_Layout;
+        }
+
         VkPipelineLayoutCreateInfo l_PipelineLayoutInfo{};
         l_PipelineLayoutInfo.sType =
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        l_PipelineLayoutInfo.setLayoutCount = 0;
-        l_PipelineLayoutInfo.pSetLayouts = nullptr;
+        if (p_Params.uniformScopeInterfaceCount == 0) {
+          l_PipelineLayoutInfo.setLayoutCount = 0;
+          l_PipelineLayoutInfo.pSetLayouts = nullptr;
+        } else {
+          l_PipelineLayoutInfo.setLayoutCount =
+              p_Params.uniformScopeInterfaceCount;
+          l_PipelineLayoutInfo.pSetLayouts = l_DescriptorSetLayouts.data();
+        }
         l_PipelineLayoutInfo.pushConstantRangeCount = 0;
         l_PipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1632,6 +1645,7 @@ namespace Low {
           Backend::GraphicsPipelineCreateParams &p_Params)
       {
         p_Pipeline.context = p_Params.context;
+        p_Pipeline.interface = p_Params.interface;
 
         auto l_VertexShaderCode =
             PipelineUtils::read_shader_file(p_Params.vertexShaderPath);
@@ -2182,6 +2196,33 @@ namespace Low {
                    "Failed to allocate descriptor sets");
 
         UniformUtils::vk_uniform_scope_assign(p_Scope, p_Params);
+      }
+
+      void vk_uniform_scopes_bind(Backend::UniformScopeBindParams &p_Params)
+      {
+        uint32_t l_CurrentFrame =
+            Backend::swapchain_get_current_frame_index(*p_Params.swapchain);
+
+        Util::List<VkDescriptorSet> l_Sets;
+        l_Sets.resize(p_Params.scopeCount);
+
+        for (uint32_t i = 0u; i < p_Params.scopeCount; ++i) {
+          l_Sets[i] = p_Params.scopes[i].vk.sets[l_CurrentFrame];
+        }
+
+        vkCmdBindDescriptorSets(
+            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
+                .vk.m_Handle,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
+            l_Sets.size(), l_Sets.data(), 0, nullptr);
+
+        vkCmdBindDescriptorSets(
+            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
+                .vk.m_Handle,
+            VK_PIPELINE_BIND_POINT_COMPUTE,
+            p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
+            l_Sets.size(), l_Sets.data(), 0, nullptr);
       }
 
     } // namespace Vulkan
