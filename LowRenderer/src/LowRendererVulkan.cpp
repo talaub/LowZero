@@ -1914,6 +1914,64 @@ namespace Low {
                   p_Params.firstInstance);
       }
 
+      namespace UniformUtils {
+        void
+        vk_uniform_scope_assign(Backend::UniformScope &p_Scope,
+                                Backend::UniformScopeCreateParams &p_Params)
+        {
+          for (uint32_t i_Frame = 0u; i_Frame < p_Scope.framesInFlight;
+               ++i_Frame) {
+            Util::List<VkWriteDescriptorSet> i_DescriptorWrites;
+            Util::List<VkDescriptorImageInfo> i_ImageInfos;
+            Util::List<VkDescriptorBufferInfo> i_BufferInfos;
+
+            i_BufferInfos.resize(p_Params.uniformCount);
+            uint32_t i_BindingIndex;
+
+            for (uint32_t i = 0u; i < p_Params.uniformCount; ++i) {
+              Backend::Uniform &i_Uniform = p_Params.uniforms[i];
+
+              if (i_Uniform.type == Backend::UniformType::UNIFORM_BUFFER ||
+                  i_Uniform.type == Backend::UniformType::STORAGE_BUFFER) {
+                i_BufferInfos[i].buffer = i_Uniform.vk.buffers[i_Frame];
+                i_BufferInfos[i].offset = 0;
+                i_BufferInfos[i].range = i_Uniform.vk.bufferSize;
+
+                VkWriteDescriptorSet i_DescriptorWrite;
+
+                i_DescriptorWrite.sType =
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                i_DescriptorWrite.dstSet = p_Scope.vk.sets[i_Frame];
+                i_DescriptorWrite.pNext = nullptr;
+                i_DescriptorWrite.dstBinding = i_Uniform.binding;
+
+                i_DescriptorWrite.dstArrayElement = i_Uniform.arrayIndex;
+                if (i_Uniform.type == Backend::UniformType::STORAGE_BUFFER) {
+                  i_DescriptorWrite.descriptorType =
+                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                } else {
+                  i_DescriptorWrite.descriptorType =
+                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                }
+                i_DescriptorWrite.descriptorCount = 1;
+                i_DescriptorWrite.pBufferInfo = &(i_BufferInfos[i]);
+                i_DescriptorWrite.pImageInfo = nullptr;
+                i_DescriptorWrite.pTexelBufferView = nullptr;
+
+                i_DescriptorWrites.push_back(i_DescriptorWrite);
+              } else {
+                LOW_ASSERT(false, "Unsupported uniform type");
+              }
+            }
+
+            vkUpdateDescriptorSets(
+                p_Params.context->vk.m_Device,
+                static_cast<uint32_t>(i_DescriptorWrites.size()),
+                i_DescriptorWrites.data(), 0, nullptr);
+          }
+        }
+      } // namespace UniformUtils
+
       void vk_uniform_scope_interface_create(
           Backend::UniformScopeInterface &p_Interface,
           Backend::UniformScopeInterfaceCreateParams &p_Params)
@@ -1946,15 +2004,13 @@ namespace Low {
             LOW_ASSERT(false, "Unknown pipeline step");
           }
 
-          if (i_Uniform.type == Backend::UniformInterfaceType::UNIFORM_BUFFER) {
+          if (i_Uniform.type == Backend::UniformType::UNIFORM_BUFFER) {
             i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-          } else if (i_Uniform.type ==
-                     Backend::UniformInterfaceType::STORAGE_BUFFER) {
+          } else if (i_Uniform.type == Backend::UniformType::STORAGE_BUFFER) {
             i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-          } else if (i_Uniform.type ==
-                     Backend::UniformInterfaceType::RENDERTARGET) {
+          } else if (i_Uniform.type == Backend::UniformType::RENDERTARGET) {
             i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-          } else if (i_Uniform.type == Backend::UniformInterfaceType::SAMPLER) {
+          } else if (i_Uniform.type == Backend::UniformType::SAMPLER) {
             i_Binding.descriptorType =
                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
           } else {
@@ -1992,6 +2048,18 @@ namespace Low {
         p_Uniform.context = p_Params.context;
         p_Uniform.framesInFlight =
             Backend::swapchain_get_frames_in_flight(*p_Params.swapchain);
+
+        p_Uniform.binding = p_Params.binding;
+        p_Uniform.arrayIndex = p_Params.arrayIndex;
+
+        if (p_Params.bufferType == Backend::UniformBufferType::UNIFORM_BUFFER) {
+          p_Uniform.type = Backend::UniformType::UNIFORM_BUFFER;
+        } else if (p_Params.bufferType ==
+                   Backend::UniformBufferType::STORAGE_BUFFER) {
+          p_Uniform.type = Backend::UniformType::STORAGE_BUFFER;
+        } else {
+          LOW_ASSERT(false, "Unknown buffer type");
+        }
 
         p_Uniform.vk.bufferSize = p_Params.bufferSize;
 
@@ -2112,7 +2180,10 @@ namespace Low {
                                             &l_AllocInfo,
                                             p_Scope.vk.sets) == VK_SUCCESS,
                    "Failed to allocate descriptor sets");
+
+        UniformUtils::vk_uniform_scope_assign(p_Scope, p_Params);
       }
+
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

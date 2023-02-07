@@ -345,7 +345,7 @@ namespace Low {
         };
       }
 
-      namespace UniformInterfaceType {
+      namespace UniformType {
         enum Enum
         {
           SAMPLER,
@@ -383,6 +383,9 @@ namespace Low {
 
         Context *context;
         uint8_t framesInFlight;
+        uint8_t type;
+        uint32_t binding;
+        uint32_t arrayIndex;
       };
 
       namespace UniformBufferType {
@@ -399,6 +402,8 @@ namespace Low {
         Swapchain *swapchain;
         uint8_t bufferType;
         size_t bufferSize;
+        uint32_t binding;
+        uint32_t arrayIndex;
       };
 
       struct UniformBufferSetParams
