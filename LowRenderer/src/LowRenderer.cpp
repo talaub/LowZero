@@ -19,7 +19,8 @@ namespace Low {
     Interface::UniformPool g_UniformPool;
     Interface::UniformScopeInterface g_UniformScopeInterface;
     Interface::Uniform g_Uniform;
-    Backend::UniformScope g_UniformScope;
+    Interface::UniformScope g_UniformScope;
+    Util::List<Interface::UniformScope> g_Scopes;
 
     static void initialize_backend_types()
     {
@@ -33,6 +34,7 @@ namespace Low {
       Interface::UniformPool::initialize();
       Interface::Uniform::initialize();
       Interface::UniformScopeInterface::initialize();
+      Interface::UniformScope::initialize();
       Interface::PipelineInterface::initialize();
       Interface::GraphicsPipeline::initialize();
     }
@@ -41,6 +43,7 @@ namespace Low {
     {
       Interface::GraphicsPipeline::cleanup();
       Interface::PipelineInterface::cleanup();
+      Interface::UniformScope::cleanup();
       Interface::UniformScopeInterface::cleanup();
       Interface::Uniform::cleanup();
       Interface::UniformPool::cleanup();
@@ -118,18 +121,20 @@ namespace Low {
           l_Params.swapchain = g_Swapchain;
           g_Uniform = Interface::Uniform::make(N(TestFloatUniform), l_Params);
 
-          float v = 0.1f;
+          float v = 0.01f;
           g_Uniform.set_buffer_initial(&v);
         }
         {
-          Backend::UniformScopeCreateParams l_Params;
-          l_Params.uniformCount = 1;
-          l_Params.uniforms = &(g_Uniform.get_uniform());
-          l_Params.context = &(g_Context.get_context());
-          l_Params.swapchain = &(g_Swapchain.get_swapchain());
-          l_Params.pool = &(g_UniformPool.get_pool());
-          l_Params.interface = &(g_UniformScopeInterface.get_interface());
-          Backend::uniform_scope_create(g_UniformScope, l_Params);
+          Interface::UniformScopeCreateParams l_Params;
+          l_Params.uniforms.push_back(g_Uniform);
+          l_Params.context = g_Context;
+          l_Params.swapchain = g_Swapchain;
+          l_Params.pool = g_UniformPool;
+          l_Params.interface = g_UniformScopeInterface;
+
+          g_UniformScope =
+              Interface::UniformScope::make(N(TestUniformScope), l_Params);
+          g_Scopes.push_back(g_UniformScope);
         }
 
         Interface::PipelineInterfaceCreateParams l_InterParams;
@@ -186,15 +191,14 @@ namespace Low {
       g_Pipeline.bind(g_Swapchain.get_current_commandbuffer());
 
       {
-        Backend::UniformScopeBindParams l_Params;
-        l_Params.context = &(g_Context.get_context());
+        Interface::UniformScopeBindGraphicsParams l_Params;
+        l_Params.context = g_Context;
         l_Params.startIndex = 0;
-        l_Params.swapchain = &(g_Swapchain.get_swapchain());
-        l_Params.scopeCount = 1;
-        l_Params.scopes = &g_UniformScope;
-        l_Params.pipeline = &(g_Pipeline.get_pipeline());
+        l_Params.swapchain = g_Swapchain;
+        l_Params.scopes = g_Scopes;
+        l_Params.pipeline = g_Pipeline;
 
-        Backend::uniform_scopes_bind(l_Params);
+        Interface::UniformScope::bind(l_Params);
       }
 
       Interface::DrawParams l_Params;

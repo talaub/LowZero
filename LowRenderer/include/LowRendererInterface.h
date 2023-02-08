@@ -11,6 +11,7 @@
 #include "LowRendererPipelineInterface.h"
 #include "LowRendererUniformPool.h"
 #include "LowRendererUniformScopeInterface.h"
+#include "LowRendererUniformScope.h"
 #include "LowRendererUniform.h"
 
 #include "LowUtilContainers.h"
@@ -139,6 +140,24 @@ namespace Low {
         Context context;
         Swapchain swapchain;
         void *value;
+      };
+
+      struct UniformScopeCreateParams
+      {
+        Context context;
+        Swapchain swapchain;
+        UniformScopeInterface interface;
+        UniformPool pool;
+        Util::List<Uniform> uniforms;
+      };
+
+      struct UniformScopeBindGraphicsParams
+      {
+        Context context;
+        Swapchain swapchain;
+        Util::List<UniformScope> scopes;
+        GraphicsPipeline pipeline;
+        uint32_t startIndex;
       };
 
       namespace ShaderProgramUtils {
