@@ -418,9 +418,11 @@ namespace Low {
 
       void uniform_buffer_create(Uniform &p_Uniform,
                                  UniformBufferCreateParams &p_Params);
+      void uniform_cleanup(Uniform &p_Uniform);
 
       void uniform_buffer_set(Uniform &p_Uniform,
                               UniformBufferSetParams &p_Params);
+      void uniform_buffer_set(Uniform p_Uniform, void *p_Data);
 
       struct UniformPool
       {

@@ -232,9 +232,11 @@ namespace Low {
       void
       vk_uniform_buffer_create(Backend::Uniform &p_Uniform,
                                Backend::UniformBufferCreateParams &p_Params);
+      void vk_uniform_cleanup(Backend::Uniform &p_Uniform);
 
       void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
                                  Backend::UniformBufferSetParams &p_Params);
+      void vk_uniform_buffer_set(Backend::Uniform p_Uniform, void *p_Data);
 
       struct UniformPool
       {

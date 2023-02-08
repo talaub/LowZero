@@ -11,6 +11,7 @@
 #include "LowRendererPipelineInterface.h"
 #include "LowRendererUniformPool.h"
 #include "LowRendererUniformScopeInterface.h"
+#include "LowRendererUniform.h"
 
 #include "LowUtilContainers.h"
 
@@ -121,6 +122,23 @@ namespace Low {
         uint32_t samplerCount;
         uint32_t rendertargetCount;
         uint32_t scopeCount;
+      };
+
+      struct UniformBufferCreateParams
+      {
+        Context context;
+        Swapchain swapchain;
+        uint8_t bufferType;
+        size_t bufferSize;
+        uint32_t binding;
+        uint32_t arrayIndex;
+      };
+
+      struct UniformBufferSetParams
+      {
+        Context context;
+        Swapchain swapchain;
+        void *value;
       };
 
       namespace ShaderProgramUtils {

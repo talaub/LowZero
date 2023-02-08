@@ -376,11 +376,29 @@ namespace Low {
 #endif
       }
 
+      void uniform_cleanup(Uniform &p_Uniform)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_cleanup(p_Uniform);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void uniform_buffer_set(Uniform &p_Uniform,
                               UniformBufferSetParams &p_Params)
       {
 #ifdef LOW_RENDERER_API_VULKAN
         Vulkan::vk_uniform_buffer_set(p_Uniform, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void uniform_buffer_set(Uniform p_Uniform, void *p_Data)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_buffer_set(p_Uniform, p_Data);
 #else
         LOW_ASSERT(false, "No valid graphics api set");
 #endif

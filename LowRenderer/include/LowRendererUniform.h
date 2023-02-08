@@ -15,40 +15,40 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-      struct UniformPoolCreateParams;
+      struct UniformBufferCreateParams;
+      struct UniformBufferSetParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT UniformPoolData
+      struct LOW_EXPORT UniformData
       {
-        Backend::UniformPool pool;
+        Backend::Uniform uniform;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(UniformPoolData);
+          return sizeof(UniformData);
         }
       };
 
-      struct LOW_EXPORT UniformPool : public Low::Util::Handle
+      struct LOW_EXPORT Uniform : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<UniformPool> ms_LivingInstances;
+        static Low::Util::List<Uniform> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        UniformPool();
-        UniformPool(uint64_t p_Id);
-        UniformPool(UniformPool &p_Copy);
+        Uniform();
+        Uniform(uint64_t p_Id);
+        Uniform(Uniform &p_Copy);
 
       private:
-        static UniformPool make(Low::Util::Name p_Name);
+        static Uniform make(Low::Util::Name p_Name);
 
       public:
-        explicit UniformPool(const UniformPool &p_Copy)
-            : Low::Util::Handle(p_Copy.m_Id)
+        explicit Uniform(const Uniform &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
         {
         }
 
@@ -61,7 +61,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static UniformPool *living_instances()
+        static Uniform *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -70,13 +70,15 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Backend::UniformPool &get_pool() const;
+        Backend::Uniform &get_uniform() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static UniformPool make(Util::Name p_Name,
-                                UniformPoolCreateParams &p_Params);
+        static Uniform make(Util::Name p_Name,
+                            UniformBufferCreateParams &p_Params);
+        void set_buffer_initial(void *p_Value);
+        void set_buffer_frame(UniformBufferSetParams &p_Params);
       };
     } // namespace Interface
   }   // namespace Renderer

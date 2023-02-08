@@ -2105,9 +2105,25 @@ namespace Low {
         }
       }
 
+      void vk_uniform_cleanup(Backend::Uniform &p_Uniform)
+      {
+        if (p_Uniform.type == Backend::UniformType::STORAGE_BUFFER ||
+            p_Uniform.type == Backend::UniformType::UNIFORM_BUFFER) {
+          for (uint32_t i = 0u; i < p_Uniform.framesInFlight; ++i) {
+            vkDestroyBuffer(p_Uniform.context->vk.m_Device,
+                            p_Uniform.vk.buffers[i], nullptr);
+            vkFreeMemory(p_Uniform.context->vk.m_Device,
+                         p_Uniform.vk.bufferMemories[i], nullptr);
+          }
+        }
+      }
+
       void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
                                  Backend::UniformBufferSetParams &p_Params)
       {
+        _LOW_ASSERT(p_Uniform.type == Backend::UniformType::UNIFORM_BUFFER ||
+                    p_Uniform.type == Backend::UniformType::STORAGE_BUFFER);
+
         uint8_t l_CurrentFrame =
             Backend::swapchain_get_current_frame_index(*p_Params.swapchain);
 
@@ -2118,6 +2134,22 @@ namespace Low {
         memcpy(l_Data, p_Params.value, p_Uniform.vk.bufferSize);
         vkUnmapMemory(p_Params.context->vk.m_Device,
                       p_Uniform.vk.bufferMemories[l_CurrentFrame]);
+      }
+
+      void vk_uniform_buffer_set(Backend::Uniform p_Uniform, void *p_Data)
+      {
+        _LOW_ASSERT(p_Uniform.type == Backend::UniformType::UNIFORM_BUFFER ||
+                    p_Uniform.type == Backend::UniformType::STORAGE_BUFFER);
+
+        for (uint8_t i = 0; i < p_Uniform.framesInFlight; ++i) {
+          void *l_Data;
+          vkMapMemory(p_Uniform.context->vk.m_Device,
+                      p_Uniform.vk.bufferMemories[i], 0,
+                      p_Uniform.vk.bufferSize, 0, &l_Data);
+          memcpy(l_Data, p_Data, p_Uniform.vk.bufferSize);
+          vkUnmapMemory(p_Uniform.context->vk.m_Device,
+                        p_Uniform.vk.bufferMemories[i]);
+        }
       }
 
       void vk_uniform_pool_create(Backend::UniformPool &p_Pool,
