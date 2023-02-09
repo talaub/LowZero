@@ -16,7 +16,6 @@ namespace Low {
     Interface::Swapchain g_Swapchain;
 
     Interface::GraphicsPipeline g_Pipeline;
-    Interface::UniformPool g_UniformPool;
     Interface::UniformScopeInterface g_UniformScopeInterface;
     Interface::Uniform g_Uniform;
     Interface::UniformScope g_UniformScope;
@@ -95,9 +94,6 @@ namespace Low {
         l_PoolParams.scopeCount = 20;
         l_PoolParams.context = g_Context;
 
-        g_UniformPool =
-            Interface::UniformPool::make(N(TestUniformPool), l_PoolParams);
-
         Interface::UniformScopeInterfaceCreateParams l_UParams;
         l_UParams.context = g_Context;
         {
@@ -129,7 +125,8 @@ namespace Low {
           l_Params.uniforms.push_back(g_Uniform);
           l_Params.context = g_Context;
           l_Params.swapchain = g_Swapchain;
-          l_Params.pool = g_UniformPool;
+          l_Params.pool =
+              Interface::UniformPoolUtils::get_uniform_pool(l_PoolParams);
           l_Params.interface = g_UniformScopeInterface;
 
           g_UniformScope =

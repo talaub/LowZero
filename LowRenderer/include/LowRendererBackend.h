@@ -483,6 +483,15 @@ namespace Low {
       };
 
       void uniform_scopes_bind(UniformScopeBindParams &p_Params);
+
+      struct Buffer
+      {
+        union
+        {
+          Vulkan::Buffer vk;
+        };
+        Context *context;
+      };
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

@@ -36,6 +36,17 @@ namespace Low {
         }
         return p_Num;
       }
+
+      uint32_t clamp(uint32_t p_Num, uint32_t p_Low, uint32_t p_High)
+      {
+        if (p_Num > p_High) {
+          return p_High;
+        }
+        if (p_Num < p_Low) {
+          return p_Low;
+        }
+        return p_Num;
+      }
     } // namespace Util
   }   // namespace Math
 } // namespace Low

@@ -36,6 +36,9 @@
 #define LOW_MEGABYTE_I (1024 * 1024)
 #define LOW_GIGABYTE_I (1024 * 1024 * 1024)
 
+#define LOW_MATH_MAX(x, y) (x > y ? x : y)
+#define LOW_MATH_MIN(x, y) (x < y ? x : y)
+
 namespace Low {
   namespace Math {
     typedef glm::vec2 Vector2;
@@ -57,6 +60,8 @@ namespace Low {
       LOW_EXPORT float power(float p_Base, float p_Power);
       LOW_EXPORT float abs(float p_Num);
       LOW_EXPORT float clamp(float p_Num, float p_Low, float p_High);
+      LOW_EXPORT uint32_t clamp(uint32_t p_Num, uint32_t p_Low,
+                                uint32_t p_High);
     } // namespace Util
   }   // namespace Math
 } // namespace Low

@@ -199,6 +199,62 @@ namespace Low {
           do_tick(p_Delta);
         }
       } // namespace ShaderProgramUtils
+
+      namespace UniformPoolUtils {
+#define POOL_MINIMUM 32u
+        UniformPool g_UniformPool;
+        UniformPoolCreateParams g_Params;
+
+        static void create_uniform_pool(UniformPoolCreateParams p_Params)
+        {
+          if (p_Params.scopeCount < 128u) {
+            p_Params.scopeCount = 128u;
+          }
+          p_Params.rendertargetCount *= 2;
+          p_Params.samplerCount *= 2;
+          p_Params.uniformBufferCount *= 2;
+          p_Params.storageBufferCount *= 2;
+
+          p_Params.rendertargetCount =
+              LOW_MATH_MAX(p_Params.rendertargetCount, POOL_MINIMUM);
+          p_Params.samplerCount =
+              LOW_MATH_MAX(p_Params.samplerCount, POOL_MINIMUM);
+          p_Params.uniformBufferCount =
+              LOW_MATH_MAX(p_Params.uniformBufferCount, POOL_MINIMUM);
+          p_Params.storageBufferCount =
+              LOW_MATH_MAX(p_Params.storageBufferCount, POOL_MINIMUM);
+
+          g_UniformPool = UniformPool::make(N(InternalUniformPool), p_Params);
+          g_Params = p_Params;
+        }
+
+        static bool check_uniform_pool(UniformPoolCreateParams &p_Params)
+        {
+          return g_Params.rendertargetCount >= p_Params.rendertargetCount &&
+                 g_Params.samplerCount >= p_Params.samplerCount &&
+                 g_Params.uniformBufferCount >= p_Params.uniformBufferCount &&
+                 g_Params.storageBufferCount >= p_Params.storageBufferCount;
+        }
+
+        UniformPool get_uniform_pool(UniformPoolCreateParams &p_Params)
+        {
+          if (!g_UniformPool.is_alive()) {
+            create_uniform_pool(p_Params);
+          }
+
+          if (!check_uniform_pool(p_Params)) {
+            create_uniform_pool(p_Params);
+          }
+
+          g_Params.rendertargetCount -= p_Params.rendertargetCount;
+          g_Params.samplerCount -= p_Params.samplerCount;
+          g_Params.uniformBufferCount -= p_Params.uniformBufferCount;
+          g_Params.storageBufferCount -= p_Params.storageBufferCount;
+
+          return g_UniformPool;
+        }
+#undef POOL_MINIMUM
+      } // namespace UniformPoolUtils
     }   // namespace Interface
   }     // namespace Renderer
 } // namespace Low

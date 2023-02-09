@@ -8,7 +8,7 @@ namespace Low {
     namespace Config {
       LOW_EXPORT void initialize();
 
-      LOW_EXPORT uint32_t get_capacity(Name p_TypeName);
+      LOW_EXPORT uint32_t get_capacity(Name p_ModuleName, Name p_TypeName);
     } // namespace Config
   }   // namespace Util
 } // namespace Low

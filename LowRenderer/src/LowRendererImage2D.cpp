@@ -94,7 +94,8 @@ namespace Low {
       {
         static uint32_t l_Capacity = 0u;
         if (l_Capacity == 0u) {
-          l_Capacity = Low::Util::Config::get_capacity(N(Image2D));
+          l_Capacity =
+              Low::Util::Config::get_capacity(N(LowRenderer), N(Image2D));
         }
         return l_Capacity;
       }

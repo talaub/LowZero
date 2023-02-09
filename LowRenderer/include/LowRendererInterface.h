@@ -170,6 +170,10 @@ namespace Low {
 
         void tick(float p_Delta);
       }; // namespace ShaderProgramUtils
-    }    // namespace Interface
-  }      // namespace Renderer
+
+      namespace UniformPoolUtils {
+        UniformPool get_uniform_pool(UniformPoolCreateParams &p_Params);
+      }
+    } // namespace Interface
+  }   // namespace Renderer
 } // namespace Low

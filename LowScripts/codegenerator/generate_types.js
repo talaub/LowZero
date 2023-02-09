@@ -455,7 +455,7 @@ function generate_source(p_Type) {
     t += line(`uint32_t ${p_Type.name}::get_capacity(){`);
     t += line('static uint32_t l_Capacity = 0u;');
     t += line('if (l_Capacity == 0u) {');
-    t += line(`l_Capacity = Low::Util::Config::get_capacity(N(${p_Type.name}));`);
+    t += line(`l_Capacity = Low::Util::Config::get_capacity(N(${p_Type.module}), N(${p_Type.name}));`);
     t += line('}');
     t += line('return l_Capacity;');
     t += line('}');

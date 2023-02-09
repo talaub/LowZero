@@ -256,6 +256,12 @@ namespace Low {
       void vk_uniform_scope_create(Backend::UniformScope &p_Scope,
                                    Backend::UniformScopeCreateParams &p_Params);
       void vk_uniform_scopes_bind(Backend::UniformScopeBindParams &p_Params);
+
+      struct Buffer
+      {
+        VkBuffer buffer;
+        VkDeviceMemory memory;
+      };
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

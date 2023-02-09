@@ -11,7 +11,7 @@
 namespace Low {
   namespace Util {
     namespace Config {
-      Map<Name, uint32_t> g_Capacities;
+      Map<Name, Map<Name, uint32_t>> g_Capacities;
 
       static void load_capacities()
       {
@@ -22,10 +22,15 @@ namespace Low {
         Yaml::Node l_RootNode = Yaml::load_file(l_FilePath.c_str());
 
         for (auto it = l_RootNode.begin(); it != l_RootNode.end(); ++it) {
-          Name i_TypeName = LOW_NAME(it->first.as<std::string>().c_str());
-          uint32_t i_Capacity = it->second.as<uint32_t>();
+          Name i_ModuleName = LOW_NAME(it->first.as<std::string>().c_str());
+          g_Capacities[i_ModuleName] = Map<Name, uint32_t>();
 
-          g_Capacities[i_TypeName] = i_Capacity;
+          for (auto typeIt = it->second.begin(); typeIt != it->second.end();
+               ++typeIt) {
+            Name i_TypeName = LOW_NAME(typeIt->first.as<std::string>().c_str());
+            uint32_t i_Capacity = typeIt->second.as<uint32_t>();
+            g_Capacities[i_ModuleName][i_TypeName] = i_Capacity;
+          }
         }
       }
 
@@ -36,9 +41,9 @@ namespace Low {
         LOW_LOG_DEBUG("Config loaded");
       }
 
-      uint32_t get_capacity(Name p_TypeName)
+      uint32_t get_capacity(Name p_ModuleName, Name p_TypeName)
       {
-        return g_Capacities[p_TypeName];
+        return g_Capacities[p_ModuleName][p_TypeName];
       }
 
     } // namespace Config
