@@ -41,6 +41,7 @@ namespace Low {
       struct PipelineBindParams;
 
       struct DrawParams;
+      struct DrawIndexedParams;
 
       struct UniformScopeInterface;
       struct UniformScopeInterfaceCreateParams;
@@ -210,6 +211,7 @@ namespace Low {
                             Backend::PipelineBindParams &p_Params);
 
       void vk_draw(Backend::DrawParams &p_Params);
+      void vk_draw_indexed(Backend::DrawIndexedParams &p_Params);
 
       struct UniformScopeInterface
       {
@@ -238,6 +240,7 @@ namespace Low {
       void
       vk_uniform_buffer_create(Backend::Uniform &p_Uniform,
                                Backend::UniformBufferCreateParams &p_Params);
+      void vk_buffer_cleanup(Backend::Buffer &p_Buffer);
       void vk_uniform_cleanup(Backend::Uniform &p_Uniform);
 
       void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,

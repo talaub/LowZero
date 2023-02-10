@@ -8,6 +8,7 @@
 #include "LowRendererInterface.h"
 
 #include "LowRendererGraphicsPipeline.h"
+#include <stdint.h>
 
 namespace Low {
   namespace Renderer {
@@ -20,6 +21,9 @@ namespace Low {
     Interface::Uniform g_Uniform;
     Interface::UniformScope g_UniformScope;
     Util::List<Interface::UniformScope> g_Scopes;
+
+    Interface::Buffer g_VertexBuffer;
+    Interface::Buffer g_IndexBuffer;
 
     static void initialize_backend_types()
     {
@@ -119,7 +123,7 @@ namespace Low {
           l_Params.swapchain = g_Swapchain;
           g_Uniform = Interface::Uniform::make(N(TestFloatUniform), l_Params);
 
-          float v = 0.01f;
+          float v = 0.9f;
           g_Uniform.set_buffer_initial(&v);
         }
         {
@@ -161,10 +165,56 @@ namespace Low {
         l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
         g_Swapchain.get_framebuffers()[0].get_dimensions(l_Params.dimensions);
         l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
-        l_Params.vertexInput = false;
+        l_Params.vertexInput = true;
 
         g_Pipeline = Interface::GraphicsPipeline::make(N(TestGraphicsPipeline),
                                                        l_Params);
+      }
+
+      {
+        Util::List<Interface::Vertex> l_Vertices;
+
+        float z = 0.0f;
+
+        {
+          Interface::Vertex l_Vertex;
+          l_Vertex.position = Math::Vector3(-0.5f, -0.5f, z);
+          l_Vertices.push_back(l_Vertex);
+        }
+        {
+          Interface::Vertex l_Vertex;
+          l_Vertex.position = Math::Vector3(0.5f, -0.5f, z);
+          l_Vertices.push_back(l_Vertex);
+        }
+        {
+          Interface::Vertex l_Vertex;
+          l_Vertex.position = Math::Vector3(0.5f, 0.5f, z);
+          l_Vertices.push_back(l_Vertex);
+        }
+        {
+          Interface::Vertex l_Vertex;
+          l_Vertex.position = Math::Vector3(-0.5f, 0.5f, z);
+          l_Vertices.push_back(l_Vertex);
+        }
+
+        Interface::BufferCreateParams l_Params;
+        l_Params.commandPool = g_CommandPool;
+        l_Params.context = g_Context;
+        l_Params.data = l_Vertices.data();
+        l_Params.bufferSize = l_Vertices.size() * sizeof(Interface::Vertex);
+        l_Params.bufferUsageType = Backend::BufferUsageType::VERTEX;
+        g_VertexBuffer = Interface::Buffer::make(N(VertexBuffer), l_Params);
+      }
+
+      {
+        Util::List<uint32_t> l_Indices = {0, 1, 2, 2, 3, 0};
+        Interface::BufferCreateParams l_Params;
+        l_Params.commandPool = g_CommandPool;
+        l_Params.context = g_Context;
+        l_Params.data = l_Indices.data();
+        l_Params.bufferSize = l_Indices.size() * sizeof(uint32_t);
+        l_Params.bufferUsageType = Backend::BufferUsageType::INDEX;
+        g_IndexBuffer = Interface::Buffer::make(N(IndexBuffer), l_Params);
       }
     }
 
@@ -200,14 +250,19 @@ namespace Low {
         Interface::UniformScope::bind(l_Params);
       }
 
-      Interface::DrawParams l_Params;
+      g_VertexBuffer.bind_vertex(g_Swapchain, 0);
+      g_IndexBuffer.bind_index(g_Swapchain, 0,
+                               Backend::BufferBindIndexType::UINT32);
+
+      Interface::DrawIndexedParams l_Params;
       l_Params.commandBuffer = g_Swapchain.get_current_commandbuffer();
       l_Params.firstInstance = 0;
-      l_Params.firstVertex = 0;
-      l_Params.vertexCount = 3;
+      l_Params.firstIndex = 0;
+      l_Params.indexCount = 6;
+      l_Params.vertexOffset = 0;
       l_Params.instanceCount = 1;
 
-      Interface::draw(l_Params);
+      Interface::draw_indexed(l_Params);
 
       Interface::RenderpassStopParams l_RpStopParams;
       l_RpStopParams.commandbuffer = g_Swapchain.get_current_commandbuffer();

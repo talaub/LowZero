@@ -326,7 +326,18 @@ namespace Low {
         uint32_t firstInstance;
       };
 
+      struct DrawIndexedParams
+      {
+        CommandBuffer *commandBuffer;
+        uint32_t indexCount;
+        uint32_t instanceCount;
+        uint32_t firstIndex;
+        uint32_t vertexOffset;
+        uint32_t firstInstance;
+      };
+
       void draw(DrawParams &p_Params);
+      void draw_indexed(DrawIndexedParams &p_Params);
 
       struct UniformScopeInterface
       {
@@ -484,6 +495,15 @@ namespace Low {
 
       void uniform_scopes_bind(UniformScopeBindParams &p_Params);
 
+      namespace BufferUsageType {
+        enum Enum
+        {
+          INDEX,
+          VERTEX,
+          OTHER
+        };
+      }
+
       struct Buffer
       {
         union
@@ -493,6 +513,7 @@ namespace Low {
         Context *context;
         CommandPool *commandPool;
         size_t bufferSize;
+        uint8_t bufferUsageType;
       };
 
       struct BufferCreateParams
@@ -501,6 +522,7 @@ namespace Low {
         CommandPool *commandPool;
         size_t bufferSize;
         void *data;
+        uint8_t bufferUsageType;
       };
 
       struct BufferBindVertexParams
@@ -533,6 +555,7 @@ namespace Low {
       };
 
       void buffer_create(Buffer &p_Buffer, BufferCreateParams &p_Params);
+      void buffer_cleanup(Buffer &p_Buffer);
       void buffer_bind_vertex(Buffer &p_Buffer,
                               BufferBindVertexParams &p_Params);
       void buffer_bind_index(Buffer &p_Buffer, BufferBindIndexParams &p_Params);

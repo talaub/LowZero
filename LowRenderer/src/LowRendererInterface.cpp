@@ -22,6 +22,19 @@ namespace Low {
         Backend::draw(l_Params);
       }
 
+      void draw_indexed(DrawIndexedParams &p_Params)
+      {
+        Backend::DrawIndexedParams l_Params;
+        l_Params.commandBuffer = &(p_Params.commandBuffer.get_commandbuffer());
+        l_Params.firstInstance = p_Params.firstInstance;
+        l_Params.firstIndex = p_Params.firstIndex;
+        l_Params.vertexOffset = p_Params.vertexOffset;
+        l_Params.instanceCount = p_Params.instanceCount;
+        l_Params.indexCount = p_Params.indexCount;
+
+        Backend::draw_indexed(l_Params);
+      }
+
       namespace ShaderProgramUtils {
         struct GraphicsPipelineOutputPaths
         {
@@ -255,6 +268,7 @@ namespace Low {
         }
 #undef POOL_MINIMUM
       } // namespace UniformPoolUtils
-    }   // namespace Interface
-  }     // namespace Renderer
+
+    } // namespace Interface
+  }   // namespace Renderer
 } // namespace Low

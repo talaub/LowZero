@@ -346,6 +346,15 @@ namespace Low {
 #endif
       }
 
+      void draw_indexed(DrawIndexedParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_draw_indexed(p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void uniform_scope_interface_create(
           UniformScopeInterface &p_Interface,
           UniformScopeInterfaceCreateParams &p_Params)
@@ -451,9 +460,20 @@ namespace Low {
 #endif
       }
 
+      void buffer_cleanup(Buffer &p_Buffer)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_buffer_cleanup(p_Buffer);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void buffer_bind_vertex(Buffer &p_Buffer,
                               BufferBindVertexParams &p_Params)
       {
+        _LOW_ASSERT(p_Buffer.bufferUsageType ==
+                    Backend::BufferUsageType::VERTEX);
 #ifdef LOW_RENDERER_API_VULKAN
         Vulkan::vk_buffer_bind_vertex(p_Buffer, p_Params);
 #else
@@ -463,6 +483,8 @@ namespace Low {
 
       void buffer_bind_index(Buffer &p_Buffer, BufferBindIndexParams &p_Params)
       {
+        _LOW_ASSERT(p_Buffer.bufferUsageType ==
+                    Backend::BufferUsageType::INDEX);
 #ifdef LOW_RENDERER_API_VULKAN
         Vulkan::vk_buffer_bind_index(p_Buffer, p_Params);
 #else

@@ -50,6 +50,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Backend::buffer_cleanup(get_buffer());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -131,6 +132,7 @@ namespace Low {
         l_Params.commandPool = &(p_Params.commandPool.get_commandpool());
         l_Params.bufferSize = p_Params.bufferSize;
         l_Params.data = p_Params.data;
+        l_Params.bufferUsageType = p_Params.bufferUsageType;
 
         Backend::buffer_create(l_Buffer.get_buffer(), l_Params);
 

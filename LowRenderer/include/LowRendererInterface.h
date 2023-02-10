@@ -20,6 +20,15 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
+      struct Vertex
+      {
+        Math::Vector3 position;
+        Math::Vector3 normal;
+        Math::Vector2 textureCoordinates;
+        Math::Vector3 tangent;
+        Math::Vector3 bitangent;
+      };
+
       struct ContextCreateParams
       {
         Window *window;
@@ -108,7 +117,18 @@ namespace Low {
         uint32_t firstInstance;
       };
 
+      struct DrawIndexedParams
+      {
+        CommandBuffer commandBuffer;
+        uint32_t indexCount;
+        uint32_t instanceCount;
+        uint32_t firstIndex;
+        uint32_t vertexOffset;
+        uint32_t firstInstance;
+      };
+
       void draw(DrawParams &p_Params);
+      void draw_indexed(DrawIndexedParams &p_Params);
 
       struct UniformScopeInterfaceCreateParams
       {
@@ -167,6 +187,7 @@ namespace Low {
         CommandPool commandPool;
         size_t bufferSize;
         void *data;
+        uint8_t bufferUsageType;
       };
 
       namespace ShaderProgramUtils {
