@@ -12,3 +12,4 @@ LowRenderer:
     UniformScope: 128
     Uniform: 256
     UniformPool: 64
+    Buffer: 128

@@ -209,6 +209,51 @@ namespace Low {
           vkBindBufferMemory(p_Context.vk.m_Device, p_Buffer, p_BufferMemory,
                              0);
         }
+
+        static void copy_buffer(Backend::Context &p_Context,
+                                Backend::CommandPool &p_CommandPool,
+                                VkBuffer p_SourceBuffer, VkBuffer p_DestBuffer,
+                                VkDeviceSize p_Size,
+                                VkDeviceSize p_SourceOffset = 0u,
+                                VkDeviceSize p_DestOffset = 0u)
+        {
+          VkCommandBufferAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+          l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
+          l_AllocInfo.commandBufferCount = 1;
+
+          VkCommandBuffer l_CommandBuffer;
+          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
+                                   &l_CommandBuffer);
+
+          VkCommandBufferBeginInfo l_BeginInfo{};
+          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+          vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo);
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = p_SourceOffset;
+          l_CopyRegion.dstOffset = p_DestOffset;
+          l_CopyRegion.size = p_Size;
+          vkCmdCopyBuffer(l_CommandBuffer, p_SourceBuffer, p_DestBuffer, 1,
+                          &l_CopyRegion);
+
+          vkEndCommandBuffer(l_CommandBuffer);
+
+          VkSubmitInfo l_SubmitInfo{};
+          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+          l_SubmitInfo.commandBufferCount = 1;
+          l_SubmitInfo.pCommandBuffers = &l_CommandBuffer;
+
+          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
+                        VK_NULL_HANDLE);
+          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
+
+          vkFreeCommandBuffers(p_Context.vk.m_Device, p_CommandPool.vk.m_Handle,
+                               1, &l_CommandBuffer);
+        }
       } // namespace Utils
 
       namespace ContextUtils {
@@ -2255,6 +2300,107 @@ namespace Low {
             VK_PIPELINE_BIND_POINT_COMPUTE,
             p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
             l_Sets.size(), l_Sets.data(), 0, nullptr);
+      }
+
+      void vk_buffer_create(Backend::Buffer &p_Buffer,
+                            Backend::BufferCreateParams &p_Params)
+      {
+        p_Buffer.context = p_Params.context;
+        p_Buffer.commandPool = p_Params.commandPool;
+
+        VkDeviceSize l_BufferSize = p_Params.bufferSize;
+        p_Buffer.bufferSize = p_Params.bufferSize;
+
+        VkBuffer l_StagingBuffer;
+        VkDeviceMemory l_StagingBufferMemory;
+
+        Utils::create_buffer(*p_Params.context, l_BufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                             l_StagingBuffer, l_StagingBufferMemory);
+
+        void *l_Data;
+        vkMapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory, 0,
+                    l_BufferSize, 0, &l_Data);
+        memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
+        vkUnmapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory);
+
+        Utils::create_buffer(*p_Params.context, l_BufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                             p_Buffer.vk.buffer, p_Buffer.vk.memory);
+
+        Utils::copy_buffer(*p_Params.context, *p_Params.commandPool,
+                           l_StagingBuffer, p_Buffer.vk.buffer, l_BufferSize);
+
+        vkDestroyBuffer(p_Params.context->vk.m_Device, l_StagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory,
+                     nullptr);
+      }
+
+      void vk_buffer_bind_vertex(Backend::Buffer &p_Buffer,
+                                 Backend::BufferBindVertexParams &p_Params)
+      {
+        VkDeviceSize l_Offsets[] = {p_Params.offset};
+
+        vkCmdBindVertexBuffers(
+            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
+                .vk.m_Handle,
+            0, 1, &(p_Buffer.vk.buffer), l_Offsets);
+      }
+
+      void vk_buffer_bind_index(Backend::Buffer &p_Buffer,
+                                Backend::BufferBindIndexParams &p_Params)
+      {
+        VkIndexType l_IndexType = VK_INDEX_TYPE_UINT16;
+
+        if (p_Params.indexType == Backend::BufferBindIndexType::UINT8) {
+          l_IndexType = VK_INDEX_TYPE_UINT8_EXT;
+        } else if (p_Params.indexType == Backend::BufferBindIndexType::UINT16) {
+          l_IndexType = VK_INDEX_TYPE_UINT16;
+        } else if (p_Params.indexType == Backend::BufferBindIndexType::UINT32) {
+          l_IndexType = VK_INDEX_TYPE_UINT32;
+        } else {
+          LOW_ASSERT(false, "Unknown index type");
+        }
+
+        vkCmdBindIndexBuffer(
+            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
+                .vk.m_Handle,
+            p_Buffer.vk.buffer, p_Params.offset, l_IndexType);
+      }
+
+      void vk_buffer_write(Backend::Buffer &p_Buffer,
+                           Backend::BufferWriteParams &p_Params)
+      {
+        VkDeviceSize l_BufferSize = p_Params.dataSize;
+
+        VkBuffer l_StagingBuffer;
+        VkDeviceMemory l_StagingBufferMemory;
+
+        Utils::create_buffer(*p_Buffer.context, l_BufferSize,
+                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                             l_StagingBuffer, l_StagingBufferMemory);
+
+        void *l_Data;
+        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
+                    l_BufferSize, 0, &l_Data);
+        memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
+        vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
+
+        Utils::copy_buffer(*p_Buffer.context, *p_Buffer.commandPool,
+                           l_StagingBuffer, p_Buffer.vk.buffer, l_BufferSize, 0,
+                           p_Params.start);
+
+        vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
+                     nullptr);
       }
 
     } // namespace Vulkan

@@ -491,7 +491,52 @@ namespace Low {
           Vulkan::Buffer vk;
         };
         Context *context;
+        CommandPool *commandPool;
+        size_t bufferSize;
       };
+
+      struct BufferCreateParams
+      {
+        Context *context;
+        CommandPool *commandPool;
+        size_t bufferSize;
+        void *data;
+      };
+
+      struct BufferBindVertexParams
+      {
+        Swapchain *swapchain;
+        uint32_t offset;
+      };
+
+      namespace BufferBindIndexType {
+        enum Enum
+        {
+          UINT8,
+          UINT16,
+          UINT32
+        };
+      }
+
+      struct BufferBindIndexParams
+      {
+        Swapchain *swapchain;
+        uint32_t offset;
+        uint8_t indexType;
+      };
+
+      struct BufferWriteParams
+      {
+        size_t start;
+        size_t dataSize;
+        void *data;
+      };
+
+      void buffer_create(Buffer &p_Buffer, BufferCreateParams &p_Params);
+      void buffer_bind_vertex(Buffer &p_Buffer,
+                              BufferBindVertexParams &p_Params);
+      void buffer_bind_index(Buffer &p_Buffer, BufferBindIndexParams &p_Params);
+      void buffer_write(Buffer &p_Buffer, BufferWriteParams &p_Params);
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

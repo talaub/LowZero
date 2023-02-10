@@ -38,6 +38,7 @@
 
 #define LOW_MATH_MAX(x, y) (x > y ? x : y)
 #define LOW_MATH_MIN(x, y) (x < y ? x : y)
+#define LOW_MATH_ABS(x) (x < 0 ? -x : x)
 
 namespace Low {
   namespace Math {

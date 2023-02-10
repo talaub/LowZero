@@ -442,6 +442,43 @@ namespace Low {
 #endif
       }
 
+      void buffer_create(Buffer &p_Buffer, BufferCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_buffer_create(p_Buffer, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void buffer_bind_vertex(Buffer &p_Buffer,
+                              BufferBindVertexParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_buffer_bind_vertex(p_Buffer, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void buffer_bind_index(Buffer &p_Buffer, BufferBindIndexParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_buffer_bind_index(p_Buffer, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void buffer_write(Buffer &p_Buffer, BufferWriteParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_buffer_write(p_Buffer, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

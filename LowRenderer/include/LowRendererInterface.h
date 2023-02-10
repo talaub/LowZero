@@ -160,6 +160,14 @@ namespace Low {
         uint32_t startIndex;
       };
 
+      struct BufferCreateParams
+      {
+        Context context;
+        CommandPool commandPool;
+        size_t bufferSize;
+        void *data;
+      };
+
       namespace ShaderProgramUtils {
         Util::String compile(Util::String p_Path);
 

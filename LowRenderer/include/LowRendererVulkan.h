@@ -55,6 +55,12 @@ namespace Low {
       struct UniformScope;
       struct UniformScopeCreateParams;
       struct UniformScopeBindParams;
+
+      struct Buffer;
+      struct BufferCreateParams;
+      struct BufferBindVertexParams;
+      struct BufferBindIndexParams;
+      struct BufferWriteParams;
     } // namespace Backend
 
     namespace Vulkan {
@@ -262,6 +268,15 @@ namespace Low {
         VkBuffer buffer;
         VkDeviceMemory memory;
       };
+
+      void vk_buffer_create(Backend::Buffer &p_Buffer,
+                            Backend::BufferCreateParams &p_Params);
+      void vk_buffer_bind_vertex(Backend::Buffer &p_Buffer,
+                                 Backend::BufferBindVertexParams &p_Params);
+      void vk_buffer_bind_index(Backend::Buffer &p_Buffer,
+                                Backend::BufferBindIndexParams &p_Params);
+      void vk_buffer_write(Backend::Buffer &p_Buffer,
+                           Backend::BufferWriteParams &p_Params);
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low
