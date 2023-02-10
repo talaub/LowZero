@@ -349,3 +349,30 @@ types:
             type: Util::Name
           - name: params
             type: BufferCreateParams
+      bind_vertex:
+        return_type: void
+        parameters:
+          - name: swapchain
+            type: Swapchain
+            handle: true
+          - name: offset
+            type: uint32_t
+      bind_index:
+        return_type: void
+        parameters:
+          - name: swapchain
+            type: Swapchain
+            handle: true
+          - name: offset
+            type: uint32_t
+          - name: indexType
+            type: uint8_t
+      write:
+        return_type: void
+        parameters:
+          - name: start
+            type: size_t
+          - name: data
+            type: void*
+          - name: dataSize
+            type: size_t

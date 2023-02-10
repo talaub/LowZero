@@ -13,6 +13,7 @@
 #include "LowRendererUniformScopeInterface.h"
 #include "LowRendererUniformScope.h"
 #include "LowRendererUniform.h"
+#include "LowRendererBuffer.h"
 
 #include "LowUtilContainers.h"
 

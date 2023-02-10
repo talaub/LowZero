@@ -36,10 +36,12 @@ namespace Low {
       Interface::UniformScope::initialize();
       Interface::PipelineInterface::initialize();
       Interface::GraphicsPipeline::initialize();
+      Interface::Buffer::initialize();
     }
 
     static void cleanup_backend_types()
     {
+      Interface::Buffer::cleanup();
       Interface::GraphicsPipeline::cleanup();
       Interface::PipelineInterface::cleanup();
       Interface::UniformScope::cleanup();

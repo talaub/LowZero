@@ -16,6 +16,7 @@ namespace Low {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       struct BufferCreateParams;
+      struct Swapchain;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_EXPORT BufferData
@@ -75,6 +76,10 @@ namespace Low {
         void set_name(Low::Util::Name p_Value);
 
         static Buffer make(Util::Name p_Name, BufferCreateParams &p_Params);
+        void bind_vertex(Swapchain p_Swapchain, uint32_t p_Offset);
+        void bind_index(Swapchain p_Swapchain, uint32_t p_Offset,
+                        uint8_t p_IndexType);
+        void write(size_t p_Start, void *p_Data, size_t p_DataSize);
       };
     } // namespace Interface
   }   // namespace Renderer

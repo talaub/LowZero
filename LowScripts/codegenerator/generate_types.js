@@ -88,6 +88,7 @@ function is_reference_type(t) {
         'int16_t',
         'int32_t',
         'int64_t',
+        'size_t'
     ].includes(t)) && !t.includes('*');
 }
 

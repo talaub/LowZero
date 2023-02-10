@@ -138,6 +138,42 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
+      void Buffer::bind_vertex(Swapchain p_Swapchain, uint32_t p_Offset)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_vertex
+        Backend::BufferBindVertexParams l_Params;
+        l_Params.swapchain = &(p_Swapchain.get_swapchain());
+        l_Params.offset = p_Offset;
+
+        Backend::buffer_bind_vertex(get_buffer(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_vertex
+      }
+
+      void Buffer::bind_index(Swapchain p_Swapchain, uint32_t p_Offset,
+                              uint8_t p_IndexType)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_index
+        Backend::BufferBindIndexParams l_Params;
+        l_Params.swapchain = &(p_Swapchain.get_swapchain());
+        l_Params.indexType = p_IndexType;
+        l_Params.offset = p_Offset;
+
+        Backend::buffer_bind_index(get_buffer(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_index
+      }
+
+      void Buffer::write(size_t p_Start, void *p_Data, size_t p_DataSize)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write
+        Backend::BufferWriteParams l_Params;
+        l_Params.start = p_Start;
+        l_Params.dataSize = p_DataSize;
+        l_Params.data = p_Data;
+
+        Backend::buffer_write(get_buffer(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_write
+      }
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low
