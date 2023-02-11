@@ -42,6 +42,7 @@ namespace Low {
 
       struct DrawParams;
       struct DrawIndexedParams;
+      struct DrawIndexedBindlessParams;
 
       struct UniformScopeInterface;
       struct UniformScopeInterfaceCreateParams;
@@ -212,6 +213,8 @@ namespace Low {
 
       void vk_draw(Backend::DrawParams &p_Params);
       void vk_draw_indexed(Backend::DrawIndexedParams &p_Params);
+      void
+      vk_draw_indexed_bindless(Backend::DrawIndexedBindlessParams &p_Params);
 
       struct UniformScopeInterface
       {

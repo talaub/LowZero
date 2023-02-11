@@ -127,8 +127,18 @@ namespace Low {
         uint32_t firstInstance;
       };
 
+      struct DrawIndexedBindlessParams
+      {
+        CommandBuffer commandBuffer;
+        Buffer drawInfo;
+        size_t offset;
+        uint32_t drawCount;
+        uint32_t stride;
+      };
+
       void draw(DrawParams &p_Params);
       void draw_indexed(DrawIndexedParams &p_Params);
+      void draw_indexed_bindless(DrawIndexedBindlessParams &p_Params);
 
       struct UniformScopeInterfaceCreateParams
       {

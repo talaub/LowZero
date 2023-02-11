@@ -1981,6 +1981,14 @@ namespace Low {
                          p_Params.firstInstance);
       }
 
+      void
+      vk_draw_indexed_bindless(Backend::DrawIndexedBindlessParams &p_Params)
+      {
+        vkCmdDrawIndexedIndirect(p_Params.commandBuffer->vk.m_Handle,
+                                 p_Params.drawInfo->vk.buffer, p_Params.offset,
+                                 p_Params.drawCount, p_Params.stride);
+      }
+
       namespace UniformUtils {
         void
         vk_uniform_scope_assign(Backend::UniformScope &p_Scope,

@@ -355,6 +355,15 @@ namespace Low {
 #endif
       }
 
+      void draw_indexed_bindless(DrawIndexedBindlessParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_draw_indexed_bindless(p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void uniform_scope_interface_create(
           UniformScopeInterface &p_Interface,
           UniformScopeInterfaceCreateParams &p_Params)

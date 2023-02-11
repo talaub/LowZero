@@ -35,6 +35,18 @@ namespace Low {
         Backend::draw_indexed(l_Params);
       }
 
+      void draw_indexed_bindless(DrawIndexedBindlessParams &p_Params)
+      {
+        Backend::DrawIndexedBindlessParams l_Params;
+        l_Params.commandBuffer = &(p_Params.commandBuffer.get_commandbuffer());
+        l_Params.drawInfo = &(p_Params.drawInfo.get_buffer());
+        l_Params.offset = p_Params.offset;
+        l_Params.stride = p_Params.stride;
+        l_Params.drawCount = p_Params.drawCount;
+
+        Backend::draw_indexed_bindless(l_Params);
+      }
+
       namespace ShaderProgramUtils {
         struct GraphicsPipelineOutputPaths
         {
