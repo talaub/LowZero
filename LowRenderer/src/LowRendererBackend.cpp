@@ -337,6 +337,34 @@ namespace Low {
 #endif
       }
 
+      void image2d_create(Image2D &p_Image, Image2DCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_image2d_create(p_Image, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void image2d_cleanup(Image2D &p_Image)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_image2d_cleanup(p_Image);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void image2d_transition_state(Image2D &p_Image,
+                                    Image2DTransitionStateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_image2d_transition_state(p_Image, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void draw(DrawParams &p_Params)
       {
 #ifdef LOW_RENDERER_API_VULKAN

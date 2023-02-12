@@ -133,22 +133,37 @@ namespace Low {
           Vulkan::Image2D vk;
         };
         Context *context;
+        CommandPool *commandPool;
         uint8_t state;
         bool swapchainImage;
+        ImageFormat format;
+        bool depth;
+        Math::UVector2 dimensions;
       };
 
       struct Image2DCreateParams
       {
         Context *context;
+        CommandPool *commandPool;
         Math::UVector2 dimensions;
         ImageFormat *format;
         bool writable;
         bool depth;
         bool create_image;
+        void *imageData;
+        size_t imageDataSize;
       };
 
-      // Transition methode here
-      // void image_state_transition_rendertarget(Image2D &p_Image);
+      struct Image2DTransitionStateParams
+      {
+        CommandBuffer *commandBuffer;
+        uint8_t destState;
+      };
+
+      void image2d_create(Image2D &p_Image, Image2DCreateParams &p_Params);
+      void image2d_cleanup(Image2D &p_Image);
+      void image2d_transition_state(Image2D &p_Image,
+                                    Image2DTransitionStateParams &p_Params);
 
       struct CommandBuffer
       {
@@ -157,6 +172,7 @@ namespace Low {
           Vulkan::CommandBuffer vk;
         };
         Context *context;
+        bool swapchainCommandBuffer;
       };
 
       void commandbuffer_start(CommandBuffer &p_CommandBuffer);

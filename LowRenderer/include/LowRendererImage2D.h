@@ -15,6 +15,7 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct CommandBuffer;
       struct Image2DCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -72,6 +73,8 @@ namespace Low {
         void set_name(Low::Util::Name p_Value);
 
         static Image2D make(Util::Name p_Name, Image2DCreateParams &p_Params);
+        void transition_state(CommandBuffer p_CommandBuffer,
+                              uint8_t p_DstState);
       };
     } // namespace Interface
   }   // namespace Renderer

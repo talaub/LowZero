@@ -179,6 +179,14 @@ types:
             type: Util::Name
           - name: params
             type: Image2DCreateParams
+      transition_state:
+        return_type: void
+        parameters:
+          - name: commandBuffer
+            type: CommandBuffer
+            handle: true
+          - name: dstState
+            type: uint8_t
 
   PipelineInterface:
     private_make: true

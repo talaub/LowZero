@@ -50,7 +50,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-        LOW_ASSERT_WARN(false, "Now backend logic to clean up image2d");
+        Backend::image2d_cleanup(get_image2d());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -129,15 +129,31 @@ namespace Low {
 
         Backend::Image2DCreateParams l_Params;
         l_Params.context = &(p_Params.context.get_context());
+        l_Params.commandPool = &(p_Params.commandPool.get_commandpool());
         l_Params.format = &(p_Params.format);
         l_Params.writable = p_Params.writeable;
         l_Params.create_image = p_Params.create_image;
         l_Params.depth = p_Params.depth;
 
-        LOW_ASSERT(false, "Currently not supported");
+        Backend::image2d_create(l_Image.get_image2d(), l_Params);
 
         return l_Image;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+      }
+
+      void Image2D::transition_state(CommandBuffer p_CommandBuffer,
+                                     uint8_t p_DstState)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_transition_state
+        Backend::Image2DTransitionStateParams l_Params;
+        l_Params.destState = p_DstState;
+        l_Params.commandBuffer = nullptr;
+        if (p_CommandBuffer.is_alive()) {
+          l_Params.commandBuffer = &(p_CommandBuffer.get_commandbuffer());
+        }
+
+        Backend::image2d_transition_state(get_image2d(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_transition_state
       }
 
     } // namespace Interface

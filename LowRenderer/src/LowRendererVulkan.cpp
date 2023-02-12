@@ -254,6 +254,52 @@ namespace Low {
           vkFreeCommandBuffers(p_Context.vk.m_Device, p_CommandPool.vk.m_Handle,
                                1, &l_CommandBuffer);
         }
+
+        static VkCommandBuffer
+        begin_single_time_commands(Backend::Context &p_Context,
+                                   Backend::CommandPool &p_CommandPool)
+        {
+          VkCommandBufferAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+          l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
+          l_AllocInfo.commandBufferCount = 1;
+
+          VkCommandBuffer l_CommandBuffer;
+          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
+                                   &l_CommandBuffer);
+
+          VkCommandBufferBeginInfo l_BeginInfo{};
+          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+          LOW_ASSERT(vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo) ==
+                         VK_SUCCESS,
+                     "Failed to begine one time command buffer");
+
+          return l_CommandBuffer;
+        }
+
+        static void
+        end_single_time_commands(Backend::Context &p_Context,
+                                 Backend::CommandPool &p_CommandPool,
+                                 VkCommandBuffer p_CommandBuffer)
+        {
+          vkEndCommandBuffer(p_CommandBuffer);
+
+          VkSubmitInfo l_SubmitInfo{};
+          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+          l_SubmitInfo.commandBufferCount = 1;
+          l_SubmitInfo.pCommandBuffers = &p_CommandBuffer;
+
+          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
+                        VK_NULL_HANDLE);
+          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
+          vkDeviceWaitIdle(p_Context.vk.m_Device);
+
+          vkFreeCommandBuffers(p_Context.vk.m_Device, p_CommandPool.vk.m_Handle,
+                               1, &p_CommandBuffer);
+        }
       } // namespace Utils
 
       namespace ContextUtils {
@@ -1445,12 +1491,110 @@ namespace Low {
                      "Failed to create image2d sampler");
         }
 
-        void create_image(Backend::Context &p_Context, uint32_t p_Width,
-                          uint32_t p_Height, VkFormat p_Format,
-                          VkImageTiling p_Tiling, VkImageUsageFlags p_Usage,
-                          VkMemoryPropertyFlags p_Properties, VkImage &p_Image,
-                          VkDeviceMemory &p_ImageMemory)
+        void copy_buffer_to_image(Backend::Image2D &p_Image, VkBuffer p_Buffer,
+                                  uint32_t p_Width, uint32_t p_Height)
         {
+          VkCommandBuffer l_CommandBuffer = Utils::begin_single_time_commands(
+              *p_Image.context, *p_Image.commandPool);
+
+          VkBufferImageCopy l_Region{};
+          l_Region.bufferOffset = 0;
+          l_Region.bufferRowLength = 0;
+          l_Region.bufferImageHeight = 0;
+
+          l_Region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          l_Region.imageSubresource.mipLevel = 0;
+          l_Region.imageSubresource.baseArrayLayer = 0;
+          l_Region.imageSubresource.layerCount = 1;
+
+          l_Region.imageOffset = {0, 0, 0};
+          l_Region.imageExtent = {p_Width, p_Height, 1};
+
+          vkCmdCopyBufferToImage(l_CommandBuffer, p_Buffer, p_Image.vk.m_Image,
+                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                                 &l_Region);
+
+          Utils::end_single_time_commands(
+              *p_Image.context, *p_Image.commandPool, l_CommandBuffer);
+        }
+
+        void transition_image_barrier(
+            VkCommandBuffer p_CommandBuffer, Backend::Image2D &p_Image2D,
+            VkImageLayout p_OldLayout, VkImageLayout p_NewLayout,
+            VkAccessFlags p_SrcAccessMask, VkAccessFlags p_DstAccessMask,
+            VkPipelineStageFlags p_SourceStage, VkPipelineStageFlags p_DstStage)
+        {
+          VkImageMemoryBarrier l_Barrier{};
+          l_Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+          l_Barrier.oldLayout = p_OldLayout;
+          l_Barrier.newLayout = p_NewLayout;
+          l_Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barrier.image = p_Image2D.vk.m_Image;
+          if (p_Image2D.depth) {
+            l_Barrier.subresourceRange.aspectMask =
+                VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+          } else {
+            l_Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          }
+          l_Barrier.subresourceRange.baseMipLevel = 0;
+          l_Barrier.subresourceRange.levelCount = 1;
+          l_Barrier.subresourceRange.baseArrayLayer = 0;
+          l_Barrier.subresourceRange.layerCount = 1;
+          l_Barrier.srcAccessMask = p_SrcAccessMask;
+          l_Barrier.dstAccessMask = p_DstAccessMask;
+          VkPipelineStageFlags l_SourceStage = l_SourceStage;
+          VkPipelineStageFlags l_DestinationStage = l_DestinationStage;
+
+          vkCmdPipelineBarrier(p_CommandBuffer, l_SourceStage,
+                               l_DestinationStage, 0, 0, nullptr, 0, nullptr, 1,
+                               &l_Barrier);
+        }
+
+        void transition_undefined_to_sample(VkCommandBuffer p_CommandBuffer,
+                                            Backend::Image2D &p_Image2d)
+        {
+          transition_image_barrier(
+              p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0,
+              VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        }
+
+        void
+        transition_undefined_to_destination(VkCommandBuffer p_CommandBuffer,
+                                            Backend::Image2D &p_Image2d)
+        {
+          transition_image_barrier(
+              p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0,
+              VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+              VK_PIPELINE_STAGE_TRANSFER_BIT);
+        }
+
+        static void create_image(Backend::Image2D &p_Image, uint32_t p_Width,
+                                 uint32_t p_Height, VkFormat p_Format,
+                                 VkImageTiling p_Tiling,
+                                 VkImageUsageFlags p_Usage,
+                                 VkMemoryPropertyFlags p_Properties,
+                                 void *p_ImageData, size_t p_ImageDataSize)
+        {
+          VkBuffer l_StagingBuffer;
+          VkDeviceMemory l_StagingBufferMemory;
+
+          Utils::create_buffer(*p_Image.context, p_ImageDataSize,
+                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                               l_StagingBuffer, l_StagingBufferMemory);
+
+          void *l_Data;
+          vkMapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory, 0,
+                      p_ImageDataSize, 0, &l_Data);
+          memcpy(l_Data, p_ImageData, p_ImageDataSize);
+          vkUnmapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory);
+
           VkImageCreateInfo l_ImageInfo{};
           l_ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
           l_ImageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1467,25 +1611,50 @@ namespace Low {
           l_ImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
           l_ImageInfo.flags = 0;
 
-          LOW_ASSERT(vkCreateImage(p_Context.vk.m_Device, &l_ImageInfo, nullptr,
-                                   &p_Image) == VK_SUCCESS,
+          LOW_ASSERT(vkCreateImage(p_Image.context->vk.m_Device, &l_ImageInfo,
+                                   nullptr,
+                                   &(p_Image.vk.m_Image)) == VK_SUCCESS,
                      "Failed to create image");
 
           VkMemoryRequirements l_MemRequirements;
-          vkGetImageMemoryRequirements(p_Context.vk.m_Device, p_Image,
-                                       &l_MemRequirements);
+          vkGetImageMemoryRequirements(p_Image.context->vk.m_Device,
+                                       p_Image.vk.m_Image, &l_MemRequirements);
 
           VkMemoryAllocateInfo l_AllocInfo{};
           l_AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
           l_AllocInfo.allocationSize = l_MemRequirements.size;
           l_AllocInfo.memoryTypeIndex = Utils::find_memory_type(
-              p_Context.vk, l_MemRequirements.memoryTypeBits, p_Properties);
+              p_Image.context->vk, l_MemRequirements.memoryTypeBits,
+              p_Properties);
 
-          LOW_ASSERT(vkAllocateMemory(p_Context.vk.m_Device, &l_AllocInfo,
-                                      nullptr, &p_ImageMemory) == VK_SUCCESS,
+          LOW_ASSERT(vkAllocateMemory(p_Image.context->vk.m_Device,
+                                      &l_AllocInfo, nullptr,
+                                      &(p_Image.vk.m_Memory)) == VK_SUCCESS,
                      "Failed to allocate image memory");
 
-          vkBindImageMemory(p_Context.vk.m_Device, p_Image, p_ImageMemory, 0);
+          vkBindImageMemory(p_Image.context->vk.m_Device, p_Image.vk.m_Image,
+                            p_Image.vk.m_Memory, 0);
+          {
+            Backend::Image2DTransitionStateParams l_Params;
+            l_Params.commandBuffer = nullptr;
+            l_Params.destState = Backend::ImageState::DESTINATION;
+            Backend::image2d_transition_state(p_Image, l_Params);
+          }
+
+          copy_buffer_to_image(p_Image, l_StagingBuffer, p_Image.dimensions.x,
+                               p_Image.dimensions.y);
+
+          {
+            Backend::Image2DTransitionStateParams l_Params;
+            l_Params.commandBuffer = nullptr;
+            l_Params.destState = Backend::ImageState::SAMPLE;
+            Backend::image2d_transition_state(p_Image, l_Params);
+          }
+
+          vkDestroyBuffer(p_Image.context->vk.m_Device, l_StagingBuffer,
+                          nullptr);
+          vkFreeMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory,
+                       nullptr);
         }
 
       } // namespace Image2DUtils
@@ -1494,6 +1663,9 @@ namespace Low {
                              Backend::Image2DCreateParams &p_Params)
       {
         p_Image2d.context = p_Params.context;
+        p_Image2d.commandPool = p_Params.commandPool;
+        p_Image2d.format = *p_Params.format;
+        p_Image2d.dimensions = p_Params.dimensions;
 
         VkImageUsageFlags l_UsageFlags =
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -1505,10 +1677,10 @@ namespace Low {
 
         if (p_Params.create_image) {
           Image2DUtils::create_image(
-              *p_Params.context, p_Params.dimensions.x, p_Params.dimensions.y,
+              p_Image2d, p_Params.dimensions.x, p_Params.dimensions.y,
               p_Params.format->vk.m_Handle, VK_IMAGE_TILING_OPTIMAL,
               l_UsageFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-              p_Image2d.vk.m_Image, p_Image2d.vk.m_Memory);
+              p_Params.imageData, p_Params.imageDataSize);
         }
 
         Image2DUtils::create_image_view(*p_Params.context, p_Image2d,
@@ -1530,6 +1702,35 @@ namespace Low {
         if (!p_Image2d.swapchainImage) {
           vkDestroyImage(l_Context.m_Device, l_Image2d.m_Image, nullptr);
           vkFreeMemory(l_Context.m_Device, l_Image2d.m_Memory, nullptr);
+        }
+      }
+
+      void vk_image2d_transition_state(
+          Backend::Image2D &p_Image,
+          Backend::Image2DTransitionStateParams &p_Params)
+      {
+        VkCommandBuffer l_CmdBuffer;
+        if (p_Params.commandBuffer != nullptr) {
+          l_CmdBuffer = p_Params.commandBuffer->vk.m_Handle;
+        } else {
+          l_CmdBuffer = Utils::begin_single_time_commands(*p_Image.context,
+                                                          *p_Image.commandPool);
+        }
+
+        if (p_Image.state == Backend::ImageState::UNDEFINED &&
+            p_Params.destState == Backend::ImageState::SAMPLE) {
+          Image2DUtils::transition_undefined_to_sample(l_CmdBuffer, p_Image);
+        } else if (p_Image.state == Backend::ImageState::UNDEFINED &&
+                   p_Params.destState == Backend::ImageState::DESTINATION) {
+          Image2DUtils::transition_undefined_to_destination(l_CmdBuffer,
+                                                            p_Image);
+        } else {
+          LOW_ASSERT(false, "Image state transition not supported");
+        }
+
+        if (p_Params.commandBuffer == nullptr) {
+          Utils::end_single_time_commands(*p_Image.context,
+                                          *p_Image.commandPool, l_CmdBuffer);
         }
       }
 

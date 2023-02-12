@@ -22,6 +22,7 @@ namespace Low {
 
       struct Image2D;
       struct Image2DCreateParams;
+      struct Image2DTransitionStateParams;
 
       struct CommandPool;
       struct CommandPoolCreateParams;
@@ -114,6 +115,9 @@ namespace Low {
       void vk_image2d_create(Backend::Image2D &p_Image2d,
                              Backend::Image2DCreateParams &p_Params);
       void vk_image2d_cleanup(Backend::Image2D &p_Image2d);
+      void vk_image2d_transition_state(
+          Backend::Image2D &p_Image,
+          Backend::Image2DTransitionStateParams &p_Params);
 
       struct Renderpass
       {

@@ -74,6 +74,7 @@ namespace Low {
       struct Image2DCreateParams
       {
         Context context;
+        CommandPool commandPool;
         Math::UVector2 dimensions;
         Backend::ImageFormat format;
         bool writeable;
