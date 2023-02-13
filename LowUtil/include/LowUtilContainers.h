@@ -5,6 +5,8 @@
 #include <EASTL/array.h>
 #include <EASTL/map.h>
 #include <EASTL/optional.h>
+#include <EASTL/stack.h>
+#include <EASTL/queue.h>
 
 #include <EASTL/string.h>
 
@@ -18,6 +20,9 @@ namespace Low {
     template <typename K, typename V> using MultiMap = eastl::multimap<K, V>;
 
     template <typename T> using Set = eastl::set<T>;
+
+    template <typename T> using Stack = eastl::stack<T>;
+    template <typename T> using Queue = eastl::queue<T>;
 
     template <typename T> using Optional = eastl::optional<T>;
 

@@ -2,6 +2,8 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
+#include "LowUtilResource.h"
+#include "LowUtilProfiler.h"
 
 #include "LowRendererWindow.h"
 
@@ -24,6 +26,8 @@ namespace Low {
 
     Interface::Buffer g_VertexBuffer;
     Interface::Buffer g_IndexBuffer;
+
+    Interface::Image2D g_Texture;
 
     static void initialize_backend_types()
     {
@@ -63,6 +67,8 @@ namespace Low {
 
     void initialize()
     {
+      LOW_PROFILE_START(Render init);
+
       initialize_backend_types();
 
       Window l_Window;
@@ -72,6 +78,11 @@ namespace Low {
       l_WindowInit.title = "LowEngine";
 
       window_initialize(l_Window, l_WindowInit);
+
+      Low::Util::String l_DdsPath =
+          Low::Util::String(LOW_DATA_PATH) + "/assets/img2d/ac107-9pf2u.dds";
+      Low::Util::Resource::Image2D l_Img;
+      Low::Util::Resource::load_dds(l_DdsPath, l_Img);
 
       Interface::ContextCreateParams l_ContextInit;
       l_ContextInit.validation_enabled = true;
@@ -92,6 +103,18 @@ namespace Low {
       LOW_LOG_INFO("Renderer initialized");
 
       {
+        {
+          Interface::Image2DCreateParams l_Params;
+          l_Params.commandPool = g_CommandPool;
+          l_Params.context = g_Context;
+          l_Params.depth = false;
+          l_Params.dimensions.x = 32;
+          l_Params.dimensions.y = 32;
+          l_Params.writeable = false;
+          // g_Texture = Interface::Image2D::make(N(TextTextureImage),
+          // l_Params);
+        }
+
         Interface::UniformPoolCreateParams l_PoolParams;
         l_PoolParams.uniformBufferCount = 10;
         l_PoolParams.storageBufferCount = 0;
@@ -216,6 +239,8 @@ namespace Low {
         l_Params.bufferUsageType = Backend::BufferUsageType::INDEX;
         g_IndexBuffer = Interface::Buffer::make(N(IndexBuffer), l_Params);
       }
+
+      LOW_PROFILE_END();
     }
 
     void tick(float p_Delta)

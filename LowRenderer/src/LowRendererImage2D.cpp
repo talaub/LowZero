@@ -132,7 +132,9 @@ namespace Low {
         l_Params.commandPool = &(p_Params.commandPool.get_commandpool());
         l_Params.format = &(p_Params.format);
         l_Params.writable = p_Params.writeable;
-        l_Params.create_image = p_Params.create_image;
+        l_Params.create_image = p_Params.imageData != nullptr;
+        l_Params.imageData = p_Params.imageData;
+        l_Params.imageDataSize = p_Params.imageDataSize;
         l_Params.depth = p_Params.depth;
 
         Backend::image2d_create(l_Image.get_image2d(), l_Params);

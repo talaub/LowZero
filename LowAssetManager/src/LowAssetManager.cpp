@@ -1,18 +1,12 @@
-#include <iostream>
-#include "LowMath.h"
-#include "LowMathVectorUtil.h"
-
-#include "LowUtil.h"
 #include "LowUtilLogger.h"
-#include "LowUtilAssert.h"
-#include "LowUtilFileIO.h"
-#include "LowUtilYaml.h"
-#include "LowUtilName.h"
-#include "LowUtilResource.h"
 
-#include "LowRenderer.h"
+#include "LowAssetManagerImage.h"
+
+#include <gli/gli.hpp>
+#include <gli/texture2d.hpp>
 
 #include <stdint.h>
+#include <stdlib.h>
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -29,17 +23,15 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 int main()
 {
-  Low::Util::initialize();
+  LOW_LOG_INFO("Assetprep");
 
-  Low::Renderer::initialize();
+  Low::AssetManager::Image::Image2D l_Image;
 
-  while (Low::Renderer::window_is_open()) {
-    Low::Renderer::tick(0.0f);
-  }
+  Low::AssetManager::Image::load_png(
+      "L:\\zero\\data\\raw_assets\\image2d\\low_default.png", l_Image);
 
-  Low::Renderer::cleanup();
-
-  Low::Util::cleanup();
+  Low::AssetManager::Image::process_to_dds("P:\\data\\assets\\img2d\\out.dds",
+                                           l_Image);
 
   return 0;
 }

@@ -79,7 +79,8 @@ namespace Low {
         Backend::ImageFormat format;
         bool writeable;
         bool depth;
-        bool create_image;
+        void *imageData;
+        size_t imageDataSize;
       };
 
       struct SwapchainCreateParams

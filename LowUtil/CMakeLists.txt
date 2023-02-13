@@ -9,6 +9,10 @@ set(LOWUTIL_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
+add_dependencies(LowUtil
+  LowMath
+)
+
 set_target_properties(LowUtil PROPERTIES OUTPUT_NAME "lowutil")
 
 target_include_directories(LowUtil PUBLIC
@@ -32,7 +36,12 @@ target_include_directories (LowUtil PUBLIC
 )
 add_custom_target(NatVis SOURCES ${EASTL_ROOT_DIR}/doc/EASTL.natvis)
 
+target_link_libraries(LowUtil PRIVATE
+  LowMath
+)
+
 target_link_libraries(LowUtil PUBLIC
   "${CMAKE_BINARY_DIR}/LowDependencies/EASTL/build/${CMAKE_BUILD_TYPE}/EASTL.lib"
   yaml-cpp
+  gli
 )

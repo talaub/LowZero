@@ -8,6 +8,7 @@
 #define LOW_LOG_INFO(x) Low::Util::Log::info(LOW_MODULE_NAME, x)
 #define LOW_LOG_WARN(x) Low::Util::Log::warn(LOW_MODULE_NAME, x)
 #define LOW_LOG_ERROR(x) Low::Util::Log::error(LOW_MODULE_NAME, x)
+#define LOW_LOG_PROFILE(x) Low::Util::Log::profile(LOW_MODULE_NAME, x)
 
 namespace Low {
   namespace Util {
@@ -18,7 +19,8 @@ namespace Low {
           INFO,
           DEBUG,
           WARN,
-          ERROR
+          ERROR,
+          PROFILE
         };
       }
 
@@ -29,6 +31,7 @@ namespace Low {
       LOW_EXPORT void debug(const char *p_Module, const char *p_Message);
       LOW_EXPORT void warn(const char *p_Module, const char *p_Message);
       LOW_EXPORT void error(const char *p_Module, const char *p_Message);
+      LOW_EXPORT void profile(const char *p_Module, const char *p_Message);
     } // namespace Log
   }   // namespace Util
 } // namespace Low

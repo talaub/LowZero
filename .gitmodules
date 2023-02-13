@@ -10,3 +10,9 @@
 [submodule "LowDependencies/glfw"]
 	path = LowDependencies/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "LowDependencies/gli"]
+	path = LowDependencies/gli
+	url = https://github.com/g-truc/gli.git
+[submodule "LowDependencies/stb"]
+	path = LowDependencies/stb
+	url = https://github.com/nothings/stb.git

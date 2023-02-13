@@ -40,6 +40,8 @@ namespace Low {
           printf("\x1B[33mWARN \033[0m\t");
         } else if (p_LogLevel == LogLevel::ERROR) {
           printf("\x1B[31mERROR \033[0m\t");
+        } else if (p_LogLevel == LogLevel::PROFILE) {
+          printf("\x1B[35mPRFLR\033[0m\t");
         }
       }
 
@@ -90,6 +92,11 @@ namespace Low {
       void error(const char *p_Module, const char *p_Message)
       {
         log(LogLevel::ERROR, p_Module, p_Message);
+      }
+
+      void profile(const char *p_Module, const char *p_Message)
+      {
+        log(LogLevel::PROFILE, p_Module, p_Message);
       }
     } // namespace Log
   }   // namespace Util
