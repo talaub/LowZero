@@ -23,6 +23,7 @@ namespace Low {
       };
 
       void imageformat_get_depth(Context &p_Context, ImageFormat &p_Format);
+      void imageformat_get_texture(Context &p_Context, ImageFormat &p_Format);
 
       struct Context
       {

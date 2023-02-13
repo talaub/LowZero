@@ -33,6 +33,16 @@ namespace Low {
 #endif
       }
 
+      void imageformat_get_texture(Backend::Context &p_Context,
+                                   Backend::ImageFormat &p_Format)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_imageformat_get_texture(p_Context, p_Format);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void context_create(Context &p_Context, ContextCreateParams &p_Params)
       {
 #ifdef LOW_RENDERER_API_VULKAN

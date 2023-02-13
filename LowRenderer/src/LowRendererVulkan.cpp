@@ -966,6 +966,14 @@ namespace Low {
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
       }
 
+      void vk_imageformat_get_texture(Backend::Context &p_Context,
+                                      Backend::ImageFormat &p_Format)
+      {
+        p_Format.vk.m_Handle = Utils::find_supported_format(
+            p_Context.vk, {VK_FORMAT_R8G8B8A8_UNORM}, VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+      }
+
       namespace SwapchainUtils {
         static void create_render_targets(Backend::Swapchain &p_Swapchain,
                                           Low::Util::List<VkImage> &p_Images)
@@ -1543,8 +1551,8 @@ namespace Low {
           l_Barrier.subresourceRange.layerCount = 1;
           l_Barrier.srcAccessMask = p_SrcAccessMask;
           l_Barrier.dstAccessMask = p_DstAccessMask;
-          VkPipelineStageFlags l_SourceStage = l_SourceStage;
-          VkPipelineStageFlags l_DestinationStage = l_DestinationStage;
+          VkPipelineStageFlags l_SourceStage = p_SourceStage;
+          VkPipelineStageFlags l_DestinationStage = p_DstStage;
 
           vkCmdPipelineBarrier(p_CommandBuffer, l_SourceStage,
                                l_DestinationStage, 0, 0, nullptr, 0, nullptr, 1,
@@ -1569,7 +1577,7 @@ namespace Low {
           transition_image_barrier(
               p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0,
-              VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+              VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
               VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
 

@@ -133,6 +133,7 @@ namespace Low {
         l_Params.format = &(p_Params.format);
         l_Params.writable = p_Params.writeable;
         l_Params.create_image = p_Params.imageData != nullptr;
+        l_Params.dimensions = p_Params.dimensions;
         l_Params.imageData = p_Params.imageData;
         l_Params.imageDataSize = p_Params.imageDataSize;
         l_Params.depth = p_Params.depth;

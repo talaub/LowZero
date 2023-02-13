@@ -12,6 +12,10 @@
 #include "LowRendererGraphicsPipeline.h"
 #include <stdint.h>
 
+#include <gli/gli.hpp>
+#include <gli/texture2d.hpp>
+#include <gli/load_dds.hpp>
+
 namespace Low {
   namespace Renderer {
     Interface::Context g_Context;
@@ -28,6 +32,31 @@ namespace Low {
     Interface::Buffer g_IndexBuffer;
 
     Interface::Image2D g_Texture;
+
+    // TEMP
+    static void load_texture()
+    {
+      LOW_PROFILE_START(Texture load);
+
+      gli::texture2d l_Texture(gli::load_dds(
+          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out.dds").c_str()));
+
+      Interface::Image2DCreateParams l_Params;
+      l_Params.commandPool = g_CommandPool;
+      Backend::imageformat_get_texture(g_Context.get_context(),
+                                       l_Params.format);
+      l_Params.context = g_Context;
+      l_Params.depth = false;
+      l_Params.dimensions.x = l_Texture.extent(0).x;
+      l_Params.dimensions.y = l_Texture.extent(0).y;
+      l_Params.writeable = false;
+      l_Params.imageDataSize =
+          l_Params.dimensions.x * l_Params.dimensions.y * 4;
+      l_Params.imageData = l_Texture.data();
+      g_Texture = Interface::Image2D::make(N(TextTextureImage), l_Params);
+
+      LOW_PROFILE_END();
+    }
 
     static void initialize_backend_types()
     {
@@ -103,17 +132,7 @@ namespace Low {
       LOW_LOG_INFO("Renderer initialized");
 
       {
-        {
-          Interface::Image2DCreateParams l_Params;
-          l_Params.commandPool = g_CommandPool;
-          l_Params.context = g_Context;
-          l_Params.depth = false;
-          l_Params.dimensions.x = 32;
-          l_Params.dimensions.y = 32;
-          l_Params.writeable = false;
-          // g_Texture = Interface::Image2D::make(N(TextTextureImage),
-          // l_Params);
-        }
+        load_texture();
 
         Interface::UniformPoolCreateParams l_PoolParams;
         l_PoolParams.uniformBufferCount = 10;
@@ -202,21 +221,25 @@ namespace Low {
         {
           Interface::Vertex l_Vertex;
           l_Vertex.position = Math::Vector3(-0.5f, -0.5f, z);
+          l_Vertex.textureCoordinates = Math::Vector2(1.0f, 0.0f);
           l_Vertices.push_back(l_Vertex);
         }
         {
           Interface::Vertex l_Vertex;
           l_Vertex.position = Math::Vector3(0.5f, -0.5f, z);
+          l_Vertex.textureCoordinates = Math::Vector2(0.0f, 0.0f);
           l_Vertices.push_back(l_Vertex);
         }
         {
           Interface::Vertex l_Vertex;
           l_Vertex.position = Math::Vector3(0.5f, 0.5f, z);
+          l_Vertex.textureCoordinates = Math::Vector2(0.0f, 1.0f);
           l_Vertices.push_back(l_Vertex);
         }
         {
           Interface::Vertex l_Vertex;
           l_Vertex.position = Math::Vector3(-0.5f, 0.5f, z);
+          l_Vertex.textureCoordinates = Math::Vector2(1.0f, 1.0f);
           l_Vertices.push_back(l_Vertex);
         }
 

@@ -74,6 +74,8 @@ namespace Low {
 
       void vk_imageformat_get_depth(Backend::Context &p_Context,
                                     Backend::ImageFormat &p_Format);
+      void vk_imageformat_get_texture(Backend::Context &p_Context,
+                                      Backend::ImageFormat &p_Format);
 
       struct Context
       {
