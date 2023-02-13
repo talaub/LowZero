@@ -437,6 +437,14 @@ namespace Low {
         };
       }
 
+      namespace UniformImageType {
+        enum Enum
+        {
+          SAMPLER,
+          RENDERTARGET
+        };
+      }
+
       struct UniformBufferCreateParams
       {
         Context *context;
@@ -454,13 +462,26 @@ namespace Low {
         void *value;
       };
 
-      void uniform_buffer_create(Uniform &p_Uniform,
-                                 UniformBufferCreateParams &p_Params);
+      struct UniformImageCreateParams
+      {
+        Context *context;
+        Swapchain *swapchain;
+        Image2D *image;
+        uint8_t imageType;
+        uint32_t binding;
+        uint32_t arrayIndex;
+      };
+
       void uniform_cleanup(Uniform &p_Uniform);
 
+      void uniform_buffer_create(Uniform &p_Uniform,
+                                 UniformBufferCreateParams &p_Params);
       void uniform_buffer_set(Uniform &p_Uniform,
                               UniformBufferSetParams &p_Params);
       void uniform_buffer_set(Uniform p_Uniform, void *p_Data);
+
+      void uniform_image_create(Uniform &p_Uniform,
+                                UniformImageCreateParams &p_Params);
 
       struct UniformPool
       {

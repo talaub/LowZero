@@ -10,6 +10,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../../LowDependencies/stb/stb_image.h"
 
+#include <iostream>
+
 namespace Low {
   namespace AssetManager {
     namespace Image {
@@ -49,11 +51,13 @@ namespace Low {
         gli::texture2d l_Texture(f,
                                  {p_Image.dimensions.x, p_Image.dimensions.y});
 
-        for (uint64_t x = 0ull; x < p_Image.dimensions.x; ++x) {
-          for (uint64_t y = 0ull; y < p_Image.dimensions.y; ++y) {
+        for (uint64_t y = 0ull; y < p_Image.dimensions.y; ++y) {
+          for (uint64_t x = 0ull; x < p_Image.dimensions.x; ++x) {
 
             Pixel i_Data =
-                *(Pixel *)&p_Image.data.data()[x * y * p_Image.channels];
+                *(Pixel *)&p_Image.data.data()[((y * p_Image.dimensions.x) +
+                                                (p_Image.dimensions.x - x)) *
+                                               p_Image.channels];
 
             gli::extent2d l_Extent;
             l_Extent.x = x;

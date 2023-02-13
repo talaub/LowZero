@@ -2210,7 +2210,7 @@ namespace Low {
             Util::List<VkDescriptorBufferInfo> i_BufferInfos;
 
             i_BufferInfos.resize(p_Params.uniformCount);
-            uint32_t i_BindingIndex;
+            i_ImageInfos.resize(p_Params.uniformCount);
 
             for (uint32_t i = 0u; i < p_Params.uniformCount; ++i) {
               Backend::Uniform &i_Uniform = p_Params.uniforms[i];
@@ -2240,6 +2240,33 @@ namespace Low {
                 i_DescriptorWrite.descriptorCount = 1;
                 i_DescriptorWrite.pBufferInfo = &(i_BufferInfos[i]);
                 i_DescriptorWrite.pImageInfo = nullptr;
+                i_DescriptorWrite.pTexelBufferView = nullptr;
+
+                i_DescriptorWrites.push_back(i_DescriptorWrite);
+              } else if (i_Uniform.type == Backend::UniformType::SAMPLER ||
+                         i_Uniform.type == Backend::UniformType::RENDERTARGET) {
+                i_ImageInfos[i].imageLayout =
+                    i_Uniform.type == Backend::UniformType::RENDERTARGET
+                        ? VK_IMAGE_LAYOUT_GENERAL
+                        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                i_ImageInfos[i].imageView = i_Uniform.vk.imageView;
+                i_ImageInfos[i].sampler = i_Uniform.vk.sampler;
+
+                VkWriteDescriptorSet i_DescriptorWrite;
+
+                i_DescriptorWrite.sType =
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                i_DescriptorWrite.dstSet = p_Scope.vk.sets[i_Frame];
+                i_DescriptorWrite.dstBinding = i_Uniform.binding;
+                i_DescriptorWrite.dstArrayElement = i_Uniform.arrayIndex;
+                i_DescriptorWrite.pNext = nullptr;
+                i_DescriptorWrite.descriptorType =
+                    i_Uniform.type == Backend::UniformType::RENDERTARGET
+                        ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
+                        : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                i_DescriptorWrite.descriptorCount = 1;
+                i_DescriptorWrite.pBufferInfo = nullptr;
+                i_DescriptorWrite.pImageInfo = &(i_ImageInfos[i]);
                 i_DescriptorWrite.pTexelBufferView = nullptr;
 
                 i_DescriptorWrites.push_back(i_DescriptorWrite);
@@ -2420,6 +2447,26 @@ namespace Low {
           vkUnmapMemory(p_Uniform.context->vk.m_Device,
                         p_Uniform.vk.bufferMemories[i]);
         }
+      }
+
+      void vk_uniform_image_create(Backend::Uniform &p_Uniform,
+                                   Backend::UniformImageCreateParams &p_Params)
+      {
+        p_Uniform.context = p_Params.context;
+        p_Uniform.binding = p_Params.binding;
+        p_Uniform.arrayIndex = p_Params.arrayIndex;
+
+        if (p_Params.imageType == Backend::UniformImageType::SAMPLER) {
+          p_Uniform.type = Backend::UniformType::SAMPLER;
+        } else if (p_Params.imageType ==
+                   Backend::UniformImageType::RENDERTARGET) {
+          p_Uniform.type = Backend::UniformType::RENDERTARGET;
+        } else {
+          LOW_ASSERT(false, "Unknown uniform image tyoe");
+        }
+
+        p_Uniform.vk.sampler = p_Params.image->vk.m_Sampler;
+        p_Uniform.vk.imageView = p_Params.image->vk.m_ImageView;
       }
 
       void vk_uniform_pool_create(Backend::UniformPool &p_Pool,

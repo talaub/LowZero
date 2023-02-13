@@ -290,7 +290,7 @@ types:
         type: Backend::Uniform
         no_setter: true
     functions:
-      make:
+      make_buffer:
         static: true
         return_type: Uniform
         return_handle: true
@@ -299,6 +299,15 @@ types:
             type: Util::Name
           - name: params
             type: UniformBufferCreateParams
+      make_image:
+        static: true
+        return_type: Uniform
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: UniformImageCreateParams
       set_buffer_initial:
         return_type: void
         parameters:

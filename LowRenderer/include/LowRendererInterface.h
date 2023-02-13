@@ -175,6 +175,16 @@ namespace Low {
         void *value;
       };
 
+      struct UniformImageCreateParams
+      {
+        Context context;
+        Swapchain swapchain;
+        Image2D image;
+        uint8_t imageType;
+        uint32_t binding;
+        uint32_t arrayIndex;
+      };
+
       struct UniformScopeCreateParams
       {
         Context context;

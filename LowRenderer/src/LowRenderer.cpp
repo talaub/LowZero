@@ -25,6 +25,7 @@ namespace Low {
     Interface::GraphicsPipeline g_Pipeline;
     Interface::UniformScopeInterface g_UniformScopeInterface;
     Interface::Uniform g_Uniform;
+    Interface::Uniform g_TexUniform;
     Interface::UniformScope g_UniformScope;
     Util::List<Interface::UniformScope> g_Scopes;
 
@@ -137,7 +138,7 @@ namespace Low {
         Interface::UniformPoolCreateParams l_PoolParams;
         l_PoolParams.uniformBufferCount = 10;
         l_PoolParams.storageBufferCount = 0;
-        l_PoolParams.samplerCount = 0;
+        l_PoolParams.samplerCount = 10;
         l_PoolParams.rendertargetCount = 0;
         l_PoolParams.scopeCount = 20;
         l_PoolParams.context = g_Context;
@@ -145,12 +146,16 @@ namespace Low {
         Interface::UniformScopeInterfaceCreateParams l_UParams;
         l_UParams.context = g_Context;
         {
-          l_UParams.uniformInterfaces.resize(1);
+          l_UParams.uniformInterfaces.resize(2);
           l_UParams.uniformInterfaces[0].uniformCount = 1;
           l_UParams.uniformInterfaces[0].pipelineStep =
               Backend::UniformPipelineStep::GRAPHICS;
           l_UParams.uniformInterfaces[0].type =
               Backend::UniformType::UNIFORM_BUFFER;
+          l_UParams.uniformInterfaces[1].uniformCount = 1;
+          l_UParams.uniformInterfaces[1].pipelineStep =
+              Backend::UniformPipelineStep::GRAPHICS;
+          l_UParams.uniformInterfaces[1].type = Backend::UniformType::SAMPLER;
         }
         g_UniformScopeInterface = Interface::UniformScopeInterface::make(
             N(UniformScopeInterfaceTest), l_UParams);
@@ -163,14 +168,27 @@ namespace Low {
           l_Params.binding = 0;
           l_Params.context = g_Context;
           l_Params.swapchain = g_Swapchain;
-          g_Uniform = Interface::Uniform::make(N(TestFloatUniform), l_Params);
+          g_Uniform =
+              Interface::Uniform::make_buffer(N(TestFloatUniform), l_Params);
 
           float v = 0.9f;
           g_Uniform.set_buffer_initial(&v);
         }
         {
+          Interface::UniformImageCreateParams l_Params;
+          l_Params.arrayIndex = 0;
+          l_Params.imageType = Backend::UniformImageType::SAMPLER;
+          l_Params.image = g_Texture;
+          l_Params.binding = 1;
+          l_Params.context = g_Context;
+          l_Params.swapchain = g_Swapchain;
+          g_TexUniform =
+              Interface::Uniform::make_image(N(TestSamplerUniform), l_Params);
+        }
+        {
           Interface::UniformScopeCreateParams l_Params;
           l_Params.uniforms.push_back(g_Uniform);
+          l_Params.uniforms.push_back(g_TexUniform);
           l_Params.context = g_Context;
           l_Params.swapchain = g_Swapchain;
           l_Params.pool =

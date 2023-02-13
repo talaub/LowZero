@@ -17,6 +17,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       struct UniformBufferCreateParams;
       struct UniformBufferSetParams;
+      struct UniformImageCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_EXPORT UniformData
@@ -75,8 +76,10 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static Uniform make(Util::Name p_Name,
-                            UniformBufferCreateParams &p_Params);
+        static Uniform make_buffer(Util::Name p_Name,
+                                   UniformBufferCreateParams &p_Params);
+        static Uniform make_image(Util::Name p_Name,
+                                  UniformImageCreateParams &p_Params);
         void set_buffer_initial(void *p_Value);
         void set_buffer_frame(UniformBufferSetParams &p_Params);
       };

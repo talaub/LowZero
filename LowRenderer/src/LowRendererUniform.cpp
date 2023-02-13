@@ -122,10 +122,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
-      Uniform Uniform::make(Util::Name p_Name,
-                            UniformBufferCreateParams &p_Params)
+      Uniform Uniform::make_buffer(Util::Name p_Name,
+                                   UniformBufferCreateParams &p_Params)
       {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_buffer
         Uniform l_Uniform = Uniform::make(p_Name);
 
         Backend::UniformBufferCreateParams l_Params;
@@ -139,7 +139,27 @@ namespace Low {
         Backend::uniform_buffer_create(l_Uniform.get_uniform(), l_Params);
 
         return l_Uniform;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_buffer
+      }
+
+      Uniform Uniform::make_image(Util::Name p_Name,
+                                  UniformImageCreateParams &p_Params)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_image
+        Uniform l_Uniform = Uniform::make(p_Name);
+
+        Backend::UniformImageCreateParams l_Params;
+        l_Params.context = &(p_Params.context.get_context());
+        l_Params.swapchain = &(p_Params.swapchain.get_swapchain());
+        l_Params.imageType = p_Params.imageType;
+        l_Params.image = &(p_Params.image.get_image2d());
+        l_Params.binding = p_Params.binding;
+        l_Params.arrayIndex = p_Params.arrayIndex;
+
+        Backend::uniform_image_create(l_Uniform.get_uniform(), l_Params);
+
+        return l_Uniform;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_image
       }
 
       void Uniform::set_buffer_initial(void *p_Value)

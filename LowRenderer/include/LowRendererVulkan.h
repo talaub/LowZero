@@ -51,6 +51,7 @@ namespace Low {
       struct Uniform;
       struct UniformBufferCreateParams;
       struct UniformBufferSetParams;
+      struct UniformImageCreateParams;
 
       struct UniformPool;
       struct UniformPoolCreateParams;
@@ -243,6 +244,12 @@ namespace Low {
             VkDeviceMemory *bufferMemories;
             uint32_t bufferSize;
           };
+
+          struct
+          {
+            VkImageView imageView;
+            VkSampler sampler;
+          };
         };
       };
 
@@ -255,6 +262,9 @@ namespace Low {
       void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
                                  Backend::UniformBufferSetParams &p_Params);
       void vk_uniform_buffer_set(Backend::Uniform p_Uniform, void *p_Data);
+
+      void vk_uniform_image_create(Backend::Uniform &p_Uniform,
+                                   Backend::UniformImageCreateParams &p_Params);
 
       struct UniformPool
       {

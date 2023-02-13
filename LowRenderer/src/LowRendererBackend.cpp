@@ -460,6 +460,16 @@ namespace Low {
 #endif
       }
 
+      void uniform_image_create(Uniform &p_Uniform,
+                                UniformImageCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_image_create(p_Uniform, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void uniform_pool_create(UniformPool &p_Pool,
                                UniformPoolCreateParams &p_Params)
       {
