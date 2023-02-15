@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Swapchain::TYPE_ID = 2;
+      const uint16_t Swapchain::TYPE_ID = 3;
       uint8_t *Swapchain::ms_Buffer = 0;
       Low::Util::Instances::Slot *Swapchain::ms_Slots = 0;
       Low::Util::List<Swapchain> Swapchain::ms_LivingInstances =

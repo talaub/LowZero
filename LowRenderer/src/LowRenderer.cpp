@@ -14,7 +14,7 @@
 
 #include <gli/gli.hpp>
 #include <gli/texture2d.hpp>
-#include <gli/load_dds.hpp>
+#include <gli/load_ktx.hpp>
 
 namespace Low {
   namespace Renderer {
@@ -34,29 +34,127 @@ namespace Low {
 
     Interface::Image2D g_Texture;
 
+    Interface::Image2D g_RenderTarget;
+    Interface::Uniform g_RtUniform;
+    Util::List<Interface::UniformScope> g_ComputeUScopes;
+    Backend::Pipeline g_ComputePipeline;
+    Interface::UniformScopeInterface g_ComputeUSInterface;
+
     // TEMP
     static void load_texture()
     {
       LOW_PROFILE_START(Texture load);
 
-      gli::texture2d l_Texture(gli::load_dds(
-          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.dds").c_str()));
+      Util::Resource::Image2D l_Resource;
+      Util::Resource::load_image2d(
+          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.ktx").c_str(),
+          l_Resource);
 
       Interface::Image2DCreateParams l_Params;
       l_Params.commandPool = g_CommandPool;
+
+      int level = 0;
+
       Backend::imageformat_get_texture(g_Context.get_context(),
                                        l_Params.format);
       l_Params.context = g_Context;
       l_Params.depth = false;
-      l_Params.dimensions.x = l_Texture.extent(0).x;
-      l_Params.dimensions.y = l_Texture.extent(0).y;
+      l_Params.dimensions = l_Resource.dimensions[level];
       l_Params.writeable = false;
       l_Params.imageDataSize =
           l_Params.dimensions.x * l_Params.dimensions.y * 4;
-      l_Params.imageData = l_Texture.data();
+      l_Params.imageData = l_Resource.data[level].data();
       g_Texture = Interface::Image2D::make(N(TextTextureImage), l_Params);
 
       LOW_PROFILE_END();
+    }
+
+    static void setup_compute()
+    {
+      Interface::Image2DCreateParams l_Params;
+      l_Params.commandPool = g_CommandPool;
+
+      Backend::imageformat_get_writable_color(g_Context.get_context(),
+                                              l_Params.format, 4);
+      l_Params.context = g_Context;
+      l_Params.depth = false;
+      l_Params.dimensions.x = 600;
+      l_Params.dimensions.y = 600;
+      l_Params.writeable = true;
+      l_Params.imageData = nullptr;
+      l_Params.imageDataSize =
+          l_Params.dimensions.x * l_Params.dimensions.y * 4;
+      g_RenderTarget = Interface::Image2D::make(N(TestRenderTarget), l_Params);
+
+      {
+        g_RenderTarget.transition_state(Interface::CommandBuffer(0),
+                                        Backend::ImageState::STORAGE);
+      }
+
+      {
+        Interface::UniformImageCreateParams l_Params;
+        l_Params.image = g_RenderTarget;
+        l_Params.imageType = Backend::UniformImageType::RENDERTARGET;
+        l_Params.binding = 0;
+        l_Params.arrayIndex = 0;
+        l_Params.context = g_Context;
+        l_Params.swapchain = g_Swapchain;
+
+        g_RtUniform = Interface::Uniform::make_image(N(RtUniform), l_Params);
+      }
+      Interface::UniformPoolCreateParams l_PoolParams;
+      l_PoolParams.uniformBufferCount = 0;
+      l_PoolParams.storageBufferCount = 0;
+      l_PoolParams.samplerCount = 0;
+      l_PoolParams.rendertargetCount = 10;
+      l_PoolParams.scopeCount = 20;
+      l_PoolParams.context = g_Context;
+      {
+        Backend::UniformInterface l_UIFace;
+        l_UIFace.uniformCount = 1;
+        l_UIFace.pipelineStep = Backend::UniformPipelineStep::COMPUTE;
+        l_UIFace.type = Backend::UniformType::RENDERTARGET;
+
+        Interface::UniformScopeInterfaceCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.uniformInterfaces.push_back(l_UIFace);
+
+        g_ComputeUSInterface = Interface::UniformScopeInterface::make(
+            N(Compute US Interface), l_Params);
+      }
+      {
+        Interface::UniformScopeCreateParams l_Params;
+        l_Params.uniforms.push_back(g_RtUniform);
+        l_Params.context = g_Context;
+        l_Params.pool =
+            Interface::UniformPoolUtils::get_uniform_pool(l_PoolParams);
+        l_Params.swapchain = g_Swapchain;
+        l_Params.interface = g_ComputeUSInterface;
+
+        g_ComputeUScopes.push_back(
+            Interface::UniformScope::make(N(CompUniformScope), l_Params));
+      }
+      Interface::PipelineInterface l_PipeInter;
+      {
+        Interface::PipelineInterfaceCreateParams l_Params;
+        l_Params.uniformScopeInterfaces.push_back(g_ComputeUSInterface);
+        l_Params.context = g_Context;
+
+        l_PipeInter =
+            Interface::PipelineInterface::make(N(Compute PipeInter), l_Params);
+      }
+      {
+
+        Util::String l_Path =
+            Util::String(LOW_DATA_PATH) + "\\shader\\dst\\spv\\test.comp.spv";
+        Backend::ComputePipelineCreateParams l_Params;
+        l_Params.context = &(g_Context.get_context());
+        l_Params.interface = &(l_PipeInter.get_interface());
+        l_Params.computeShaderPath = l_Path.c_str();
+        LOW_LOG_DEBUG(l_Params.computeShaderPath);
+
+        Backend::pipeline_compute_create(g_ComputePipeline, l_Params);
+      }
     }
 
     static void initialize_backend_types()
@@ -129,6 +227,7 @@ namespace Low {
 
       {
         load_texture();
+        setup_compute();
 
         Interface::UniformPoolCreateParams l_PoolParams;
         l_PoolParams.uniformBufferCount = 10;
@@ -290,6 +389,32 @@ namespace Low {
       g_Swapchain.prepare();
 
       g_Swapchain.get_current_commandbuffer().start();
+
+      {
+        Backend::PipelineBindParams l_Params;
+        l_Params.commandBuffer =
+            &(g_Swapchain.get_current_commandbuffer().get_commandbuffer());
+        Backend::pipeline_bind(g_ComputePipeline, l_Params);
+      }
+      {
+        Backend::UniformScopeBindParams l_Params;
+        l_Params.scopeCount = g_ComputeUScopes.size();
+        l_Params.scopes = &(g_ComputeUScopes[0].get_scope());
+        l_Params.context = &(g_Context.get_context());
+        l_Params.pipeline = &g_ComputePipeline;
+        l_Params.startIndex = 0;
+        l_Params.swapchain = &(g_Swapchain.get_swapchain());
+        Backend::uniform_scopes_bind(l_Params);
+      }
+      {
+        Backend::DispatchComputeParams l_Params;
+        l_Params.dimensions.x = 600 / 16 + 1;
+        l_Params.dimensions.y = 600 / 16 + 1;
+        l_Params.dimensions.z = 1;
+        Backend::commandbuffer_dispatch_compute(
+            g_Swapchain.get_current_commandbuffer().get_commandbuffer(),
+            l_Params);
+      }
 
       Interface::RenderpassStartParams l_RpParams;
       l_RpParams.framebuffer = g_Swapchain.get_current_framebuffer();

@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t CommandPool::TYPE_ID = 6;
+      const uint16_t CommandPool::TYPE_ID = 7;
       uint8_t *CommandPool::ms_Buffer = 0;
       Low::Util::Instances::Slot *CommandPool::ms_Slots = 0;
       Low::Util::List<CommandPool> CommandPool::ms_LivingInstances =

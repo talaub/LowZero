@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Framebuffer::TYPE_ID = 4;
+      const uint16_t Framebuffer::TYPE_ID = 5;
       uint8_t *Framebuffer::ms_Buffer = 0;
       Low::Util::Instances::Slot *Framebuffer::ms_Slots = 0;
       Low::Util::List<Framebuffer> Framebuffer::ms_LivingInstances =

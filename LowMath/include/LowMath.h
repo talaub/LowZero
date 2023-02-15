@@ -50,6 +50,7 @@ namespace Low {
     typedef glm::vec4 Color;
 
     typedef glm::uvec2 UVector2;
+    typedef glm::uvec3 UVector3;
 
     typedef glm::quat Quaternion;
 

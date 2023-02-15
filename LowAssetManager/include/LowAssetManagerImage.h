@@ -16,7 +16,7 @@ namespace Low {
 
       void load_png(Util::String p_FilePath, Image2D &p_Image);
 
-      void process_to_dds(Util::String p_OutputPath, Image2D &p_Image);
+      void process(Util::String p_OutputPath, Image2D &p_Image);
     } // namespace Image
   }   // namespace AssetManager
 } // namespace Low

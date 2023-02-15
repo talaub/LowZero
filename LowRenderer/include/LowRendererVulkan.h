@@ -28,6 +28,7 @@ namespace Low {
       struct CommandPoolCreateParams;
 
       struct CommandBuffer;
+      struct DispatchComputeParams;
 
       struct Renderpass;
       struct RenderpassCreateParams;
@@ -39,6 +40,7 @@ namespace Low {
 
       struct Pipeline;
       struct GraphicsPipelineCreateParams;
+      struct ComputePipelineCreateParams;
       struct PipelineBindParams;
 
       struct DrawParams;
@@ -77,6 +79,9 @@ namespace Low {
                                     Backend::ImageFormat &p_Format);
       void vk_imageformat_get_texture(Backend::Context &p_Context,
                                       Backend::ImageFormat &p_Format);
+      void vk_imageformat_get_writable_color(Backend::Context &p_Context,
+                                             Backend::ImageFormat &p_Format,
+                                             uint8_t p_Channels);
 
       struct Context
       {
@@ -142,6 +147,10 @@ namespace Low {
 
       void vk_commandbuffer_start(Backend::CommandBuffer &p_CommandBuffer);
       void vk_commandbuffer_stop(Backend::CommandBuffer &p_CommandBuffer);
+
+      void vk_commandbuffer_dispatch_compute(
+          Backend::CommandBuffer &p_CommandBuffer,
+          Backend::DispatchComputeParams &p_Params);
 
       struct Swapchain
       {
@@ -212,6 +221,9 @@ namespace Low {
       void vk_pipeline_graphics_create(
           Backend::Pipeline &p_Pipeline,
           Backend::GraphicsPipelineCreateParams &p_Params);
+      void vk_pipeline_compute_create(
+          Backend::Pipeline &p_Pipeline,
+          Backend::ComputePipelineCreateParams &p_Params);
 
       void vk_pipeline_cleanup(Backend::Pipeline &p_Pipeline);
 

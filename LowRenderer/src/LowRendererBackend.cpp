@@ -43,6 +43,18 @@ namespace Low {
 #endif
       }
 
+      void imageformat_get_writable_color(Context &p_Context,
+                                          ImageFormat &p_Format,
+                                          uint8_t p_Channels)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_imageformat_get_writable_color(p_Context, p_Format,
+                                                  p_Channels);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void context_create(Context &p_Context, ContextCreateParams &p_Params)
       {
 #ifdef LOW_RENDERER_API_VULKAN
@@ -300,6 +312,16 @@ namespace Low {
 #endif
       }
 
+      void commandbuffer_dispatch_compute(CommandBuffer &p_CommandBuffer,
+                                          DispatchComputeParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_commandbuffer_dispatch_compute(p_CommandBuffer, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void pipeline_interface_create(PipelineInterface &p_PipelineInterface,
                                      PipelineInterfaceCreateParams &p_Params)
       {
@@ -324,6 +346,16 @@ namespace Low {
       {
 #ifdef LOW_RENDERER_API_VULKAN
         Vulkan::vk_pipeline_graphics_create(p_Pipeline, p_Params);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
+      void pipeline_compute_create(Pipeline &p_Pipeline,
+                                   ComputePipelineCreateParams &p_Params)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_pipeline_compute_create(p_Pipeline, p_Params);
 #else
         LOW_ASSERT(false, "No valid graphics api set");
 #endif

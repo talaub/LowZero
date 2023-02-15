@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Image2D::TYPE_ID = 7;
+      const uint16_t Image2D::TYPE_ID = 8;
       uint8_t *Image2D::ms_Buffer = 0;
       Low::Util::Instances::Slot *Image2D::ms_Slots = 0;
       Low::Util::List<Image2D> Image2D::ms_LivingInstances =
@@ -139,7 +139,7 @@ namespace Low {
         l_Params.commandPool = &(p_Params.commandPool.get_commandpool());
         l_Params.format = &(p_Params.format);
         l_Params.writable = p_Params.writeable;
-        l_Params.create_image = p_Params.imageData != nullptr;
+        l_Params.create_image = p_Params.imageDataSize > 0;
         l_Params.dimensions = p_Params.dimensions;
         l_Params.imageData = p_Params.imageData;
         l_Params.imageDataSize = p_Params.imageDataSize;

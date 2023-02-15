@@ -24,6 +24,9 @@ namespace Low {
 
       void imageformat_get_depth(Context &p_Context, ImageFormat &p_Format);
       void imageformat_get_texture(Context &p_Context, ImageFormat &p_Format);
+      void imageformat_get_writable_color(Context &p_Context,
+                                          ImageFormat &p_Format,
+                                          uint8_t p_Channels);
 
       struct Context
       {
@@ -176,8 +179,16 @@ namespace Low {
         bool swapchainCommandBuffer;
       };
 
+      struct DispatchComputeParams
+      {
+        Math::UVector3 dimensions;
+      };
+
       void commandbuffer_start(CommandBuffer &p_CommandBuffer);
       void commandbuffer_stop(CommandBuffer &p_CommandBuffer);
+
+      void commandbuffer_dispatch_compute(CommandBuffer &p_CommandBuffer,
+                                          DispatchComputeParams &p_Params);
 
       struct Swapchain
       {
@@ -260,6 +271,14 @@ namespace Low {
 
       void pipeline_interface_cleanup(PipelineInterface &p_PipelineInterface);
 
+      namespace PipelineType {
+        enum Enum
+        {
+          GRAPHICS,
+          COMPUTE
+        };
+      }
+
       struct Pipeline
       {
         union
@@ -269,6 +288,7 @@ namespace Low {
 
         Context *context;
         PipelineInterface *interface;
+        uint8_t type;
       };
 
       namespace PipelineRasterizerCullMode {
@@ -322,6 +342,13 @@ namespace Low {
         bool vertexInput;
       };
 
+      struct ComputePipelineCreateParams
+      {
+        Context *context;
+        const char *computeShaderPath;
+        PipelineInterface *interface;
+      };
+
       struct PipelineBindParams
       {
         CommandBuffer *commandBuffer;
@@ -329,6 +356,8 @@ namespace Low {
 
       void pipeline_graphics_create(Pipeline &p_Pipeline,
                                     GraphicsPipelineCreateParams &p_Params);
+      void pipeline_compute_create(Pipeline &p_Pipeline,
+                                   ComputePipelineCreateParams &p_Params);
 
       void pipeline_cleanup(Pipeline &p_Pipeline);
 

@@ -30,8 +30,7 @@ int main()
   Low::AssetManager::Image::load_png(
       "L:\\zero\\data\\raw_assets\\image2d\\wood_box.png", l_Image);
 
-  Low::AssetManager::Image::process_to_dds(
-      "P:\\data\\assets\\img2d\\out_wb.dds", l_Image);
+  Low::AssetManager::Image::process("P:\\data\\assets\\img2d\\out_wb", l_Image);
 
   return 0;
 }

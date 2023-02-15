@@ -11,11 +11,11 @@ namespace Low {
     namespace Resource {
       struct Image2D
       {
-        List<uint8_t> data;
-        Math::UVector2 dimensions;
+        List<List<uint8_t>> data;
+        List<Math::UVector2> dimensions;
       };
 
-      LOW_EXPORT void load_dds(String p_FilePath, Image2D &p_Image);
+      LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image);
     } // namespace Resource
   }   // namespace Util
 } // namespace Low

@@ -4,7 +4,7 @@
 
 #include <gli/gli.hpp>
 #include <gli/make_texture.hpp>
-#include <gli/save_dds.hpp>
+#include <gli/save_ktx.hpp>
 #include <gli/generate_mipmaps.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -34,7 +34,7 @@ namespace Low {
         LOW_PROFILE_END();
       }
 
-      void process_to_dds(Util::String p_OutputPath, Image2D &p_Image)
+      void process(Util::String p_OutputPath, Image2D &p_Image)
       {
         struct Pixel
         {
@@ -44,7 +44,7 @@ namespace Low {
           uint8_t a;
         };
 
-        LOW_PROFILE_START(Process DDS);
+        LOW_PROFILE_START(Process Image);
 
         gli::format f = gli::FORMAT_RGBA8_UNORM_PACK8;
 
@@ -70,7 +70,7 @@ namespace Low {
         gli::texture2d l_TextureMipmaps =
             gli::generate_mipmaps(l_Texture, gli::FILTER_LINEAR);
 
-        gli::save_dds(l_TextureMipmaps, p_OutputPath.c_str());
+        gli::save_ktx(l_TextureMipmaps, (p_OutputPath + ".ktx").c_str());
 
         LOW_PROFILE_END();
       }

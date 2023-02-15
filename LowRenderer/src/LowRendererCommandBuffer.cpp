@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t CommandBuffer::TYPE_ID = 5;
+      const uint16_t CommandBuffer::TYPE_ID = 6;
       uint8_t *CommandBuffer::ms_Buffer = 0;
       Low::Util::Instances::Slot *CommandBuffer::ms_Slots = 0;
       Low::Util::List<CommandBuffer> CommandBuffer::ms_LivingInstances =

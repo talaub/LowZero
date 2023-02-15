@@ -973,6 +973,19 @@ namespace Low {
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
       }
 
+      void vk_imageformat_get_writable_color(Backend::Context &p_Context,
+                                             Backend::ImageFormat &p_Format,
+                                             uint8_t p_Channels)
+      {
+        if (p_Channels == 4) {
+          p_Format.vk.m_Handle = Utils::find_supported_format(
+              p_Context.vk, {VK_FORMAT_R32G32B32A32_SFLOAT},
+              VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT);
+        } else {
+          LOW_ASSERT(false, "Unsupported channel count");
+        }
+      }
+
       void vk_imageformat_get_texture(Backend::Context &p_Context,
                                       Backend::ImageFormat &p_Format)
       {
@@ -1466,6 +1479,14 @@ namespace Low {
                    "Failed to stop recording the command buffer");
       }
 
+      void vk_commandbuffer_dispatch_compute(
+          Backend::CommandBuffer &p_CommandBuffer,
+          Backend::DispatchComputeParams &p_Params)
+      {
+        vkCmdDispatch(p_CommandBuffer.vk.m_Handle, p_Params.dimensions.x,
+                      p_Params.dimensions.y, p_Params.dimensions.z);
+      }
+
       namespace Image2DUtils {
         static void create_image_view(Backend::Context &p_Context,
                                       Backend::Image2D &p_Image2d,
@@ -1613,6 +1634,16 @@ namespace Low {
               VK_PIPELINE_STAGE_TRANSFER_BIT);
         }
 
+        void transition_undefined_to_storage(VkCommandBuffer p_CommandBuffer,
+                                             Backend::Image2D &p_Image2d)
+        {
+          transition_image_barrier(
+              p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_SHADER_WRITE_BIT,
+              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        }
+
         static void create_image(Backend::Image2D &p_Image, uint32_t p_Width,
                                  uint32_t p_Height, VkFormat p_Format,
                                  VkImageTiling p_Tiling,
@@ -1623,17 +1654,19 @@ namespace Low {
           VkBuffer l_StagingBuffer;
           VkDeviceMemory l_StagingBufferMemory;
 
-          Utils::create_buffer(*p_Image.context, p_ImageDataSize,
-                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                               l_StagingBuffer, l_StagingBufferMemory);
+          if (p_ImageData) {
+            Utils::create_buffer(*p_Image.context, p_ImageDataSize,
+                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                 l_StagingBuffer, l_StagingBufferMemory);
 
-          void *l_Data;
-          vkMapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory, 0,
-                      p_ImageDataSize, 0, &l_Data);
-          memcpy(l_Data, p_ImageData, p_ImageDataSize);
-          vkUnmapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory);
+            void *l_Data;
+            vkMapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory, 0,
+                        p_ImageDataSize, 0, &l_Data);
+            memcpy(l_Data, p_ImageData, p_ImageDataSize);
+            vkUnmapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory);
+          }
 
           VkImageCreateInfo l_ImageInfo{};
           l_ImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1674,27 +1707,30 @@ namespace Low {
 
           vkBindImageMemory(p_Image.context->vk.m_Device, p_Image.vk.m_Image,
                             p_Image.vk.m_Memory, 0);
-          {
-            Backend::Image2DTransitionStateParams l_Params;
-            l_Params.commandBuffer = nullptr;
-            l_Params.destState = Backend::ImageState::DESTINATION;
-            Backend::image2d_transition_state(p_Image, l_Params);
+
+          if (p_ImageData) {
+            {
+              Backend::Image2DTransitionStateParams l_Params;
+              l_Params.commandBuffer = nullptr;
+              l_Params.destState = Backend::ImageState::DESTINATION;
+              Backend::image2d_transition_state(p_Image, l_Params);
+            }
+
+            copy_buffer_to_image(p_Image, l_StagingBuffer, p_Image.dimensions.x,
+                                 p_Image.dimensions.y);
+
+            {
+              Backend::Image2DTransitionStateParams l_Params;
+              l_Params.commandBuffer = nullptr;
+              l_Params.destState = Backend::ImageState::SAMPLE;
+              Backend::image2d_transition_state(p_Image, l_Params);
+            }
+
+            vkDestroyBuffer(p_Image.context->vk.m_Device, l_StagingBuffer,
+                            nullptr);
+            vkFreeMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory,
+                         nullptr);
           }
-
-          copy_buffer_to_image(p_Image, l_StagingBuffer, p_Image.dimensions.x,
-                               p_Image.dimensions.y);
-
-          {
-            Backend::Image2DTransitionStateParams l_Params;
-            l_Params.commandBuffer = nullptr;
-            l_Params.destState = Backend::ImageState::SAMPLE;
-            Backend::image2d_transition_state(p_Image, l_Params);
-          }
-
-          vkDestroyBuffer(p_Image.context->vk.m_Device, l_StagingBuffer,
-                          nullptr);
-          vkFreeMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory,
-                       nullptr);
         }
 
       } // namespace Image2DUtils
@@ -1764,6 +1800,9 @@ namespace Low {
                    p_Params.destState == Backend::ImageState::DESTINATION) {
           Image2DUtils::transition_undefined_to_destination(l_CmdBuffer,
                                                             p_Image);
+        } else if (p_Image.state == Backend::ImageState::UNDEFINED &&
+                   p_Params.destState == Backend::ImageState::STORAGE) {
+          Image2DUtils::transition_undefined_to_storage(l_CmdBuffer, p_Image);
         } else {
           LOW_ASSERT(false, "Image state transition not supported");
         }
@@ -1932,6 +1971,7 @@ namespace Low {
       {
         p_Pipeline.context = p_Params.context;
         p_Pipeline.interface = p_Params.interface;
+        p_Pipeline.type = Backend::PipelineType::GRAPHICS;
 
         auto l_VertexShaderCode =
             PipelineUtils::read_shader_file(p_Params.vertexShaderPath);
@@ -2193,6 +2233,37 @@ namespace Low {
                               l_VertexShaderModule, nullptr);
       }
 
+      void
+      vk_pipeline_compute_create(Backend::Pipeline &p_Pipeline,
+                                 Backend::ComputePipelineCreateParams &p_Params)
+      {
+        p_Pipeline.context = p_Params.context;
+        p_Pipeline.interface = p_Params.interface;
+        p_Pipeline.type = Backend::PipelineType::COMPUTE;
+
+        VkShaderModule l_ShaderModule = PipelineUtils::create_shader_module(
+            *p_Params.context,
+            PipelineUtils::read_shader_file(p_Params.computeShaderPath));
+
+        VkComputePipelineCreateInfo l_ComputePipelineInfo = {
+            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
+        l_ComputePipelineInfo.stage.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        l_ComputePipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+        l_ComputePipelineInfo.stage.module = l_ShaderModule;
+        l_ComputePipelineInfo.stage.pName = "main";
+        l_ComputePipelineInfo.layout = p_Params.interface->vk.m_Handle;
+
+        LOW_ASSERT(vkCreateComputePipelines(
+                       p_Params.context->vk.m_Device, VK_NULL_HANDLE, 1,
+                       &l_ComputePipelineInfo, nullptr,
+                       &(p_Pipeline.vk.m_Handle)) == VK_SUCCESS,
+                   "Failed to create compute pipeline");
+
+        vkDestroyShaderModule(p_Params.context->vk.m_Device, l_ShaderModule,
+                              nullptr);
+      }
+
       void vk_pipeline_cleanup(Backend::Pipeline &p_Pipeline)
       {
         vkDestroyPipeline(p_Pipeline.context->vk.m_Device,
@@ -2202,9 +2273,17 @@ namespace Low {
       void vk_pipeline_bind(Backend::Pipeline &p_Pipeline,
                             Backend::PipelineBindParams &p_Params)
       {
-        vkCmdBindPipeline(p_Params.commandBuffer->vk.m_Handle,
-                          VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          p_Pipeline.vk.m_Handle);
+        if (p_Pipeline.type == Backend::PipelineType::GRAPHICS) {
+          vkCmdBindPipeline(p_Params.commandBuffer->vk.m_Handle,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            p_Pipeline.vk.m_Handle);
+        } else if (p_Pipeline.type == Backend::PipelineType::COMPUTE) {
+          vkCmdBindPipeline(p_Params.commandBuffer->vk.m_Handle,
+                            VK_PIPELINE_BIND_POINT_COMPUTE,
+                            p_Pipeline.vk.m_Handle);
+        } else {
+          LOW_ASSERT(false, "Unknown pipeline type");
+        }
       }
 
       void vk_draw(Backend::DrawParams &p_Params)
