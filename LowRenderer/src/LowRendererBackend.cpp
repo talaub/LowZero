@@ -508,6 +508,15 @@ namespace Low {
 #endif
       }
 
+      void uniform_scope_cleanup(UniformScope &p_Scope)
+      {
+#ifdef LOW_RENDERER_API_VULKAN
+        Vulkan::vk_uniform_scope_cleanup(p_Scope);
+#else
+        LOW_ASSERT(false, "No valid graphics api set");
+#endif
+      }
+
       void buffer_create(Buffer &p_Buffer, BufferCreateParams &p_Params)
       {
 #ifdef LOW_RENDERER_API_VULKAN

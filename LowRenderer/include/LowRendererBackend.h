@@ -530,6 +530,7 @@ namespace Low {
 
       void uniform_scope_create(UniformScope &p_Scope,
                                 UniformScopeCreateParams &p_Params);
+      void uniform_scope_cleanup(UniformScope &p_Scope);
 
       struct UniformScopeBindParams
       {

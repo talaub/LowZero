@@ -3,6 +3,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
 
 #include <stdlib.h>
 
@@ -55,6 +56,7 @@ namespace Low {
     void Name::initialize()
     {
       g_StringBuffer = (char *)malloc(MAX_BUFFER_SIZE);
+      LOW_PROFILE_ALLOC(Name String Buffer);
       g_StringPointer = g_StringBuffer;
 
       LOW_LOG_DEBUG("Name buffer setup completed");
@@ -63,6 +65,7 @@ namespace Low {
     void Name::cleanup()
     {
       free(g_StringBuffer);
+      LOW_PROFILE_FREE(Name String Buffer);
 
       LOW_LOG_DEBUG("Cleaned up Name buffer");
     }

@@ -2,6 +2,7 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
 #include "LowRendererInterface.h"
@@ -51,6 +52,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Backend::uniform_scope_cleanup(get_scope());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -72,6 +74,9 @@ namespace Low {
       {
         initialize_buffer(&ms_Buffer, UniformScopeData::get_size(),
                           get_capacity(), &ms_Slots);
+
+        LOW_PROFILE_ALLOC(type_buffer_UniformScope);
+        LOW_PROFILE_ALLOC(type_slots_UniformScope);
       }
 
       void UniformScope::cleanup()
@@ -82,6 +87,9 @@ namespace Low {
         }
         free(ms_Buffer);
         free(ms_Slots);
+
+        LOW_PROFILE_FREE(type_buffer_UniformScope);
+        LOW_PROFILE_FREE(type_slots_UniformScope);
       }
 
       bool UniformScope::is_alive() const

@@ -14,5 +14,5 @@ layout(set = 0, binding = 1) uniform sampler2D u_Img;
 void main()
 {
   // outColor = vec4(vec3(val), 1.0);
-  outColor = texture(u_Img, in_TextureCoordinates);
+  outColor = vec4(texture(u_Img, in_TextureCoordinates).xyz, 1.0);
 }

@@ -20,6 +20,16 @@ namespace Low {
 
       Stack<CpuProfile> g_CpuProfiles;
 
+      struct TrackedMemoryAllocation
+      {
+        String text;
+        String module;
+        String file;
+        String function;
+      };
+
+      List<TrackedMemoryAllocation> g_TrackedMemoryAllocations;
+
       void start_cpu_profile(String p_Text, String p_Module, String p_File,
                              String p_Function)
       {
@@ -69,7 +79,49 @@ namespace Low {
                       " nanoseconds.";
         }
 
-        LOW_LOG_PROFILE(l_LogMsg.c_str());
+        Log::profile(l_Profile.module.c_str(), l_LogMsg.c_str());
+      }
+
+      void track_memory_allocation(String p_Label, String p_Module,
+                                   String p_File, String p_Function)
+      {
+        TrackedMemoryAllocation l_Allocation;
+
+        l_Allocation.file = p_File;
+        l_Allocation.text = p_Label;
+        l_Allocation.module = p_Module;
+        l_Allocation.function = p_Function;
+
+        g_TrackedMemoryAllocations.push_back(l_Allocation);
+      }
+
+      void free_memory_allocation(String p_Label)
+      {
+        for (auto it = g_TrackedMemoryAllocations.begin();
+             it != g_TrackedMemoryAllocations.end(); ++it) {
+          if (it->text == p_Label) {
+            g_TrackedMemoryAllocations.erase(it);
+            return;
+          }
+        }
+
+        LOW_ASSERT(
+            false,
+            "Tried to untrack a tracked memory allocation that does not exist");
+      }
+
+      void evaluate_memory_allocation()
+      {
+        for (auto it = g_TrackedMemoryAllocations.begin();
+             it != g_TrackedMemoryAllocations.end(); ++it) {
+          String i_Text = String("Tracked memory allocation '") + it->text +
+                          "' did not get free'd. Function: " + it->function;
+
+          Log::profile(it->module.c_str(), i_Text.c_str());
+        }
+
+        LOW_ASSERT(g_TrackedMemoryAllocations.empty(),
+                   "Not all tracked memory allocations were free'd");
       }
     } // namespace Profiler
   }   // namespace Util

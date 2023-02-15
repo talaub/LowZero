@@ -40,7 +40,7 @@ namespace Low {
       LOW_PROFILE_START(Texture load);
 
       gli::texture2d l_Texture(gli::load_dds(
-          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out.dds").c_str()));
+          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.dds").c_str()));
 
       Interface::Image2DCreateParams l_Params;
       l_Params.commandPool = g_CommandPool;
@@ -108,11 +108,6 @@ namespace Low {
       l_WindowInit.title = "LowEngine";
 
       window_initialize(l_Window, l_WindowInit);
-
-      Low::Util::String l_DdsPath =
-          Low::Util::String(LOW_DATA_PATH) + "/assets/img2d/ac107-9pf2u.dds";
-      Low::Util::Resource::Image2D l_Img;
-      Low::Util::Resource::load_dds(l_DdsPath, l_Img);
 
       Interface::ContextCreateParams l_ContextInit;
       l_ContextInit.validation_enabled = true;

@@ -13,7 +13,6 @@ namespace Low {
 
       Name::initialize();
       Config::initialize();
-      // Instances::initialize();
 
       LOW_LOG_INFO("Util initialized");
 
@@ -22,8 +21,9 @@ namespace Low {
 
     void cleanup()
     {
-      // Instances::cleanup();
       Name::cleanup();
+
+      Profiler::evaluate_memory_allocation();
 
       LOW_LOG_INFO("Util shutdown");
     }

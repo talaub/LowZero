@@ -2,6 +2,7 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
 #include "LowRendererInterface.h"
@@ -73,6 +74,9 @@ namespace Low {
       {
         initialize_buffer(&ms_Buffer, FramebufferData::get_size(),
                           get_capacity(), &ms_Slots);
+
+        LOW_PROFILE_ALLOC(type_buffer_Framebuffer);
+        LOW_PROFILE_ALLOC(type_slots_Framebuffer);
       }
 
       void Framebuffer::cleanup()
@@ -83,6 +87,9 @@ namespace Low {
         }
         free(ms_Buffer);
         free(ms_Slots);
+
+        LOW_PROFILE_FREE(type_buffer_Framebuffer);
+        LOW_PROFILE_FREE(type_slots_Framebuffer);
       }
 
       bool Framebuffer::is_alive() const

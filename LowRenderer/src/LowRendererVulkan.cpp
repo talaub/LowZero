@@ -2,6 +2,7 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
 #include "LowUtilContainers.h"
 #include "LowUtilFileIO.h"
 
@@ -777,6 +778,8 @@ namespace Low {
         p_Renderpass.clearTarget =
             (bool *)calloc(p_Params.formatCount, sizeof(bool));
 
+        LOW_PROFILE_ALLOC(Vulkan Renderpass Clear Targets);
+
         Low::Util::List<VkAttachmentDescription> l_Attachments;
         Low::Util::List<VkAttachmentReference> l_ColorAttachmentRefs;
 
@@ -891,6 +894,7 @@ namespace Low {
                             p_Renderpass.vk.m_Handle, nullptr);
 
         free(p_Renderpass.clearTarget);
+        LOW_PROFILE_FREE(Vulkan Renderpass Clear Targets);
       }
 
       void vk_renderpass_start(Backend::Renderpass &p_Renderpass,
@@ -983,7 +987,9 @@ namespace Low {
           l_Swapchain.m_RenderTargets = (Backend::Image2D *)calloc(
               p_Images.size(), sizeof(Backend::Image2D));
 
-          Low::Math::UVector2 l_Dimensions = l_Swapchain.m_Dimensions;
+          LOW_PROFILE_ALLOC(Vulkan Swapchain Render Targets);
+
+          Math::UVector2 l_Dimensions = l_Swapchain.m_Dimensions;
 
           Backend::Image2DCreateParams l_Params;
           l_Params.context = p_Swapchain.context;
@@ -1041,10 +1047,13 @@ namespace Low {
         {
           p_Swapchain.m_ImageAvailableSemaphores = (VkSemaphore *)calloc(
               p_Swapchain.m_ImageCount, sizeof(VkSemaphore));
+          LOW_PROFILE_ALLOC(Vulkan Image Available Semaphore);
           p_Swapchain.m_RenderFinishedSemaphores = (VkSemaphore *)calloc(
               p_Swapchain.m_ImageCount, sizeof(VkSemaphore));
+          LOW_PROFILE_ALLOC(Vulkan Render Finished Semaphore);
           p_Swapchain.m_InFlightFences =
               (VkFence *)calloc(p_Swapchain.m_ImageCount, sizeof(VkFence));
+          LOW_PROFILE_ALLOC(Vulkan In Flight Fences);
 
           VkSemaphoreCreateInfo l_SemaphoreInfo{};
           l_SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1082,6 +1091,8 @@ namespace Low {
           p_Swapchain.m_CommandBuffers = (Backend::CommandBuffer *)calloc(
               p_Swapchain.m_FramesInFlight, sizeof(Backend::CommandBuffer));
 
+          LOW_PROFILE_ALLOC(Vulkan Swapchain Command Buffers);
+
           VkCommandBufferAllocateInfo l_AllocInfo{};
           l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
           l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
@@ -1105,6 +1116,8 @@ namespace Low {
 
           p_Swapchain.vk.m_Framebuffers = (Backend::Framebuffer *)calloc(
               p_Swapchain.vk.m_ImageCount, sizeof(Backend::Framebuffer));
+
+          LOW_PROFILE_ALLOC(Vulkan Swapchain Framebuffers);
 
           Low::Math::UVector2 l_Dimensions(p_Swapchain.vk.m_Dimensions.x,
                                            p_Swapchain.vk.m_Dimensions.y);
@@ -1258,9 +1271,25 @@ namespace Low {
                          nullptr);
         }
 
+        free(l_Swapchain.m_ImageAvailableSemaphores);
+        LOW_PROFILE_FREE(Vulkan Image Available Semaphore);
+        free(l_Swapchain.m_RenderFinishedSemaphores);
+        LOW_PROFILE_FREE(Vulkan Render Finished Semaphore);
+        free(l_Swapchain.m_InFlightFences);
+        LOW_PROFILE_FREE(Vulkan In Flight Fences);
+
         for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
           vk_image2d_cleanup(l_Swapchain.m_RenderTargets[i]);
         }
+        free(l_Swapchain.m_RenderTargets);
+
+        LOW_PROFILE_FREE(Vulkan Swapchain Render Targets);
+
+        free(l_Swapchain.m_Framebuffers);
+        LOW_PROFILE_FREE(Vulkan Swapchain Framebuffers);
+
+        free(l_Swapchain.m_CommandBuffers);
+        LOW_PROFILE_FREE(Vulkan Swapchain Command Buffers);
 
         vkDestroySwapchainKHR(l_Context.m_Device, l_Swapchain.m_Handle,
                               nullptr);
@@ -2378,8 +2407,10 @@ namespace Low {
 
         p_Uniform.vk.buffers =
             (VkBuffer *)malloc(sizeof(VkBuffer) * p_Uniform.framesInFlight);
+        LOW_PROFILE_ALLOC(Vulkan Uniform Buffers);
         p_Uniform.vk.bufferMemories = (VkDeviceMemory *)malloc(
             sizeof(VkDeviceMemory) * p_Uniform.framesInFlight);
+        LOW_PROFILE_ALLOC(Vulkan Uniform Buffer Memories);
 
         for (uint8_t i = 0; i < p_Uniform.framesInFlight; ++i) {
           VkBufferUsageFlags i_Usage;
@@ -2412,6 +2443,12 @@ namespace Low {
             vkFreeMemory(p_Uniform.context->vk.m_Device,
                          p_Uniform.vk.bufferMemories[i], nullptr);
           }
+
+          free(p_Uniform.vk.bufferMemories);
+          LOW_PROFILE_FREE(Vulkan Uniform Buffer Memories);
+
+          free(p_Uniform.vk.buffers);
+          LOW_PROFILE_FREE(Vulkan Uniform Buffers);
         }
       }
 
@@ -2539,6 +2576,7 @@ namespace Low {
 
         p_Scope.vk.sets = (VkDescriptorSet *)malloc(sizeof(VkDescriptorSet) *
                                                     p_Scope.framesInFlight);
+        LOW_PROFILE_ALLOC(Vulkan Uniform Scope Descriptor Sets);
         LOW_ASSERT(vkAllocateDescriptorSets(p_Params.context->vk.m_Device,
                                             &l_AllocInfo,
                                             p_Scope.vk.sets) == VK_SUCCESS,
@@ -2572,6 +2610,12 @@ namespace Low {
             VK_PIPELINE_BIND_POINT_COMPUTE,
             p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
             l_Sets.size(), l_Sets.data(), 0, nullptr);
+      }
+
+      void vk_uniform_scope_cleanup(Backend::UniformScope &p_Scope)
+      {
+        free(p_Scope.vk.sets);
+        LOW_PROFILE_FREE(Vulkan Uniform Scope Descriptor Sets);
       }
 
       void vk_buffer_create(Backend::Buffer &p_Buffer,

@@ -3,6 +3,7 @@
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilProfiler.h"
 
 #include "LowRendererBackend.h"
 
@@ -183,8 +184,6 @@ namespace Low {
 
           Backend::pipeline_graphics_create(p_Pipeline.get_pipeline(),
                                             l_BeParams);
-
-          // TL TODO: Create pipeline
         }
 
         static void recreate_pipeline(Util::String p_OutPath)
@@ -194,11 +193,19 @@ namespace Low {
             return;
           }
 
+          LOW_PROFILE_START(Hotreload pipeline recreation);
+
           for (uint32_t i = 0; i < g_GraphicsPipelines[p_OutPath].size(); ++i) {
             GraphicsPipeline i_Pipeline = g_GraphicsPipelines[p_OutPath][i];
 
+            if (i == 0) {
+              Backend::context_wait_idle(*i_Pipeline.get_pipeline().context);
+            }
+
             recreate_graphics_pipeline(i_Pipeline);
           }
+
+          LOW_PROFILE_END();
         }
 
         static void do_tick(float p_Delta)

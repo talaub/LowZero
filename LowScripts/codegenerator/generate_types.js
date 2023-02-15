@@ -336,6 +336,7 @@ function generate_source(p_Type) {
     t += empty();
     t += include("LowUtilAssert.h", n);
     t += include("LowUtilLogger.h", n);
+    t += include("LowUtilProfiler.h", n);
     t += include("LowUtilConfig.h", n);
     t += empty();
     if (p_Type.source_imports) {
@@ -436,6 +437,9 @@ function generate_source(p_Type) {
     t += line(`initialize_buffer(`);
     t += line(`&ms_Buffer, ${p_Type.name}Data::get_size(), get_capacity(), &ms_Slots`);
     t += line(`);`);
+    t += empty();
+    t += line(`LOW_PROFILE_ALLOC(type_buffer_${p_Type.name});`);
+    t += line(`LOW_PROFILE_ALLOC(type_slots_${p_Type.name});`);
     t += line('}');
     t += empty();
     t += line(`void ${p_Type.name}::cleanup() {`);
@@ -445,6 +449,9 @@ function generate_source(p_Type) {
     t += line('}');
     t += line('free(ms_Buffer);');
     t += line('free(ms_Slots);');
+    t += empty();
+    t += line(`LOW_PROFILE_FREE(type_buffer_${p_Type.name});`);
+    t += line(`LOW_PROFILE_FREE(type_slots_${p_Type.name});`);
     t += line('}');
     t += empty();
 
