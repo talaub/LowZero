@@ -152,7 +152,8 @@ namespace Low {
         Backend::RenderpassCreateParams l_Params;
         l_Params.clearDepth = p_Params.clearDepth;
         l_Params.context = &(p_Params.context.get_context());
-        l_Params.formatCount = p_Params.formats.size();
+        _LOW_ASSERT(p_Params.formats.size() <= 255);
+        l_Params.formatCount = static_cast<uint8_t>(p_Params.formats.size());
         l_Params.formats = p_Params.formats.data();
         if (p_Params.formats.empty()) {
           l_Params.formats = nullptr;

@@ -260,7 +260,8 @@ namespace Low {
         l_Params.commandPool = g_CommandPool;
         l_Params.context = g_Context;
         l_Params.data = l_Vertices.data();
-        l_Params.bufferSize = l_Vertices.size() * sizeof(Interface::Vertex);
+        l_Params.bufferSize = static_cast<uint32_t>(l_Vertices.size() *
+                                                    sizeof(Interface::Vertex));
         l_Params.bufferUsageType = Backend::BufferUsageType::VERTEX;
         g_VertexBuffer = Interface::Buffer::make(N(VertexBuffer), l_Params);
       }
@@ -271,7 +272,8 @@ namespace Low {
         l_Params.commandPool = g_CommandPool;
         l_Params.context = g_Context;
         l_Params.data = l_Indices.data();
-        l_Params.bufferSize = l_Indices.size() * sizeof(uint32_t);
+        l_Params.bufferSize =
+            static_cast<uint32_t>(l_Indices.size() * sizeof(uint32_t));
         l_Params.bufferUsageType = Backend::BufferUsageType::INDEX;
         g_IndexBuffer = Interface::Buffer::make(N(IndexBuffer), l_Params);
       }

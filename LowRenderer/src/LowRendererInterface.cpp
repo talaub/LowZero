@@ -174,7 +174,9 @@ namespace Low {
           l_BeParams.fragmentShaderPath = l_OutputPaths.fragment.c_str();
           l_BeParams.interface = &(l_Params.interface.get_interface());
           l_BeParams.dimensions = l_Params.dimensions;
-          l_BeParams.colorTargetCount = l_Params.colorTargets.size();
+          _LOW_ASSERT(l_Params.colorTargets.size() <= 255);
+          l_BeParams.colorTargetCount =
+              static_cast<uint8_t>(l_Params.colorTargets.size());
           l_BeParams.colorTargets = l_Params.colorTargets.data();
           l_BeParams.cullMode = l_Params.cullMode;
           l_BeParams.frontFace = l_Params.frontFace;

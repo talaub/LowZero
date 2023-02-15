@@ -407,7 +407,7 @@ namespace Low {
       {
         Context *context;
         UniformInterface *uniformInterfaces;
-        uint32_t uniformInterfaceCount;
+        size_t uniformInterfaceCount;
       };
 
       void uniform_scope_interface_create(
@@ -450,7 +450,7 @@ namespace Low {
         Context *context;
         Swapchain *swapchain;
         uint8_t bufferType;
-        size_t bufferSize;
+        uint32_t bufferSize;
         uint32_t binding;
         uint32_t arrayIndex;
       };
@@ -524,7 +524,7 @@ namespace Low {
         Swapchain *swapchain;
         UniformPool *pool;
         Uniform *uniforms;
-        uint32_t uniformCount;
+        size_t uniformCount;
         UniformScopeInterface *interface;
       };
 
@@ -561,7 +561,7 @@ namespace Low {
         };
         Context *context;
         CommandPool *commandPool;
-        size_t bufferSize;
+        uint32_t bufferSize;
         uint8_t bufferUsageType;
       };
 
@@ -569,7 +569,7 @@ namespace Low {
       {
         Context *context;
         CommandPool *commandPool;
-        size_t bufferSize;
+        uint32_t bufferSize;
         void *data;
         uint8_t bufferUsageType;
       };

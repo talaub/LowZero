@@ -151,7 +151,7 @@ namespace Low {
         }
 
         l_Params.uniformScopeInterfaceCount =
-            p_Params.uniformScopeInterfaces.size();
+            static_cast<uint32_t>(p_Params.uniformScopeInterfaces.size());
         l_Params.uniformScopeInterfaces = l_UniformScopeInterfaces.data();
 
         Backend::pipeline_interface_create(l_Interface.get_interface(),

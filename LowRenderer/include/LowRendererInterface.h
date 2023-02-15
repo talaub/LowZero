@@ -163,7 +163,7 @@ namespace Low {
         Context context;
         Swapchain swapchain;
         uint8_t bufferType;
-        size_t bufferSize;
+        uint32_t bufferSize;
         uint32_t binding;
         uint32_t arrayIndex;
       };
@@ -207,7 +207,7 @@ namespace Low {
       {
         Context context;
         CommandPool commandPool;
-        size_t bufferSize;
+        uint32_t bufferSize;
         void *data;
         uint8_t bufferUsageType;
       };

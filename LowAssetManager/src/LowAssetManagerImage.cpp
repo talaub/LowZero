@@ -60,8 +60,8 @@ namespace Low {
                                                p_Image.channels];
 
             gli::extent2d l_Extent;
-            l_Extent.x = x;
-            l_Extent.y = y;
+            l_Extent.x = static_cast<uint32_t>(x);
+            l_Extent.y = static_cast<uint32_t>(y);
 
             l_Texture.store<Pixel>(l_Extent, 0, i_Data);
           }

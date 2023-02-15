@@ -154,7 +154,8 @@ namespace Low {
         l_Params.renderpass = &(p_Params.renderpass.get_renderpass());
         l_Params.dimensions = p_Params.dimensions;
         l_Params.framesInFlight = p_Params.framesInFlight;
-        l_Params.renderTargetCount = p_Params.renderTargets.size();
+        l_Params.renderTargetCount =
+            static_cast<uint8_t>(p_Params.renderTargets.size());
         l_Params.renderTargets = nullptr;
 
         Util::List<Backend::Image2D> l_Targets;

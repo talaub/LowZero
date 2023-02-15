@@ -100,7 +100,7 @@ namespace Low {
         return;
       }
 
-      int l_Length = strlen(p_String);
+      uint32_t l_Length = static_cast<uint32_t>(strlen(p_String));
 
       LOW_ASSERT(g_StringPointer - g_StringBuffer + l_Length + 1 <
                      MAX_BUFFER_SIZE,

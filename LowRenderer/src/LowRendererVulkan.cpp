@@ -445,7 +445,8 @@ namespace Low {
           }
 
           // Set the glfw extension data in the createinfo struct
-          l_CreateInfo.enabledExtensionCount = l_Extensions.size();
+          l_CreateInfo.enabledExtensionCount =
+              static_cast<uint32_t>(l_Extensions.size());
           l_CreateInfo.ppEnabledExtensionNames = l_Extensions.data();
 
           VkDebugUtilsMessengerCreateInfoEXT l_DebugCreateInfo{};
@@ -842,7 +843,8 @@ namespace Low {
           l_Subpass.pDepthStencilAttachment = nullptr;
         }
 
-        l_Subpass.colorAttachmentCount = l_ColorAttachmentRefs.size();
+        l_Subpass.colorAttachmentCount =
+            static_cast<uint32_t>(l_ColorAttachmentRefs.size());
         l_Subpass.pColorAttachments = l_ColorAttachmentRefs.data();
 
         VkSubpassDependency l_Dependency{};
@@ -931,7 +933,8 @@ namespace Low {
                    .y}); // TL TODO: Passed value currently ignored
         }
 
-        l_RenderpassInfo.clearValueCount = l_ClearValues.size();
+        l_RenderpassInfo.clearValueCount =
+            static_cast<uint32_t>(l_ClearValues.size());
         l_RenderpassInfo.pClearValues = l_ClearValues.data();
 
         vkCmdBeginRenderPass(p_Params.commandBuffer->vk.m_Handle,
@@ -1993,7 +1996,7 @@ namespace Low {
           l_VertexInputInfo.vertexBindingDescriptionCount = 1;
           l_VertexInputInfo.pVertexBindingDescriptions = &l_BindingDescription;
           l_VertexInputInfo.vertexAttributeDescriptionCount =
-              l_AttributeDescription.size();
+              static_cast<uint32_t>(l_AttributeDescription.size());
           l_VertexInputInfo.pVertexAttributeDescriptions =
               l_AttributeDescription.data();
         } else {
@@ -2365,7 +2368,7 @@ namespace Low {
         VkDescriptorSetLayoutCreateInfo l_LayoutInfo{};
         l_LayoutInfo.sType =
             VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        l_LayoutInfo.bindingCount = l_Bindings.size();
+        l_LayoutInfo.bindingCount = static_cast<uint32_t>(l_Bindings.size());
         l_LayoutInfo.pBindings = l_Bindings.data();
 
         LOW_ASSERT(vkCreateDescriptorSetLayout(
@@ -2602,14 +2605,14 @@ namespace Low {
                 .vk.m_Handle,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
             p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
-            l_Sets.size(), l_Sets.data(), 0, nullptr);
+            static_cast<uint32_t>(l_Sets.size()), l_Sets.data(), 0, nullptr);
 
         vkCmdBindDescriptorSets(
             Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
                 .vk.m_Handle,
             VK_PIPELINE_BIND_POINT_COMPUTE,
             p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
-            l_Sets.size(), l_Sets.data(), 0, nullptr);
+            static_cast<uint32_t>(l_Sets.size()), l_Sets.data(), 0, nullptr);
       }
 
       void vk_uniform_scope_cleanup(Backend::UniformScope &p_Scope)

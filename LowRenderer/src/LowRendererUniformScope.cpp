@@ -162,7 +162,7 @@ namespace Low {
         l_Params.swapchain = &(p_Params.swapchain.get_swapchain());
         l_Params.pipeline = &(p_Params.pipeline.get_pipeline());
         l_Params.startIndex = p_Params.startIndex;
-        l_Params.scopeCount = p_Params.scopes.size();
+        l_Params.scopeCount = static_cast<uint32_t>(p_Params.scopes.size());
         Util::List<Backend::UniformScope> l_Scopes;
         for (uint32_t i = 0u; i < l_Params.scopeCount; ++i) {
           l_Scopes.push_back(p_Params.scopes[i].get_scope());
