@@ -16,7 +16,7 @@ namespace Low {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       struct UniformScopeCreateParams;
-      struct UniformScopeBindGraphicsParams;
+      struct UniformScopeBindParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_EXPORT UniformScopeData
@@ -78,7 +78,7 @@ namespace Low {
 
         static UniformScope make(Util::Name p_Name,
                                  UniformScopeCreateParams &p_Params);
-        static void bind(UniformScopeBindGraphicsParams &p_Params);
+        static void bind(UniformScopeBindParams &p_Params);
       };
     } // namespace Interface
   }   // namespace Renderer

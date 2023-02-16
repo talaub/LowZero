@@ -60,13 +60,20 @@ namespace Low {
         Util::Map<GraphicsPipeline, GraphicsPipelineOutputPaths>
             g_GraphicsPipelineOutPaths;
 
+        Util::Map<ComputePipeline, ComputePipelineCreateParams>
+            g_ComputePipelineParams;
+        Util::Map<ComputePipeline, Util::String> g_ComputePipelineOutPaths;
+
         Util::Map<Util::String, Util::List<GraphicsPipeline>>
             g_GraphicsPipelines;
+        Util::Map<Util::String, Util::List<ComputePipeline>> g_ComputePipelines;
 
         Util::Map<Util::String, uint64_t> g_SourceTimes;
 
         static void recreate_graphics_pipeline(GraphicsPipeline p_Pipeline,
                                                bool p_CleanOld = true);
+        static void recreate_compute_pipeline(ComputePipeline p_Pipeline,
+                                              bool p_CleanOld = true);
 
         static Util::String get_source_path_vk_glsl(Util::String p_Path)
         {
@@ -142,6 +149,25 @@ namespace Low {
           recreate_graphics_pipeline(p_Pipeline, false);
         }
 
+        void register_compute_pipeline(ComputePipeline p_Pipeline,
+                                       ComputePipelineCreateParams &p_Params)
+        {
+          g_ComputePipelineParams[p_Pipeline] = p_Params;
+
+          Util::String l_OutputPath = compile(p_Params.shaderPath);
+
+          if (g_ComputePipelines.find(l_OutputPath) ==
+              g_ComputePipelines.end()) {
+            g_ComputePipelines[l_OutputPath] = Util::List<ComputePipeline>();
+          }
+
+          g_ComputePipelines[l_OutputPath].push_back(p_Pipeline);
+
+          g_ComputePipelineOutPaths[p_Pipeline] = l_OutputPath;
+
+          recreate_compute_pipeline(p_Pipeline, false);
+        }
+
         void delist_graphics_pipeline(GraphicsPipeline p_Pipeline)
         {
           g_GraphicsPipelineParams.erase(p_Pipeline);
@@ -153,6 +179,17 @@ namespace Low {
           g_GraphicsPipelines[l_OutputPaths.fragment].erase_first(p_Pipeline);
 
           g_GraphicsPipelineOutPaths.erase(p_Pipeline);
+        }
+
+        void delist_compute_pipeline(ComputePipeline p_Pipeline)
+        {
+          g_ComputePipelineParams.erase(p_Pipeline);
+
+          Util::String l_OutputPath = g_ComputePipelineOutPaths[p_Pipeline];
+
+          g_ComputePipelines[l_OutputPath].erase_first(p_Pipeline);
+
+          g_ComputePipelineOutPaths.erase(p_Pipeline);
         }
 
         static void recreate_graphics_pipeline(GraphicsPipeline p_Pipeline,
@@ -188,23 +225,53 @@ namespace Low {
                                             l_BeParams);
         }
 
-        static void recreate_pipeline(Util::String p_OutPath)
+        static void recreate_compute_pipeline(ComputePipeline p_Pipeline,
+                                              bool p_CleanOld)
         {
-          if (g_GraphicsPipelines.find(p_OutPath) ==
-              g_GraphicsPipelines.end()) {
-            return;
+          if (p_CleanOld) {
+            Backend::pipeline_cleanup(p_Pipeline.get_pipeline());
           }
 
+          ComputePipelineCreateParams &l_Params =
+              g_ComputePipelineParams[p_Pipeline];
+
+          Util::String l_OutputPath = g_ComputePipelineOutPaths[p_Pipeline];
+
+          Backend::ComputePipelineCreateParams l_BeParams;
+          l_BeParams.context = &(l_Params.context.get_context());
+          l_BeParams.computeShaderPath = l_OutputPath.c_str();
+          l_BeParams.interface = &(l_Params.interface.get_interface());
+
+          Backend::pipeline_compute_create(p_Pipeline.get_pipeline(),
+                                           l_BeParams);
+        }
+
+        static void recreate_pipeline(Util::String p_OutPath)
+        {
           LOW_PROFILE_START(Hotreload pipeline recreation);
+
+          bool l_Waited = false;
 
           for (uint32_t i = 0; i < g_GraphicsPipelines[p_OutPath].size(); ++i) {
             GraphicsPipeline i_Pipeline = g_GraphicsPipelines[p_OutPath][i];
 
-            if (i == 0) {
+            if (!l_Waited) {
               Backend::context_wait_idle(*i_Pipeline.get_pipeline().context);
+              l_Waited = true;
             }
 
             recreate_graphics_pipeline(i_Pipeline);
+          }
+
+          for (uint32_t i = 0; i < g_ComputePipelines[p_OutPath].size(); ++i) {
+            ComputePipeline i_Pipeline = g_ComputePipelines[p_OutPath][i];
+
+            if (!l_Waited) {
+              Backend::context_wait_idle(*i_Pipeline.get_pipeline().context);
+              l_Waited = true;
+            }
+
+            recreate_compute_pipeline(i_Pipeline);
           }
 
           LOW_PROFILE_END();

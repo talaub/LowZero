@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t UniformScope::TYPE_ID = 14;
+      const uint16_t UniformScope::TYPE_ID = 15;
       uint8_t *UniformScope::ms_Buffer = 0;
       Low::Util::Instances::Slot *UniformScope::ms_Slots = 0;
       Low::Util::List<UniformScope> UniformScope::ms_LivingInstances =
@@ -154,13 +154,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
-      void UniformScope::bind(UniformScopeBindGraphicsParams &p_Params)
+      void UniformScope::bind(UniformScopeBindParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind
         Backend::UniformScopeBindParams l_Params;
         l_Params.context = &(p_Params.context.get_context());
         l_Params.swapchain = &(p_Params.swapchain.get_swapchain());
-        l_Params.pipeline = &(p_Params.pipeline.get_pipeline());
+        l_Params.pipelineInterface =
+            &(p_Params.pipelineInterface.get_interface());
         l_Params.startIndex = p_Params.startIndex;
         l_Params.scopeCount = static_cast<uint32_t>(p_Params.scopes.size());
         Util::List<Backend::UniformScope> l_Scopes;

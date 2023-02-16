@@ -157,6 +157,15 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_stop
       }
 
+      void CommandBuffer::dispatch_compute(Math::UVector3 &p_Dimensions)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_dispatch_compute
+        Backend::DispatchComputeParams l_Params;
+        l_Params.dimensions = p_Dimensions;
+        Backend::commandbuffer_dispatch_compute(get_commandbuffer(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_dispatch_compute
+      }
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

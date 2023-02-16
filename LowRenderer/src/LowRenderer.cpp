@@ -22,6 +22,7 @@ namespace Low {
     Interface::CommandPool g_CommandPool;
     Interface::Swapchain g_Swapchain;
 
+    Interface::PipelineInterface g_PipelineInterface;
     Interface::GraphicsPipeline g_Pipeline;
     Interface::UniformScopeInterface g_UniformScopeInterface;
     Interface::Uniform g_Uniform;
@@ -37,7 +38,8 @@ namespace Low {
     Interface::Image2D g_RenderTarget;
     Interface::Uniform g_RtUniform;
     Util::List<Interface::UniformScope> g_ComputeUScopes;
-    Backend::Pipeline g_ComputePipeline;
+    Interface::PipelineInterface g_ComputeInterface;
+    Interface::ComputePipeline g_ComputePipeline;
     Interface::UniformScopeInterface g_ComputeUSInterface;
 
     // TEMP
@@ -134,26 +136,23 @@ namespace Low {
         g_ComputeUScopes.push_back(
             Interface::UniformScope::make(N(CompUniformScope), l_Params));
       }
-      Interface::PipelineInterface l_PipeInter;
       {
         Interface::PipelineInterfaceCreateParams l_Params;
         l_Params.uniformScopeInterfaces.push_back(g_ComputeUSInterface);
         l_Params.context = g_Context;
 
-        l_PipeInter =
+        g_ComputeInterface =
             Interface::PipelineInterface::make(N(Compute PipeInter), l_Params);
       }
       {
 
-        Util::String l_Path =
-            Util::String(LOW_DATA_PATH) + "\\shader\\dst\\spv\\test.comp.spv";
-        Backend::ComputePipelineCreateParams l_Params;
-        l_Params.context = &(g_Context.get_context());
-        l_Params.interface = &(l_PipeInter.get_interface());
-        l_Params.computeShaderPath = l_Path.c_str();
-        LOW_LOG_DEBUG(l_Params.computeShaderPath);
+        Interface::ComputePipelineCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.interface = g_ComputeInterface;
+        l_Params.shaderPath = "test.comp";
 
-        Backend::pipeline_compute_create(g_ComputePipeline, l_Params);
+        g_ComputePipeline =
+            Interface::ComputePipeline::make(N(ComputePipeline), l_Params);
       }
     }
 
@@ -172,6 +171,7 @@ namespace Low {
       Interface::UniformScope::initialize();
       Interface::PipelineInterface::initialize();
       Interface::GraphicsPipeline::initialize();
+      Interface::ComputePipeline::initialize();
       Interface::Buffer::initialize();
     }
 
@@ -179,6 +179,7 @@ namespace Low {
     {
       Interface::Buffer::cleanup();
       Interface::GraphicsPipeline::cleanup();
+      Interface::ComputePipeline::cleanup();
       Interface::PipelineInterface::cleanup();
       Interface::UniformScope::cleanup();
       Interface::UniformScopeInterface::cleanup();
@@ -297,14 +298,14 @@ namespace Low {
         Interface::PipelineInterfaceCreateParams l_InterParams;
         l_InterParams.context = g_Context;
         l_InterParams.uniformScopeInterfaces.push_back(g_UniformScopeInterface);
-        Interface::PipelineInterface l_Interface =
+        g_PipelineInterface =
             Interface::PipelineInterface::make(N(Interface), l_InterParams);
 
         Interface::GraphicsPipelineCreateParams l_Params;
         l_Params.vertexPath = "test.vert";
         l_Params.fragmentPath = "test.frag";
         l_Params.context = g_Context;
-        l_Params.interface = l_Interface;
+        l_Params.interface = g_PipelineInterface;
 
         Backend::GraphicsPipelineColorTarget l_Target;
         l_Target.blendEnable = true;
@@ -390,30 +391,19 @@ namespace Low {
 
       g_Swapchain.get_current_commandbuffer().start();
 
+      g_ComputePipeline.bind(g_Swapchain.get_current_commandbuffer());
       {
-        Backend::PipelineBindParams l_Params;
-        l_Params.commandBuffer =
-            &(g_Swapchain.get_current_commandbuffer().get_commandbuffer());
-        Backend::pipeline_bind(g_ComputePipeline, l_Params);
-      }
-      {
-        Backend::UniformScopeBindParams l_Params;
-        l_Params.scopeCount = g_ComputeUScopes.size();
-        l_Params.scopes = &(g_ComputeUScopes[0].get_scope());
-        l_Params.context = &(g_Context.get_context());
-        l_Params.pipeline = &g_ComputePipeline;
+        Interface::UniformScopeBindParams l_Params;
+        l_Params.scopes = g_ComputeUScopes;
+        l_Params.context = g_Context;
+        l_Params.swapchain = g_Swapchain;
+        l_Params.pipelineInterface = g_ComputeInterface;
         l_Params.startIndex = 0;
-        l_Params.swapchain = &(g_Swapchain.get_swapchain());
-        Backend::uniform_scopes_bind(l_Params);
+        Interface::UniformScope::bind(l_Params);
       }
       {
-        Backend::DispatchComputeParams l_Params;
-        l_Params.dimensions.x = 600 / 16 + 1;
-        l_Params.dimensions.y = 600 / 16 + 1;
-        l_Params.dimensions.z = 1;
-        Backend::commandbuffer_dispatch_compute(
-            g_Swapchain.get_current_commandbuffer().get_commandbuffer(),
-            l_Params);
+        Math::UVector3 l_Dimensions(600 / 16 + 1, 600 / 16 + 1, 1);
+        g_Swapchain.get_current_commandbuffer().dispatch_compute(l_Dimensions);
       }
 
       Interface::RenderpassStartParams l_RpParams;
@@ -428,12 +418,12 @@ namespace Low {
       g_Pipeline.bind(g_Swapchain.get_current_commandbuffer());
 
       {
-        Interface::UniformScopeBindGraphicsParams l_Params;
+        Interface::UniformScopeBindParams l_Params;
         l_Params.context = g_Context;
         l_Params.startIndex = 0;
         l_Params.swapchain = g_Swapchain;
         l_Params.scopes = g_Scopes;
-        l_Params.pipeline = g_Pipeline;
+        l_Params.pipelineInterface = g_PipelineInterface;
 
         Interface::UniformScope::bind(l_Params);
       }

@@ -568,7 +568,7 @@ namespace Low {
         Context *context;
         Swapchain *swapchain;
         uint32_t startIndex;
-        Pipeline *pipeline;
+        PipelineInterface *pipelineInterface;
       };
 
       void uniform_scopes_bind(UniformScopeBindParams &p_Params);

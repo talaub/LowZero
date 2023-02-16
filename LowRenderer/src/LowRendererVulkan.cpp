@@ -2683,14 +2683,14 @@ namespace Low {
             Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
                 .vk.m_Handle,
             VK_PIPELINE_BIND_POINT_GRAPHICS,
-            p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
+            p_Params.pipelineInterface->vk.m_Handle, p_Params.startIndex,
             static_cast<uint32_t>(l_Sets.size()), l_Sets.data(), 0, nullptr);
 
         vkCmdBindDescriptorSets(
             Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
                 .vk.m_Handle,
             VK_PIPELINE_BIND_POINT_COMPUTE,
-            p_Params.pipeline->interface->vk.m_Handle, p_Params.startIndex,
+            p_Params.pipelineInterface->vk.m_Handle, p_Params.startIndex,
             static_cast<uint32_t>(l_Sets.size()), l_Sets.data(), 0, nullptr);
       }
 

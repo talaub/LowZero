@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t UniformPool::TYPE_ID = 12;
+      const uint16_t UniformPool::TYPE_ID = 13;
       uint8_t *UniformPool::ms_Buffer = 0;
       Low::Util::Instances::Slot *UniformPool::ms_Slots = 0;
       Low::Util::List<UniformPool> UniformPool::ms_LivingInstances =

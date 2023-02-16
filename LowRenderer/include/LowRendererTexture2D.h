@@ -20,7 +20,6 @@ namespace Low {
     struct LOW_EXPORT Texture2DData
     {
       Interface::Image2D image2d;
-      Interface::Uniform uniform;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -69,9 +68,6 @@ namespace Low {
 
       Interface::Image2D &get_image2d() const;
       void set_image2d(Interface::Image2D &p_Value);
-
-      Interface::Uniform &get_uniform() const;
-      void set_uniform(Interface::Uniform &p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

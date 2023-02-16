@@ -138,6 +138,11 @@ types:
         return_type: void
       stop:
         return_type: void
+      dispatch_compute:
+        return_type: void
+        parameters:
+          - name: dimensions
+            type: Math::UVector3
 
   CommandPool:
     private_make: true
@@ -230,6 +235,34 @@ types:
             type: Util::Name
           - name: params
             type: GraphicsPipelineCreateParams
+      bind:
+        return_type: void
+        parameters:
+          - name: commandBuffer
+            type: CommandBuffer
+            handle: true
+
+  ComputePipeline:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+      - LowRendererCommandBuffer.h
+    source_imports:
+      - LowRendererInterface.h
+    properties:
+      pipeline:
+        type: Low::Renderer::Backend::Pipeline
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: ComputePipeline
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: ComputePipelineCreateParams
       bind:
         return_type: void
         parameters:
@@ -344,7 +377,7 @@ types:
         return_type: void
         parameters:
           - name: params
-            type: UniformScopeBindGraphicsParams
+            type: UniformScopeBindParams
 
   Buffer:
     private_make: true

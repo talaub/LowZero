@@ -1,5 +1,6 @@
 LowRenderer:
     GraphicsPipeline: 128
+    ComputePipeline: 16
     Context: 2
     Swapchain: 2
     Image2D: 256

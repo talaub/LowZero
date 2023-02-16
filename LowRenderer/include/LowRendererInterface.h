@@ -8,6 +8,7 @@
 #include "LowRendererRenderpass.h"
 #include "LowRendererSwapchain.h"
 #include "LowRendererGraphicsPipeline.h"
+#include "LowRendererComputePipeline.h"
 #include "LowRendererPipelineInterface.h"
 #include "LowRendererUniformPool.h"
 #include "LowRendererUniformScopeInterface.h"
@@ -104,6 +105,13 @@ namespace Low {
         bool vertexInput;
       };
 
+      struct ComputePipelineCreateParams
+      {
+        Context context;
+        Util::String shaderPath;
+        PipelineInterface interface;
+      };
+
       struct PipelineInterfaceCreateParams
       {
         Context context;
@@ -194,12 +202,12 @@ namespace Low {
         Util::List<Uniform> uniforms;
       };
 
-      struct UniformScopeBindGraphicsParams
+      struct UniformScopeBindParams
       {
         Context context;
         Swapchain swapchain;
         Util::List<UniformScope> scopes;
-        GraphicsPipeline pipeline;
+        PipelineInterface pipelineInterface;
         uint32_t startIndex;
       };
 
@@ -217,8 +225,11 @@ namespace Low {
 
         void register_graphics_pipeline(GraphicsPipeline p_Pipeline,
                                         GraphicsPipelineCreateParams &p_Params);
+        void register_compute_pipeline(ComputePipeline p_Pipeline,
+                                       ComputePipelineCreateParams &p_Params);
 
         void delist_graphics_pipeline(GraphicsPipeline p_Pipeline);
+        void delist_compute_pipeline(ComputePipeline p_Pipeline);
 
         void tick(float p_Delta);
       }; // namespace ShaderProgramUtils

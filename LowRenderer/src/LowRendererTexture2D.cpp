@@ -119,22 +119,6 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_image2d
     }
 
-    Interface::Uniform &Texture2D::get_uniform() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(Texture2D, uniform, Interface::Uniform);
-    }
-    void Texture2D::set_uniform(Interface::Uniform &p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // Set new value
-      TYPE_SOA(Texture2D, uniform, Interface::Uniform) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uniform
-      // LOW_CODEGEN::END::CUSTOM:SETTER_uniform
-    }
-
     Low::Util::Name Texture2D::get_name() const
     {
       _LOW_ASSERT(is_alive());

@@ -7,6 +7,7 @@
 #include "LowUtilContainers.h"
 
 #include "LowRendererBackend.h"
+#include "LowRendererCommandBuffer.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -15,35 +16,39 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct ComputePipelineCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT CommandBufferData
+      struct LOW_EXPORT ComputePipelineData
       {
-        Low::Renderer::Backend::CommandBuffer commandbuffer;
+        Low::Renderer::Backend::Pipeline pipeline;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(CommandBufferData);
+          return sizeof(ComputePipelineData);
         }
       };
 
-      struct LOW_EXPORT CommandBuffer : public Low::Util::Handle
+      struct LOW_EXPORT ComputePipeline : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<CommandBuffer> ms_LivingInstances;
+        static Low::Util::List<ComputePipeline> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        CommandBuffer();
-        CommandBuffer(uint64_t p_Id);
-        CommandBuffer(CommandBuffer &p_Copy);
+        ComputePipeline();
+        ComputePipeline(uint64_t p_Id);
+        ComputePipeline(ComputePipeline &p_Copy);
 
-        static CommandBuffer make(Low::Util::Name p_Name);
-        explicit CommandBuffer(const CommandBuffer &p_Copy)
+      private:
+        static ComputePipeline make(Low::Util::Name p_Name);
+
+      public:
+        explicit ComputePipeline(const ComputePipeline &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -57,7 +62,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static CommandBuffer *living_instances()
+        static ComputePipeline *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -66,15 +71,14 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        Low::Renderer::Backend::CommandBuffer &get_commandbuffer() const;
-        void set_commandbuffer(Low::Renderer::Backend::CommandBuffer &p_Value);
+        Low::Renderer::Backend::Pipeline &get_pipeline() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        void start();
-        void stop();
-        void dispatch_compute(Math::UVector3 &p_Dimensions);
+        static ComputePipeline make(Util::Name p_Name,
+                                    ComputePipelineCreateParams &p_Params);
+        void bind(CommandBuffer p_CommandBuffer);
       };
     } // namespace Interface
   }   // namespace Renderer
