@@ -28,9 +28,11 @@ namespace Low {
     namespace Vulkan {
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
                                 Backend::RenderpassCreateParams &p_Params);
+      void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass);
       void
       vk_imageresource_create(Backend::ImageResource &p_Image,
                               Backend::ImageResourceCreateParams &p_Params);
+      void vk_imageresource_cleanup(Backend::ImageResource &p_Image);
 
       namespace Helper {
 
@@ -940,6 +942,35 @@ namespace Low {
       {
         Context l_Context = p_Context.vk;
 
+        for (uint32_t i = 0u; i < p_Context.framesInFlight; ++i) {
+          vkDestroySemaphore(l_Context.m_Device,
+                             l_Context.m_ImageAvailableSemaphores[i], nullptr);
+          vkDestroySemaphore(l_Context.m_Device,
+                             l_Context.m_RenderFinishedSemaphores[i], nullptr);
+          vkDestroyFence(l_Context.m_Device, l_Context.m_InFlightFences[i],
+                         nullptr);
+        }
+
+        Util::Memory::main_allocator()->deallocate(
+            l_Context.m_ImageAvailableSemaphores);
+        Util::Memory::main_allocator()->deallocate(
+            l_Context.m_RenderFinishedSemaphores);
+        Util::Memory::main_allocator()->deallocate(l_Context.m_InFlightFences);
+
+        for (uint32_t i = 0u; i < p_Context.imageCount; ++i) {
+          vk_renderpass_cleanup(p_Context.renderpasses[i]);
+          vk_imageresource_cleanup(p_Context.vk.m_SwapchainRenderTargets[i]);
+        }
+
+        Util::Memory::main_allocator()->deallocate(
+            p_Context.vk.m_SwapchainRenderTargets);
+        Util::Memory::main_allocator()->deallocate(p_Context.renderpasses);
+
+        vkDestroySwapchainKHR(l_Context.m_Device, l_Context.m_Swapchain,
+                              nullptr);
+
+        Util::Memory::main_allocator()->deallocate(l_Context.m_CommandBuffers);
+
         {
           vkDestroyCommandPool(p_Context.vk.m_Device,
                                p_Context.vk.m_CommandPool, nullptr);
@@ -1225,6 +1256,19 @@ namespace Low {
         }
       }
 
+      void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass)
+      {
+        vkDestroyFramebuffer(p_Renderpass.context->vk.m_Device,
+                             p_Renderpass.vk.m_Framebuffer, nullptr);
+
+        vkDestroyRenderPass(p_Renderpass.context->vk.m_Device,
+                            p_Renderpass.vk.m_Renderpass, nullptr);
+
+        Util::Memory::main_allocator()->deallocate(
+            p_Renderpass.clearTargetColor);
+        Util::Memory::main_allocator()->deallocate(p_Renderpass.renderTargets);
+      }
+
       void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
       {
         VkRenderPassBeginInfo l_RenderpassInfo{};
@@ -1472,6 +1516,21 @@ namespace Low {
         ImageHelper::create_2d_sampler(*p_Params.context, p_Image);
 
         p_Image.swapchainImage = false;
+      }
+
+      void vk_imageresource_cleanup(Backend::ImageResource &p_Image)
+      {
+        Context &l_Context = p_Image.context->vk;
+        ImageResource &l_Image = p_Image.vk;
+
+        vkDestroySampler(l_Context.m_Device, l_Image.m_Sampler, nullptr);
+        vkDestroyImageView(l_Context.m_Device, l_Image.m_ImageView, nullptr);
+
+        if (!p_Image.swapchainImage) {
+          // TL TODO: Switch to vma
+          vkDestroyImage(l_Context.m_Device, l_Image.m_Image, nullptr);
+          vkFreeMemory(l_Context.m_Device, l_Image.m_Memory, nullptr);
+        }
       }
 
       void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
