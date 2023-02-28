@@ -44,4 +44,5 @@ target_link_libraries(LowUtil PUBLIC
   "${CMAKE_BINARY_DIR}/LowDependencies/EASTL/build/${CMAKE_BUILD_TYPE}/EASTL.lib"
   yaml-cpp
   gli
+  tlsf
 )

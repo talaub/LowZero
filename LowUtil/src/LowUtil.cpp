@@ -4,6 +4,7 @@
 #include "LowUtilConfig.h"
 #include "LowUtilHandle.h"
 #include "LowUtilProfiler.h"
+#include "LowUtilMemory.h"
 
 namespace Low {
   namespace Util {
@@ -11,6 +12,7 @@ namespace Low {
     {
       LOW_PROFILE_START(Util init);
 
+      Memory::initialize();
       Name::initialize();
       Config::initialize();
 
@@ -22,6 +24,7 @@ namespace Low {
     void cleanup()
     {
       Name::cleanup();
+      Memory::cleanup();
 
       Profiler::evaluate_memory_allocation();
 

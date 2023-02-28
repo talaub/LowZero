@@ -16,3 +16,9 @@
 [submodule "LowDependencies/stb"]
 	path = LowDependencies/stb
 	url = https://github.com/nothings/stb.git
+[submodule "LowDependencies/VulkanMemoryAllocator"]
+	path = LowDependencies/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "LowDependencies/tlsf"]
+	path = LowDependencies/tlsf
+	url = https://github.com/mattconte/tlsf.git

@@ -4,6 +4,7 @@
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
+#include "LowUtilMemory.h"
 
 #include <stdlib.h>
 
@@ -55,7 +56,8 @@ namespace Low {
 
     void Name::initialize()
     {
-      g_StringBuffer = (char *)malloc(MAX_BUFFER_SIZE);
+      g_StringBuffer =
+          (char *)Memory::main_allocator()->allocate(MAX_BUFFER_SIZE);
       LOW_PROFILE_ALLOC(Name String Buffer);
       g_StringPointer = g_StringBuffer;
 
@@ -64,7 +66,7 @@ namespace Low {
 
     void Name::cleanup()
     {
-      free(g_StringBuffer);
+      Memory::main_allocator()->deallocate(g_StringBuffer);
       LOW_PROFILE_FREE(Name String Buffer);
 
       LOW_LOG_DEBUG("Cleaned up Name buffer");

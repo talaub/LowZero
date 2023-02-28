@@ -10,16 +10,24 @@
 
 #include <EASTL/string.h>
 
+#include "LowUtilMemory.h"
+
 namespace Low {
   namespace Util {
-    template <typename T> using List = eastl::vector<T>;
+    template <typename T>
+    using List = eastl::vector<T, Memory::MallocAllocatorProxy<T>>;
 
     template <typename T, int S> using Array = eastl::array<T, S>;
 
-    template <typename K, typename V> using Map = eastl::map<K, V>;
-    template <typename K, typename V> using MultiMap = eastl::multimap<K, V>;
+    template <typename K, typename V>
+    using Map =
+        eastl::map<K, V, eastl::less<K>, Memory::MallocAllocatorProxy<V>>;
+    template <typename K, typename V>
+    using MultiMap =
+        eastl::multimap<K, V, eastl::less<K>, Memory::MallocAllocatorProxy<V>>;
 
-    template <typename T> using Set = eastl::set<T>;
+    template <typename T>
+    using Set = eastl::set<T, eastl::less<T>, Memory::MallocAllocatorProxy<T>>;
 
     template <typename T> using Stack = eastl::stack<T>;
     template <typename T> using Queue = eastl::queue<T>;

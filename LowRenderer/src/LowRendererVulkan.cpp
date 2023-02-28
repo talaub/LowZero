@@ -1,3 +1,8 @@
+#include "vulkan/vulkan_core.h"
+#define VMA_IMPLEMENTATION
+#define VMA_VULKAN_VERSION 1002000
+#include "../../LowDependencies/VulkanMemoryAllocator/include/vk_mem_alloc.h"
+
 #include "LowRendererVulkan.h"
 
 #include "LowUtilAssert.h"
@@ -10,8 +15,6 @@
 
 #include "LowRendererBackend.h"
 
-#include "vulkan/vulkan_core.h"
-
 #include <GLFW/glfw3.h>
 
 #include <corecrt_malloc.h>
@@ -23,7 +26,14 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
-      namespace Utils {
+      void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
+                                Backend::RenderpassCreateParams &p_Params);
+      void
+      vk_imageresource_create(Backend::ImageResource &p_Image,
+                              Backend::ImageResourceCreateParams &p_Params);
+
+      namespace Helper {
+
         struct SwapChainSupportDetails
         {
           VkSurfaceCapabilitiesKHR m_Capabilities;
@@ -122,7 +132,7 @@ namespace Low {
           return VK_PRESENT_MODE_FIFO_KHR;
         }
 
-        static Utils::QueueFamilyIndices
+        static Helper::QueueFamilyIndices
         find_queue_families(Context &p_Context, VkPhysicalDevice p_Device)
         {
           QueueFamilyIndices l_Indices;
@@ -178,6 +188,71 @@ namespace Low {
           return {};
         }
 
+        static uint8_t vkformat_to_imageformat(VkFormat p_Format)
+        {
+          switch (p_Format) {
+          case VK_FORMAT_B8G8R8A8_SRGB:
+            return Backend::ImageFormat::BGRA8_SRGB;
+          default:
+            LOW_ASSERT(false, "Unknown vk format");
+            return 0;
+          }
+        }
+
+        static VkFormat imageformat_to_vkformat(uint8_t p_Format)
+        {
+          switch (p_Format) {
+          case Backend::ImageFormat::BGRA8_SRGB:
+            return VK_FORMAT_B8G8R8A8_SRGB;
+          default:
+            LOW_ASSERT(false, "Unknown image format");
+            return VK_FORMAT_A2B10G10R10_SINT_PACK32;
+          }
+        }
+
+        static VkCommandBuffer
+        begin_single_time_commands(Backend::Context &p_Context)
+        {
+          VkCommandBufferAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+          l_AllocInfo.commandPool = p_Context.vk.m_CommandPool;
+          l_AllocInfo.commandBufferCount = 1;
+
+          VkCommandBuffer l_CommandBuffer;
+          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
+                                   &l_CommandBuffer);
+
+          VkCommandBufferBeginInfo l_BeginInfo{};
+          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+          LOW_ASSERT(vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo) ==
+                         VK_SUCCESS,
+                     "Failed to begine one time command buffer");
+
+          return l_CommandBuffer;
+        }
+
+        static void end_single_time_commands(Backend::Context &p_Context,
+                                             VkCommandBuffer p_CommandBuffer)
+        {
+          vkEndCommandBuffer(p_CommandBuffer);
+
+          VkSubmitInfo l_SubmitInfo{};
+          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+          l_SubmitInfo.commandBufferCount = 1;
+          l_SubmitInfo.pCommandBuffers = &p_CommandBuffer;
+
+          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
+                        VK_NULL_HANDLE);
+          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
+          vkDeviceWaitIdle(p_Context.vk.m_Device);
+
+          vkFreeCommandBuffers(p_Context.vk.m_Device,
+                               p_Context.vk.m_CommandPool, 1, &p_CommandBuffer);
+        }
+
         void create_buffer(Backend::Context &p_Context, VkDeviceSize p_Size,
                            VkBufferUsageFlags p_Usage,
                            VkMemoryPropertyFlags p_Properties,
@@ -211,103 +286,22 @@ namespace Low {
                              0);
         }
 
-        static void copy_buffer(Backend::Context &p_Context,
-                                Backend::CommandPool &p_CommandPool,
-                                VkBuffer p_SourceBuffer, VkBuffer p_DestBuffer,
-                                VkDeviceSize p_Size,
-                                VkDeviceSize p_SourceOffset = 0u,
-                                VkDeviceSize p_DestOffset = 0u)
+        VkFormat vkformat_get_depth(Backend::Context &p_Context)
         {
-          VkCommandBufferAllocateInfo l_AllocInfo{};
-          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-          l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
-          l_AllocInfo.commandBufferCount = 1;
-
-          VkCommandBuffer l_CommandBuffer;
-          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
-                                   &l_CommandBuffer);
-
-          VkCommandBufferBeginInfo l_BeginInfo{};
-          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-          vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo);
-
-          VkBufferCopy l_CopyRegion{};
-          l_CopyRegion.srcOffset = p_SourceOffset;
-          l_CopyRegion.dstOffset = p_DestOffset;
-          l_CopyRegion.size = p_Size;
-          vkCmdCopyBuffer(l_CommandBuffer, p_SourceBuffer, p_DestBuffer, 1,
-                          &l_CopyRegion);
-
-          vkEndCommandBuffer(l_CommandBuffer);
-
-          VkSubmitInfo l_SubmitInfo{};
-          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-          l_SubmitInfo.commandBufferCount = 1;
-          l_SubmitInfo.pCommandBuffers = &l_CommandBuffer;
-
-          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
-                        VK_NULL_HANDLE);
-          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
-
-          vkFreeCommandBuffers(p_Context.vk.m_Device, p_CommandPool.vk.m_Handle,
-                               1, &l_CommandBuffer);
+          return Helper::find_supported_format(
+              p_Context.vk,
+              {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+               VK_FORMAT_D24_UNORM_S8_UINT},
+              VK_IMAGE_TILING_OPTIMAL,
+              VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
         }
+      } // namespace Helper
 
-        static VkCommandBuffer
-        begin_single_time_commands(Backend::Context &p_Context,
-                                   Backend::CommandPool &p_CommandPool)
-        {
-          VkCommandBufferAllocateInfo l_AllocInfo{};
-          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-          l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
-          l_AllocInfo.commandBufferCount = 1;
-
-          VkCommandBuffer l_CommandBuffer;
-          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
-                                   &l_CommandBuffer);
-
-          VkCommandBufferBeginInfo l_BeginInfo{};
-          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-          LOW_ASSERT(vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo) ==
-                         VK_SUCCESS,
-                     "Failed to begine one time command buffer");
-
-          return l_CommandBuffer;
-        }
-
-        static void
-        end_single_time_commands(Backend::Context &p_Context,
-                                 Backend::CommandPool &p_CommandPool,
-                                 VkCommandBuffer p_CommandBuffer)
-        {
-          vkEndCommandBuffer(p_CommandBuffer);
-
-          VkSubmitInfo l_SubmitInfo{};
-          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-          l_SubmitInfo.commandBufferCount = 1;
-          l_SubmitInfo.pCommandBuffers = &p_CommandBuffer;
-
-          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
-                        VK_NULL_HANDLE);
-          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
-          vkDeviceWaitIdle(p_Context.vk.m_Device);
-
-          vkFreeCommandBuffers(p_Context.vk.m_Device, p_CommandPool.vk.m_Handle,
-                               1, &p_CommandBuffer);
-        }
-      } // namespace Utils
-
-      namespace ContextUtils {
-        const Util::List<const char *> g_ValidationLayers = {
+      namespace ContextHelper {
+        Util::List<const char *> g_ValidationLayers = {
             "VK_LAYER_KHRONOS_validation"};
 
-        const Util::List<const char *> g_DeviceExtensions = {
+        Util::List<const char *> g_DeviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
         static bool check_validation_layer_support()
@@ -482,11 +476,17 @@ namespace Low {
                      "Failed to set up debug messenger");
         }
 
+        static VkCommandBuffer
+        get_current_commandbuffer(Backend::Context &p_Context)
+        {
+          return p_Context.vk.m_CommandBuffers[p_Context.currentFrameIndex];
+        }
+
         static void create_surface(Backend::Context &p_Context)
         {
           // TL TODO: glfw hard coded
           LOW_ASSERT(glfwCreateWindowSurface(
-                         p_Context.vk.m_Instance, p_Context.m_Window.m_Glfw,
+                         p_Context.vk.m_Instance, p_Context.window.m_Glfw,
                          nullptr, &(p_Context.vk.m_Surface)) == VK_SUCCESS,
                      "Failed to create window surface");
         }
@@ -542,16 +542,16 @@ namespace Low {
             return 0;
           }
 
-          Utils::QueueFamilyIndices l_Indices =
-              Utils::find_queue_families(p_Context, p_Device);
+          Helper::QueueFamilyIndices l_Indices =
+              Helper::find_queue_families(p_Context, p_Device);
           if (!l_Indices.is_complete())
             return 0;
 
           if (!check_device_extension_support(p_Device))
             return 0;
 
-          Utils::SwapChainSupportDetails l_SwapChainSupport =
-              Utils::query_swap_chain_support(p_Context, p_Device);
+          Helper::SwapChainSupportDetails l_SwapChainSupport =
+              Helper::query_swap_chain_support(p_Context, p_Device);
           if (l_SwapChainSupport.m_Formats.empty() ||
               l_SwapChainSupport.m_PresentModes
                   .empty()) // TODO: Refactor to increase score based on the
@@ -589,8 +589,8 @@ namespace Low {
 
         static void create_logical_device(Context &p_Context)
         {
-          Utils::QueueFamilyIndices l_Indices =
-              Utils::find_queue_families(p_Context, p_Context.m_PhysicalDevice);
+          Helper::QueueFamilyIndices l_Indices = Helper::find_queue_families(
+              p_Context, p_Context.m_PhysicalDevice);
 
           Low::Util::List<VkDeviceQueueCreateInfo> l_QueueCreateInfos;
           Low::Util::Set<uint32_t> l_UniqueQueueFamilies = {
@@ -645,48 +645,322 @@ namespace Low {
 
           LOW_LOG_DEBUG("Queues created");
         }
-      } // namespace ContextUtils
+
+        static VkExtent2D
+        choose_swap_extent(Backend::Context &p_Context,
+                           const VkSurfaceCapabilitiesKHR &p_Capabilities)
+        {
+          // If the extents are set to the max value of uint32_t then we need
+          // some custom logic to determine the actualy size
+          if (p_Capabilities.currentExtent.width != LOW_UINT32_MAX) {
+            return p_Capabilities.currentExtent;
+          }
+
+          // Query the actualy extents from glfw
+          int l_Width, l_Height;
+          glfwGetFramebufferSize(p_Context.window.m_Glfw, &l_Width, &l_Height);
+
+          VkExtent2D l_ActualExtent = {static_cast<uint32_t>(l_Width),
+                                       static_cast<uint32_t>(l_Height)};
+
+          // Clamp the extent to the min/max values of capabilities
+          l_ActualExtent.width = Math::Util::clamp(
+              l_ActualExtent.width, p_Capabilities.minImageExtent.width,
+              p_Capabilities.maxImageExtent.width);
+          l_ActualExtent.height = Math::Util::clamp(
+              l_ActualExtent.height, p_Capabilities.minImageExtent.height,
+              p_Capabilities.maxImageExtent.height);
+
+          return l_ActualExtent;
+        }
+
+        static void create_render_targets(Backend::Context &p_Context,
+                                          Low::Util::List<VkImage> &p_Images)
+        {
+          Context &l_Context = p_Context.vk;
+
+          l_Context.m_SwapchainRenderTargets =
+              (Backend::ImageResource *)Util::Memory::main_allocator()
+                  ->allocate(sizeof(Backend::ImageResource) * p_Images.size());
+
+          Math::UVector2 l_Dimensions = p_Context.dimensions;
+
+          Backend::ImageResourceCreateParams l_Params;
+          l_Params.context = &p_Context;
+          l_Params.depth = false;
+          l_Params.writable = false;
+          l_Params.dimensions.x = l_Dimensions.x;
+          l_Params.dimensions.y = l_Dimensions.y;
+          l_Params.imageDataSize = 0;
+          l_Params.imageData = nullptr;
+          l_Params.format = p_Context.imageFormat;
+          l_Params.createImage = false;
+
+          for (size_t i_Iter = 0; i_Iter < p_Images.size(); i_Iter++) {
+            l_Context.m_SwapchainRenderTargets[i_Iter].vk.m_Image =
+                p_Images[i_Iter];
+
+            vk_imageresource_create(l_Context.m_SwapchainRenderTargets[i_Iter],
+                                    l_Params);
+
+            l_Context.m_SwapchainRenderTargets[i_Iter].swapchainImage = true;
+          }
+        }
+
+        static void create_sync_objects(Backend::Context &p_Context)
+
+        {
+          p_Context.vk.m_ImageAvailableSemaphores =
+              (VkSemaphore *)Util::Memory::main_allocator()->allocate(
+                  p_Context.framesInFlight * sizeof(VkSemaphore));
+          p_Context.vk.m_RenderFinishedSemaphores =
+              (VkSemaphore *)Util::Memory::main_allocator()->allocate(
+                  p_Context.framesInFlight * sizeof(VkSemaphore));
+          p_Context.vk.m_InFlightFences =
+              (VkFence *)Util::Memory::main_allocator()->allocate(
+                  p_Context.framesInFlight * sizeof(VkFence));
+
+          VkSemaphoreCreateInfo l_SemaphoreInfo{};
+          l_SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+          VkFenceCreateInfo l_FenceInfo{};
+          l_FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+          l_FenceInfo.flags =
+              VK_FENCE_CREATE_SIGNALED_BIT; // Set to resolved immidiately to
+                                            // not get stuck on frame one
+
+          for (size_t i_Iter = 0; i_Iter < p_Context.framesInFlight; i_Iter++) {
+            LOW_ASSERT(
+                vkCreateSemaphore(
+                    p_Context.vk.m_Device, &l_SemaphoreInfo, nullptr,
+                    &(p_Context.vk.m_ImageAvailableSemaphores[i_Iter])) ==
+                    VK_SUCCESS,
+                "Failed to create semaphore");
+            LOW_ASSERT(
+                vkCreateSemaphore(
+                    p_Context.vk.m_Device, &l_SemaphoreInfo, nullptr,
+                    &(p_Context.vk.m_RenderFinishedSemaphores[i_Iter])) ==
+                    VK_SUCCESS,
+                "Failed to create semaphore");
+            LOW_ASSERT(
+                vkCreateFence(p_Context.vk.m_Device, &l_FenceInfo, nullptr,
+                              &(p_Context.vk.m_InFlightFences[i_Iter])) ==
+                    VK_SUCCESS,
+                "Failed to create fence");
+          }
+        }
+
+        static void create_command_buffers(Backend::Context &p_Context)
+        {
+          p_Context.vk.m_CommandBuffers =
+              (VkCommandBuffer *)Util::Memory::main_allocator()->allocate(
+                  p_Context.framesInFlight * sizeof(VkCommandBuffer));
+
+          VkCommandBufferAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+          l_AllocInfo.commandPool = p_Context.vk.m_CommandPool;
+          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+          l_AllocInfo.commandBufferCount = 1;
+
+          for (uint8_t i = 0; i < p_Context.framesInFlight; ++i) {
+            LOW_ASSERT(vkAllocateCommandBuffers(
+                           p_Context.vk.m_Device, &l_AllocInfo,
+                           &(p_Context.vk.m_CommandBuffers[i])) == VK_SUCCESS,
+                       "Failed to allocate command buffer");
+          }
+        }
+
+        Util::List<Math::Color> g_SwapchainClearColors = {
+            {0.0f, 1.0f, 0.0f, 1.0f}};
+      } // namespace ContextHelper
 
       void vk_context_create(Backend::Context &p_Context,
                              Backend::ContextCreateParams &p_Params)
       {
-        // Check for validation layer support
-        if (p_Params.validation_enabled) {
-          LOW_ASSERT(ContextUtils::check_validation_layer_support(),
-                     "Validation layers requested, but not available");
-          LOW_LOG_DEBUG("Validation layers enabled");
+        p_Context.framesInFlight = p_Params.framesInFlight;
+        {
+          // Check for validation layer support
+          if (p_Params.validation_enabled) {
+            LOW_ASSERT(ContextHelper::check_validation_layer_support(),
+                       "Validation layers requested, but not available");
+            LOW_LOG_DEBUG("Validation layers enabled");
+          }
+
+          p_Context.vk.m_ValidationEnabled = p_Params.validation_enabled;
+          p_Context.window = *(p_Params.window);
+
+          ContextHelper::create_instance(p_Context.vk);
+
+          ContextHelper::setup_debug_messenger(p_Context.vk);
+
+          ContextHelper::create_surface(p_Context);
+
+          ContextHelper::select_physical_device(p_Context.vk);
+
+          ContextHelper::create_logical_device(p_Context.vk);
+        }
+        Helper::QueueFamilyIndices l_QueueFamilyIndices =
+            Helper::find_queue_families(p_Context.vk,
+                                        p_Context.vk.m_PhysicalDevice);
+
+        VmaAllocatorCreateInfo l_AllocCreateInfo = {};
+        l_AllocCreateInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+        l_AllocCreateInfo.physicalDevice = p_Context.vk.m_PhysicalDevice;
+        l_AllocCreateInfo.device = p_Context.vk.m_Device;
+        l_AllocCreateInfo.instance = p_Context.vk.m_Instance;
+
+        vmaCreateAllocator(&l_AllocCreateInfo, &(p_Context.vk.m_Alloc));
+
+        // Create command pool
+        {
+          VkCommandPoolCreateInfo l_PoolInfo{};
+          l_PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+          l_PoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+          l_PoolInfo.queueFamilyIndex =
+              l_QueueFamilyIndices.m_GraphicsFamily.value();
+
+          LOW_ASSERT(
+              vkCreateCommandPool(p_Context.vk.m_Device, &l_PoolInfo, nullptr,
+                                  &(p_Context.vk.m_CommandPool)) == VK_SUCCESS,
+              "Failed to create command pool");
         }
 
-        p_Context.vk.m_ValidationEnabled = p_Params.validation_enabled;
-        p_Context.m_Window = *(p_Params.window);
+        {
+          Context &l_Context = p_Context.vk;
 
-        ContextUtils::create_instance(p_Context.vk);
+          p_Context.currentFrameIndex = 0;
 
-        ContextUtils::setup_debug_messenger(p_Context.vk);
+          Helper::SwapChainSupportDetails l_SwapChainSupportDetails =
+              Helper::query_swap_chain_support(l_Context,
+                                               l_Context.m_PhysicalDevice);
 
-        ContextUtils::create_surface(p_Context);
+          VkSurfaceFormatKHR l_SurfaceFormat =
+              Helper::choose_swap_surface_format(
+                  l_SwapChainSupportDetails.m_Formats);
+          VkPresentModeKHR l_PresentMode = Helper::choose_swap_present_mode(
+              l_SwapChainSupportDetails.m_PresentModes);
+          VkExtent2D l_Extent = ContextHelper::choose_swap_extent(
+              p_Context, l_SwapChainSupportDetails.m_Capabilities);
 
-        ContextUtils::select_physical_device(p_Context.vk);
+          uint32_t l_ImageCount =
+              l_SwapChainSupportDetails.m_Capabilities.minImageCount + 1;
 
-        ContextUtils::create_logical_device(p_Context.vk);
+          p_Context.imageCount = l_ImageCount;
 
-        LOW_LOG_DEBUG("Vulkan context initialized");
+          // Clamp the imagecount to not exceed the maximum
+          // A set maximum of 0 means that there is no maximum
+          if (l_SwapChainSupportDetails.m_Capabilities.maxImageCount > 0 &&
+              l_ImageCount >
+                  l_SwapChainSupportDetails.m_Capabilities.maxImageCount) {
+            l_ImageCount =
+                l_SwapChainSupportDetails.m_Capabilities.maxImageCount;
+          }
+
+          VkSwapchainCreateInfoKHR l_CreateInfo{};
+          l_CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+          l_CreateInfo.surface = l_Context.m_Surface;
+          l_CreateInfo.minImageCount = l_ImageCount;
+          l_CreateInfo.imageFormat = l_SurfaceFormat.format;
+          l_CreateInfo.imageColorSpace = l_SurfaceFormat.colorSpace;
+          l_CreateInfo.imageExtent = l_Extent;
+          l_CreateInfo.imageArrayLayers = 1;
+          l_CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+          Helper::QueueFamilyIndices l_Indices = Helper::find_queue_families(
+              l_Context, l_Context.m_PhysicalDevice);
+          uint32_t l_QueueFamilyIndices[] = {l_Indices.m_GraphicsFamily.value(),
+                                             l_Indices.m_PresentFamily.value()};
+
+          if (l_Indices.m_GraphicsFamily != l_Indices.m_PresentFamily) {
+            l_CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+            l_CreateInfo.queueFamilyIndexCount = 2;
+            l_CreateInfo.pQueueFamilyIndices = l_QueueFamilyIndices;
+          } else {
+            l_CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            l_CreateInfo.queueFamilyIndexCount = 0;
+            l_CreateInfo.pQueueFamilyIndices = nullptr;
+          }
+
+          l_CreateInfo.preTransform =
+              l_SwapChainSupportDetails.m_Capabilities.currentTransform;
+          l_CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+          l_CreateInfo.presentMode = l_PresentMode;
+          l_CreateInfo.clipped = VK_TRUE;
+          l_CreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+          // Create swap chain
+          LOW_ASSERT(vkCreateSwapchainKHR(l_Context.m_Device, &l_CreateInfo,
+                                          nullptr, &(l_Context.m_Swapchain)) ==
+                         VK_SUCCESS,
+                     "Could not create swap chain");
+          LOW_LOG_DEBUG("Swapchain created");
+
+          // Retrieve the vkimages of the swapchain
+          vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
+                                  &l_ImageCount, nullptr);
+
+          Low::Util::List<VkImage> l_Images;
+          l_Images.resize(l_ImageCount);
+          vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
+                                  &l_ImageCount, l_Images.data());
+
+          p_Context.imageFormat =
+              Helper::vkformat_to_imageformat(l_SurfaceFormat.format);
+
+          // Store some swapchain info
+          p_Context.dimensions =
+              Math::UVector2(l_Extent.width, l_Extent.height);
+
+          ContextHelper::create_render_targets(p_Context, l_Images);
+
+          p_Context.renderpasses =
+              (Backend::Renderpass *)Util::Memory::main_allocator()->allocate(
+                  sizeof(Backend::Renderpass) * p_Context.imageCount);
+
+          for (uint8_t i = 0; i < p_Context.imageCount; ++i) {
+            Backend::RenderpassCreateParams l_RenderPassParams;
+            l_RenderPassParams.context = &p_Context;
+            l_RenderPassParams.renderTargetCount = 1;
+            l_RenderPassParams.renderTargets =
+                &(p_Context.vk.m_SwapchainRenderTargets[i]);
+            l_RenderPassParams.clearTargetColor =
+                ContextHelper::g_SwapchainClearColors.data();
+            l_RenderPassParams.useDepth = false;
+            l_RenderPassParams.dimensions = p_Context.dimensions;
+
+            vk_renderpass_create(p_Context.renderpasses[i], l_RenderPassParams);
+          }
+
+          ContextHelper::create_sync_objects(p_Context);
+          ContextHelper::create_command_buffers(p_Context);
+        }
       }
 
       void vk_context_cleanup(Backend::Context &p_Context)
       {
         Context l_Context = p_Context.vk;
 
-        vkDestroyDevice(l_Context.m_Device, nullptr);
-
-        vkDestroySurfaceKHR(l_Context.m_Instance, l_Context.m_Surface, nullptr);
-
-        if (l_Context.m_ValidationEnabled) {
-          ContextUtils::destroy_debug_utils_messenger_ext(
-              l_Context.m_Instance, l_Context.m_DebugMessenger, nullptr);
+        {
+          vkDestroyCommandPool(p_Context.vk.m_Device,
+                               p_Context.vk.m_CommandPool, nullptr);
         }
 
-        vkDestroyInstance(l_Context.m_Instance, nullptr);
+        vmaDestroyAllocator(p_Context.vk.m_Alloc);
+
+        // Clean devices and instance
+        {
+          vkDestroyDevice(l_Context.m_Device, nullptr);
+
+          vkDestroySurfaceKHR(l_Context.m_Instance, l_Context.m_Surface,
+                              nullptr);
+
+          if (l_Context.m_ValidationEnabled) {
+            ContextHelper::destroy_debug_utils_messenger_ext(
+                l_Context.m_Instance, l_Context.m_DebugMessenger, nullptr);
+          }
+
+          vkDestroyInstance(l_Context.m_Instance, nullptr);
+        }
       }
 
       void vk_context_wait_idle(Backend::Context &p_Context)
@@ -694,92 +968,130 @@ namespace Low {
         vkDeviceWaitIdle(p_Context.vk.m_Device);
       }
 
-      void vk_framebuffer_create(Backend::Framebuffer &p_Framebuffer,
-                                 Backend::FramebufferCreateParams &p_Params)
+      uint8_t vk_frame_prepare(Backend::Context &p_Context)
       {
-        p_Framebuffer.context = p_Params.context;
+        vkWaitForFences(
+            p_Context.vk.m_Device, 1,
+            &p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex],
+            VK_TRUE, UINT64_MAX);
 
-        Util::List<VkImageView> l_Attachments;
-        l_Attachments.resize(p_Params.renderTargetCount);
+        uint32_t l_CurrentImage;
 
-        for (int i_Iter = 0; i_Iter < p_Params.renderTargetCount; i_Iter++) {
-          l_Attachments[i_Iter] = p_Params.renderTargets[i_Iter].vk.m_ImageView;
+        VkResult l_Result = vkAcquireNextImageKHR(
+            p_Context.vk.m_Device, p_Context.vk.m_Swapchain, UINT64_MAX,
+            p_Context.vk
+                .m_ImageAvailableSemaphores[p_Context.currentFrameIndex],
+            VK_NULL_HANDLE, &l_CurrentImage);
+
+        p_Context.currentImageIndex = l_CurrentImage;
+
+        // Handle window resize
+        if (l_Result == VK_ERROR_OUT_OF_DATE_KHR) {
+          return Backend::ContextState::OUT_OF_DATE;
         }
 
-        VkFramebufferCreateInfo l_FramebufferInfo{};
-        l_FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        l_FramebufferInfo.renderPass = p_Params.renderpass->vk.m_Handle;
-        l_FramebufferInfo.attachmentCount =
-            static_cast<uint32_t>(l_Attachments.size());
-        l_FramebufferInfo.pAttachments = l_Attachments.data();
-        l_FramebufferInfo.width = p_Params.dimensions.x;
-        l_FramebufferInfo.height = p_Params.dimensions.y;
-        l_FramebufferInfo.layers = 1;
+        LOW_ASSERT(l_Result == VK_SUCCESS || l_Result == VK_SUBOPTIMAL_KHR,
+                   "Failed to acquire swapchain image");
 
-        LOW_ASSERT(vkCreateFramebuffer(
-                       p_Params.context->vk.m_Device, &l_FramebufferInfo,
-                       nullptr, &(p_Framebuffer.vk.m_Handle)) == VK_SUCCESS,
-                   "Failed to create framebuffer");
+        vkResetFences(
+            p_Context.vk.m_Device, 1,
+            &p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex]);
 
-        p_Framebuffer.vk.m_Dimensions.x = p_Params.dimensions.x;
-        p_Framebuffer.vk.m_Dimensions.y = p_Params.dimensions.y;
+        VkCommandBufferBeginInfo l_BeginInfo{};
+        l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        l_BeginInfo.flags = 0;
+        l_BeginInfo.pInheritanceInfo = nullptr;
 
-        LOW_LOG_DEBUG("Framebuffer created");
+        VkCommandBuffer l_CommandBuffer =
+            ContextHelper::get_current_commandbuffer(p_Context);
+        LOW_ASSERT(vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo) ==
+                       VK_SUCCESS,
+                   "Failed to begin recording command buffer");
+
+        return Backend::ContextState::SUCCESS;
       }
 
-      void vk_framebuffer_get_dimensions(Backend::Framebuffer &p_Framebuffer,
-                                         Math::UVector2 &p_Dimensions)
+      void vk_frame_render(Backend::Context &p_Context)
       {
-        p_Dimensions.x = p_Framebuffer.vk.m_Dimensions.x;
-        p_Dimensions.y = p_Framebuffer.vk.m_Dimensions.y;
-      }
+        VkCommandBuffer l_CommandBuffer =
+            ContextHelper::get_current_commandbuffer(p_Context);
 
-      void vk_framebuffer_cleanup(Backend::Framebuffer &p_Framebuffer)
-      {
-        vkDestroyFramebuffer(p_Framebuffer.context->vk.m_Device,
-                             p_Framebuffer.vk.m_Handle, nullptr);
-      }
+        LOW_ASSERT(vkEndCommandBuffer(l_CommandBuffer) == VK_SUCCESS,
+                   "Failed to stop recording the command buffer");
 
-      void vk_commandpool_create(Backend::CommandPool &p_CommandPool,
-                                 Backend::CommandPoolCreateParams &p_Params)
-      {
-        p_CommandPool.context = p_Params.context;
+        VkSubmitInfo l_SubmitInfo{};
+        l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        Utils::QueueFamilyIndices l_QueueFamilyIndices =
-            Utils::find_queue_families(p_Params.context->vk,
-                                       p_Params.context->vk.m_PhysicalDevice);
+        VkSemaphore l_WaitSemaphores[] = {
+            p_Context.vk
+                .m_ImageAvailableSemaphores[p_Context.currentFrameIndex]};
+        VkPipelineStageFlags l_WaitStages[] = {
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        l_SubmitInfo.waitSemaphoreCount = 1;
+        l_SubmitInfo.pWaitSemaphores = l_WaitSemaphores;
+        l_SubmitInfo.pWaitDstStageMask = l_WaitStages;
+        l_SubmitInfo.commandBufferCount = 1;
+        l_SubmitInfo.pCommandBuffers = &l_CommandBuffer;
 
-        VkCommandPoolCreateInfo l_PoolInfo{};
-        l_PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        l_PoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        l_PoolInfo.queueFamilyIndex =
-            l_QueueFamilyIndices.m_GraphicsFamily.value();
+        VkSemaphore l_SignalSemaphores[] = {
+            p_Context.vk
+                .m_RenderFinishedSemaphores[p_Context.currentFrameIndex]};
+        l_SubmitInfo.signalSemaphoreCount = 1;
+        l_SubmitInfo.pSignalSemaphores = l_SignalSemaphores;
 
-        LOW_ASSERT(vkCreateCommandPool(
-                       p_Params.context->vk.m_Device, &l_PoolInfo, nullptr,
-                       &(p_CommandPool.vk.m_Handle)) == VK_SUCCESS,
-                   "Failed to create command pool");
+        VkResult l_SubmitResult = vkQueueSubmit(
+            p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
+            p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex]);
 
-        LOW_LOG_DEBUG("Command pool created");
-      }
+        LOW_ASSERT(l_SubmitResult == VK_SUCCESS,
+                   "Failed to submit draw command buffer");
 
-      void vk_commandpool_cleanup(Backend::CommandPool &p_CommandPool)
-      {
-        vkDestroyCommandPool(p_CommandPool.context->vk.m_Device,
-                             p_CommandPool.vk.m_Handle, nullptr);
+        VkPresentInfoKHR l_PresentInfo{};
+        l_PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+        l_PresentInfo.waitSemaphoreCount = 1;
+        l_PresentInfo.pWaitSemaphores = l_SignalSemaphores;
+
+        VkSwapchainKHR l_Swapchains[] = {p_Context.vk.m_Swapchain};
+        l_PresentInfo.swapchainCount = 1;
+        l_PresentInfo.pSwapchains = l_Swapchains;
+        uint32_t l_ImageIndex = p_Context.currentImageIndex;
+        l_PresentInfo.pImageIndices = &l_ImageIndex;
+        l_PresentInfo.pResults = nullptr;
+
+        VkResult l_Result =
+            vkQueuePresentKHR(p_Context.vk.m_PresentQueue, &l_PresentInfo);
+
+        // Handle window resize
+        if (l_Result == VK_ERROR_OUT_OF_DATE_KHR ||
+            l_Result == VK_SUBOPTIMAL_KHR || /*g_FramebufferResized*/ false) {
+          // g_FramebufferResized = false;
+          // recreate_swapchain();
+          // TODO: Handle reconfigure renderer
+        } else {
+          LOW_ASSERT(l_Result == VK_SUCCESS,
+                     "Failed to present swapchain image");
+        }
+
+        p_Context.currentFrameIndex =
+            (p_Context.currentFrameIndex + 1) % p_Context.framesInFlight;
       }
 
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
                                 Backend::RenderpassCreateParams &p_Params)
       {
         p_Renderpass.context = p_Params.context;
-        p_Renderpass.clearDepth = p_Params.clearDepth;
-        p_Renderpass.formatCount = p_Params.formatCount;
+        p_Renderpass.dimensions = p_Params.dimensions;
+        p_Renderpass.clearDepthColor = p_Params.clearDepthColor;
+        p_Renderpass.renderTargetCount = p_Params.renderTargetCount;
         p_Renderpass.useDepth = p_Params.useDepth;
-        p_Renderpass.clearTarget =
-            (bool *)calloc(p_Params.formatCount, sizeof(bool));
+        p_Renderpass.renderTargets =
+            (Backend::ImageResource *)Util::Memory::main_allocator()->allocate(
+                p_Params.renderTargetCount * sizeof(Backend::ImageResource));
 
-        LOW_PROFILE_ALLOC(Vulkan Renderpass Clear Targets);
+        p_Renderpass.clearTargetColor =
+            (Math::Color *)Util::Memory::main_allocator()->allocate(
+                p_Params.renderTargetCount * sizeof(Math::Color));
 
         Low::Util::List<VkAttachmentDescription> l_Attachments;
         Low::Util::List<VkAttachmentReference> l_ColorAttachmentRefs;
@@ -790,15 +1102,15 @@ namespace Low {
         VkSubpassDescription l_Subpass{};
         l_Subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
-        for (uint32_t i = 0u; i < p_Params.formatCount; ++i) {
-          ImageFormat &i_ImageFormat = p_Params.formats[i].vk;
-
-          p_Renderpass.clearTarget[i] = p_Params.clearTarget[i];
+        for (uint32_t i = 0u; i < p_Params.renderTargetCount; ++i) {
+          p_Renderpass.clearTargetColor[i] = p_Params.clearTargetColor[i];
+          p_Renderpass.renderTargets[i] = p_Params.renderTargets[i];
 
           VkAttachmentDescription l_ColorAttachment{};
-          l_ColorAttachment.format = i_ImageFormat.m_Handle;
+          l_ColorAttachment.format = Helper::imageformat_to_vkformat(
+              p_Renderpass.renderTargets[i].format);
           l_ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-          l_ColorAttachment.loadOp = p_Params.clearTarget[i]
+          l_ColorAttachment.loadOp = p_Params.clearTargetColor[i].a > 0.0f
                                          ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                          : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
           l_ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -818,11 +1130,10 @@ namespace Low {
         }
 
         if (p_Params.useDepth) {
-          Backend::ImageFormat l_DepthFormat;
-          Backend::imageformat_get_depth(*p_Params.context, l_DepthFormat);
-          l_DepthAttachment.format = l_DepthFormat.vk.m_Handle;
+          l_DepthAttachment.format =
+              Helper::vkformat_get_depth(*p_Params.context);
           l_DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-          l_DepthAttachment.loadOp = p_Params.clearDepth
+          l_DepthAttachment.loadOp = p_Params.clearDepthColor.g > 0.0f
                                          ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                          : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
           l_DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -832,7 +1143,7 @@ namespace Low {
           l_DepthAttachment.finalLayout =
               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-          l_DepthAttachmentRef.attachment = p_Params.formatCount;
+          l_DepthAttachmentRef.attachment = p_Params.renderTargetCount;
           l_DepthAttachmentRef.layout =
               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -884,61 +1195,73 @@ namespace Low {
 
         LOW_ASSERT(vkCreateRenderPass(
                        p_Params.context->vk.m_Device, &l_RenderpassInfo,
-                       nullptr, &(p_Renderpass.vk.m_Handle)) == VK_SUCCESS,
+                       nullptr, &(p_Renderpass.vk.m_Renderpass)) == VK_SUCCESS,
                    "Failed to create render pass");
 
-        LOW_LOG_DEBUG("Renderpass created");
+        {
+          Util::List<VkImageView> l_Attachments;
+          l_Attachments.resize(p_Params.renderTargetCount);
+
+          for (int i_Iter = 0; i_Iter < p_Params.renderTargetCount; i_Iter++) {
+            l_Attachments[i_Iter] =
+                p_Params.renderTargets[i_Iter].vk.m_ImageView;
+          }
+
+          VkFramebufferCreateInfo l_FramebufferInfo{};
+          l_FramebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+          l_FramebufferInfo.renderPass = p_Renderpass.vk.m_Renderpass;
+          l_FramebufferInfo.attachmentCount =
+              static_cast<uint32_t>(l_Attachments.size());
+          l_FramebufferInfo.pAttachments = l_Attachments.data();
+          l_FramebufferInfo.width = p_Params.dimensions.x;
+          l_FramebufferInfo.height = p_Params.dimensions.y;
+          l_FramebufferInfo.layers = 1;
+
+          LOW_ASSERT(vkCreateFramebuffer(p_Params.context->vk.m_Device,
+                                         &l_FramebufferInfo, nullptr,
+                                         &(p_Renderpass.vk.m_Framebuffer)) ==
+                         VK_SUCCESS,
+                     "Failed to create framebuffer");
+        }
       }
 
-      void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass)
-      {
-        vkDestroyRenderPass(p_Renderpass.context->vk.m_Device,
-                            p_Renderpass.vk.m_Handle, nullptr);
-
-        free(p_Renderpass.clearTarget);
-        LOW_PROFILE_FREE(Vulkan Renderpass Clear Targets);
-      }
-
-      void vk_renderpass_start(Backend::Renderpass &p_Renderpass,
-                               Backend::RenderpassStartParams &p_Params)
+      void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
       {
         VkRenderPassBeginInfo l_RenderpassInfo{};
         l_RenderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        l_RenderpassInfo.renderPass = p_Renderpass.vk.m_Handle;
-        l_RenderpassInfo.framebuffer = p_Params.framebuffer->vk.m_Handle;
+        l_RenderpassInfo.renderPass = p_Renderpass.vk.m_Renderpass;
+        l_RenderpassInfo.framebuffer = p_Renderpass.vk.m_Framebuffer;
         l_RenderpassInfo.renderArea.offset = {0, 0};
 
-        Math::UVector2 l_Dimensions;
-        Backend::framebuffer_get_dimensions(*p_Params.framebuffer,
-                                            l_Dimensions);
-
-        VkExtent2D l_ActualExtent = {static_cast<uint32_t>(l_Dimensions.x),
-                                     static_cast<uint32_t>(l_Dimensions.y)};
+        VkExtent2D l_ActualExtent = {
+            static_cast<uint32_t>(p_Renderpass.dimensions.x),
+            static_cast<uint32_t>(p_Renderpass.dimensions.y)};
 
         l_RenderpassInfo.renderArea.extent = l_ActualExtent;
 
         Low::Util::List<VkClearValue> l_ClearValues;
 
-        for (uint32_t i = 0u; i < p_Renderpass.formatCount; ++i) {
-          VkClearValue l_ClearColor = {
-              {{p_Params.clearColorValues[i].r, p_Params.clearColorValues[i].g,
-                p_Params.clearColorValues[i].b,
-                p_Params.clearColorValues[i].a}}};
+        for (uint32_t i = 0u; i < p_Renderpass.renderTargetCount; ++i) {
+          VkClearValue l_ClearColor = {{{p_Renderpass.clearTargetColor[i].r,
+                                         p_Renderpass.clearTargetColor[i].g,
+                                         p_Renderpass.clearTargetColor[i].b,
+                                         p_Renderpass.clearTargetColor[i].a}}};
           l_ClearValues.push_back(l_ClearColor);
         }
-        if (p_Renderpass.clearDepth) {
+        if (p_Renderpass.clearDepthColor.y > 0.0f) {
           l_ClearValues.push_back(
-              {p_Params.clearDepthValue.r,
-               p_Params.clearDepthValue
-                   .y}); // TL TODO: Passed value currently ignored
+              {p_Renderpass.clearDepthColor.r, p_Renderpass.clearDepthColor.y});
         }
 
         l_RenderpassInfo.clearValueCount =
             static_cast<uint32_t>(l_ClearValues.size());
         l_RenderpassInfo.pClearValues = l_ClearValues.data();
 
-        vkCmdBeginRenderPass(p_Params.commandBuffer->vk.m_Handle,
-                             &l_RenderpassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        VkCommandBuffer l_CommandBuffer =
+            ContextHelper::get_current_commandbuffer(*p_Renderpass.context);
+
+        vkCmdBeginRenderPass(l_CommandBuffer, &l_RenderpassInfo,
+                             VK_SUBPASS_CONTENTS_INLINE);
 
         VkViewport l_Viewport{};
         l_Viewport.x = 0.f;
@@ -947,557 +1270,31 @@ namespace Low {
         l_Viewport.height = static_cast<float>(l_ActualExtent.height);
         l_Viewport.minDepth = 0.f;
         l_Viewport.maxDepth = 1.f;
-        vkCmdSetViewport(p_Params.commandBuffer->vk.m_Handle, 0, 1,
-                         &l_Viewport);
+        vkCmdSetViewport(l_CommandBuffer, 0, 1, &l_Viewport);
 
         VkRect2D l_Scissor{};
         l_Scissor.offset = {0, 0};
         l_Scissor.extent = l_ActualExtent;
-        vkCmdSetScissor(p_Params.commandBuffer->vk.m_Handle, 0, 1, &l_Scissor);
+        vkCmdSetScissor(l_CommandBuffer, 0, 1, &l_Scissor);
       }
 
-      void vk_renderpass_stop(Backend::Renderpass &p_Renderpass,
-                              Backend::RenderpassStopParams &p_Params)
+      void vk_renderpass_end(Backend::Renderpass &p_Renderpass)
       {
-        vkCmdEndRenderPass(p_Params.commandBuffer->vk.m_Handle);
+        VkCommandBuffer l_CommandBuffer =
+            ContextHelper::get_current_commandbuffer(*p_Renderpass.context);
+        vkCmdEndRenderPass(l_CommandBuffer);
       }
 
-      void vk_imageformat_get_depth(Backend::Context &p_Context,
-                                    Backend::ImageFormat &p_Format)
-      {
-        p_Format.vk.m_Handle = Utils::find_supported_format(
-            p_Context.vk,
-            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
-             VK_FORMAT_D24_UNORM_S8_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-      }
-
-      void vk_imageformat_get_writable_color(Backend::Context &p_Context,
-                                             Backend::ImageFormat &p_Format,
-                                             uint8_t p_Channels)
-      {
-        if (p_Channels == 4) {
-          p_Format.vk.m_Handle = Utils::find_supported_format(
-              p_Context.vk, {VK_FORMAT_R32G32B32A32_SFLOAT},
-              VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT);
-        } else {
-          LOW_ASSERT(false, "Unsupported channel count");
-        }
-      }
-
-      void vk_imageformat_get_texture(Backend::Context &p_Context,
-                                      Backend::ImageFormat &p_Format)
-      {
-        p_Format.vk.m_Handle = Utils::find_supported_format(
-            p_Context.vk, {VK_FORMAT_R8G8B8A8_UNORM}, VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
-      }
-
-      namespace SwapchainUtils {
-        static void create_render_targets(Backend::Swapchain &p_Swapchain,
-                                          Low::Util::List<VkImage> &p_Images)
-        {
-          Swapchain &l_Swapchain = p_Swapchain.vk;
-
-          l_Swapchain.m_RenderTargets = (Backend::Image2D *)calloc(
-              p_Images.size(), sizeof(Backend::Image2D));
-
-          LOW_PROFILE_ALLOC(Vulkan Swapchain Render Targets);
-
-          Math::UVector2 l_Dimensions = l_Swapchain.m_Dimensions;
-
-          Backend::Image2DCreateParams l_Params;
-          l_Params.context = p_Swapchain.context;
-          l_Params.create_image = false;
-          l_Params.depth = false;
-          l_Params.writable = false;
-          l_Params.dimensions.x = l_Dimensions.x;
-          l_Params.dimensions.y = l_Dimensions.y;
-          Backend::ImageFormat l_Format;
-          l_Format.vk = p_Swapchain.vk.m_ImageFormat;
-          l_Params.format = &l_Format;
-
-          for (size_t i_Iter = 0; i_Iter < p_Images.size(); i_Iter++) {
-            l_Swapchain.m_RenderTargets[i_Iter].vk.m_Image = p_Images[i_Iter];
-
-            vk_image2d_create(l_Swapchain.m_RenderTargets[i_Iter], l_Params);
-            l_Swapchain.m_RenderTargets[i_Iter].swapchainImage = true;
-          }
-
-          LOW_LOG_DEBUG("Swapchain render targets created");
-        }
-
-        static VkExtent2D
-        choose_swap_extent(Backend::Context &p_Context,
-                           const VkSurfaceCapabilitiesKHR &p_Capabilities)
-        {
-          // If the extents are set to the max value of uint32_t then we need
-          // some custom logic to determine the actualy size
-          if (p_Capabilities.currentExtent.width != LOW_UINT32_MAX) {
-            return p_Capabilities.currentExtent;
-          }
-
-          // Query the actualy extents from glfw
-          int l_Width, l_Height;
-          glfwGetFramebufferSize(p_Context.m_Window.m_Glfw, &l_Width,
-                                 &l_Height);
-
-          VkExtent2D l_ActualExtent = {static_cast<uint32_t>(l_Width),
-                                       static_cast<uint32_t>(l_Height)};
-
-          // Clamp the extent to the min/max values of capabilities
-          l_ActualExtent.width = Math::Util::clamp(
-              l_ActualExtent.width, p_Capabilities.minImageExtent.width,
-              p_Capabilities.maxImageExtent.width);
-          l_ActualExtent.height = Math::Util::clamp(
-              l_ActualExtent.height, p_Capabilities.minImageExtent.height,
-              p_Capabilities.maxImageExtent.height);
-
-          return l_ActualExtent;
-        }
-
-        static void create_sync_objects(Context &p_Context,
-                                        Swapchain &p_Swapchain)
-
-        {
-          p_Swapchain.m_ImageAvailableSemaphores = (VkSemaphore *)calloc(
-              p_Swapchain.m_ImageCount, sizeof(VkSemaphore));
-          LOW_PROFILE_ALLOC(Vulkan Image Available Semaphore);
-          p_Swapchain.m_RenderFinishedSemaphores = (VkSemaphore *)calloc(
-              p_Swapchain.m_ImageCount, sizeof(VkSemaphore));
-          LOW_PROFILE_ALLOC(Vulkan Render Finished Semaphore);
-          p_Swapchain.m_InFlightFences =
-              (VkFence *)calloc(p_Swapchain.m_ImageCount, sizeof(VkFence));
-          LOW_PROFILE_ALLOC(Vulkan In Flight Fences);
-
-          VkSemaphoreCreateInfo l_SemaphoreInfo{};
-          l_SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-          VkFenceCreateInfo l_FenceInfo{};
-          l_FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-          l_FenceInfo.flags =
-              VK_FENCE_CREATE_SIGNALED_BIT; // Set to resolved immidiately to
-                                            // not get stuck on frame one
-
-          for (size_t i_Iter = 0; i_Iter < p_Swapchain.m_ImageCount; i_Iter++) {
-            LOW_ASSERT(vkCreateSemaphore(
-                           p_Context.m_Device, &l_SemaphoreInfo, nullptr,
-                           &(p_Swapchain.m_ImageAvailableSemaphores[i_Iter])) ==
-                           VK_SUCCESS,
-                       "Failed to create semaphore");
-            LOW_ASSERT(vkCreateSemaphore(
-                           p_Context.m_Device, &l_SemaphoreInfo, nullptr,
-                           &(p_Swapchain.m_RenderFinishedSemaphores[i_Iter])) ==
-                           VK_SUCCESS,
-                       "Failed to create semaphore");
-            LOW_ASSERT(vkCreateFence(p_Context.m_Device, &l_FenceInfo, nullptr,
-                                     &(p_Swapchain.m_InFlightFences[i_Iter])) ==
-                           VK_SUCCESS,
-                       "Failed to create fence");
-          }
-
-          LOW_LOG_DEBUG("Swapchain sync objects created");
-        }
-
-        static void create_command_buffers(Backend::Context &p_Context,
-                                           Backend::CommandPool &p_CommandPool,
-                                           Swapchain &p_Swapchain)
-        {
-          p_Swapchain.m_CommandBuffers = (Backend::CommandBuffer *)calloc(
-              p_Swapchain.m_FramesInFlight, sizeof(Backend::CommandBuffer));
-
-          LOW_PROFILE_ALLOC(Vulkan Swapchain Command Buffers);
-
-          VkCommandBufferAllocateInfo l_AllocInfo{};
-          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-          l_AllocInfo.commandPool = p_CommandPool.vk.m_Handle;
-          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-          l_AllocInfo.commandBufferCount = 1;
-
-          for (uint8_t i = 0; i < p_Swapchain.m_FramesInFlight; ++i) {
-            LOW_ASSERT(vkAllocateCommandBuffers(
-                           p_Context.vk.m_Device, &l_AllocInfo,
-                           &(p_Swapchain.m_CommandBuffers[i].vk.m_Handle)) ==
-                           VK_SUCCESS,
-                       "Failed to allocate command buffer");
-          }
-
-          LOW_LOG_DEBUG("Swapchain commandbuffers created");
-        }
-
-        static void create_framebuffers(Backend::Context &p_Context,
-                                        Backend::Swapchain &p_Swapchain)
-        {
-
-          p_Swapchain.vk.m_Framebuffers = (Backend::Framebuffer *)calloc(
-              p_Swapchain.vk.m_ImageCount, sizeof(Backend::Framebuffer));
-
-          LOW_PROFILE_ALLOC(Vulkan Swapchain Framebuffers);
-
-          Low::Math::UVector2 l_Dimensions(p_Swapchain.vk.m_Dimensions.x,
-                                           p_Swapchain.vk.m_Dimensions.y);
-
-          for (size_t i_Iter = 0; i_Iter < p_Swapchain.vk.m_ImageCount;
-               i_Iter++) {
-
-            Backend::FramebufferCreateParams i_FramebufferParams;
-            i_FramebufferParams.context = &p_Context;
-            i_FramebufferParams.renderTargets =
-                &(p_Swapchain.vk.m_RenderTargets[i_Iter]);
-            i_FramebufferParams.renderpass = &p_Swapchain.renderpass;
-            i_FramebufferParams.dimensions = l_Dimensions;
-            i_FramebufferParams.renderTargetCount = 1;
-            i_FramebufferParams.framesInFlight =
-                p_Swapchain.vk.m_FramesInFlight;
-
-            vk_framebuffer_create(p_Swapchain.vk.m_Framebuffers[i_Iter],
-                                  i_FramebufferParams);
-          }
-
-          LOW_LOG_DEBUG("Swapchain framebuffers created");
-        }
-      } // namespace SwapchainUtils
-
-      void vk_swapchain_create(Backend::Swapchain &p_Swapchain,
-                               Backend::SwapchainCreateParams &p_Params)
-      {
-        p_Swapchain.context = p_Params.context;
-        p_Swapchain.vk.m_FramesInFlight =
-            2; // TL TODO: Turn that into a parameter
-
-        Context &l_Context = p_Params.context->vk;
-        Swapchain &l_Swapchain = p_Swapchain.vk;
-
-        l_Swapchain.m_CurrentFrameIndex = 0;
-
-        Utils::SwapChainSupportDetails l_SwapChainSupportDetails =
-            Utils::query_swap_chain_support(l_Context,
-                                            l_Context.m_PhysicalDevice);
-
-        VkSurfaceFormatKHR l_SurfaceFormat = Utils::choose_swap_surface_format(
-            l_SwapChainSupportDetails.m_Formats);
-        VkPresentModeKHR l_PresentMode = Utils::choose_swap_present_mode(
-            l_SwapChainSupportDetails.m_PresentModes);
-        VkExtent2D l_Extent = SwapchainUtils::choose_swap_extent(
-            *p_Params.context, l_SwapChainSupportDetails.m_Capabilities);
-
-        uint32_t l_ImageCount =
-            l_SwapChainSupportDetails.m_Capabilities.minImageCount + 1;
-
-        l_Swapchain.m_ImageCount = l_ImageCount;
-
-        // Clamp the imagecount to not exceed the maximum
-        // A set maximum of 0 means that there is no maximum
-        if (l_SwapChainSupportDetails.m_Capabilities.maxImageCount > 0 &&
-            l_ImageCount >
-                l_SwapChainSupportDetails.m_Capabilities.maxImageCount) {
-          l_ImageCount = l_SwapChainSupportDetails.m_Capabilities.maxImageCount;
-        }
-
-        VkSwapchainCreateInfoKHR l_CreateInfo{};
-        l_CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        l_CreateInfo.surface = l_Context.m_Surface;
-        l_CreateInfo.minImageCount = l_ImageCount;
-        l_CreateInfo.imageFormat = l_SurfaceFormat.format;
-        l_CreateInfo.imageColorSpace = l_SurfaceFormat.colorSpace;
-        l_CreateInfo.imageExtent = l_Extent;
-        l_CreateInfo.imageArrayLayers = 1;
-        l_CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-        Utils::QueueFamilyIndices l_Indices =
-            Utils::find_queue_families(l_Context, l_Context.m_PhysicalDevice);
-        uint32_t l_QueueFamilyIndices[] = {l_Indices.m_GraphicsFamily.value(),
-                                           l_Indices.m_PresentFamily.value()};
-
-        if (l_Indices.m_GraphicsFamily != l_Indices.m_PresentFamily) {
-          l_CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-          l_CreateInfo.queueFamilyIndexCount = 2;
-          l_CreateInfo.pQueueFamilyIndices = l_QueueFamilyIndices;
-        } else {
-          l_CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-          l_CreateInfo.queueFamilyIndexCount = 0;
-          l_CreateInfo.pQueueFamilyIndices = nullptr;
-        }
-
-        l_CreateInfo.preTransform =
-            l_SwapChainSupportDetails.m_Capabilities.currentTransform;
-        l_CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        l_CreateInfo.presentMode = l_PresentMode;
-        l_CreateInfo.clipped = VK_TRUE;
-        l_CreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
-        // Create swap chain
-        LOW_ASSERT(vkCreateSwapchainKHR(l_Context.m_Device, &l_CreateInfo,
-                                        nullptr,
-                                        &(l_Swapchain.m_Handle)) == VK_SUCCESS,
-                   "Could not create swap chain");
-        LOW_LOG_DEBUG("Swapchain created");
-
-        // Retrieve the vkimages of the swapchain
-        vkGetSwapchainImagesKHR(l_Context.m_Device, l_Swapchain.m_Handle,
-                                &l_ImageCount, nullptr);
-
-        Low::Util::List<VkImage> l_Images;
-        l_Images.resize(l_ImageCount);
-        vkGetSwapchainImagesKHR(l_Context.m_Device, l_Swapchain.m_Handle,
-                                &l_ImageCount, l_Images.data());
-        LOW_LOG_DEBUG("Retrieved swapchain images");
-
-        // Store some swapchain info
-        l_Swapchain.m_ImageFormat.m_Handle = l_SurfaceFormat.format;
-        l_Swapchain.m_Dimensions =
-            Math::UVector2(l_Extent.width, l_Extent.height);
-
-        Backend::RenderpassCreateParams l_RenderPassParams;
-        l_RenderPassParams.context = p_Params.context;
-        l_RenderPassParams.formatCount = 1;
-        Backend::ImageFormat l_RenderpassImageFormat;
-        l_RenderpassImageFormat.vk = l_Swapchain.m_ImageFormat;
-        l_RenderPassParams.formats = &l_RenderpassImageFormat;
-        bool l_ClearRenderpassImage = true;
-        l_RenderPassParams.clearTarget = &l_ClearRenderpassImage;
-        l_RenderPassParams.useDepth = false;
-
-        vk_renderpass_create(p_Swapchain.renderpass, l_RenderPassParams);
-
-        SwapchainUtils::create_render_targets(p_Swapchain, l_Images);
-        SwapchainUtils::create_framebuffers(*p_Params.context, p_Swapchain);
-
-        SwapchainUtils::create_sync_objects(p_Params.context->vk, l_Swapchain);
-        SwapchainUtils::create_command_buffers(
-            *p_Params.context, *p_Params.commandPool, l_Swapchain);
-
-        LOW_LOG_INFO("Swapchain initialized");
-      }
-
-      void vk_swapchain_cleanup(Backend::Swapchain &p_Swapchain)
-      {
-        Swapchain &l_Swapchain = p_Swapchain.vk;
-        Context &l_Context = p_Swapchain.context->vk;
-
-        for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
-          vkDestroySemaphore(l_Context.m_Device,
-                             l_Swapchain.m_ImageAvailableSemaphores[i],
-                             nullptr);
-          vkDestroySemaphore(l_Context.m_Device,
-                             l_Swapchain.m_RenderFinishedSemaphores[i],
-                             nullptr);
-          vkDestroyFence(l_Context.m_Device, l_Swapchain.m_InFlightFences[i],
-                         nullptr);
-        }
-
-        free(l_Swapchain.m_ImageAvailableSemaphores);
-        LOW_PROFILE_FREE(Vulkan Image Available Semaphore);
-        free(l_Swapchain.m_RenderFinishedSemaphores);
-        LOW_PROFILE_FREE(Vulkan Render Finished Semaphore);
-        free(l_Swapchain.m_InFlightFences);
-        LOW_PROFILE_FREE(Vulkan In Flight Fences);
-
-        for (uint32_t i = 0u; i < l_Swapchain.m_ImageCount; ++i) {
-          vk_image2d_cleanup(l_Swapchain.m_RenderTargets[i]);
-        }
-        free(l_Swapchain.m_RenderTargets);
-
-        LOW_PROFILE_FREE(Vulkan Swapchain Render Targets);
-
-        free(l_Swapchain.m_Framebuffers);
-        LOW_PROFILE_FREE(Vulkan Swapchain Framebuffers);
-
-        free(l_Swapchain.m_CommandBuffers);
-        LOW_PROFILE_FREE(Vulkan Swapchain Command Buffers);
-
-        vkDestroySwapchainKHR(l_Context.m_Device, l_Swapchain.m_Handle,
-                              nullptr);
-      }
-
-      uint8_t vk_swapchain_prepare(Backend::Swapchain &p_Swapchain)
-      {
-        vkWaitForFences(
-            p_Swapchain.context->vk.m_Device, 1,
-            &p_Swapchain.vk
-                 .m_InFlightFences[p_Swapchain.vk.m_CurrentFrameIndex],
-            VK_TRUE, UINT64_MAX);
-
-        uint32_t l_CurrentImage;
-
-        VkResult l_Result = vkAcquireNextImageKHR(
-            p_Swapchain.context->vk.m_Device, p_Swapchain.vk.m_Handle,
-            UINT64_MAX,
-            p_Swapchain.vk
-                .m_ImageAvailableSemaphores[p_Swapchain.vk.m_CurrentFrameIndex],
-            VK_NULL_HANDLE, &l_CurrentImage);
-
-        p_Swapchain.vk.m_CurrentImageIndex = l_CurrentImage;
-
-        // Handle window resize
-        if (l_Result == VK_ERROR_OUT_OF_DATE_KHR) {
-          return Backend::SwapchainState::OUT_OF_DATE;
-        }
-
-        LOW_ASSERT(l_Result == VK_SUCCESS || l_Result == VK_SUBOPTIMAL_KHR,
-                   "Failed to acquire swapchain image");
-
-        vkResetFences(
-            p_Swapchain.context->vk.m_Device, 1,
-            &p_Swapchain.vk
-                 .m_InFlightFences[p_Swapchain.vk.m_CurrentFrameIndex]);
-
-        return Backend::SwapchainState::SUCCESS;
-      }
-
-      void vk_swapchain_swap(Backend::Swapchain &p_Swapchain)
-      {
-        Swapchain &l_Swapchain = p_Swapchain.vk;
-
-        VkSubmitInfo l_SubmitInfo{};
-        l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore l_WaitSemaphores[] = {
-            l_Swapchain
-                .m_ImageAvailableSemaphores[l_Swapchain.m_CurrentFrameIndex]};
-        VkPipelineStageFlags l_WaitStages[] = {
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        l_SubmitInfo.waitSemaphoreCount = 1;
-        l_SubmitInfo.pWaitSemaphores = l_WaitSemaphores;
-        l_SubmitInfo.pWaitDstStageMask = l_WaitStages;
-        l_SubmitInfo.commandBufferCount = 1;
-        l_SubmitInfo.pCommandBuffers =
-            &(vk_swapchain_get_current_commandbuffer(p_Swapchain).vk.m_Handle);
-
-        VkSemaphore l_SignalSemaphores[] = {
-            l_Swapchain
-                .m_RenderFinishedSemaphores[l_Swapchain.m_CurrentFrameIndex]};
-        l_SubmitInfo.signalSemaphoreCount = 1;
-        l_SubmitInfo.pSignalSemaphores = l_SignalSemaphores;
-
-        VkResult l_SubmitResult = vkQueueSubmit(
-            p_Swapchain.context->vk.m_GraphicsQueue, 1, &l_SubmitInfo,
-            l_Swapchain.m_InFlightFences[l_Swapchain.m_CurrentFrameIndex]);
-
-        LOW_ASSERT(l_SubmitResult == VK_SUCCESS,
-                   "Failed to submit draw command buffer");
-
-        VkPresentInfoKHR l_PresentInfo{};
-        l_PresentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        l_PresentInfo.waitSemaphoreCount = 1;
-        l_PresentInfo.pWaitSemaphores = l_SignalSemaphores;
-
-        VkSwapchainKHR l_Swapchains[] = {l_Swapchain.m_Handle};
-        l_PresentInfo.swapchainCount = 1;
-        l_PresentInfo.pSwapchains = l_Swapchains;
-        uint32_t l_ImageIndex = p_Swapchain.vk.m_CurrentImageIndex;
-        l_PresentInfo.pImageIndices = &l_ImageIndex;
-        l_PresentInfo.pResults = nullptr;
-
-        VkResult l_Result = vkQueuePresentKHR(
-            p_Swapchain.context->vk.m_PresentQueue, &l_PresentInfo);
-
-        // Handle window resize
-        if (l_Result == VK_ERROR_OUT_OF_DATE_KHR ||
-            l_Result == VK_SUBOPTIMAL_KHR || /*g_FramebufferResized*/ false) {
-          // g_FramebufferResized = false;
-          // recreate_swapchain();
-          // TODO: Handle reconfigure renderer
-        } else {
-          LOW_ASSERT(l_Result == VK_SUCCESS,
-                     "Failed to present swapchain image");
-        }
-
-        p_Swapchain.vk.m_CurrentFrameIndex =
-            (p_Swapchain.vk.m_CurrentFrameIndex + 1) %
-            p_Swapchain.vk.m_FramesInFlight;
-      }
-
-      Backend::CommandBuffer &
-      vk_swapchain_get_current_commandbuffer(Backend::Swapchain &p_Swapchain)
-      {
-        return p_Swapchain.vk
-            .m_CommandBuffers[p_Swapchain.vk.m_CurrentFrameIndex];
-      }
-
-      Backend::CommandBuffer &
-      vk_swapchain_get_commandbuffer(Backend::Swapchain &p_Swapchain,
-                                     uint8_t p_Index)
-      {
-        return p_Swapchain.vk.m_CommandBuffers[p_Index];
-      }
-
-      Backend::Framebuffer &
-      vk_swapchain_get_framebuffer(Backend::Swapchain &p_Swapchain,
-                                   uint8_t p_Index)
-      {
-        return p_Swapchain.vk.m_Framebuffers[p_Index];
-      }
-
-      Backend::Framebuffer &
-      vk_swapchain_get_current_framebuffer(Backend::Swapchain &p_Swapchain)
-      {
-        return p_Swapchain.vk
-            .m_Framebuffers[p_Swapchain.vk.m_CurrentImageIndex];
-      }
-
-      uint8_t vk_swapchain_get_frames_in_flight(Backend::Swapchain &p_Swapchain)
-      {
-        return p_Swapchain.vk.m_FramesInFlight;
-      }
-
-      uint8_t vk_swapchain_get_image_count(Backend::Swapchain &p_Swapchain)
-      {
-        return p_Swapchain.vk.m_ImageCount;
-      }
-
-      uint8_t
-      vk_swapchain_get_current_frame_index(Backend::Swapchain &p_Swapchain)
-      {
-        return p_Swapchain.vk.m_CurrentFrameIndex;
-      }
-
-      uint8_t
-      vk_swapchain_get_current_image_index(Backend::Swapchain &p_Swapchain)
-      {
-        return p_Swapchain.vk.m_CurrentImageIndex;
-      }
-
-      void vk_commandbuffer_start(Backend::CommandBuffer &p_CommandBuffer)
-      {
-        VkCommandBufferBeginInfo l_BeginInfo{};
-        l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        l_BeginInfo.flags = 0;
-        l_BeginInfo.pInheritanceInfo = nullptr;
-
-        LOW_ASSERT(vkBeginCommandBuffer(p_CommandBuffer.vk.m_Handle,
-                                        &l_BeginInfo) == VK_SUCCESS,
-                   "Failed to begin recording command buffer");
-      }
-
-      void vk_commandbuffer_stop(Backend::CommandBuffer &p_CommandBuffer)
-      {
-        LOW_ASSERT(vkEndCommandBuffer(p_CommandBuffer.vk.m_Handle) ==
-                       VK_SUCCESS,
-                   "Failed to stop recording the command buffer");
-      }
-
-      void vk_commandbuffer_dispatch_compute(
-          Backend::CommandBuffer &p_CommandBuffer,
-          Backend::DispatchComputeParams &p_Params)
-      {
-        vkCmdDispatch(p_CommandBuffer.vk.m_Handle, p_Params.dimensions.x,
-                      p_Params.dimensions.y, p_Params.dimensions.z);
-      }
-
-      namespace Image2DUtils {
+      namespace ImageHelper {
         static void create_image_view(Backend::Context &p_Context,
-                                      Backend::Image2D &p_Image2d,
-                                      ImageFormat &p_Format, bool p_Depth)
+                                      Backend::ImageResource &p_Image2d,
+                                      uint8_t &p_Format, bool p_Depth)
         {
-
           VkImageViewCreateInfo l_CreateInfo{};
           l_CreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
           l_CreateInfo.image = p_Image2d.vk.m_Image;
           l_CreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-          l_CreateInfo.format = p_Format.m_Handle;
+          l_CreateInfo.format = Helper::imageformat_to_vkformat(p_Format);
 
           l_CreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
           l_CreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -1520,7 +1317,7 @@ namespace Low {
         }
 
         static void create_2d_sampler(Backend::Context &p_Context,
-                                      Backend::Image2D &p_RenderTarget)
+                                      Backend::ImageResource &p_Image)
         {
           VkSamplerCreateInfo l_SamplerInfo{};
           l_SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -1547,16 +1344,17 @@ namespace Low {
           l_SamplerInfo.maxLod = 0.f;
 
           LOW_ASSERT(vkCreateSampler(p_Context.vk.m_Device, &l_SamplerInfo,
-                                     nullptr, &(p_RenderTarget.vk.m_Sampler)) ==
-                         VK_SUCCESS,
+                                     nullptr,
+                                     &(p_Image.vk.m_Sampler)) == VK_SUCCESS,
                      "Failed to create image2d sampler");
         }
 
-        void copy_buffer_to_image(Backend::Image2D &p_Image, VkBuffer p_Buffer,
-                                  uint32_t p_Width, uint32_t p_Height)
+        void copy_buffer_to_image(Backend::ImageResource &p_Image,
+                                  VkBuffer p_Buffer, uint32_t p_Width,
+                                  uint32_t p_Height)
         {
-          VkCommandBuffer l_CommandBuffer = Utils::begin_single_time_commands(
-              *p_Image.context, *p_Image.commandPool);
+          VkCommandBuffer l_CommandBuffer =
+              Helper::begin_single_time_commands(*p_Image.context);
 
           VkBufferImageCopy l_Region{};
           l_Region.bufferOffset = 0;
@@ -1575,78 +1373,12 @@ namespace Low {
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                  &l_Region);
 
-          Utils::end_single_time_commands(
-              *p_Image.context, *p_Image.commandPool, l_CommandBuffer);
+          Helper::end_single_time_commands(*p_Image.context, l_CommandBuffer);
         }
 
-        void transition_image_barrier(
-            VkCommandBuffer p_CommandBuffer, Backend::Image2D &p_Image2D,
-            VkImageLayout p_OldLayout, VkImageLayout p_NewLayout,
-            VkAccessFlags p_SrcAccessMask, VkAccessFlags p_DstAccessMask,
-            VkPipelineStageFlags p_SourceStage, VkPipelineStageFlags p_DstStage)
-        {
-          VkImageMemoryBarrier l_Barrier{};
-          l_Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-          l_Barrier.oldLayout = p_OldLayout;
-          l_Barrier.newLayout = p_NewLayout;
-          l_Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-          l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-          l_Barrier.image = p_Image2D.vk.m_Image;
-          if (p_Image2D.depth) {
-            l_Barrier.subresourceRange.aspectMask =
-                VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
-          } else {
-            l_Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-          }
-          l_Barrier.subresourceRange.baseMipLevel = 0;
-          l_Barrier.subresourceRange.levelCount = 1;
-          l_Barrier.subresourceRange.baseArrayLayer = 0;
-          l_Barrier.subresourceRange.layerCount = 1;
-          l_Barrier.srcAccessMask = p_SrcAccessMask;
-          l_Barrier.dstAccessMask = p_DstAccessMask;
-          VkPipelineStageFlags l_SourceStage = p_SourceStage;
-          VkPipelineStageFlags l_DestinationStage = p_DstStage;
-
-          vkCmdPipelineBarrier(p_CommandBuffer, l_SourceStage,
-                               l_DestinationStage, 0, 0, nullptr, 0, nullptr, 1,
-                               &l_Barrier);
-        }
-
-        void transition_undefined_to_sample(VkCommandBuffer p_CommandBuffer,
-                                            Backend::Image2D &p_Image2d)
-        {
-          transition_image_barrier(
-              p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0,
-              VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                  VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        }
-
-        void
-        transition_undefined_to_destination(VkCommandBuffer p_CommandBuffer,
-                                            Backend::Image2D &p_Image2d)
-        {
-          transition_image_barrier(
-              p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
-              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0,
-              VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-              VK_PIPELINE_STAGE_TRANSFER_BIT);
-        }
-
-        void transition_undefined_to_storage(VkCommandBuffer p_CommandBuffer,
-                                             Backend::Image2D &p_Image2d)
-        {
-          transition_image_barrier(
-              p_CommandBuffer, p_Image2d, VK_IMAGE_LAYOUT_UNDEFINED,
-              VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_SHADER_WRITE_BIT,
-              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-        }
-
-        static void create_image(Backend::Image2D &p_Image, uint32_t p_Width,
-                                 uint32_t p_Height, VkFormat p_Format,
-                                 VkImageTiling p_Tiling,
+        static void create_image(Backend::ImageResource &p_Image,
+                                 uint32_t p_Width, uint32_t p_Height,
+                                 VkFormat p_Format, VkImageTiling p_Tiling,
                                  VkImageUsageFlags p_Usage,
                                  VkMemoryPropertyFlags p_Properties,
                                  void *p_ImageData, size_t p_ImageDataSize)
@@ -1655,11 +1387,11 @@ namespace Low {
           VkDeviceMemory l_StagingBufferMemory;
 
           if (p_ImageData) {
-            Utils::create_buffer(*p_Image.context, p_ImageDataSize,
-                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                 l_StagingBuffer, l_StagingBufferMemory);
+            Helper::create_buffer(*p_Image.context, p_ImageDataSize,
+                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                  l_StagingBuffer, l_StagingBufferMemory);
 
             void *l_Data;
             vkMapMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory, 0,
@@ -1696,7 +1428,7 @@ namespace Low {
           VkMemoryAllocateInfo l_AllocInfo{};
           l_AllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
           l_AllocInfo.allocationSize = l_MemRequirements.size;
-          l_AllocInfo.memoryTypeIndex = Utils::find_memory_type(
+          l_AllocInfo.memoryTypeIndex = Helper::find_memory_type(
               p_Image.context->vk, l_MemRequirements.memoryTypeBits,
               p_Properties);
 
@@ -1707,41 +1439,15 @@ namespace Low {
 
           vkBindImageMemory(p_Image.context->vk.m_Device, p_Image.vk.m_Image,
                             p_Image.vk.m_Memory, 0);
-
-          if (p_ImageData) {
-            {
-              Backend::Image2DTransitionStateParams l_Params;
-              l_Params.commandBuffer = nullptr;
-              l_Params.destState = Backend::ImageState::DESTINATION;
-              Backend::image2d_transition_state(p_Image, l_Params);
-            }
-
-            copy_buffer_to_image(p_Image, l_StagingBuffer, p_Image.dimensions.x,
-                                 p_Image.dimensions.y);
-
-            {
-              Backend::Image2DTransitionStateParams l_Params;
-              l_Params.commandBuffer = nullptr;
-              l_Params.destState = Backend::ImageState::SAMPLE;
-              Backend::image2d_transition_state(p_Image, l_Params);
-            }
-
-            vkDestroyBuffer(p_Image.context->vk.m_Device, l_StagingBuffer,
-                            nullptr);
-            vkFreeMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory,
-                         nullptr);
-          }
         }
+      } // namespace ImageHelper
 
-      } // namespace Image2DUtils
-
-      void vk_image2d_create(Backend::Image2D &p_Image2d,
-                             Backend::Image2DCreateParams &p_Params)
+      void vk_imageresource_create(Backend::ImageResource &p_Image,
+                                   Backend::ImageResourceCreateParams &p_Params)
       {
-        p_Image2d.context = p_Params.context;
-        p_Image2d.commandPool = p_Params.commandPool;
-        p_Image2d.format = *p_Params.format;
-        p_Image2d.dimensions = p_Params.dimensions;
+        p_Image.context = p_Params.context;
+        p_Image.format = p_Params.format;
+        p_Image.dimensions = p_Params.dimensions;
 
         VkImageUsageFlags l_UsageFlags =
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -1751,1072 +1457,38 @@ namespace Low {
           l_UsageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
         }
 
-        if (p_Params.create_image) {
-          Image2DUtils::create_image(
-              p_Image2d, p_Params.dimensions.x, p_Params.dimensions.y,
-              p_Params.format->vk.m_Handle, VK_IMAGE_TILING_OPTIMAL,
-              l_UsageFlags, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-              p_Params.imageData, p_Params.imageDataSize);
+        if (p_Params.createImage) {
+          ImageHelper::create_image(
+              p_Image, p_Params.dimensions.x, p_Params.dimensions.y,
+              Helper::imageformat_to_vkformat(p_Params.format),
+              VK_IMAGE_TILING_OPTIMAL, l_UsageFlags,
+              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, p_Params.imageData,
+              p_Params.imageDataSize);
         }
 
-        Image2DUtils::create_image_view(*p_Params.context, p_Image2d,
-                                        p_Params.format->vk, p_Params.depth);
+        ImageHelper::create_image_view(*p_Params.context, p_Image,
+                                       p_Image.format, p_Params.depth);
 
-        Image2DUtils::create_2d_sampler(*p_Params.context, p_Image2d);
+        ImageHelper::create_2d_sampler(*p_Params.context, p_Image);
 
-        p_Image2d.swapchainImage = false;
+        p_Image.swapchainImage = false;
       }
 
-      void vk_image2d_cleanup(Backend::Image2D &p_Image2d)
+      void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
       {
-        Context &l_Context = p_Image2d.context->vk;
-        Image2D &l_Image2d = p_Image2d.vk;
+        p_Callbacks.context_create = &vk_context_create;
+        p_Callbacks.context_cleanup = &vk_context_cleanup;
+        p_Callbacks.context_wait_idle = &vk_context_wait_idle;
 
-        vkDestroySampler(l_Context.m_Device, l_Image2d.m_Sampler, nullptr);
-        vkDestroyImageView(l_Context.m_Device, l_Image2d.m_ImageView, nullptr);
+        p_Callbacks.frame_prepare = &vk_frame_prepare;
+        p_Callbacks.frame_render = &vk_frame_render;
 
-        if (!p_Image2d.swapchainImage) {
-          vkDestroyImage(l_Context.m_Device, l_Image2d.m_Image, nullptr);
-          vkFreeMemory(l_Context.m_Device, l_Image2d.m_Memory, nullptr);
-        }
+        p_Callbacks.renderpass_create = &vk_renderpass_create;
+        p_Callbacks.renderpass_begin = &vk_renderpass_begin;
+        p_Callbacks.renderpass_end = &vk_renderpass_end;
+
+        p_Callbacks.imageresource_create = &vk_imageresource_create;
       }
-
-      void vk_image2d_transition_state(
-          Backend::Image2D &p_Image,
-          Backend::Image2DTransitionStateParams &p_Params)
-      {
-        VkCommandBuffer l_CmdBuffer;
-        if (p_Params.commandBuffer != nullptr) {
-          l_CmdBuffer = p_Params.commandBuffer->vk.m_Handle;
-        } else {
-          l_CmdBuffer = Utils::begin_single_time_commands(*p_Image.context,
-                                                          *p_Image.commandPool);
-        }
-
-        if (p_Image.state == Backend::ImageState::UNDEFINED &&
-            p_Params.destState == Backend::ImageState::SAMPLE) {
-          Image2DUtils::transition_undefined_to_sample(l_CmdBuffer, p_Image);
-        } else if (p_Image.state == Backend::ImageState::UNDEFINED &&
-                   p_Params.destState == Backend::ImageState::DESTINATION) {
-          Image2DUtils::transition_undefined_to_destination(l_CmdBuffer,
-                                                            p_Image);
-        } else if (p_Image.state == Backend::ImageState::UNDEFINED &&
-                   p_Params.destState == Backend::ImageState::STORAGE) {
-          Image2DUtils::transition_undefined_to_storage(l_CmdBuffer, p_Image);
-        } else {
-          LOW_ASSERT(false, "Image state transition not supported");
-        }
-
-        if (p_Params.commandBuffer == nullptr) {
-          Utils::end_single_time_commands(*p_Image.context,
-                                          *p_Image.commandPool, l_CmdBuffer);
-        }
-      }
-
-      namespace PipelineUtils {
-        typedef VkVertexInputBindingDescription(BindingDescriptionCallback)();
-        typedef Low::Util::List<VkVertexInputAttributeDescription>(
-            InputAttributeCallback)();
-
-        namespace VertexEmpty {
-          static VkVertexInputBindingDescription get_binding_description()
-          {
-            VkVertexInputBindingDescription l_BindingDescription{};
-            l_BindingDescription.binding = 0;
-            l_BindingDescription.stride = 0;
-            l_BindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-            return l_BindingDescription;
-          }
-
-          static Low::Util::List<VkVertexInputAttributeDescription>
-          get_attribute_descriptions()
-          {
-            Low::Util::List<VkVertexInputAttributeDescription>
-                l_AttributeDescriptions;
-
-            return l_AttributeDescriptions;
-          }
-        } // namespace VertexEmpty
-
-        namespace VertexBasic {
-          static VkVertexInputBindingDescription get_binding_description()
-          {
-            VkVertexInputBindingDescription l_BindingDescription{};
-            l_BindingDescription.binding = 0;
-            l_BindingDescription.stride =
-                sizeof(Low::Math::Vector3) + sizeof(Low::Math::Vector3) +
-                sizeof(Low::Math::Vector2) + sizeof(Low::Math::Vector3) +
-                sizeof(Low::Math::Vector3);
-            l_BindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-            return l_BindingDescription;
-          }
-
-          static Low::Util::List<VkVertexInputAttributeDescription>
-          get_attribute_descriptions()
-          {
-            Low::Util::List<VkVertexInputAttributeDescription>
-                l_AttributeDescriptions;
-            l_AttributeDescriptions.resize(5);
-
-            l_AttributeDescriptions[0].binding = 0;
-            l_AttributeDescriptions[0].location = 0;
-            l_AttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-            l_AttributeDescriptions[0].offset = 0;
-
-            l_AttributeDescriptions[1].binding = 0;
-            l_AttributeDescriptions[1].location = 1;
-            l_AttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            l_AttributeDescriptions[1].offset = sizeof(Low::Math::Vector3);
-
-            l_AttributeDescriptions[2].binding = 0;
-            l_AttributeDescriptions[2].location = 2;
-            l_AttributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-            l_AttributeDescriptions[2].offset = sizeof(Low::Math::Vector3) * 2;
-
-            l_AttributeDescriptions[3].binding = 0;
-            l_AttributeDescriptions[3].location = 3;
-            l_AttributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
-            l_AttributeDescriptions[3].offset =
-                sizeof(Low::Math::Vector3) * 2 + sizeof(Low::Math::Vector2);
-
-            l_AttributeDescriptions[4].binding = 0;
-            l_AttributeDescriptions[4].location = 4;
-            l_AttributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
-            l_AttributeDescriptions[4].offset =
-                sizeof(Low::Math::Vector3) * 3 + sizeof(Low::Math::Vector2);
-
-            return l_AttributeDescriptions;
-          }
-        } // namespace VertexBasic
-
-        VkShaderModule create_shader_module(Backend::Context &p_Context,
-                                            const Util::List<char> &p_Code)
-        {
-          VkShaderModuleCreateInfo l_CreateInfo{};
-          l_CreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-          l_CreateInfo.codeSize = p_Code.size() - 1; // Remove \0 terminator
-          l_CreateInfo.pCode =
-              reinterpret_cast<const uint32_t *>(p_Code.data());
-
-          VkShaderModule l_ShaderModule;
-          LOW_ASSERT(vkCreateShaderModule(p_Context.vk.m_Device, &l_CreateInfo,
-                                          nullptr,
-                                          &l_ShaderModule) == VK_SUCCESS,
-                     "Failed to create shader module");
-
-          return l_ShaderModule;
-        }
-
-        Util::List<char> read_shader_file(const char *p_Filename)
-        {
-          Util::FileIO::File l_File = Util::FileIO::open(
-              p_Filename, Util::FileIO::FileMode::READ_BYTES);
-
-          size_t l_Filesize = Util::FileIO::size_sync(l_File);
-          Util::List<char> l_ContentBuffer(l_Filesize +
-                                           1); // Add 1 because of \0 terminator
-
-          Util::FileIO::read_sync(l_File, l_ContentBuffer.data());
-
-          return l_ContentBuffer;
-        }
-      } // namespace PipelineUtils
-
-      void vk_pipeline_interface_create(
-          Backend::PipelineInterface &p_PipelineInterface,
-          Backend::PipelineInterfaceCreateParams &p_Params)
-      {
-        p_PipelineInterface.context = p_Params.context;
-
-        Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
-        l_DescriptorSetLayouts.resize(p_Params.uniformScopeInterfaceCount);
-        for (uint32_t i = 0u; i < p_Params.uniformScopeInterfaceCount; ++i) {
-          l_DescriptorSetLayouts[i] =
-              p_Params.uniformScopeInterfaces[i].vk.m_Layout;
-        }
-
-        VkPipelineLayoutCreateInfo l_PipelineLayoutInfo{};
-        l_PipelineLayoutInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        if (p_Params.uniformScopeInterfaceCount == 0) {
-          l_PipelineLayoutInfo.setLayoutCount = 0;
-          l_PipelineLayoutInfo.pSetLayouts = nullptr;
-        } else {
-          l_PipelineLayoutInfo.setLayoutCount =
-              p_Params.uniformScopeInterfaceCount;
-          l_PipelineLayoutInfo.pSetLayouts = l_DescriptorSetLayouts.data();
-        }
-        l_PipelineLayoutInfo.pushConstantRangeCount = 0;
-        l_PipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-        LOW_ASSERT(vkCreatePipelineLayout(p_Params.context->vk.m_Device,
-                                          &l_PipelineLayoutInfo, nullptr,
-                                          &(p_PipelineInterface.vk.m_Handle)) ==
-                       VK_SUCCESS,
-                   "Failed to create pipeline layout");
-      }
-
-      void vk_pipeline_interface_cleanup(
-          Backend::PipelineInterface &p_PipelineInterface)
-      {
-        vkDestroyPipelineLayout(p_PipelineInterface.context->vk.m_Device,
-                                p_PipelineInterface.vk.m_Handle, nullptr);
-      }
-
-      void vk_pipeline_graphics_create(
-          Backend::Pipeline &p_Pipeline,
-          Backend::GraphicsPipelineCreateParams &p_Params)
-      {
-        p_Pipeline.context = p_Params.context;
-        p_Pipeline.interface = p_Params.interface;
-        p_Pipeline.type = Backend::PipelineType::GRAPHICS;
-
-        auto l_VertexShaderCode =
-            PipelineUtils::read_shader_file(p_Params.vertexShaderPath);
-        auto l_FragmentShaderCode =
-            PipelineUtils::read_shader_file(p_Params.fragmentShaderPath);
-
-        VkShaderModule l_VertexShaderModule =
-            PipelineUtils::create_shader_module(*p_Params.context,
-                                                l_VertexShaderCode);
-        VkShaderModule l_FragmentShaderModule =
-            PipelineUtils::create_shader_module(*p_Params.context,
-                                                l_FragmentShaderCode);
-
-        VkPipelineShaderStageCreateInfo l_VertexShaderStageInfo{};
-        l_VertexShaderStageInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        l_VertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        l_VertexShaderStageInfo.module = l_VertexShaderModule;
-        l_VertexShaderStageInfo.pName = "main";
-
-        VkPipelineShaderStageCreateInfo l_FragmentShaderStageInfo{};
-        l_FragmentShaderStageInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        l_FragmentShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        l_FragmentShaderStageInfo.module = l_FragmentShaderModule;
-        l_FragmentShaderStageInfo.pName = "main";
-
-        VkPipelineShaderStageCreateInfo l_ShaderStages[] = {
-            l_VertexShaderStageInfo, l_FragmentShaderStageInfo};
-
-        Low::Util::List<VkDynamicState> l_DynamicStages = {
-            VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-
-        VkPipelineDynamicStateCreateInfo l_DynamicState{};
-        l_DynamicState.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        l_DynamicState.dynamicStateCount =
-            static_cast<uint32_t>(l_DynamicStages.size());
-        l_DynamicState.pDynamicStates = l_DynamicStages.data();
-
-        VkPipelineVertexInputStateCreateInfo l_VertexInputInfo{};
-
-        VkVertexInputBindingDescription l_BindingDescription;
-        Low::Util::List<VkVertexInputAttributeDescription>
-            l_AttributeDescription;
-
-        if (p_Params.vertexInput) {
-          l_BindingDescription =
-              PipelineUtils::VertexBasic::get_binding_description();
-          l_AttributeDescription =
-              PipelineUtils::VertexBasic::get_attribute_descriptions();
-        } else {
-          l_BindingDescription =
-              PipelineUtils::VertexEmpty::get_binding_description();
-          l_AttributeDescription =
-              PipelineUtils::VertexEmpty::get_attribute_descriptions();
-        }
-
-        l_VertexInputInfo.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        if (p_Params.vertexInput) {
-          l_VertexInputInfo.vertexBindingDescriptionCount = 1;
-          l_VertexInputInfo.pVertexBindingDescriptions = &l_BindingDescription;
-          l_VertexInputInfo.vertexAttributeDescriptionCount =
-              static_cast<uint32_t>(l_AttributeDescription.size());
-          l_VertexInputInfo.pVertexAttributeDescriptions =
-              l_AttributeDescription.data();
-        } else {
-          l_VertexInputInfo.vertexBindingDescriptionCount = 0;
-          l_VertexInputInfo.pVertexBindingDescriptions = nullptr;
-          l_VertexInputInfo.vertexAttributeDescriptionCount = 0;
-          l_VertexInputInfo.pVertexAttributeDescriptions = nullptr;
-        }
-
-        VkPipelineInputAssemblyStateCreateInfo l_InputAssembly{};
-        l_InputAssembly.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        l_InputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        l_InputAssembly.primitiveRestartEnable = VK_FALSE;
-
-        VkViewport l_Viewport{};
-        l_Viewport.x = 0.f;
-        l_Viewport.y = 0.f;
-        l_Viewport.width = (float)p_Params.dimensions.x;
-        l_Viewport.height = (float)p_Params.dimensions.y;
-        l_Viewport.minDepth = 0.f;
-        l_Viewport.maxDepth = 1.f;
-
-        VkExtent2D l_Extent{p_Params.dimensions.x, p_Params.dimensions.y};
-
-        VkRect2D l_Scissor{};
-        l_Scissor.offset = {0, 0};
-        l_Scissor.extent = l_Extent;
-
-        VkPipelineViewportStateCreateInfo l_ViewportState{};
-        l_ViewportState.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        l_ViewportState.viewportCount = 1;
-        l_ViewportState.scissorCount = 1;
-
-        VkPipelineRasterizationStateCreateInfo l_Rasterizer{};
-        l_Rasterizer.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        l_Rasterizer.depthClampEnable = VK_FALSE;
-        l_Rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        if (p_Params.polygonMode ==
-            Backend::PipelineRasterizerPolygonMode::FILL) {
-          l_Rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-        } else if (p_Params.polygonMode ==
-                   Backend::PipelineRasterizerPolygonMode::LINE) {
-          l_Rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
-        } else {
-          LOW_ASSERT(false, "Unknown rasterizer polygon mode");
-        }
-
-        // Fills the polygons "LINE" would be
-        // wireframe
-        // Setting this to any other mode but FILL requires
-        // ~l_Rasterizer.lineWidth~ so be set to some float. If the float is
-        // larger than 1 then a special GPU feature ~wideLines~ has to be
-        // enabled
-        l_Rasterizer.lineWidth = 1.f;
-        if (p_Params.cullMode == Backend::PipelineRasterizerCullMode::FRONT) {
-          l_Rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
-        } else if (p_Params.cullMode ==
-                   Backend::PipelineRasterizerCullMode::BACK) {
-          l_Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        } else {
-          LOW_ASSERT(false, "Unknown pipeline rasterizer cull mode");
-        }
-
-        if (p_Params.frontFace ==
-            Backend::PipelineRasterizerFrontFace::CLOCKWISE) {
-          l_Rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
-        } else if (p_Params.frontFace ==
-                   Backend::PipelineRasterizerFrontFace::COUNTER_CLOCKWISE) {
-          l_Rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        } else {
-          LOW_ASSERT(false, "Unknown rasterizer frontface mode");
-        }
-
-        l_Rasterizer.depthBiasEnable = VK_FALSE;
-        l_Rasterizer.depthBiasConstantFactor = 0.f;
-        l_Rasterizer.depthBiasClamp = 0.f;
-
-        VkPipelineMultisampleStateCreateInfo l_Multisampling{};
-        l_Multisampling.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        l_Multisampling.sampleShadingEnable = VK_FALSE;
-        l_Multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-        l_Multisampling.minSampleShading = 1.f;
-        l_Multisampling.pSampleMask = nullptr;
-        l_Multisampling.alphaToCoverageEnable = VK_FALSE;
-        l_Multisampling.alphaToOneEnable = VK_FALSE;
-
-        VkPipelineDepthStencilStateCreateInfo l_DepthStencil{};
-        l_DepthStencil.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        l_DepthStencil.depthTestEnable = VK_TRUE;
-        l_DepthStencil.depthWriteEnable = VK_TRUE;
-        l_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        l_DepthStencil.depthBoundsTestEnable = VK_FALSE;
-        l_DepthStencil.minDepthBounds = 0.0f;
-        l_DepthStencil.maxDepthBounds = 1.0f;
-        l_DepthStencil.stencilTestEnable = VK_FALSE;
-        l_DepthStencil.front = {};
-        l_DepthStencil.back = {};
-
-        Low::Util::List<VkPipelineColorBlendAttachmentState>
-            l_ColorBlendAttachments;
-
-        for (uint32_t i = 0u; i < p_Params.colorTargetCount; ++i) {
-          Backend::GraphicsPipelineColorTarget &i_Target =
-              p_Params.colorTargets[i];
-
-          int test = i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_RED;
-
-          VkColorComponentFlags l_WriteMask = 0;
-          if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_RED) ==
-              LOW_RENDERER_COLOR_WRITE_BIT_RED) {
-            l_WriteMask |= VK_COLOR_COMPONENT_R_BIT;
-          }
-          if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_GREEN) ==
-              LOW_RENDERER_COLOR_WRITE_BIT_GREEN) {
-            l_WriteMask |= VK_COLOR_COMPONENT_G_BIT;
-          }
-          if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_BLUE) ==
-              LOW_RENDERER_COLOR_WRITE_BIT_BLUE) {
-            l_WriteMask |= VK_COLOR_COMPONENT_B_BIT;
-          }
-          if ((i_Target.wirteMask & LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) ==
-              LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) {
-            l_WriteMask |= VK_COLOR_COMPONENT_A_BIT;
-          }
-
-          VkPipelineColorBlendAttachmentState l_ColorBlendAttachment{};
-          l_ColorBlendAttachment.colorWriteMask = l_WriteMask;
-
-          if (i_Target.blendEnable) {
-            l_ColorBlendAttachment.blendEnable = VK_TRUE;
-          } else {
-            l_ColorBlendAttachment.blendEnable = VK_FALSE;
-          }
-
-          l_ColorBlendAttachment.srcColorBlendFactor =
-              VK_BLEND_FACTOR_SRC_ALPHA;
-          l_ColorBlendAttachment.dstColorBlendFactor =
-              VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-          l_ColorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-          l_ColorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-          l_ColorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-          l_ColorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-          l_ColorBlendAttachments.push_back(l_ColorBlendAttachment);
-        }
-
-        VkPipelineColorBlendStateCreateInfo l_ColorBlending{};
-        l_ColorBlending.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        l_ColorBlending.logicOpEnable = VK_FALSE;
-        l_ColorBlending.logicOp = VK_LOGIC_OP_COPY;
-        l_ColorBlending.attachmentCount =
-            static_cast<uint32_t>(l_ColorBlendAttachments.size());
-        l_ColorBlending.pAttachments = l_ColorBlendAttachments.data();
-        l_ColorBlending.blendConstants[0] = 0.f;
-        l_ColorBlending.blendConstants[1] = 0.f;
-        l_ColorBlending.blendConstants[2] = 0.f;
-        l_ColorBlending.blendConstants[3] = 0.f;
-
-        VkGraphicsPipelineCreateInfo l_PipelineInfo{};
-        l_PipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        l_PipelineInfo.stageCount = 2;
-        l_PipelineInfo.pStages = l_ShaderStages;
-        l_PipelineInfo.pVertexInputState = &l_VertexInputInfo;
-        l_PipelineInfo.pInputAssemblyState = &l_InputAssembly;
-        l_PipelineInfo.pViewportState = &l_ViewportState;
-        l_PipelineInfo.pRasterizationState = &l_Rasterizer;
-        l_PipelineInfo.pMultisampleState = &l_Multisampling;
-        l_PipelineInfo.pDepthStencilState = &l_DepthStencil;
-        l_PipelineInfo.pColorBlendState = &l_ColorBlending;
-        l_PipelineInfo.pDynamicState = &l_DynamicState;
-        l_PipelineInfo.layout = p_Params.interface->vk.m_Handle;
-        l_PipelineInfo.renderPass = p_Params.renderpass->vk.m_Handle;
-        l_PipelineInfo.subpass = 0;
-        l_PipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-        l_PipelineInfo.basePipelineIndex = -1;
-
-        LOW_ASSERT(vkCreateGraphicsPipelines(
-                       p_Params.context->vk.m_Device, VK_NULL_HANDLE, 1,
-                       &l_PipelineInfo, nullptr,
-                       &(p_Pipeline.vk.m_Handle)) == VK_SUCCESS,
-                   "Failed to create graphics pipeline");
-
-        LOW_LOG_DEBUG("Graphics pipeline created");
-
-        vkDestroyShaderModule(p_Params.context->vk.m_Device,
-                              l_FragmentShaderModule, nullptr);
-        vkDestroyShaderModule(p_Params.context->vk.m_Device,
-                              l_VertexShaderModule, nullptr);
-      }
-
-      void
-      vk_pipeline_compute_create(Backend::Pipeline &p_Pipeline,
-                                 Backend::ComputePipelineCreateParams &p_Params)
-      {
-        p_Pipeline.context = p_Params.context;
-        p_Pipeline.interface = p_Params.interface;
-        p_Pipeline.type = Backend::PipelineType::COMPUTE;
-
-        VkShaderModule l_ShaderModule = PipelineUtils::create_shader_module(
-            *p_Params.context,
-            PipelineUtils::read_shader_file(p_Params.computeShaderPath));
-
-        VkComputePipelineCreateInfo l_ComputePipelineInfo = {
-            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
-        l_ComputePipelineInfo.stage.sType =
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        l_ComputePipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        l_ComputePipelineInfo.stage.module = l_ShaderModule;
-        l_ComputePipelineInfo.stage.pName = "main";
-        l_ComputePipelineInfo.layout = p_Params.interface->vk.m_Handle;
-
-        LOW_ASSERT(vkCreateComputePipelines(
-                       p_Params.context->vk.m_Device, VK_NULL_HANDLE, 1,
-                       &l_ComputePipelineInfo, nullptr,
-                       &(p_Pipeline.vk.m_Handle)) == VK_SUCCESS,
-                   "Failed to create compute pipeline");
-
-        vkDestroyShaderModule(p_Params.context->vk.m_Device, l_ShaderModule,
-                              nullptr);
-      }
-
-      void vk_pipeline_cleanup(Backend::Pipeline &p_Pipeline)
-      {
-        vkDestroyPipeline(p_Pipeline.context->vk.m_Device,
-                          p_Pipeline.vk.m_Handle, nullptr);
-      }
-
-      void vk_pipeline_bind(Backend::Pipeline &p_Pipeline,
-                            Backend::PipelineBindParams &p_Params)
-      {
-        if (p_Pipeline.type == Backend::PipelineType::GRAPHICS) {
-          vkCmdBindPipeline(p_Params.commandBuffer->vk.m_Handle,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            p_Pipeline.vk.m_Handle);
-        } else if (p_Pipeline.type == Backend::PipelineType::COMPUTE) {
-          vkCmdBindPipeline(p_Params.commandBuffer->vk.m_Handle,
-                            VK_PIPELINE_BIND_POINT_COMPUTE,
-                            p_Pipeline.vk.m_Handle);
-        } else {
-          LOW_ASSERT(false, "Unknown pipeline type");
-        }
-      }
-
-      void vk_draw(Backend::DrawParams &p_Params)
-      {
-        vkCmdDraw(p_Params.commandBuffer->vk.m_Handle, p_Params.vertexCount,
-                  p_Params.instanceCount, p_Params.firstVertex,
-                  p_Params.firstInstance);
-      }
-
-      void vk_draw_indexed(Backend::DrawIndexedParams &p_Params)
-      {
-        vkCmdDrawIndexed(p_Params.commandBuffer->vk.m_Handle,
-                         p_Params.indexCount, p_Params.instanceCount,
-                         p_Params.firstIndex, p_Params.vertexOffset,
-                         p_Params.firstInstance);
-      }
-
-      void
-      vk_draw_indexed_bindless(Backend::DrawIndexedBindlessParams &p_Params)
-      {
-        vkCmdDrawIndexedIndirect(p_Params.commandBuffer->vk.m_Handle,
-                                 p_Params.drawInfo->vk.buffer, p_Params.offset,
-                                 p_Params.drawCount, p_Params.stride);
-      }
-
-      namespace UniformUtils {
-        void
-        vk_uniform_scope_assign(Backend::UniformScope &p_Scope,
-                                Backend::UniformScopeCreateParams &p_Params)
-        {
-          for (uint32_t i_Frame = 0u; i_Frame < p_Scope.framesInFlight;
-               ++i_Frame) {
-            Util::List<VkWriteDescriptorSet> i_DescriptorWrites;
-            Util::List<VkDescriptorImageInfo> i_ImageInfos;
-            Util::List<VkDescriptorBufferInfo> i_BufferInfos;
-
-            i_BufferInfos.resize(p_Params.uniformCount);
-            i_ImageInfos.resize(p_Params.uniformCount);
-
-            for (uint32_t i = 0u; i < p_Params.uniformCount; ++i) {
-              Backend::Uniform &i_Uniform = p_Params.uniforms[i];
-
-              if (i_Uniform.type == Backend::UniformType::UNIFORM_BUFFER ||
-                  i_Uniform.type == Backend::UniformType::STORAGE_BUFFER) {
-                i_BufferInfos[i].buffer = i_Uniform.vk.buffers[i_Frame];
-                i_BufferInfos[i].offset = 0;
-                i_BufferInfos[i].range = i_Uniform.vk.bufferSize;
-
-                VkWriteDescriptorSet i_DescriptorWrite;
-
-                i_DescriptorWrite.sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                i_DescriptorWrite.dstSet = p_Scope.vk.sets[i_Frame];
-                i_DescriptorWrite.pNext = nullptr;
-                i_DescriptorWrite.dstBinding = i_Uniform.binding;
-
-                i_DescriptorWrite.dstArrayElement = i_Uniform.arrayIndex;
-                if (i_Uniform.type == Backend::UniformType::STORAGE_BUFFER) {
-                  i_DescriptorWrite.descriptorType =
-                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                } else {
-                  i_DescriptorWrite.descriptorType =
-                      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                }
-                i_DescriptorWrite.descriptorCount = 1;
-                i_DescriptorWrite.pBufferInfo = &(i_BufferInfos[i]);
-                i_DescriptorWrite.pImageInfo = nullptr;
-                i_DescriptorWrite.pTexelBufferView = nullptr;
-
-                i_DescriptorWrites.push_back(i_DescriptorWrite);
-              } else if (i_Uniform.type == Backend::UniformType::SAMPLER ||
-                         i_Uniform.type == Backend::UniformType::RENDERTARGET) {
-                i_ImageInfos[i].imageLayout =
-                    i_Uniform.type == Backend::UniformType::RENDERTARGET
-                        ? VK_IMAGE_LAYOUT_GENERAL
-                        : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                i_ImageInfos[i].imageView = i_Uniform.vk.imageView;
-                i_ImageInfos[i].sampler = i_Uniform.vk.sampler;
-
-                VkWriteDescriptorSet i_DescriptorWrite;
-
-                i_DescriptorWrite.sType =
-                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                i_DescriptorWrite.dstSet = p_Scope.vk.sets[i_Frame];
-                i_DescriptorWrite.dstBinding = i_Uniform.binding;
-                i_DescriptorWrite.dstArrayElement = i_Uniform.arrayIndex;
-                i_DescriptorWrite.pNext = nullptr;
-                i_DescriptorWrite.descriptorType =
-                    i_Uniform.type == Backend::UniformType::RENDERTARGET
-                        ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
-                        : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                i_DescriptorWrite.descriptorCount = 1;
-                i_DescriptorWrite.pBufferInfo = nullptr;
-                i_DescriptorWrite.pImageInfo = &(i_ImageInfos[i]);
-                i_DescriptorWrite.pTexelBufferView = nullptr;
-
-                i_DescriptorWrites.push_back(i_DescriptorWrite);
-              } else {
-                LOW_ASSERT(false, "Unsupported uniform type");
-              }
-            }
-
-            vkUpdateDescriptorSets(
-                p_Params.context->vk.m_Device,
-                static_cast<uint32_t>(i_DescriptorWrites.size()),
-                i_DescriptorWrites.data(), 0, nullptr);
-          }
-        }
-      } // namespace UniformUtils
-
-      void vk_uniform_scope_interface_create(
-          Backend::UniformScopeInterface &p_Interface,
-          Backend::UniformScopeInterfaceCreateParams &p_Params)
-      {
-        p_Interface.context = p_Params.context;
-
-        Util::List<VkDescriptorSetLayoutBinding> l_Bindings;
-
-        for (uint32_t i = 0u; i < p_Params.uniformInterfaceCount; ++i) {
-          Backend::UniformInterface &i_Uniform = p_Params.uniformInterfaces[i];
-
-          VkDescriptorSetLayoutBinding i_Binding;
-          i_Binding.binding = i;
-
-          i_Binding.descriptorCount = i_Uniform.uniformCount;
-
-          if (i_Uniform.pipelineStep == Backend::UniformPipelineStep::COMPUTE) {
-            i_Binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-          } else if (i_Uniform.pipelineStep ==
-                     Backend::UniformPipelineStep::VERTEX) {
-            i_Binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-          } else if (i_Uniform.pipelineStep ==
-                     Backend::UniformPipelineStep::FRAGMENT) {
-            i_Binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-          } else if (i_Uniform.pipelineStep ==
-                     Backend::UniformPipelineStep::GRAPHICS) {
-            i_Binding.stageFlags =
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-          } else {
-            LOW_ASSERT(false, "Unknown pipeline step");
-          }
-
-          if (i_Uniform.type == Backend::UniformType::UNIFORM_BUFFER) {
-            i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-          } else if (i_Uniform.type == Backend::UniformType::STORAGE_BUFFER) {
-            i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-          } else if (i_Uniform.type == Backend::UniformType::RENDERTARGET) {
-            i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-          } else if (i_Uniform.type == Backend::UniformType::SAMPLER) {
-            i_Binding.descriptorType =
-                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-          } else {
-            LOW_ASSERT(false, "Unknown uniform interface type");
-          }
-
-          i_Binding.pImmutableSamplers = nullptr;
-
-          l_Bindings.push_back(i_Binding);
-        }
-
-        VkDescriptorSetLayoutCreateInfo l_LayoutInfo{};
-        l_LayoutInfo.sType =
-            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        l_LayoutInfo.bindingCount = static_cast<uint32_t>(l_Bindings.size());
-        l_LayoutInfo.pBindings = l_Bindings.data();
-
-        LOW_ASSERT(vkCreateDescriptorSetLayout(
-                       p_Params.context->vk.m_Device, &l_LayoutInfo, nullptr,
-                       &(p_Interface.vk.m_Layout)) == VK_SUCCESS,
-                   "Failed to create descriptor set layout");
-      }
-
-      void vk_uniform_scope_interface_cleanup(
-          Backend::UniformScopeInterface &p_Interface)
-      {
-        vkDestroyDescriptorSetLayout(p_Interface.context->vk.m_Device,
-                                     p_Interface.vk.m_Layout, nullptr);
-      }
-
-      void
-      vk_uniform_buffer_create(Backend::Uniform &p_Uniform,
-                               Backend::UniformBufferCreateParams &p_Params)
-      {
-        p_Uniform.context = p_Params.context;
-        p_Uniform.framesInFlight =
-            Backend::swapchain_get_frames_in_flight(*p_Params.swapchain);
-
-        p_Uniform.binding = p_Params.binding;
-        p_Uniform.arrayIndex = p_Params.arrayIndex;
-
-        if (p_Params.bufferType == Backend::UniformBufferType::UNIFORM_BUFFER) {
-          p_Uniform.type = Backend::UniformType::UNIFORM_BUFFER;
-        } else if (p_Params.bufferType ==
-                   Backend::UniformBufferType::STORAGE_BUFFER) {
-          p_Uniform.type = Backend::UniformType::STORAGE_BUFFER;
-        } else {
-          LOW_ASSERT(false, "Unknown buffer type");
-        }
-
-        p_Uniform.vk.bufferSize = p_Params.bufferSize;
-
-        VkDeviceSize l_BufferSize = p_Params.bufferSize;
-
-        p_Uniform.vk.buffers =
-            (VkBuffer *)malloc(sizeof(VkBuffer) * p_Uniform.framesInFlight);
-        LOW_PROFILE_ALLOC(Vulkan Uniform Buffers);
-        p_Uniform.vk.bufferMemories = (VkDeviceMemory *)malloc(
-            sizeof(VkDeviceMemory) * p_Uniform.framesInFlight);
-        LOW_PROFILE_ALLOC(Vulkan Uniform Buffer Memories);
-
-        for (uint8_t i = 0; i < p_Uniform.framesInFlight; ++i) {
-          VkBufferUsageFlags i_Usage;
-
-          if (p_Params.bufferType ==
-              Backend::UniformBufferType::STORAGE_BUFFER) {
-            i_Usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-          } else if (p_Params.bufferType ==
-                     Backend::UniformBufferType::UNIFORM_BUFFER) {
-            i_Usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-          } else {
-            LOW_ASSERT(false, "Unknown uniform buffer type");
-          }
-
-          Utils::create_buffer(*p_Params.context, l_BufferSize, i_Usage,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                               p_Uniform.vk.buffers[i],
-                               p_Uniform.vk.bufferMemories[i]);
-        }
-      }
-
-      void vk_uniform_cleanup(Backend::Uniform &p_Uniform)
-      {
-        if (p_Uniform.type == Backend::UniformType::STORAGE_BUFFER ||
-            p_Uniform.type == Backend::UniformType::UNIFORM_BUFFER) {
-          for (uint32_t i = 0u; i < p_Uniform.framesInFlight; ++i) {
-            vkDestroyBuffer(p_Uniform.context->vk.m_Device,
-                            p_Uniform.vk.buffers[i], nullptr);
-            vkFreeMemory(p_Uniform.context->vk.m_Device,
-                         p_Uniform.vk.bufferMemories[i], nullptr);
-          }
-
-          free(p_Uniform.vk.bufferMemories);
-          LOW_PROFILE_FREE(Vulkan Uniform Buffer Memories);
-
-          free(p_Uniform.vk.buffers);
-          LOW_PROFILE_FREE(Vulkan Uniform Buffers);
-        }
-      }
-
-      void vk_uniform_buffer_set(Backend::Uniform &p_Uniform,
-                                 Backend::UniformBufferSetParams &p_Params)
-      {
-        _LOW_ASSERT(p_Uniform.type == Backend::UniformType::UNIFORM_BUFFER ||
-                    p_Uniform.type == Backend::UniformType::STORAGE_BUFFER);
-
-        uint8_t l_CurrentFrame =
-            Backend::swapchain_get_current_frame_index(*p_Params.swapchain);
-
-        void *l_Data;
-        vkMapMemory(p_Params.context->vk.m_Device,
-                    p_Uniform.vk.bufferMemories[l_CurrentFrame], 0,
-                    p_Uniform.vk.bufferSize, 0, &l_Data);
-        memcpy(l_Data, p_Params.value, p_Uniform.vk.bufferSize);
-        vkUnmapMemory(p_Params.context->vk.m_Device,
-                      p_Uniform.vk.bufferMemories[l_CurrentFrame]);
-      }
-
-      void vk_uniform_buffer_set(Backend::Uniform p_Uniform, void *p_Data)
-      {
-        _LOW_ASSERT(p_Uniform.type == Backend::UniformType::UNIFORM_BUFFER ||
-                    p_Uniform.type == Backend::UniformType::STORAGE_BUFFER);
-
-        for (uint8_t i = 0; i < p_Uniform.framesInFlight; ++i) {
-          void *l_Data;
-          vkMapMemory(p_Uniform.context->vk.m_Device,
-                      p_Uniform.vk.bufferMemories[i], 0,
-                      p_Uniform.vk.bufferSize, 0, &l_Data);
-          memcpy(l_Data, p_Data, p_Uniform.vk.bufferSize);
-          vkUnmapMemory(p_Uniform.context->vk.m_Device,
-                        p_Uniform.vk.bufferMemories[i]);
-        }
-      }
-
-      void vk_uniform_image_create(Backend::Uniform &p_Uniform,
-                                   Backend::UniformImageCreateParams &p_Params)
-      {
-        p_Uniform.context = p_Params.context;
-        p_Uniform.binding = p_Params.binding;
-        p_Uniform.arrayIndex = p_Params.arrayIndex;
-
-        if (p_Params.imageType == Backend::UniformImageType::SAMPLER) {
-          p_Uniform.type = Backend::UniformType::SAMPLER;
-        } else if (p_Params.imageType ==
-                   Backend::UniformImageType::RENDERTARGET) {
-          p_Uniform.type = Backend::UniformType::RENDERTARGET;
-        } else {
-          LOW_ASSERT(false, "Unknown uniform image tyoe");
-        }
-
-        p_Uniform.vk.sampler = p_Params.image->vk.m_Sampler;
-        p_Uniform.vk.imageView = p_Params.image->vk.m_ImageView;
-      }
-
-      void vk_uniform_pool_create(Backend::UniformPool &p_Pool,
-                                  Backend::UniformPoolCreateParams &p_Params)
-      {
-        p_Pool.context = p_Params.context;
-
-        Util::List<VkDescriptorPoolSize> l_PoolSizes;
-        if (p_Params.rendertargetCount > 0u) {
-          VkDescriptorPoolSize l_Size;
-          l_Size.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-          l_Size.descriptorCount = p_Params.rendertargetCount;
-          l_PoolSizes.push_back(l_Size);
-        }
-        if (p_Params.uniformBufferCount > 0u) {
-          VkDescriptorPoolSize l_Size;
-          l_Size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-          l_Size.descriptorCount = p_Params.uniformBufferCount;
-          l_PoolSizes.push_back(l_Size);
-        }
-        if (p_Params.samplerCount > 0u) {
-          VkDescriptorPoolSize l_Size;
-          l_Size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-          l_Size.descriptorCount = p_Params.samplerCount;
-          l_PoolSizes.push_back(l_Size);
-        }
-        if (p_Params.storageBufferCount > 0u) {
-          VkDescriptorPoolSize l_Size;
-          l_Size.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-          l_Size.descriptorCount = p_Params.storageBufferCount;
-          l_PoolSizes.push_back(l_Size);
-        }
-
-        VkDescriptorPoolCreateInfo l_PoolInfo{};
-        l_PoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        l_PoolInfo.poolSizeCount = static_cast<uint32_t>(l_PoolSizes.size());
-        l_PoolInfo.pPoolSizes = l_PoolSizes.data();
-        l_PoolInfo.maxSets = p_Params.scopeCount;
-
-        LOW_ASSERT(vkCreateDescriptorPool(p_Params.context->vk.m_Device,
-                                          &l_PoolInfo, nullptr,
-                                          &(p_Pool.vk.handle)) == VK_SUCCESS,
-                   "Failed to create descriptor pools");
-
-        LOW_LOG_DEBUG("Descriptor pool created");
-      }
-
-      void vk_uniform_pool_cleanup(Backend::UniformPool &p_Pool)
-      {
-        vkDestroyDescriptorPool(p_Pool.context->vk.m_Device, p_Pool.vk.handle,
-                                nullptr);
-      }
-
-      void vk_uniform_scope_create(Backend::UniformScope &p_Scope,
-                                   Backend::UniformScopeCreateParams &p_Params)
-      {
-        p_Scope.context = p_Params.context;
-        p_Scope.framesInFlight =
-            Backend::swapchain_get_frames_in_flight(*p_Params.swapchain);
-
-        Util::List<VkDescriptorSetLayout> l_Layouts(
-            p_Scope.framesInFlight, p_Params.interface->vk.m_Layout);
-
-        VkDescriptorSetAllocateInfo l_AllocInfo{};
-        l_AllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        l_AllocInfo.descriptorPool = p_Params.pool->vk.handle;
-        l_AllocInfo.descriptorSetCount =
-            static_cast<uint32_t>(p_Scope.framesInFlight);
-        l_AllocInfo.pSetLayouts = l_Layouts.data();
-
-        p_Scope.vk.sets = (VkDescriptorSet *)malloc(sizeof(VkDescriptorSet) *
-                                                    p_Scope.framesInFlight);
-        LOW_PROFILE_ALLOC(Vulkan Uniform Scope Descriptor Sets);
-        LOW_ASSERT(vkAllocateDescriptorSets(p_Params.context->vk.m_Device,
-                                            &l_AllocInfo,
-                                            p_Scope.vk.sets) == VK_SUCCESS,
-                   "Failed to allocate descriptor sets");
-
-        UniformUtils::vk_uniform_scope_assign(p_Scope, p_Params);
-      }
-
-      void vk_uniform_scopes_bind(Backend::UniformScopeBindParams &p_Params)
-      {
-        uint32_t l_CurrentFrame =
-            Backend::swapchain_get_current_frame_index(*p_Params.swapchain);
-
-        Util::List<VkDescriptorSet> l_Sets;
-        l_Sets.resize(p_Params.scopeCount);
-
-        for (uint32_t i = 0u; i < p_Params.scopeCount; ++i) {
-          l_Sets[i] = p_Params.scopes[i].vk.sets[l_CurrentFrame];
-        }
-
-        vkCmdBindDescriptorSets(
-            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
-                .vk.m_Handle,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            p_Params.pipelineInterface->vk.m_Handle, p_Params.startIndex,
-            static_cast<uint32_t>(l_Sets.size()), l_Sets.data(), 0, nullptr);
-
-        vkCmdBindDescriptorSets(
-            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
-                .vk.m_Handle,
-            VK_PIPELINE_BIND_POINT_COMPUTE,
-            p_Params.pipelineInterface->vk.m_Handle, p_Params.startIndex,
-            static_cast<uint32_t>(l_Sets.size()), l_Sets.data(), 0, nullptr);
-      }
-
-      void vk_uniform_scope_cleanup(Backend::UniformScope &p_Scope)
-      {
-        free(p_Scope.vk.sets);
-        LOW_PROFILE_FREE(Vulkan Uniform Scope Descriptor Sets);
-      }
-
-      void vk_buffer_create(Backend::Buffer &p_Buffer,
-                            Backend::BufferCreateParams &p_Params)
-      {
-        p_Buffer.context = p_Params.context;
-        p_Buffer.commandPool = p_Params.commandPool;
-        p_Buffer.bufferUsageType = p_Params.bufferUsageType;
-
-        VkDeviceSize l_BufferSize = p_Params.bufferSize;
-        p_Buffer.bufferSize = p_Params.bufferSize;
-
-        VkBuffer l_StagingBuffer;
-        VkDeviceMemory l_StagingBufferMemory;
-
-        Utils::create_buffer(*p_Params.context, l_BufferSize,
-                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                             l_StagingBuffer, l_StagingBufferMemory);
-
-        void *l_Data;
-        vkMapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory, 0,
-                    l_BufferSize, 0, &l_Data);
-        memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
-        vkUnmapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory);
-
-        VkBufferUsageFlags l_UsageFlage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-        if (p_Params.bufferUsageType == Backend::BufferUsageType::VERTEX) {
-          l_UsageFlage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        } else if (p_Params.bufferUsageType ==
-                   Backend::BufferUsageType::INDEX) {
-          l_UsageFlage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        }
-
-        Utils::create_buffer(*p_Params.context, l_BufferSize, l_UsageFlage,
-                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                             p_Buffer.vk.buffer, p_Buffer.vk.memory);
-
-        Utils::copy_buffer(*p_Params.context, *p_Params.commandPool,
-                           l_StagingBuffer, p_Buffer.vk.buffer, l_BufferSize);
-
-        vkDestroyBuffer(p_Params.context->vk.m_Device, l_StagingBuffer,
-                        nullptr);
-        vkFreeMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory,
-                     nullptr);
-      }
-
-      void vk_buffer_cleanup(Backend::Buffer &p_Buffer)
-      {
-        vkDestroyBuffer(p_Buffer.context->vk.m_Device, p_Buffer.vk.buffer,
-                        nullptr);
-        vkFreeMemory(p_Buffer.context->vk.m_Device, p_Buffer.vk.memory,
-                     nullptr);
-      }
-
-      void vk_buffer_bind_vertex(Backend::Buffer &p_Buffer,
-                                 Backend::BufferBindVertexParams &p_Params)
-      {
-        VkDeviceSize l_Offsets[] = {p_Params.offset};
-
-        vkCmdBindVertexBuffers(
-            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
-                .vk.m_Handle,
-            0, 1, &(p_Buffer.vk.buffer), l_Offsets);
-      }
-
-      void vk_buffer_bind_index(Backend::Buffer &p_Buffer,
-                                Backend::BufferBindIndexParams &p_Params)
-      {
-        VkIndexType l_IndexType = VK_INDEX_TYPE_UINT16;
-
-        if (p_Params.indexType == Backend::BufferBindIndexType::UINT8) {
-          l_IndexType = VK_INDEX_TYPE_UINT8_EXT;
-        } else if (p_Params.indexType == Backend::BufferBindIndexType::UINT16) {
-          l_IndexType = VK_INDEX_TYPE_UINT16;
-        } else if (p_Params.indexType == Backend::BufferBindIndexType::UINT32) {
-          l_IndexType = VK_INDEX_TYPE_UINT32;
-        } else {
-          LOW_ASSERT(false, "Unknown index type");
-        }
-
-        vkCmdBindIndexBuffer(
-            Backend::swapchain_get_current_commandbuffer(*p_Params.swapchain)
-                .vk.m_Handle,
-            p_Buffer.vk.buffer, p_Params.offset, l_IndexType);
-      }
-
-      void vk_buffer_write(Backend::Buffer &p_Buffer,
-                           Backend::BufferWriteParams &p_Params)
-      {
-        VkDeviceSize l_BufferSize = p_Params.dataSize;
-
-        VkBuffer l_StagingBuffer;
-        VkDeviceMemory l_StagingBufferMemory;
-
-        Utils::create_buffer(*p_Buffer.context, l_BufferSize,
-                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                 VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                             l_StagingBuffer, l_StagingBufferMemory);
-
-        void *l_Data;
-        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
-                    l_BufferSize, 0, &l_Data);
-        memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
-        vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
-
-        Utils::copy_buffer(*p_Buffer.context, *p_Buffer.commandPool,
-                           l_StagingBuffer, p_Buffer.vk.buffer, l_BufferSize, 0,
-                           p_Params.start);
-
-        vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
-                        nullptr);
-        vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
-                     nullptr);
-      }
-
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low
