@@ -227,6 +227,20 @@ namespace Low {
 #define LOW_RENDERER_COLOR_WRITE_BIT_BLUE 4
 #define LOW_RENDERER_COLOR_WRITE_BIT_ALPHA 8
 
+      struct GraphicsPipelineColorTarget
+      {
+        bool blendEnable;
+        uint32_t wirteMask;
+      };
+
+      namespace VertexAttributeType {
+        enum Enum
+        {
+          VECTOR2,
+          VECTOR3
+        };
+      }
+
       struct Pipeline
       {
         union
@@ -243,6 +257,25 @@ namespace Low {
         const char *shaderPath;
         PipelineResourceSignature *signatures;
         uint8_t signatureCount;
+      };
+
+      struct PipelineGraphicsCreateParams
+      {
+        Context *context;
+        const char *vertexShaderPath;
+        const char *fragmentShaderPath;
+        Math::UVector2 dimensions;
+        PipelineResourceSignature *signatures;
+        uint8_t signatureCount;
+        uint8_t cullMode;
+        uint8_t frontFace;
+        uint8_t polygonMode;
+        GraphicsPipelineColorTarget *colorTargets;
+        uint8_t colorTargetCount;
+        Renderpass *renderpass;
+
+        uint8_t *vertexDataAttributesType;
+        uint32_t vertexDataAttributeCount;
       };
 
       struct ApiBackendCallback
@@ -272,6 +305,8 @@ namespace Low {
 
         void (*pipeline_compute_create)(Pipeline &,
                                         PipelineComputeCreateParams &);
+        void (*pipeline_graphics_create)(Pipeline &,
+                                         PipelineGraphicsCreateParams &);
         void (*pipeline_cleanup)(Pipeline &);
         void (*pipeline_bind)(Pipeline &);
 

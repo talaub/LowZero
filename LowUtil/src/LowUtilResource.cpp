@@ -26,8 +26,6 @@ namespace Low {
         p_Image.dimensions.resize(l_Texture.levels());
         p_Image.data.resize(l_Texture.levels());
 
-        LOW_LOG_DEBUG(std::to_string(p_Image.dimensions.size()).c_str());
-
         for (uint32_t i = 0u; i < p_Image.dimensions.size(); ++i) {
           p_Image.dimensions[i].x = l_Texture.extent(i).x;
           p_Image.dimensions[i].y = l_Texture.extent(i).y;

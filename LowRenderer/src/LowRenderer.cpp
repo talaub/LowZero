@@ -156,7 +156,7 @@ namespace Low {
           g_Context.renderpasses[g_Context.currentImageIndex]);
 
       Backend::callbacks().pipeline_bind(g_Pipeline);
-      Backend::callbacks().compute_dispatch(g_Context, {10, 10, 1});
+      Backend::callbacks().compute_dispatch(g_Context, {38, 38, 1});
 
       Backend::callbacks().frame_render(g_Context);
     }
