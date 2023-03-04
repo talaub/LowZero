@@ -20,7 +20,8 @@ namespace Low {
         enum Enum
         {
           BGRA8_SRGB,
-          RGBA32_SFLOAT
+          RGBA32_SFLOAT,
+          RGBA8_UNORM
         };
       }
 
@@ -264,6 +265,8 @@ namespace Low {
             PipelineResourceSignature &, Util::Name, uint32_t,
             Resource::Buffer);
         void (*pipeline_resource_signature_set_image)(
+            PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
+        void (*pipeline_resource_signature_set_sampler)(
             PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
         void (*pipeline_resource_signature_commit)(PipelineResourceSignature &);
 

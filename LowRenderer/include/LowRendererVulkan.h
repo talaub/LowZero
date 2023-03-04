@@ -70,7 +70,9 @@ namespace Low {
         enum Enum
         {
           UNDEFINED,
-          GENERAL
+          GENERAL,
+          SHADER_READ_ONLY_OPTIMAL,
+          DESTINATION_OPTIMAL
         };
       };
 

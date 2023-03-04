@@ -21,7 +21,6 @@ namespace Low {
 
     Backend::Context g_Context;
     Backend::Pipeline g_Pipeline;
-    Resource::Buffer g_UniformBuffer;
 
     static void initialize_resource_types()
     {
@@ -39,6 +38,11 @@ namespace Low {
       Backend::initialize();
 
       initialize_types();
+
+      Util::Resource::Image2D l_Resource;
+      Util::Resource::load_image2d(
+          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.ktx").c_str(),
+          l_Resource);
 
       Window l_Window;
       WindowInit l_WindowInit;
@@ -70,10 +74,10 @@ namespace Low {
         }
         {
           Backend::PipelineResourceDescription l_Resource;
-          l_Resource.name = N(g_Value);
+          l_Resource.name = N(u_Texture);
           l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
           l_Resource.arraySize = 1;
-          l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
+          l_Resource.type = Backend::ResourceType::SAMPLER;
           l_Resources.push_back(l_Resource);
         }
 
@@ -87,6 +91,21 @@ namespace Low {
                                                                 l_Params);
 
         Backend::callbacks().pipeline_resource_signature_commit(l_Signature);
+      }
+
+      Resource::Image l_TextureResource;
+      {
+        Backend::ImageResourceCreateParams l_Params;
+        l_Params.createImage = true;
+        l_Params.imageData = l_Resource.data[0].data();
+        l_Params.imageDataSize = l_Resource.data[0].size();
+        l_Params.dimensions = l_Resource.dimensions[0];
+        l_Params.context = &g_Context;
+        l_Params.depth = false;
+        l_Params.writable = false;
+        l_Params.format = Backend::ImageFormat::RGBA8_UNORM;
+
+        l_TextureResource = Resource::Image::make(N(Texture), l_Params);
       }
 
       Resource::Image l_ImageResource;
@@ -104,23 +123,11 @@ namespace Low {
         l_ImageResource = Resource::Image::make(N(TestImage), l_Params);
       }
 
-      {
-        float x = 0.1f;
-        Backend::BufferCreateParams l_Params;
-        l_Params.context = &g_Context;
-        l_Params.bufferSize = sizeof(float);
-        l_Params.data = &x;
-        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
-
-        g_UniformBuffer =
-            Resource::Buffer::make(N(TestUniformBuffer), l_Params);
-      }
-
       Backend::callbacks().pipeline_resource_signature_set_image(
           l_Signature, N(out_Color), 0, l_ImageResource);
 
-      Backend::callbacks().pipeline_resource_signature_set_constant_buffer(
-          l_Signature, N(g_Value), 0, g_UniformBuffer);
+      Backend::callbacks().pipeline_resource_signature_set_sampler(
+          l_Signature, N(u_Texture), 0, l_TextureResource);
 
       {
 
@@ -147,14 +154,6 @@ namespace Low {
           g_Context.renderpasses[g_Context.currentImageIndex]);
       Backend::callbacks().renderpass_end(
           g_Context.renderpasses[g_Context.currentImageIndex]);
-
-      if (t == 20000) {
-        float x = 0.8f;
-        Backend::callbacks().buffer_set(g_UniformBuffer.get_buffer(), &x);
-      }
-      if (t <= 20000) {
-        t++;
-      }
 
       Backend::callbacks().pipeline_bind(g_Pipeline);
       Backend::callbacks().compute_dispatch(g_Context, {10, 10, 1});

@@ -201,6 +201,8 @@ namespace Low {
             return Backend::ImageFormat::BGRA8_SRGB;
           case VK_FORMAT_R32G32B32A32_SFLOAT:
             return Backend::ImageFormat::RGBA32_SFLOAT;
+          case VK_FORMAT_R8G8B8A8_UNORM:
+            return Backend::ImageFormat::RGBA8_UNORM;
           default:
             LOW_ASSERT(false, "Unknown vk format");
             return 0;
@@ -214,6 +216,8 @@ namespace Low {
             return VK_FORMAT_B8G8R8A8_SRGB;
           case Backend::ImageFormat::RGBA32_SFLOAT:
             return VK_FORMAT_R32G32B32A32_SFLOAT;
+          case Backend::ImageFormat::RGBA8_UNORM:
+            return VK_FORMAT_R8G8B8A8_UNORM;
           default:
             LOW_ASSERT(false, "Unknown image format");
             return VK_FORMAT_A2B10G10R10_SINT_PACK32;
@@ -827,6 +831,102 @@ namespace Low {
         Util::List<Math::Color> g_SwapchainClearColors = {
             {0.0f, 1.0f, 0.0f, 1.0f}};
       } // namespace ContextHelper
+
+      namespace BarrierHelper {
+        void transition_image_barrier(
+            VkCommandBuffer p_CommandBuffer, Backend::ImageResource &p_Image2D,
+            VkImageLayout p_OldLayout, VkImageLayout p_NewLayout,
+            VkAccessFlags p_SrcAccessMask, VkAccessFlags p_DstAccessMask,
+            VkPipelineStageFlags p_SourceStage, VkPipelineStageFlags p_DstStage)
+        {
+          VkImageMemoryBarrier l_Barrier{};
+          l_Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+          l_Barrier.oldLayout = p_OldLayout;
+          l_Barrier.newLayout = p_NewLayout;
+          l_Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+          l_Barrier.image = p_Image2D.vk.m_Image;
+          if (p_Image2D.depth) {
+            l_Barrier.subresourceRange.aspectMask =
+                VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+          } else {
+            l_Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+          }
+          l_Barrier.subresourceRange.baseMipLevel = 0;
+          l_Barrier.subresourceRange.levelCount = 1;
+          l_Barrier.subresourceRange.baseArrayLayer = 0;
+          l_Barrier.subresourceRange.layerCount = 1;
+          l_Barrier.srcAccessMask = p_SrcAccessMask;
+          l_Barrier.dstAccessMask = p_DstAccessMask;
+          VkPipelineStageFlags l_SourceStage = p_SourceStage;
+          VkPipelineStageFlags l_DestinationStage = p_DstStage;
+
+          vkCmdPipelineBarrier(p_CommandBuffer, l_SourceStage,
+                               l_DestinationStage, 0, 0, nullptr, 0, nullptr, 1,
+                               &l_Barrier);
+        }
+
+        static void perform_resource_barrier_sampler(
+            Backend::Context &p_Context,
+            Backend::PipelineResourceBinding &p_Binding)
+        {
+          Util::Handle l_Handle(p_Binding.boundResourceHandleId);
+          LOW_ASSERT(l_Handle.get_type() == Resource::Image::TYPE_ID,
+                     "Unexpected resource type");
+          Resource::Image l_Image(l_Handle.get_id());
+
+          VkCommandBuffer l_CommandBuffer =
+              ContextHelper::get_current_commandbuffer(p_Context);
+
+          if (l_Image.get_image().vk.m_State ==
+              ImageState::SHADER_READ_ONLY_OPTIMAL) {
+            return;
+          } else if (l_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
+            transition_image_barrier(
+                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0,
+                VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+          } else if (l_Image.get_image().vk.m_State ==
+                     ImageState::DESTINATION_OPTIMAL) {
+            transition_image_barrier(l_CommandBuffer, l_Image.get_image(),
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                     0, VK_ACCESS_SHADER_READ_BIT,
+                                     VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+          } else {
+            LOW_ASSERT_WARN(false, "Unsupported image state for transition");
+          }
+          l_Image.get_image().vk.m_State = ImageState::SHADER_READ_ONLY_OPTIMAL;
+        }
+
+        static void perform_resource_barrier_image(
+            Backend::Context &p_Context,
+            Backend::PipelineResourceBinding &p_Binding)
+        {
+          Util::Handle l_Handle(p_Binding.boundResourceHandleId);
+          LOW_ASSERT(l_Handle.get_type() == Resource::Image::TYPE_ID,
+                     "Unexpected resource type");
+          Resource::Image l_Image(l_Handle.get_id());
+
+          VkCommandBuffer l_CommandBuffer =
+              ContextHelper::get_current_commandbuffer(p_Context);
+
+          if (l_Image.get_image().vk.m_State == ImageState::GENERAL) {
+            return;
+          } else if (l_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
+            transition_image_barrier(
+                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_SHADER_WRITE_BIT,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+            l_Image.get_image().vk.m_State = ImageState::GENERAL;
+          } else {
+            LOW_ASSERT_WARN(false, "Unsupported image state for transition");
+          }
+        }
+      } // namespace BarrierHelper
 
       void vk_context_create(Backend::Context &p_Context,
                              Backend::ContextCreateParams &p_Params)
@@ -1602,6 +1702,30 @@ namespace Low {
 
           vkBindImageMemory(p_Image.context->vk.m_Device, p_Image.vk.m_Image,
                             p_Image.vk.m_Memory, 0);
+
+          if (p_ImageData) {
+            VkCommandBuffer l_CommandBuffer =
+                Helper::begin_single_time_commands(*p_Image.context);
+
+            {
+              BarrierHelper::transition_image_barrier(
+                  l_CommandBuffer, p_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 0,
+                  VK_ACCESS_TRANSFER_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+              p_Image.vk.m_State = ImageState::DESTINATION_OPTIMAL;
+            }
+            Helper::end_single_time_commands(*p_Image.context, l_CommandBuffer);
+
+            copy_buffer_to_image(p_Image, l_StagingBuffer, p_Image.dimensions.x,
+                                 p_Image.dimensions.y);
+
+            vkDestroyBuffer(p_Image.context->vk.m_Device, l_StagingBuffer,
+                            nullptr);
+            vkFreeMemory(p_Image.context->vk.m_Device, l_StagingBufferMemory,
+                         nullptr);
+          }
         }
       } // namespace ImageHelper
 
@@ -1848,6 +1972,55 @@ namespace Low {
         }
       }
 
+      void vk_pipeline_resource_signature_set_sampler(
+          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
+          uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
+      {
+        uint32_t l_ResourceIndex =
+            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        Backend::PipelineResourceBinding &l_Resource =
+            p_Signature.resources[l_ResourceIndex];
+
+        LOW_ASSERT(l_Resource.description.type ==
+                       Backend::ResourceType::SAMPLER,
+                   "Expected image resource type");
+        LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
+                   "Resource array index out of bounds");
+
+        l_Resource.boundResourceHandleId = p_ImageResource.get_id();
+        p_Signature.context->vk
+            .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+            .m_Bindings[l_ResourceIndex]
+            .boundResourceHandleId = p_ImageResource.get_id();
+
+        for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
+          VkDescriptorImageInfo i_ImageInfo;
+          i_ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+          i_ImageInfo.imageView = p_ImageResource.get_image().vk.m_ImageView;
+          i_ImageInfo.sampler = p_ImageResource.get_image().vk.m_Sampler;
+
+          VkWriteDescriptorSet i_DescriptorWrite;
+
+          i_DescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          i_DescriptorWrite.dstSet =
+              p_Signature.context->vk
+                  .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+                  .m_DescriptorSets[j];
+          i_DescriptorWrite.dstBinding = l_ResourceIndex;
+          i_DescriptorWrite.dstArrayElement = p_ArrayIndex;
+          i_DescriptorWrite.pNext = nullptr;
+          i_DescriptorWrite.descriptorType =
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+          i_DescriptorWrite.descriptorCount = 1;
+          i_DescriptorWrite.pBufferInfo = nullptr;
+          i_DescriptorWrite.pImageInfo = &(i_ImageInfo);
+          i_DescriptorWrite.pTexelBufferView = nullptr;
+
+          vkUpdateDescriptorSets(p_Signature.context->vk.m_Device, 1,
+                                 &i_DescriptorWrite, 0, nullptr);
+        }
+      }
+
       void vk_pipeline_resource_signature_set_image(
           Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
           uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
@@ -2020,67 +2193,6 @@ namespace Low {
         }
       }
 
-      namespace BarrierHelpers {
-        void transition_image_barrier(
-            VkCommandBuffer p_CommandBuffer, Backend::ImageResource &p_Image2D,
-            VkImageLayout p_OldLayout, VkImageLayout p_NewLayout,
-            VkAccessFlags p_SrcAccessMask, VkAccessFlags p_DstAccessMask,
-            VkPipelineStageFlags p_SourceStage, VkPipelineStageFlags p_DstStage)
-        {
-          VkImageMemoryBarrier l_Barrier{};
-          l_Barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-          l_Barrier.oldLayout = p_OldLayout;
-          l_Barrier.newLayout = p_NewLayout;
-          l_Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-          l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-          l_Barrier.image = p_Image2D.vk.m_Image;
-          if (p_Image2D.depth) {
-            l_Barrier.subresourceRange.aspectMask =
-                VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
-          } else {
-            l_Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-          }
-          l_Barrier.subresourceRange.baseMipLevel = 0;
-          l_Barrier.subresourceRange.levelCount = 1;
-          l_Barrier.subresourceRange.baseArrayLayer = 0;
-          l_Barrier.subresourceRange.layerCount = 1;
-          l_Barrier.srcAccessMask = p_SrcAccessMask;
-          l_Barrier.dstAccessMask = p_DstAccessMask;
-          VkPipelineStageFlags l_SourceStage = p_SourceStage;
-          VkPipelineStageFlags l_DestinationStage = p_DstStage;
-
-          vkCmdPipelineBarrier(p_CommandBuffer, l_SourceStage,
-                               l_DestinationStage, 0, 0, nullptr, 0, nullptr, 1,
-                               &l_Barrier);
-        }
-
-        static void perform_resource_barrier_image(
-            Backend::Context &p_Context,
-            Backend::PipelineResourceBinding &p_Binding)
-        {
-          Util::Handle l_Handle(p_Binding.boundResourceHandleId);
-          LOW_ASSERT(l_Handle.get_type() == Resource::Image::TYPE_ID,
-                     "Unexpected resource type");
-          Resource::Image l_Image(l_Handle.get_id());
-
-          VkCommandBuffer l_CommandBuffer =
-              ContextHelper::get_current_commandbuffer(p_Context);
-
-          if (l_Image.get_image().vk.m_State == ImageState::GENERAL) {
-            return;
-          } else if (l_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
-            transition_image_barrier(
-                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_SHADER_WRITE_BIT,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-            l_Image.get_image().vk.m_State = ImageState::GENERAL;
-          } else {
-            LOW_ASSERT_WARN(false, "Unsupported image state for transition");
-          }
-        }
-      } // namespace BarrierHelpers
-
       static void vk_perform_barriers(Backend::Context &p_Context)
       {
         for (uint32_t i = 0u; i < LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS; ++i) {
@@ -2097,8 +2209,12 @@ namespace Low {
             Backend::PipelineResourceBinding &i_Binding =
                 l_InternalSignature.m_Bindings[j];
             if (i_Binding.description.type == Backend::ResourceType::IMAGE) {
-              BarrierHelpers::perform_resource_barrier_image(p_Context,
-                                                             i_Binding);
+              BarrierHelper::perform_resource_barrier_image(p_Context,
+                                                            i_Binding);
+            } else if (i_Binding.description.type ==
+                       Backend::ResourceType::SAMPLER) {
+              BarrierHelper::perform_resource_barrier_sampler(p_Context,
+                                                              i_Binding);
             }
           }
         }
@@ -2249,6 +2365,8 @@ namespace Low {
             &vk_pipeline_resource_signature_set_constant_buffer;
         p_Callbacks.pipeline_resource_signature_set_image =
             &vk_pipeline_resource_signature_set_image;
+        p_Callbacks.pipeline_resource_signature_set_sampler =
+            &vk_pipeline_resource_signature_set_sampler;
         p_Callbacks.pipeline_resource_signature_commit =
             &vk_pipeline_resource_signature_commit;
 
