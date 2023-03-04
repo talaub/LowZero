@@ -13,7 +13,8 @@ namespace Low {
   namespace Renderer {
     namespace Resource {
       struct Image;
-    }
+      struct Buffer;
+    } // namespace Resource
     namespace Backend {
       namespace ImageFormat {
         enum Enum
@@ -155,6 +156,30 @@ namespace Low {
         size_t imageDataSize;
       };
 
+#define LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT 1
+#define LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER 2
+#define LOW_RENDERER_BUFFER_USAGE_VERTEX 4
+#define LOW_RENDERER_BUFFER_USAGE_INDEX 8
+
+      struct BufferCreateParams
+      {
+        Context *context;
+        uint32_t usageFlags;
+        uint32_t bufferSize;
+        void *data;
+      };
+
+      struct Buffer
+      {
+        union
+        {
+          Vulkan::Buffer vk;
+        };
+        Context *context;
+        uint32_t bufferSize;
+        uint32_t usageFlags;
+      };
+
       namespace ContextState {
         enum Enum
         {
@@ -235,6 +260,9 @@ namespace Low {
         void (*pipeline_resource_signature_create)(
             PipelineResourceSignature &,
             PipelineResourceSignatureCreateParams &);
+        void (*pipeline_resource_signature_set_constant_buffer)(
+            PipelineResourceSignature &, Util::Name, uint32_t,
+            Resource::Buffer);
         void (*pipeline_resource_signature_set_image)(
             PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
         void (*pipeline_resource_signature_commit)(PipelineResourceSignature &);
@@ -249,6 +277,10 @@ namespace Low {
         void (*imageresource_create)(ImageResource &,
                                      ImageResourceCreateParams &);
         void (*imageresource_cleanup)(ImageResource &);
+
+        void (*buffer_create)(Buffer &, BufferCreateParams &);
+        void (*buffer_set)(Buffer &, void *);
+        void (*buffer_cleanup)(Buffer &);
       };
 
       ApiBackendCallback &callbacks();

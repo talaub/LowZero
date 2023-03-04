@@ -3,12 +3,16 @@
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0, set = 0, rgba32f) uniform image2D out_Color;
+layout(set = 0, binding = 1) uniform ColorInfoWrapper
+{
+  float g_Value;
+};
 
 void main()
 {
   ivec2 xy_int = ivec2(gl_GlobalInvocationID.xy);
 
-  vec3 ocolor = vec3(0.5, 0.2, 0.2);
+  vec3 ocolor = vec3(g_Value);
 
   imageStore(out_Color, xy_int, vec4(ocolor, 1.0));
 }

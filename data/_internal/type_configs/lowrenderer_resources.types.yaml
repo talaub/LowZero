@@ -22,3 +22,20 @@ types:
             type: Util::Name
           - name: params
             type: Backend::ImageResourceCreateParams
+  Buffer:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+    properties:
+      buffer:
+        type: Backend::Buffer
+    functions:
+      make:
+        static: true
+        return_type: Buffer
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: Backend::BufferCreateParams

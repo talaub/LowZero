@@ -93,6 +93,12 @@ namespace Low {
         VkPipeline m_Pipeline;
         VkPipelineLayout m_PipelineLayout;
       };
+
+      struct Buffer
+      {
+        VkBuffer m_Buffer;
+        VkDeviceMemory m_Memory;
+      };
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

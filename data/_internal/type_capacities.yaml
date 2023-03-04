@@ -1,2 +1,3 @@
 LowRenderer:
-  Image: 256
+  Image: 4
+  Buffer: 4

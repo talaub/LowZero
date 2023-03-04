@@ -15,6 +15,7 @@
 
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
+#include "LowRendererBuffer.h"
 
 #include <GLFW/glfw3.h>
 
@@ -293,6 +294,50 @@ namespace Low {
 
           vkBindBufferMemory(p_Context.vk.m_Device, p_Buffer, p_BufferMemory,
                              0);
+        }
+        static void copy_buffer(Backend::Context &p_Context,
+
+                                VkBuffer p_SourceBuffer, VkBuffer p_DestBuffer,
+                                VkDeviceSize p_Size,
+                                VkDeviceSize p_SourceOffset = 0u,
+                                VkDeviceSize p_DestOffset = 0u)
+        {
+          VkCommandBufferAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+          l_AllocInfo.commandPool = p_Context.vk.m_CommandPool;
+          l_AllocInfo.commandBufferCount = 1;
+
+          VkCommandBuffer l_CommandBuffer;
+          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
+                                   &l_CommandBuffer);
+
+          VkCommandBufferBeginInfo l_BeginInfo{};
+          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+          vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo);
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = p_SourceOffset;
+          l_CopyRegion.dstOffset = p_DestOffset;
+          l_CopyRegion.size = p_Size;
+          vkCmdCopyBuffer(l_CommandBuffer, p_SourceBuffer, p_DestBuffer, 1,
+                          &l_CopyRegion);
+
+          vkEndCommandBuffer(l_CommandBuffer);
+
+          VkSubmitInfo l_SubmitInfo{};
+          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+          l_SubmitInfo.commandBufferCount = 1;
+          l_SubmitInfo.pCommandBuffers = &l_CommandBuffer;
+
+          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
+                        VK_NULL_HANDLE);
+          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
+
+          vkFreeCommandBuffers(p_Context.vk.m_Device,
+                               p_Context.vk.m_CommandPool, 1, &l_CommandBuffer);
         }
 
         VkFormat vkformat_get_depth(Backend::Context &p_Context)
@@ -1742,61 +1787,112 @@ namespace Low {
         }
       }
 
+      uint32_t vk_pipeline_resource_signature_get_binding(
+          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name)
+      {
+
+        for (uint32_t i = 0u; i < p_Signature.resourceCount; ++i) {
+          if (p_Signature.resources[i].description.name == p_Name) {
+            return i;
+          }
+        }
+        LOW_ASSERT(false, "Unable to find resource binding");
+        return ~0u;
+      }
+
+      void vk_pipeline_resource_signature_set_constant_buffer(
+          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
+          uint32_t p_ArrayIndex, Resource::Buffer p_BufferResource)
+      {
+        uint32_t l_ResourceIndex =
+            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        Backend::PipelineResourceBinding &l_Resource =
+            p_Signature.resources[l_ResourceIndex];
+
+        LOW_ASSERT(l_Resource.description.type ==
+                       Backend::ResourceType::CONSTANT_BUFFER,
+                   "Expected image resource type");
+        LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
+                   "Resource array index out of bounds");
+
+        l_Resource.boundResourceHandleId = p_BufferResource.get_id();
+        p_Signature.context->vk
+            .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+            .m_Bindings[l_ResourceIndex]
+            .boundResourceHandleId = p_BufferResource.get_id();
+
+        for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
+          VkDescriptorBufferInfo i_BufferInfo;
+          i_BufferInfo.buffer = p_BufferResource.get_buffer().vk.m_Buffer;
+          i_BufferInfo.offset = 0;
+          i_BufferInfo.range = p_BufferResource.get_buffer().bufferSize;
+
+          VkWriteDescriptorSet i_DescriptorWrite;
+
+          i_DescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          i_DescriptorWrite.dstSet =
+              p_Signature.context->vk
+                  .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+                  .m_DescriptorSets[j];
+          i_DescriptorWrite.dstBinding = l_ResourceIndex;
+          i_DescriptorWrite.dstArrayElement = p_ArrayIndex;
+          i_DescriptorWrite.pNext = nullptr;
+          i_DescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+          i_DescriptorWrite.descriptorCount = 1;
+          i_DescriptorWrite.pBufferInfo = &i_BufferInfo;
+          i_DescriptorWrite.pImageInfo = nullptr;
+          i_DescriptorWrite.pTexelBufferView = nullptr;
+
+          vkUpdateDescriptorSets(p_Signature.context->vk.m_Device, 1,
+                                 &i_DescriptorWrite, 0, nullptr);
+        }
+      }
+
       void vk_pipeline_resource_signature_set_image(
           Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
           uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
       {
-        bool l_Found = false;
-        for (uint32_t i = 0u; i < p_Signature.resourceCount; ++i) {
-          if (p_Signature.resources[i].description.name == p_Name) {
-            Backend::PipelineResourceBinding &i_Resource =
-                p_Signature.resources[i];
+        uint32_t l_ResourceIndex =
+            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        Backend::PipelineResourceBinding &l_Resource =
+            p_Signature.resources[l_ResourceIndex];
 
-            LOW_ASSERT(i_Resource.description.type ==
-                           Backend::ResourceType::IMAGE,
-                       "Expected image resource type");
-            LOW_ASSERT(p_ArrayIndex < i_Resource.description.arraySize,
-                       "Resource array index out of bounds");
+        LOW_ASSERT(l_Resource.description.type == Backend::ResourceType::IMAGE,
+                   "Expected image resource type");
+        LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
+                   "Resource array index out of bounds");
 
-            l_Found = true;
-            i_Resource.boundResourceHandleId = p_ImageResource.get_id();
-            p_Signature.context->vk
-                .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
-                .m_Bindings[i]
-                .boundResourceHandleId = p_ImageResource.get_id();
+        l_Resource.boundResourceHandleId = p_ImageResource.get_id();
+        p_Signature.context->vk
+            .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+            .m_Bindings[l_ResourceIndex]
+            .boundResourceHandleId = p_ImageResource.get_id();
 
-            for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
-              VkDescriptorImageInfo i_ImageInfo;
-              i_ImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-              i_ImageInfo.imageView =
-                  p_ImageResource.get_image().vk.m_ImageView;
-              i_ImageInfo.sampler = p_ImageResource.get_image().vk.m_Sampler;
+        for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
+          VkDescriptorImageInfo i_ImageInfo;
+          i_ImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+          i_ImageInfo.imageView = p_ImageResource.get_image().vk.m_ImageView;
+          i_ImageInfo.sampler = p_ImageResource.get_image().vk.m_Sampler;
 
-              VkWriteDescriptorSet i_DescriptorWrite;
+          VkWriteDescriptorSet i_DescriptorWrite;
 
-              i_DescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-              i_DescriptorWrite.dstSet =
-                  p_Signature.context->vk
-                      .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
-                      .m_DescriptorSets[j];
-              i_DescriptorWrite.dstBinding = i;
-              i_DescriptorWrite.dstArrayElement = p_ArrayIndex;
-              i_DescriptorWrite.pNext = nullptr;
-              i_DescriptorWrite.descriptorType =
-                  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-              i_DescriptorWrite.descriptorCount = 1;
-              i_DescriptorWrite.pBufferInfo = nullptr;
-              i_DescriptorWrite.pImageInfo = &(i_ImageInfo);
-              i_DescriptorWrite.pTexelBufferView = nullptr;
+          i_DescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          i_DescriptorWrite.dstSet =
+              p_Signature.context->vk
+                  .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+                  .m_DescriptorSets[j];
+          i_DescriptorWrite.dstBinding = l_ResourceIndex;
+          i_DescriptorWrite.dstArrayElement = p_ArrayIndex;
+          i_DescriptorWrite.pNext = nullptr;
+          i_DescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+          i_DescriptorWrite.descriptorCount = 1;
+          i_DescriptorWrite.pBufferInfo = nullptr;
+          i_DescriptorWrite.pImageInfo = &(i_ImageInfo);
+          i_DescriptorWrite.pTexelBufferView = nullptr;
 
-              vkUpdateDescriptorSets(p_Signature.context->vk.m_Device, 1,
-                                     &i_DescriptorWrite, 0, nullptr);
-            }
-
-            break;
-          }
+          vkUpdateDescriptorSets(p_Signature.context->vk.m_Device, 1,
+                                 &i_DescriptorWrite, 0, nullptr);
         }
-        LOW_ASSERT(l_Found, "Unable to find resource binding");
       }
 
       namespace PipelineHelper {
@@ -2048,6 +2144,92 @@ namespace Low {
                       p_Dimensions.x, p_Dimensions.y, p_Dimensions.z);
       }
 
+      void vk_buffer_create(Backend::Buffer &p_Buffer,
+                            Backend::BufferCreateParams &p_Params)
+      {
+        p_Buffer.context = p_Params.context;
+        p_Buffer.usageFlags = p_Params.usageFlags;
+
+        VkDeviceSize l_BufferSize = p_Params.bufferSize;
+        p_Buffer.bufferSize = p_Params.bufferSize;
+
+        VkBuffer l_StagingBuffer;
+        VkDeviceMemory l_StagingBufferMemory;
+
+        Helper::create_buffer(*p_Params.context, l_BufferSize,
+                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                              l_StagingBuffer, l_StagingBufferMemory);
+
+        void *l_Data;
+        vkMapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory, 0,
+                    l_BufferSize, 0, &l_Data);
+        memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
+        vkUnmapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory);
+
+        VkBufferUsageFlags l_UsageFlage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+        if ((p_Params.usageFlags & LOW_RENDERER_BUFFER_USAGE_VERTEX) ==
+            LOW_RENDERER_BUFFER_USAGE_VERTEX) {
+          l_UsageFlage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        } else if ((p_Params.usageFlags & LOW_RENDERER_BUFFER_USAGE_INDEX) ==
+                   LOW_RENDERER_BUFFER_USAGE_INDEX) {
+          l_UsageFlage |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        } else if ((p_Params.usageFlags &
+                    LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT) ==
+                   LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT) {
+          l_UsageFlage |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        }
+
+        Helper::create_buffer(*p_Params.context, l_BufferSize, l_UsageFlage,
+                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                              p_Buffer.vk.m_Buffer, p_Buffer.vk.m_Memory);
+
+        Helper::copy_buffer(*p_Params.context, l_StagingBuffer,
+                            p_Buffer.vk.m_Buffer, l_BufferSize);
+
+        vkDestroyBuffer(p_Params.context->vk.m_Device, l_StagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory,
+                     nullptr);
+      }
+
+      void vk_buffer_cleanup(Backend::Buffer &p_Buffer)
+      {
+        vkDestroyBuffer(p_Buffer.context->vk.m_Device, p_Buffer.vk.m_Buffer,
+                        nullptr);
+        vkFreeMemory(p_Buffer.context->vk.m_Device, p_Buffer.vk.m_Memory,
+                     nullptr);
+      }
+
+      void vk_buffer_set(Backend::Buffer &p_Buffer, void *p_Data)
+      {
+
+        VkBuffer l_StagingBuffer;
+        VkDeviceMemory l_StagingBufferMemory;
+
+        Helper::create_buffer(*p_Buffer.context, p_Buffer.bufferSize,
+                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                              l_StagingBuffer, l_StagingBufferMemory);
+
+        void *l_Data;
+        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
+                    p_Buffer.bufferSize, 0, &l_Data);
+        memcpy(l_Data, p_Data, (size_t)p_Buffer.bufferSize);
+        vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
+
+        Helper::copy_buffer(*p_Buffer.context, l_StagingBuffer,
+                            p_Buffer.vk.m_Buffer, p_Buffer.bufferSize);
+
+        vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
+                     nullptr);
+      }
+
       void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
       {
         p_Callbacks.context_create = &vk_context_create;
@@ -2063,6 +2245,8 @@ namespace Low {
 
         p_Callbacks.pipeline_resource_signature_create =
             &vk_pipeline_resource_signature_create;
+        p_Callbacks.pipeline_resource_signature_set_constant_buffer =
+            &vk_pipeline_resource_signature_set_constant_buffer;
         p_Callbacks.pipeline_resource_signature_set_image =
             &vk_pipeline_resource_signature_set_image;
         p_Callbacks.pipeline_resource_signature_commit =
@@ -2076,6 +2260,10 @@ namespace Low {
 
         p_Callbacks.imageresource_create = &vk_imageresource_create;
         p_Callbacks.imageresource_cleanup = &vk_imageresource_cleanup;
+
+        p_Callbacks.buffer_create = &vk_buffer_create;
+        p_Callbacks.buffer_cleanup = &vk_buffer_cleanup;
+        p_Callbacks.buffer_set = &vk_buffer_set;
       }
     } // namespace Vulkan
   }   // namespace Renderer
