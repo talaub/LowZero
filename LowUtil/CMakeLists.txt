@@ -3,10 +3,14 @@ project(LowUtil)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_library(LowUtil SHARED ${SOURCES})
+add_library(LowUtil SHARED
+  ${SOURCES}
+  "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/microprofile/microprofile.cpp"
+)
 
 set(LOWUTIL_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/microprofile"
 )
 
 add_dependencies(LowUtil
@@ -41,6 +45,7 @@ target_link_libraries(LowUtil PRIVATE
 )
 
 target_link_libraries(LowUtil PUBLIC
+  microprofile
   "${CMAKE_BINARY_DIR}/LowDependencies/EASTL/build/${CMAKE_BUILD_TYPE}/EASTL.lib"
   yaml-cpp
   gli

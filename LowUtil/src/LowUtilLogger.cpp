@@ -8,6 +8,8 @@
 #include <time.h>
 #include <thread>
 
+#include <microprofile.h>
+
 namespace Low {
   namespace Util {
     namespace Log {

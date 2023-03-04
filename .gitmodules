@@ -22,3 +22,6 @@
 [submodule "LowDependencies/tlsf"]
 	path = LowDependencies/tlsf
 	url = https://github.com/mattconte/tlsf.git
+[submodule "LowDependencies/microprofile"]
+	path = LowDependencies/microprofile
+	url = https://github.com/jonasmr/microprofile.git

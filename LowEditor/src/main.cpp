@@ -14,6 +14,8 @@
 
 #include <stdint.h>
 
+#include <microprofile.h>
+
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
 {
@@ -34,7 +36,10 @@ int main()
   Low::Renderer::initialize();
 
   while (Low::Renderer::window_is_open()) {
-    Low::Renderer::tick(0.0f);
+    {
+      Low::Renderer::tick(0.0f);
+    }
+    MicroProfileFlip(nullptr);
   }
 
   Low::Renderer::cleanup();

@@ -7,18 +7,25 @@
 
 #include "LowUtilName.h"
 
+#define LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS 4
+
 namespace Low {
   namespace Renderer {
+    namespace Resource {
+      struct Image;
+    }
     namespace Backend {
       namespace ImageFormat {
         enum Enum
         {
-          BGRA8_SRGB
+          BGRA8_SRGB,
+          RGBA32_SFLOAT
         };
       }
 
       struct Context;
       struct ImageResource;
+      struct PipelineResourceSignature;
 
       struct Renderpass
       {
@@ -69,18 +76,59 @@ namespace Low {
         Math::UVector2 dimensions;
       };
 
-      namespace ImageState {
+      namespace ResourcePipelineStep {
         enum Enum
         {
-          UNDEFINED,
-          RENDERTARGET,
-          STORAGE,
-          SAMPLE,
-          TRANSFER_SOURCE,
-          TRANSFER_DESTINATION,
-          DEPTH_RENDERTARGET
+          GRAPHICS,
+          COMPUTE,
+          VERTEX,
+          FRAGMENT
         };
       }
+
+      namespace ResourceType {
+        enum Enum
+        {
+          CONSTANT_BUFFER,
+          BUFFER,
+          SAMPLER,
+          IMAGE
+        };
+      };
+
+      struct PipelineResourceDescription
+      {
+        Util::Name name;
+        uint8_t type;
+        uint8_t step;
+        uint32_t arraySize;
+      };
+
+      struct PipelineResourceBinding
+      {
+        PipelineResourceDescription description;
+        uint64_t boundResourceHandleId;
+      };
+
+      struct PipelineResourceSignatureCreateParams
+      {
+        Context *context;
+        PipelineResourceDescription *resourceDescriptions;
+        uint32_t resourceDescriptionCount;
+        uint8_t binding;
+      };
+
+      struct PipelineResourceSignature
+      {
+        union
+        {
+          Vulkan::PipelineResourceSignature vk;
+        };
+        PipelineResourceBinding *resources;
+        uint32_t resourceCount;
+        uint8_t binding;
+        Context *context;
+      };
 
       struct ImageResource
       {
@@ -89,7 +137,6 @@ namespace Low {
           Vulkan::ImageResource vk;
         };
         Context *context;
-        uint8_t state;
         bool swapchainImage;
         uint8_t format;
         bool depth;
@@ -141,20 +188,36 @@ namespace Low {
         };
       }
 
+      namespace PipelineType {
+        enum Enum
+        {
+          GRAPHICS,
+          COMPUTE
+        };
+      }
+
 #define LOW_RENDERER_COLOR_WRITE_BIT_RED 1
 #define LOW_RENDERER_COLOR_WRITE_BIT_GREEN 2
 #define LOW_RENDERER_COLOR_WRITE_BIT_BLUE 4
 #define LOW_RENDERER_COLOR_WRITE_BIT_ALPHA 8
 
-      namespace ResourcePipelineStep {
-        enum Enum
+      struct Pipeline
+      {
+        union
         {
-          GRAPHICS,
-          COMPUTE,
-          VERTEX,
-          FRAGMENT
+          Vulkan::Pipeline vk;
         };
-      }
+        uint8_t type;
+        Context *context;
+      };
+
+      struct PipelineComputeCreateParams
+      {
+        Context *context;
+        const char *shaderPath;
+        PipelineResourceSignature *signatures;
+        uint8_t signatureCount;
+      };
 
       struct ApiBackendCallback
       {
@@ -169,8 +232,23 @@ namespace Low {
         void (*renderpass_begin)(Renderpass &);
         void (*renderpass_end)(Renderpass &);
 
+        void (*pipeline_resource_signature_create)(
+            PipelineResourceSignature &,
+            PipelineResourceSignatureCreateParams &);
+        void (*pipeline_resource_signature_set_image)(
+            PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
+        void (*pipeline_resource_signature_commit)(PipelineResourceSignature &);
+
+        void (*pipeline_compute_create)(Pipeline &,
+                                        PipelineComputeCreateParams &);
+        void (*pipeline_cleanup)(Pipeline &);
+        void (*pipeline_bind)(Pipeline &);
+
+        void (*compute_dispatch)(Context &, Math::UVector3);
+
         void (*imageresource_create)(ImageResource &,
                                      ImageResourceCreateParams &);
+        void (*imageresource_cleanup)(ImageResource &);
       };
 
       ApiBackendCallback &callbacks();

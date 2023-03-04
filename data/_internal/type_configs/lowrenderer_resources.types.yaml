@@ -1,0 +1,24 @@
+module: LowRenderer
+namespace:
+  - Low
+  - Renderer
+  - Resource
+dll_macro: LOW_EXPORT
+types:
+  Image:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+    properties:
+      image:
+        type: Backend::ImageResource
+    functions:
+      make:
+        static: true
+        return_type: Image 
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: Backend::ImageResourceCreateParams

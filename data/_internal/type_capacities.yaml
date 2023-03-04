@@ -1,16 +1,2 @@
 LowRenderer:
-    GraphicsPipeline: 128
-    ComputePipeline: 16
-    Context: 2
-    Swapchain: 2
-    Image2D: 256
-    CommandBuffer: 4
-    CommandPool: 2
-    Framebuffer: 64
-    Renderpass: 16
-    PipelineInterface: 64
-    UniformScopeInterface: 64
-    UniformScope: 128
-    Uniform: 256
-    UniformPool: 64
-    Buffer: 128
+  Image: 256
