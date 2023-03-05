@@ -16,7 +16,8 @@ void main()
 {
   ivec2 xy_int = ivec2(gl_GlobalInvocationID.xy);
 
-  vec3 ocolor = texture(u_Texture, get_texture_coords()).xyz;
+  vec3 ocolor =
+      vec3(1.0, 1.0, 1.0) - texture(u_Texture, get_texture_coords()).xyz;
 
   imageStore(out_Color, xy_int, vec4(ocolor, 1.0));
 }

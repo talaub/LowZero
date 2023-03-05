@@ -22,7 +22,8 @@ namespace Low {
     Backend::Context g_Context;
     Backend::Pipeline g_Pipeline;
     Backend::Pipeline g_GraphicsPipeline;
-    Backend::PipelineResourceSignature g_Signature;
+    Backend::PipelineResourceSignature g_ComputeSignature;
+    Backend::PipelineResourceSignature g_GraphicsSignature;
 
     static void initialize_resource_types()
     {
@@ -76,7 +77,7 @@ namespace Low {
         {
           Backend::PipelineResourceDescription l_Resource;
           l_Resource.name = N(u_Texture);
-          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
           l_Resource.arraySize = 1;
           l_Resource.type = Backend::ResourceType::SAMPLER;
           l_Resources.push_back(l_Resource);
@@ -88,8 +89,30 @@ namespace Low {
         l_Params.context = &g_Context;
         l_Params.binding = 0;
 
-        Backend::callbacks().pipeline_resource_signature_create(g_Signature,
-                                                                l_Params);
+        Backend::callbacks().pipeline_resource_signature_create(
+            g_ComputeSignature, l_Params);
+      }
+
+      {
+        Util::List<Backend::PipelineResourceDescription> l_Resources;
+
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_Texture);
+          l_Resource.step = Backend::ResourcePipelineStep::FRAGMENT;
+          l_Resource.arraySize = 1;
+          l_Resource.type = Backend::ResourceType::SAMPLER;
+          l_Resources.push_back(l_Resource);
+        }
+
+        Backend::PipelineResourceSignatureCreateParams l_Params;
+        l_Params.resourceDescriptionCount = l_Resources.size();
+        l_Params.resourceDescriptions = l_Resources.data();
+        l_Params.context = &g_Context;
+        l_Params.binding = 0;
+
+        Backend::callbacks().pipeline_resource_signature_create(
+            g_GraphicsSignature, l_Params);
       }
 
       Resource::Image l_TextureResource;
@@ -123,10 +146,13 @@ namespace Low {
       }
 
       Backend::callbacks().pipeline_resource_signature_set_image(
-          g_Signature, N(out_Color), 0, l_ImageResource);
+          g_ComputeSignature, N(out_Color), 0, l_ImageResource);
 
       Backend::callbacks().pipeline_resource_signature_set_sampler(
-          g_Signature, N(u_Texture), 0, l_TextureResource);
+          g_ComputeSignature, N(u_Texture), 0, l_TextureResource);
+
+      Backend::callbacks().pipeline_resource_signature_set_sampler(
+          g_GraphicsSignature, N(u_Texture), 0, l_ImageResource);
 
       {
 
@@ -137,7 +163,7 @@ namespace Low {
         l_Params.context = &g_Context;
         l_Params.shaderPath = s.c_str();
         l_Params.signatureCount = 1;
-        l_Params.signatures = &g_Signature;
+        l_Params.signatures = &g_ComputeSignature;
 
         Backend::callbacks().pipeline_compute_create(g_Pipeline, l_Params);
       }
@@ -166,7 +192,7 @@ namespace Low {
         l_Params.vertexShaderPath = vertex.c_str();
         l_Params.fragmentShaderPath = fragment.c_str();
         l_Params.signatureCount = 1;
-        l_Params.signatures = &g_Signature;
+        l_Params.signatures = &g_GraphicsSignature;
         l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
         l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
         l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
@@ -180,8 +206,6 @@ namespace Low {
         Backend::callbacks().pipeline_graphics_create(g_GraphicsPipeline,
                                                       l_Params);
       }
-
-      Backend::callbacks().pipeline_resource_signature_commit(g_Signature);
     }
 
     void tick(float p_Delta)
@@ -190,6 +214,15 @@ namespace Low {
       g_Context.window.tick();
 
       Backend::callbacks().frame_prepare(g_Context);
+
+      Backend::callbacks().pipeline_resource_signature_commit(
+          g_ComputeSignature);
+
+      Backend::callbacks().pipeline_bind(g_Pipeline);
+      Backend::callbacks().compute_dispatch(g_Context, {38, 38, 1});
+
+      Backend::callbacks().pipeline_resource_signature_commit(
+          g_GraphicsSignature);
 
       Backend::callbacks().renderpass_begin(
           g_Context.renderpasses[g_Context.currentImageIndex]);
@@ -205,9 +238,6 @@ namespace Low {
       }
       Backend::callbacks().renderpass_end(
           g_Context.renderpasses[g_Context.currentImageIndex]);
-
-      Backend::callbacks().pipeline_bind(g_Pipeline);
-      Backend::callbacks().compute_dispatch(g_Context, {38, 38, 1});
 
       Backend::callbacks().frame_render(g_Context);
     }

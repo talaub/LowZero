@@ -904,6 +904,13 @@ namespace Low {
                                      0, VK_ACCESS_SHADER_READ_BIT,
                                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+          } else if (l_Image.get_image().vk.m_State == ImageState::GENERAL) {
+            transition_image_barrier(
+                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_GENERAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
@@ -930,10 +937,19 @@ namespace Low {
                 VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_SHADER_WRITE_BIT,
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-            l_Image.get_image().vk.m_State = ImageState::GENERAL;
+          } else if (l_Image.get_image().vk.m_State ==
+                     ImageState::SHADER_READ_ONLY_OPTIMAL) {
+            transition_image_barrier(l_CommandBuffer, l_Image.get_image(),
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                     VK_IMAGE_LAYOUT_GENERAL,
+                                     VK_ACCESS_SHADER_READ_BIT,
+                                     VK_ACCESS_SHADER_WRITE_BIT,
+                                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
+          l_Image.get_image().vk.m_State = ImageState::GENERAL;
         }
       } // namespace BarrierHelper
 
