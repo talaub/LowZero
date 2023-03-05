@@ -84,7 +84,8 @@ namespace Low {
           GRAPHICS,
           COMPUTE,
           VERTEX,
-          FRAGMENT
+          FRAGMENT,
+          ALL
         };
       }
 
@@ -161,6 +162,15 @@ namespace Low {
 #define LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER 2
 #define LOW_RENDERER_BUFFER_USAGE_VERTEX 4
 #define LOW_RENDERER_BUFFER_USAGE_INDEX 8
+
+      namespace IndexBufferType {
+        enum Enum
+        {
+          UINT8,
+          UINT16,
+          UINT32
+        };
+      }
 
       struct BufferCreateParams
       {
@@ -278,6 +288,13 @@ namespace Low {
         uint32_t vertexDataAttributeCount;
       };
 
+      struct DrawParams
+      {
+        Context *context;
+        uint32_t vertexCount;
+        uint32_t firstVertex;
+      };
+
       struct ApiBackendCallback
       {
         void (*context_create)(Context &, ContextCreateParams &);
@@ -302,6 +319,7 @@ namespace Low {
         void (*pipeline_resource_signature_set_sampler)(
             PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
         void (*pipeline_resource_signature_commit)(PipelineResourceSignature &);
+        void (*pipeline_resource_signature_commit_clear)(Context &);
 
         void (*pipeline_compute_create)(Pipeline &,
                                         PipelineComputeCreateParams &);
@@ -311,14 +329,18 @@ namespace Low {
         void (*pipeline_bind)(Pipeline &);
 
         void (*compute_dispatch)(Context &, Math::UVector3);
+        void (*draw)(DrawParams &);
 
         void (*imageresource_create)(ImageResource &,
                                      ImageResourceCreateParams &);
         void (*imageresource_cleanup)(ImageResource &);
 
         void (*buffer_create)(Buffer &, BufferCreateParams &);
+        void (*buffer_write)(Buffer &, void *, uint32_t, uint32_t);
         void (*buffer_set)(Buffer &, void *);
         void (*buffer_cleanup)(Buffer &);
+        void (*buffer_bind_vertex)(Buffer &);
+        void (*buffer_bind_index)(Buffer &, uint8_t);
       };
 
       ApiBackendCallback &callbacks();

@@ -30,6 +30,11 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
+      void renderpass_create_internal(Backend::Renderpass &p_Renderpass,
+                                      Backend::RenderpassCreateParams &p_Params,
+                                      bool);
+      void renderpass_cleanup_internal(Backend::Renderpass &p_Renderpass,
+                                       bool p_ClearVulkanRenderpass);
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
                                 Backend::RenderpassCreateParams &p_Params);
       void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass);
@@ -37,6 +42,10 @@ namespace Low {
       vk_imageresource_create(Backend::ImageResource &p_Image,
                               Backend::ImageResourceCreateParams &p_Params);
       void vk_imageresource_cleanup(Backend::ImageResource &p_Image);
+
+      void vk_perform_barriers(Backend::Context &p_Context);
+      void vk_bind_resources(Backend::Context &p_Context,
+                             VkPipelineBindPoint p_BindPoint);
 
       namespace Helper {
 
@@ -1090,7 +1099,13 @@ namespace Low {
             l_RenderPassParams.useDepth = false;
             l_RenderPassParams.dimensions = p_Context.dimensions;
 
-            vk_renderpass_create(p_Context.renderpasses[i], l_RenderPassParams);
+            if (i > 0) {
+              p_Context.renderpasses[i].vk.m_Renderpass =
+                  p_Context.renderpasses[0].vk.m_Renderpass;
+            }
+
+            renderpass_create_internal(p_Context.renderpasses[i],
+                                       l_RenderPassParams, i == 0);
           }
 
           ContextHelper::create_sync_objects(p_Context);
@@ -1156,7 +1171,8 @@ namespace Low {
         Util::Memory::main_allocator()->deallocate(l_Context.m_InFlightFences);
 
         for (uint32_t i = 0u; i < p_Context.imageCount; ++i) {
-          vk_renderpass_cleanup(p_Context.renderpasses[i]);
+          renderpass_cleanup_internal(p_Context.renderpasses[i],
+                                      i == p_Context.imageCount - 1);
           vk_imageresource_cleanup(p_Context.vk.m_SwapchainRenderTargets[i]);
         }
 
@@ -1327,8 +1343,9 @@ namespace Low {
         p_Context.vk.m_BoundPipelineLayout = VK_NULL_HANDLE;
       }
 
-      void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
-                                Backend::RenderpassCreateParams &p_Params)
+      void renderpass_create_internal(Backend::Renderpass &p_Renderpass,
+                                      Backend::RenderpassCreateParams &p_Params,
+                                      bool p_CreateVulkanRenderpass)
       {
         p_Renderpass.context = p_Params.context;
         p_Renderpass.dimensions = p_Params.dimensions;
@@ -1408,29 +1425,34 @@ namespace Low {
             static_cast<uint32_t>(l_ColorAttachmentRefs.size());
         l_Subpass.pColorAttachments = l_ColorAttachmentRefs.data();
 
-        VkSubpassDependency l_Dependency{};
-        l_Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        l_Dependency.dstSubpass = 0;
-        if (p_Params.useDepth) {
-          l_Dependency.srcStageMask =
-              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        } else {
-          l_Dependency.srcStageMask =
-              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        }
-        l_Dependency.srcAccessMask = 0;
-        if (p_Params.useDepth) {
-          l_Dependency.dstStageMask =
-              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-          l_Dependency.dstAccessMask =
-              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        } else {
-          l_Dependency.dstStageMask =
-              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-          l_Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        Util::List<VkSubpassDependency> l_Dependencies;
+
+        {
+          VkSubpassDependency l_Dependency{};
+          l_Dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+          l_Dependency.dstSubpass = 0;
+          if (p_Params.useDepth) {
+            l_Dependency.srcStageMask =
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+          } else {
+            l_Dependency.srcStageMask =
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+          }
+          l_Dependency.srcAccessMask = 0;
+          if (p_Params.useDepth) {
+            l_Dependency.dstStageMask =
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            l_Dependency.dstAccessMask =
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+          } else {
+            l_Dependency.dstStageMask =
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            l_Dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+          }
+          l_Dependencies.push_back(l_Dependency);
         }
 
         VkRenderPassCreateInfo l_RenderpassInfo{};
@@ -1440,13 +1462,16 @@ namespace Low {
         l_RenderpassInfo.pAttachments = l_Attachments.data();
         l_RenderpassInfo.subpassCount = 1;
         l_RenderpassInfo.pSubpasses = &l_Subpass;
-        l_RenderpassInfo.dependencyCount = 1;
-        l_RenderpassInfo.pDependencies = &l_Dependency;
+        l_RenderpassInfo.dependencyCount = l_Dependencies.size();
+        l_RenderpassInfo.pDependencies = l_Dependencies.data();
 
-        LOW_ASSERT(vkCreateRenderPass(
-                       p_Params.context->vk.m_Device, &l_RenderpassInfo,
-                       nullptr, &(p_Renderpass.vk.m_Renderpass)) == VK_SUCCESS,
-                   "Failed to create render pass");
+        if (p_CreateVulkanRenderpass) {
+          LOW_ASSERT(vkCreateRenderPass(p_Params.context->vk.m_Device,
+                                        &l_RenderpassInfo, nullptr,
+                                        &(p_Renderpass.vk.m_Renderpass)) ==
+                         VK_SUCCESS,
+                     "Failed to create render pass");
+        }
 
         {
           Util::List<VkImageView> l_Attachments;
@@ -1475,21 +1500,37 @@ namespace Low {
         }
       }
 
-      void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass)
+      void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
+                                Backend::RenderpassCreateParams &p_Params)
+      {
+        renderpass_create_internal(p_Renderpass, p_Params, true);
+      }
+
+      void renderpass_cleanup_internal(Backend::Renderpass &p_Renderpass,
+                                       bool p_ClearVulkanRenderpass)
       {
         vkDestroyFramebuffer(p_Renderpass.context->vk.m_Device,
                              p_Renderpass.vk.m_Framebuffer, nullptr);
 
-        vkDestroyRenderPass(p_Renderpass.context->vk.m_Device,
-                            p_Renderpass.vk.m_Renderpass, nullptr);
+        if (p_ClearVulkanRenderpass) {
+          vkDestroyRenderPass(p_Renderpass.context->vk.m_Device,
+                              p_Renderpass.vk.m_Renderpass, nullptr);
+        }
 
         Util::Memory::main_allocator()->deallocate(
             p_Renderpass.clearTargetColor);
         Util::Memory::main_allocator()->deallocate(p_Renderpass.renderTargets);
       }
 
+      void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass)
+      {
+        renderpass_cleanup_internal(p_Renderpass, true);
+      }
+
       void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
       {
+        vk_perform_barriers(*p_Renderpass.context);
+
         VkRenderPassBeginInfo l_RenderpassInfo{};
         l_RenderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         l_RenderpassInfo.renderPass = p_Renderpass.vk.m_Renderpass;
@@ -1818,6 +1859,10 @@ namespace Low {
                        Backend::ResourcePipelineStep::GRAPHICS) {
               i_Binding.stageFlags =
                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            } else if (i_Resource.step == Backend::ResourcePipelineStep::ALL) {
+              i_Binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT |
+                                     VK_SHADER_STAGE_FRAGMENT_BIT |
+                                     VK_SHADER_STAGE_COMPUTE_BIT;
             } else {
               LOW_ASSERT(false, "Unknown pipeline step");
             }
@@ -1906,6 +1951,14 @@ namespace Low {
              i < LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS; ++i) {
           p_Signature.context->vk.m_CommittedPipelineResourceSignatures[i] =
               ~0u;
+        }
+      }
+
+      void
+      vk_pipeline_resource_signature_commit_clear(Backend::Context &p_Context)
+      {
+        for (uint32_t i = 0; i < LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS; ++i) {
+          p_Context.vk.m_CommittedPipelineResourceSignatures[i] = ~0u;
         }
       }
 
@@ -2259,8 +2312,13 @@ namespace Low {
         l_VertexInputInfo.sType =
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-        l_VertexInputInfo.vertexBindingDescriptionCount = 1;
-        l_VertexInputInfo.pVertexBindingDescriptions = &l_BindingDescription;
+        if (p_Params.vertexDataAttributeCount > 0) {
+          l_VertexInputInfo.vertexBindingDescriptionCount = 1;
+          l_VertexInputInfo.pVertexBindingDescriptions = &l_BindingDescription;
+        } else {
+          l_VertexInputInfo.vertexBindingDescriptionCount = 0;
+          l_VertexInputInfo.pVertexBindingDescriptions = nullptr;
+        }
         l_VertexInputInfo.vertexAttributeDescriptionCount =
             static_cast<uint32_t>(l_AttributeDescriptions.size());
         l_VertexInputInfo.pVertexAttributeDescriptions =
@@ -2466,6 +2524,8 @@ namespace Low {
         if (p_Pipeline.type == Backend::PipelineType::GRAPHICS) {
           p_Pipeline.context->vk.m_BoundPipelineLayout =
               p_Pipeline.vk.m_PipelineLayout;
+          vk_bind_resources(*p_Pipeline.context,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS);
           vkCmdBindPipeline(
               ContextHelper::get_current_commandbuffer(*p_Pipeline.context),
               VK_PIPELINE_BIND_POINT_GRAPHICS, p_Pipeline.vk.m_Pipeline);
@@ -2526,6 +2586,10 @@ namespace Low {
                   .m_DescriptorSets[p_Context.currentFrameIndex]);
         }
 
+        if (l_DescriptorSets.size() == 0) {
+          return;
+        }
+
         vkCmdBindDescriptorSets(
             ContextHelper::get_current_commandbuffer(p_Context), p_BindPoint,
             p_Context.vk.m_BoundPipelineLayout, 0, l_DescriptorSets.size(),
@@ -2535,16 +2599,22 @@ namespace Low {
       void vk_bind_resources(Backend::Context &p_Context,
                              VkPipelineBindPoint p_BindPoint)
       {
-        vk_perform_barriers(p_Context);
-        vk_bind_descriptor_sets(p_Context, VK_PIPELINE_BIND_POINT_COMPUTE);
+        vk_bind_descriptor_sets(p_Context, p_BindPoint);
       }
 
       void vk_compute_dispatch(Backend::Context &p_Context,
                                Math::UVector3 p_Dimensions)
       {
+        vk_perform_barriers(p_Context);
         vk_bind_resources(p_Context, VK_PIPELINE_BIND_POINT_COMPUTE);
         vkCmdDispatch(ContextHelper::get_current_commandbuffer(p_Context),
                       p_Dimensions.x, p_Dimensions.y, p_Dimensions.z);
+      }
+
+      void vk_draw(Backend::DrawParams &p_Params)
+      {
+        vkCmdDraw(ContextHelper::get_current_commandbuffer(*p_Params.context),
+                  p_Params.vertexCount, 1, p_Params.firstVertex, 0);
       }
 
       void vk_buffer_create(Backend::Buffer &p_Buffer,
@@ -2606,13 +2676,14 @@ namespace Low {
                      nullptr);
       }
 
-      void vk_buffer_set(Backend::Buffer &p_Buffer, void *p_Data)
+      void vk_buffer_write(Backend::Buffer &p_Buffer, void *p_Data,
+                           uint32_t p_DataSize, uint32_t p_Start)
       {
 
         VkBuffer l_StagingBuffer;
         VkDeviceMemory l_StagingBufferMemory;
 
-        Helper::create_buffer(*p_Buffer.context, p_Buffer.bufferSize,
+        Helper::create_buffer(*p_Buffer.context, p_DataSize,
                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -2620,17 +2691,56 @@ namespace Low {
 
         void *l_Data;
         vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
-                    p_Buffer.bufferSize, 0, &l_Data);
-        memcpy(l_Data, p_Data, (size_t)p_Buffer.bufferSize);
+                    p_DataSize, 0, &l_Data);
+        memcpy(l_Data, p_Data, (size_t)p_DataSize);
         vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
 
         Helper::copy_buffer(*p_Buffer.context, l_StagingBuffer,
-                            p_Buffer.vk.m_Buffer, p_Buffer.bufferSize);
+                            p_Buffer.vk.m_Buffer, p_DataSize, 0, p_Start);
 
         vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
                         nullptr);
         vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
                      nullptr);
+      }
+
+      void vk_buffer_set(Backend::Buffer &p_Buffer, void *p_Data)
+      {
+        vk_buffer_write(p_Buffer, p_Data, p_Buffer.bufferSize, 0);
+      }
+
+      void vk_buffer_bind_vertex(Backend::Buffer &p_Buffer)
+      {
+        LOW_ASSERT(p_Buffer.usageFlags & LOW_RENDERER_BUFFER_USAGE_VERTEX ==
+                                             LOW_RENDERER_BUFFER_USAGE_VERTEX,
+                   "Tried to bind buffer without proper usage flag as vertex "
+                   "buffer");
+
+        VkDeviceSize l_Offsets[] = {0};
+
+        vkCmdBindVertexBuffers(
+            ContextHelper::get_current_commandbuffer(*p_Buffer.context), 0, 1,
+            &(p_Buffer.vk.m_Buffer), l_Offsets);
+      }
+
+      void vk_buffer_bind_index(Backend::Buffer &p_Buffer,
+                                uint8_t p_IndexBufferType)
+      {
+        VkIndexType l_IndexType = VK_INDEX_TYPE_UINT16;
+
+        if (p_IndexBufferType == Backend::IndexBufferType::UINT8) {
+          l_IndexType = VK_INDEX_TYPE_UINT8_EXT;
+        } else if (p_IndexBufferType == Backend::IndexBufferType::UINT16) {
+          l_IndexType = VK_INDEX_TYPE_UINT16;
+        } else if (p_IndexBufferType == Backend::IndexBufferType::UINT32) {
+          l_IndexType = VK_INDEX_TYPE_UINT32;
+        } else {
+          LOW_ASSERT(false, "Unknown index type");
+        }
+
+        vkCmdBindIndexBuffer(
+            ContextHelper::get_current_commandbuffer(*p_Buffer.context),
+            p_Buffer.vk.m_Buffer, 0, l_IndexType);
       }
 
       void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
@@ -2656,6 +2766,8 @@ namespace Low {
             &vk_pipeline_resource_signature_set_sampler;
         p_Callbacks.pipeline_resource_signature_commit =
             &vk_pipeline_resource_signature_commit;
+        p_Callbacks.pipeline_resource_signature_commit_clear =
+            &vk_pipeline_resource_signature_commit_clear;
 
         p_Callbacks.pipeline_compute_create = &vk_pipeline_compute_create;
         p_Callbacks.pipeline_graphics_create = &vk_pipeline_graphics_create;
@@ -2663,6 +2775,7 @@ namespace Low {
         p_Callbacks.pipeline_bind = &vk_pipeline_bind;
 
         p_Callbacks.compute_dispatch = &vk_compute_dispatch;
+        p_Callbacks.draw = &vk_draw;
 
         p_Callbacks.imageresource_create = &vk_imageresource_create;
         p_Callbacks.imageresource_cleanup = &vk_imageresource_cleanup;
@@ -2670,6 +2783,9 @@ namespace Low {
         p_Callbacks.buffer_create = &vk_buffer_create;
         p_Callbacks.buffer_cleanup = &vk_buffer_cleanup;
         p_Callbacks.buffer_set = &vk_buffer_set;
+        p_Callbacks.buffer_write = &vk_buffer_write;
+        p_Callbacks.buffer_bind_vertex = &vk_buffer_bind_vertex;
+        p_Callbacks.buffer_bind_index = &vk_buffer_bind_index;
       }
     } // namespace Vulkan
   }   // namespace Renderer
