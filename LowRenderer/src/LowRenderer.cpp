@@ -9,6 +9,9 @@
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
 #include "LowRendererBuffer.h"
+#include "LowRendererComputePipeline.h"
+#include "LowRendererPipelineResourceSignature.h"
+#include "LowRendererInterface.h"
 
 #include <stdint.h>
 
@@ -19,11 +22,11 @@
 namespace Low {
   namespace Renderer {
 
-    Backend::Context g_Context;
-    Backend::Pipeline g_Pipeline;
+    Interface::Context g_Context;
+    Interface::ComputePipeline g_Pipeline;
     Backend::Pipeline g_GraphicsPipeline;
-    Backend::PipelineResourceSignature g_ComputeSignature;
-    Backend::PipelineResourceSignature g_GraphicsSignature;
+    Interface::PipelineResourceSignature g_ComputeSignature;
+    Interface::PipelineResourceSignature g_GraphicsSignature;
 
     static void initialize_resource_types()
     {
@@ -31,9 +34,18 @@ namespace Low {
       Resource::Buffer::initialize();
     }
 
+    static void initialize_interface_types()
+    {
+      Interface::Context::initialize();
+      Interface::Renderpass::initialize();
+      Interface::PipelineResourceSignature::initialize();
+      Interface::ComputePipeline::initialize();
+    }
+
     static void initialize_types()
     {
       initialize_resource_types();
+      initialize_interface_types();
     }
 
     void initialize()
@@ -55,13 +67,8 @@ namespace Low {
 
       window_initialize(l_Window, l_WindowInit);
 
-      {
-        Backend::ContextCreateParams l_Params;
-        l_Params.window = &l_Window;
-        l_Params.validation_enabled = true;
-        l_Params.framesInFlight = 2;
-        Backend::callbacks().context_create(g_Context, l_Params);
-      }
+      g_Context =
+          Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
 
       {
         Util::List<Backend::PipelineResourceDescription> l_Resources;
@@ -83,14 +90,8 @@ namespace Low {
           l_Resources.push_back(l_Resource);
         }
 
-        Backend::PipelineResourceSignatureCreateParams l_Params;
-        l_Params.resourceDescriptionCount = l_Resources.size();
-        l_Params.resourceDescriptions = l_Resources.data();
-        l_Params.context = &g_Context;
-        l_Params.binding = 0;
-
-        Backend::callbacks().pipeline_resource_signature_create(
-            g_ComputeSignature, l_Params);
+        g_ComputeSignature = Interface::PipelineResourceSignature::make(
+            N(ComputeSignature), g_Context, 0, l_Resources);
       }
 
       {
@@ -105,14 +106,8 @@ namespace Low {
           l_Resources.push_back(l_Resource);
         }
 
-        Backend::PipelineResourceSignatureCreateParams l_Params;
-        l_Params.resourceDescriptionCount = l_Resources.size();
-        l_Params.resourceDescriptions = l_Resources.data();
-        l_Params.context = &g_Context;
-        l_Params.binding = 0;
-
-        Backend::callbacks().pipeline_resource_signature_create(
-            g_GraphicsSignature, l_Params);
+        g_GraphicsSignature = Interface::PipelineResourceSignature::make(
+            N(GraphicsSignature), g_Context, 0, l_Resources);
       }
 
       Resource::Image l_TextureResource;
@@ -122,7 +117,7 @@ namespace Low {
         l_Params.imageData = l_Resource.data[0].data();
         l_Params.imageDataSize = l_Resource.data[0].size();
         l_Params.dimensions = l_Resource.dimensions[0];
-        l_Params.context = &g_Context;
+        l_Params.context = &g_Context.get_context();
         l_Params.depth = false;
         l_Params.writable = false;
         l_Params.format = Backend::ImageFormat::RGBA8_UNORM;
@@ -137,7 +132,7 @@ namespace Low {
         l_Params.imageData = nullptr;
         l_Params.imageDataSize = 0;
         l_Params.dimensions = Math::UVector2(600, 600);
-        l_Params.context = &g_Context;
+        l_Params.context = &g_Context.get_context();
         l_Params.depth = false;
         l_Params.writable = true;
         l_Params.format = Backend::ImageFormat::RGBA32_SFLOAT;
@@ -145,27 +140,25 @@ namespace Low {
         l_ImageResource = Resource::Image::make(N(TestImage), l_Params);
       }
 
-      Backend::callbacks().pipeline_resource_signature_set_image(
-          g_ComputeSignature, N(out_Color), 0, l_ImageResource);
+      g_ComputeSignature.set_image_resource(N(out_Color), 0, l_ImageResource);
+      g_ComputeSignature.set_sampler_resource(N(u_Texture), 0,
+                                              l_TextureResource);
 
-      Backend::callbacks().pipeline_resource_signature_set_sampler(
-          g_ComputeSignature, N(u_Texture), 0, l_TextureResource);
-
-      Backend::callbacks().pipeline_resource_signature_set_sampler(
-          g_GraphicsSignature, N(u_Texture), 0, l_ImageResource);
+      g_GraphicsSignature.set_sampler_resource(N(u_Texture), 0,
+                                               l_ImageResource);
 
       {
 
-        Util::String s =
-            Util::String(LOW_DATA_PATH) + "/shader/dst/spv/test.comp.spv";
+        Util::String s = "test.comp";
 
         Backend::PipelineComputeCreateParams l_Params;
-        l_Params.context = &g_Context;
+        l_Params.context = &g_Context.get_context();
         l_Params.shaderPath = s.c_str();
         l_Params.signatureCount = 1;
-        l_Params.signatures = &g_ComputeSignature;
+        l_Params.signatures = &g_ComputeSignature.get_signature();
 
-        Backend::callbacks().pipeline_compute_create(g_Pipeline, l_Params);
+        g_Pipeline =
+            Interface::ComputePipeline::make(N(CompPipeline), l_Params);
       }
 
       {
@@ -188,16 +181,16 @@ namespace Low {
         Util::List<uint8_t> l_VertexAttributes;
 
         Backend::PipelineGraphicsCreateParams l_Params;
-        l_Params.context = &g_Context;
+        l_Params.context = &g_Context.get_context();
         l_Params.vertexShaderPath = vertex.c_str();
         l_Params.fragmentShaderPath = fragment.c_str();
         l_Params.signatureCount = 1;
-        l_Params.signatures = &g_GraphicsSignature;
+        l_Params.signatures = &g_GraphicsSignature.get_signature();
         l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
         l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
         l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
-        l_Params.dimensions = {1280, 860};
-        l_Params.renderpass = g_Context.renderpasses;
+        l_Params.dimensions = g_Context.get_dimensions();
+        l_Params.renderpass = g_Context.get_context().renderpasses;
         l_Params.colorTargetCount = l_ColorTargets.size();
         l_Params.colorTargets = l_ColorTargets.data();
         l_Params.vertexDataAttributeCount = l_VertexAttributes.size();
@@ -210,41 +203,43 @@ namespace Low {
 
     void tick(float p_Delta)
     {
-      static int t = 0;
-      g_Context.window.tick();
+      g_Context.get_window().tick();
 
-      Backend::callbacks().frame_prepare(g_Context);
+      Interface::PipelineManager::tick(p_Delta);
 
-      Backend::callbacks().pipeline_resource_signature_commit(
-          g_ComputeSignature);
+      uint8_t l_ContextState = g_Context.prepare_frame();
 
-      Backend::callbacks().pipeline_bind(g_Pipeline);
-      Backend::callbacks().compute_dispatch(g_Context, {38, 38, 1});
+      LOW_ASSERT(l_ContextState == Backend::ContextState::SUCCESS,
+                 "Frame prepare was not successful");
 
-      Backend::callbacks().pipeline_resource_signature_commit(
-          g_GraphicsSignature);
+      g_ComputeSignature.commit();
 
-      Backend::callbacks().renderpass_begin(
-          g_Context.renderpasses[g_Context.currentImageIndex]);
+      g_Pipeline.bind();
+      Backend::callbacks().compute_dispatch(g_Context.get_context(),
+                                            {38, 38, 1});
+
+      g_GraphicsSignature.commit();
+
+      g_Context.get_current_renderpass().begin();
 
       Backend::callbacks().pipeline_bind(g_GraphicsPipeline);
 
       {
         Backend::DrawParams l_Params;
-        l_Params.context = &g_Context;
+        l_Params.context = &g_Context.get_context();
         l_Params.firstVertex = 0;
         l_Params.vertexCount = 3;
         Backend::callbacks().draw(l_Params);
       }
-      Backend::callbacks().renderpass_end(
-          g_Context.renderpasses[g_Context.currentImageIndex]);
 
-      Backend::callbacks().frame_render(g_Context);
+      g_Context.get_current_renderpass().end();
+
+      g_Context.render_frame();
     }
 
     bool window_is_open()
     {
-      return g_Context.window.is_open();
+      return g_Context.get_window().is_open();
     }
 
     static void cleanup_resource_types()
@@ -253,21 +248,27 @@ namespace Low {
       Resource::Buffer::cleanup();
     }
 
+    static void cleanup_interface_types()
+    {
+      Interface::ComputePipeline::cleanup();
+      Interface::PipelineResourceSignature::cleanup();
+      Interface::Renderpass::cleanup();
+      Interface::Context::cleanup();
+    }
+
     static void cleanup_types()
     {
       cleanup_resource_types();
+      cleanup_interface_types();
     }
 
     void cleanup()
     {
-      Backend::callbacks().context_wait_idle(g_Context);
+      g_Context.wait_idle();
 
-      Backend::callbacks().pipeline_cleanup(g_Pipeline);
       Backend::callbacks().pipeline_cleanup(g_GraphicsPipeline);
 
       cleanup_types();
-
-      Backend::callbacks().context_cleanup(g_Context);
     }
   } // namespace Renderer
 } // namespace Low

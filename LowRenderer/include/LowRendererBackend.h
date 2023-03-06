@@ -341,6 +341,9 @@ namespace Low {
         void (*buffer_cleanup)(Buffer &);
         void (*buffer_bind_vertex)(Buffer &);
         void (*buffer_bind_index)(Buffer &, uint8_t);
+
+        Util::String (*compile)(Util::String);
+        Util::String (*get_shader_source_path)(Util::String);
       };
 
       ApiBackendCallback &callbacks();

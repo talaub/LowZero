@@ -2759,6 +2759,27 @@ namespace Low {
             p_Buffer.vk.m_Buffer, 0, l_IndexType);
       }
 
+      Util::String get_source_path_vk_glsl(Util::String p_Path)
+      {
+        return Util::String(LOW_DATA_PATH) + "/shader/src/vk_glsl/" + p_Path;
+      }
+
+      static Util::String compile_vk_glsl_to_spv(Util::String p_Path)
+      {
+        Util::String l_SourcePath = get_source_path_vk_glsl(p_Path);
+        Util::String l_OutPath =
+            Util::String(LOW_DATA_PATH) + "/shader/dst/spv/" + p_Path + ".spv";
+
+        Util::String l_Command = "glslc " + l_SourcePath + " -o " + l_OutPath;
+
+        Util::String l_Notice = "Compiling shader " + l_SourcePath;
+
+        LOW_LOG_DEBUG(l_Notice.c_str());
+        system(l_Command.c_str());
+
+        return l_OutPath;
+      }
+
       void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
       {
         p_Callbacks.context_create = &vk_context_create;
@@ -2802,6 +2823,9 @@ namespace Low {
         p_Callbacks.buffer_write = &vk_buffer_write;
         p_Callbacks.buffer_bind_vertex = &vk_buffer_bind_vertex;
         p_Callbacks.buffer_bind_index = &vk_buffer_bind_index;
+
+        p_Callbacks.compile = &compile_vk_glsl_to_spv;
+        p_Callbacks.get_shader_source_path = &get_source_path_vk_glsl;
       }
     } // namespace Vulkan
   }   // namespace Renderer
