@@ -53,6 +53,8 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        PipelineManager::delist_graphics_pipeline(*this);
+        Backend::callbacks().pipeline_cleanup(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -132,10 +134,13 @@ namespace Low {
 
       GraphicsPipeline
       GraphicsPipeline::make(Util::Name p_Name,
-                             Backend::PipelineGraphicsCreateParams &p_Params)
+                             PipelineGraphicsCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         GraphicsPipeline l_Pipeline = GraphicsPipeline::make(p_Name);
+
+        PipelineManager::register_graphics_pipeline(l_Pipeline, p_Params);
+
         return l_Pipeline;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }

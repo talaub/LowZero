@@ -17,12 +17,12 @@ namespace Low {
         static void recreate_graphics_pipeline(GraphicsPipeline p_Pipeline,
                                                bool p_CleanOld = true);
 
-        Util::Map<GraphicsPipeline, Backend::PipelineGraphicsCreateParams>
+        Util::Map<GraphicsPipeline, PipelineGraphicsCreateParams>
             g_GraphicsPipelineParams;
         Util::Map<GraphicsPipeline, GraphicsPipelineOutputPaths>
             g_GraphicsPipelineOutPaths;
 
-        Util::Map<ComputePipeline, Backend::PipelineComputeCreateParams>
+        Util::Map<ComputePipeline, PipelineComputeCreateParams>
             g_ComputePipelineParams;
         Util::Map<ComputePipeline, Util::String> g_ComputePipelineOutPaths;
 
@@ -44,9 +44,8 @@ namespace Low {
           return Backend::callbacks().compile(p_Path);
         }
 
-        void register_compute_pipeline(
-            ComputePipeline p_Pipeline,
-            Backend::PipelineComputeCreateParams &p_Params)
+        void register_compute_pipeline(ComputePipeline p_Pipeline,
+                                       PipelineComputeCreateParams &p_Params)
         {
           g_ComputePipelineParams[p_Pipeline] = p_Params;
 
@@ -71,15 +70,51 @@ namespace Low {
             Backend::callbacks().pipeline_cleanup(p_Pipeline.get_pipeline());
           }
 
-          Backend::PipelineComputeCreateParams l_Params =
+          PipelineComputeCreateParams &l_Params =
               g_ComputePipelineParams[p_Pipeline];
 
+          Backend::PipelineComputeCreateParams l_BeParams;
+          l_BeParams.context = &l_Params.context.get_context();
           Util::String l_OutputPath = g_ComputePipelineOutPaths[p_Pipeline];
-
-          l_Params.shaderPath = l_OutputPath.c_str();
+          l_BeParams.shaderPath = l_OutputPath.c_str();
+          l_BeParams.signatureCount =
+              static_cast<uint8_t>(l_Params.signatures.size());
+          Util::List<Backend::PipelineResourceSignature> l_Signatures;
+          for (uint8_t i = 0; i < l_BeParams.signatureCount; ++i) {
+            l_Signatures.push_back(l_Params.signatures[i].get_signature());
+          }
+          l_BeParams.signatures = l_Signatures.data();
 
           Backend::callbacks().pipeline_compute_create(
-              p_Pipeline.get_pipeline(), l_Params);
+              p_Pipeline.get_pipeline(), l_BeParams);
+        }
+
+        void register_graphics_pipeline(GraphicsPipeline p_Pipeline,
+                                        PipelineGraphicsCreateParams &p_Params)
+        {
+          g_GraphicsPipelineParams[p_Pipeline] = p_Params;
+
+          GraphicsPipelineOutputPaths l_OutputPaths;
+          l_OutputPaths.vertex = compile(p_Params.vertexShaderPath);
+          l_OutputPaths.fragment = compile(p_Params.fragmentShaderPath);
+
+          if (g_GraphicsPipelines.find(l_OutputPaths.vertex) ==
+              g_GraphicsPipelines.end()) {
+            g_GraphicsPipelines[l_OutputPaths.vertex] =
+                Util::List<GraphicsPipeline>();
+          }
+          if (g_GraphicsPipelines.find(l_OutputPaths.fragment) ==
+              g_GraphicsPipelines.end()) {
+            g_GraphicsPipelines[l_OutputPaths.fragment] =
+                Util::List<GraphicsPipeline>();
+          }
+
+          g_GraphicsPipelines[l_OutputPaths.vertex].push_back(p_Pipeline);
+          g_GraphicsPipelines[l_OutputPaths.fragment].push_back(p_Pipeline);
+
+          g_GraphicsPipelineOutPaths[p_Pipeline] = l_OutputPaths;
+
+          recreate_graphics_pipeline(p_Pipeline, false);
         }
 
         static void recreate_graphics_pipeline(GraphicsPipeline p_Pipeline,
@@ -89,19 +124,38 @@ namespace Low {
             Backend::callbacks().pipeline_cleanup(p_Pipeline.get_pipeline());
           }
 
-          Backend::PipelineGraphicsCreateParams l_Params =
+          PipelineGraphicsCreateParams l_Params =
               g_GraphicsPipelineParams[p_Pipeline];
 
           GraphicsPipelineOutputPaths &l_OutputPaths =
               g_GraphicsPipelineOutPaths[p_Pipeline];
 
-          // TODO!!
-
-          l_Params.vertexShaderPath = l_OutputPaths.vertex.c_str();
-          l_Params.fragmentShaderPath = l_OutputPaths.fragment.c_str();
+          Backend::PipelineGraphicsCreateParams l_BeParams;
+          l_BeParams.context = &l_Params.context.get_context();
+          l_BeParams.vertexShaderPath = l_OutputPaths.vertex.c_str();
+          l_BeParams.fragmentShaderPath = l_OutputPaths.fragment.c_str();
+          l_BeParams.dimensions = l_Params.dimensions;
+          l_BeParams.signatureCount =
+              static_cast<uint8_t>(l_Params.signatures.size());
+          Util::List<Backend::PipelineResourceSignature> l_Signatures;
+          for (uint8_t i = 0; i < l_BeParams.signatureCount; ++i) {
+            l_Signatures.push_back(l_Params.signatures[i].get_signature());
+          }
+          l_BeParams.signatures = l_Signatures.data();
+          l_BeParams.cullMode = l_Params.cullMode;
+          l_BeParams.frontFace = l_Params.frontFace;
+          l_BeParams.polygonMode = l_Params.polygonMode;
+          l_BeParams.renderpass = &l_Params.renderpass.get_renderpass();
+          l_BeParams.colorTargetCount =
+              static_cast<uint8_t>(l_Params.colorTargets.size());
+          l_BeParams.colorTargets = l_Params.colorTargets.data();
+          l_BeParams.vertexDataAttributeCount =
+              static_cast<uint8_t>(l_Params.vertexDataAttributeTypes.size());
+          l_BeParams.vertexDataAttributesType =
+              l_Params.vertexDataAttributeTypes.data();
 
           Backend::callbacks().pipeline_graphics_create(
-              p_Pipeline.get_pipeline(), l_Params);
+              p_Pipeline.get_pipeline(), l_BeParams);
         }
 
         static void recreate_pipeline(Util::String p_OutPath)

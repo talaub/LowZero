@@ -24,7 +24,7 @@ namespace Low {
 
     Interface::Context g_Context;
     Interface::ComputePipeline g_Pipeline;
-    Backend::Pipeline g_GraphicsPipeline;
+    Interface::GraphicsPipeline g_GraphicsPipeline;
     Interface::PipelineResourceSignature g_ComputeSignature;
     Interface::PipelineResourceSignature g_GraphicsSignature;
 
@@ -40,6 +40,7 @@ namespace Low {
       Interface::Renderpass::initialize();
       Interface::PipelineResourceSignature::initialize();
       Interface::ComputePipeline::initialize();
+      Interface::GraphicsPipeline::initialize();
     }
 
     static void initialize_types()
@@ -148,24 +149,18 @@ namespace Low {
                                                l_ImageResource);
 
       {
-
-        Util::String s = "test.comp";
-
-        Backend::PipelineComputeCreateParams l_Params;
-        l_Params.context = &g_Context.get_context();
-        l_Params.shaderPath = s.c_str();
-        l_Params.signatureCount = 1;
-        l_Params.signatures = &g_ComputeSignature.get_signature();
+        Interface::PipelineComputeCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.shaderPath = "test.comp";
+        l_Params.signatures = {g_ComputeSignature};
 
         g_Pipeline =
             Interface::ComputePipeline::make(N(CompPipeline), l_Params);
       }
 
       {
-        Util::String vertex =
-            Util::String(LOW_DATA_PATH) + "/shader/dst/spv/fs.vert.spv";
-        Util::String fragment =
-            Util::String(LOW_DATA_PATH) + "/shader/dst/spv/fs.frag.spv";
+        Util::String vertex = "fs.vert";
+        Util::String fragment = "fs.frag";
 
         Util::List<Backend::GraphicsPipelineColorTarget> l_ColorTargets;
         {
@@ -180,24 +175,21 @@ namespace Low {
 
         Util::List<uint8_t> l_VertexAttributes;
 
-        Backend::PipelineGraphicsCreateParams l_Params;
-        l_Params.context = &g_Context.get_context();
-        l_Params.vertexShaderPath = vertex.c_str();
-        l_Params.fragmentShaderPath = fragment.c_str();
-        l_Params.signatureCount = 1;
-        l_Params.signatures = &g_GraphicsSignature.get_signature();
+        Interface::PipelineGraphicsCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.vertexShaderPath = vertex;
+        l_Params.fragmentShaderPath = fragment;
+        l_Params.signatures = {g_GraphicsSignature};
         l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
         l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
         l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
         l_Params.dimensions = g_Context.get_dimensions();
-        l_Params.renderpass = g_Context.get_context().renderpasses;
-        l_Params.colorTargetCount = l_ColorTargets.size();
-        l_Params.colorTargets = l_ColorTargets.data();
-        l_Params.vertexDataAttributeCount = l_VertexAttributes.size();
-        l_Params.vertexDataAttributesType = l_VertexAttributes.data();
+        l_Params.renderpass = g_Context.get_renderpasses()[0];
+        l_Params.colorTargets = l_ColorTargets;
+        l_Params.vertexDataAttributeTypes = l_VertexAttributes;
 
-        Backend::callbacks().pipeline_graphics_create(g_GraphicsPipeline,
-                                                      l_Params);
+        g_GraphicsPipeline =
+            Interface::GraphicsPipeline::make(N(GraphicsPipeline), l_Params);
       }
     }
 
@@ -222,7 +214,7 @@ namespace Low {
 
       g_Context.get_current_renderpass().begin();
 
-      Backend::callbacks().pipeline_bind(g_GraphicsPipeline);
+      g_GraphicsPipeline.bind();
 
       {
         Backend::DrawParams l_Params;
@@ -251,6 +243,7 @@ namespace Low {
     static void cleanup_interface_types()
     {
       Interface::ComputePipeline::cleanup();
+      Interface::GraphicsPipeline::cleanup();
       Interface::PipelineResourceSignature::cleanup();
       Interface::Renderpass::cleanup();
       Interface::Context::cleanup();
@@ -265,8 +258,6 @@ namespace Low {
     void cleanup()
     {
       g_Context.wait_idle();
-
-      Backend::callbacks().pipeline_cleanup(g_GraphicsPipeline);
 
       cleanup_types();
     }

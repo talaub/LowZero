@@ -133,7 +133,7 @@ namespace Low {
 
       ComputePipeline
       ComputePipeline::make(Util::Name p_Name,
-                            Backend::PipelineComputeCreateParams &p_Params)
+                            PipelineComputeCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         ComputePipeline l_Pipeline = ComputePipeline::make(p_Name);

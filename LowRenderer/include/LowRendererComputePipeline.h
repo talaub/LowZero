@@ -15,6 +15,7 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct PipelineComputeCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_EXPORT ComputePipelineData
@@ -74,8 +75,8 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static ComputePipeline
-        make(Util::Name p_Name, Backend::PipelineComputeCreateParams &p_Params);
+        static ComputePipeline make(Util::Name p_Name,
+                                    PipelineComputeCreateParams &p_Params);
         void bind();
       };
     } // namespace Interface

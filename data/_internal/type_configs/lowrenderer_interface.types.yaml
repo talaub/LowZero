@@ -166,7 +166,7 @@ types:
           - name: name
             type: Util::Name
           - name: params
-            type: Backend::PipelineComputeCreateParams
+            type: PipelineComputeCreateParams
       bind:
         return_type: void
 
@@ -189,7 +189,7 @@ types:
           - name: name
             type: Util::Name
           - name: params
-            type: Backend::PipelineGraphicsCreateParams
+            type: PipelineGraphicsCreateParams
       bind:
         return_type: void
 
