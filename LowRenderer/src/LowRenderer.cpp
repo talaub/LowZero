@@ -27,6 +27,7 @@ namespace Low {
     Interface::GraphicsPipeline g_GraphicsPipeline;
     Interface::PipelineResourceSignature g_ComputeSignature;
     Interface::PipelineResourceSignature g_GraphicsSignature;
+    Interface::PipelineGraphicsCreateParams g_GraphicsPipelineCreateParams;
 
     static void initialize_resource_types()
     {
@@ -188,6 +189,8 @@ namespace Low {
         l_Params.colorTargets = l_ColorTargets;
         l_Params.vertexDataAttributeTypes = l_VertexAttributes;
 
+        g_GraphicsPipelineCreateParams = l_Params;
+
         g_GraphicsPipeline =
             Interface::GraphicsPipeline::make(N(GraphicsPipeline), l_Params);
       }
@@ -201,8 +204,17 @@ namespace Low {
 
       uint8_t l_ContextState = g_Context.prepare_frame();
 
-      LOW_ASSERT(l_ContextState == Backend::ContextState::SUCCESS,
+      LOW_ASSERT(l_ContextState != Backend::ContextState::FAILED,
                  "Frame prepare was not successful");
+
+      if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
+        g_Context.update_dimensions();
+
+        g_GraphicsPipelineCreateParams.dimensions = g_Context.get_dimensions();
+        Interface::PipelineManager::register_graphics_pipeline(
+            g_GraphicsPipeline, g_GraphicsPipelineCreateParams);
+        return;
+      }
 
       g_ComputeSignature.commit();
 

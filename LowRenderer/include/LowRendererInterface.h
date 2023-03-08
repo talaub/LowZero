@@ -51,6 +51,7 @@ namespace Low {
         void delist_graphics_pipeline(GraphicsPipeline p_Pipeline);
 
         void tick(float p_Delta);
+
       } // namespace PipelineManager
     }   // namespace Interface
   }     // namespace Renderer

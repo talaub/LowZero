@@ -90,6 +90,7 @@ namespace Low {
         void wait_idle();
         uint8_t prepare_frame();
         void render_frame();
+        void update_dimensions();
       };
     } // namespace Interface
   }   // namespace Renderer

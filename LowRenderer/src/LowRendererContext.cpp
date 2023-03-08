@@ -235,6 +235,18 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_render_frame
       }
 
+      void Context::update_dimensions()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+        Backend::callbacks().context_update_dimensions(get_context());
+
+        get_renderpasses().resize(get_image_count());
+        for (uint8_t i = 0u; i < get_renderpasses().size(); ++i) {
+          get_renderpasses()[i].set_renderpass(get_context().renderpasses[i]);
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
+      }
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

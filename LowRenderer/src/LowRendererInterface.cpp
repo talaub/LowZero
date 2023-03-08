@@ -47,20 +47,31 @@ namespace Low {
         void register_compute_pipeline(ComputePipeline p_Pipeline,
                                        PipelineComputeCreateParams &p_Params)
         {
-          g_ComputePipelineParams[p_Pipeline] = p_Params;
-
-          Util::String l_OutputPath = compile(p_Params.shaderPath);
-
-          if (g_ComputePipelines.find(l_OutputPath) ==
-              g_ComputePipelines.end()) {
-            g_ComputePipelines[l_OutputPath] = Util::List<ComputePipeline>();
+          bool l_AlreadyExisting = false;
+          for (auto it = g_ComputePipelineParams.begin();
+               it != g_ComputePipelineParams.end(); ++it) {
+            if (it->first == p_Pipeline) {
+              l_AlreadyExisting = true;
+              break;
+            }
           }
 
-          g_ComputePipelines[l_OutputPath].push_back(p_Pipeline);
+          g_ComputePipelineParams[p_Pipeline] = p_Params;
 
-          g_ComputePipelineOutPaths[p_Pipeline] = l_OutputPath;
+          if (!l_AlreadyExisting) {
+            Util::String l_OutputPath = compile(p_Params.shaderPath);
 
-          recreate_compute_pipeline(p_Pipeline, false);
+            if (g_ComputePipelines.find(l_OutputPath) ==
+                g_ComputePipelines.end()) {
+              g_ComputePipelines[l_OutputPath] = Util::List<ComputePipeline>();
+            }
+
+            g_ComputePipelines[l_OutputPath].push_back(p_Pipeline);
+
+            g_ComputePipelineOutPaths[p_Pipeline] = l_OutputPath;
+          }
+
+          recreate_compute_pipeline(p_Pipeline, l_AlreadyExisting);
         }
 
         static void recreate_compute_pipeline(ComputePipeline p_Pipeline,
@@ -92,29 +103,40 @@ namespace Low {
         void register_graphics_pipeline(GraphicsPipeline p_Pipeline,
                                         PipelineGraphicsCreateParams &p_Params)
         {
+          bool l_AlreadyExisting = false;
+          for (auto it = g_GraphicsPipelineParams.begin();
+               it != g_GraphicsPipelineParams.end(); ++it) {
+            if (it->first == p_Pipeline) {
+              l_AlreadyExisting = true;
+              break;
+            }
+          }
+
           g_GraphicsPipelineParams[p_Pipeline] = p_Params;
 
-          GraphicsPipelineOutputPaths l_OutputPaths;
-          l_OutputPaths.vertex = compile(p_Params.vertexShaderPath);
-          l_OutputPaths.fragment = compile(p_Params.fragmentShaderPath);
+          if (!l_AlreadyExisting) {
+            GraphicsPipelineOutputPaths l_OutputPaths;
+            l_OutputPaths.vertex = compile(p_Params.vertexShaderPath);
+            l_OutputPaths.fragment = compile(p_Params.fragmentShaderPath);
 
-          if (g_GraphicsPipelines.find(l_OutputPaths.vertex) ==
-              g_GraphicsPipelines.end()) {
-            g_GraphicsPipelines[l_OutputPaths.vertex] =
-                Util::List<GraphicsPipeline>();
+            if (g_GraphicsPipelines.find(l_OutputPaths.vertex) ==
+                g_GraphicsPipelines.end()) {
+              g_GraphicsPipelines[l_OutputPaths.vertex] =
+                  Util::List<GraphicsPipeline>();
+            }
+            if (g_GraphicsPipelines.find(l_OutputPaths.fragment) ==
+                g_GraphicsPipelines.end()) {
+              g_GraphicsPipelines[l_OutputPaths.fragment] =
+                  Util::List<GraphicsPipeline>();
+            }
+
+            g_GraphicsPipelines[l_OutputPaths.vertex].push_back(p_Pipeline);
+            g_GraphicsPipelines[l_OutputPaths.fragment].push_back(p_Pipeline);
+
+            g_GraphicsPipelineOutPaths[p_Pipeline] = l_OutputPaths;
           }
-          if (g_GraphicsPipelines.find(l_OutputPaths.fragment) ==
-              g_GraphicsPipelines.end()) {
-            g_GraphicsPipelines[l_OutputPaths.fragment] =
-                Util::List<GraphicsPipeline>();
-          }
 
-          g_GraphicsPipelines[l_OutputPaths.vertex].push_back(p_Pipeline);
-          g_GraphicsPipelines[l_OutputPaths.fragment].push_back(p_Pipeline);
-
-          g_GraphicsPipelineOutPaths[p_Pipeline] = l_OutputPaths;
-
-          recreate_graphics_pipeline(p_Pipeline, false);
+          recreate_graphics_pipeline(p_Pipeline, l_AlreadyExisting);
         }
 
         static void recreate_graphics_pipeline(GraphicsPipeline p_Pipeline,

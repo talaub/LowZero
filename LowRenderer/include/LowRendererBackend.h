@@ -300,6 +300,7 @@ namespace Low {
         void (*context_create)(Context &, ContextCreateParams &);
         void (*context_cleanup)(Context &);
         void (*context_wait_idle)(Context &);
+        void (*context_update_dimensions)(Context &);
 
         uint8_t (*frame_prepare)(Context &);
         void (*frame_render)(Context &);

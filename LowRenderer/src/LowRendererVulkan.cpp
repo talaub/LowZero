@@ -32,7 +32,7 @@ namespace Low {
     namespace Vulkan {
       void renderpass_create_internal(Backend::Renderpass &p_Renderpass,
                                       Backend::RenderpassCreateParams &p_Params,
-                                      bool);
+                                      bool, bool);
       void renderpass_cleanup_internal(Backend::Renderpass &p_Renderpass,
                                        bool p_ClearVulkanRenderpass);
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
@@ -46,6 +46,10 @@ namespace Low {
       void vk_perform_barriers(Backend::Context &p_Context);
       void vk_bind_resources(Backend::Context &p_Context,
                              VkPipelineBindPoint p_BindPoint);
+
+      void imageresource_create_internal(
+          Backend::ImageResource &p_Image,
+          Backend::ImageResourceCreateParams &p_Params, bool p_CreateSampler);
 
       namespace Helper {
 
@@ -742,13 +746,17 @@ namespace Low {
         }
 
         static void create_render_targets(Backend::Context &p_Context,
-                                          Low::Util::List<VkImage> &p_Images)
+                                          Low::Util::List<VkImage> &p_Images,
+                                          bool p_UpdateExisting)
         {
           Context &l_Context = p_Context.vk;
 
-          l_Context.m_SwapchainRenderTargets =
-              (Backend::ImageResource *)Util::Memory::main_allocator()
-                  ->allocate(sizeof(Backend::ImageResource) * p_Images.size());
+          if (!p_UpdateExisting) {
+            l_Context.m_SwapchainRenderTargets =
+                (Backend::ImageResource *)Util::Memory::main_allocator()
+                    ->allocate(sizeof(Backend::ImageResource) *
+                               p_Images.size());
+          }
 
           Math::UVector2 l_Dimensions = p_Context.dimensions;
 
@@ -767,8 +775,9 @@ namespace Low {
             l_Context.m_SwapchainRenderTargets[i_Iter].vk.m_Image =
                 p_Images[i_Iter];
 
-            vk_imageresource_create(l_Context.m_SwapchainRenderTargets[i_Iter],
-                                    l_Params);
+            imageresource_create_internal(
+                l_Context.m_SwapchainRenderTargets[i_Iter], l_Params,
+                !p_UpdateExisting);
 
             l_Context.m_SwapchainRenderTargets[i_Iter].swapchainImage = true;
           }
@@ -837,8 +846,126 @@ namespace Low {
           }
         }
 
-        Util::List<Math::Color> g_SwapchainClearColors = {
-            {0.0f, 1.0f, 0.0f, 1.0f}};
+        static void create_swapchain(Backend::Context &p_Context,
+                                     bool p_UpdateExisting = false)
+        {
+          Util::List<Math::Color> l_SwapchainClearColors = {
+              {0.0f, 1.0f, 0.0f, 1.0f}};
+          Context &l_Context = p_Context.vk;
+
+          p_Context.currentFrameIndex = 0;
+
+          Helper::SwapChainSupportDetails l_SwapChainSupportDetails =
+              Helper::query_swap_chain_support(l_Context,
+                                               l_Context.m_PhysicalDevice);
+
+          VkSurfaceFormatKHR l_SurfaceFormat =
+              Helper::choose_swap_surface_format(
+                  l_SwapChainSupportDetails.m_Formats);
+          VkPresentModeKHR l_PresentMode = Helper::choose_swap_present_mode(
+              l_SwapChainSupportDetails.m_PresentModes);
+          VkExtent2D l_Extent = ContextHelper::choose_swap_extent(
+              p_Context, l_SwapChainSupportDetails.m_Capabilities);
+
+          uint32_t l_ImageCount =
+              l_SwapChainSupportDetails.m_Capabilities.minImageCount + 1;
+
+          p_Context.imageCount = l_ImageCount;
+
+          // Clamp the imagecount to not exceed the maximum
+          // A set maximum of 0 means that there is no maximum
+          if (l_SwapChainSupportDetails.m_Capabilities.maxImageCount > 0 &&
+              l_ImageCount >
+                  l_SwapChainSupportDetails.m_Capabilities.maxImageCount) {
+            l_ImageCount =
+                l_SwapChainSupportDetails.m_Capabilities.maxImageCount;
+          }
+
+          VkSwapchainCreateInfoKHR l_CreateInfo{};
+          l_CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+          l_CreateInfo.surface = l_Context.m_Surface;
+          l_CreateInfo.minImageCount = l_ImageCount;
+          l_CreateInfo.imageFormat = l_SurfaceFormat.format;
+          l_CreateInfo.imageColorSpace = l_SurfaceFormat.colorSpace;
+          l_CreateInfo.imageExtent = l_Extent;
+          l_CreateInfo.imageArrayLayers = 1;
+          l_CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+          Helper::QueueFamilyIndices l_Indices = Helper::find_queue_families(
+              l_Context, l_Context.m_PhysicalDevice);
+          uint32_t l_QueueFamilyIndices[] = {l_Indices.m_GraphicsFamily.value(),
+                                             l_Indices.m_PresentFamily.value()};
+
+          if (l_Indices.m_GraphicsFamily != l_Indices.m_PresentFamily) {
+            l_CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+            l_CreateInfo.queueFamilyIndexCount = 2;
+            l_CreateInfo.pQueueFamilyIndices = l_QueueFamilyIndices;
+          } else {
+            l_CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            l_CreateInfo.queueFamilyIndexCount = 0;
+            l_CreateInfo.pQueueFamilyIndices = nullptr;
+          }
+
+          l_CreateInfo.preTransform =
+              l_SwapChainSupportDetails.m_Capabilities.currentTransform;
+          l_CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+          l_CreateInfo.presentMode = l_PresentMode;
+          l_CreateInfo.clipped = VK_TRUE;
+          l_CreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+          // Create swap chain
+          LOW_ASSERT(vkCreateSwapchainKHR(l_Context.m_Device, &l_CreateInfo,
+                                          nullptr, &(l_Context.m_Swapchain)) ==
+                         VK_SUCCESS,
+                     "Could not create swap chain");
+          LOW_LOG_DEBUG("Swapchain created");
+
+          // Retrieve the vkimages of the swapchain
+          vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
+                                  &l_ImageCount, nullptr);
+
+          Low::Util::List<VkImage> l_Images;
+          l_Images.resize(l_ImageCount);
+          vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
+                                  &l_ImageCount, l_Images.data());
+
+          p_Context.imageFormat =
+              Helper::vkformat_to_imageformat(l_SurfaceFormat.format);
+
+          // Store some swapchain info
+          p_Context.dimensions =
+              Math::UVector2(l_Extent.width, l_Extent.height);
+
+          ContextHelper::create_render_targets(p_Context, l_Images,
+                                               p_UpdateExisting);
+
+          if (!p_UpdateExisting) {
+            p_Context.renderpasses =
+                (Backend::Renderpass *)Util::Memory::main_allocator()->allocate(
+                    sizeof(Backend::Renderpass) * p_Context.imageCount);
+          }
+
+          for (uint8_t i = 0; i < p_Context.imageCount; ++i) {
+            Backend::RenderpassCreateParams l_RenderPassParams;
+            l_RenderPassParams.context = &p_Context;
+            l_RenderPassParams.renderTargetCount = 1;
+            l_RenderPassParams.renderTargets =
+                &(p_Context.vk.m_SwapchainRenderTargets[i]);
+            l_RenderPassParams.clearTargetColor = l_SwapchainClearColors.data();
+            l_RenderPassParams.useDepth = false;
+            l_RenderPassParams.dimensions = p_Context.dimensions;
+
+            if (i > 0) {
+              p_Context.renderpasses[i].vk.m_Renderpass =
+                  p_Context.renderpasses[0].vk.m_Renderpass;
+            }
+
+            renderpass_create_internal(p_Context.renderpasses[i],
+                                       l_RenderPassParams, i == 0,
+                                       p_UpdateExisting);
+          }
+        }
+
       } // namespace ContextHelper
 
       namespace BarrierHelper {
@@ -1012,121 +1139,11 @@ namespace Low {
               "Failed to create command pool");
         }
 
-        {
-          Context &l_Context = p_Context.vk;
+        ContextHelper::create_swapchain(p_Context);
 
-          p_Context.currentFrameIndex = 0;
+        ContextHelper::create_sync_objects(p_Context);
+        ContextHelper::create_command_buffers(p_Context);
 
-          Helper::SwapChainSupportDetails l_SwapChainSupportDetails =
-              Helper::query_swap_chain_support(l_Context,
-                                               l_Context.m_PhysicalDevice);
-
-          VkSurfaceFormatKHR l_SurfaceFormat =
-              Helper::choose_swap_surface_format(
-                  l_SwapChainSupportDetails.m_Formats);
-          VkPresentModeKHR l_PresentMode = Helper::choose_swap_present_mode(
-              l_SwapChainSupportDetails.m_PresentModes);
-          VkExtent2D l_Extent = ContextHelper::choose_swap_extent(
-              p_Context, l_SwapChainSupportDetails.m_Capabilities);
-
-          uint32_t l_ImageCount =
-              l_SwapChainSupportDetails.m_Capabilities.minImageCount + 1;
-
-          p_Context.imageCount = l_ImageCount;
-
-          // Clamp the imagecount to not exceed the maximum
-          // A set maximum of 0 means that there is no maximum
-          if (l_SwapChainSupportDetails.m_Capabilities.maxImageCount > 0 &&
-              l_ImageCount >
-                  l_SwapChainSupportDetails.m_Capabilities.maxImageCount) {
-            l_ImageCount =
-                l_SwapChainSupportDetails.m_Capabilities.maxImageCount;
-          }
-
-          VkSwapchainCreateInfoKHR l_CreateInfo{};
-          l_CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-          l_CreateInfo.surface = l_Context.m_Surface;
-          l_CreateInfo.minImageCount = l_ImageCount;
-          l_CreateInfo.imageFormat = l_SurfaceFormat.format;
-          l_CreateInfo.imageColorSpace = l_SurfaceFormat.colorSpace;
-          l_CreateInfo.imageExtent = l_Extent;
-          l_CreateInfo.imageArrayLayers = 1;
-          l_CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-          Helper::QueueFamilyIndices l_Indices = Helper::find_queue_families(
-              l_Context, l_Context.m_PhysicalDevice);
-          uint32_t l_QueueFamilyIndices[] = {l_Indices.m_GraphicsFamily.value(),
-                                             l_Indices.m_PresentFamily.value()};
-
-          if (l_Indices.m_GraphicsFamily != l_Indices.m_PresentFamily) {
-            l_CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-            l_CreateInfo.queueFamilyIndexCount = 2;
-            l_CreateInfo.pQueueFamilyIndices = l_QueueFamilyIndices;
-          } else {
-            l_CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            l_CreateInfo.queueFamilyIndexCount = 0;
-            l_CreateInfo.pQueueFamilyIndices = nullptr;
-          }
-
-          l_CreateInfo.preTransform =
-              l_SwapChainSupportDetails.m_Capabilities.currentTransform;
-          l_CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-          l_CreateInfo.presentMode = l_PresentMode;
-          l_CreateInfo.clipped = VK_TRUE;
-          l_CreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
-          // Create swap chain
-          LOW_ASSERT(vkCreateSwapchainKHR(l_Context.m_Device, &l_CreateInfo,
-                                          nullptr, &(l_Context.m_Swapchain)) ==
-                         VK_SUCCESS,
-                     "Could not create swap chain");
-          LOW_LOG_DEBUG("Swapchain created");
-
-          // Retrieve the vkimages of the swapchain
-          vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
-                                  &l_ImageCount, nullptr);
-
-          Low::Util::List<VkImage> l_Images;
-          l_Images.resize(l_ImageCount);
-          vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
-                                  &l_ImageCount, l_Images.data());
-
-          p_Context.imageFormat =
-              Helper::vkformat_to_imageformat(l_SurfaceFormat.format);
-
-          // Store some swapchain info
-          p_Context.dimensions =
-              Math::UVector2(l_Extent.width, l_Extent.height);
-
-          ContextHelper::create_render_targets(p_Context, l_Images);
-
-          p_Context.renderpasses =
-              (Backend::Renderpass *)Util::Memory::main_allocator()->allocate(
-                  sizeof(Backend::Renderpass) * p_Context.imageCount);
-
-          for (uint8_t i = 0; i < p_Context.imageCount; ++i) {
-            Backend::RenderpassCreateParams l_RenderPassParams;
-            l_RenderPassParams.context = &p_Context;
-            l_RenderPassParams.renderTargetCount = 1;
-            l_RenderPassParams.renderTargets =
-                &(p_Context.vk.m_SwapchainRenderTargets[i]);
-            l_RenderPassParams.clearTargetColor =
-                ContextHelper::g_SwapchainClearColors.data();
-            l_RenderPassParams.useDepth = false;
-            l_RenderPassParams.dimensions = p_Context.dimensions;
-
-            if (i > 0) {
-              p_Context.renderpasses[i].vk.m_Renderpass =
-                  p_Context.renderpasses[0].vk.m_Renderpass;
-            }
-
-            renderpass_create_internal(p_Context.renderpasses[i],
-                                       l_RenderPassParams, i == 0);
-          }
-
-          ContextHelper::create_sync_objects(p_Context);
-          ContextHelper::create_command_buffers(p_Context);
-        }
         {
           Util::List<VkDescriptorPoolSize> l_PoolSizes;
           {
@@ -1248,6 +1265,28 @@ namespace Low {
         vkDeviceWaitIdle(p_Context.vk.m_Device);
       }
 
+      void vk_context_update_dimensions(Backend::Context &p_Context)
+      {
+        vk_context_wait_idle(p_Context);
+
+        for (uint8_t i = 0u; i < p_Context.imageCount; ++i) {
+          vkDestroyFramebuffer(p_Context.vk.m_Device,
+                               p_Context.renderpasses[i].vk.m_Framebuffer,
+                               nullptr);
+          vkDestroyImageView(
+              p_Context.vk.m_Device,
+              p_Context.vk.m_SwapchainRenderTargets[i].vk.m_ImageView, nullptr);
+        }
+
+        vkDestroyRenderPass(p_Context.vk.m_Device,
+                            p_Context.renderpasses[0].vk.m_Renderpass, nullptr);
+
+        vkDestroySwapchainKHR(p_Context.vk.m_Device, p_Context.vk.m_Swapchain,
+                              nullptr);
+
+        ContextHelper::create_swapchain(p_Context, true);
+      }
+
       uint8_t vk_frame_prepare(Backend::Context &p_Context)
       {
         vkWaitForFences(
@@ -1361,20 +1400,24 @@ namespace Low {
 
       void renderpass_create_internal(Backend::Renderpass &p_Renderpass,
                                       Backend::RenderpassCreateParams &p_Params,
-                                      bool p_CreateVulkanRenderpass)
+                                      bool p_CreateVulkanRenderpass,
+                                      bool p_UpdateExisting)
       {
         p_Renderpass.context = p_Params.context;
         p_Renderpass.dimensions = p_Params.dimensions;
         p_Renderpass.clearDepthColor = p_Params.clearDepthColor;
         p_Renderpass.renderTargetCount = p_Params.renderTargetCount;
         p_Renderpass.useDepth = p_Params.useDepth;
-        p_Renderpass.renderTargets =
-            (Backend::ImageResource *)Util::Memory::main_allocator()->allocate(
-                p_Params.renderTargetCount * sizeof(Backend::ImageResource));
+        if (!p_UpdateExisting) {
+          p_Renderpass.renderTargets =
+              (Backend::ImageResource *)Util::Memory::main_allocator()
+                  ->allocate(p_Params.renderTargetCount *
+                             sizeof(Backend::ImageResource));
 
-        p_Renderpass.clearTargetColor =
-            (Math::Color *)Util::Memory::main_allocator()->allocate(
-                p_Params.renderTargetCount * sizeof(Math::Color));
+          p_Renderpass.clearTargetColor =
+              (Math::Color *)Util::Memory::main_allocator()->allocate(
+                  p_Params.renderTargetCount * sizeof(Math::Color));
+        }
 
         Low::Util::List<VkAttachmentDescription> l_Attachments;
         Low::Util::List<VkAttachmentReference> l_ColorAttachmentRefs;
@@ -1519,7 +1562,7 @@ namespace Low {
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
                                 Backend::RenderpassCreateParams &p_Params)
       {
-        renderpass_create_internal(p_Renderpass, p_Params, true);
+        renderpass_create_internal(p_Renderpass, p_Params, true, false);
       }
 
       void renderpass_cleanup_internal(Backend::Renderpass &p_Renderpass,
@@ -1784,8 +1827,9 @@ namespace Low {
         }
       } // namespace ImageHelper
 
-      void vk_imageresource_create(Backend::ImageResource &p_Image,
-                                   Backend::ImageResourceCreateParams &p_Params)
+      void imageresource_create_internal(
+          Backend::ImageResource &p_Image,
+          Backend::ImageResourceCreateParams &p_Params, bool p_CreateSampler)
       {
         p_Image.context = p_Params.context;
         p_Image.format = p_Params.format;
@@ -1812,9 +1856,17 @@ namespace Low {
         ImageHelper::create_image_view(*p_Params.context, p_Image,
                                        p_Image.format, p_Params.depth);
 
-        ImageHelper::create_2d_sampler(*p_Params.context, p_Image);
+        if (p_CreateSampler) {
+          ImageHelper::create_2d_sampler(*p_Params.context, p_Image);
+        }
 
         p_Image.swapchainImage = false;
+      }
+
+      void vk_imageresource_create(Backend::ImageResource &p_Image,
+                                   Backend::ImageResourceCreateParams &p_Params)
+      {
+        imageresource_create_internal(p_Image, p_Params, true);
       }
 
       void vk_imageresource_cleanup(Backend::ImageResource &p_Image)
@@ -2785,6 +2837,7 @@ namespace Low {
         p_Callbacks.context_create = &vk_context_create;
         p_Callbacks.context_cleanup = &vk_context_cleanup;
         p_Callbacks.context_wait_idle = &vk_context_wait_idle;
+        p_Callbacks.context_update_dimensions = &vk_context_update_dimensions;
 
         p_Callbacks.frame_prepare = &vk_frame_prepare;
         p_Callbacks.frame_render = &vk_frame_render;
