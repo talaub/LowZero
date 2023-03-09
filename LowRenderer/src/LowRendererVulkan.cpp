@@ -963,6 +963,8 @@ namespace Low {
             renderpass_create_internal(p_Context.renderpasses[i],
                                        l_RenderPassParams, i == 0,
                                        p_UpdateExisting);
+
+            p_Context.renderpasses[i].swapchainRenderpass = true;
           }
         }
 
@@ -1038,6 +1040,14 @@ namespace Low {
                 VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+          } else if (l_Image.get_image().vk.m_State ==
+                     ImageState::PRESENT_SRC) {
+            transition_image_barrier(l_CommandBuffer, l_Image.get_image(),
+                                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                     0, VK_ACCESS_SHADER_READ_BIT,
+                                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
@@ -1557,6 +1567,8 @@ namespace Low {
                          VK_SUCCESS,
                      "Failed to create framebuffer");
         }
+
+        p_Renderpass.swapchainRenderpass = false;
       }
 
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
@@ -1625,6 +1637,14 @@ namespace Low {
 
         vkCmdBeginRenderPass(l_CommandBuffer, &l_RenderpassInfo,
                              VK_SUBPASS_CONTENTS_INLINE);
+
+        for (uint8_t i = 0u; i < p_Renderpass.renderTargetCount; ++i) {
+          Resource::Image i_Image(p_Renderpass.renderTargets[i].handleId);
+
+          if (i_Image.is_alive()) {
+            i_Image.get_image().vk.m_State = ImageState::PRESENT_SRC;
+          }
+        }
 
         VkViewport l_Viewport{};
         l_Viewport.x = 0.f;
@@ -1835,6 +1855,8 @@ namespace Low {
         p_Image.format = p_Params.format;
         p_Image.dimensions = p_Params.dimensions;
         p_Image.vk.m_State = ImageState::UNDEFINED;
+
+        p_Image.handleId = 0ull;
 
         VkImageUsageFlags l_UsageFlags =
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
@@ -2843,6 +2865,7 @@ namespace Low {
         p_Callbacks.frame_render = &vk_frame_render;
 
         p_Callbacks.renderpass_create = &vk_renderpass_create;
+        p_Callbacks.renderpass_cleanup = &vk_renderpass_cleanup;
         p_Callbacks.renderpass_begin = &vk_renderpass_begin;
         p_Callbacks.renderpass_end = &vk_renderpass_end;
 

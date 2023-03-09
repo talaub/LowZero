@@ -91,6 +91,7 @@ namespace Low {
         uint8_t prepare_frame();
         void render_frame();
         void update_dimensions();
+        void clear_committed_resource_signatures();
       };
     } // namespace Interface
   }   // namespace Renderer

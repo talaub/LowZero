@@ -167,14 +167,6 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_commit
       }
 
-      void PipelineResourceSignature::commit_clear()
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_commit_clear
-        Backend::callbacks().pipeline_resource_signature_commit_clear(
-            *get_signature().context);
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_commit_clear
-      }
-
       void PipelineResourceSignature::set_image_resource(
           Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
       {

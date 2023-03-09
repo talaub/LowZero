@@ -53,6 +53,9 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        if (!get_renderpass().swapchainRenderpass) {
+          Backend::callbacks().renderpass_cleanup(get_renderpass());
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;

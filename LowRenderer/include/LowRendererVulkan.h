@@ -72,7 +72,8 @@ namespace Low {
           UNDEFINED,
           GENERAL,
           SHADER_READ_ONLY_OPTIMAL,
-          DESTINATION_OPTIMAL
+          DESTINATION_OPTIMAL,
+          PRESENT_SRC
         };
       };
 

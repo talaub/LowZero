@@ -42,6 +42,7 @@ namespace Low {
         bool useDepth;
         Math::Vector2 clearDepthColor;
         Math::UVector2 dimensions;
+        bool swapchainRenderpass;
       };
 
       struct Context
@@ -144,6 +145,7 @@ namespace Low {
         uint8_t format;
         bool depth;
         Math::UVector2 dimensions;
+        uint64_t handleId;
       };
 
       struct ImageResourceCreateParams
@@ -306,6 +308,7 @@ namespace Low {
         void (*frame_render)(Context &);
 
         void (*renderpass_create)(Renderpass &, RenderpassCreateParams &);
+        void (*renderpass_cleanup)(Renderpass &);
         void (*renderpass_begin)(Renderpass &);
         void (*renderpass_end)(Renderpass &);
 

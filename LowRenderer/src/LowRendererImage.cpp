@@ -146,6 +146,8 @@ namespace Low {
         Backend::callbacks().imageresource_create(l_Image.get_image(),
                                                   p_Params);
 
+        l_Image.get_image().handleId = l_Image.get_id();
+
         return l_Image;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }

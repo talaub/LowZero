@@ -58,6 +58,8 @@ types:
         return_type: void
       update_dimensions:
         return_type: void
+      clear_committed_resource_signatures:
+        return_type: void
 
   Renderpass:
     header_imports:
@@ -113,8 +115,6 @@ types:
           - name: resourceDescriptions
             type: Util::List<Backend::PipelineResourceDescription>
       commit:
-        return_type: void
-      commit_clear:
         return_type: void
       set_image_resource:
         return_type: void

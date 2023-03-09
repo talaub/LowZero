@@ -247,6 +247,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
       }
 
+      void Context::clear_committed_resource_signatures()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_committed_resource_signatures
+        Backend::callbacks().pipeline_resource_signature_commit_clear(
+            get_context());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_committed_resource_signatures
+      }
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

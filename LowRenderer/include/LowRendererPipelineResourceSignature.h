@@ -83,7 +83,6 @@ namespace Low {
              Util::List<Backend::PipelineResourceDescription>
                  &p_ResourceDescriptions);
         void commit();
-        void commit_clear();
         void set_image_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
                                 Resource::Image p_Value);
         void set_sampler_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
