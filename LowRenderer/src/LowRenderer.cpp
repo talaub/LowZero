@@ -13,6 +13,8 @@
 #include "LowRendererPipelineResourceSignature.h"
 #include "LowRendererInterface.h"
 
+#include "LowRendererResourceRegistry.h"
+
 #include <stdint.h>
 
 #include <gli/gli.hpp>
@@ -33,6 +35,9 @@ namespace Low {
     Interface::GraphicsPipeline g_GP2;
     Interface::Renderpass g_Rp;
     Resource::Image g_Image;
+
+    ResourceRegistry g_ResourceRegistry;
+    Util::String g_ConfigPath;
 
     static void initialize_resource_types()
     {
@@ -55,8 +60,20 @@ namespace Low {
       initialize_interface_types();
     }
 
+    static void initialize_global_resources()
+    {
+      Util::Yaml::Node l_RootNode = Util::Yaml::load_file(
+          (g_ConfigPath + "/renderer_global_resources.yaml").c_str());
+
+      g_ResourceRegistry.initialize(g_Context, l_RootNode);
+
+      g_ResourceRegistry.get_buffer_resource(N(context_dimensions))
+          .set(&g_Context.get_dimensions());
+    }
+
     void initialize()
     {
+      g_ConfigPath = Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
       Backend::initialize();
 
       initialize_types();
@@ -76,6 +93,8 @@ namespace Low {
 
       g_Context =
           Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
+
+      initialize_global_resources();
 
       {{Backend::ImageResourceCreateParams l_Params;
       l_Params.context = &g_Context.get_context();

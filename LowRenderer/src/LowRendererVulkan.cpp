@@ -2719,17 +2719,19 @@ namespace Low {
         VkBuffer l_StagingBuffer;
         VkDeviceMemory l_StagingBufferMemory;
 
-        Helper::create_buffer(*p_Params.context, l_BufferSize,
-                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                              l_StagingBuffer, l_StagingBufferMemory);
+        if (p_Params.data) {
+          Helper::create_buffer(*p_Params.context, l_BufferSize,
+                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                l_StagingBuffer, l_StagingBufferMemory);
 
-        void *l_Data;
-        vkMapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory, 0,
-                    l_BufferSize, 0, &l_Data);
-        memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
-        vkUnmapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory);
+          void *l_Data;
+          vkMapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory, 0,
+                      l_BufferSize, 0, &l_Data);
+          memcpy(l_Data, p_Params.data, (size_t)l_BufferSize);
+          vkUnmapMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory);
+        }
 
         VkBufferUsageFlags l_UsageFlage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
@@ -2749,13 +2751,15 @@ namespace Low {
                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                               p_Buffer.vk.m_Buffer, p_Buffer.vk.m_Memory);
 
-        Helper::copy_buffer(*p_Params.context, l_StagingBuffer,
-                            p_Buffer.vk.m_Buffer, l_BufferSize);
+        if (p_Params.data) {
+          Helper::copy_buffer(*p_Params.context, l_StagingBuffer,
+                              p_Buffer.vk.m_Buffer, l_BufferSize);
 
-        vkDestroyBuffer(p_Params.context->vk.m_Device, l_StagingBuffer,
-                        nullptr);
-        vkFreeMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory,
-                     nullptr);
+          vkDestroyBuffer(p_Params.context->vk.m_Device, l_StagingBuffer,
+                          nullptr);
+          vkFreeMemory(p_Params.context->vk.m_Device, l_StagingBufferMemory,
+                       nullptr);
+        }
       }
 
       void vk_buffer_cleanup(Backend::Buffer &p_Buffer)

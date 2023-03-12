@@ -1,0 +1,11 @@
+context_dimensions:
+  buffer_info: 
+    data_type: UVector2
+    array_size: 1
+  type: buffer
+
+context_dimensions_divisor:
+  buffer_info: 
+    data_type: Vector2
+    array_size: 1
+  type: buffer

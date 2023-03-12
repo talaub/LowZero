@@ -149,6 +149,13 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
+      void Buffer::set(void *p_Data)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set
+        Backend::callbacks().buffer_set(get_buffer(), p_Data);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set
+      }
+
     } // namespace Resource
   }   // namespace Renderer
 } // namespace Low

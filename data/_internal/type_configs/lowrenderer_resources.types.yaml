@@ -39,3 +39,8 @@ types:
             type: Util::Name
           - name: params
             type: Backend::BufferCreateParams
+      set:
+        return_type: void
+        parameters:
+          - name: data
+            type: void*

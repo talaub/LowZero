@@ -76,6 +76,7 @@ namespace Low {
 
         static Buffer make(Util::Name p_Name,
                            Backend::BufferCreateParams &p_Params);
+        void set(void *p_Data);
       };
     } // namespace Resource
   }   // namespace Renderer
