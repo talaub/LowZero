@@ -36,7 +36,7 @@ FILE(GLOB SUBFOLDERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE
 SET(SUBPROJECTS "")
 SET(FOUND "")
 
-add_compile_definitions(LOW_EDITOR_BUILD LOW_DATA_PATH="../../../data")
+add_compile_definitions(LOW_EDITOR_BUILD LOW_DATA_PATH="../../data")
 
 # Excluded directories
 # These directorories are not part of the build tree

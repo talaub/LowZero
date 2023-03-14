@@ -409,24 +409,20 @@ namespace Low {
           if (p_MessageSeverity ==
                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT &&
               !SKIP_DEBUG_LEVEL) {
-            LOW_LOG_DEBUG((std::string("Validation layer: ") +
-                           std::string(p_CallbackData->pMessage))
-                              .c_str());
+            LOW_LOG_DEBUG << "Validation layer: " << p_CallbackData->pMessage
+                          << LOW_LOG_END;
           } else if (p_MessageSeverity ==
                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-            LOW_LOG_INFO((std::string("Validation layer: ") +
-                          std::string(p_CallbackData->pMessage))
-                             .c_str());
+            LOW_LOG_INFO << "Validation layer: " << p_CallbackData->pMessage
+                         << LOW_LOG_END;
           } else if (p_MessageSeverity ==
                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            LOW_LOG_WARN((std::string("Validation layer: ") +
-                          std::string(p_CallbackData->pMessage))
-                             .c_str());
+            LOW_LOG_WARN << "Validation layer: " << p_CallbackData->pMessage
+                         << LOW_LOG_END;
           } else if (p_MessageSeverity ==
                      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-            LOW_LOG_ERROR((std::string("Validation layer: ") +
-                           std::string(p_CallbackData->pMessage))
-                              .c_str());
+            LOW_LOG_ERROR << "Validation layer: " << p_CallbackData->pMessage
+                          << LOW_LOG_END;
           }
 
           return VK_FALSE;
@@ -654,8 +650,6 @@ namespace Low {
           LOW_ASSERT(l_Candidates.rbegin()->first > 0,
                      "No suitable physical GPU found");
           p_Context.m_PhysicalDevice = l_Candidates.rbegin()->second;
-
-          LOW_LOG_DEBUG("Physical device selected");
         }
 
         static void create_logical_device(Context &p_Context)
@@ -704,8 +698,6 @@ namespace Low {
                                     &(p_Context.m_Device)) == VK_SUCCESS,
                      "Failed to create logical device");
 
-          LOW_LOG_DEBUG("Logical device created");
-
           // Create queues
           vkGetDeviceQueue(p_Context.m_Device,
                            l_Indices.m_GraphicsFamily.value(), 0,
@@ -713,8 +705,6 @@ namespace Low {
           vkGetDeviceQueue(p_Context.m_Device,
                            l_Indices.m_PresentFamily.value(), 0,
                            &(p_Context.m_PresentQueue));
-
-          LOW_LOG_DEBUG("Queues created");
         }
 
         static VkExtent2D
@@ -918,7 +908,6 @@ namespace Low {
                                           nullptr, &(l_Context.m_Swapchain)) ==
                          VK_SUCCESS,
                      "Could not create swap chain");
-          LOW_LOG_DEBUG("Swapchain created");
 
           // Retrieve the vkimages of the swapchain
           vkGetSwapchainImagesKHR(l_Context.m_Device, l_Context.m_Swapchain,
@@ -1107,7 +1096,7 @@ namespace Low {
           if (p_Params.validation_enabled) {
             LOW_ASSERT(ContextHelper::check_validation_layer_support(),
                        "Validation layers requested, but not available");
-            LOW_LOG_DEBUG("Validation layers enabled");
+            LOW_LOG_DEBUG << "Validation enabled" << LOW_LOG_END;
           }
 
           p_Context.vk.m_ValidationEnabled = p_Params.validation_enabled;
@@ -2593,8 +2582,6 @@ namespace Low {
                        &(p_Pipeline.vk.m_Pipeline)) == VK_SUCCESS,
                    "Failed to create graphics pipeline");
 
-        LOW_LOG_DEBUG("Graphics pipeline created");
-
         vkDestroyShaderModule(p_Params.context->vk.m_Device,
                               l_FragmentShaderModule, nullptr);
         vkDestroyShaderModule(p_Params.context->vk.m_Device,
@@ -2852,7 +2839,7 @@ namespace Low {
 
         Util::String l_Notice = "Compiling shader " + l_SourcePath;
 
-        LOW_LOG_DEBUG(l_Notice.c_str());
+        LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
         system(l_Command.c_str());
 
         return l_OutPath;

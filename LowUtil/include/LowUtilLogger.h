@@ -1,14 +1,26 @@
 #pragma once
 
 #include "LowUtilApi.h"
+#include "LowUtilContainers.h"
+#include "LowUtilName.h"
+
+#include "LowMathVectorUtil.h"
 
 #include <stdint.h>
+#include <string>
 
-#define LOW_LOG_DEBUG(x) Low::Util::Log::debug(LOW_MODULE_NAME, x)
-#define LOW_LOG_INFO(x) Low::Util::Log::info(LOW_MODULE_NAME, x)
-#define LOW_LOG_WARN(x) Low::Util::Log::warn(LOW_MODULE_NAME, x)
-#define LOW_LOG_ERROR(x) Low::Util::Log::error(LOW_MODULE_NAME, x)
-#define LOW_LOG_PROFILE(x) Low::Util::Log::profile(LOW_MODULE_NAME, x)
+#define LOW_LOG_DEBUG                                                          \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::DEBUG, LOW_MODULE_NAME)
+#define LOW_LOG_INFO                                                           \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::INFO, LOW_MODULE_NAME)
+#define LOW_LOG_WARN                                                           \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::WARN, LOW_MODULE_NAME)
+#define LOW_LOG_ERROR                                                          \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::ERROR, LOW_MODULE_NAME)
+#define LOW_LOG_PROFILE                                                        \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::PROFILE, LOW_MODULE_NAME)
+
+#define LOW_LOG_END Low::Util::Log::LogLineEnd::LINE_END
 
 namespace Low {
   namespace Util {
@@ -24,14 +36,41 @@ namespace Low {
         };
       }
 
-      LOW_EXPORT void log(uint8_t p_LogLevel, const char *p_Module,
-                          const char *p_Message);
+      enum LogLineEnd
+      {
+        LINE_END
+      };
 
-      LOW_EXPORT void info(const char *p_Module, const char *p_Message);
-      LOW_EXPORT void debug(const char *p_Module, const char *p_Message);
-      LOW_EXPORT void warn(const char *p_Module, const char *p_Message);
-      LOW_EXPORT void error(const char *p_Module, const char *p_Message);
-      LOW_EXPORT void profile(const char *p_Module, const char *p_Message);
+      struct LogStream;
+
+      LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module);
+
+      struct LOW_EXPORT LogStream
+      {
+        friend LogStream &begin_log(uint8_t, const char *);
+
+        LogStream &operator<<(LogLineEnd p_End);
+        LogStream &operator<<(String &p_Message);
+        LogStream &operator<<(const char *p_Message);
+        LogStream &operator<<(std::string &p_Message);
+
+        LogStream &operator<<(int p_Message);
+        LogStream &operator<<(uint32_t p_Message);
+        LogStream &operator<<(uint64_t p_Message);
+        LogStream &operator<<(float p_Message);
+
+        LogStream &operator<<(Math::Vector2 &p_Vec);
+        LogStream &operator<<(Math::Vector3 &p_Vec);
+        LogStream &operator<<(Math::Vector4 &p_Vec);
+        LogStream &operator<<(Math::UVector2 &p_Vec);
+        LogStream &operator<<(Math::UVector3 &p_Vec);
+
+        LogStream &operator<<(Name &p_Name);
+
+      private:
+        String m_Content;
+      };
+
     } // namespace Log
   }   // namespace Util
 } // namespace Low

@@ -79,7 +79,8 @@ namespace Low {
                       " nanoseconds.";
         }
 
-        Log::profile(l_Profile.module.c_str(), l_LogMsg.c_str());
+        Log::begin_log(Log::LogLevel::PROFILE, l_Profile.module.c_str())
+            << l_LogMsg << LOW_LOG_END;
       }
 
       void track_memory_allocation(String p_Label, String p_Module,
@@ -117,7 +118,8 @@ namespace Low {
           String i_Text = String("Tracked memory allocation '") + it->text +
                           "' did not get free'd. Function: " + it->function;
 
-          Log::profile(it->module.c_str(), i_Text.c_str());
+          Log::begin_log(Log::LogLevel::PROFILE, it->module.c_str())
+              << i_Text << LOW_LOG_END;
         }
 
         LOW_ASSERT(g_TrackedMemoryAllocations.empty(),
