@@ -15,7 +15,7 @@ namespace Low {
 
       static void load_capacities()
       {
-        LOW_LOG_DEBUG(LOW_DATA_PATH);
+        LOW_LOG_DEBUG << LOW_DATA_PATH << LOW_LOG_END;
         std::string l_FilePath =
             std::string(LOW_DATA_PATH) + "/_internal/type_capacities.yaml";
 
@@ -38,7 +38,7 @@ namespace Low {
       {
         load_capacities();
 
-        LOW_LOG_DEBUG("Config loaded");
+        LOW_LOG_DEBUG << "Config loaded" << LOW_LOG_END;
       }
 
       uint32_t get_capacity(Name p_ModuleName, Name p_TypeName)

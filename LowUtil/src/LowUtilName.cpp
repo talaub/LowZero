@@ -61,7 +61,7 @@ namespace Low {
       LOW_PROFILE_ALLOC(Name String Buffer);
       g_StringPointer = g_StringBuffer;
 
-      LOW_LOG_DEBUG("Name buffer setup completed");
+      LOW_LOG_DEBUG << "Name buffer setup completed" << LOW_LOG_END;
     }
 
     void Name::cleanup()
@@ -69,7 +69,7 @@ namespace Low {
       Memory::main_allocator()->deallocate(g_StringBuffer);
       LOW_PROFILE_FREE(Name String Buffer);
 
-      LOW_LOG_DEBUG("Cleaned up Name buffer");
+      LOW_LOG_DEBUG << "Cleaned up Name buffer" << LOW_LOG_END;
     }
 
     uint32_t Name::to_hash(const char *p_String)

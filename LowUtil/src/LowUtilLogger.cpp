@@ -7,12 +7,15 @@
 #include <string.h>
 #include <time.h>
 #include <thread>
+#include <sstream>
 
 #include <microprofile.h>
 
 namespace Low {
   namespace Util {
     namespace Log {
+      LogStream g_LogStream;
+
       static void print_time()
       {
         time_t rawtime;
@@ -23,27 +26,29 @@ namespace Low {
 
         strftime(buffer, 80, "%F %X", timeinfo);
 
-        printf("\x1B[90m%s\033[0m\t", buffer);
+        g_LogStream << "\x1B[90m" << buffer << "\033[0m\t";
       }
 
       static void print_thread_id()
       {
-        std::thread::id this_id = std::this_thread::get_id();
-        printf("\x1B[35m%u\033[0m\t", this_id);
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        int id = std::stoi(ss.str());
+        g_LogStream << "\x1B[35m" << id << "\033[0m\t";
       }
 
       static void print_log_level(uint8_t p_LogLevel)
       {
         if (p_LogLevel == LogLevel::DEBUG) {
-          printf("\x1B[96mDEBUG\033[0m\t");
+          g_LogStream << "\x1B[96mDEBUG\033[0m\t";
         } else if (p_LogLevel == LogLevel::INFO) {
-          printf("\x1B[92mINFO \033[0m\t");
+          g_LogStream << "\x1B[92mINFO \033[0m\t";
         } else if (p_LogLevel == LogLevel::WARN) {
-          printf("\x1B[33mWARN \033[0m\t");
+          g_LogStream << "\x1B[33mWARN \033[0m\t";
         } else if (p_LogLevel == LogLevel::ERROR) {
-          printf("\x1B[31mERROR \033[0m\t");
+          g_LogStream << "\x1B[31mERROR \033[0m\t";
         } else if (p_LogLevel == LogLevel::PROFILE) {
-          printf("\x1B[35mPRFLR\033[0m\t");
+          g_LogStream << "\x1B[35mPRFLR\033[0m\t";
         }
       }
 
@@ -64,42 +69,97 @@ namespace Low {
           l_ModBuffer[i] = p_Module[i];
         }
 
-        printf("\x1B[90m[%s]\033[0m ", l_ModBuffer);
+        g_LogStream << "\x1B[90m[" << l_ModBuffer << "]\033[0m ";
       }
 
-      void log(uint8_t p_LogLevel, const char *p_Module, const char *p_Message)
+      LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module)
       {
+        g_LogStream.m_Content = "";
+
         print_time();
         print_thread_id();
         print_log_level(p_LogLevel);
         print_module(p_Module);
-        printf(" - %s\n", p_Message);
+        g_LogStream << " - ";
+
+        return g_LogStream;
       }
 
-      void info(const char *p_Module, const char *p_Message)
+      LogStream &LogStream::operator<<(LogLineEnd p_LineEnd)
       {
-        log(LogLevel::INFO, p_Module, p_Message);
+        printf("%s\n", m_Content.c_str());
+        return *this;
       }
 
-      void debug(const char *p_Module, const char *p_Message)
+      LogStream &LogStream::operator<<(String &p_Message)
       {
-        log(LogLevel::DEBUG, p_Module, p_Message);
+        m_Content += p_Message;
+        return g_LogStream;
       }
 
-      void warn(const char *p_Module, const char *p_Message)
+      LogStream &LogStream::operator<<(const char *p_Message)
       {
-        log(LogLevel::WARN, p_Module, p_Message);
+        return *this << String(p_Message);
       }
 
-      void error(const char *p_Module, const char *p_Message)
+      LogStream &LogStream::operator<<(std::string &p_Message)
       {
-        log(LogLevel::ERROR, p_Module, p_Message);
+        return *this << String(p_Message.c_str());
       }
 
-      void profile(const char *p_Module, const char *p_Message)
+      LogStream &LogStream::operator<<(Name &p_Name)
       {
-        log(LogLevel::PROFILE, p_Module, p_Message);
+        return *this << p_Name.c_str();
       }
+
+      LogStream &LogStream::operator<<(int p_Message)
+      {
+        return *this << std::to_string(p_Message);
+      }
+
+      LogStream &LogStream::operator<<(uint32_t p_Message)
+      {
+        return *this << std::to_string(p_Message);
+      }
+
+      LogStream &LogStream::operator<<(uint64_t p_Message)
+      {
+        return *this << std::to_string(p_Message);
+      }
+
+      LogStream &LogStream::operator<<(float p_Message)
+      {
+        return *this << std::to_string(p_Message);
+      }
+
+      LogStream &LogStream::operator<<(Math::Vector2 &p_Vec)
+      {
+        return *this << "Vector2(" << p_Vec.x << ", " << p_Vec.y << ")";
+      }
+
+      LogStream &LogStream::operator<<(Math::Vector3 &p_Vec)
+      {
+        return *this << "Vector3(" << p_Vec.x << ", " << p_Vec.y << ", "
+                     << p_Vec.z << ")";
+      }
+
+      LogStream &LogStream::operator<<(Math::Vector4 &p_Vec)
+      {
+        return *this << "Vector4(" << p_Vec.x << ", " << p_Vec.y << ", "
+                     << p_Vec.z << ", " << p_Vec.w << ")";
+      }
+
+      LogStream &LogStream::operator<<(Math::UVector2 &p_Vec)
+      {
+        return *this << "UVector2(" << p_Vec.x << ", " << p_Vec.y << ")";
+      }
+
+      LogStream &LogStream::operator<<(Math::UVector3 &p_Vec)
+      {
+        return *this << "UVector3(" << p_Vec.x << ", " << p_Vec.y << ", "
+                     << p_Vec.z << ")";
+      }
+
     } // namespace Log
   }   // namespace Util
 } // namespace Low

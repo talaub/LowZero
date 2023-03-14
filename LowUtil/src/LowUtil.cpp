@@ -16,7 +16,7 @@ namespace Low {
       Name::initialize();
       Config::initialize();
 
-      LOW_LOG_INFO("Util initialized");
+      LOW_LOG_INFO << "Util initialized" << LOW_LOG_END;
 
       LOW_PROFILE_END();
     }
@@ -28,7 +28,7 @@ namespace Low {
 
       Profiler::evaluate_memory_allocation();
 
-      LOW_LOG_INFO("Util shutdown");
+      LOW_LOG_INFO << "Util shutdown" << LOW_LOG_END;
     }
   } // namespace Util
 } // namespace Low

@@ -19,7 +19,7 @@ namespace Low {
           l_Message += std::string(", Message: ") + p_Message;
         }
 
-        Low::Util::Log::log(p_LogLevel, p_Module, l_Message.c_str());
+        Log::begin_log(p_LogLevel, p_Module) << l_Message << LOW_LOG_END;
       }
 
       bool assert_that(bool p_Condition, const char *p_Module, char *p_Message,
