@@ -1,0 +1,115 @@
+module: LowRenderer
+namespace:
+  - Low
+  - Renderer
+dll_macro: LOW_EXPORT
+types:
+  RenderFlow:
+    private_make: true
+    header_imports:
+      - LowRendererInterface.h
+      - LowRendererResourceRegistry.h
+      - LowUtilYaml.h
+    source_imports:
+      - LowRendererComputeStep.h
+    properties:
+      dimensions:
+        type: Math::UVector2
+        no_setter: true
+      steps:
+        type: Util::List<Util::Handle>
+      resources:
+        type: ResourceRegistry
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: RenderFlow
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: context
+            type: Interface::Context
+            handle: true
+          - name: config
+            type: Util::Yaml::Node
+      execute:
+        return_type: void
+    
+  ComputeStep:
+    private_make: true
+    header_imports:
+      - LowRendererInterface.h
+      - LowRendererResourceRegistry.h
+      - LowRendererComputeStepConfig.h
+      - LowRendererComputePipeline.h
+      - LowRendererRenderFlow.h
+      - LowUtilYaml.h
+    properties:
+      resources:
+        type: Util::Map<RenderFlow, ResourceRegistry>
+        no_setter: true
+      config:
+        type: ComputeStepConfig
+        handle: true
+        private_setter: true
+      pipelines:
+        type: Util::List<Interface::ComputePipeline>
+        no_setter: true
+      signatures:
+        type: Util::List<Interface::PipelineResourceSignature>
+        no_setter: true
+      context:
+        type: Interface::Context
+        handle: true
+        private_setter: true
+        private_getter: true
+    functions:
+      make:
+        static: true
+        return_type: ComputeStep
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: context
+            type: Interface::Context
+            handle: true
+          - name: config
+            type: ComputeStepConfig
+            handle: true
+      prepare:
+        return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      execute:
+        return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+
+  ComputeStepConfig:
+    private_make: true
+    header_imports:
+      - LowRendererFrontendConfig.h
+    properties:
+     resources:
+       type: Util::List<ResourceConfig> 
+       no_setter: true
+     pipelines:
+       type: Util::List<ComputePipelineConfig>
+       no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: ComputeStepConfig
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: node
+            type: Util::Yaml::Node

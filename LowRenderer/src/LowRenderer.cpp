@@ -4,6 +4,8 @@
 #include "LowUtilLogger.h"
 #include "LowUtilResource.h"
 #include "LowUtilProfiler.h"
+#include "LowUtilFileIO.h"
+#include "LowUtilString.h"
 
 #include "LowRendererWindow.h"
 #include "LowRendererBackend.h"
@@ -12,8 +14,12 @@
 #include "LowRendererComputePipeline.h"
 #include "LowRendererPipelineResourceSignature.h"
 #include "LowRendererInterface.h"
+#include "LowRendererComputeStepConfig.h"
+#include "LowRendererComputeStep.h"
+#include "LowRendererRenderFlow.h"
 
 #include "LowRendererResourceRegistry.h"
+#include "LowRendererFrontendConfig.h"
 
 #include <stdint.h>
 
@@ -39,6 +45,16 @@ namespace Low {
     ResourceRegistry g_ResourceRegistry;
     Util::String g_ConfigPath;
 
+    RenderFlow g_MainRenderFlow;
+    Util::Name g_MainRenderFlowName;
+
+    static void initialize_frontend_types()
+    {
+      ComputeStepConfig::initialize();
+      ComputeStep::initialize();
+      RenderFlow::initialize();
+    }
+
     static void initialize_resource_types()
     {
       Resource::Image::initialize();
@@ -58,6 +74,7 @@ namespace Low {
     {
       initialize_resource_types();
       initialize_interface_types();
+      initialize_frontend_types();
     }
 
     static void initialize_global_resources()
@@ -65,18 +82,71 @@ namespace Low {
       Util::Yaml::Node l_RootNode = Util::Yaml::load_file(
           (g_ConfigPath + "/renderer_global_resources.yaml").c_str());
 
+      /*
       g_ResourceRegistry.initialize(g_Context, l_RootNode);
 
       g_ResourceRegistry.get_buffer_resource(N(context_dimensions))
           .set(&g_Context.get_dimensions());
+      */
+    }
+
+    static void load_renderflows()
+    {
+      Util::String l_RenderFlowDirectory = g_ConfigPath + "/renderflows";
+      Util::List<Util::String> l_FilePaths;
+      Util::FileIO::list_directory(l_RenderFlowDirectory.c_str(), l_FilePaths);
+      Util::String l_Ending = ".renderflow.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::String i_Filename = i_Path.substr(
+              l_RenderFlowDirectory.length() + 1, i_Path.length());
+          Util::String i_Name =
+              i_Filename.substr(0, i_Filename.length() - l_Ending.length());
+
+          RenderFlow::make(LOW_NAME(i_Name.c_str()), g_Context, i_Node);
+
+          LOW_LOG_DEBUG << "RenderFlow " << i_Name << " loaded" << LOW_LOG_END;
+        }
+      }
+    }
+
+    static void load_renderstep_configs()
+    {
+      Util::String l_RenderpassDirectory = g_ConfigPath + "/rendersteps";
+      Util::List<Util::String> l_FilePaths;
+      Util::FileIO::list_directory(l_RenderpassDirectory.c_str(), l_FilePaths);
+      Util::String l_Ending = ".renderstep.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::String i_Filename = i_Path.substr(
+              l_RenderpassDirectory.length() + 1, i_Path.length());
+          Util::String i_Name =
+              i_Filename.substr(0, i_Filename.length() - l_Ending.length());
+
+          if (LOW_YAML_AS_STRING(i_Node["type"]) == "compute") {
+            ComputeStepConfig::make(LOW_NAME(i_Name.c_str()), i_Node);
+          } else {
+            LOW_ASSERT(false, "Unknown renderstep type");
+          }
+          LOW_LOG_DEBUG << "Renderstep " << i_Name << " loaded" << LOW_LOG_END;
+        }
+      }
     }
 
     void initialize()
     {
       g_ConfigPath = Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
+      g_MainRenderFlowName = N(test);
+
       Backend::initialize();
 
       initialize_types();
+
+      load_renderstep_configs();
 
       Util::Resource::Image2D l_Resource;
       Util::Resource::load_image2d(
@@ -95,6 +165,21 @@ namespace Low {
           Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
 
       initialize_global_resources();
+
+      load_renderflows();
+
+      {
+        RenderFlow *l_RenderFlows = RenderFlow::living_instances();
+        for (uint32_t i = 0; i < RenderFlow::living_count(); ++i) {
+          if (l_RenderFlows[i].get_name() == g_MainRenderFlowName) {
+            g_MainRenderFlow = l_RenderFlows[i];
+            break;
+          }
+        }
+
+        LOW_ASSERT(g_MainRenderFlow.is_alive(),
+                   "Could not find main renderflow");
+      }
 
       {{Backend::ImageResourceCreateParams l_Params;
       l_Params.context = &g_Context.get_context();
@@ -291,6 +376,8 @@ void tick(float p_Delta)
     return;
   }
 
+  g_MainRenderFlow.execute();
+
   g_Context.clear_committed_resource_signatures();
   g_Rp.begin();
   g_GP2.bind();
@@ -332,6 +419,13 @@ bool window_is_open()
   return g_Context.get_window().is_open();
 }
 
+static void cleanup_frontend_types()
+{
+  RenderFlow::cleanup();
+  ComputeStep::cleanup();
+  ComputeStepConfig::cleanup();
+}
+
 static void cleanup_resource_types()
 {
   Resource::Image::cleanup();
@@ -349,6 +443,7 @@ static void cleanup_interface_types()
 
 static void cleanup_types()
 {
+  cleanup_frontend_types();
   cleanup_resource_types();
   cleanup_interface_types();
 }

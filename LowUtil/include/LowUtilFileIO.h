@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LowUtilApi.h"
+#include "LowUtilContainers.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -34,6 +35,9 @@ namespace Low {
         FILE *m_FilePointer;
         File(FILE *);
       };
+
+      LOW_EXPORT void list_directory(const char *p_Path,
+                                     List<String> &p_ContentPaths);
 
     } // namespace FileIO
   }   // namespace Util

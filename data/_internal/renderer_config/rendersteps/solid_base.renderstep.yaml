@@ -1,4 +1,0 @@
-type: graphics
-inputs:
-  albedo:
-    type: sampler

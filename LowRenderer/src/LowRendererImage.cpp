@@ -8,7 +8,7 @@
 namespace Low {
   namespace Renderer {
     namespace Resource {
-      const uint16_t Image::TYPE_ID = 6;
+      const uint16_t Image::TYPE_ID = 9;
       uint8_t *Image::ms_Buffer = 0;
       Low::Util::Instances::Slot *Image::ms_Slots = 0;
       Low::Util::List<Image> Image::ms_LivingInstances =
@@ -28,6 +28,10 @@ namespace Low {
       {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
+
+        ImageData *l_DataPtr =
+            (ImageData *)&ms_Buffer[l_Index * sizeof(ImageData)];
+        new (l_DataPtr) ImageData();
 
         Image l_Handle;
         l_Handle.m_Data.m_Index = l_Index;

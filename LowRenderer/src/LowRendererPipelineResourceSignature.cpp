@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t PipelineResourceSignature::TYPE_ID = 3;
+      const uint16_t PipelineResourceSignature::TYPE_ID = 6;
       uint8_t *PipelineResourceSignature::ms_Buffer = 0;
       Low::Util::Instances::Slot *PipelineResourceSignature::ms_Slots = 0;
       Low::Util::List<PipelineResourceSignature>
@@ -36,6 +36,11 @@ namespace Low {
       {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
+
+        PipelineResourceSignatureData *l_DataPtr =
+            (PipelineResourceSignatureData
+                 *)&ms_Buffer[l_Index * sizeof(PipelineResourceSignatureData)];
+        new (l_DataPtr) PipelineResourceSignatureData();
 
         PipelineResourceSignature l_Handle;
         l_Handle.m_Data.m_Index = l_Index;

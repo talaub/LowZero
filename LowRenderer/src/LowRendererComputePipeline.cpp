@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t ComputePipeline::TYPE_ID = 4;
+      const uint16_t ComputePipeline::TYPE_ID = 7;
       uint8_t *ComputePipeline::ms_Buffer = 0;
       Low::Util::Instances::Slot *ComputePipeline::ms_Slots = 0;
       Low::Util::List<ComputePipeline> ComputePipeline::ms_LivingInstances =
@@ -31,6 +31,11 @@ namespace Low {
       {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
+
+        ComputePipelineData *l_DataPtr =
+            (ComputePipelineData
+                 *)&ms_Buffer[l_Index * sizeof(ComputePipelineData)];
+        new (l_DataPtr) ComputePipelineData();
 
         ComputePipeline l_Handle;
         l_Handle.m_Data.m_Index = l_Index;

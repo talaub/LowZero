@@ -6,3 +6,6 @@ LowRenderer:
   Buffer: 4
   ComputePipeline: 16
   GraphicsPipeline: 16
+  ComputeStep: 8
+  ComputeStepConfig: 4
+  RenderFlow: 1

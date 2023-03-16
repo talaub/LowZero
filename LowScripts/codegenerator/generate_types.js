@@ -139,6 +139,8 @@ function generate_header(p_Type) {
     let t = '';
     let n = 0;
 
+    let privatelines = []
+
     let l_OldCode = '';
     if (fs.existsSync(p_Type.header_file_path)) {
 	l_OldCode = read_file(p_Type.header_file_path);
@@ -277,10 +279,23 @@ function generate_header(p_Type) {
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	if (!i_Prop.no_getter) {
-	    t += line(`${i_Prop.accessor_type}${i_Prop.getter_name}() const;`, n);
+	    const l = `${i_Prop.accessor_type}${i_Prop.getter_name}() const;`;
+	    if (i_Prop.private_getter) {
+		privatelines.push(l);
+	    }
+	    else {
+		t += line(l, n);
+	    }
 	}
 	if (!i_Prop.no_setter) {
-	    t += line(`void ${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value);`, n);
+	    const l = `void ${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value);`;
+
+	    if (i_Prop.private_setter) {
+		privatelines.push(l);
+	    }
+	    else {
+		t += line(l, n);
+	    }
 	}
 	t += empty();
     }
@@ -305,6 +320,14 @@ function generate_header(p_Type) {
 		t += write(' const');
 	    }
 	    t += line(';');
+	}
+    }
+
+    if (privatelines.length) {
+	t += line('private:');
+
+	for (const l of privatelines) {
+	    t += line(l);
 	}
     }
     
@@ -372,6 +395,9 @@ function generate_source(p_Type) {
     }
     t += line(`uint32_t l_Index = Low::Util::Instances::create_instance(ms_Buffer, ms_Slots, get_capacity());`);
     t += empty();
+    t += line(`${p_Type.name}Data *l_DataPtr = (${p_Type.name}Data *) &ms_Buffer[l_Index * sizeof(${p_Type.name}Data)];`);
+    t += line(`new (l_DataPtr) ${p_Type.name}Data();`);
+    t += empty();
     t += line(`${p_Type.name} l_Handle;`);
     t += line(`l_Handle.m_Data.m_Index = l_Index;`);
     t += line(`l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;`);
@@ -379,10 +405,10 @@ function generate_source(p_Type) {
     t += empty();
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	if (['bool', 'boolean'].includes(i_Prop.type)) {
-	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.plain_type}) = false;`);
+	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = false;`);
 	}
 	if (['Name', 'Low::Util::Name'].includes(i_Prop.type)) {
-	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.plain_type}) = Low::Util::Name(0u);`);
+	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = Low::Util::Name(0u);`);
 	}
     }
     t += empty();
@@ -474,7 +500,7 @@ function generate_source(p_Type) {
 	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() const`, n);
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
-	    t += line(`return TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.plain_type});`, n);
+	    t += line(`return TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type});`, n);
 	    t += line('}', --n);
 	}
 	if (!i_Prop.no_setter) {
@@ -506,7 +532,7 @@ function generate_source(p_Type) {
 		t += empty();
 	    }
 	    t += line('// Set new value');
-	    t += line(`TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.plain_type}) = p_Value;`, n);
+	    t += line(`TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`, n);
 	    t += empty();
 	    t += line(i_SetterBeginMarker);
 	    t += i_CustomCode;
@@ -644,6 +670,10 @@ function process_file(p_FileName) {
 	    }
 
 	    i_Prop.plain_type = get_plain_type(i_Prop.type);
+	    i_Prop.soa_type = i_Prop.plain_type;
+	    if (i_Prop.soa_type.includes(',')) {
+		i_Prop.soa_type = `SINGLE_ARG(${i_Prop.soa_type})`;
+	    }
 	    i_Prop.accessor_type = get_accessor_type(i_Prop.type, i_Prop.handle);
 	}
 

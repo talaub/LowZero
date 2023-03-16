@@ -5,36 +5,21 @@
 #include "LowUtilLogger.h"
 #include "LowMath.h"
 
+#include "LowRendererRenderFlow.h"
+#include "LowRendererImage.h"
+
 namespace Low {
   namespace Renderer {
     static uint64_t create_buffer_resource(Interface::Context p_Context,
-                                           Util::Yaml::Node &p_Node,
+                                           RenderFlow p_RenderFlow,
+                                           ResourceConfig &p_Config,
                                            Util::Name p_Name)
     {
-      LOW_ASSERT((bool)p_Node["buffer_info"],
-                 "Missing bufferinfo for buffer resource");
-
-      LOW_ASSERT((bool)p_Node["buffer_info"]["data_type"],
-                 "Missing data_type for bufferinfo in resource");
-
-      Util::String l_TypeString = Util::String(
-          p_Node["buffer_info"]["data_type"].as<std::string>().c_str());
-
       Backend::BufferCreateParams l_Params;
       l_Params.context = &p_Context.get_context();
       l_Params.data = 0;
 
-      if (l_TypeString == "UVector2") {
-        l_Params.bufferSize = sizeof(Math::UVector2);
-      } else if (l_TypeString == "Vector2") {
-        l_Params.bufferSize = sizeof(Math::Vector2);
-      } else {
-        LOW_ASSERT(false, "Unknown resource type");
-      }
-
-      if (p_Node["buffer_info"]["array_size"]) {
-        l_Params.bufferSize *= p_Node["buffer_info"]["array_size"].as<int>();
-      }
+      l_Params.bufferSize = p_Config.buffer.size;
 
       l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER |
                             LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
@@ -44,32 +29,70 @@ namespace Low {
       return l_Resource.get_id();
     }
 
-    static uint64_t create_resource(Interface::Context p_Context,
-                                    Util::Yaml::Node &p_Node, Util::Name p_Name)
+    static uint64_t create_image_resource(Interface::Context p_Context,
+                                          RenderFlow p_RenderFlow,
+                                          ResourceConfig &p_Config,
+                                          Util::Name p_Name)
     {
-      Util::String l_TypeString =
-          Util::String(p_Node["type"].as<std::string>().c_str());
+      Backend::ImageResourceCreateParams l_Params;
+      l_Params.context = &p_Context.get_context();
+      l_Params.createImage = true;
+      l_Params.imageData = 0;
+      l_Params.imageDataSize = 0;
+      l_Params.depth = false;
+      l_Params.format = p_Config.image.format;
+      l_Params.writable = true;
 
-      if (l_TypeString == "buffer") {
-        return create_buffer_resource(p_Context, p_Node, p_Name);
+      if (p_Config.image.dimensionType ==
+          ImageResourceDimensionType::ABSOLUTE) {
+        l_Params.dimensions = p_Config.image.dimensions.absolute;
+      } else if (p_Config.image.dimensionType ==
+                 ImageResourceDimensionType::RELATIVE) {
+        if (p_Config.image.dimensions.relative.target ==
+            ImageResourceDimensionRelativeOptions::CONTEXT) {
+          l_Params.dimensions = p_Context.get_dimensions();
+        } else if (p_Config.image.dimensions.relative.target ==
+                   ImageResourceDimensionRelativeOptions::RENDERFLOW) {
+          l_Params.dimensions = p_RenderFlow.get_dimensions();
+        } else {
+          LOW_ASSERT(false, "Unknown relative dimension option");
+        }
+
+        Math::Vector2 l_Dimensions = l_Params.dimensions;
+        l_Dimensions *= p_Config.image.dimensions.relative.multiplier;
+        l_Params.dimensions = l_Dimensions;
+      } else {
+        LOW_ASSERT(false, "Unknown dimension type");
+      }
+
+      return Resource::Image::make(p_Name, l_Params).get_id();
+    }
+
+    static uint64_t create_resource(Interface::Context p_Context,
+                                    RenderFlow p_RenderFlow,
+                                    ResourceConfig &p_Config, Util::Name p_Name)
+    {
+      LOW_LOG_DEBUG << "Creating resource " << p_Name << LOW_LOG_END;
+      if (p_Config.type == ResourceType::BUFFER) {
+        return create_buffer_resource(p_Context, p_RenderFlow, p_Config,
+                                      p_Name);
+      } else if (p_Config.type == ResourceType::IMAGE) {
+        return create_image_resource(p_Context, p_RenderFlow, p_Config, p_Name);
       }
 
       LOW_ASSERT(false, "Unknown resource type");
       return 0ull;
     }
 
-    void ResourceRegistry::initialize(Interface::Context p_Context,
-                                      Util::Yaml::Node &p_Node)
+    void ResourceRegistry::initialize(Util::List<ResourceConfig> &p_Configs,
+                                      Interface::Context p_Context,
+                                      RenderFlow p_RenderFlow)
     {
       m_Context = p_Context;
 
-      for (auto it = p_Node.begin(); it != p_Node.end(); ++it) {
-        Util::Name i_ResourceName =
-            LOW_NAME(it->first.as<std::string>().c_str());
-
-        m_Resources[i_ResourceName] = ResourceInfo();
-        m_Resources[i_ResourceName].handleId =
-            create_resource(p_Context, it->second, i_ResourceName);
+      for (ResourceConfig &i_Config : p_Configs) {
+        m_Resources[i_Config.name] = {
+            create_resource(p_Context, p_RenderFlow, i_Config, i_Config.name)};
       }
     }
 
@@ -91,6 +114,16 @@ namespace Low {
 
       LOW_ASSERT(l_Handle.get_type() == Resource::Buffer::TYPE_ID,
                  "Cannot fetch resource as buffer");
+
+      return l_Handle.get_id();
+    }
+
+    Resource::Image ResourceRegistry::get_image_resource(Util::Name p_Name)
+    {
+      Util::Handle l_Handle = get_resource(p_Name);
+
+      LOW_ASSERT(l_Handle.get_type() == Resource::Image::TYPE_ID,
+                 "Cannot fetch resource as image");
 
       return l_Handle.get_id();
     }

@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Context::TYPE_ID = 1;
+      const uint16_t Context::TYPE_ID = 4;
       uint8_t *Context::ms_Buffer = 0;
       Low::Util::Instances::Slot *Context::ms_Slots = 0;
       Low::Util::List<Context> Context::ms_LivingInstances =
@@ -30,6 +30,10 @@ namespace Low {
       {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
+
+        ContextData *l_DataPtr =
+            (ContextData *)&ms_Buffer[l_Index * sizeof(ContextData)];
+        new (l_DataPtr) ContextData();
 
         Context l_Handle;
         l_Handle.m_Data.m_Index = l_Index;

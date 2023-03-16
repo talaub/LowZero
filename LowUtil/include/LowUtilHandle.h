@@ -4,6 +4,8 @@
 
 #include <stdint.h>
 
+#define SINGLE_ARG(...) __VA_ARGS__
+
 #define TYPE_SOA(type, member, membertype)                                     \
   *((membertype *)&(ms_Buffer[offsetof(##type##Data, member) +                 \
                               (m_Data.m_Index * ##type##Data::get_size())]))

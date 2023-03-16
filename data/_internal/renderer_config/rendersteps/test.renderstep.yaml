@@ -1,0 +1,21 @@
+type: compute
+resources:
+    out_image:
+        dimensions:
+            type: relative
+            target: renderflow
+            multiplier: 1.0
+        type: image
+        format: RGBA8_UNORM
+        array_size: 1
+output_image: out_image
+pipelines:
+  - name: write
+    description: inverts the color of the current image
+    shader: write.comp
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 0.065
+    resource_bindings:
+      out_image: image

@@ -2,6 +2,7 @@
 
 #include "LowUtilAssert.h"
 
+#include <filesystem>
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -75,6 +76,14 @@ namespace Low {
       void close(File &p_File)
       {
         fclose(p_File.m_FilePointer);
+      }
+
+      void list_directory(const char *p_Path, List<String> &p_ContentPaths)
+      {
+        for (const auto &i_Entry :
+             std::filesystem::directory_iterator(p_Path)) {
+          p_ContentPaths.push_back(String(i_Entry.path().string().c_str()));
+        }
       }
     } // namespace FileIO
   }   // namespace Util

@@ -11,7 +11,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Renderpass::TYPE_ID = 2;
+      const uint16_t Renderpass::TYPE_ID = 5;
       uint8_t *Renderpass::ms_Buffer = 0;
       Low::Util::Instances::Slot *Renderpass::ms_Slots = 0;
       Low::Util::List<Renderpass> Renderpass::ms_LivingInstances =
@@ -32,6 +32,10 @@ namespace Low {
       {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
+
+        RenderpassData *l_DataPtr =
+            (RenderpassData *)&ms_Buffer[l_Index * sizeof(RenderpassData)];
+        new (l_DataPtr) RenderpassData();
 
         Renderpass l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
