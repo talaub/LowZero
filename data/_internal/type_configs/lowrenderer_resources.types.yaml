@@ -44,3 +44,19 @@ types:
         parameters:
           - name: data
             type: void*
+      write:
+        return_type: void
+        parameters:
+          - name: data
+            type: void*
+          - name: dataSize
+            type: uint32_t
+          - name: start
+            type: uint32_t
+      bind_vertex:
+        return_type: void
+      bind_index:
+        return_type: void
+        parameters:
+          - name: bindType
+            type: uint8_t

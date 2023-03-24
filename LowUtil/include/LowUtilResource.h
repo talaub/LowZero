@@ -15,7 +15,20 @@ namespace Low {
         List<Math::UVector2> dimensions;
       };
 
+      struct Vertex
+      {
+        Math::Vector3 position;
+      };
+
+      struct Mesh
+      {
+        List<Vertex> vertices;
+        List<uint32_t> indices;
+      };
+
       LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image);
+
+      LOW_EXPORT void load_mesh(String p_FilePath, Mesh &p_Mesh);
     } // namespace Resource
   }   // namespace Util
 } // namespace Low

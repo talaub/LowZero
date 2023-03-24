@@ -2,10 +2,17 @@ LowRenderer:
   Context: 1
   Renderpass: 8
   PipelineResourceSignature: 8
-  Image: 4
+  Image: 8
   Buffer: 4
   ComputePipeline: 16
   GraphicsPipeline: 16
   ComputeStep: 8
   ComputeStepConfig: 4
+  GraphicsStepConfig: 4
+  GraphicsStep: 8
   RenderFlow: 1
+  Texture2D: 8
+  Mesh: 4
+  RenderObject: 16
+  MaterialType: 2
+  Material: 8

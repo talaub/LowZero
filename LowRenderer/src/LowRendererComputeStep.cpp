@@ -221,13 +221,14 @@ namespace Low {
         }
 
         l_Step.get_signatures().push_back(
-            Interface::PipelineResourceSignature::make(p_Name, p_Context, 0,
+            Interface::PipelineResourceSignature::make(p_Name, p_Context, 1,
                                                        i_ResourceDescriptions));
 
         Interface::PipelineComputeCreateParams l_Params;
         l_Params.context = p_Context;
         l_Params.shaderPath = i_Config.shader;
-        l_Params.signatures = {l_Step.get_signatures()[i]};
+        l_Params.signatures = {p_Context.get_global_signature(),
+                               l_Step.get_signatures()[i]};
         l_Step.get_pipelines().push_back(
             Interface::ComputePipeline::make(p_Name, l_Params));
       }
@@ -270,8 +271,6 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
       LOW_ASSERT(get_resources().find(p_RenderFlow) != get_resources().end(),
                  "Step not prepared for renderflow");
-
-      get_context().clear_committed_resource_signatures();
 
       Util::List<ComputePipelineConfig> &l_Configs =
           get_config().get_pipelines();

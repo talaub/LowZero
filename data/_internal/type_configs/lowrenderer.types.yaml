@@ -12,6 +12,7 @@ types:
       - LowUtilYaml.h
     source_imports:
       - LowRendererComputeStep.h
+      - LowRendererGraphicsStep.h
     properties:
       dimensions:
         type: Math::UVector2
@@ -113,3 +114,159 @@ types:
             type: Util::Name
           - name: node
             type: Util::Yaml::Node
+
+  GraphicsStepConfig:
+    private_make: true
+    header_imports:
+      - LowRendererFrontendConfig.h
+    source_imports:
+      - LowUtilString.h
+    properties:
+     resources:
+       type: Util::List<ResourceConfig> 
+       no_setter: true
+     pipelines:
+       type: Util::List<GraphicsPipelineConfig>
+       no_setter: true
+     rendertargets:
+       type: Util::List<PipelineResourceBindingConfig>
+       no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: GraphicsStepConfig
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: node
+            type: Util::Yaml::Node
+
+  GraphicsStep:
+    private_make: true
+    header_imports:
+      - LowRendererInterface.h
+      - LowRendererResourceRegistry.h
+      - LowRendererGraphicsStepConfig.h
+      - LowRendererGraphicsPipeline.h
+      - LowRendererRenderObject.h
+      - LowRendererRenderFlow.h
+      - LowUtilYaml.h
+    properties:
+      resources:
+        type: Util::Map<RenderFlow, ResourceRegistry>
+        no_setter: true
+      config:
+        type: GraphicsStepConfig
+        handle: true
+        private_setter: true
+      pipelines:
+        type: Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>>
+        no_setter: true
+      renderobjects:
+        type: Util::Map<Util::Name, Util::List<RenderObject>>
+        no_setter: true
+      renderpasses:
+        type: Util::Map<RenderFlow, Interface::Renderpass>
+        no_setter: true
+      context:
+        type: Interface::Context
+        handle: true
+        private_setter: true
+        private_getter: true
+    functions:
+      make:
+        static: true
+        return_type: GraphicsStep
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: context
+            type: Interface::Context
+            handle: true
+          - name: config
+            type: GraphicsStepConfig
+            handle: true
+      prepare:
+        return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      execute:
+        return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      register_renderobject:
+        return_type: void
+        parameters:
+          - name: renderObject
+            type: RenderObject
+            handle: true
+
+  Texture2D:
+    private_make: true
+    header_imports:
+      - LowRendererImage.h
+    properties:
+      image:
+        type: Resource::Image
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: Texture2D
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: params
+            type: Backend::ImageResourceCreateParams
+
+  Mesh:
+    properties:
+      vertex_buffer_start:
+        type: uint32_t
+      vertex_count:
+        type: uint32_t
+      index_buffer_start:
+        type: uint32_t
+      index_count:
+        type: uint32_t
+
+  RenderObject:
+    header_imports:
+      - LowMathVectorUtil.h
+      - LowRendererMesh.h
+      - LowRendererMaterial.h
+    properties:
+      mesh:
+        type: Mesh
+        handle: true
+      material:
+        type: Material
+        handle: true
+      world_position:
+        type: Math::Vector3
+      world_rotation:
+        type: Math::Quaternion
+      world_scale:
+        type: Math::Vector3
+
+  MaterialType:
+    header_imports:
+      - LowRendererFrontendConfig.h
+    properties:
+      gbuffer_pipeline:
+        type: GraphicsPipelineConfig
+
+  Material:
+    header_imports:
+      - LowRendererMaterialType.h
+    properties:
+      material_type:
+        type: MaterialType
+        handle: true

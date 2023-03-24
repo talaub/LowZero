@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t GraphicsPipeline::TYPE_ID = 8;
+      const uint16_t GraphicsPipeline::TYPE_ID = 15;
       uint8_t *GraphicsPipeline::ms_Buffer = 0;
       Low::Util::Instances::Slot *GraphicsPipeline::ms_Slots = 0;
       Low::Util::List<GraphicsPipeline> GraphicsPipeline::ms_LivingInstances =

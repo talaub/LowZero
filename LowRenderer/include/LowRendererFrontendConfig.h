@@ -79,10 +79,20 @@ namespace Low {
       };
     }
 
+    namespace ResourceBindScope {
+      enum Enum
+      {
+        LOCAL,
+        RENDERFLOW,
+        CONTEXT
+      };
+    }
+
     struct PipelineResourceBindingConfig
     {
       Util::Name resourceName;
       uint8_t bindType;
+      uint8_t resourceScope;
     };
 
     namespace ComputeDispatchDimensionType {
@@ -127,5 +137,21 @@ namespace Low {
 
     void parse_compute_pipeline_configs(
         Util::Yaml::Node &p_Node, Util::List<ComputePipelineConfig> &p_Configs);
+
+    struct GraphicsPipelineConfig
+    {
+      Util::Name name;
+      Util::String vertexPath;
+      Util::String fragmentPath;
+      uint8_t cullMode;
+      uint8_t frontFace;
+      uint8_t polygonMode;
+      bool translucency;
+    };
+
+    void load_graphics_pipeline_configs(Util::String p_RootPath);
+
+    GraphicsPipelineConfig &get_graphics_pipeline_config(Util::Name p_Name);
+
   } // namespace Renderer
 } // namespace Low

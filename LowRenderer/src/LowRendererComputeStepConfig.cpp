@@ -145,7 +145,9 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       ComputeStepConfig l_Config = ComputeStepConfig::make(p_Name);
 
-      parse_resource_configs(p_Node["resources"], l_Config.get_resources());
+      if (p_Node["resources"]) {
+        parse_resource_configs(p_Node["resources"], l_Config.get_resources());
+      }
       parse_compute_pipeline_configs(p_Node["pipelines"],
                                      l_Config.get_pipelines());
 

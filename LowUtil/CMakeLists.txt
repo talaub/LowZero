@@ -50,4 +50,5 @@ target_link_libraries(LowUtil PUBLIC
   yaml-cpp
   gli
   tlsf
+  assimp
 )

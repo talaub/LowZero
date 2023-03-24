@@ -8,7 +8,7 @@
 namespace Low {
   namespace Renderer {
     namespace Resource {
-      const uint16_t Buffer::TYPE_ID = 10;
+      const uint16_t Buffer::TYPE_ID = 17;
       uint8_t *Buffer::ms_Buffer = 0;
       Low::Util::Instances::Slot *Buffer::ms_Slots = 0;
       Low::Util::List<Buffer> Buffer::ms_LivingInstances =
@@ -158,6 +158,28 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set
         Backend::callbacks().buffer_set(get_buffer(), p_Data);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set
+      }
+
+      void Buffer::write(void *p_Data, uint32_t p_DataSize, uint32_t p_Start)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write
+        Backend::callbacks().buffer_write(get_buffer(), p_Data, p_DataSize,
+                                          p_Start);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_write
+      }
+
+      void Buffer::bind_vertex()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_vertex
+        Backend::callbacks().buffer_bind_vertex(get_buffer());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_vertex
+      }
+
+      void Buffer::bind_index(uint8_t p_BindType)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_index
+        Backend::callbacks().buffer_bind_index(get_buffer(), p_BindType);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_index
       }
 
     } // namespace Resource

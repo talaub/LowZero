@@ -77,6 +77,9 @@ namespace Low {
         static Buffer make(Util::Name p_Name,
                            Backend::BufferCreateParams &p_Params);
         void set(void *p_Data);
+        void write(void *p_Data, uint32_t p_DataSize, uint32_t p_Start);
+        void bind_vertex();
+        void bind_index(uint8_t p_BindType);
       };
     } // namespace Resource
   }   // namespace Renderer

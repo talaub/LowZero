@@ -297,6 +297,16 @@ namespace Low {
         uint32_t firstVertex;
       };
 
+      struct DrawIndexedParams
+      {
+        Context *context;
+        uint32_t indexCount;
+        uint32_t firstIndex;
+        int32_t vertexOffset;
+        uint32_t instanceCount;
+        uint32_t firstInstance;
+      };
+
       struct ApiBackendCallback
       {
         void (*context_create)(Context &, ContextCreateParams &);
@@ -334,6 +344,7 @@ namespace Low {
 
         void (*compute_dispatch)(Context &, Math::UVector3);
         void (*draw)(DrawParams &);
+        void (*draw_indexed)(DrawIndexedParams &);
 
         void (*imageresource_create)(ImageResource &,
                                      ImageResourceCreateParams &);

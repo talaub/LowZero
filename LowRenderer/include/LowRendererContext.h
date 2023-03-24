@@ -8,6 +8,7 @@
 
 #include "LowRendererBackend.h"
 #include "LowRendererRenderpass.h"
+#include "LowRendererPipelineResourceSignature.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -22,6 +23,7 @@ namespace Low {
       {
         Backend::Context context;
         Util::List<Renderpass> renderpasses;
+        PipelineResourceSignature global_signature;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -74,6 +76,8 @@ namespace Low {
 
         Util::List<Renderpass> &get_renderpasses() const;
 
+        PipelineResourceSignature get_global_signature() const;
+
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
@@ -92,6 +96,9 @@ namespace Low {
         void render_frame();
         void update_dimensions();
         void clear_committed_resource_signatures();
+
+      private:
+        void set_global_signature(PipelineResourceSignature p_Value);
       };
     } // namespace Interface
   }   // namespace Renderer

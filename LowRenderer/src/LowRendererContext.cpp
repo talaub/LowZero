@@ -6,11 +6,12 @@
 #include "LowUtilConfig.h"
 
 #include "LowRendererInterface.h"
+#include "LowRendererTexture2D.h"
 
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Context::TYPE_ID = 4;
+      const uint16_t Context::TYPE_ID = 11;
       uint8_t *Context::ms_Buffer = 0;
       Low::Util::Instances::Slot *Context::ms_Slots = 0;
       Low::Util::List<Context> Context::ms_LivingInstances =
@@ -123,6 +124,23 @@ namespace Low {
         return TYPE_SOA(Context, renderpasses, Util::List<Renderpass>);
       }
 
+      PipelineResourceSignature Context::get_global_signature() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(Context, global_signature, PipelineResourceSignature);
+      }
+      void Context::set_global_signature(PipelineResourceSignature p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(Context, global_signature, PipelineResourceSignature) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_global_signature
+        // LOW_CODEGEN::END::CUSTOM:SETTER_global_signature
+      }
+
       Low::Util::Name Context::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -156,6 +174,22 @@ namespace Low {
           l_Context.get_renderpasses()[i] = Renderpass::make(p_Name);
           l_Context.get_renderpasses()[i].set_renderpass(
               l_Context.get_context().renderpasses[i]);
+        }
+
+        {
+          Util::List<Backend::PipelineResourceDescription> l_Resources;
+
+          {
+            Backend::PipelineResourceDescription l_Resource;
+            l_Resource.name = N(g_Texture2Ds);
+            l_Resource.step = Backend::ResourcePipelineStep::ALL;
+            l_Resource.type = Backend::ResourceType::SAMPLER;
+            l_Resource.arraySize = Texture2D::get_capacity();
+            l_Resources.push_back(l_Resource);
+          }
+
+          l_Context.set_global_signature(PipelineResourceSignature::make(
+              N(GlobalSignature), l_Context, 0, l_Resources));
         }
 
         return l_Context;

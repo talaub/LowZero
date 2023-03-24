@@ -1,0 +1,5 @@
+type: graphics
+rendertargets:
+  - renderflow:GBufferAlbedo
+pipelines:
+  - name: testgp

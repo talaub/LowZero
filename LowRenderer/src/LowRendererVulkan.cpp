@@ -998,9 +998,10 @@ namespace Low {
             Backend::PipelineResourceBinding &p_Binding)
         {
           Util::Handle l_Handle(p_Binding.boundResourceHandleId);
-          LOW_ASSERT(l_Handle.get_type() == Resource::Image::TYPE_ID,
-                     "Unexpected resource type");
           Resource::Image l_Image(l_Handle.get_id());
+          if (!l_Image.is_alive()) {
+            return;
+          }
 
           VkCommandBuffer l_CommandBuffer =
               ContextHelper::get_current_commandbuffer(p_Context);
@@ -1048,9 +1049,10 @@ namespace Low {
             Backend::PipelineResourceBinding &p_Binding)
         {
           Util::Handle l_Handle(p_Binding.boundResourceHandleId);
-          LOW_ASSERT(l_Handle.get_type() == Resource::Image::TYPE_ID,
-                     "Unexpected resource type");
           Resource::Image l_Image(l_Handle.get_id());
+          if (!l_Image.is_alive()) {
+            return;
+          }
 
           VkCommandBuffer l_CommandBuffer =
               ContextHelper::get_current_commandbuffer(p_Context);
@@ -2378,7 +2380,7 @@ namespace Low {
             l_AttributeDescriptions[i].format = VK_FORMAT_R32G32_SFLOAT;
             l_Stride += sizeof(Math::Vector2);
           } else if (p_Params.vertexDataAttributesType[i] ==
-                     Backend::VertexAttributeType::VECTOR2) {
+                     Backend::VertexAttributeType::VECTOR3) {
             l_AttributeDescriptions[i].format = VK_FORMAT_R32G32B32_SFLOAT;
             l_Stride += sizeof(Math::Vector3);
           } else {
@@ -2694,6 +2696,14 @@ namespace Low {
                   p_Params.vertexCount, 1, p_Params.firstVertex, 0);
       }
 
+      void vk_draw_indexed(Backend::DrawIndexedParams &p_Params)
+      {
+        vkCmdDrawIndexed(
+            ContextHelper::get_current_commandbuffer(*p_Params.context),
+            p_Params.indexCount, p_Params.instanceCount, p_Params.firstIndex,
+            p_Params.vertexOffset, p_Params.firstInstance);
+      }
+
       void vk_buffer_create(Backend::Buffer &p_Buffer,
                             Backend::BufferCreateParams &p_Params)
       {
@@ -2792,8 +2802,8 @@ namespace Low {
 
       void vk_buffer_bind_vertex(Backend::Buffer &p_Buffer)
       {
-        LOW_ASSERT(p_Buffer.usageFlags & LOW_RENDERER_BUFFER_USAGE_VERTEX ==
-                                             LOW_RENDERER_BUFFER_USAGE_VERTEX,
+        LOW_ASSERT((p_Buffer.usageFlags & LOW_RENDERER_BUFFER_USAGE_VERTEX) ==
+                       LOW_RENDERER_BUFFER_USAGE_VERTEX,
                    "Tried to bind buffer without proper usage flag as vertex "
                    "buffer");
 
@@ -2807,6 +2817,10 @@ namespace Low {
       void vk_buffer_bind_index(Backend::Buffer &p_Buffer,
                                 uint8_t p_IndexBufferType)
       {
+        LOW_ASSERT((p_Buffer.usageFlags & LOW_RENDERER_BUFFER_USAGE_INDEX) ==
+                       LOW_RENDERER_BUFFER_USAGE_INDEX,
+                   "Tried to bind buffer without proper usage flag as index "
+                   "buffer");
         VkIndexType l_IndexType = VK_INDEX_TYPE_UINT16;
 
         if (p_IndexBufferType == Backend::IndexBufferType::UINT8) {
@@ -2880,6 +2894,7 @@ namespace Low {
 
         p_Callbacks.compute_dispatch = &vk_compute_dispatch;
         p_Callbacks.draw = &vk_draw;
+        p_Callbacks.draw_indexed = &vk_draw_indexed;
 
         p_Callbacks.imageresource_create = &vk_imageresource_create;
         p_Callbacks.imageresource_cleanup = &vk_imageresource_cleanup;

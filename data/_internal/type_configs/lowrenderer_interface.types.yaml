@@ -10,8 +10,10 @@ types:
     header_imports:
       - LowRendererBackend.h
       - LowRendererRenderpass.h
+      - LowRendererPipelineResourceSignature.h
     source_imports:
       - LowRendererInterface.h
+      - LowRendererTexture2D.h
     properties:
       context:
         type: Backend::Context
@@ -19,6 +21,10 @@ types:
       renderpasses:
         type: Util::List<Renderpass>
         no_setter: true
+      global_signature:
+        type: PipelineResourceSignature
+        handle: true
+        private_setter: true
     functions:
       make:
         static: true

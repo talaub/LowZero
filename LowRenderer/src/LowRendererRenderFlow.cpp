@@ -6,6 +6,7 @@
 #include "LowUtilConfig.h"
 
 #include "LowRendererComputeStep.h"
+#include "LowRendererGraphicsStep.h"
 
 namespace Low {
   namespace Renderer {
@@ -160,6 +161,13 @@ namespace Low {
       RenderFlow l_RenderFlow = RenderFlow::make(p_Name);
       l_RenderFlow.get_dimensions() = p_Context.get_dimensions();
 
+      if (p_Config["resources"]) {
+        Util::List<ResourceConfig> l_ResourceConfigs;
+        parse_resource_configs(p_Config["resources"], l_ResourceConfigs);
+        l_RenderFlow.get_resources().initialize(l_ResourceConfigs, p_Context,
+                                                l_RenderFlow);
+      }
+
       for (auto it = p_Config["steps"].begin(); it != p_Config["steps"].end();
            ++it) {
         Util::Yaml::Node i_StepEntry = *it;
@@ -179,6 +187,21 @@ namespace Low {
           }
         }
 
+        if (!i_Found) {
+          for (GraphicsStepConfig i_Config :
+               GraphicsStepConfig ::ms_LivingInstances) {
+            if (i_Config.get_name() == i_StepName) {
+              i_Found = true;
+              GraphicsStep i_Step =
+                  GraphicsStep::make(i_Config.get_name(), p_Context, i_Config);
+              i_Step.prepare(l_RenderFlow);
+
+              l_RenderFlow.get_steps().push_back(i_Step);
+              break;
+            }
+          }
+        }
+
         LOW_ASSERT(i_Found, "Could not find renderstep");
       }
 
@@ -193,6 +216,9 @@ namespace Low {
         if (i_Step.get_type() == ComputeStep::TYPE_ID) {
           ComputeStep i_ComputeStep = i_Step.get_id();
           i_ComputeStep.execute(*this);
+        } else if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
+          GraphicsStep i_GraphicsStep = i_Step.get_id();
+          i_GraphicsStep.execute(*this);
         } else {
           LOW_ASSERT(false, "Unknown step type");
         }

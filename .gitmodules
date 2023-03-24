@@ -25,3 +25,6 @@
 [submodule "LowDependencies/microprofile"]
 	path = LowDependencies/microprofile
 	url = https://github.com/jonasmr/microprofile.git
+[submodule "LowDependencies/assimp"]
+	path = LowDependencies/assimp
+	url = https://github.com/assimp/assimp.git
