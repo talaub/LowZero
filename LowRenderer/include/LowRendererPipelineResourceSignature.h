@@ -90,6 +90,8 @@ namespace Low {
         void set_constant_buffer_resource(Util::Name p_Name,
                                           uint32_t p_ArrayIndex,
                                           Resource::Buffer p_Value);
+        void set_buffer_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
+                                 Resource::Buffer p_Value);
         uint8_t get_binding();
       };
     } // namespace Interface

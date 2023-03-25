@@ -8,6 +8,7 @@
 
 #include "LowRendererInterface.h"
 #include "LowRendererResourceRegistry.h"
+#include "LowRendererMesh.h"
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -23,6 +24,11 @@ namespace Low {
       Math::UVector2 dimensions;
       Util::List<Util::Handle> steps;
       ResourceRegistry resources;
+      Math::Vector3 camera_position;
+      Math::Quaternion camera_rotation;
+      float camera_fov;
+      float camera_near_plane;
+      float camera_far_plane;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -78,6 +84,21 @@ namespace Low {
       void set_steps(Util::List<Util::Handle> &p_Value);
 
       ResourceRegistry &get_resources() const;
+
+      Math::Vector3 &get_camera_position() const;
+      void set_camera_position(Math::Vector3 &p_Value);
+
+      Math::Quaternion &get_camera_rotation() const;
+      void set_camera_rotation(Math::Quaternion &p_Value);
+
+      float get_camera_fov() const;
+      void set_camera_fov(float p_Value);
+
+      float get_camera_near_plane() const;
+      void set_camera_near_plane(float p_Value);
+
+      float get_camera_far_plane() const;
+      void set_camera_far_plane(float p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

@@ -199,6 +199,15 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_constant_buffer_resource
       }
 
+      void PipelineResourceSignature::set_buffer_resource(
+          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Buffer p_Value)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_buffer_resource
+        Backend::callbacks().pipeline_resource_signature_set_buffer(
+            get_signature(), p_Name, p_ArrayIndex, p_Value);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_buffer_resource
+      }
+
       uint8_t PipelineResourceSignature::get_binding()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_binding

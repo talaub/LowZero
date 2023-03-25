@@ -152,6 +152,16 @@ types:
           - name: value
             type: Resource::Buffer
             handle: true
+      set_buffer_resource:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: arrayIndex
+            type: uint32_t
+          - name: value
+            type: Resource::Buffer
+            handle: true
       get_binding:
         return_type: uint8_t
 

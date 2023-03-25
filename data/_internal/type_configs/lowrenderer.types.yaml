@@ -9,6 +9,7 @@ types:
     header_imports:
       - LowRendererInterface.h
       - LowRendererResourceRegistry.h
+      - LowRendererMesh.h
       - LowUtilYaml.h
     source_imports:
       - LowRendererComputeStep.h
@@ -22,6 +23,16 @@ types:
       resources:
         type: ResourceRegistry
         no_setter: true
+      camera_position:
+        type: Math::Vector3
+      camera_rotation:
+        type: Math::Quaternion
+      camera_fov:
+        type: float
+      camera_near_plane:
+        type: float
+      camera_far_plane:
+        type: float
     functions:
       make:
         static: true
@@ -151,6 +162,7 @@ types:
       - LowRendererGraphicsPipeline.h
       - LowRendererRenderObject.h
       - LowRendererRenderFlow.h
+      - LowRendererBuffer.h
       - LowUtilYaml.h
     properties:
       resources:
@@ -164,7 +176,7 @@ types:
         type: Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>>
         no_setter: true
       renderobjects:
-        type: Util::Map<Util::Name, Util::List<RenderObject>>
+        type: Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
         no_setter: true
       renderpasses:
         type: Util::Map<RenderFlow, Interface::Renderpass>
@@ -173,6 +185,14 @@ types:
         type: Interface::Context
         handle: true
         private_setter: true
+        private_getter: true
+      signatures:
+        type: Util::Map<RenderFlow, Interface::PipelineResourceSignature>
+        no_setter: true
+        private_getter: true
+      object_matrix_buffers:
+        type: Util::Map<RenderFlow, Resource::Buffer>
+        no_setter: true
         private_getter: true
     functions:
       make:
@@ -200,6 +220,10 @@ types:
           - name: renderFlow
             type: RenderFlow
             handle: true
+          - name: projectionMatrix
+            type: Math::Matrix4x4
+          - name: viewMatrix
+            type: Math::Matrix4x4
       register_renderobject:
         return_type: void
         parameters:

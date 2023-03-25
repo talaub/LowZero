@@ -12,6 +12,7 @@
 #include "LowRendererGraphicsPipeline.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderFlow.h"
+#include "LowRendererBuffer.h"
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -27,9 +28,12 @@ namespace Low {
       Util::Map<RenderFlow, ResourceRegistry> resources;
       GraphicsStepConfig config;
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> pipelines;
-      Util::Map<Util::Name, Util::List<RenderObject>> renderobjects;
+      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
+          renderobjects;
       Util::Map<RenderFlow, Interface::Renderpass> renderpasses;
       Interface::Context context;
+      Util::Map<RenderFlow, Interface::PipelineResourceSignature> signatures;
+      Util::Map<RenderFlow, Resource::Buffer> object_matrix_buffers;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -86,7 +90,7 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> &
       get_pipelines() const;
 
-      Util::Map<Util::Name, Util::List<RenderObject>> &
+      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>> &
       get_renderobjects() const;
 
       Util::Map<RenderFlow, Interface::Renderpass> &get_renderpasses() const;
@@ -97,13 +101,18 @@ namespace Low {
       static GraphicsStep make(Util::Name p_Name, Interface::Context p_Context,
                                GraphicsStepConfig p_Config);
       void prepare(RenderFlow p_RenderFlow);
-      void execute(RenderFlow p_RenderFlow);
+      void execute(RenderFlow p_RenderFlow, Math::Matrix4x4 &p_ProjectionMatrix,
+                   Math::Matrix4x4 &p_ViewMatrix);
       void register_renderobject(RenderObject p_RenderObject);
 
     private:
       void set_config(GraphicsStepConfig p_Value);
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
+      Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
+      get_signatures() const;
+      Util::Map<RenderFlow, Resource::Buffer> &
+      get_object_matrix_buffers() const;
     };
   } // namespace Renderer
 } // namespace Low

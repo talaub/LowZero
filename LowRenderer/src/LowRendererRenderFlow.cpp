@@ -138,6 +138,86 @@ namespace Low {
       return TYPE_SOA(RenderFlow, resources, ResourceRegistry);
     }
 
+    Math::Vector3 &RenderFlow::get_camera_position() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, camera_position, Math::Vector3);
+    }
+    void RenderFlow::set_camera_position(Math::Vector3 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, camera_position, Math::Vector3) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_position
+      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_position
+    }
+
+    Math::Quaternion &RenderFlow::get_camera_rotation() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, camera_rotation, Math::Quaternion);
+    }
+    void RenderFlow::set_camera_rotation(Math::Quaternion &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, camera_rotation, Math::Quaternion) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_rotation
+      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_rotation
+    }
+
+    float RenderFlow::get_camera_fov() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, camera_fov, float);
+    }
+    void RenderFlow::set_camera_fov(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, camera_fov, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_fov
+      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_fov
+    }
+
+    float RenderFlow::get_camera_near_plane() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, camera_near_plane, float);
+    }
+    void RenderFlow::set_camera_near_plane(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, camera_near_plane, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_near_plane
+      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_near_plane
+    }
+
+    float RenderFlow::get_camera_far_plane() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, camera_far_plane, float);
+    }
+    void RenderFlow::set_camera_far_plane(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, camera_far_plane, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_far_plane
+      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_far_plane
+    }
+
     Low::Util::Name RenderFlow::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -160,6 +240,15 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       RenderFlow l_RenderFlow = RenderFlow::make(p_Name);
       l_RenderFlow.get_dimensions() = p_Context.get_dimensions();
+
+      {
+        l_RenderFlow.set_camera_far_plane(100.0f);
+        l_RenderFlow.set_camera_near_plane(0.1f);
+        l_RenderFlow.set_camera_fov(45.f);
+        l_RenderFlow.set_camera_position(Math::Vector3(0.0f, 0.0f, 0.0f));
+        l_RenderFlow.set_camera_rotation(
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+      }
 
       if (p_Config["resources"]) {
         Util::List<ResourceConfig> l_ResourceConfigs;
@@ -212,13 +301,27 @@ namespace Low {
     void RenderFlow::execute()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(
+          glm::radians(get_camera_fov()),
+          ((float)get_dimensions().x) / ((float)get_dimensions().y),
+          get_camera_near_plane(), get_camera_far_plane());
+
+      l_ProjectionMatrix[1][1] *=
+          -1; // Convert from OpenGL y-axis to Vulkan y-axis
+      l_ProjectionMatrix[0][0] *= -1; // Convert to left handed system
+
+      Math::Matrix4x4 l_ViewMatrix =
+          glm::lookAt(get_camera_position(),
+                      Math::VectorUtil::direction(get_camera_rotation()),
+                      Math::Vector3(0.f, 1.f, 0.f));
+
       for (Util::Handle i_Step : get_steps()) {
         if (i_Step.get_type() == ComputeStep::TYPE_ID) {
           ComputeStep i_ComputeStep = i_Step.get_id();
           i_ComputeStep.execute(*this);
         } else if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
           GraphicsStep i_GraphicsStep = i_Step.get_id();
-          i_GraphicsStep.execute(*this);
+          i_GraphicsStep.execute(*this, l_ProjectionMatrix, l_ViewMatrix);
         } else {
           LOW_ASSERT(false, "Unknown step type");
         }

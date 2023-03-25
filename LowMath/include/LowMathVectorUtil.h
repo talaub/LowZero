@@ -13,6 +13,8 @@ namespace Low {
       LOW_EXPORT float distance(Vector3 &p_Start, Vector3 &p_End);
 
       LOW_EXPORT Vector3 normalize(Vector3 &p_Vector);
+
+      LOW_EXPORT Vector3 direction(Quaternion &p_Rotation);
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

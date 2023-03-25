@@ -360,6 +360,10 @@ namespace Low {
         RenderObject l_RenderObject = RenderObject::make(N(TestRO));
         l_RenderObject.set_mesh(g_Mesh);
         l_RenderObject.set_material(l_Material);
+        l_RenderObject.set_world_position(Math::Vector3(0.0f, 0.0f, -5.0f));
+        l_RenderObject.set_world_rotation(
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+        l_RenderObject.set_world_scale(Math::Vector3(1.0f));
 
         GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(l_RenderObject);

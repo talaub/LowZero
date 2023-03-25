@@ -141,13 +141,14 @@ namespace Low {
               Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>>));
     }
 
-    Util::Map<Util::Name, Util::List<RenderObject>> &
+    Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>> &
     GraphicsStep::get_renderobjects() const
     {
       _LOW_ASSERT(is_alive());
       return TYPE_SOA(
           GraphicsStep, renderobjects,
-          SINGLE_ARG(Util::Map<Util::Name, Util::List<RenderObject>>));
+          SINGLE_ARG(Util::Map<Util::Name,
+                               Util::Map<Mesh, Util::List<RenderObject>>>));
     }
 
     Util::Map<RenderFlow, Interface::Renderpass> &
@@ -172,6 +173,24 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
+    }
+
+    Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
+    GraphicsStep::get_signatures() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(
+          GraphicsStep, signatures,
+          SINGLE_ARG(
+              Util::Map<RenderFlow, Interface::PipelineResourceSignature>));
+    }
+
+    Util::Map<RenderFlow, Resource::Buffer> &
+    GraphicsStep::get_object_matrix_buffers() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStep, object_matrix_buffers,
+                      SINGLE_ARG(Util::Map<RenderFlow, Resource::Buffer>));
     }
 
     Low::Util::Name GraphicsStep::get_name() const
@@ -206,6 +225,38 @@ namespace Low {
     void GraphicsStep::prepare(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
+      {
+        Backend::BufferCreateParams l_Params;
+        l_Params.context = &get_context().get_context();
+        l_Params.bufferSize = sizeof(Math::Matrix4x4) * 32u;
+        l_Params.data = nullptr;
+        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+
+        get_object_matrix_buffers()[p_RenderFlow] =
+            Resource::Buffer::make(N(ObjectMatrixBuffer), l_Params);
+      }
+
+      {
+        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+
+        {
+          Backend::PipelineResourceDescription l_ResourceDescription;
+          l_ResourceDescription.arraySize = 1;
+          l_ResourceDescription.name = N(u_RenderObjects);
+          l_ResourceDescription.step = Backend::ResourcePipelineStep::VERTEX;
+          l_ResourceDescription.type = Backend::ResourceType::BUFFER;
+
+          l_ResourceDescriptions.push_back(l_ResourceDescription);
+        }
+        get_signatures()[p_RenderFlow] =
+            Interface::PipelineResourceSignature::make(N(StepResourceSignature),
+                                                       get_context(), 1,
+                                                       l_ResourceDescriptions);
+
+        get_signatures()[p_RenderFlow].set_buffer_resource(
+            N(u_RenderObjects), 0, get_object_matrix_buffers()[p_RenderFlow]);
+      }
+
       {
         Interface::RenderpassCreateParams l_Params;
         l_Params.context = get_context();
@@ -243,7 +294,8 @@ namespace Low {
             i_Params.polygonMode = i_Config.polygonMode;
             i_Params.frontFace = i_Config.frontFace;
             i_Params.dimensions = p_RenderFlow.get_dimensions();
-            i_Params.signatures = {get_context().get_global_signature()};
+            i_Params.signatures = {get_context().get_global_signature(),
+                                   get_signatures()[p_RenderFlow]};
             i_Params.vertexShaderPath = i_Config.vertexPath;
             i_Params.fragmentShaderPath = i_Config.fragmentPath;
             i_Params.renderpass = l_Renderpass;
@@ -268,12 +320,55 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
     }
 
-    void GraphicsStep::execute(RenderFlow p_RenderFlow)
+    void GraphicsStep::execute(RenderFlow p_RenderFlow,
+                               Math::Matrix4x4 &p_ProjectionMatrix,
+                               Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
       get_context().get_global_signature().commit();
+      get_signatures()[p_RenderFlow].commit();
 
       get_renderpasses()[p_RenderFlow].begin();
+
+      Math::Matrix4x4 l_ObjectMatrices[32];
+      uint32_t l_ObjectIndex = 0;
+
+      for (auto pit = get_pipelines()[p_RenderFlow].begin();
+           pit != get_pipelines()[p_RenderFlow].end(); ++pit) {
+        Interface::GraphicsPipeline i_Pipeline = *pit;
+        i_Pipeline.bind();
+
+        for (auto mit = get_renderobjects()[pit->get_name()].begin();
+             mit != get_renderobjects()[pit->get_name()].end(); ++mit) {
+          for (auto it = mit->second.begin(); it != mit->second.end();) {
+            RenderObject i_RenderObject = *it;
+
+            if (!i_RenderObject.is_alive()) {
+              it = mit->second.erase(it);
+              continue;
+            }
+
+            Math::Matrix4x4 l_ModelMatrix =
+                glm::translate(glm::mat4(1.0f),
+                               i_RenderObject.get_world_position()) *
+                glm::toMat4(i_RenderObject.get_world_rotation()) *
+                glm::scale(glm::mat4(1.0f), i_RenderObject.get_world_scale());
+
+            Math::Matrix4x4 l_MVPMatrix =
+                p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
+
+            l_ObjectMatrices[l_ObjectIndex] = l_MVPMatrix;
+
+            l_ObjectIndex++;
+
+            ++it;
+          }
+        }
+      }
+
+      get_object_matrix_buffers()[p_RenderFlow].set(l_ObjectMatrices);
+
+      uint32_t l_InstanceId = 0;
 
       for (auto pit = get_pipelines()[p_RenderFlow].begin();
            pit != get_pipelines()[p_RenderFlow].end(); ++pit) {
@@ -282,16 +377,15 @@ namespace Low {
 
         for (auto it = get_renderobjects()[pit->get_name()].begin();
              it != get_renderobjects()[pit->get_name()].end(); ++it) {
-          RenderObject i_RenderObject = *it;
           Backend::DrawIndexedParams i_Params;
           i_Params.context = &get_context().get_context();
-          i_Params.firstIndex =
-              i_RenderObject.get_mesh().get_index_buffer_start();
-          i_Params.indexCount = i_RenderObject.get_mesh().get_index_count();
-          i_Params.instanceCount = 1;
-          i_Params.vertexOffset =
-              i_RenderObject.get_mesh().get_vertex_buffer_start();
-          i_Params.firstInstance = 0;
+          i_Params.firstIndex = it->first.get_index_buffer_start();
+          i_Params.indexCount = it->first.get_index_count();
+          i_Params.instanceCount = it->second.size();
+          i_Params.vertexOffset = it->first.get_vertex_buffer_start();
+          i_Params.firstInstance = l_InstanceId;
+
+          l_InstanceId += it->second.size();
 
           Backend::callbacks().draw_indexed(i_Params);
         }
@@ -309,7 +403,8 @@ namespace Low {
                                  .get_material_type()
                                  .get_gbuffer_pipeline()
                                  .name) {
-          get_renderobjects()[i_Config.name].push_back(p_RenderObject);
+          get_renderobjects()[i_Config.name][p_RenderObject.get_mesh()]
+              .push_back(p_RenderObject);
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject

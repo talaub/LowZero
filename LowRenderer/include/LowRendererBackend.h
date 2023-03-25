@@ -328,6 +328,9 @@ namespace Low {
         void (*pipeline_resource_signature_set_constant_buffer)(
             PipelineResourceSignature &, Util::Name, uint32_t,
             Resource::Buffer);
+        void (*pipeline_resource_signature_set_buffer)(
+            PipelineResourceSignature &, Util::Name, uint32_t,
+            Resource::Buffer);
         void (*pipeline_resource_signature_set_image)(
             PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
         void (*pipeline_resource_signature_set_sampler)(

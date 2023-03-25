@@ -32,6 +32,10 @@ namespace Low {
         return glm::normalize(p_Vector);
       }
 
+      Vector3 direction(Quaternion &p_Rotation)
+      {
+        return p_Rotation * Vector3(0.f, 0.f, 1.f);
+      }
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low
