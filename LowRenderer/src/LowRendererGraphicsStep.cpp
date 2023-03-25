@@ -325,6 +325,14 @@ namespace Low {
                                Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      if (get_context().get_debug_enabled()) {
+        Util::String l_RenderDocLabel =
+            Util::String("GraphicsStep - ") + get_name().c_str();
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            get_context().get_context(), l_RenderDocLabel,
+            Math::Color(0.234f, 0.341f, 0.4249f, 1.0f));
+      }
+
       get_context().get_global_signature().commit();
       get_signatures()[p_RenderFlow].commit();
 

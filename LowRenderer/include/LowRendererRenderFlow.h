@@ -21,6 +21,7 @@ namespace Low {
 
     struct LOW_EXPORT RenderFlowData
     {
+      Interface::Context context;
       Math::UVector2 dimensions;
       Util::List<Util::Handle> steps;
       ResourceRegistry resources;
@@ -106,6 +107,10 @@ namespace Low {
       static RenderFlow make(Util::Name p_Name, Interface::Context p_Context,
                              Util::Yaml::Node &p_Config);
       void execute();
+
+    private:
+      Interface::Context get_context() const;
+      void set_context(Interface::Context p_Value);
     };
   } // namespace Renderer
 } // namespace Low

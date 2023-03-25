@@ -272,6 +272,14 @@ namespace Low {
       LOW_ASSERT(get_resources().find(p_RenderFlow) != get_resources().end(),
                  "Step not prepared for renderflow");
 
+      if (get_context().get_debug_enabled()) {
+        Util::String l_RenderDocLabel =
+            Util::String("ComputeStep - ") + get_name().c_str();
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            get_context().get_context(), l_RenderDocLabel,
+            Math::Color(0.4249f, 0.2341f, 0.341f, 1.0f));
+      }
+
       Util::List<ComputePipelineConfig> &l_Configs =
           get_config().get_pipelines();
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
@@ -309,6 +317,10 @@ namespace Low {
 
         Backend::callbacks().compute_dispatch(get_context().get_context(),
                                               i_DispatchDimensions);
+
+        if (get_context().get_debug_enabled()) {
+          LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
+        }
       }
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute

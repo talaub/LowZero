@@ -9,6 +9,12 @@
 
 #define LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS 4
 
+#define LOW_RENDERER_BEGIN_RENDERDOC_SECTION(ctx, label, color)                \
+  Backend::callbacks().renderdoc_section_begin(ctx, label, color)
+
+#define LOW_RENDERER_END_RENDERDOC_SECTION(ctx)                                \
+  Backend::callbacks().renderdoc_section_end(ctx)
+
 namespace Low {
   namespace Renderer {
     namespace Resource {
@@ -59,6 +65,7 @@ namespace Low {
         Math::UVector2 dimensions;
         uint8_t imageFormat;
         Renderpass *renderpasses;
+        bool debugEnabled;
       };
 
       struct ContextCreateParams
@@ -362,6 +369,10 @@ namespace Low {
 
         Util::String (*compile)(Util::String);
         Util::String (*get_shader_source_path)(Util::String);
+
+        void (*renderdoc_section_begin)(Context &, Util::String,
+                                        Math::Color p_Color);
+        void (*renderdoc_section_end)(Context &);
       };
 
       ApiBackendCallback &callbacks();

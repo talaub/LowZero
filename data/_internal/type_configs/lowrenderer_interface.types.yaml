@@ -56,6 +56,8 @@ types:
         return_type: uint8_t
       get_window:
         return_type: Window
+      get_debug_enabled:
+        return_type: bool
       wait_idle:
         return_type: void
       prepare_frame:

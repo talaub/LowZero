@@ -15,6 +15,11 @@ types:
       - LowRendererComputeStep.h
       - LowRendererGraphicsStep.h
     properties:
+      context:
+        type: Interface::Context
+        handle: true
+        private_setter: true
+        private_getter: true
       dimensions:
         type: Math::UVector2
         no_setter: true

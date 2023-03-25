@@ -252,6 +252,13 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_window
       }
 
+      bool Context::get_debug_enabled()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_debug_enabled
+        return get_context().debugEnabled;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_debug_enabled
+      }
+
       void Context::wait_idle()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_wait_idle

@@ -110,6 +110,22 @@ namespace Low {
       return l_Capacity;
     }
 
+    Interface::Context RenderFlow::get_context() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, context, Interface::Context);
+    }
+    void RenderFlow::set_context(Interface::Context p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, context, Interface::Context) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+      // LOW_CODEGEN::END::CUSTOM:SETTER_context
+    }
+
     Math::UVector2 &RenderFlow::get_dimensions() const
     {
       _LOW_ASSERT(is_alive());
@@ -240,6 +256,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       RenderFlow l_RenderFlow = RenderFlow::make(p_Name);
       l_RenderFlow.get_dimensions() = p_Context.get_dimensions();
+      l_RenderFlow.set_context(p_Context);
 
       {
         l_RenderFlow.set_camera_far_plane(100.0f);
@@ -301,6 +318,14 @@ namespace Low {
     void RenderFlow::execute()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      if (get_context().get_debug_enabled()) {
+        Util::String l_RenderDocLabel =
+            Util::String("RenderFlow - ") + get_name().c_str();
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            get_context().get_context(), l_RenderDocLabel,
+            Math::Color(0.341f, 0.4249f, 0.2341f, 1.0f));
+      }
+
       Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(
           glm::radians(get_camera_fov()),
           ((float)get_dimensions().x) / ((float)get_dimensions().y),
@@ -325,6 +350,10 @@ namespace Low {
         } else {
           LOW_ASSERT(false, "Unknown step type");
         }
+      }
+
+      if (get_context().get_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
     }

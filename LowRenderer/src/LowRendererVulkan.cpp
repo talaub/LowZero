@@ -1102,6 +1102,7 @@ namespace Low {
           }
 
           p_Context.vk.m_ValidationEnabled = p_Params.validation_enabled;
+          p_Context.debugEnabled = p_Params.validation_enabled;
           p_Context.window = *(p_Params.window);
 
           ContextHelper::create_instance(p_Context.vk);
@@ -2912,6 +2913,51 @@ namespace Low {
         return l_OutPath;
       }
 
+      void vk_renderdoc_section_begin(Backend::Context &p_Context,
+                                      Util::String p_SectionLabel,
+                                      Math::Color p_Color)
+      {
+        if (!p_Context.vk.m_ValidationEnabled) {
+          return;
+        }
+
+        VkCommandBuffer l_CommandBuffer =
+            ContextHelper::get_current_commandbuffer(p_Context);
+
+        VkDebugUtilsLabelEXT markerInfo = {};
+        markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+        markerInfo.pLabelName = p_SectionLabel.c_str();
+        markerInfo.color[0] = p_Color.r;
+        markerInfo.color[1] = p_Color.g;
+        markerInfo.color[2] = p_Color.b;
+        markerInfo.color[3] = p_Color.a;
+
+        auto l_Function =
+            (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(
+                p_Context.vk.m_Instance, "vkCmdBeginDebugUtilsLabelEXT");
+
+        if (l_Function != nullptr) {
+          l_Function(l_CommandBuffer, &markerInfo);
+        }
+      }
+
+      void vk_renderdoc_section_end(Backend::Context &p_Context)
+      {
+        if (!p_Context.vk.m_ValidationEnabled) {
+          return;
+        }
+
+        VkCommandBuffer l_CommandBuffer =
+            ContextHelper::get_current_commandbuffer(p_Context);
+
+        auto l_Function = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(
+            p_Context.vk.m_Instance, "vkCmdEndDebugUtilsLabelEXT");
+
+        if (l_Function != nullptr) {
+          l_Function(l_CommandBuffer);
+        }
+      }
+
       void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
       {
         p_Callbacks.context_create = &vk_context_create;
@@ -2963,6 +3009,9 @@ namespace Low {
 
         p_Callbacks.compile = &compile_vk_glsl_to_spv;
         p_Callbacks.get_shader_source_path = &get_source_path_vk_glsl;
+
+        p_Callbacks.renderdoc_section_begin = &vk_renderdoc_section_begin;
+        p_Callbacks.renderdoc_section_end = &vk_renderdoc_section_end;
       }
     } // namespace Vulkan
   }   // namespace Renderer
