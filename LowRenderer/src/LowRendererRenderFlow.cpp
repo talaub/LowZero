@@ -132,6 +132,22 @@ namespace Low {
       return TYPE_SOA(RenderFlow, dimensions, Math::UVector2);
     }
 
+    Resource::Image RenderFlow::get_output_image() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, output_image, Resource::Image);
+    }
+    void RenderFlow::set_output_image(Resource::Image p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, output_image, Resource::Image) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
+    }
+
     Util::List<Util::Handle> &RenderFlow::get_steps() const
     {
       _LOW_ASSERT(is_alive());
@@ -310,6 +326,10 @@ namespace Low {
 
         LOW_ASSERT(i_Found, "Could not find renderstep");
       }
+
+      l_RenderFlow.set_output_image(
+          l_RenderFlow.get_resources().get_image_resource(
+              LOW_YAML_AS_NAME(p_Config["output_image"])));
 
       return l_RenderFlow;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make

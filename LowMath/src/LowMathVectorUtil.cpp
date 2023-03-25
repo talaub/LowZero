@@ -36,6 +36,11 @@ namespace Low {
       {
         return p_Rotation * Vector3(0.f, 0.f, 1.f);
       }
+
+      Vector3 to_euler(Quaternion &p_Rotation)
+      {
+        return glm::degrees(glm::eulerAngles(p_Rotation));
+      }
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

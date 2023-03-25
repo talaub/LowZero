@@ -399,6 +399,10 @@ namespace Low {
         }
       }
       get_renderpasses()[p_RenderFlow].end();
+
+      if (get_context().get_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
     }
 

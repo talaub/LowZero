@@ -23,6 +23,7 @@ namespace Low {
     {
       Interface::Context context;
       Math::UVector2 dimensions;
+      Resource::Image output_image;
       Util::List<Util::Handle> steps;
       ResourceRegistry resources;
       Math::Vector3 camera_position;
@@ -80,6 +81,9 @@ namespace Low {
       static uint32_t get_capacity();
 
       Math::UVector2 &get_dimensions() const;
+
+      Resource::Image get_output_image() const;
+      void set_output_image(Resource::Image p_Value);
 
       Util::List<Util::Handle> &get_steps() const;
       void set_steps(Util::List<Util::Handle> &p_Value);

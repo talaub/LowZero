@@ -141,6 +141,22 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_global_signature
       }
 
+      Resource::Buffer Context::get_frame_info_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(Context, frame_info_buffer, Resource::Buffer);
+      }
+      void Context::set_frame_info_buffer(Resource::Buffer p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(Context, frame_info_buffer, Resource::Buffer) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
+      }
+
       Low::Util::Name Context::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -177,7 +193,32 @@ namespace Low {
         }
 
         {
+          Backend::BufferCreateParams l_Params;
+          l_Params.bufferSize = sizeof(Math::Vector2);
+          l_Params.context = &l_Context.get_context();
+          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
+
+          Math::Vector2 l_InverseDimensions = {
+              1.0f / ((float)l_Context.get_dimensions().x),
+              1.0f / ((float)l_Context.get_dimensions().y)};
+
+          l_Params.data = &l_InverseDimensions;
+
+          l_Context.set_frame_info_buffer(
+              Resource::Buffer::make(N(ContextFrameInfoBuffer), l_Params));
+        }
+
+        {
           Util::List<Backend::PipelineResourceDescription> l_Resources;
+
+          {
+            Backend::PipelineResourceDescription l_Resource;
+            l_Resource.name = N(g_ContextFrameInfo);
+            l_Resource.step = Backend::ResourcePipelineStep::ALL;
+            l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
+            l_Resource.arraySize = 1;
+            l_Resources.push_back(l_Resource);
+          }
 
           {
             Backend::PipelineResourceDescription l_Resource;
@@ -190,6 +231,9 @@ namespace Low {
 
           l_Context.set_global_signature(PipelineResourceSignature::make(
               N(GlobalSignature), l_Context, 0, l_Resources));
+
+          l_Context.get_global_signature().set_constant_buffer_resource(
+              N(g_ContextFrameInfo), 0, l_Context.get_frame_info_buffer());
         }
 
         return l_Context;
@@ -289,6 +333,13 @@ namespace Low {
         for (uint8_t i = 0u; i < get_renderpasses().size(); ++i) {
           get_renderpasses()[i].set_renderpass(get_context().renderpasses[i]);
         }
+
+        Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
+                                             1.0f /
+                                                 ((float)get_dimensions().y)};
+
+        get_frame_info_buffer().set(&l_InverseDimensions);
+
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
       }
 

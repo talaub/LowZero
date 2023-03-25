@@ -133,6 +133,8 @@ namespace Low {
 
     Interface::Context g_Context;
 
+    RenderObject g_RenderObject;
+
     MeshBuffer g_VertexBuffer;
     MeshBuffer g_IndexBuffer;
 
@@ -141,6 +143,9 @@ namespace Low {
 
     RenderFlow g_MainRenderFlow;
     Util::Name g_MainRenderFlowName;
+
+    Interface::GraphicsPipeline g_FullscreenPipeline;
+    Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
 
     Mesh g_Mesh;
 
@@ -344,19 +349,66 @@ namespace Low {
       }
 
       {
+        Backend::PipelineResourceDescription l_ResourceDescription;
+        l_ResourceDescription.name = N(u_FinalImage);
+        l_ResourceDescription.arraySize = 1;
+        l_ResourceDescription.step = Backend::ResourcePipelineStep::FRAGMENT;
+        l_ResourceDescription.type = Backend::ResourceType::SAMPLER;
+        Util::List<Backend::PipelineResourceDescription>
+            l_ResourceDescriptions = {l_ResourceDescription};
+
+        g_FullScreenPipelineSignature =
+            Interface::PipelineResourceSignature::make(
+                N(FullscreenPipelineSignature), g_Context, 1,
+                l_ResourceDescriptions);
+
+        Util::List<Backend::GraphicsPipelineColorTarget> l_ColorTargets;
+        {
+          Backend::GraphicsPipelineColorTarget l_Target;
+          l_Target.blendEnable = false;
+          l_Target.wirteMask = LOW_RENDERER_COLOR_WRITE_BIT_RED |
+                               LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
+                               LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
+                               LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
+          l_ColorTargets.push_back(l_Target);
+        }
+
+        Interface::PipelineGraphicsCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.vertexShaderPath = "fs.vert";
+        l_Params.fragmentShaderPath = "fs.frag";
+        l_Params.dimensions = g_Context.get_dimensions();
+        l_Params.signatures = {g_Context.get_global_signature(),
+                               g_FullScreenPipelineSignature};
+        l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
+        l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
+        l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
+        l_Params.dimensions = g_Context.get_dimensions();
+        l_Params.renderpass = g_Context.get_renderpasses()[0];
+        l_Params.colorTargets = l_ColorTargets;
+        l_Params.vertexDataAttributeTypes = {};
+
+        g_FullscreenPipeline =
+            Interface::GraphicsPipeline::make(N(FullscreenPipeline), l_Params);
+
+        g_FullScreenPipelineSignature.set_sampler_resource(
+            N(u_FinalImage), 0, g_MainRenderFlow.get_output_image());
+      }
+
+      {
         Material l_Material = Material::make(N(TestMat));
         l_Material.set_material_type(MaterialType::living_instances()[0]);
 
-        RenderObject l_RenderObject = RenderObject::make(N(TestRO));
-        l_RenderObject.set_mesh(g_Mesh);
-        l_RenderObject.set_material(l_Material);
-        l_RenderObject.set_world_position(Math::Vector3(0.0f, 0.0f, -5.0f));
-        l_RenderObject.set_world_rotation(
+        g_RenderObject = RenderObject::make(N(TestRO));
+        g_RenderObject.set_mesh(g_Mesh);
+        g_RenderObject.set_material(l_Material);
+        g_RenderObject.set_world_position(Math::Vector3(0.0f, 0.0f, -5.0f));
+        g_RenderObject.set_world_rotation(
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
-        l_RenderObject.set_world_scale(Math::Vector3(1.0f));
+        g_RenderObject.set_world_scale(Math::Vector3(1.0f));
 
         GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
-            .register_renderobject(l_RenderObject);
+            .register_renderobject(g_RenderObject);
       }
     }
 
@@ -384,8 +436,27 @@ namespace Low {
 
       g_MainRenderFlow.execute();
 
+      LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+          g_Context.get_context(), "FullscreenPass",
+          Math::Color(0.3096f, 0.3461f, 0.3443f, 1.0f));
+
+      g_FullScreenPipelineSignature.commit();
+
       g_Context.get_current_renderpass().begin();
+
+      g_FullscreenPipeline.bind();
+
+      {
+        Backend::DrawParams l_Params;
+        l_Params.context = &g_Context.get_context();
+        l_Params.firstVertex = 0;
+        l_Params.vertexCount = 3;
+        Backend::callbacks().draw(l_Params);
+      }
+
       g_Context.get_current_renderpass().end();
+
+      LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
 
       g_Context.render_frame();
     }

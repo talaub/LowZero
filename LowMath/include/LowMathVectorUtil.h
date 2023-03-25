@@ -15,6 +15,7 @@ namespace Low {
       LOW_EXPORT Vector3 normalize(Vector3 &p_Vector);
 
       LOW_EXPORT Vector3 direction(Quaternion &p_Rotation);
+      LOW_EXPORT Vector3 to_euler(Quaternion &p_Rotation);
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

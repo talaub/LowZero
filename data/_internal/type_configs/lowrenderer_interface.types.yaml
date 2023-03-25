@@ -11,6 +11,7 @@ types:
       - LowRendererBackend.h
       - LowRendererRenderpass.h
       - LowRendererPipelineResourceSignature.h
+      - LowRendererBuffer.h
     source_imports:
       - LowRendererInterface.h
       - LowRendererTexture2D.h
@@ -23,6 +24,10 @@ types:
         no_setter: true
       global_signature:
         type: PipelineResourceSignature
+        handle: true
+        private_setter: true
+      frame_info_buffer:
+        type: Resource::Buffer
         handle: true
         private_setter: true
     functions:
