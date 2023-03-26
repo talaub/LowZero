@@ -29,41 +29,48 @@ namespace Low {
       return l_Resource.get_id();
     }
 
+    static void fill_image_resource_params(
+        Interface::Context p_Context, RenderFlow p_RenderFlow,
+        ResourceConfig &p_Config, Backend::ImageResourceCreateParams &p_Params)
+    {
+      p_Params.context = &p_Context.get_context();
+      p_Params.createImage = true;
+      p_Params.imageData = 0;
+      p_Params.imageDataSize = 0;
+      p_Params.depth = false;
+      p_Params.format = p_Config.image.format;
+      p_Params.writable = true;
+
+      if (p_Config.image.dimensionType ==
+          ImageResourceDimensionType::ABSOLUTE) {
+        p_Params.dimensions = p_Config.image.dimensions.absolute;
+      } else if (p_Config.image.dimensionType ==
+                 ImageResourceDimensionType::RELATIVE) {
+        if (p_Config.image.dimensions.relative.target ==
+            ImageResourceDimensionRelativeOptions::CONTEXT) {
+          p_Params.dimensions = p_Context.get_dimensions();
+        } else if (p_Config.image.dimensions.relative.target ==
+                   ImageResourceDimensionRelativeOptions::RENDERFLOW) {
+          p_Params.dimensions = p_RenderFlow.get_dimensions();
+        } else {
+          LOW_ASSERT(false, "Unknown relative dimension option");
+        }
+
+        Math::Vector2 l_Dimensions = p_Params.dimensions;
+        l_Dimensions *= p_Config.image.dimensions.relative.multiplier;
+        p_Params.dimensions = l_Dimensions;
+      } else {
+        LOW_ASSERT(false, "Unknown dimension type");
+      }
+    }
+
     static uint64_t create_image_resource(Interface::Context p_Context,
                                           RenderFlow p_RenderFlow,
                                           ResourceConfig &p_Config,
                                           Util::Name p_Name)
     {
       Backend::ImageResourceCreateParams l_Params;
-      l_Params.context = &p_Context.get_context();
-      l_Params.createImage = true;
-      l_Params.imageData = 0;
-      l_Params.imageDataSize = 0;
-      l_Params.depth = false;
-      l_Params.format = p_Config.image.format;
-      l_Params.writable = true;
-
-      if (p_Config.image.dimensionType ==
-          ImageResourceDimensionType::ABSOLUTE) {
-        l_Params.dimensions = p_Config.image.dimensions.absolute;
-      } else if (p_Config.image.dimensionType ==
-                 ImageResourceDimensionType::RELATIVE) {
-        if (p_Config.image.dimensions.relative.target ==
-            ImageResourceDimensionRelativeOptions::CONTEXT) {
-          l_Params.dimensions = p_Context.get_dimensions();
-        } else if (p_Config.image.dimensions.relative.target ==
-                   ImageResourceDimensionRelativeOptions::RENDERFLOW) {
-          l_Params.dimensions = p_RenderFlow.get_dimensions();
-        } else {
-          LOW_ASSERT(false, "Unknown relative dimension option");
-        }
-
-        Math::Vector2 l_Dimensions = l_Params.dimensions;
-        l_Dimensions *= p_Config.image.dimensions.relative.multiplier;
-        l_Params.dimensions = l_Dimensions;
-      } else {
-        LOW_ASSERT(false, "Unknown dimension type");
-      }
+      fill_image_resource_params(p_Context, p_RenderFlow, p_Config, l_Params);
 
       return Resource::Image::make(p_Name, l_Params).get_id();
     }
@@ -89,6 +96,7 @@ namespace Low {
                                       RenderFlow p_RenderFlow)
     {
       m_Context = p_Context;
+      m_Configs = p_Configs;
 
       for (ResourceConfig &i_Config : p_Configs) {
         m_Resources[i_Config.name] = {
@@ -98,6 +106,20 @@ namespace Low {
 
     void ResourceRegistry::cleanup()
     {
+    }
+
+    void ResourceRegistry::update_dimensions(RenderFlow p_RenderFlow)
+    {
+      for (uint32_t i = 0u; i < m_Configs.size(); ++i) {
+        ResourceConfig &i_Config = m_Configs[i];
+
+        if (i_Config.type == ResourceType::IMAGE) {
+          Backend::ImageResourceCreateParams l_Params;
+          fill_image_resource_params(m_Context, p_RenderFlow, i_Config,
+                                     l_Params);
+          get_image_resource(i_Config.name).reinitialize(l_Params);
+        }
+      }
     }
 
     Util::Handle ResourceRegistry::get_resource(Util::Name p_Name)

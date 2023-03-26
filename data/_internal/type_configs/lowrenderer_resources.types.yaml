@@ -22,6 +22,11 @@ types:
             type: Util::Name
           - name: params
             type: Backend::ImageResourceCreateParams
+      reinitialize:
+        return_type: void
+        parameters:
+          - name: params
+            type: Backend::ImageResourceCreateParams
   Buffer:
     private_make: true
     header_imports:

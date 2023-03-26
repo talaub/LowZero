@@ -104,6 +104,7 @@ namespace Low {
       void execute(RenderFlow p_RenderFlow, Math::Matrix4x4 &p_ProjectionMatrix,
                    Math::Matrix4x4 &p_ViewMatrix);
       void register_renderobject(RenderObject p_RenderObject);
+      void update_dimensions(RenderFlow p_RenderFlow);
 
     private:
       void set_config(GraphicsStepConfig p_Value);
@@ -113,6 +114,9 @@ namespace Low {
       get_signatures() const;
       Util::Map<RenderFlow, Resource::Buffer> &
       get_object_matrix_buffers() const;
+      void create_renderpass(RenderFlow p_RenderFlow);
+
+      void create_pipelines(RenderFlow p_RenderFlow, bool p_UpdateExisting);
     };
   } // namespace Renderer
 } // namespace Low

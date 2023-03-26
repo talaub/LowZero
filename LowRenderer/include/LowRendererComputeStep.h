@@ -92,11 +92,13 @@ namespace Low {
                               ComputeStepConfig p_Config);
       void prepare(RenderFlow p_RenderFlow);
       void execute(RenderFlow p_RenderFlow);
+      void update_dimensions(RenderFlow p_RenderFlow);
 
     private:
       void set_config(ComputeStepConfig p_Value);
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
+      void prepare_signature(RenderFlow p_RenderFlow);
     };
   } // namespace Renderer
 } // namespace Low

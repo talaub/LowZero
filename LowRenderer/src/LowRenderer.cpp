@@ -287,6 +287,43 @@ namespace Low {
       }
     }
 
+    static void create_fullscreen_pipeline()
+    {
+      Util::List<Backend::GraphicsPipelineColorTarget> l_ColorTargets;
+      {
+        Backend::GraphicsPipelineColorTarget l_Target;
+        l_Target.blendEnable = false;
+        l_Target.wirteMask = LOW_RENDERER_COLOR_WRITE_BIT_RED |
+                             LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
+                             LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
+                             LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
+        l_ColorTargets.push_back(l_Target);
+      }
+
+      Interface::PipelineGraphicsCreateParams l_Params;
+      l_Params.context = g_Context;
+      l_Params.vertexShaderPath = "fs.vert";
+      l_Params.fragmentShaderPath = "fs.frag";
+      l_Params.dimensions = g_Context.get_dimensions();
+      l_Params.signatures = {g_Context.get_global_signature(),
+                             g_FullScreenPipelineSignature};
+      l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
+      l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
+      l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
+      l_Params.dimensions = g_Context.get_dimensions();
+      l_Params.renderpass = g_Context.get_renderpasses()[0];
+      l_Params.colorTargets = l_ColorTargets;
+      l_Params.vertexDataAttributeTypes = {};
+
+      if (g_FullscreenPipeline.is_alive()) {
+        Interface::PipelineManager::register_graphics_pipeline(
+            g_FullscreenPipeline, l_Params);
+      } else {
+        g_FullscreenPipeline =
+            Interface::GraphicsPipeline::make(N(FullscreenPipeline), l_Params);
+      }
+    }
+
     void initialize()
     {
       g_ConfigPath = Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
@@ -362,34 +399,7 @@ namespace Low {
                 N(FullscreenPipelineSignature), g_Context, 1,
                 l_ResourceDescriptions);
 
-        Util::List<Backend::GraphicsPipelineColorTarget> l_ColorTargets;
-        {
-          Backend::GraphicsPipelineColorTarget l_Target;
-          l_Target.blendEnable = false;
-          l_Target.wirteMask = LOW_RENDERER_COLOR_WRITE_BIT_RED |
-                               LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
-                               LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
-                               LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
-          l_ColorTargets.push_back(l_Target);
-        }
-
-        Interface::PipelineGraphicsCreateParams l_Params;
-        l_Params.context = g_Context;
-        l_Params.vertexShaderPath = "fs.vert";
-        l_Params.fragmentShaderPath = "fs.frag";
-        l_Params.dimensions = g_Context.get_dimensions();
-        l_Params.signatures = {g_Context.get_global_signature(),
-                               g_FullScreenPipelineSignature};
-        l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
-        l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
-        l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
-        l_Params.dimensions = g_Context.get_dimensions();
-        l_Params.renderpass = g_Context.get_renderpasses()[0];
-        l_Params.colorTargets = l_ColorTargets;
-        l_Params.vertexDataAttributeTypes = {};
-
-        g_FullscreenPipeline =
-            Interface::GraphicsPipeline::make(N(FullscreenPipeline), l_Params);
+        create_fullscreen_pipeline();
 
         g_FullScreenPipelineSignature.set_sampler_resource(
             N(u_FinalImage), 0, g_MainRenderFlow.get_output_image());
@@ -425,6 +435,13 @@ namespace Low {
 
       if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
         g_Context.update_dimensions();
+        for (RenderFlow i_RenderFlow : RenderFlow::ms_LivingInstances) {
+          i_RenderFlow.update_dimensions();
+        }
+
+        g_FullScreenPipelineSignature.set_sampler_resource(
+            N(u_FinalImage), 0, g_MainRenderFlow.get_output_image());
+        create_fullscreen_pipeline();
 
         return;
       }

@@ -244,25 +244,7 @@ namespace Low {
       l_Resources[p_RenderFlow].initialize(get_config().get_resources(),
                                            get_context(), p_RenderFlow);
 
-      Util::List<ComputePipelineConfig> &l_Configs =
-          get_config().get_pipelines();
-      for (uint32_t i = 0; i < l_Configs.size(); ++i) {
-        ComputePipelineConfig &i_Config = l_Configs[i];
-
-        Interface::PipelineResourceSignature i_Signature = get_signatures()[i];
-        for (auto it = i_Config.resourceBinding.begin();
-             it != i_Config.resourceBinding.end(); ++it) {
-          if (it->bindType == ResourceBindType::IMAGE) {
-            i_Signature.set_image_resource(
-                it->resourceName, 0,
-                get_resources()[p_RenderFlow].get_image_resource(
-                    it->resourceName));
-          } else {
-            LOW_ASSERT(false, "Unsupported resource bind type");
-          }
-        }
-      }
-
+      prepare_signature(p_RenderFlow);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
     }
 
@@ -324,6 +306,39 @@ namespace Low {
       }
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
+    }
+
+    void ComputeStep::update_dimensions(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+      get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
+
+      prepare_signature(p_RenderFlow);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
+    }
+
+    void ComputeStep::prepare_signature(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_signature
+      Util::List<ComputePipelineConfig> &l_Configs =
+          get_config().get_pipelines();
+      for (uint32_t i = 0; i < l_Configs.size(); ++i) {
+        ComputePipelineConfig &i_Config = l_Configs[i];
+
+        Interface::PipelineResourceSignature i_Signature = get_signatures()[i];
+        for (auto it = i_Config.resourceBinding.begin();
+             it != i_Config.resourceBinding.end(); ++it) {
+          if (it->bindType == ResourceBindType::IMAGE) {
+            i_Signature.set_image_resource(
+                it->resourceName, 0,
+                get_resources()[p_RenderFlow].get_image_resource(
+                    it->resourceName));
+          } else {
+            LOW_ASSERT(false, "Unsupported resource bind type");
+          }
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare_signature
     }
 
   } // namespace Renderer

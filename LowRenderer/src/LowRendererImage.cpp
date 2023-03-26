@@ -156,6 +156,18 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
+      void Image::reinitialize(Backend::ImageResourceCreateParams &p_Params)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_reinitialize
+        Backend::callbacks().imageresource_cleanup(get_image());
+
+        Backend::callbacks().imageresource_create(get_image(), p_Params);
+
+        get_image().handleId = get_id();
+
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_reinitialize
+      }
+
     } // namespace Resource
   }   // namespace Renderer
 } // namespace Low

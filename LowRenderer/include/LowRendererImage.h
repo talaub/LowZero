@@ -76,6 +76,7 @@ namespace Low {
 
         static Image make(Util::Name p_Name,
                           Backend::ImageResourceCreateParams &p_Params);
+        void reinitialize(Backend::ImageResourceCreateParams &p_Params);
       };
     } // namespace Resource
   }   // namespace Renderer

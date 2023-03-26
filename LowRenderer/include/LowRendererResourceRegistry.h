@@ -22,12 +22,15 @@ namespace Low {
                       Interface::Context p_Context, RenderFlow p_RenderFlow);
       void cleanup();
 
+      void update_dimensions(RenderFlow p_RenderFlow);
+
       Resource::Buffer get_buffer_resource(Util::Name p_Name);
       Resource::Image get_image_resource(Util::Name p_Name);
 
     private:
       Interface::Context m_Context;
       Util::Map<Util::Name, ResourceInfo> m_Resources;
+      Util::List<ResourceConfig> m_Configs;
 
       Util::Handle get_resource(Util::Name p_Name);
     };

@@ -302,24 +302,32 @@ function generate_header(p_Type) {
 
     if (p_Type.functions) {
 	for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
+	    let func_line= '';
 	    if (i_Func.static) {
-		t += write('static ');
+		func_line += write('static ');
 	    }
-	    t += write(`${i_Func.accessor_type}${i_Func.name}(`);
+	    func_line += write(`${i_Func.accessor_type}${i_Func.name}(`);
 	    if (i_Func.parameters) {
 		for (let i = 0; i < i_Func.parameters.length; ++i) {
 		    if (i > 0) {
-			t += write(', ');
+			func_line += write(', ');
 		    }
 		    const i_Param = i_Func.parameters[i];
-		    t += write(`${i_Param.accessor_type}${i_Param.name}`);
+		    func_line += write(`${i_Param.accessor_type}${i_Param.name}`);
 		}
 	    }
-	    t += write(')');
+	    func_line += write(')');
 	    if (i_Func.constant) {
-		t += write(' const');
+		func_line += write(' const');
 	    }
-	    t += line(';');
+	    func_line += line(';');
+
+	    if (i_Func.private) {
+		privatelines.push(func_line);
+	    }
+	    else {
+		t += write(func_line);
+	    }
 	}
     }
 

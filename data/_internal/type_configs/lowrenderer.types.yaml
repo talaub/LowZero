@@ -56,6 +56,8 @@ types:
             type: Util::Yaml::Node
       execute:
         return_type: void
+      update_dimensions:
+        return_type: void
     
   ComputeStep:
     private_make: true
@@ -107,6 +109,19 @@ types:
             handle: true
       execute:
         return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      update_dimensions:
+        return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      prepare_signature:
+        return_type: void
+        private: true
         parameters:
           - name: renderFlow
             type: RenderFlow
@@ -238,6 +253,28 @@ types:
           - name: renderObject
             type: RenderObject
             handle: true
+      update_dimensions:
+        return_type: void
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      create_renderpass:
+        return_type: void
+        private: true
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      create_pipelines:
+        return_type: void
+        private: true
+        parameters:
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+          - name: updateExisting
+            type: bool
 
   Texture2D:
     private_make: true

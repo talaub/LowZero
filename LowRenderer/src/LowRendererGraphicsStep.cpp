@@ -257,66 +257,8 @@ namespace Low {
             N(u_RenderObjects), 0, get_object_matrix_buffers()[p_RenderFlow]);
       }
 
-      {
-        Interface::RenderpassCreateParams l_Params;
-        l_Params.context = get_context();
-        l_Params.dimensions = p_RenderFlow.get_dimensions();
-        l_Params.useDepth = false;
-        l_Params.clearDepthColor = {1.0f, 0.0f};
-
-        for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
-          l_Params.clearColors.push_back({0.0f, 0.5f, 1.0f, 1.0f});
-
-          if (get_config().get_rendertargets()[i].resourceScope ==
-              ResourceBindScope::RENDERFLOW) {
-            Resource::Image i_Image =
-                p_RenderFlow.get_resources().get_image_resource(
-                    get_config().get_rendertargets()[i].resourceName);
-            LOW_ASSERT(i_Image.is_alive(),
-                       "Could not find rendertarget image resource");
-
-            l_Params.renderTargets.push_back(i_Image);
-          } else {
-            LOW_ASSERT(false, "Unsupported rendertarget resource scope");
-          }
-        }
-
-        Interface::Renderpass l_Renderpass =
-            Interface::Renderpass::make(get_name(), l_Params);
-        get_renderpasses()[p_RenderFlow] = l_Renderpass;
-
-        {
-          for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
-            GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
-            Interface::PipelineGraphicsCreateParams i_Params;
-            i_Params.context = get_context();
-            i_Params.cullMode = i_Config.cullMode;
-            i_Params.polygonMode = i_Config.polygonMode;
-            i_Params.frontFace = i_Config.frontFace;
-            i_Params.dimensions = p_RenderFlow.get_dimensions();
-            i_Params.signatures = {get_context().get_global_signature(),
-                                   get_signatures()[p_RenderFlow]};
-            i_Params.vertexShaderPath = i_Config.vertexPath;
-            i_Params.fragmentShaderPath = i_Config.fragmentPath;
-            i_Params.renderpass = l_Renderpass;
-            i_Params.vertexDataAttributeTypes = {
-                Backend::VertexAttributeType::VECTOR3};
-            for (uint8_t i = 0u; i < get_config().get_rendertargets().size();
-                 ++i) {
-              // TODO: Temp
-              Backend::GraphicsPipelineColorTarget i_ColorTarget;
-              i_ColorTarget.blendEnable = false;
-              i_ColorTarget.wirteMask = LOW_RENDERER_COLOR_WRITE_BIT_RED |
-                                        LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
-                                        LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
-                                        LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
-              i_Params.colorTargets.push_back(i_ColorTarget);
-            }
-            get_pipelines()[p_RenderFlow].push_back(
-                Interface::GraphicsPipeline::make(i_Config.name, i_Params));
-          }
-        }
-      }
+      create_renderpass(p_RenderFlow);
+      create_pipelines(p_RenderFlow, false);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
     }
 
@@ -420,6 +362,90 @@ namespace Low {
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject
+    }
+
+    void GraphicsStep::update_dimensions(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+      get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
+
+      // Recreate renderpass
+      get_renderpasses()[p_RenderFlow].destroy();
+      create_renderpass(p_RenderFlow);
+      create_pipelines(p_RenderFlow, true);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
+    }
+
+    void GraphicsStep::create_renderpass(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_renderpass
+      Interface::RenderpassCreateParams l_Params;
+      l_Params.context = get_context();
+      l_Params.dimensions = p_RenderFlow.get_dimensions();
+      l_Params.useDepth = false;
+      l_Params.clearDepthColor = {1.0f, 0.0f};
+
+      for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
+        l_Params.clearColors.push_back({0.0f, 0.5f, 1.0f, 1.0f});
+
+        if (get_config().get_rendertargets()[i].resourceScope ==
+            ResourceBindScope::RENDERFLOW) {
+          Resource::Image i_Image =
+              p_RenderFlow.get_resources().get_image_resource(
+                  get_config().get_rendertargets()[i].resourceName);
+          LOW_ASSERT(i_Image.is_alive(),
+                     "Could not find rendertarget image resource");
+
+          l_Params.renderTargets.push_back(i_Image);
+        } else {
+          LOW_ASSERT(false, "Unsupported rendertarget resource scope");
+        }
+      }
+
+      get_renderpasses()[p_RenderFlow] =
+          Interface::Renderpass::make(get_name(), l_Params);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_renderpass
+    }
+
+    void GraphicsStep::create_pipelines(RenderFlow p_RenderFlow,
+                                        bool p_UpdateExisting)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_pipelines
+      for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
+        GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
+        Interface::PipelineGraphicsCreateParams i_Params;
+        i_Params.context = get_context();
+        i_Params.cullMode = i_Config.cullMode;
+        i_Params.polygonMode = i_Config.polygonMode;
+        i_Params.frontFace = i_Config.frontFace;
+        i_Params.dimensions = p_RenderFlow.get_dimensions();
+        i_Params.signatures = {get_context().get_global_signature(),
+                               get_signatures()[p_RenderFlow]};
+        i_Params.vertexShaderPath = i_Config.vertexPath;
+        i_Params.fragmentShaderPath = i_Config.fragmentPath;
+        i_Params.renderpass = get_renderpasses()[p_RenderFlow];
+        i_Params.vertexDataAttributeTypes = {
+            Backend::VertexAttributeType::VECTOR3};
+        for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
+          // TODO: Temp
+          Backend::GraphicsPipelineColorTarget i_ColorTarget;
+          i_ColorTarget.blendEnable = false;
+          i_ColorTarget.wirteMask = LOW_RENDERER_COLOR_WRITE_BIT_RED |
+                                    LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
+                                    LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
+                                    LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
+          i_Params.colorTargets.push_back(i_ColorTarget);
+        }
+
+        if (p_UpdateExisting) {
+          Interface::PipelineManager::register_graphics_pipeline(
+              get_pipelines()[p_RenderFlow][i], i_Params);
+        } else {
+          get_pipelines()[p_RenderFlow].push_back(
+              Interface::GraphicsPipeline::make(i_Config.name, i_Params));
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_pipelines
     }
 
   } // namespace Renderer

@@ -378,5 +378,26 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
     }
 
+    void RenderFlow::update_dimensions()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+      get_dimensions() = get_context().get_dimensions();
+
+      get_resources().update_dimensions(*this);
+
+      for (Util::Handle i_Step : get_steps()) {
+        if (i_Step.get_type() == ComputeStep::TYPE_ID) {
+          ComputeStep i_ComputeStep = i_Step.get_id();
+          i_ComputeStep.update_dimensions(*this);
+        } else if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
+          GraphicsStep i_GraphicsStep = i_Step.get_id();
+          i_GraphicsStep.update_dimensions(*this);
+        } else {
+          LOW_ASSERT(false, "Unknown step type");
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
+    }
+
   } // namespace Renderer
 } // namespace Low
