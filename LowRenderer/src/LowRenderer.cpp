@@ -446,6 +446,20 @@ namespace Low {
         return;
       }
 
+      {
+        Math::Vector3 l_RotationEuler =
+            Math::VectorUtil::to_euler(g_RenderObject.get_world_rotation());
+
+        l_RotationEuler.y += 0.01f;
+
+        if (l_RotationEuler.y > 89.0f) {
+          l_RotationEuler.y = 0.0f;
+        }
+
+        g_RenderObject.set_world_rotation(
+            Math::VectorUtil::from_euler(l_RotationEuler));
+      }
+
       g_VertexBuffer.bind();
       g_IndexBuffer.bind();
 
@@ -453,9 +467,11 @@ namespace Low {
 
       g_MainRenderFlow.execute();
 
-      LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
-          g_Context.get_context(), "FullscreenPass",
-          Math::Color(0.3096f, 0.3461f, 0.3443f, 1.0f));
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            g_Context.get_context(), "FullscreenPass",
+            Math::Color(0.3096f, 0.3461f, 0.3443f, 1.0f));
+      }
 
       g_FullScreenPipelineSignature.commit();
 
@@ -473,7 +489,9 @@ namespace Low {
 
       g_Context.get_current_renderpass().end();
 
-      LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
+      }
 
       g_Context.render_frame();
     }

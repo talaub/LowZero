@@ -16,6 +16,8 @@ namespace Low {
 
       LOW_EXPORT Vector3 direction(Quaternion &p_Rotation);
       LOW_EXPORT Vector3 to_euler(Quaternion &p_Rotation);
+
+      LOW_EXPORT Quaternion from_euler(Math::Vector3 &p_EulerAngles);
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

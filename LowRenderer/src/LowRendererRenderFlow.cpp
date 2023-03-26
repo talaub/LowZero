@@ -338,7 +338,7 @@ namespace Low {
     void RenderFlow::execute()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
-      if (get_context().get_debug_enabled()) {
+      if (get_context().is_debug_enabled()) {
         Util::String l_RenderDocLabel =
             Util::String("RenderFlow - ") + get_name().c_str();
         LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
@@ -372,7 +372,7 @@ namespace Low {
         }
       }
 
-      if (get_context().get_debug_enabled()) {
+      if (get_context().is_debug_enabled()) {
         LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute

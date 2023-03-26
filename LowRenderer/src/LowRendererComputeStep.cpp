@@ -254,7 +254,7 @@ namespace Low {
       LOW_ASSERT(get_resources().find(p_RenderFlow) != get_resources().end(),
                  "Step not prepared for renderflow");
 
-      if (get_context().get_debug_enabled()) {
+      if (get_context().is_debug_enabled()) {
         Util::String l_RenderDocLabel =
             Util::String("ComputeStep - ") + get_name().c_str();
         LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
@@ -300,7 +300,7 @@ namespace Low {
         Backend::callbacks().compute_dispatch(get_context().get_context(),
                                               i_DispatchDimensions);
 
-        if (get_context().get_debug_enabled()) {
+        if (get_context().is_debug_enabled()) {
           LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
         }
       }

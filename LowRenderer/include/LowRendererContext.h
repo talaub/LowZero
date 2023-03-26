@@ -95,7 +95,7 @@ namespace Low {
         Math::UVector2 &get_dimensions();
         uint8_t get_image_format();
         Window &get_window();
-        bool get_debug_enabled();
+        bool is_debug_enabled();
         void wait_idle();
         uint8_t prepare_frame();
         void render_frame();
