@@ -1,3 +1,7 @@
+#include "imgui.h"
+#include "imgui_impl_vulkan.h"
+#include "imgui_impl_glfw.h"
+
 #include "vulkan/vulkan_core.h"
 #define VMA_IMPLEMENTATION
 #define VMA_VULKAN_VERSION 1002000
@@ -38,6 +42,8 @@ namespace Low {
       void vk_renderpass_create(Backend::Renderpass &p_Renderpass,
                                 Backend::RenderpassCreateParams &p_Params);
       void vk_renderpass_cleanup(Backend::Renderpass &p_Renderpass);
+      void vk_renderpass_begin(Backend::Renderpass &p_Renderpass);
+      void vk_renderpass_end(Backend::Renderpass &p_Renderpass);
       void
       vk_imageresource_create(Backend::ImageResource &p_Image,
                               Backend::ImageResourceCreateParams &p_Params);
@@ -93,7 +99,9 @@ namespace Low {
             const Low::Util::List<VkSurfaceFormatKHR> &p_AvailableFormats)
         {
           for (const auto &i_AvailableFormat : p_AvailableFormats) {
-            if (i_AvailableFormat.format == VK_FORMAT_B8G8R8A8_SRGB) {
+            if (i_AvailableFormat.format ==
+                VK_FORMAT_B8G8R8A8_UNORM) { // Should be SRGB but UNORM to be
+                                            // compatible with ImGui viewports
               return i_AvailableFormat;
             }
           }
@@ -212,6 +220,8 @@ namespace Low {
           switch (p_Format) {
           case VK_FORMAT_B8G8R8A8_SRGB:
             return Backend::ImageFormat::BGRA8_SRGB;
+          case VK_FORMAT_B8G8R8A8_UNORM:
+            return Backend::ImageFormat::BGRA8_UNORM;
           case VK_FORMAT_R32G32B32A32_SFLOAT:
             return Backend::ImageFormat::RGBA32_SFLOAT;
           case VK_FORMAT_R8G8B8A8_UNORM:
@@ -227,6 +237,8 @@ namespace Low {
           switch (p_Format) {
           case Backend::ImageFormat::BGRA8_SRGB:
             return VK_FORMAT_B8G8R8A8_SRGB;
+          case Backend::ImageFormat::BGRA8_UNORM:
+            return VK_FORMAT_B8G8R8A8_UNORM;
           case Backend::ImageFormat::RGBA32_SFLOAT:
             return VK_FORMAT_R32G32B32A32_SFLOAT;
           case Backend::ImageFormat::RGBA8_UNORM:
@@ -957,6 +969,183 @@ namespace Low {
           }
         }
 
+        void check_vk_result(VkResult p_Result)
+        {
+          _LOW_ASSERT(p_Result == VK_SUCCESS);
+        }
+
+        static void setup_imgui(Backend::Context &p_Context)
+        {
+          // 1: create descriptor pool for IMGUI
+          // the size of the pool is very oversize, but it's copied from imgui
+          // demo itself.
+          VkDescriptorPoolSize pool_sizes[] = {
+              {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+              {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+              {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+              {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+              {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+
+          VkDescriptorPoolCreateInfo pool_info = {};
+          pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+          pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+          pool_info.maxSets = 1000;
+          pool_info.poolSizeCount = std::size(pool_sizes);
+          pool_info.pPoolSizes = pool_sizes;
+
+          LOW_ASSERT(vkCreateDescriptorPool(
+                         p_Context.vk.m_Device, &pool_info, nullptr,
+                         &(p_Context.vk.m_ImGuiDescriptorPool)) == VK_SUCCESS,
+                     "Could not create imgui descriptorpool");
+
+          IMGUI_CHECKVERSION();
+
+          // this initializes the core structures of imgui
+          ImGui::CreateContext();
+          ImGuiIO &io = ImGui::GetIO();
+          (void)io;
+          io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
+          io.ConfigFlags |=
+              ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport /
+
+          /*
+          io.ConfigFlags |=
+              ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+          // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable
+          // Gamepad Controls
+                  */
+
+          ImGui::StyleColorsDark();
+
+          // When viewports are enabled we tweak WindowRounding/WindowBg so
+          // platform windows can look identical to regular ones.
+          ImGuiStyle &style = ImGui::GetStyle();
+          if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            style.WindowRounding = 0.0f;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+          }
+          {
+            ImVec4 *colors = ImGui::GetStyle().Colors;
+            colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+            colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+            colors[ImGuiCol_WindowBg] = ImVec4(0.01f, 0.01f, 0.01f, 0.94f);
+            colors[ImGuiCol_ChildBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.00f);
+            colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
+            colors[ImGuiCol_Border] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+            colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+            colors[ImGuiCol_FrameBg] = ImVec4(0.30f, 0.30f, 0.30f, 0.54f);
+            colors[ImGuiCol_FrameBgHovered] =
+                ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_FrameBgActive] = ImVec4(0.66f, 0.21f, 0.21f, 1.00f);
+            colors[ImGuiCol_TitleBg] = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+            colors[ImGuiCol_TitleBgActive] = ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_TitleBgCollapsed] =
+                ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+            colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+            colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+            colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+            colors[ImGuiCol_ScrollbarGrabHovered] =
+                ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+            colors[ImGuiCol_ScrollbarGrabActive] =
+                ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+            colors[ImGuiCol_CheckMark] = ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_SliderGrab] = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
+            colors[ImGuiCol_SliderGrabActive] =
+                ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+            colors[ImGuiCol_Button] = ImVec4(0.21f, 0.21f, 0.21f, 1.00f);
+            colors[ImGuiCol_ButtonHovered] = ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_ButtonActive] = ImVec4(0.53f, 0.05f, 0.05f, 1.00f);
+            colors[ImGuiCol_Header] = ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_HeaderHovered] = ImVec4(0.57f, 0.23f, 0.23f, 1.00f);
+            colors[ImGuiCol_HeaderActive] = ImVec4(0.55f, 0.06f, 0.06f, 1.00f);
+            colors[ImGuiCol_Separator] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+            colors[ImGuiCol_SeparatorHovered] =
+                ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
+            colors[ImGuiCol_SeparatorActive] =
+                ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
+            colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.20f);
+            colors[ImGuiCol_ResizeGripHovered] =
+                ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+            colors[ImGuiCol_ResizeGripActive] =
+                ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+            colors[ImGuiCol_Tab] = ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_TabHovered] = ImVec4(0.31f, 0.47f, 0.66f, 0.80f);
+            colors[ImGuiCol_TabActive] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+            colors[ImGuiCol_TabUnfocused] = ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_TabUnfocusedActive] =
+                ImVec4(0.53f, 0.12f, 0.12f, 1.00f);
+            colors[ImGuiCol_DockingPreview] =
+                ImVec4(0.26f, 0.59f, 0.98f, 0.70f);
+            colors[ImGuiCol_DockingEmptyBg] =
+                ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+            colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+            colors[ImGuiCol_PlotLinesHovered] =
+                ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+            colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+            colors[ImGuiCol_PlotHistogramHovered] =
+                ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+            colors[ImGuiCol_TableHeaderBg] = ImVec4(0.19f, 0.19f, 0.20f, 1.00f);
+            colors[ImGuiCol_TableBorderStrong] =
+                ImVec4(0.31f, 0.31f, 0.35f, 1.00f);
+            colors[ImGuiCol_TableBorderLight] =
+                ImVec4(0.23f, 0.23f, 0.25f, 1.00f);
+            colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+            colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
+            colors[ImGuiCol_TextSelectedBg] =
+                ImVec4(0.35f, 0.36f, 0.38f, 0.35f);
+            colors[ImGuiCol_DragDropTarget] =
+                ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+            colors[ImGuiCol_NavHighlight] = ImVec4(0.35f, 0.39f, 0.45f, 1.00f);
+            colors[ImGuiCol_NavWindowingHighlight] =
+                ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
+            colors[ImGuiCol_NavWindowingDimBg] =
+                ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
+            colors[ImGuiCol_ModalWindowDimBg] =
+                ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+          }
+
+          // this initializes imgui for glfw
+          ImGui_ImplGlfw_InitForVulkan(p_Context.window.m_Glfw, true);
+
+          // this initializes imgui for Vulkan
+          ImGui_ImplVulkan_InitInfo init_info = {};
+          init_info.Instance = p_Context.vk.m_Instance;
+          init_info.PhysicalDevice = p_Context.vk.m_PhysicalDevice;
+          init_info.Device = p_Context.vk.m_Device;
+          init_info.Queue = p_Context.vk.m_GraphicsQueue;
+          init_info.DescriptorPool = p_Context.vk.m_ImGuiDescriptorPool;
+          init_info.Subpass = 0;
+          init_info.Allocator = nullptr;
+          init_info.PipelineCache = VK_NULL_HANDLE;
+          init_info.MinImageCount = p_Context.imageCount;
+          init_info.ImageCount = p_Context.imageCount;
+          init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+          init_info.CheckVkResultFn = check_vk_result;
+
+          ImGui_ImplVulkan_Init(&init_info,
+                                p_Context.renderpasses[0].vk.m_Renderpass);
+
+          LOW_ASSERT(vkResetCommandPool(p_Context.vk.m_Device,
+                                        p_Context.vk.m_CommandPool,
+                                        0) == VK_SUCCESS,
+                     "Failed to reset command pool");
+
+          VkCommandBuffer l_CommandBuffer =
+              Helper::begin_single_time_commands(p_Context);
+          // execute a gpu command to upload imgui font textures
+          ImGui_ImplVulkan_CreateFontsTexture(l_CommandBuffer);
+
+          Helper::end_single_time_commands(p_Context, l_CommandBuffer);
+
+          ImGui_ImplVulkan_DestroyFontUploadObjects();
+        }
+
       } // namespace ContextHelper
 
       namespace BarrierHelper {
@@ -1184,6 +1373,10 @@ namespace Low {
                          &(p_Context.vk.m_DescriptorPool)) == VK_SUCCESS,
                      "Failed to create descriptor pools");
         }
+
+        p_Context.state = Backend::ContextState::SUCCESS;
+
+        ContextHelper::setup_imgui(p_Context);
       }
 
       void vk_context_cleanup(Backend::Context &p_Context)
@@ -1204,6 +1397,12 @@ namespace Low {
         Util::Memory::main_allocator()->deallocate(
             l_Context.m_RenderFinishedSemaphores);
         Util::Memory::main_allocator()->deallocate(l_Context.m_InFlightFences);
+
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+
+        vkDestroyDescriptorPool(l_Context.m_Device,
+                                l_Context.m_ImGuiDescriptorPool, nullptr);
 
         for (uint32_t i = 0u; i < p_Context.imageCount; ++i) {
           renderpass_cleanup_internal(p_Context.renderpasses[i],
@@ -1308,7 +1507,8 @@ namespace Low {
 
         // Handle window resize
         if (l_Result == VK_ERROR_OUT_OF_DATE_KHR) {
-          return Backend::ContextState::OUT_OF_DATE;
+          p_Context.state = Backend::ContextState::OUT_OF_DATE;
+          return p_Context.state;
         }
 
         LOW_ASSERT(l_Result == VK_SUCCESS || l_Result == VK_SUBOPTIMAL_KHR,
@@ -1329,7 +1529,31 @@ namespace Low {
                        VK_SUCCESS,
                    "Failed to begin recording command buffer");
 
-        return Backend::ContextState::SUCCESS;
+        p_Context.state = Backend::ContextState::SUCCESS;
+        return p_Context.state;
+      }
+
+      void vk_imgui_prepare_frame(Backend::Context &p_Context)
+      {
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+      }
+
+      void vk_imgui_render(Backend::Context &p_Context)
+      {
+        ImGui::Render();
+        GLFWwindow *backup_current_context = glfwGetCurrentContext();
+
+        ImGui_ImplVulkan_RenderDrawData(
+            ImGui::GetDrawData(),
+            ContextHelper::get_current_commandbuffer(p_Context));
+
+        ImGui::UpdatePlatformWindows();
+
+        ImGui::RenderPlatformWindowsDefault();
+
+        glfwMakeContextCurrent(backup_current_context);
       }
 
       void vk_frame_render(Backend::Context &p_Context)
@@ -2967,6 +3191,8 @@ namespace Low {
 
         p_Callbacks.frame_prepare = &vk_frame_prepare;
         p_Callbacks.frame_render = &vk_frame_render;
+        p_Callbacks.imgui_prepare_frame = &vk_imgui_prepare_frame;
+        p_Callbacks.imgui_render = &vk_imgui_render;
 
         p_Callbacks.renderpass_create = &vk_renderpass_create;
         p_Callbacks.renderpass_cleanup = &vk_renderpass_cleanup;

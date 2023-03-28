@@ -19,7 +19,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_EXPORT RenderFlowData
+    struct LOW_RENDERER_API RenderFlowData
     {
       Interface::Context context;
       Math::UVector2 dimensions;
@@ -39,7 +39,7 @@ namespace Low {
       }
     };
 
-    struct LOW_EXPORT RenderFlow : public Low::Util::Handle
+    struct LOW_RENDERER_API RenderFlow : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;

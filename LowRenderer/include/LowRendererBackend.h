@@ -1,8 +1,8 @@
 #pragma once
 
+#include "LowRendererVulkan.h"
 #include "LowRendererWindow.h"
 
-#include "LowRendererVulkan.h"
 #include <stdint.h>
 
 #include "LowUtilName.h"
@@ -26,6 +26,7 @@ namespace Low {
         enum Enum
         {
           BGRA8_SRGB,
+          BGRA8_UNORM,
           RGBA32_SFLOAT,
           RGBA8_UNORM
         };
@@ -62,6 +63,7 @@ namespace Low {
         uint8_t imageCount;
         uint8_t currentFrameIndex;
         uint8_t currentImageIndex;
+        uint8_t state;
         Math::UVector2 dimensions;
         uint8_t imageFormat;
         Renderpass *renderpasses;
@@ -323,6 +325,8 @@ namespace Low {
 
         uint8_t (*frame_prepare)(Context &);
         void (*frame_render)(Context &);
+        void (*imgui_prepare_frame)(Context &);
+        void (*imgui_render)(Context &);
 
         void (*renderpass_create)(Renderpass &, RenderpassCreateParams &);
         void (*renderpass_cleanup)(Renderpass &);

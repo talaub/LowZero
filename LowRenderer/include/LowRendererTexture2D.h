@@ -16,7 +16,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_EXPORT Texture2DData
+    struct LOW_RENDERER_API Texture2DData
     {
       Resource::Image image;
       Low::Util::Name name;
@@ -27,7 +27,7 @@ namespace Low {
       }
     };
 
-    struct LOW_EXPORT Texture2D : public Low::Util::Handle
+    struct LOW_RENDERER_API Texture2D : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;

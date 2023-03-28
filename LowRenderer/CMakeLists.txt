@@ -1,9 +1,22 @@
 project(LowRenderer)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_library(LowRenderer SHARED ${SOURCES})
+set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui")
+
+SET(IMGUI_SOURCES
+  "${IMGUI_PATH}/imgui.cpp"
+  "${IMGUI_PATH}/imgui_draw.cpp"
+  "${IMGUI_PATH}/imgui_tables.cpp"
+  "${IMGUI_PATH}/imgui_widgets.cpp"
+  "${IMGUI_PATH}/backends/imgui_impl_glfw.cpp"
+  "${IMGUI_PATH}/backends/imgui_impl_vulkan.cpp"
+)
+  
+add_library(LowRenderer SHARED
+  ${IMGUI_SOURCES}
+  ${SOURCES}
+)
 
 add_dependencies(LowRenderer LowUtil LowMath glfw)
 
@@ -25,6 +38,8 @@ target_compile_definitions(LowRenderer PRIVATE
 target_include_directories(LowRenderer PUBLIC
   ${LOWRENDERER_INCLUDE_DIRS}
   $ENV{VK_SDK_PATH}/Include
+  "${IMGUI_PATH}"
+  "${IMGUI_PATH}/backends"
 )
 
 target_link_libraries(LowRenderer PRIVATE

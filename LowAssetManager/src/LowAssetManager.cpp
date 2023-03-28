@@ -23,7 +23,7 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 int main()
 {
-  LOW_LOG_INFO("Assetprep");
+  LOW_LOG_INFO << "Assetprep" << LOW_LOG_END;
 
   Low::AssetManager::Image::Image2D l_Image;
 

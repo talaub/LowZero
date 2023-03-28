@@ -17,7 +17,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT ImageData
+      struct LOW_RENDERER_API ImageData
       {
         Backend::ImageResource image;
         Low::Util::Name name;
@@ -28,7 +28,7 @@ namespace Low {
         }
       };
 
-      struct LOW_EXPORT Image : public Low::Util::Handle
+      struct LOW_RENDERER_API Image : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;

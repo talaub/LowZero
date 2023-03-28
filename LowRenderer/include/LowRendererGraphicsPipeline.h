@@ -18,7 +18,7 @@ namespace Low {
       struct PipelineGraphicsCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT GraphicsPipelineData
+      struct LOW_RENDERER_API GraphicsPipelineData
       {
         Backend::Pipeline pipeline;
         Low::Util::Name name;
@@ -29,7 +29,7 @@ namespace Low {
         }
       };
 
-      struct LOW_EXPORT GraphicsPipeline : public Low::Util::Handle
+      struct LOW_RENDERER_API GraphicsPipeline : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;

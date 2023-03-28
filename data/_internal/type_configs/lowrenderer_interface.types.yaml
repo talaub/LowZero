@@ -3,7 +3,7 @@ namespace:
   - Low
   - Renderer
   - Interface
-dll_macro: LOW_EXPORT
+dll_macro: LOW_RENDERER_API
 types:
   Context:
     private_make: true
@@ -61,6 +61,8 @@ types:
         return_type: uint8_t
       get_window:
         return_type: Window
+      get_state:
+        return_type: uint8_t
       is_debug_enabled:
         return_type: bool
       wait_idle:
@@ -68,6 +70,10 @@ types:
       prepare_frame:
         return_type: uint8_t
       render_frame:
+        return_type: void
+      begin_imgui_frame:
+        return_type: void
+      render_imgui:
         return_type: void
       update_dimensions:
         return_type: void

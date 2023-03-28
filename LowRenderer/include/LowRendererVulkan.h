@@ -58,6 +58,8 @@ namespace Low {
         uint32_t m_PipelineResourceSignatureIndex;
         PipelineResourceSignatureInternal *m_PipelineResourceSignatures;
         uint32_t *m_CommittedPipelineResourceSignatures;
+
+        VkDescriptorPool m_ImGuiDescriptorPool;
       };
 
       struct Renderpass

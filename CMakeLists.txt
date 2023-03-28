@@ -36,7 +36,10 @@ FILE(GLOB SUBFOLDERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE
 SET(SUBPROJECTS "")
 SET(FOUND "")
 
-add_compile_definitions(LOW_EDITOR_BUILD LOW_DATA_PATH="../../../data")
+add_compile_definitions(
+  LOW_EDITOR_BUILD LOW_DATA_PATH="../../../data"
+  IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
+)
 
 # Excluded directories
 # These directorories are not part of the build tree

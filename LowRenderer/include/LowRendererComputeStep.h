@@ -21,7 +21,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_EXPORT ComputeStepData
+    struct LOW_RENDERER_API ComputeStepData
     {
       Util::Map<RenderFlow, ResourceRegistry> resources;
       ComputeStepConfig config;
@@ -36,7 +36,7 @@ namespace Low {
       }
     };
 
-    struct LOW_EXPORT ComputeStep : public Low::Util::Handle
+    struct LOW_RENDERER_API ComputeStep : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;

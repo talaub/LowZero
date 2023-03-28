@@ -14,7 +14,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_EXPORT MeshData
+    struct LOW_RENDERER_API MeshData
     {
       uint32_t vertex_buffer_start;
       uint32_t vertex_count;
@@ -28,7 +28,7 @@ namespace Low {
       }
     };
 
-    struct LOW_EXPORT Mesh : public Low::Util::Handle
+    struct LOW_RENDERER_API Mesh : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;

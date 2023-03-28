@@ -14,3 +14,4 @@ add_library(tlsf STATIC "${CMAKE_CURRENT_SOURCE_DIR}/tlsf/tlsf.c")
 target_include_directories(tlsf PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/tlsf"
 )
+cmake_minimum_required(VERSION 3.20)

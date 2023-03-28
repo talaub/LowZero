@@ -28,3 +28,7 @@
 [submodule "LowDependencies/assimp"]
 	path = LowDependencies/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "LowDependencies/imgui"]
+	path = LowDependencies/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking

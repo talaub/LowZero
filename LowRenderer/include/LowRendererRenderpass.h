@@ -18,7 +18,7 @@ namespace Low {
       struct RenderpassCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT RenderpassData
+      struct LOW_RENDERER_API RenderpassData
       {
         Backend::Renderpass renderpass;
         Low::Util::Name name;
@@ -29,7 +29,7 @@ namespace Low {
         }
       };
 
-      struct LOW_EXPORT Renderpass : public Low::Util::Handle
+      struct LOW_RENDERER_API Renderpass : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;

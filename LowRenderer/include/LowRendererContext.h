@@ -20,7 +20,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT ContextData
+      struct LOW_RENDERER_API ContextData
       {
         Backend::Context context;
         Util::List<Renderpass> renderpasses;
@@ -34,7 +34,7 @@ namespace Low {
         }
       };
 
-      struct LOW_EXPORT Context : public Low::Util::Handle
+      struct LOW_RENDERER_API Context : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
@@ -95,10 +95,13 @@ namespace Low {
         Math::UVector2 &get_dimensions();
         uint8_t get_image_format();
         Window &get_window();
+        uint8_t get_state();
         bool is_debug_enabled();
         void wait_idle();
         uint8_t prepare_frame();
         void render_frame();
+        void begin_imgui_frame();
+        void render_imgui();
         void update_dimensions();
         void clear_committed_resource_signatures();
 

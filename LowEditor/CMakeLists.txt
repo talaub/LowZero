@@ -1,7 +1,6 @@
 project(LowEditor)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-file(GLOB_RECURSE INCLUDES "include/*.h")
 
 add_executable(LowEditor ${SOURCES})
 
@@ -26,7 +25,7 @@ include_directories(
 set_target_properties(LowEditor PROPERTIES OUTPUT_NAME "lowed")
 
 target_link_libraries(LowEditor PRIVATE
+  LowRenderer
   LowUtil
   LowMath
-  LowRenderer
 )

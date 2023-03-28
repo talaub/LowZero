@@ -296,11 +296,18 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_window
       }
 
+      uint8_t Context::get_state()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_state
+        return get_context().state;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_state
+      }
+
       bool Context::is_debug_enabled()
       {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_debug_enabled
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_debug_enabled
         return get_context().debugEnabled;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_debug_enabled
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_debug_enabled
       }
 
       void Context::wait_idle()
@@ -322,6 +329,20 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_frame
         Backend::callbacks().frame_render(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_render_frame
+      }
+
+      void Context::begin_imgui_frame()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_begin_imgui_frame
+        Backend::callbacks().imgui_prepare_frame(get_context());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_begin_imgui_frame
+      }
+
+      void Context::render_imgui()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_imgui
+        Backend::callbacks().imgui_render(get_context());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_render_imgui
       }
 
       void Context::update_dimensions()

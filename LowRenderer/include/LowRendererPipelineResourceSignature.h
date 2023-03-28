@@ -20,7 +20,7 @@ namespace Low {
       struct Context;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_EXPORT PipelineResourceSignatureData
+      struct LOW_RENDERER_API PipelineResourceSignatureData
       {
         Backend::PipelineResourceSignature signature;
         Low::Util::Name name;
@@ -31,7 +31,8 @@ namespace Low {
         }
       };
 
-      struct LOW_EXPORT PipelineResourceSignature : public Low::Util::Handle
+      struct LOW_RENDERER_API PipelineResourceSignature
+          : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;

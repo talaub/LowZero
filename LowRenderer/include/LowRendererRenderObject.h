@@ -18,7 +18,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_EXPORT RenderObjectData
+    struct LOW_RENDERER_API RenderObjectData
     {
       Mesh mesh;
       Material material;
@@ -33,7 +33,7 @@ namespace Low {
       }
     };
 
-    struct LOW_EXPORT RenderObject : public Low::Util::Handle
+    struct LOW_RENDERER_API RenderObject : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;

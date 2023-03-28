@@ -2,7 +2,7 @@ module: LowRenderer
 namespace:
   - Low
   - Renderer
-dll_macro: LOW_EXPORT
+dll_macro: LOW_RENDERER_API
 types:
   RenderFlow:
     private_make: true

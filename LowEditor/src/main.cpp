@@ -1,4 +1,7 @@
 #include <iostream>
+
+#include "imgui.h"
+
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
@@ -38,6 +41,11 @@ int main()
   while (Low::Renderer::window_is_open()) {
     {
       Low::Renderer::tick(0.0f);
+
+      ImGui::Begin("Editor");
+      ImGui::End();
+
+      Low::Renderer::late_tick(0.0f);
     }
     MicroProfileFlip(nullptr);
   }

@@ -7,6 +7,8 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
 
+#include "imgui.h"
+
 #include "LowRendererWindow.h"
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
@@ -433,6 +435,8 @@ namespace Low {
       LOW_ASSERT(l_ContextState != Backend::ContextState::FAILED,
                  "Frame prepare was not successful");
 
+      g_Context.begin_imgui_frame();
+
       if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
         g_Context.update_dimensions();
         for (RenderFlow i_RenderFlow : RenderFlow::ms_LivingInstances) {
@@ -445,6 +449,23 @@ namespace Low {
 
         return;
       }
+    }
+
+    void late_tick(float p_Delta)
+    {
+      if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
+        ImGui::EndFrame();
+        ImGui::UpdatePlatformWindows();
+        return;
+      }
+
+      {
+        ImGui::Begin("Renderer");
+        if (ImGui::Button("Log")) {
+          LOW_LOG_INFO << "Button pressed" << LOW_LOG_END;
+        }
+        ImGui::End();
+      }
 
       {
         Math::Vector3 l_RotationEuler =
@@ -452,7 +473,7 @@ namespace Low {
 
         l_RotationEuler.y += 0.01f;
 
-        if (l_RotationEuler.y > 89.0f) {
+        if (l_RotationEuler.y > 89.99f) {
           l_RotationEuler.y = 0.0f;
         }
 
@@ -486,6 +507,8 @@ namespace Low {
         l_Params.vertexCount = 3;
         Backend::callbacks().draw(l_Params);
       }
+
+      g_Context.render_imgui();
 
       g_Context.get_current_renderpass().end();
 
