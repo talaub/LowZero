@@ -104,6 +104,11 @@ namespace Low {
         VkBuffer m_Buffer;
         VkDeviceMemory m_Memory;
       };
+
+      struct ImGuiImage
+      {
+        VkDescriptorSet *m_DescriptorSets;
+      };
     } // namespace Vulkan
   }   // namespace Renderer
 } // namespace Low

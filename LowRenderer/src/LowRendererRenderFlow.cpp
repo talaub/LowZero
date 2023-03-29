@@ -378,10 +378,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
     }
 
-    void RenderFlow::update_dimensions()
+    void RenderFlow::update_dimensions(Math::UVector2 &p_Dimensions)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
-      get_dimensions() = get_context().get_dimensions();
+      get_dimensions() = p_Dimensions;
 
       get_resources().update_dimensions(*this);
 

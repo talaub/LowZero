@@ -3182,6 +3182,40 @@ namespace Low {
         }
       }
 
+      void vk_imgui_image_create(Backend::ImGuiImage &p_ImGuiImage,
+                                 Backend::ImageResource &p_Image)
+      {
+        uint32_t l_FramesInFlight = p_Image.context->framesInFlight;
+        p_ImGuiImage.context = p_Image.context;
+
+        p_ImGuiImage.vk.m_DescriptorSets =
+            (VkDescriptorSet *)Util::Memory::default_general_purpose_allocator()
+                ->allocate(sizeof(VkDescriptorSet) * l_FramesInFlight);
+
+        // TODO: Transition imag eto correct layout after resize
+
+        for (uint32_t i = 0u; i < l_FramesInFlight; ++i) {
+          p_ImGuiImage.vk.m_DescriptorSets[i] = ImGui_ImplVulkan_AddTexture(
+              p_Image.vk.m_Sampler, p_Image.vk.m_ImageView,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+      }
+
+      void vk_imgui_image_cleanup(Backend::ImGuiImage &p_ImGuiImage)
+      {
+        Util::Memory::default_general_purpose_allocator()->deallocate(
+            p_ImGuiImage.vk.m_DescriptorSets);
+      }
+
+      void vk_imgui_image_render(Backend::ImGuiImage &p_ImGuiImage,
+                                 Math::UVector2 &p_Dimensions)
+      {
+        ImGui::Image(
+            p_ImGuiImage.vk
+                .m_DescriptorSets[p_ImGuiImage.context->currentFrameIndex],
+            ImVec2{(float)p_Dimensions.x, (float)p_Dimensions.y});
+      }
+
       void initialize_callback(Backend::ApiBackendCallback &p_Callbacks)
       {
         p_Callbacks.context_create = &vk_context_create;
@@ -3238,6 +3272,10 @@ namespace Low {
 
         p_Callbacks.renderdoc_section_begin = &vk_renderdoc_section_begin;
         p_Callbacks.renderdoc_section_end = &vk_renderdoc_section_end;
+
+        p_Callbacks.imgui_image_create = &vk_imgui_image_create;
+        p_Callbacks.imgui_image_cleanup = &vk_imgui_image_cleanup;
+        p_Callbacks.imgui_image_render = &vk_imgui_image_render;
       }
     } // namespace Vulkan
   }   // namespace Renderer

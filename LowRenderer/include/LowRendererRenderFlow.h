@@ -111,7 +111,7 @@ namespace Low {
       static RenderFlow make(Util::Name p_Name, Interface::Context p_Context,
                              Util::Yaml::Node &p_Config);
       void execute();
-      void update_dimensions();
+      void update_dimensions(Math::UVector2 &p_Dimensions);
 
     private:
       Interface::Context get_context() const;

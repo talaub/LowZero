@@ -42,11 +42,9 @@ int main()
     {
       Low::Renderer::tick(0.0f);
 
-      ImGui::Begin("Editor");
-      ImGui::End();
-
       Low::Renderer::late_tick(0.0f);
     }
+
     MicroProfileFlip(nullptr);
   }
 

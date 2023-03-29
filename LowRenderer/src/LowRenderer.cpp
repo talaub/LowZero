@@ -26,6 +26,7 @@
 #include "LowRendererRenderObject.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererMaterialType.h"
+#include "LowRendererImGuiImage.h"
 
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererFrontendConfig.h"
@@ -149,6 +150,8 @@ namespace Low {
     Interface::GraphicsPipeline g_FullscreenPipeline;
     Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
 
+    Interface::ImGuiImage g_MainRenderFlowImGuiImage;
+
     Mesh g_Mesh;
 
     static Mesh upload_mesh(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
@@ -192,6 +195,7 @@ namespace Low {
       Interface::PipelineResourceSignature::initialize();
       Interface::ComputePipeline::initialize();
       Interface::GraphicsPipeline::initialize();
+      Interface::ImGuiImage::initialize();
     }
 
     static void initialize_types()
@@ -422,6 +426,9 @@ namespace Low {
         GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(g_RenderObject);
       }
+
+      g_MainRenderFlowImGuiImage = Interface::ImGuiImage::make(
+          N(MainRenderFlowImGuiImage), g_MainRenderFlow.get_output_image());
     }
 
     void tick(float p_Delta)
@@ -440,15 +447,23 @@ namespace Low {
       if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
         g_Context.update_dimensions();
         for (RenderFlow i_RenderFlow : RenderFlow::ms_LivingInstances) {
-          i_RenderFlow.update_dimensions();
+          i_RenderFlow.update_dimensions(g_Context.get_dimensions());
         }
 
         g_FullScreenPipelineSignature.set_sampler_resource(
             N(u_FinalImage), 0, g_MainRenderFlow.get_output_image());
         create_fullscreen_pipeline();
 
+        g_MainRenderFlowImGuiImage.destroy();
+        g_MainRenderFlowImGuiImage = Interface::ImGuiImage::make(
+            N(MainRenderFlowImGuiImage), g_MainRenderFlow.get_output_image());
+
         return;
       }
+
+      ImGui::Begin("TestViewport");
+      g_MainRenderFlowImGuiImage.render(Math::UVector2(640, 430));
+      ImGui::End();
     }
 
     void late_tick(float p_Delta)
@@ -457,14 +472,6 @@ namespace Low {
         ImGui::EndFrame();
         ImGui::UpdatePlatformWindows();
         return;
-      }
-
-      {
-        ImGui::Begin("Renderer");
-        if (ImGui::Button("Log")) {
-          LOW_LOG_INFO << "Button pressed" << LOW_LOG_END;
-        }
-        ImGui::End();
       }
 
       {
@@ -546,6 +553,7 @@ namespace Low {
 
     static void cleanup_interface_types()
     {
+      Interface::ImGuiImage::cleanup();
       Interface::ComputePipeline::cleanup();
       Interface::GraphicsPipeline::cleanup();
       Interface::PipelineResourceSignature::cleanup();

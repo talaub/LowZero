@@ -316,6 +316,15 @@ namespace Low {
         uint32_t firstInstance;
       };
 
+      struct ImGuiImage
+      {
+        union
+        {
+          Vulkan::ImGuiImage vk;
+        };
+        Context *context;
+      };
+
       struct ApiBackendCallback
       {
         void (*context_create)(Context &, ContextCreateParams &);
@@ -377,6 +386,11 @@ namespace Low {
         void (*renderdoc_section_begin)(Context &, Util::String,
                                         Math::Color p_Color);
         void (*renderdoc_section_end)(Context &);
+
+        void (*imgui_image_create)(Backend::ImGuiImage &,
+                                   Backend::ImageResource &);
+        void (*imgui_image_cleanup)(Backend::ImGuiImage &);
+        void (*imgui_image_render)(Backend::ImGuiImage &, Math::UVector2 &);
       };
 
       ApiBackendCallback &callbacks();

@@ -4,6 +4,7 @@ LowRenderer:
   PipelineResourceSignature: 8
   Image: 8
   Buffer: 4
+  ImGuiImage: 4
   ComputePipeline: 16
   GraphicsPipeline: 16
   ComputeStep: 8

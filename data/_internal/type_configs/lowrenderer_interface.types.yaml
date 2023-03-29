@@ -224,3 +224,30 @@ types:
       bind:
         return_type: void
 
+  ImGuiImage:
+    private_make: true
+    header_imports:
+      - LowRendererBackend.h
+      - LowRendererImage.h
+      - LowMathVectorUtil.h
+    properties:
+      imgui_image:
+        type: Backend::ImGuiImage
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: ImGuiImage
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: image
+            type: Resource::Image
+            handle: true
+      render:
+        return_type: void
+        parameters:
+          - name: dimensions
+            type: Math::UVector2
+

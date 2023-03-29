@@ -58,6 +58,9 @@ types:
         return_type: void
       update_dimensions:
         return_type: void
+        parameters:
+          - name: dimensions
+            type: Math::UVector2
     
   ComputeStep:
     private_make: true
