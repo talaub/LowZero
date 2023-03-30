@@ -3,6 +3,7 @@ project(LowRenderer)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui")
+set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders")
 
 SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui.cpp"
@@ -40,6 +41,7 @@ target_include_directories(LowRenderer PUBLIC
   $ENV{VK_SDK_PATH}/Include
   "${IMGUI_PATH}"
   "${IMGUI_PATH}/backends"
+  "${ICON_PATH}"
 )
 
 target_link_libraries(LowRenderer PRIVATE

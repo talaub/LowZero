@@ -7,6 +7,8 @@
 #define VMA_VULKAN_VERSION 1002000
 #include "../../LowDependencies/VulkanMemoryAllocator/include/vk_mem_alloc.h"
 
+#include "IconsFontAwesome5.h"
+
 #include "LowRendererVulkan.h"
 
 #include "LowUtilAssert.h"
@@ -1014,6 +1016,45 @@ namespace Low {
           io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable Docking
           io.ConfigFlags |=
               ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport /
+
+          float baseFontSize = 17.0f; // 13.0f is the size of the default font.
+                                      // Change to the font size you use.
+
+          Util::String l_BaseInternalFontPath =
+              Util::String(LOW_DATA_PATH) + "/_internal/assets/fonts/";
+
+          {
+            ImFontConfig config;
+            config.OversampleH = 2;
+            config.OversampleV = 1;
+            config.GlyphExtraSpacing.x = 0.7f;
+
+            Util::String l_FontPath =
+                l_BaseInternalFontPath + "Roboto-Regular.ttf";
+            io.Fonts->AddFontFromFileTTF(l_FontPath.c_str(), baseFontSize,
+                                         &config);
+          }
+
+          // Icons
+          {
+            float iconFontSize =
+                baseFontSize * 2.0f /
+                3.0f; // FontAwesome fonts need to have their sizes reduced
+                      // by 2.0f/3.0f in order to align correctly
+
+            // merge in icons from Font Awesome
+            static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA,
+                                                   0};
+            ImFontConfig icons_config;
+            icons_config.MergeMode = true;
+            icons_config.PixelSnapH = true;
+            icons_config.GlyphMinAdvanceX = iconFontSize;
+
+            Util::String l_FontPath =
+                l_BaseInternalFontPath + FONT_ICON_FILE_NAME_FAS;
+            io.Fonts->AddFontFromFileTTF(l_FontPath.c_str(), iconFontSize,
+                                         &icons_config, icons_ranges);
+          }
 
           /*
           io.ConfigFlags |=

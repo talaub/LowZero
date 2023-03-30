@@ -32,3 +32,6 @@
 	path = LowDependencies/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
+[submodule "LowDependencies/IconFontCppHeaders"]
+	path = LowDependencies/IconFontCppHeaders
+	url = https://github.com/juliettef/IconFontCppHeaders.git
