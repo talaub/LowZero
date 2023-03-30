@@ -1,2 +1,7 @@
 mantest:
   GBufferPipeline: testgp
+  properties:
+    albedo_color:
+      type: Vector4
+    albedo_map:
+      type: Texture2D

@@ -21,6 +21,11 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct RenderObjectShaderInfo
+    {
+      Math::Matrix4x4 mvp;
+      uint32_t material_index;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API GraphicsStepData

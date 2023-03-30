@@ -228,7 +228,7 @@ namespace Low {
       {
         Backend::BufferCreateParams l_Params;
         l_Params.context = &get_context().get_context();
-        l_Params.bufferSize = sizeof(Math::Matrix4x4) * 32u;
+        l_Params.bufferSize = sizeof(RenderObjectShaderInfo) * 32u;
         l_Params.data = nullptr;
         l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
 
@@ -243,7 +243,7 @@ namespace Low {
           Backend::PipelineResourceDescription l_ResourceDescription;
           l_ResourceDescription.arraySize = 1;
           l_ResourceDescription.name = N(u_RenderObjects);
-          l_ResourceDescription.step = Backend::ResourcePipelineStep::VERTEX;
+          l_ResourceDescription.step = Backend::ResourcePipelineStep::GRAPHICS;
           l_ResourceDescription.type = Backend::ResourceType::BUFFER;
 
           l_ResourceDescriptions.push_back(l_ResourceDescription);
@@ -280,7 +280,7 @@ namespace Low {
 
       get_renderpasses()[p_RenderFlow].begin();
 
-      Math::Matrix4x4 l_ObjectMatrices[32];
+      RenderObjectShaderInfo l_ObjectShaderInfos[32];
       uint32_t l_ObjectIndex = 0;
 
       for (auto pit = get_pipelines()[p_RenderFlow].begin();
@@ -307,7 +307,10 @@ namespace Low {
             Math::Matrix4x4 l_MVPMatrix =
                 p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
 
-            l_ObjectMatrices[l_ObjectIndex] = l_MVPMatrix;
+            l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
+
+            l_ObjectShaderInfos[l_ObjectIndex].material_index =
+                i_RenderObject.get_material().get_index();
 
             l_ObjectIndex++;
 
@@ -316,7 +319,7 @@ namespace Low {
         }
       }
 
-      get_object_matrix_buffers()[p_RenderFlow].set(l_ObjectMatrices);
+      get_object_matrix_buffers()[p_RenderFlow].set(l_ObjectShaderInfos);
 
       uint32_t l_InstanceId = 0;
 
@@ -425,7 +428,8 @@ namespace Low {
         i_Params.fragmentShaderPath = i_Config.fragmentPath;
         i_Params.renderpass = get_renderpasses()[p_RenderFlow];
         i_Params.vertexDataAttributeTypes = {
-            Backend::VertexAttributeType::VECTOR3};
+            Backend::VertexAttributeType::VECTOR3,
+            Backend::VertexAttributeType::VECTOR2};
         for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
           // TODO: Temp
           Backend::GraphicsPipelineColorTarget i_ColorTarget;

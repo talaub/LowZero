@@ -7,6 +7,8 @@
 
 #include "LowRendererInterface.h"
 #include "LowRendererTexture2D.h"
+#include "LowRendererMaterial.h"
+#include "LowUtilResource.h"
 
 namespace Low {
   namespace Renderer {
@@ -157,6 +159,22 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
       }
 
+      Resource::Buffer Context::get_material_data_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(Context, material_data_buffer, Resource::Buffer);
+      }
+      void Context::set_material_data_buffer(Resource::Buffer p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(Context, material_data_buffer, Resource::Buffer) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_data_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_material_data_buffer
+      }
+
       Low::Util::Name Context::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -209,6 +227,19 @@ namespace Low {
         }
 
         {
+          Backend::BufferCreateParams l_Params;
+          l_Params.bufferSize =
+              Material::get_capacity() *
+              (sizeof(Math::Vector4) * LOW_RENDERER_MATERIAL_DATA_VECTORS);
+          l_Params.context = &l_Context.get_context();
+          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+          l_Params.data = nullptr;
+
+          l_Context.set_material_data_buffer(
+              Resource::Buffer::make(N(ContextMaterialDataBuffer), l_Params));
+        }
+
+        {
           Util::List<Backend::PipelineResourceDescription> l_Resources;
 
           {
@@ -216,6 +247,15 @@ namespace Low {
             l_Resource.name = N(g_ContextFrameInfo);
             l_Resource.step = Backend::ResourcePipelineStep::ALL;
             l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
+            l_Resource.arraySize = 1;
+            l_Resources.push_back(l_Resource);
+          }
+
+          {
+            Backend::PipelineResourceDescription l_Resource;
+            l_Resource.name = N(g_MaterialInfos);
+            l_Resource.step = Backend::ResourcePipelineStep::ALL;
+            l_Resource.type = Backend::ResourceType::BUFFER;
             l_Resource.arraySize = 1;
             l_Resources.push_back(l_Resource);
           }
@@ -234,6 +274,25 @@ namespace Low {
 
           l_Context.get_global_signature().set_constant_buffer_resource(
               N(g_ContextFrameInfo), 0, l_Context.get_frame_info_buffer());
+
+          l_Context.get_global_signature().set_buffer_resource(
+              N(g_MaterialInfos), 0, l_Context.get_material_data_buffer());
+
+          {
+            Util::Resource::Image2D l_Image;
+            Util::Resource::load_image2d(
+                Util::String(LOW_DATA_PATH) +
+                    "/assets/img2d/default_texture.ktx",
+                l_Image);
+
+            Texture2D l_Texture2D =
+                Texture2D::make(N(DefaultTexture), l_Context, l_Image);
+
+            for (uint32_t i = 1u; i < Texture2D::get_capacity(); ++i) {
+              l_Context.get_global_signature().set_sampler_resource(
+                  N(g_Texture2Ds), i, l_Texture2D.get_image());
+            }
+          }
         }
 
         return l_Context;

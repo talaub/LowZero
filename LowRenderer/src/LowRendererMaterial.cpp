@@ -5,6 +5,8 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
+#include "LowRendererTexture2D.h"
+
 namespace Low {
   namespace Renderer {
     const uint16_t Material::TYPE_ID = 10;
@@ -123,6 +125,22 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_material_type
     }
 
+    Interface::Context Material::get_context() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Material, context, Interface::Context);
+    }
+    void Material::set_context(Interface::Context p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(Material, context, Interface::Context) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+      // LOW_CODEGEN::END::CUSTOM:SETTER_context
+    }
+
     Low::Util::Name Material::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -137,6 +155,64 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+    }
+
+    Material Material::make(Util::Name p_Name, Interface::Context p_Context)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      Material l_Material = Material::make(p_Name);
+
+      l_Material.set_context(p_Context);
+
+      return l_Material;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void Material::set_property(Util::Name p_PropertyName,
+                                Util::Variant &p_Value)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property
+      for (MaterialTypeProperty &i_MaterialTypeProperty :
+           get_material_type().get_properties()) {
+        if (p_PropertyName == i_MaterialTypeProperty.name) {
+
+          if (i_MaterialTypeProperty.type ==
+              MaterialTypePropertyType::VECTOR4) {
+            uint32_t i_Size = sizeof(Math::Vector4);
+            uint32_t i_Offset = i_MaterialTypeProperty.offset;
+
+            Math::Vector4 i_Data = p_Value;
+
+            get_context().get_material_data_buffer().write(
+                &i_Data, i_Size,
+                i_Offset + (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                                           sizeof(Math::Vector4))));
+
+          } else if (i_MaterialTypeProperty.type ==
+                     MaterialTypePropertyType::TEXTURE2D) {
+            uint32_t i_Size = sizeof(uint32_t);
+            uint32_t i_Offset = i_MaterialTypeProperty.offset;
+
+            Util::Handle i_DataHandle = p_Value;
+            LOW_ASSERT(i_DataHandle.get_type() == Texture2D::TYPE_ID,
+                       "Material Texture2D property has incorrect handle type");
+            uint32_t i_TextureIndex = i_DataHandle.get_index();
+            float i_TextureIndexFloat = i_TextureIndex;
+
+            get_context().get_material_data_buffer().write(
+                &i_TextureIndexFloat, i_Size,
+                i_Offset + (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                                           sizeof(Math::Vector4))));
+          } else {
+            LOW_ASSERT(false, "Unknown material property type");
+          }
+
+          return;
+        }
+      }
+
+      LOW_ASSERT(false, "Could not find property");
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_property
     }
 
   } // namespace Renderer

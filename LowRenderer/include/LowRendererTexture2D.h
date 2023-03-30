@@ -7,8 +7,16 @@
 #include "LowUtilContainers.h"
 
 #include "LowRendererImage.h"
+#include "LowRendererContext.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+namespace Low {
+  namespace Util {
+    namespace Resource {
+      struct Image2D;
+    }
+  } // namespace Util
+} // namespace Low
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -19,6 +27,7 @@ namespace Low {
     struct LOW_RENDERER_API Texture2DData
     {
       Resource::Image image;
+      Interface::Context context;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -68,16 +77,18 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      Resource::Image &get_image() const;
+      Resource::Image get_image() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static Texture2D make(Util::Name p_Name,
-                            Backend::ImageResourceCreateParams &p_Params);
+      static Texture2D make(Util::Name p_Name, Interface::Context p_Context,
+                            Util::Resource::Image2D &p_Image2d);
 
     private:
-      void set_image(Resource::Image &p_Value);
+      void set_image(Resource::Image p_Value);
+      Interface::Context get_context() const;
+      void set_context(Interface::Context p_Value);
     };
   } // namespace Renderer
 } // namespace Low

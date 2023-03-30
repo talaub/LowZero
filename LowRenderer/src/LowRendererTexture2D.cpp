@@ -5,6 +5,8 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
+#include "LowUtilResource.h"
+
 namespace Low {
   namespace Renderer {
     const uint16_t Texture2D::TYPE_ID = 6;
@@ -52,6 +54,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      get_image().destroy();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -107,12 +110,12 @@ namespace Low {
       return l_Capacity;
     }
 
-    Resource::Image &Texture2D::get_image() const
+    Resource::Image Texture2D::get_image() const
     {
       _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, image, Resource::Image);
     }
-    void Texture2D::set_image(Resource::Image &p_Value)
+    void Texture2D::set_image(Resource::Image p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -121,6 +124,22 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_image
       // LOW_CODEGEN::END::CUSTOM:SETTER_image
+    }
+
+    Interface::Context Texture2D::get_context() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Texture2D, context, Interface::Context);
+    }
+    void Texture2D::set_context(Interface::Context p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(Texture2D, context, Interface::Context) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+      // LOW_CODEGEN::END::CUSTOM:SETTER_context
     }
 
     Low::Util::Name Texture2D::get_name() const
@@ -139,11 +158,29 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
-    Texture2D Texture2D::make(Util::Name p_Name,
-                              Backend::ImageResourceCreateParams &p_Params)
+    Texture2D Texture2D::make(Util::Name p_Name, Interface::Context p_Context,
+                              Util::Resource::Image2D &p_Image2d)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-      return 0;
+      Texture2D l_Texture2D = Texture2D::make(p_Name);
+      l_Texture2D.set_context(p_Context);
+
+      Backend::ImageResourceCreateParams l_Params;
+      l_Params.context = &p_Context.get_context();
+      l_Params.createImage = true;
+      l_Params.depth = false;
+      l_Params.format = Backend::ImageFormat::RGBA8_UNORM;
+      l_Params.writable = false;
+      l_Params.imageDataSize = p_Image2d.data[0].size();
+      l_Params.imageData = p_Image2d.data[0].data();
+      l_Params.dimensions = p_Image2d.dimensions[0];
+
+      l_Texture2D.set_image(Resource::Image::make(p_Name, l_Params));
+
+      p_Context.get_global_signature().set_sampler_resource(
+          N(g_Texture2Ds), l_Texture2D.get_index(), l_Texture2D.get_image());
+
+      return l_Texture2D;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 

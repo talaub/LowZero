@@ -2,6 +2,6 @@ testgp:
   vertex: test.vert
   fragment: test.frag
   cull_mode: back
-  front_face: counter_clockwise
+  front_face: clockwise
   polygon_mode: fill
   translucency: false

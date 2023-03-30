@@ -54,7 +54,6 @@ namespace Low {
         const aiScene *l_AiScene = l_Importer.ReadFile(
             p_FilePath.c_str(), aiProcess_CalcTangentSpace |
                                     aiProcess_FixInfacingNormals |
-                                    aiProcess_GenUVCoords |
                                     aiProcess_Triangulate | aiProcess_FlipUVs);
 
         LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
@@ -69,6 +68,12 @@ namespace Low {
           p_Mesh.vertices[i].position = {l_AiMesh->mVertices[i].x,
                                          l_AiMesh->mVertices[i].y,
                                          l_AiMesh->mVertices[i].z};
+        }
+
+        for (uint32_t i = 0u; i < l_AiMesh->mNumVertices; ++i) {
+          p_Mesh.vertices[i].texture_coordinates = {
+              l_AiMesh->mTextureCoords[0][i].x,
+              l_AiMesh->mTextureCoords[0][i].y};
         }
 
         LOW_ASSERT(l_AiMesh->HasFaces(), "Mesh has no index information");

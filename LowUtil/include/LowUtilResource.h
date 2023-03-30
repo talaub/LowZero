@@ -18,6 +18,7 @@ namespace Low {
       struct Vertex
       {
         Math::Vector3 position;
+        Math::Vector2 texture_coordinates;
       };
 
       struct Mesh

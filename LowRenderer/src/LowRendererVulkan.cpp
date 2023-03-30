@@ -1182,46 +1182,44 @@ namespace Low {
                                &l_Barrier);
         }
 
-        static void perform_resource_barrier_sampler(
-            Backend::Context &p_Context,
-            Backend::PipelineResourceBinding &p_Binding)
+        static void
+        perform_resource_barrier_sampler(Backend::Context &p_Context,
+                                         Resource::Image p_Image)
         {
-          Util::Handle l_Handle(p_Binding.boundResourceHandleId);
-          Resource::Image l_Image(l_Handle.get_id());
-          if (!l_Image.is_alive()) {
+          if (!p_Image.is_alive()) {
             return;
           }
 
           VkCommandBuffer l_CommandBuffer =
               ContextHelper::get_current_commandbuffer(p_Context);
 
-          if (l_Image.get_image().vk.m_State ==
+          if (p_Image.get_image().vk.m_State ==
               ImageState::SHADER_READ_ONLY_OPTIMAL) {
             return;
-          } else if (l_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
+          } else if (p_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
             transition_image_barrier(
-                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
+                l_CommandBuffer, p_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0,
                 VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-          } else if (l_Image.get_image().vk.m_State ==
+          } else if (p_Image.get_image().vk.m_State ==
                      ImageState::DESTINATION_OPTIMAL) {
-            transition_image_barrier(l_CommandBuffer, l_Image.get_image(),
+            transition_image_barrier(l_CommandBuffer, p_Image.get_image(),
                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                      0, VK_ACCESS_SHADER_READ_BIT,
                                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-          } else if (l_Image.get_image().vk.m_State == ImageState::GENERAL) {
+          } else if (p_Image.get_image().vk.m_State == ImageState::GENERAL) {
             transition_image_barrier(
-                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_GENERAL,
+                l_CommandBuffer, p_Image.get_image(), VK_IMAGE_LAYOUT_GENERAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-          } else if (l_Image.get_image().vk.m_State ==
+          } else if (p_Image.get_image().vk.m_State ==
                      ImageState::PRESENT_SRC) {
-            transition_image_barrier(l_CommandBuffer, l_Image.get_image(),
+            transition_image_barrier(l_CommandBuffer, p_Image.get_image(),
                                      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                      0, VK_ACCESS_SHADER_READ_BIT,
@@ -1230,33 +1228,30 @@ namespace Low {
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
-          l_Image.get_image().vk.m_State = ImageState::SHADER_READ_ONLY_OPTIMAL;
+          p_Image.get_image().vk.m_State = ImageState::SHADER_READ_ONLY_OPTIMAL;
         }
 
-        static void perform_resource_barrier_image(
-            Backend::Context &p_Context,
-            Backend::PipelineResourceBinding &p_Binding)
+        static void perform_resource_barrier_image(Backend::Context &p_Context,
+                                                   Resource::Image p_Image)
         {
-          Util::Handle l_Handle(p_Binding.boundResourceHandleId);
-          Resource::Image l_Image(l_Handle.get_id());
-          if (!l_Image.is_alive()) {
+          if (!p_Image.is_alive()) {
             return;
           }
 
           VkCommandBuffer l_CommandBuffer =
               ContextHelper::get_current_commandbuffer(p_Context);
 
-          if (l_Image.get_image().vk.m_State == ImageState::GENERAL) {
+          if (p_Image.get_image().vk.m_State == ImageState::GENERAL) {
             return;
-          } else if (l_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
+          } else if (p_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
             transition_image_barrier(
-                l_CommandBuffer, l_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
+                l_CommandBuffer, p_Image.get_image(), VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_GENERAL, 0, VK_ACCESS_SHADER_WRITE_BIT,
                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
-          } else if (l_Image.get_image().vk.m_State ==
+          } else if (p_Image.get_image().vk.m_State ==
                      ImageState::SHADER_READ_ONLY_OPTIMAL) {
-            transition_image_barrier(l_CommandBuffer, l_Image.get_image(),
+            transition_image_barrier(l_CommandBuffer, p_Image.get_image(),
                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                      VK_IMAGE_LAYOUT_GENERAL,
                                      VK_ACCESS_SHADER_READ_BIT,
@@ -1266,7 +1261,7 @@ namespace Low {
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
-          l_Image.get_image().vk.m_State = ImageState::GENERAL;
+          p_Image.get_image().vk.m_State = ImageState::GENERAL;
         }
       } // namespace BarrierHelper
 
@@ -2146,7 +2141,9 @@ namespace Low {
                 p_Params.resourceDescriptions[i];
 
             p_Signature.resources[i].description = i_Resource;
-            p_Signature.resources[i].boundResourceHandleId = ~0ull;
+            p_Signature.resources[i].boundResourceHandleId =
+                (uint64_t *)Util::Memory::main_allocator()->allocate(
+                    i_Resource.arraySize * sizeof(uint64_t));
 
             VkDescriptorSetLayoutBinding i_Binding;
             i_Binding.binding = i;
@@ -2219,7 +2216,10 @@ namespace Low {
                              p_Params.resourceDescriptionCount);
 
           for (uint32_t i = 0u; i < p_Params.resourceDescriptionCount; ++i) {
-            l_InternalSignature.m_Bindings[i].boundResourceHandleId = ~0ull;
+            l_InternalSignature.m_Bindings[i].boundResourceHandleId =
+                (uint64_t *)Util::Memory::main_allocator()->allocate(
+                    sizeof(uint64_t) *
+                    p_Params.resourceDescriptions[i].arraySize);
             l_InternalSignature.m_Bindings[i].description =
                 p_Params.resourceDescriptions[i];
           }
@@ -2295,11 +2295,12 @@ namespace Low {
         LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
                    "Resource array index out of bounds");
 
-        l_Resource.boundResourceHandleId = p_BufferResource.get_id();
+        l_Resource.boundResourceHandleId[p_ArrayIndex] =
+            p_BufferResource.get_id();
         p_Signature.context->vk
             .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
             .m_Bindings[l_ResourceIndex]
-            .boundResourceHandleId = p_BufferResource.get_id();
+            .boundResourceHandleId[p_ArrayIndex] = p_BufferResource.get_id();
 
         for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
           VkDescriptorBufferInfo i_BufferInfo;
@@ -2343,11 +2344,12 @@ namespace Low {
         LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
                    "Resource array index out of bounds");
 
-        l_Resource.boundResourceHandleId = p_BufferResource.get_id();
+        l_Resource.boundResourceHandleId[p_ArrayIndex] =
+            p_BufferResource.get_id();
         p_Signature.context->vk
             .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
             .m_Bindings[l_ResourceIndex]
-            .boundResourceHandleId = p_BufferResource.get_id();
+            .boundResourceHandleId[p_ArrayIndex] = p_BufferResource.get_id();
 
         for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
           VkDescriptorBufferInfo i_BufferInfo;
@@ -2391,11 +2393,12 @@ namespace Low {
         LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
                    "Resource array index out of bounds");
 
-        l_Resource.boundResourceHandleId = p_ImageResource.get_id();
+        l_Resource.boundResourceHandleId[p_ArrayIndex] =
+            p_ImageResource.get_id();
         p_Signature.context->vk
             .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
             .m_Bindings[l_ResourceIndex]
-            .boundResourceHandleId = p_ImageResource.get_id();
+            .boundResourceHandleId[p_ArrayIndex] = p_ImageResource.get_id();
 
         for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
           VkDescriptorImageInfo i_ImageInfo;
@@ -2439,11 +2442,12 @@ namespace Low {
         LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
                    "Resource array index out of bounds");
 
-        l_Resource.boundResourceHandleId = p_ImageResource.get_id();
+        l_Resource.boundResourceHandleId[p_ArrayIndex] =
+            p_ImageResource.get_id();
         p_Signature.context->vk
             .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
             .m_Bindings[l_ResourceIndex]
-            .boundResourceHandleId = p_ImageResource.get_id();
+            .boundResourceHandleId[p_ArrayIndex] = p_ImageResource.get_id();
 
         for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
           VkDescriptorImageInfo i_ImageInfo;
@@ -2907,12 +2911,16 @@ namespace Low {
             Backend::PipelineResourceBinding &i_Binding =
                 l_InternalSignature.m_Bindings[j];
             if (i_Binding.description.type == Backend::ResourceType::IMAGE) {
-              BarrierHelper::perform_resource_barrier_image(p_Context,
-                                                            i_Binding);
+              for (uint32_t i = 0u; i < i_Binding.description.arraySize; ++i) {
+                BarrierHelper::perform_resource_barrier_image(
+                    p_Context, i_Binding.boundResourceHandleId[i]);
+              }
             } else if (i_Binding.description.type ==
                        Backend::ResourceType::SAMPLER) {
-              BarrierHelper::perform_resource_barrier_sampler(p_Context,
-                                                              i_Binding);
+              for (uint32_t i = 0u; i < i_Binding.description.arraySize; ++i) {
+                BarrierHelper::perform_resource_barrier_sampler(
+                    p_Context, i_Binding.boundResourceHandleId[i]);
+              }
             }
           }
         }
@@ -3189,8 +3197,8 @@ namespace Low {
         p_ImGuiImage.context = p_Image.context;
 
         p_ImGuiImage.vk.m_DescriptorSets =
-            (VkDescriptorSet *)Util::Memory::default_general_purpose_allocator()
-                ->allocate(sizeof(VkDescriptorSet) * l_FramesInFlight);
+            (VkDescriptorSet *)Util::Memory::main_allocator()->allocate(
+                sizeof(VkDescriptorSet) * l_FramesInFlight);
 
         // TODO: Transition imag eto correct layout after resize
 
@@ -3203,7 +3211,7 @@ namespace Low {
 
       void vk_imgui_image_cleanup(Backend::ImGuiImage &p_ImGuiImage)
       {
-        Util::Memory::default_general_purpose_allocator()->deallocate(
+        Util::Memory::main_allocator()->deallocate(
             p_ImGuiImage.vk.m_DescriptorSets);
       }
 

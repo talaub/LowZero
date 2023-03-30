@@ -15,6 +15,8 @@ types:
     source_imports:
       - LowRendererInterface.h
       - LowRendererTexture2D.h
+      - LowRendererMaterial.h
+      - LowUtilResource.h
     properties:
       context:
         type: Backend::Context
@@ -27,6 +29,10 @@ types:
         handle: true
         private_setter: true
       frame_info_buffer:
+        type: Resource::Buffer
+        handle: true
+        private_setter: true
+      material_data_buffer:
         type: Resource::Buffer
         handle: true
         private_setter: true

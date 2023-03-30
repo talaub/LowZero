@@ -6,6 +6,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
+#include "LowUtilVariant.h"
 
 #include "imgui.h"
 
@@ -152,6 +153,8 @@ namespace Low {
 
     Interface::ImGuiImage g_MainRenderFlowImGuiImage;
 
+    Texture2D g_Texture;
+    Texture2D g_Texture2;
     Mesh g_Mesh;
 
     static Mesh upload_mesh(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
@@ -218,6 +221,134 @@ namespace Low {
       */
     }
 
+    static uint32_t
+    material_type_place_properties_vector4(MaterialType p_MaterialType,
+                                           uint32_t p_StartOffset)
+    {
+      uint32_t l_CurrentOffset = p_StartOffset;
+
+      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+        if (i_Property.offset != ~0u) {
+          // Skip properties that have already been placed
+          continue;
+        }
+        if (i_Property.type != MaterialTypePropertyType::VECTOR4) {
+          continue;
+        }
+
+        i_Property.offset = l_CurrentOffset;
+        l_CurrentOffset += sizeof(Math::Vector4);
+      }
+
+      return l_CurrentOffset;
+    }
+
+    uint32_t
+    material_type_place_properties_vector2(MaterialType p_MaterialType,
+                                           uint32_t p_StartOffset,
+                                           Util::List<uint32_t> &p_FreeSingles)
+    {
+      uint32_t l_CurrentOffset = p_StartOffset;
+      uint32_t l_Vector2Count = 0;
+
+      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+        if (i_Property.offset != ~0u) {
+          // Skip properties that have already been placed
+          continue;
+        }
+        if (i_Property.type != MaterialTypePropertyType::VECTOR2) {
+          continue;
+        }
+
+        i_Property.offset = l_CurrentOffset;
+        l_CurrentOffset += sizeof(Math::Vector2);
+        l_Vector2Count++;
+      }
+
+      if (l_Vector2Count % 2 == 1) {
+        // If there has been in odd number of vector2s that means that there are
+        // two single fields free to be filled later on
+        p_FreeSingles.push_back(l_CurrentOffset);
+        p_FreeSingles.push_back(l_CurrentOffset + sizeof(uint32_t));
+
+        l_CurrentOffset += sizeof(uint32_t) * 2;
+      }
+
+      return l_CurrentOffset;
+    }
+
+    uint32_t
+    material_type_place_properties_vector3(MaterialType p_MaterialType,
+                                           uint32_t p_StartOffset,
+                                           Util::List<uint32_t> &p_FreeSingles)
+    {
+      uint32_t l_CurrentOffset = p_StartOffset;
+
+      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+        if (i_Property.offset != ~0u) {
+          // Skip properties that have already been placed
+          continue;
+        }
+        if (i_Property.type != MaterialTypePropertyType::VECTOR3) {
+          continue;
+        }
+
+        i_Property.offset = l_CurrentOffset;
+        l_CurrentOffset += sizeof(Math::Vector3);
+        p_FreeSingles.push_back(l_CurrentOffset);
+        l_CurrentOffset += sizeof(uint32_t);
+      }
+
+      return l_CurrentOffset;
+    }
+
+    static void
+    material_type_place_properties_single(MaterialType p_MaterialType,
+                                          Util::List<uint32_t> &p_FreeSingles)
+    {
+      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+        if (i_Property.offset != ~0u) {
+          // Skip properties that have already been placed
+          continue;
+        }
+
+        LOW_ASSERT(!(i_Property.type == MaterialTypePropertyType::VECTOR3 ||
+                     i_Property.type == MaterialTypePropertyType::VECTOR4 ||
+                     i_Property.type == MaterialTypePropertyType::VECTOR2),
+                   "Vector material property has not been placed yet");
+
+        LOW_ASSERT(!p_FreeSingles.empty(), "No space left in material info");
+
+        uint32_t i_Offset = p_FreeSingles.front();
+        p_FreeSingles.erase_first(i_Offset);
+
+        i_Property.offset = i_Offset;
+      }
+    }
+
+    static void material_type_place_properties(MaterialType p_MaterialType)
+    {
+      uint32_t l_CurrentOffset = 0u;
+      Util::List<uint32_t> l_FreeSingles;
+
+      l_CurrentOffset = material_type_place_properties_vector4(p_MaterialType,
+                                                               l_CurrentOffset);
+
+      l_CurrentOffset = material_type_place_properties_vector2(
+          p_MaterialType, l_CurrentOffset, l_FreeSingles);
+
+      l_CurrentOffset = material_type_place_properties_vector3(
+          p_MaterialType, l_CurrentOffset, l_FreeSingles);
+
+      for (; l_CurrentOffset <
+             LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4);
+           l_CurrentOffset += sizeof(Math::Vector4)) {
+        l_FreeSingles.push_back(l_CurrentOffset);
+      }
+
+      material_type_place_properties_single(p_MaterialType, l_FreeSingles);
+    }
+
     static void load_material_types()
     {
       Util::String l_PipelineDirectory = g_ConfigPath + "/material_types";
@@ -239,6 +370,33 @@ namespace Low {
 
             i_MaterialType.set_gbuffer_pipeline(
                 get_graphics_pipeline_config(i_GBufferPipelineName));
+
+            uint32_t i_CurrentOffset = 0u;
+
+            if (it->second["properties"]) {
+              for (auto pit = it->second["properties"].begin();
+                   pit != it->second["properties"].end(); ++pit) {
+                Util::Name i_PropertyName = LOW_YAML_AS_NAME(pit->first);
+                Util::String i_PropertyTypeString =
+                    LOW_YAML_AS_STRING(pit->second["type"]);
+
+                MaterialTypeProperty i_Property;
+                i_Property.offset = ~0u;
+                i_Property.name = i_PropertyName;
+
+                if (i_PropertyTypeString == "Vector4") {
+                  i_Property.type = MaterialTypePropertyType::VECTOR4;
+                } else if (i_PropertyTypeString == "Texture2D") {
+                  i_Property.type = MaterialTypePropertyType::TEXTURE2D;
+                } else {
+                  LOW_ASSERT(false, "Unknown materialtype property type");
+                }
+
+                i_MaterialType.get_properties().push_back(i_Property);
+              }
+            }
+
+            material_type_place_properties(i_MaterialType);
           }
         }
       }
@@ -366,6 +524,20 @@ namespace Low {
                                sizeof(uint32_t), 1024u);
 
       {
+        Util::Resource::Image2D l_Image;
+        Util::Resource::load_image2d(
+            Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.ktx", l_Image);
+        g_Texture = Texture2D::make(N(TestTexture), g_Context, l_Image);
+      }
+      {
+        Util::Resource::Image2D l_Image;
+        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
+                                         "/assets/img2d/out_rust.ktx",
+                                     l_Image);
+        g_Texture2 = Texture2D::make(N(TestTextureRust), g_Context, l_Image);
+      }
+
+      {
         Util::Resource::Mesh l_Mesh;
         Util::Resource::load_mesh("C:\\Users\\tlaub\\Desktop\\cube.glb",
                                   l_Mesh);
@@ -412,8 +584,12 @@ namespace Low {
       }
 
       {
-        Material l_Material = Material::make(N(TestMat));
+        Material l_Material = Material::make(N(TestMat), g_Context);
         l_Material.set_material_type(MaterialType::living_instances()[0]);
+        l_Material.set_property(N(albedo_color), Util::Variant(Math::Vector4(
+                                                     0.2f, 0.8f, 1.0f, 1.0f)));
+
+        l_Material.set_property(N(albedo_map), Util::Variant(g_Texture2));
 
         g_RenderObject = RenderObject::make(N(TestRO));
         g_RenderObject.set_mesh(g_Mesh);

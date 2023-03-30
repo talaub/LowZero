@@ -14,11 +14,28 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    namespace MaterialTypePropertyType {
+      enum Enum
+      {
+        VECTOR4,
+        VECTOR3,
+        VECTOR2,
+        TEXTURE2D
+      };
+    }
+
+    struct MaterialTypeProperty
+    {
+      Util::Name name;
+      uint8_t type;
+      uint32_t offset;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API MaterialTypeData
     {
       GraphicsPipelineConfig gbuffer_pipeline;
+      Util::List<MaterialTypeProperty> properties;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -67,6 +84,9 @@ namespace Low {
 
       GraphicsPipelineConfig &get_gbuffer_pipeline() const;
       void set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value);
+
+      Util::List<MaterialTypeProperty> &get_properties() const;
+      void set_properties(Util::List<MaterialTypeProperty> &p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

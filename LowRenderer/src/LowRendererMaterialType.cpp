@@ -125,6 +125,24 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_pipeline
     }
 
+    Util::List<MaterialTypeProperty> &MaterialType::get_properties() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(MaterialType, properties,
+                      Util::List<MaterialTypeProperty>);
+    }
+    void MaterialType::set_properties(Util::List<MaterialTypeProperty> &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(MaterialType, properties, Util::List<MaterialTypeProperty>) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_properties
+      // LOW_CODEGEN::END::CUSTOM:SETTER_properties
+    }
+
     Low::Util::Name MaterialType::get_name() const
     {
       _LOW_ASSERT(is_alive());

@@ -120,7 +120,7 @@ namespace Low {
       struct PipelineResourceBinding
       {
         PipelineResourceDescription description;
-        uint64_t boundResourceHandleId;
+        uint64_t *boundResourceHandleId;
       };
 
       struct PipelineResourceSignatureCreateParams
