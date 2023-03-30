@@ -19,6 +19,8 @@
 
 #include <microprofile.h>
 
+#include "LowEditorMainWindow.h"
+
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
 {
@@ -34,15 +36,21 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 int main()
 {
+  float delta = 0.004f;
+
   Low::Util::initialize();
 
   Low::Renderer::initialize();
 
+  Low::Editor::initialize();
+
   while (Low::Renderer::window_is_open()) {
     {
-      Low::Renderer::tick(0.0f);
+      Low::Renderer::tick(delta);
 
-      Low::Renderer::late_tick(0.0f);
+      Low::Editor::tick(delta);
+
+      Low::Renderer::late_tick(delta);
     }
 
     MicroProfileFlip(nullptr);

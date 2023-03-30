@@ -20,6 +20,7 @@
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
 #include "LowRendererBuffer.h"
+#include "LowRendererImGuiImage.h"
 
 #include <GLFW/glfw3.h>
 
@@ -1812,6 +1813,14 @@ namespace Low {
       void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
       {
         vk_perform_barriers(*p_Renderpass.context);
+
+        if (p_Renderpass.swapchainRenderpass) {
+          for (Interface::ImGuiImage i_ImGuiImage :
+               Interface::ImGuiImage::ms_LivingInstances) {
+            BarrierHelper::perform_resource_barrier_sampler(
+                *p_Renderpass.context, i_ImGuiImage.get_image());
+          }
+        }
 
         VkRenderPassBeginInfo l_RenderpassInfo{};
         l_RenderpassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

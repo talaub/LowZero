@@ -22,6 +22,7 @@ namespace Low {
       struct LOW_RENDERER_API ImGuiImageData
       {
         Backend::ImGuiImage imgui_image;
+        Resource::Image image;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -73,11 +74,16 @@ namespace Low {
 
         Backend::ImGuiImage &get_imgui_image() const;
 
+        Resource::Image get_image() const;
+
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
         static ImGuiImage make(Util::Name p_Name, Resource::Image p_Image);
         void render(Math::UVector2 &p_Dimensions);
+
+      private:
+        void set_image(Resource::Image p_Value);
       };
     } // namespace Interface
   }   // namespace Renderer

@@ -240,6 +240,10 @@ types:
       imgui_image:
         type: Backend::ImGuiImage
         no_setter: true
+      image:
+        type: Resource::Image
+        private_setter: true
+        handle: true
     functions:
       make:
         static: true

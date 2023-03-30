@@ -116,6 +116,22 @@ namespace Low {
         return TYPE_SOA(ImGuiImage, imgui_image, Backend::ImGuiImage);
       }
 
+      Resource::Image ImGuiImage::get_image() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(ImGuiImage, image, Resource::Image);
+      }
+      void ImGuiImage::set_image(Resource::Image p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // Set new value
+        TYPE_SOA(ImGuiImage, image, Resource::Image) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_image
+        // LOW_CODEGEN::END::CUSTOM:SETTER_image
+      }
+
       Low::Util::Name ImGuiImage::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -136,6 +152,8 @@ namespace Low {
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         ImGuiImage l_ImGuiImage = ImGuiImage::make(p_Name);
+
+        l_ImGuiImage.set_image(p_Image);
 
         Backend::callbacks().imgui_image_create(l_ImGuiImage.get_imgui_image(),
                                                 p_Image.get_image());

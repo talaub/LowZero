@@ -135,7 +135,15 @@ namespace Low {
       uint8_t m_Type;
     };
 
+    struct RenderFlowUpdateData
+    {
+      RenderFlow renderflow;
+      Math::UVector2 dimensions;
+    };
+
     Interface::Context g_Context;
+
+    Util::List<RenderFlowUpdateData> g_PendingRenderFlowUpdates;
 
     RenderObject g_RenderObject;
 
@@ -151,11 +159,19 @@ namespace Low {
     Interface::GraphicsPipeline g_FullscreenPipeline;
     Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
 
-    Interface::ImGuiImage g_MainRenderFlowImGuiImage;
-
     Texture2D g_Texture;
     Texture2D g_Texture2;
     Mesh g_Mesh;
+
+    void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
+                                      Math::UVector2 &p_Dimensions)
+    {
+      RenderFlowUpdateData l_UpdateData;
+      l_UpdateData.renderflow = p_RenderFlow;
+      l_UpdateData.dimensions = p_Dimensions;
+
+      g_PendingRenderFlowUpdates.push_back(l_UpdateData);
+    }
 
     static Mesh upload_mesh(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
     {
@@ -580,7 +596,7 @@ namespace Low {
         create_fullscreen_pipeline();
 
         g_FullScreenPipelineSignature.set_sampler_resource(
-            N(u_FinalImage), 0, g_MainRenderFlow.get_output_image());
+            N(u_FinalImage), 0, Texture2D::ms_LivingInstances[0].get_image());
       }
 
       {
@@ -602,9 +618,6 @@ namespace Low {
         GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(g_RenderObject);
       }
-
-      g_MainRenderFlowImGuiImage = Interface::ImGuiImage::make(
-          N(MainRenderFlowImGuiImage), g_MainRenderFlow.get_output_image());
     }
 
     void tick(float p_Delta)
@@ -622,24 +635,8 @@ namespace Low {
 
       if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
         g_Context.update_dimensions();
-        for (RenderFlow i_RenderFlow : RenderFlow::ms_LivingInstances) {
-          i_RenderFlow.update_dimensions(g_Context.get_dimensions());
-        }
-
-        g_FullScreenPipelineSignature.set_sampler_resource(
-            N(u_FinalImage), 0, g_MainRenderFlow.get_output_image());
-        create_fullscreen_pipeline();
-
-        g_MainRenderFlowImGuiImage.destroy();
-        g_MainRenderFlowImGuiImage = Interface::ImGuiImage::make(
-            N(MainRenderFlowImGuiImage), g_MainRenderFlow.get_output_image());
-
         return;
       }
-
-      ImGui::Begin("TestViewport");
-      g_MainRenderFlowImGuiImage.render(Math::UVector2(640, 430));
-      ImGui::End();
     }
 
     void late_tick(float p_Delta)
@@ -700,6 +697,15 @@ namespace Low {
       }
 
       g_Context.render_frame();
+
+      if (!g_PendingRenderFlowUpdates.empty()) {
+        g_Context.wait_idle();
+        for (RenderFlowUpdateData &i_Update : g_PendingRenderFlowUpdates) {
+          i_Update.renderflow.update_dimensions(i_Update.dimensions);
+        }
+        g_PendingRenderFlowUpdates.clear();
+        return;
+      }
     }
 
     bool window_is_open()
