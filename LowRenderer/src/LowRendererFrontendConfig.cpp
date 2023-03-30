@@ -44,6 +44,8 @@ namespace Low {
       Util::String l_FormatString = LOW_YAML_AS_STRING(p_Node["format"]);
       if (l_FormatString == "RGBA8_UNORM") {
         p_Config.format = Backend::ImageFormat::RGBA8_UNORM;
+      } else if (l_FormatString == "R8_UNORM") {
+        p_Config.format = Backend::ImageFormat::R8_UNORM;
       } else {
         LOW_ASSERT(false, "Unknown format");
       }

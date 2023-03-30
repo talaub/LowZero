@@ -38,6 +38,24 @@ namespace Low {
         return g_Callbacks;
       }
 
+      uint32_t imageformat_get_pipeline_write_mask(uint8_t p_Format)
+      {
+        switch (p_Format) {
+        case ImageFormat::BGRA8_SRGB:
+        case ImageFormat::BGRA8_UNORM:
+        case ImageFormat::RGBA32_SFLOAT:
+        case ImageFormat::RGBA8_UNORM:
+          return LOW_RENDERER_COLOR_WRITE_BIT_RED |
+                 LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
+                 LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
+                 LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
+        case ImageFormat::R8_UNORM:
+          return LOW_RENDERER_COLOR_WRITE_BIT_RED;
+        default:
+          LOW_ASSERT(false, "Unknown image format");
+          return 0u;
+        }
+      }
     } // namespace Backend
   }   // namespace Renderer
 } // namespace Low

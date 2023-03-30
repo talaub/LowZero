@@ -2,7 +2,7 @@ LowRenderer:
   Context: 1
   Renderpass: 8
   PipelineResourceSignature: 8
-  Image: 8
+  Image: 16
   Buffer: 8
   ImGuiImage: 4
   ComputePipeline: 16

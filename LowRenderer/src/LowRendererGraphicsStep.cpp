@@ -389,7 +389,7 @@ namespace Low {
       l_Params.clearDepthColor = {1.0f, 0.0f};
 
       for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
-        l_Params.clearColors.push_back({0.0f, 0.5f, 1.0f, 1.0f});
+        l_Params.clearColors.push_back({0.0f, 0.0f, 0.0f, 1.0f});
 
         if (get_config().get_rendertargets()[i].resourceScope ==
             ResourceBindScope::RENDERFLOW) {
@@ -429,15 +429,27 @@ namespace Low {
         i_Params.renderpass = get_renderpasses()[p_RenderFlow];
         i_Params.vertexDataAttributeTypes = {
             Backend::VertexAttributeType::VECTOR3,
-            Backend::VertexAttributeType::VECTOR2};
+            Backend::VertexAttributeType::VECTOR2,
+            Backend::VertexAttributeType::VECTOR3};
         for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
-          // TODO: Temp
           Backend::GraphicsPipelineColorTarget i_ColorTarget;
-          i_ColorTarget.blendEnable = false;
-          i_ColorTarget.wirteMask = LOW_RENDERER_COLOR_WRITE_BIT_RED |
-                                    LOW_RENDERER_COLOR_WRITE_BIT_GREEN |
-                                    LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
-                                    LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
+
+          if (get_config().get_rendertargets()[i].resourceScope ==
+              ResourceBindScope::RENDERFLOW) {
+            Resource::Image i_Image =
+                p_RenderFlow.get_resources().get_image_resource(
+                    get_config().get_rendertargets()[i].resourceName);
+            LOW_ASSERT(i_Image.is_alive(),
+                       "Could not find rendertarget image resource");
+
+            i_ColorTarget.wirteMask =
+                Backend::imageformat_get_pipeline_write_mask(
+                    i_Image.get_image().format);
+          } else {
+            LOW_ASSERT(false, "Unsupported rendertarget resource scope");
+          }
+
+          i_ColorTarget.blendEnable = true;
           i_Params.colorTargets.push_back(i_ColorTarget);
         }
 

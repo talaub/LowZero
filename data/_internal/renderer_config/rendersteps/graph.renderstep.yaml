@@ -1,5 +1,9 @@
 type: graphics
 rendertargets:
   - renderflow:GBufferAlbedo
+  - renderflow:GBufferSurfaceNormals
+  - renderflow:GBufferNormals
+  - renderflow:GBufferMetalness
+  - renderflow:GBufferRoughness
 pipelines:
   - name: testgp

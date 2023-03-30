@@ -62,18 +62,21 @@ namespace Low {
 
         LOW_ASSERT(l_AiMesh->HasPositions(),
                    "Mesh has no position information");
+        LOW_ASSERT(l_AiMesh->HasNormals(), "Mesh has no normal information");
 
         p_Mesh.vertices.resize(l_AiMesh->mNumVertices);
         for (uint32_t i = 0u; i < l_AiMesh->mNumVertices; ++i) {
           p_Mesh.vertices[i].position = {l_AiMesh->mVertices[i].x,
                                          l_AiMesh->mVertices[i].y,
                                          l_AiMesh->mVertices[i].z};
-        }
 
-        for (uint32_t i = 0u; i < l_AiMesh->mNumVertices; ++i) {
           p_Mesh.vertices[i].texture_coordinates = {
               l_AiMesh->mTextureCoords[0][i].x,
               l_AiMesh->mTextureCoords[0][i].y};
+
+          p_Mesh.vertices[i].normal = {l_AiMesh->mNormals[i].x,
+                                       l_AiMesh->mNormals[i].y,
+                                       l_AiMesh->mNormals[i].z};
         }
 
         LOW_ASSERT(l_AiMesh->HasFaces(), "Mesh has no index information");

@@ -28,9 +28,12 @@ namespace Low {
           BGRA8_SRGB,
           BGRA8_UNORM,
           RGBA32_SFLOAT,
-          RGBA8_UNORM
+          RGBA8_UNORM,
+          R8_UNORM
         };
       }
+
+      uint32_t imageformat_get_pipeline_write_mask(uint8_t p_Format);
 
       struct Context;
       struct ImageResource;

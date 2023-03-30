@@ -16,6 +16,7 @@ struct MaterialInfo
 
 layout(location = 0) flat in uint in_InstanceId;
 layout(location = 1) in vec2 in_TextureCoordinates;
+layout(location = 2) in vec3 in_SurfaceNormal;
 
 layout(std140, set = 0, binding = 1) readonly buffer MaterialInfoWrapper
 {
@@ -29,13 +30,25 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectInfoWrapper
   ObjectInfo u_RenderObjects[];
 };
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 o_Albedo;
+layout(location = 1) out vec4 o_SurfaceNormal;
+layout(location = 2) out vec4 o_Normal;
+layout(location = 3) out vec4 o_Metalness;
+layout(location = 4) out vec4 o_Roughness;
 void main()
 {
   uint l_MaterialIndex = u_RenderObjects[in_InstanceId].material_index;
   uint l_TextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.x);
 
-  outColor = g_MaterialInfos[l_MaterialIndex].v0;
-  outColor =
+  o_Albedo =
       vec4(texture(g_Texture2Ds[l_TextureId], in_TextureCoordinates).xyz, 1.0);
+
+  o_SurfaceNormal = vec4(vec3((in_SurfaceNormal.x + 1.0) / 2.0,
+                              (in_SurfaceNormal.y + 1.0) / 2.0,
+                              (in_SurfaceNormal.z + 1.0) / 2.0),
+                         1.0);
+
+  o_Normal = o_SurfaceNormal;
+  o_Metalness = vec4(vec3(0.2), 1.0);
+  o_Roughness = vec4(vec3(0.6), 1.0);
 }

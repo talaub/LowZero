@@ -229,6 +229,8 @@ namespace Low {
             return Backend::ImageFormat::RGBA32_SFLOAT;
           case VK_FORMAT_R8G8B8A8_UNORM:
             return Backend::ImageFormat::RGBA8_UNORM;
+          case VK_FORMAT_R8_UNORM:
+            return Backend::ImageFormat::R8_UNORM;
           default:
             LOW_ASSERT(false, "Unknown vk format");
             return 0;
@@ -246,6 +248,8 @@ namespace Low {
             return VK_FORMAT_R32G32B32A32_SFLOAT;
           case Backend::ImageFormat::RGBA8_UNORM:
             return VK_FORMAT_R8G8B8A8_UNORM;
+          case Backend::ImageFormat::R8_UNORM:
+            return VK_FORMAT_R8_UNORM;
           default:
             LOW_ASSERT(false, "Unknown image format");
             return VK_FORMAT_A2B10G10R10_SINT_PACK32;
@@ -690,6 +694,7 @@ namespace Low {
 
           VkPhysicalDeviceFeatures l_DeviceFeatures{};
           l_DeviceFeatures.samplerAnisotropy = VK_TRUE;
+          l_DeviceFeatures.independentBlend = VK_TRUE;
           VkDeviceCreateInfo l_CreateInfo{};
           l_CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
           l_CreateInfo.pQueueCreateInfos = l_QueueCreateInfos.data();

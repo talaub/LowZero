@@ -7,6 +7,38 @@ resources:
     type: image
     format: RGBA8_UNORM
     array_size: 1
+  GBufferSurfaceNormals:
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 1.0
+    type: image
+    format: RGBA8_UNORM
+    array_size: 1
+  GBufferNormals:
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 1.0
+    type: image
+    format: RGBA8_UNORM
+    array_size: 1
+  GBufferMetalness:
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 1.0
+    type: image
+    format: R8_UNORM
+    array_size: 1
+  GBufferRoughness:
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 1.0
+    type: image
+    format: R8_UNORM
+    array_size: 1
 output_image: GBufferAlbedo
 steps:
   - name: test
