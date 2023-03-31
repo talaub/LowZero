@@ -1724,7 +1724,7 @@ namespace Low {
           l_ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
           l_ColorAttachment.loadOp = p_Params.clearTargetColor[i].a > 0.0f
                                          ? VK_ATTACHMENT_LOAD_OP_CLEAR
-                                         : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                                         : VK_ATTACHMENT_LOAD_OP_LOAD;
           l_ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
           l_ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
           l_ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -1745,13 +1745,20 @@ namespace Low {
           l_DepthAttachment.format =
               Helper::vkformat_get_depth(*p_Params.context);
           l_DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-          l_DepthAttachment.loadOp = p_Params.clearDepthColor.g > 0.0f
-                                         ? VK_ATTACHMENT_LOAD_OP_CLEAR
-                                         : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-          l_DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+          bool l_ClearDepth = p_Params.clearDepthColor.g > 0.0f;
+
+          l_DepthAttachment.loadOp = l_ClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                                  : VK_ATTACHMENT_LOAD_OP_LOAD;
+          l_DepthAttachment.storeOp = l_ClearDepth
+                                          ? VK_ATTACHMENT_STORE_OP_STORE
+                                          : VK_ATTACHMENT_STORE_OP_DONT_CARE;
           l_DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
           l_DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-          l_DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+          l_DepthAttachment.initialLayout =
+              l_ClearDepth
+                  ? VK_IMAGE_LAYOUT_UNDEFINED
+                  : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
           l_DepthAttachment.finalLayout =
               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
