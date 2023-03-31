@@ -175,6 +175,9 @@ namespace Low {
               static_cast<uint8_t>(l_Params.vertexDataAttributeTypes.size());
           l_BeParams.vertexDataAttributesType =
               l_Params.vertexDataAttributeTypes.data();
+          l_BeParams.depthTest = l_Params.depthTest;
+          l_BeParams.depthWrite = l_Params.depthWrite;
+          l_BeParams.depthCompareOperation = l_Params.depthCompareOperation;
 
           Backend::callbacks().pipeline_graphics_create(
               p_Pipeline.get_pipeline(), l_BeParams);

@@ -146,6 +146,7 @@ namespace Low {
     Util::List<RenderFlowUpdateData> g_PendingRenderFlowUpdates;
 
     RenderObject g_RenderObject;
+    RenderObject g_RenderObject2;
 
     MeshBuffer g_VertexBuffer;
     MeshBuffer g_IndexBuffer;
@@ -381,11 +382,15 @@ namespace Low {
 
             Util::Name i_GBufferPipelineName =
                 LOW_YAML_AS_NAME(it->second["GBufferPipeline"]);
+            Util::Name i_DepthPipelineName =
+                LOW_YAML_AS_NAME(it->second["DepthPipeline"]);
 
             MaterialType i_MaterialType = MaterialType::make(i_Name);
 
             i_MaterialType.set_gbuffer_pipeline(
                 get_graphics_pipeline_config(i_GBufferPipelineName));
+            i_MaterialType.set_depth_pipeline(
+                get_graphics_pipeline_config(i_DepthPipelineName));
 
             uint32_t i_CurrentOffset = 0u;
 
@@ -494,6 +499,9 @@ namespace Low {
       l_Params.renderpass = g_Context.get_renderpasses()[0];
       l_Params.colorTargets = l_ColorTargets;
       l_Params.vertexDataAttributeTypes = {};
+      l_Params.depthWrite = false;
+      l_Params.depthTest = false;
+      l_Params.depthCompareOperation = Backend::CompareOperation::EQUAL;
 
       if (g_FullscreenPipeline.is_alive()) {
         Interface::PipelineManager::register_graphics_pipeline(
@@ -617,6 +625,30 @@ namespace Low {
 
         GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(g_RenderObject);
+        GraphicsStep(g_MainRenderFlow.get_steps()[2].get_id())
+            .register_renderobject(g_RenderObject);
+      }
+
+      {
+        Material l_Material = Material::make(N(TestMat), g_Context);
+        l_Material.set_material_type(MaterialType::living_instances()[0]);
+        l_Material.set_property(N(albedo_color), Util::Variant(Math::Vector4(
+                                                     0.2f, 0.8f, 1.0f, 1.0f)));
+
+        l_Material.set_property(N(albedo_map), Util::Variant(g_Texture));
+
+        g_RenderObject2 = RenderObject::make(N(TestRO2));
+        g_RenderObject2.set_mesh(g_Mesh);
+        g_RenderObject2.set_material(l_Material);
+        g_RenderObject2.set_world_position(Math::Vector3(-2.0f, 0.0f, -8.0f));
+        g_RenderObject2.set_world_rotation(
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+        g_RenderObject2.set_world_scale(Math::Vector3(1.0f));
+
+        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
+            .register_renderobject(g_RenderObject2);
+        GraphicsStep(g_MainRenderFlow.get_steps()[2].get_id())
+            .register_renderobject(g_RenderObject2);
       }
     }
 
@@ -658,6 +690,8 @@ namespace Low {
         }
 
         g_RenderObject.set_world_rotation(
+            Math::VectorUtil::from_euler(l_RotationEuler));
+        g_RenderObject2.set_world_rotation(
             Math::VectorUtil::from_euler(l_RotationEuler));
       }
 

@@ -151,9 +151,7 @@ namespace Low {
                                   RenderpassCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-        LOW_ASSERT(!p_Params.clearColors.empty() &&
-                       p_Params.clearColors.size() ==
-                           p_Params.renderTargets.size(),
+        LOW_ASSERT(p_Params.clearColors.size() == p_Params.renderTargets.size(),
                    "If clear is enabled you have to submit the same amount of "
                    "clearcolors as rendertargets");
 
@@ -163,6 +161,9 @@ namespace Low {
         l_Params.context = &p_Params.context.get_context();
         l_Params.clearDepthColor = p_Params.clearDepthColor;
         l_Params.useDepth = p_Params.useDepth;
+        if (p_Params.useDepth) {
+          l_Params.depthRenderTarget = &p_Params.depthRenderTarget.get_image();
+        }
         l_Params.dimensions = p_Params.dimensions;
         l_Params.clearTargetColor = p_Params.clearColors.data();
         l_Params.renderTargetCount =

@@ -1,5 +1,6 @@
 mantest:
   GBufferPipeline: testgp
+  DepthPipeline: testgp_depth
   properties:
     albedo_color:
       type: Vector4

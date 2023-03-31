@@ -158,6 +158,7 @@ types:
       - LowRendererFrontendConfig.h
     source_imports:
       - LowUtilString.h
+      - LowRendererBackend.h
     properties:
      resources:
        type: Util::List<ResourceConfig> 
@@ -168,6 +169,24 @@ types:
      rendertargets:
        type: Util::List<PipelineResourceBindingConfig>
        no_setter: true
+     depth_rendertarget:
+       type: PipelineResourceBindingConfig
+       private_setter: true
+     use_depth:
+       type: bool
+       private_setter: true
+     depth_clear:
+       type: bool
+       private_setter: true
+     depth_test:
+       type: bool
+       private_setter: true
+     depth_write:
+       type: bool
+       private_setter: true
+     depth_compare_operation:
+       type: uint8_t
+       private_setter: true
     functions:
       make:
         static: true
@@ -345,6 +364,8 @@ types:
       - LowRendererFrontendConfig.h
     properties:
       gbuffer_pipeline:
+        type: GraphicsPipelineConfig
+      depth_pipeline:
         type: GraphicsPipelineConfig
       properties:
         type: Util::List<MaterialTypeProperty>

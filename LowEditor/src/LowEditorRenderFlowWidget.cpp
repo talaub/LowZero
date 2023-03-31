@@ -39,7 +39,9 @@ namespace Low {
         m_LastSavedDimensions = l_ViewportDimensions;
 
       } else if (m_ImGuiImage.is_alive()) {
-        m_ImGuiImage.render(l_ViewportDimensions);
+        if (l_ViewportDimensions.x > 0u && l_ViewportDimensions.y > 0u) {
+          m_ImGuiImage.render(l_ViewportDimensions);
+        }
       }
 
       ImGui::End();

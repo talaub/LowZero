@@ -1,0 +1,8 @@
+type: graphics
+depth_rendertarget: renderflow:GBufferDepth
+depth_test: true
+depth_write: true
+depth_compare_operation: LESS
+depth_clear: true
+pipelines:
+  - name: testgp_depth

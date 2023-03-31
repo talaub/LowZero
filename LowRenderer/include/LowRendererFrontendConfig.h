@@ -47,6 +47,7 @@ namespace Low {
     {
       uint8_t format;
       uint8_t dimensionType;
+      bool depth;
 
       union
       {

@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "LowUtilName.h"
+#include "vulkan/vulkan_core.h"
 
 #define LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS 4
 
@@ -29,7 +30,10 @@ namespace Low {
           BGRA8_UNORM,
           RGBA32_SFLOAT,
           RGBA8_UNORM,
-          R8_UNORM
+          R8_UNORM,
+          D32_SFLOAT,
+          D32_SFLOAT_S8_UINT,
+          D24_UNORM_S8_UINT
         };
       }
 
@@ -87,6 +91,7 @@ namespace Low {
         uint8_t renderTargetCount;
         Math::Color *clearTargetColor;
         bool useDepth;
+        ImageResource *depthRenderTarget;
         Math::Vector2 clearDepthColor;
         Math::UVector2 dimensions;
       };
@@ -265,6 +270,14 @@ namespace Low {
         };
       }
 
+      namespace CompareOperation {
+        enum Enum
+        {
+          LESS,
+          EQUAL
+        };
+      }
+
       struct Pipeline
       {
         union
@@ -297,6 +310,9 @@ namespace Low {
         GraphicsPipelineColorTarget *colorTargets;
         uint8_t colorTargetCount;
         Renderpass *renderpass;
+        bool depthWrite;
+        bool depthTest;
+        uint8_t depthCompareOperation;
 
         uint8_t *vertexDataAttributesType;
         uint32_t vertexDataAttributeCount;

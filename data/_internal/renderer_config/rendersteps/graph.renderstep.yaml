@@ -5,5 +5,10 @@ rendertargets:
   - renderflow:GBufferNormals
   - renderflow:GBufferMetalness
   - renderflow:GBufferRoughness
+depth_rendertarget: renderflow:GBufferDepth
+depth_test: true
+depth_write: false
+depth_compare_operation: EQUAL
+depth_clear: false
 pipelines:
   - name: testgp

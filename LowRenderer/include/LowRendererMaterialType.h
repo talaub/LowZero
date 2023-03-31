@@ -35,6 +35,7 @@ namespace Low {
     struct LOW_RENDERER_API MaterialTypeData
     {
       GraphicsPipelineConfig gbuffer_pipeline;
+      GraphicsPipelineConfig depth_pipeline;
       Util::List<MaterialTypeProperty> properties;
       Low::Util::Name name;
 
@@ -84,6 +85,9 @@ namespace Low {
 
       GraphicsPipelineConfig &get_gbuffer_pipeline() const;
       void set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value);
+
+      GraphicsPipelineConfig &get_depth_pipeline() const;
+      void set_depth_pipeline(GraphicsPipelineConfig &p_Value);
 
       Util::List<MaterialTypeProperty> &get_properties() const;
       void set_properties(Util::List<MaterialTypeProperty> &p_Value);

@@ -6,6 +6,7 @@
 #include "LowUtilConfig.h"
 
 #include "LowUtilString.h"
+#include "LowRendererBackend.h"
 
 namespace Low {
   namespace Renderer {
@@ -42,6 +43,12 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
 
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, use_depth, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_clear, bool) =
+          false;
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_test, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_write, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -135,6 +142,106 @@ namespace Low {
                       Util::List<PipelineResourceBindingConfig>);
     }
 
+    PipelineResourceBindingConfig &
+    GraphicsStepConfig::get_depth_rendertarget() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
+                      PipelineResourceBindingConfig);
+    }
+    void GraphicsStepConfig::set_depth_rendertarget(
+        PipelineResourceBindingConfig &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
+               PipelineResourceBindingConfig) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_rendertarget
+      // LOW_CODEGEN::END::CUSTOM:SETTER_depth_rendertarget
+    }
+
+    bool GraphicsStepConfig::is_use_depth() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, use_depth, bool);
+    }
+    void GraphicsStepConfig::set_use_depth(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, use_depth, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_use_depth
+      // LOW_CODEGEN::END::CUSTOM:SETTER_use_depth
+    }
+
+    bool GraphicsStepConfig::is_depth_clear() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, depth_clear, bool);
+    }
+    void GraphicsStepConfig::set_depth_clear(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, depth_clear, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_clear
+      // LOW_CODEGEN::END::CUSTOM:SETTER_depth_clear
+    }
+
+    bool GraphicsStepConfig::is_depth_test() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, depth_test, bool);
+    }
+    void GraphicsStepConfig::set_depth_test(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, depth_test, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_test
+      // LOW_CODEGEN::END::CUSTOM:SETTER_depth_test
+    }
+
+    bool GraphicsStepConfig::is_depth_write() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, depth_write, bool);
+    }
+    void GraphicsStepConfig::set_depth_write(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, depth_write, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_write
+      // LOW_CODEGEN::END::CUSTOM:SETTER_depth_write
+    }
+
+    uint8_t GraphicsStepConfig::get_depth_compare_operation() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t);
+    }
+    void GraphicsStepConfig::set_depth_compare_operation(uint8_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_compare_operation
+      // LOW_CODEGEN::END::CUSTOM:SETTER_depth_compare_operation
+    }
+
     Low::Util::Name GraphicsStepConfig::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -190,6 +297,49 @@ namespace Low {
         i_BindConfig.resourceName = LOW_NAME(i_Name.c_str());
 
         l_Config.get_rendertargets().push_back(i_BindConfig);
+      }
+
+      l_Config.set_use_depth(false);
+      l_Config.set_depth_write(false);
+      l_Config.set_depth_test(false);
+      l_Config.set_depth_clear(false);
+      l_Config.set_depth_compare_operation(Backend::CompareOperation::EQUAL);
+
+      if (p_Node["depth_rendertarget"]) {
+        Util::String l_TargetString =
+            LOW_YAML_AS_STRING(p_Node["depth_rendertarget"]);
+        PipelineResourceBindingConfig l_BindConfig;
+        l_BindConfig.resourceScope = ResourceBindScope::LOCAL;
+        Util::String l_Name = l_TargetString;
+
+        if (Util::StringHelper::begins_with(l_TargetString, l_ContextPrefix)) {
+          l_Name = l_TargetString.substr(l_ContextPrefix.length());
+          l_BindConfig.resourceScope = ResourceBindScope::CONTEXT;
+        } else if (Util::StringHelper::begins_with(l_TargetString,
+                                                   l_RenderFlowPrefix)) {
+          l_Name = l_TargetString.substr(l_RenderFlowPrefix.length());
+          l_BindConfig.resourceScope = ResourceBindScope::RENDERFLOW;
+        }
+        l_BindConfig.resourceName = LOW_NAME(l_Name.c_str());
+
+        l_Config.set_depth_rendertarget(l_BindConfig);
+        l_Config.set_use_depth(true);
+
+        l_Config.set_depth_write(p_Node["depth_write"].as<bool>());
+        l_Config.set_depth_test(p_Node["depth_test"].as<bool>());
+        l_Config.set_depth_clear(p_Node["depth_clear"].as<bool>());
+
+        Util::String l_CompareOperationString =
+            LOW_YAML_AS_STRING(p_Node["depth_compare_operation"]);
+        if (l_CompareOperationString == "LESS") {
+          l_Config.set_depth_compare_operation(Backend::CompareOperation::LESS);
+        } else if (l_CompareOperationString == "EQUAL" ||
+                   l_CompareOperationString == "EQUALS") {
+          l_Config.set_depth_compare_operation(
+              Backend::CompareOperation::EQUAL);
+        } else {
+          LOW_ASSERT(false, "Unknown compare operation in configuration");
+        }
       }
 
       return l_Config;

@@ -37,7 +37,7 @@ namespace Low {
       p_Params.createImage = true;
       p_Params.imageData = 0;
       p_Params.imageDataSize = 0;
-      p_Params.depth = false;
+      p_Params.depth = p_Config.image.depth;
       p_Params.format = p_Config.image.format;
       p_Params.writable = true;
 

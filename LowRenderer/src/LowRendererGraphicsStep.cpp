@@ -288,6 +288,8 @@ namespace Low {
         Interface::GraphicsPipeline i_Pipeline = *pit;
         i_Pipeline.bind();
 
+        auto &renderobjects = get_renderobjects()[pit->get_name()];
+
         for (auto mit = get_renderobjects()[pit->get_name()].begin();
              mit != get_renderobjects()[pit->get_name()].end(); ++mit) {
           for (auto it = mit->second.begin(); it != mit->second.end();) {
@@ -319,7 +321,8 @@ namespace Low {
         }
       }
 
-      get_object_matrix_buffers()[p_RenderFlow].set(l_ObjectShaderInfos);
+      get_object_matrix_buffers()[p_RenderFlow].set(
+          (void *)l_ObjectShaderInfos);
 
       uint32_t l_InstanceId = 0;
 
@@ -354,12 +357,14 @@ namespace Low {
     void GraphicsStep::register_renderobject(RenderObject p_RenderObject)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
+
+      MaterialType l_MaterialType =
+          p_RenderObject.get_material().get_material_type();
+
       for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
         GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
-        if (i_Config.name == p_RenderObject.get_material()
-                                 .get_material_type()
-                                 .get_gbuffer_pipeline()
-                                 .name) {
+        if (i_Config.name == l_MaterialType.get_gbuffer_pipeline().name ||
+            i_Config.name == l_MaterialType.get_depth_pipeline().name) {
           get_renderobjects()[i_Config.name][p_RenderObject.get_mesh()]
               .push_back(p_RenderObject);
         }
@@ -385,8 +390,12 @@ namespace Low {
       Interface::RenderpassCreateParams l_Params;
       l_Params.context = get_context();
       l_Params.dimensions = p_RenderFlow.get_dimensions();
-      l_Params.useDepth = false;
-      l_Params.clearDepthColor = {1.0f, 0.0f};
+      l_Params.useDepth = get_config().is_use_depth();
+      if (get_config().is_depth_clear()) {
+        l_Params.clearDepthColor = {1.0f, 1.0f};
+      } else {
+        l_Params.clearDepthColor = {1.0f, 0.0f};
+      }
 
       for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
         l_Params.clearColors.push_back({0.0f, 0.0f, 0.0f, 1.0f});
@@ -403,6 +412,15 @@ namespace Low {
         } else {
           LOW_ASSERT(false, "Unsupported rendertarget resource scope");
         }
+      }
+
+      if (get_config().is_use_depth()) {
+        Resource::Image l_Image =
+            p_RenderFlow.get_resources().get_image_resource(
+                get_config().get_depth_rendertarget().resourceName);
+        LOW_ASSERT(l_Image.is_alive(),
+                   "Could not find rendertarget image resource");
+        l_Params.depthRenderTarget = l_Image;
       }
 
       get_renderpasses()[p_RenderFlow] =
@@ -427,6 +445,10 @@ namespace Low {
         i_Params.vertexShaderPath = i_Config.vertexPath;
         i_Params.fragmentShaderPath = i_Config.fragmentPath;
         i_Params.renderpass = get_renderpasses()[p_RenderFlow];
+        i_Params.depthTest = get_config().is_depth_test();
+        i_Params.depthWrite = get_config().is_depth_write();
+        i_Params.depthCompareOperation =
+            get_config().get_depth_compare_operation();
         i_Params.vertexDataAttributeTypes = {
             Backend::VertexAttributeType::VECTOR3,
             Backend::VertexAttributeType::VECTOR2,

@@ -125,6 +125,22 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_pipeline
     }
 
+    GraphicsPipelineConfig &MaterialType::get_depth_pipeline() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig);
+    }
+    void MaterialType::set_depth_pipeline(GraphicsPipelineConfig &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_pipeline
+      // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline
+    }
+
     Util::List<MaterialTypeProperty> &MaterialType::get_properties() const
     {
       _LOW_ASSERT(is_alive());

@@ -5,3 +5,11 @@ testgp:
   front_face: clockwise
   polygon_mode: fill
   translucency: false
+
+testgp_depth:
+  vertex: test_depth.vert
+  fragment: test_depth.frag
+  cull_mode: back
+  front_face: clockwise
+  polygon_mode: fill
+  translucency: false

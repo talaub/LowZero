@@ -231,6 +231,12 @@ namespace Low {
             return Backend::ImageFormat::RGBA8_UNORM;
           case VK_FORMAT_R8_UNORM:
             return Backend::ImageFormat::R8_UNORM;
+          case VK_FORMAT_D32_SFLOAT:
+            return Backend::ImageFormat::D32_SFLOAT;
+          case VK_FORMAT_D32_SFLOAT_S8_UINT:
+            return Backend::ImageFormat::D32_SFLOAT_S8_UINT;
+          case VK_FORMAT_D24_UNORM_S8_UINT:
+            return Backend::ImageFormat::D24_UNORM_S8_UINT;
           default:
             LOW_ASSERT(false, "Unknown vk format");
             return 0;
@@ -250,6 +256,12 @@ namespace Low {
             return VK_FORMAT_R8G8B8A8_UNORM;
           case Backend::ImageFormat::R8_UNORM:
             return VK_FORMAT_R8_UNORM;
+          case Backend::ImageFormat::D32_SFLOAT:
+            return VK_FORMAT_D32_SFLOAT;
+          case Backend::ImageFormat::D32_SFLOAT_S8_UINT:
+            return VK_FORMAT_D32_SFLOAT_S8_UINT;
+          case Backend::ImageFormat::D24_UNORM_S8_UINT:
+            return VK_FORMAT_D24_UNORM_S8_UINT;
           default:
             LOW_ASSERT(false, "Unknown image format");
             return VK_FORMAT_A2B10G10R10_SINT_PACK32;
@@ -695,6 +707,8 @@ namespace Low {
           VkPhysicalDeviceFeatures l_DeviceFeatures{};
           l_DeviceFeatures.samplerAnisotropy = VK_TRUE;
           l_DeviceFeatures.independentBlend = VK_TRUE;
+          l_DeviceFeatures.fillModeNonSolid = VK_TRUE;
+          l_DeviceFeatures.wideLines = VK_TRUE;
           VkDeviceCreateInfo l_CreateInfo{};
           l_CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
           l_CreateInfo.pQueueCreateInfos = l_QueueCreateInfos.data();
@@ -1677,14 +1691,18 @@ namespace Low {
         p_Renderpass.renderTargetCount = p_Params.renderTargetCount;
         p_Renderpass.useDepth = p_Params.useDepth;
         if (!p_UpdateExisting) {
-          p_Renderpass.renderTargets =
-              (Backend::ImageResource *)Util::Memory::main_allocator()
-                  ->allocate(p_Params.renderTargetCount *
-                             sizeof(Backend::ImageResource));
+          p_Renderpass.renderTargets = nullptr;
+          p_Renderpass.clearTargetColor = nullptr;
+          if (p_Params.renderTargetCount > 0) {
+            p_Renderpass.renderTargets =
+                (Backend::ImageResource *)Util::Memory::main_allocator()
+                    ->allocate(p_Params.renderTargetCount *
+                               sizeof(Backend::ImageResource));
 
-          p_Renderpass.clearTargetColor =
-              (Math::Color *)Util::Memory::main_allocator()->allocate(
-                  p_Params.renderTargetCount * sizeof(Math::Color));
+            p_Renderpass.clearTargetColor =
+                (Math::Color *)Util::Memory::main_allocator()->allocate(
+                    p_Params.renderTargetCount * sizeof(Math::Color));
+          }
         }
 
         Low::Util::List<VkAttachmentDescription> l_Attachments;
@@ -1731,8 +1749,8 @@ namespace Low {
                                          ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                          : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
           l_DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-          l_DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-          l_DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+          l_DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+          l_DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
           l_DepthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
           l_DepthAttachment.finalLayout =
               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
@@ -1802,11 +1820,17 @@ namespace Low {
 
         {
           Util::List<VkImageView> l_Attachments;
-          l_Attachments.resize(p_Params.renderTargetCount);
+          l_Attachments.resize(p_Params.renderTargetCount +
+                               (p_Params.useDepth ? 1 : 0));
 
           for (int i_Iter = 0; i_Iter < p_Params.renderTargetCount; i_Iter++) {
             l_Attachments[i_Iter] =
                 p_Params.renderTargets[i_Iter].vk.m_ImageView;
+          }
+
+          if (p_Params.useDepth) {
+            l_Attachments[p_Params.renderTargetCount] =
+                p_Params.depthRenderTarget->vk.m_ImageView;
           }
 
           VkFramebufferCreateInfo l_FramebufferInfo{};
@@ -2128,7 +2152,14 @@ namespace Low {
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-        if (p_Params.writable) {
+        if (p_Params.depth) {
+          l_UsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                         VK_IMAGE_USAGE_SAMPLED_BIT |
+                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                         VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        }
+
+        if (p_Params.writable && !p_Params.depth) {
           l_UsageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
         }
 
@@ -2783,7 +2814,7 @@ namespace Low {
         // ~l_Rasterizer.lineWidth~ so be set to some float. If the float is
         // larger than 1 then a special GPU feature ~wideLines~ has to be
         // enabled
-        l_Rasterizer.lineWidth = 1.f;
+        l_Rasterizer.lineWidth = 2.f;
         if (p_Params.cullMode == Backend::PipelineRasterizerCullMode::FRONT) {
           l_Rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
         } else if (p_Params.cullMode ==
@@ -2820,9 +2851,24 @@ namespace Low {
         VkPipelineDepthStencilStateCreateInfo l_DepthStencil{};
         l_DepthStencil.sType =
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        l_DepthStencil.depthTestEnable = VK_TRUE;
-        l_DepthStencil.depthWriteEnable = VK_TRUE;
+        l_DepthStencil.depthTestEnable =
+            p_Params.depthTest ? VK_TRUE : VK_FALSE;
+        l_DepthStencil.depthWriteEnable =
+            p_Params.depthWrite ? VK_TRUE : VK_FALSE;
         l_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        if (p_Params.depthTest || p_Params.depthWrite) {
+          switch (p_Params.depthCompareOperation) {
+          case Backend::CompareOperation::LESS:
+            l_DepthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+            break;
+          case Backend::CompareOperation::EQUAL:
+            l_DepthStencil.depthCompareOp = VK_COMPARE_OP_EQUAL;
+            break;
+          default:
+            LOW_ASSERT(false, "Unknown compare operation");
+            break;
+          }
+        }
         l_DepthStencil.depthBoundsTestEnable = VK_FALSE;
         l_DepthStencil.minDepthBounds = 0.0f;
         l_DepthStencil.maxDepthBounds = 1.0f;

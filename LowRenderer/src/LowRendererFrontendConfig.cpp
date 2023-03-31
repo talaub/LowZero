@@ -41,11 +41,22 @@ namespace Low {
         LOW_ASSERT(false, "Unknown dimension type");
       }
 
+      p_Config.depth = false;
+      if (p_Node["depth"]) {
+        p_Config.depth = p_Node["depth"].as<bool>();
+      }
+
       Util::String l_FormatString = LOW_YAML_AS_STRING(p_Node["format"]);
       if (l_FormatString == "RGBA8_UNORM") {
         p_Config.format = Backend::ImageFormat::RGBA8_UNORM;
       } else if (l_FormatString == "R8_UNORM") {
         p_Config.format = Backend::ImageFormat::R8_UNORM;
+      } else if (l_FormatString == "D32_SFLOAT") {
+        p_Config.format = Backend::ImageFormat::D32_SFLOAT;
+      } else if (l_FormatString == "D32_SFLOAT_S8_UINT") {
+        p_Config.format = Backend::ImageFormat::D32_SFLOAT_S8_UINT;
+      } else if (l_FormatString == "D24_UNORM_S8_UINT") {
+        p_Config.format = Backend::ImageFormat::D24_UNORM_S8_UINT;
       } else {
         LOW_ASSERT(false, "Unknown format");
       }

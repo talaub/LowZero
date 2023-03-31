@@ -21,6 +21,12 @@ namespace Low {
       Util::List<ResourceConfig> resources;
       Util::List<GraphicsPipelineConfig> pipelines;
       Util::List<PipelineResourceBindingConfig> rendertargets;
+      PipelineResourceBindingConfig depth_rendertarget;
+      bool use_depth;
+      bool depth_clear;
+      bool depth_test;
+      bool depth_write;
+      uint8_t depth_compare_operation;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -76,11 +82,31 @@ namespace Low {
 
       Util::List<PipelineResourceBindingConfig> &get_rendertargets() const;
 
+      PipelineResourceBindingConfig &get_depth_rendertarget() const;
+
+      bool is_use_depth() const;
+
+      bool is_depth_clear() const;
+
+      bool is_depth_test() const;
+
+      bool is_depth_write() const;
+
+      uint8_t get_depth_compare_operation() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       static GraphicsStepConfig make(Util::Name p_Name,
                                      Util::Yaml::Node &p_Node);
+
+    private:
+      void set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);
+      void set_use_depth(bool p_Value);
+      void set_depth_clear(bool p_Value);
+      void set_depth_test(bool p_Value);
+      void set_depth_write(bool p_Value);
+      void set_depth_compare_operation(uint8_t p_Value);
     };
   } // namespace Renderer
 } // namespace Low

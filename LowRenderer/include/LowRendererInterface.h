@@ -15,6 +15,7 @@ namespace Low {
         Util::List<Resource::Image> renderTargets;
         Util::List<Math::Color> clearColors;
         bool useDepth;
+        Resource::Image depthRenderTarget;
         Math::Vector2 clearDepthColor;
         Math::UVector2 dimensions;
       };
@@ -39,6 +40,9 @@ namespace Low {
         Util::List<Backend::GraphicsPipelineColorTarget> colorTargets;
         Renderpass renderpass;
         Util::List<uint8_t> vertexDataAttributeTypes;
+        bool depthWrite;
+        bool depthTest;
+        uint8_t depthCompareOperation;
       };
 
       namespace PipelineManager {
