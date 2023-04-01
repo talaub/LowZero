@@ -310,6 +310,7 @@ namespace Low {
                 p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
 
             l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
+            l_ObjectShaderInfos[l_ObjectIndex].model_matrix = l_ModelMatrix;
 
             l_ObjectShaderInfos[l_ObjectIndex].material_index =
                 i_RenderObject.get_material().get_index();
@@ -452,6 +453,8 @@ namespace Low {
         i_Params.vertexDataAttributeTypes = {
             Backend::VertexAttributeType::VECTOR3,
             Backend::VertexAttributeType::VECTOR2,
+            Backend::VertexAttributeType::VECTOR3,
+            Backend::VertexAttributeType::VECTOR3,
             Backend::VertexAttributeType::VECTOR3};
         for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
           Backend::GraphicsPipelineColorTarget i_ColorTarget;

@@ -54,6 +54,7 @@ namespace Low {
         const aiScene *l_AiScene = l_Importer.ReadFile(
             p_FilePath.c_str(), aiProcess_CalcTangentSpace |
                                     aiProcess_FixInfacingNormals |
+                                    aiProcess_CalcTangentSpace |
                                     aiProcess_Triangulate | aiProcess_FlipUVs);
 
         LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
@@ -63,6 +64,8 @@ namespace Low {
         LOW_ASSERT(l_AiMesh->HasPositions(),
                    "Mesh has no position information");
         LOW_ASSERT(l_AiMesh->HasNormals(), "Mesh has no normal information");
+        LOW_ASSERT(l_AiMesh->HasTangentsAndBitangents(),
+                   "Mesh has no tanged/bitangent information");
 
         p_Mesh.vertices.resize(l_AiMesh->mNumVertices);
         for (uint32_t i = 0u; i < l_AiMesh->mNumVertices; ++i) {
@@ -77,6 +80,13 @@ namespace Low {
           p_Mesh.vertices[i].normal = {l_AiMesh->mNormals[i].x,
                                        l_AiMesh->mNormals[i].y,
                                        l_AiMesh->mNormals[i].z};
+
+          p_Mesh.vertices[i].tangent = {l_AiMesh->mTangents[i].x,
+                                        l_AiMesh->mTangents[i].y,
+                                        l_AiMesh->mTangents[i].z};
+          p_Mesh.vertices[i].bitangent = {l_AiMesh->mBitangents[i].x,
+                                          l_AiMesh->mBitangents[i].y,
+                                          l_AiMesh->mBitangents[i].z};
         }
 
         LOW_ASSERT(l_AiMesh->HasFaces(), "Mesh has no index information");

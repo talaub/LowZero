@@ -20,6 +20,8 @@ namespace Low {
         Math::Vector3 position;
         Math::Vector2 texture_coordinates;
         Math::Vector3 normal;
+        Math::Vector3 tangent;
+        Math::Vector3 bitangent;
       };
 
       struct Mesh

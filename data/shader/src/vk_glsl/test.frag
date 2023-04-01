@@ -3,6 +3,7 @@
 struct ObjectInfo
 {
   mat4 mvp;
+  mat4 model_matrix;
   uint material_index;
 };
 
@@ -17,6 +18,7 @@ struct MaterialInfo
 layout(location = 0) flat in uint in_InstanceId;
 layout(location = 1) in vec2 in_TextureCoordinates;
 layout(location = 2) in vec3 in_SurfaceNormal;
+layout(location = 3) in mat3 in_TBN;
 
 layout(std140, set = 0, binding = 1) readonly buffer MaterialInfoWrapper
 {
@@ -50,8 +52,15 @@ void main()
                               (in_SurfaceNormal.z + 1.0) / 2.0),
                          1.0);
 
-  o_Normal = vec4(
-      texture(g_Texture2Ds[l_NormalTextureId], in_TextureCoordinates).xyz, 1.0);
+  vec3 l_Normal =
+      texture(g_Texture2Ds[l_NormalTextureId], in_TextureCoordinates).xyz;
+
+  l_Normal = normalize(in_TBN * l_Normal);
+  o_Normal =
+      vec4(normalize(vec3((l_Normal.x + 1.0) / 2.0, (l_Normal.y + 1.0) / 2.0,
+                          (l_Normal.z + 1.0) / 2.0)),
+           1.0);
+
   o_Metalness = vec4(vec3(0.2), 1.0);
   o_Roughness = vec4(vec3(0.6), 1.0);
 }

@@ -24,6 +24,7 @@ namespace Low {
     struct RenderObjectShaderInfo
     {
       alignas(16) Math::Matrix4x4 mvp;
+      alignas(16) Math::Matrix4x4 model_matrix;
       uint32_t material_index;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
