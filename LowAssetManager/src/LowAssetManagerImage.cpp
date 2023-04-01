@@ -1,6 +1,7 @@
 #include "LowAssetManagerImage.h"
 
 #include "LowUtilProfiler.h"
+#include "LowUtilLogger.h"
 
 #include <gli/gli.hpp>
 #include <gli/make_texture.hpp>
@@ -22,14 +23,26 @@ namespace Low {
         int l_Width, l_Height, l_Channels;
 
         const uint8_t *l_Data =
-            stbi_load(p_FilePath.c_str(), &l_Width, &l_Height, &l_Channels, 4);
+            stbi_load(p_FilePath.c_str(), &l_Width, &l_Height, &l_Channels, 0);
 
         p_Image.dimensions.x = l_Width;
         p_Image.dimensions.y = l_Height;
-        p_Image.channels = l_Channels;
+        p_Image.channels = 4;
 
-        p_Image.data.resize(l_Width * l_Height * l_Channels);
-        memcpy(p_Image.data.data(), l_Data, l_Width * l_Height * l_Channels);
+        p_Image.data.resize(l_Width * l_Height * 4);
+
+        for (uint32_t y = 0u; y < l_Height; ++y) {
+          for (uint32_t x = 0u; x < l_Width; ++x) {
+            uint32_t c = 0;
+            for (; c < l_Channels; ++c) {
+              p_Image.data[(((y * l_Width) + x) * 4) + c] =
+                  l_Data[(((y * l_Width) + x) * l_Channels) + c];
+            }
+            for (; c < 4; ++c) {
+              p_Image.data[(((y * l_Width) + x) * 4) + c] = 255;
+            }
+          }
+        }
 
         LOW_PROFILE_END();
       }
@@ -57,7 +70,7 @@ namespace Low {
             Pixel i_Data =
                 *(Pixel *)&p_Image.data.data()[((y * p_Image.dimensions.x) +
                                                 (p_Image.dimensions.x - x)) *
-                                               p_Image.channels];
+                                               4];
 
             gli::extent2d l_Extent;
             l_Extent.x = static_cast<uint32_t>(x);

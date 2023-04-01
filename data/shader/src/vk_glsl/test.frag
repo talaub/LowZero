@@ -38,17 +38,20 @@ layout(location = 4) out vec4 o_Roughness;
 void main()
 {
   uint l_MaterialIndex = u_RenderObjects[in_InstanceId].material_index;
-  uint l_TextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.x);
 
-  o_Albedo =
-      vec4(texture(g_Texture2Ds[l_TextureId], in_TextureCoordinates).xyz, 1.0);
+  uint l_AlbedoTextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.x);
+  uint l_NormalTextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.y);
+
+  o_Albedo = vec4(
+      texture(g_Texture2Ds[l_AlbedoTextureId], in_TextureCoordinates).xyz, 1.0);
 
   o_SurfaceNormal = vec4(vec3((in_SurfaceNormal.x + 1.0) / 2.0,
                               (in_SurfaceNormal.y + 1.0) / 2.0,
                               (in_SurfaceNormal.z + 1.0) / 2.0),
                          1.0);
 
-  o_Normal = o_SurfaceNormal;
+  o_Normal = vec4(
+      texture(g_Texture2Ds[l_NormalTextureId], in_TextureCoordinates).xyz, 1.0);
   o_Metalness = vec4(vec3(0.2), 1.0);
   o_Roughness = vec4(vec3(0.6), 1.0);
 }

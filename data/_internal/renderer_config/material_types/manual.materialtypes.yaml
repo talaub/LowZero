@@ -6,3 +6,5 @@ mantest:
       type: Vector4
     albedo_map:
       type: Texture2D
+    normal_map:
+      type: Texture2D

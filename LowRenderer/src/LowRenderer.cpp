@@ -161,7 +161,9 @@ namespace Low {
     Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
 
     Texture2D g_Texture;
+    Texture2D g_RustNormalTexture;
     Texture2D g_Texture2;
+    Texture2D g_WoodNormalTexture;
     Mesh g_Mesh;
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
@@ -361,6 +363,9 @@ namespace Low {
              LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4);
            l_CurrentOffset += sizeof(Math::Vector4)) {
         l_FreeSingles.push_back(l_CurrentOffset);
+        l_FreeSingles.push_back(l_CurrentOffset + sizeof(float));
+        l_FreeSingles.push_back(l_CurrentOffset + (sizeof(float) * 2));
+        l_FreeSingles.push_back(l_CurrentOffset + (sizeof(float) * 3));
       }
 
       material_type_place_properties_single(p_MaterialType, l_FreeSingles);
@@ -418,6 +423,9 @@ namespace Low {
             }
 
             material_type_place_properties(i_MaterialType);
+
+            auto &props = i_MaterialType.get_properties();
+            LOW_LOG_DEBUG << "T" << LOW_LOG_END;
           }
         }
       }
@@ -556,9 +564,25 @@ namespace Low {
       {
         Util::Resource::Image2D l_Image;
         Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
+                                         "/assets/img2d/wb_normal.ktx",
+                                     l_Image);
+        g_WoodNormalTexture =
+            Texture2D::make(N(WoodBoxNormal), g_Context, l_Image);
+      }
+      {
+        Util::Resource::Image2D l_Image;
+        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
                                          "/assets/img2d/out_rust.ktx",
                                      l_Image);
         g_Texture2 = Texture2D::make(N(TestTextureRust), g_Context, l_Image);
+      }
+      {
+        Util::Resource::Image2D l_Image;
+        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
+                                         "/assets/img2d/rust_normal.ktx",
+                                     l_Image);
+        g_RustNormalTexture =
+            Texture2D::make(N(RustNormalTexture), g_Context, l_Image);
       }
 
       {
@@ -614,6 +638,8 @@ namespace Low {
                                                      0.2f, 0.8f, 1.0f, 1.0f)));
 
         l_Material.set_property(N(albedo_map), Util::Variant(g_Texture2));
+        l_Material.set_property(N(normal_map),
+                                Util::Variant(g_RustNormalTexture));
 
         g_RenderObject = RenderObject::make(N(TestRO));
         g_RenderObject.set_mesh(g_Mesh);
@@ -636,6 +662,8 @@ namespace Low {
                                                      0.2f, 0.8f, 1.0f, 1.0f)));
 
         l_Material.set_property(N(albedo_map), Util::Variant(g_Texture));
+        l_Material.set_property(N(normal_map),
+                                Util::Variant(g_WoodNormalTexture));
 
         g_RenderObject2 = RenderObject::make(N(TestRO2));
         g_RenderObject2.set_mesh(g_Mesh);

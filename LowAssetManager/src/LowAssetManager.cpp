@@ -28,9 +28,10 @@ int main()
   Low::AssetManager::Image::Image2D l_Image;
 
   Low::AssetManager::Image::load_png(
-      "L:\\zero\\data\\raw_assets\\image2d\\low_default.png", l_Image);
+      "L:\\zero\\data\\raw_assets\\image2d\\rustediron2_roughness.png",
+      l_Image);
 
-  Low::AssetManager::Image::process("P:\\data\\assets\\img2d\\default_texture",
+  Low::AssetManager::Image::process("P:\\data\\assets\\img2d\\rust_roughness",
                                     l_Image);
 
   return 0;
