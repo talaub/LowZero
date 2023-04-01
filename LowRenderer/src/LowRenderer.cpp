@@ -110,7 +110,8 @@ namespace Low {
           m_FreeSlots[i_SlotIndex].start = l_SavePoint + p_ElementCount;
         }
 
-        m_Buffer.write(p_DataPtr, p_ElementCount * m_ElementSize, l_SavePoint);
+        m_Buffer.write(p_DataPtr, p_ElementCount * m_ElementSize,
+                       l_SavePoint * m_ElementSize);
 
         return l_SavePoint;
       }
@@ -164,7 +165,8 @@ namespace Low {
     Texture2D g_RustNormalTexture;
     Texture2D g_Texture2;
     Texture2D g_WoodNormalTexture;
-    Mesh g_Mesh;
+    Mesh g_CubeMesh;
+    Mesh g_SphereMesh;
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
                                       Math::UVector2 &p_Dimensions)
@@ -551,9 +553,9 @@ namespace Low {
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 MeshBufferType::VERTEX,
-                                sizeof(Util::Resource::Vertex), 512u);
+                                sizeof(Util::Resource::Vertex), 1024u);
       g_IndexBuffer.initialize(N(IndexBuffer), g_Context, MeshBufferType::INDEX,
-                               sizeof(uint32_t), 1024u);
+                               sizeof(uint32_t), 8192u);
 
       {
         Util::Resource::Image2D l_Image;
@@ -589,7 +591,13 @@ namespace Low {
         Util::Resource::Mesh l_Mesh;
         Util::Resource::load_mesh("C:\\Users\\tlaub\\Desktop\\cube.glb",
                                   l_Mesh);
-        g_Mesh = upload_mesh(N(Cube), l_Mesh);
+        g_CubeMesh = upload_mesh(N(Cube), l_Mesh);
+      }
+      {
+        Util::Resource::Mesh l_Mesh;
+        Util::Resource::load_mesh(
+            Util::String(LOW_DATA_PATH) + "/assets/model/sphere.glb", l_Mesh);
+        g_SphereMesh = upload_mesh(N(Sphere), l_Mesh);
       }
 
       initialize_global_resources();
@@ -642,7 +650,7 @@ namespace Low {
                                 Util::Variant(g_RustNormalTexture));
 
         g_RenderObject = RenderObject::make(N(TestRO));
-        g_RenderObject.set_mesh(g_Mesh);
+        g_RenderObject.set_mesh(g_SphereMesh);
         g_RenderObject.set_material(l_Material);
         g_RenderObject.set_world_position(Math::Vector3(0.0f, 0.0f, -5.0f));
         g_RenderObject.set_world_rotation(
@@ -666,7 +674,7 @@ namespace Low {
                                 Util::Variant(g_WoodNormalTexture));
 
         g_RenderObject2 = RenderObject::make(N(TestRO2));
-        g_RenderObject2.set_mesh(g_Mesh);
+        g_RenderObject2.set_mesh(g_CubeMesh);
         g_RenderObject2.set_material(l_Material);
         g_RenderObject2.set_world_position(Math::Vector3(-2.0f, 0.0f, -8.0f));
         g_RenderObject2.set_world_rotation(
