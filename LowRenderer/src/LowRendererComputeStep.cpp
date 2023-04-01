@@ -131,19 +131,25 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_config
     }
 
-    Util::List<Interface::ComputePipeline> &ComputeStep::get_pipelines() const
+    Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> &
+    ComputeStep::get_pipelines() const
     {
       _LOW_ASSERT(is_alive());
-      return TYPE_SOA(ComputeStep, pipelines,
-                      Util::List<Interface::ComputePipeline>);
+      return TYPE_SOA(
+          ComputeStep, pipelines,
+          SINGLE_ARG(
+              Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>>));
     }
 
-    Util::List<Interface::PipelineResourceSignature> &
+    Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>> &
     ComputeStep::get_signatures() const
     {
       _LOW_ASSERT(is_alive());
-      return TYPE_SOA(ComputeStep, signatures,
-                      Util::List<Interface::PipelineResourceSignature>);
+      return TYPE_SOA(
+          ComputeStep, signatures,
+          SINGLE_ARG(
+              Util::Map<RenderFlow,
+                        Util::List<Interface::PipelineResourceSignature>>));
     }
 
     Interface::Context ComputeStep::get_context() const
@@ -188,8 +194,19 @@ namespace Low {
       l_Step.set_config(p_Config);
       l_Step.set_context(p_Context);
 
-      for (uint32_t i = 0; i < p_Config.get_pipelines().size(); ++i) {
-        ComputePipelineConfig &i_Config = p_Config.get_pipelines()[i];
+      return l_Step;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void ComputeStep::prepare(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
+      Util::Map<RenderFlow, ResourceRegistry> &l_Resources = get_resources();
+      l_Resources[p_RenderFlow].initialize(get_config().get_resources(),
+                                           get_context(), p_RenderFlow);
+
+      for (uint32_t i = 0; i < get_config().get_pipelines().size(); ++i) {
+        ComputePipelineConfig &i_Config = get_config().get_pipelines()[i];
 
         Util::List<Backend::PipelineResourceDescription> i_ResourceDescriptions;
         for (auto it = i_Config.resourceBinding.begin();
@@ -206,43 +223,39 @@ namespace Low {
             LOW_ASSERT(false, "Unknown resource bind type");
           }
 
-          bool i_Found = false;
-          for (auto rit = p_Config.get_resources().begin();
-               rit != p_Config.get_resources().end(); ++rit) {
-            if (rit->name == it->resourceName) {
-              i_Found = true;
-              i_Resource.arraySize = rit->arraySize;
-              break;
+          if (it->resourceScope == ResourceBindScope::LOCAL) {
+            bool i_Found = false;
+            for (auto rit = get_config().get_resources().begin();
+                 rit != get_config().get_resources().end(); ++rit) {
+              if (rit->name == it->resourceName) {
+                i_Found = true;
+                i_Resource.arraySize = rit->arraySize;
+                break;
+              }
             }
+            LOW_ASSERT(i_Found, "Cannot bind resource not found in renderstep");
+          } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
+            i_Resource.arraySize = 1;
+          } else {
+            LOW_ASSERT(false, "Resource bind scope not supported");
           }
-          LOW_ASSERT(i_Found, "Cannot bind resource not found in renderstep");
 
           i_ResourceDescriptions.push_back(i_Resource);
         }
 
-        l_Step.get_signatures().push_back(
-            Interface::PipelineResourceSignature::make(p_Name, p_Context, 1,
-                                                       i_ResourceDescriptions));
+        get_signatures()[p_RenderFlow].push_back(
+            Interface::PipelineResourceSignature::make(
+                get_name(), get_context(), 2, i_ResourceDescriptions));
 
         Interface::PipelineComputeCreateParams l_Params;
-        l_Params.context = p_Context;
+        l_Params.context = get_context();
         l_Params.shaderPath = i_Config.shader;
-        l_Params.signatures = {p_Context.get_global_signature(),
-                               l_Step.get_signatures()[i]};
-        l_Step.get_pipelines().push_back(
-            Interface::ComputePipeline::make(p_Name, l_Params));
+        l_Params.signatures = {get_context().get_global_signature(),
+                               p_RenderFlow.get_resource_signature(),
+                               get_signatures()[p_RenderFlow][i]};
+        get_pipelines()[p_RenderFlow].push_back(
+            Interface::ComputePipeline::make(get_name(), l_Params));
       }
-
-      return l_Step;
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
-    }
-
-    void ComputeStep::prepare(RenderFlow p_RenderFlow)
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
-      Util::Map<RenderFlow, ResourceRegistry> &l_Resources = get_resources();
-      l_Resources[p_RenderFlow].initialize(get_config().get_resources(),
-                                           get_context(), p_RenderFlow);
 
       prepare_signature(p_RenderFlow);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
@@ -267,10 +280,11 @@ namespace Low {
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
         ComputePipelineConfig &i_Config = l_Configs[i];
 
-        Interface::PipelineResourceSignature i_Signature = get_signatures()[i];
+        Interface::PipelineResourceSignature i_Signature =
+            get_signatures()[p_RenderFlow][i];
         i_Signature.commit();
 
-        get_pipelines()[i].bind();
+        get_pipelines()[p_RenderFlow][i].bind();
 
         Math::UVector3 i_DispatchDimensions;
         if (i_Config.dispatchConfig.dimensionType ==
@@ -325,14 +339,36 @@ namespace Low {
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
         ComputePipelineConfig &i_Config = l_Configs[i];
 
-        Interface::PipelineResourceSignature i_Signature = get_signatures()[i];
+        Interface::PipelineResourceSignature i_Signature =
+            get_signatures()[p_RenderFlow][i];
         for (auto it = i_Config.resourceBinding.begin();
              it != i_Config.resourceBinding.end(); ++it) {
           if (it->bindType == ResourceBindType::IMAGE) {
-            i_Signature.set_image_resource(
-                it->resourceName, 0,
-                get_resources()[p_RenderFlow].get_image_resource(
-                    it->resourceName));
+            Resource::Image i_Image;
+
+            if (it->resourceScope == ResourceBindScope::LOCAL) {
+              i_Image = get_resources()[p_RenderFlow].get_image_resource(
+                  it->resourceName);
+            } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
+              i_Image = p_RenderFlow.get_resources().get_image_resource(
+                  it->resourceName);
+            } else {
+              LOW_ASSERT(false, "Resource bind scope not supported");
+            }
+            i_Signature.set_image_resource(it->resourceName, 0, i_Image);
+          } else if (it->bindType == ResourceBindType::SAMPLER) {
+            Resource::Image i_Image;
+
+            if (it->resourceScope == ResourceBindScope::LOCAL) {
+              i_Image = get_resources()[p_RenderFlow].get_image_resource(
+                  it->resourceName);
+            } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
+              i_Image = p_RenderFlow.get_resources().get_image_resource(
+                  it->resourceName);
+            } else {
+              LOW_ASSERT(false, "Resource bind scope not supported");
+            }
+            i_Signature.set_sampler_resource(it->resourceName, 0, i_Image);
           } else {
             LOW_ASSERT(false, "Unsupported resource bind type");
           }

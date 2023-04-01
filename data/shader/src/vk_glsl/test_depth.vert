@@ -13,7 +13,7 @@ layout(location = 2) in vec3 inSurfaceNormal;
 layout(location = 3) in vec3 inTangent;
 layout(location = 4) in vec3 inBitangent;
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInfoWrapper
+layout(std140, set = 2, binding = 0) readonly buffer ObjectInfoWrapper
 {
   ObjectInfo u_RenderObjects[];
 };

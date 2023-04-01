@@ -26,6 +26,8 @@ namespace Low {
       Resource::Image output_image;
       Util::List<Util::Handle> steps;
       ResourceRegistry resources;
+      Resource::Buffer frame_info_buffer;
+      Interface::PipelineResourceSignature resource_signature;
       Math::Vector3 camera_position;
       Math::Quaternion camera_rotation;
       float camera_fov;
@@ -90,6 +92,10 @@ namespace Low {
 
       ResourceRegistry &get_resources() const;
 
+      Resource::Buffer get_frame_info_buffer() const;
+
+      Interface::PipelineResourceSignature get_resource_signature() const;
+
       Math::Vector3 &get_camera_position() const;
       void set_camera_position(Math::Vector3 &p_Value);
 
@@ -116,6 +122,8 @@ namespace Low {
     private:
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
+      void set_frame_info_buffer(Resource::Buffer p_Value);
+      void set_resource_signature(Interface::PipelineResourceSignature p_Value);
     };
   } // namespace Renderer
 } // namespace Low

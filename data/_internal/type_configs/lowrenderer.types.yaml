@@ -31,6 +31,14 @@ types:
       resources:
         type: ResourceRegistry
         no_setter: true
+      frame_info_buffer:
+        type: Resource::Buffer
+        handle: true
+        private_setter: true
+      resource_signature:
+        type: Interface::PipelineResourceSignature
+        handle: true
+        private_setter: true
       camera_position:
         type: Math::Vector3
       camera_rotation:
@@ -80,10 +88,10 @@ types:
         handle: true
         private_setter: true
       pipelines:
-        type: Util::List<Interface::ComputePipeline>
+        type: Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>>
         no_setter: true
       signatures:
-        type: Util::List<Interface::PipelineResourceSignature>
+        type: Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>>
         no_setter: true
       context:
         type: Interface::Context

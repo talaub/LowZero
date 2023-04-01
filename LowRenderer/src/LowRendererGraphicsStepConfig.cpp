@@ -283,18 +283,9 @@ namespace Low {
            it != l_RenderTargetsNode.end(); ++it) {
         Util::String i_TargetString = LOW_YAML_AS_STRING((*it));
         PipelineResourceBindingConfig i_BindConfig;
-        i_BindConfig.resourceScope = ResourceBindScope::LOCAL;
-        Util::String i_Name = i_TargetString;
 
-        if (Util::StringHelper::begins_with(i_TargetString, l_ContextPrefix)) {
-          i_Name = i_TargetString.substr(l_ContextPrefix.length());
-          i_BindConfig.resourceScope = ResourceBindScope::CONTEXT;
-        } else if (Util::StringHelper::begins_with(i_TargetString,
-                                                   l_RenderFlowPrefix)) {
-          i_Name = i_TargetString.substr(l_RenderFlowPrefix.length());
-          i_BindConfig.resourceScope = ResourceBindScope::RENDERFLOW;
-        }
-        i_BindConfig.resourceName = LOW_NAME(i_Name.c_str());
+        parse_pipeline_resource_binding(i_BindConfig, i_TargetString,
+                                        Util::String("sampler"));
 
         l_Config.get_rendertargets().push_back(i_BindConfig);
       }
@@ -309,18 +300,9 @@ namespace Low {
         Util::String l_TargetString =
             LOW_YAML_AS_STRING(p_Node["depth_rendertarget"]);
         PipelineResourceBindingConfig l_BindConfig;
-        l_BindConfig.resourceScope = ResourceBindScope::LOCAL;
-        Util::String l_Name = l_TargetString;
 
-        if (Util::StringHelper::begins_with(l_TargetString, l_ContextPrefix)) {
-          l_Name = l_TargetString.substr(l_ContextPrefix.length());
-          l_BindConfig.resourceScope = ResourceBindScope::CONTEXT;
-        } else if (Util::StringHelper::begins_with(l_TargetString,
-                                                   l_RenderFlowPrefix)) {
-          l_Name = l_TargetString.substr(l_RenderFlowPrefix.length());
-          l_BindConfig.resourceScope = ResourceBindScope::RENDERFLOW;
-        }
-        l_BindConfig.resourceName = LOW_NAME(l_Name.c_str());
+        parse_pipeline_resource_binding(l_BindConfig, l_TargetString,
+                                        Util::String("sampler"));
 
         l_Config.set_depth_rendertarget(l_BindConfig);
         l_Config.set_use_depth(true);

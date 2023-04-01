@@ -54,6 +54,7 @@ namespace Low {
         uint8_t renderTargetCount;
         Math::Color *clearTargetColor;
         bool useDepth;
+        uint64_t depthRenderTargetHandleId;
         Math::Vector2 clearDepthColor;
         Math::UVector2 dimensions;
         bool swapchainRenderpass;

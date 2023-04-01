@@ -18,7 +18,7 @@ layout(location = 1) out vec2 o_TextureCoordinates;
 layout(location = 2) out vec3 o_SurfaceNormal;
 layout(location = 3) out mat3 o_TBN;
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInfoWrapper
+layout(std140, set = 2, binding = 0) readonly buffer ObjectInfoWrapper
 {
   ObjectInfo u_RenderObjects[];
 };

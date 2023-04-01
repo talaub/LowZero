@@ -27,7 +27,7 @@ layout(std140, set = 0, binding = 1) readonly buffer MaterialInfoWrapper
 
 layout(set = 0, binding = 2) uniform sampler2D g_Texture2Ds[8];
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInfoWrapper
+layout(std140, set = 2, binding = 0) readonly buffer ObjectInfoWrapper
 {
   ObjectInfo u_RenderObjects[];
 };

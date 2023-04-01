@@ -85,24 +85,49 @@ namespace Low {
       }
     }
 
+    void parse_pipeline_resource_binding(
+        PipelineResourceBindingConfig &p_BindingConfig,
+        Util::String &p_TargetString, Util::String &p_TypeName)
+    {
+      Util::String l_TargetString = p_TargetString;
+
+      Util::String l_ContextPrefix = "context:";
+      Util::String l_RenderFlowPrefix = "renderflow:";
+
+      p_BindingConfig.resourceScope = ResourceBindScope::LOCAL;
+
+      Util::String i_Name = l_TargetString;
+
+      if (Util::StringHelper::begins_with(l_TargetString, l_ContextPrefix)) {
+        i_Name = l_TargetString.substr(l_ContextPrefix.length());
+        p_BindingConfig.resourceScope = ResourceBindScope::CONTEXT;
+      } else if (Util::StringHelper::begins_with(l_TargetString,
+                                                 l_RenderFlowPrefix)) {
+        i_Name = l_TargetString.substr(l_RenderFlowPrefix.length());
+        p_BindingConfig.resourceScope = ResourceBindScope::RENDERFLOW;
+      }
+      p_BindingConfig.resourceName = LOW_NAME(i_Name.c_str());
+
+      if (p_TypeName == "image") {
+        p_BindingConfig.bindType = ResourceBindType::IMAGE;
+      } else if (p_TypeName == "sampler") {
+        p_BindingConfig.bindType = ResourceBindType::SAMPLER;
+      } else {
+        LOW_ASSERT(false, "Unknown resource binding type");
+      }
+    }
+
     static void parse_pipeline_resource_bindings(
         Util::Yaml::Node &p_Node,
         Util::List<PipelineResourceBindingConfig> &p_BindingConfigs)
     {
       for (auto it = p_Node.begin(); it != p_Node.end(); ++it) {
         PipelineResourceBindingConfig i_BindingConfig;
-        i_BindingConfig.resourceName =
-            LOW_NAME(it->first.as<std::string>().c_str());
-
+        Util::String i_TargetString = LOW_YAML_AS_STRING(it->first);
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->second);
 
-        i_BindingConfig.resourceScope = ResourceBindScope::LOCAL;
-
-        if (i_TypeName == "image") {
-          i_BindingConfig.bindType = ResourceBindType::IMAGE;
-        } else {
-          LOW_ASSERT(false, "Unknown resource binding type");
-        }
+        parse_pipeline_resource_binding(i_BindingConfig, i_TargetString,
+                                        i_TypeName);
 
         p_BindingConfigs.push_back(i_BindingConfig);
       }

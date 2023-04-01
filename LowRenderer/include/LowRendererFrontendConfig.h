@@ -136,6 +136,10 @@ namespace Low {
       ComputeDispatchConfig dispatchConfig;
     };
 
+    void parse_pipeline_resource_binding(
+        PipelineResourceBindingConfig &p_BindingConfig,
+        Util::String &p_TargetString, Util::String &p_TypeName);
+
     void parse_compute_pipeline_configs(
         Util::Yaml::Node &p_Node, Util::List<ComputePipelineConfig> &p_Configs);
 

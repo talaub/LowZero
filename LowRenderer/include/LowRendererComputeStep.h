@@ -25,8 +25,9 @@ namespace Low {
     {
       Util::Map<RenderFlow, ResourceRegistry> resources;
       ComputeStepConfig config;
-      Util::List<Interface::ComputePipeline> pipelines;
-      Util::List<Interface::PipelineResourceSignature> signatures;
+      Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> pipelines;
+      Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>>
+          signatures;
       Interface::Context context;
       Low::Util::Name name;
 
@@ -81,9 +82,11 @@ namespace Low {
 
       ComputeStepConfig get_config() const;
 
-      Util::List<Interface::ComputePipeline> &get_pipelines() const;
+      Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> &
+      get_pipelines() const;
 
-      Util::List<Interface::PipelineResourceSignature> &get_signatures() const;
+      Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>> &
+      get_signatures() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

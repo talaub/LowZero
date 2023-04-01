@@ -427,7 +427,6 @@ namespace Low {
             material_type_place_properties(i_MaterialType);
 
             auto &props = i_MaterialType.get_properties();
-            LOW_LOG_DEBUG << "T" << LOW_LOG_END;
           }
         }
       }
@@ -657,9 +656,9 @@ namespace Low {
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
         g_RenderObject.set_world_scale(Math::Vector3(1.0f));
 
-        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
+        GraphicsStep(g_MainRenderFlow.get_steps()[0].get_id())
             .register_renderobject(g_RenderObject);
-        GraphicsStep(g_MainRenderFlow.get_steps()[2].get_id())
+        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(g_RenderObject);
       }
 
@@ -681,9 +680,9 @@ namespace Low {
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
         g_RenderObject2.set_world_scale(Math::Vector3(1.0f));
 
-        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
+        GraphicsStep(g_MainRenderFlow.get_steps()[0].get_id())
             .register_renderobject(g_RenderObject2);
-        GraphicsStep(g_MainRenderFlow.get_steps()[2].get_id())
+        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(g_RenderObject2);
       }
     }

@@ -1,0 +1,49 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, set = 1) uniform FrameInfoWrapper
+{
+  vec2 u_InverseDimensions;
+};
+layout(binding = 0, set = 2, rgba32f) uniform image2D out_image;
+layout(binding = 1, set = 2) uniform sampler2D GBufferAlbedo;
+layout(binding = 2, set = 2) uniform sampler2D GBufferSurfaceNormals;
+layout(binding = 3, set = 2) uniform sampler2D GBufferNormals;
+layout(binding = 4, set = 2) uniform sampler2D GBufferRoughness;
+layout(binding = 5, set = 2) uniform sampler2D GBufferMetalness;
+layout(binding = 6, set = 2) uniform sampler2D GBufferDepth;
+
+vec2 get_texture_coords()
+{
+  ivec2 l_AbsolutePixel = ivec2(gl_GlobalInvocationID.xy);
+  return vec2((float(l_AbsolutePixel.x) + 0.5) * u_InverseDimensions.x,
+              (float(l_AbsolutePixel.y) + 0.5) * u_InverseDimensions.y);
+}
+
+void main()
+{
+  ivec2 xy_int = ivec2(gl_GlobalInvocationID.xy);
+
+  /*
+  imageStore(
+      out_image, xy_int,
+      vec4(vec3(1.0) - texture(GBufferAlbedo, get_texture_coords()).xyz, 1.0));
+      */
+  float l_Depth = texture(GBufferDepth, get_texture_coords()).x;
+
+  if (l_Depth >= 1.0) {
+    imageStore(out_image, xy_int, vec4(0, 0, 0, 0));
+    return;
+  }
+
+  vec4 l_OutColor = vec4(0, 0, 0, 1);
+
+  /*
+  l_OutColor =
+      vec4(vec3(texture(Albedo, get_texture_coords()).x), 1.0);
+  */
+  l_OutColor = vec4(texture(GBufferAlbedo, get_texture_coords()).xyz, 1.0);
+
+  imageStore(out_image, xy_int, l_OutColor);
+}

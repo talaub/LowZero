@@ -1224,8 +1224,7 @@ namespace Low {
           l_Barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
           l_Barrier.image = p_Image2D.vk.m_Image;
           if (p_Image2D.depth) {
-            l_Barrier.subresourceRange.aspectMask =
-                VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+            l_Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
           } else {
             l_Barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
           }
@@ -1286,6 +1285,14 @@ namespace Low {
                                      0, VK_ACCESS_SHADER_READ_BIT,
                                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+          } else if (p_Image.get_image().vk.m_State ==
+                     ImageState::DEPTH_STENCIL_ATTACHMENT) {
+            transition_image_barrier(
+                l_CommandBuffer, p_Image.get_image(),
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 0,
+                VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
@@ -1742,6 +1749,8 @@ namespace Low {
         }
 
         if (p_Params.useDepth) {
+          p_Renderpass.depthRenderTargetHandleId =
+              p_Params.depthRenderTarget->handleId;
           l_DepthAttachment.format =
               Helper::vkformat_get_depth(*p_Params.context);
           l_DepthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -1940,6 +1949,15 @@ namespace Low {
 
           if (i_Image.is_alive()) {
             i_Image.get_image().vk.m_State = ImageState::PRESENT_SRC;
+          }
+        }
+
+        if (p_Renderpass.useDepth) {
+          Resource::Image l_Image(p_Renderpass.depthRenderTargetHandleId);
+
+          if (l_Image.is_alive()) {
+            l_Image.get_image().vk.m_State =
+                ImageState::DEPTH_STENCIL_ATTACHMENT;
           }
         }
 
@@ -2151,6 +2169,7 @@ namespace Low {
         p_Image.context = p_Params.context;
         p_Image.format = p_Params.format;
         p_Image.dimensions = p_Params.dimensions;
+        p_Image.depth = false;
         p_Image.vk.m_State = ImageState::UNDEFINED;
 
         p_Image.handleId = 0ull;
@@ -2164,6 +2183,7 @@ namespace Low {
                          VK_IMAGE_USAGE_SAMPLED_BIT |
                          VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                          VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+          p_Image.depth = true;
         }
 
         if (p_Params.writable && !p_Params.depth) {

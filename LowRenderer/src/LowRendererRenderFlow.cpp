@@ -170,6 +170,42 @@ namespace Low {
       return TYPE_SOA(RenderFlow, resources, ResourceRegistry);
     }
 
+    Resource::Buffer RenderFlow::get_frame_info_buffer() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, frame_info_buffer, Resource::Buffer);
+    }
+    void RenderFlow::set_frame_info_buffer(Resource::Buffer p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, frame_info_buffer, Resource::Buffer) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
+      // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
+    }
+
+    Interface::PipelineResourceSignature
+    RenderFlow::get_resource_signature() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, resource_signature,
+                      Interface::PipelineResourceSignature);
+    }
+    void RenderFlow::set_resource_signature(
+        Interface::PipelineResourceSignature p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, resource_signature,
+               Interface::PipelineResourceSignature) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource_signature
+      // LOW_CODEGEN::END::CUSTOM:SETTER_resource_signature
+    }
+
     Math::Vector3 &RenderFlow::get_camera_position() const
     {
       _LOW_ASSERT(is_alive());
@@ -283,6 +319,42 @@ namespace Low {
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
       }
 
+      {
+        Backend::BufferCreateParams l_Params;
+        l_Params.bufferSize = sizeof(Math::Vector2);
+        l_Params.context = &p_Context.get_context();
+        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
+
+        Math::Vector2 l_InverseDimensions = {
+            1.0f / ((float)l_RenderFlow.get_dimensions().x),
+            1.0f / ((float)l_RenderFlow.get_dimensions().y)};
+
+        l_Params.data = &l_InverseDimensions;
+
+        l_RenderFlow.set_frame_info_buffer(
+            Resource::Buffer::make(N(RenderFlowFrameInfoBuffer), l_Params));
+      }
+
+      {
+        Util::List<Backend::PipelineResourceDescription> l_Resources;
+
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_RenderFlowFrameInfo);
+          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
+          l_Resource.arraySize = 1;
+          l_Resources.push_back(l_Resource);
+        }
+
+        l_RenderFlow.set_resource_signature(
+            Interface::PipelineResourceSignature::make(
+                N(RenderFlowSignature), p_Context, 1, l_Resources));
+
+        l_RenderFlow.get_resource_signature().set_constant_buffer_resource(
+            N(u_RenderFlowFrameInfo), 0, l_RenderFlow.get_frame_info_buffer());
+      }
+
       if (p_Config["resources"]) {
         Util::List<ResourceConfig> l_ResourceConfigs;
         parse_resource_configs(p_Config["resources"], l_ResourceConfigs);
@@ -346,6 +418,8 @@ namespace Low {
             Math::Color(0.341f, 0.4249f, 0.2341f, 1.0f));
       }
 
+      get_resource_signature().commit();
+
       Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(
           glm::radians(get_camera_fov()),
           ((float)get_dimensions().x) / ((float)get_dimensions().y),
@@ -384,6 +458,11 @@ namespace Low {
       get_dimensions() = p_Dimensions;
 
       get_resources().update_dimensions(*this);
+
+      Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
+                                           1.0f / ((float)get_dimensions().y)};
+
+      get_frame_info_buffer().set(&l_InverseDimensions);
 
       for (Util::Handle i_Step : get_steps()) {
         if (i_Step.get_type() == ComputeStep::TYPE_ID) {

@@ -75,7 +75,8 @@ namespace Low {
           GENERAL,
           SHADER_READ_ONLY_OPTIMAL,
           DESTINATION_OPTIMAL,
-          PRESENT_SRC
+          PRESENT_SRC,
+          DEPTH_STENCIL_ATTACHMENT
         };
       };
 

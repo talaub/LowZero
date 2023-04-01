@@ -250,7 +250,7 @@ namespace Low {
         }
         get_signatures()[p_RenderFlow] =
             Interface::PipelineResourceSignature::make(N(StepResourceSignature),
-                                                       get_context(), 1,
+                                                       get_context(), 2,
                                                        l_ResourceDescriptions);
 
         get_signatures()[p_RenderFlow].set_buffer_resource(
@@ -276,6 +276,7 @@ namespace Low {
       }
 
       get_context().get_global_signature().commit();
+      p_RenderFlow.get_resource_signature().commit();
       get_signatures()[p_RenderFlow].commit();
 
       get_renderpasses()[p_RenderFlow].begin();
@@ -442,6 +443,7 @@ namespace Low {
         i_Params.frontFace = i_Config.frontFace;
         i_Params.dimensions = p_RenderFlow.get_dimensions();
         i_Params.signatures = {get_context().get_global_signature(),
+                               p_RenderFlow.get_resource_signature(),
                                get_signatures()[p_RenderFlow]};
         i_Params.vertexShaderPath = i_Config.vertexPath;
         i_Params.fragmentShaderPath = i_Config.fragmentPath;
