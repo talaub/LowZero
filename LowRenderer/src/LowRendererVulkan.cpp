@@ -1733,8 +1733,8 @@ namespace Low {
                                          ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                          : VK_ATTACHMENT_LOAD_OP_LOAD;
           l_ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-          l_ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-          l_ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+          l_ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+          l_ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
           l_ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
           l_ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
@@ -1759,9 +1759,7 @@ namespace Low {
 
           l_DepthAttachment.loadOp = l_ClearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                                   : VK_ATTACHMENT_LOAD_OP_LOAD;
-          l_DepthAttachment.storeOp = l_ClearDepth
-                                          ? VK_ATTACHMENT_STORE_OP_STORE
-                                          : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+          l_DepthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
           l_DepthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
           l_DepthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
           l_DepthAttachment.initialLayout =

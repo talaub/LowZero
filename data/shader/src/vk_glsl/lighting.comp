@@ -1,10 +1,19 @@
 #version 450
 
+struct PointLightInfo
+{
+  vec3 position;
+  vec3 color;
+};
+
 layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0, set = 1) uniform FrameInfoWrapper
 {
   vec2 u_InverseDimensions;
+  vec3 u_CameraPosition;
+  mat4 u_ProjectionMatrix;
+  mat4 u_ViewMatrix;
 };
 layout(binding = 0, set = 2, rgba32f) uniform image2D out_image;
 layout(binding = 1, set = 2) uniform sampler2D GBufferAlbedo;
@@ -21,29 +30,135 @@ vec2 get_texture_coords()
               (float(l_AbsolutePixel.y) + 0.5) * u_InverseDimensions.y);
 }
 
+const float PI = 3.14159265359;
+
+vec3 WorldPosFromDepth(float depth)
+{
+  float z = depth * 2.0 - 1.0;
+
+  vec2 TexCoord = get_texture_coords();
+
+  vec4 clipSpacePosition = vec4(TexCoord * 2.0 - 1.0, z, 1.0);
+  vec4 viewSpacePosition = inverse(u_ProjectionMatrix) * clipSpacePosition;
+
+  // Perspective division
+  viewSpacePosition /= viewSpacePosition.w;
+
+  vec4 worldSpacePosition = inverse(u_ViewMatrix) * viewSpacePosition;
+
+  return worldSpacePosition.xyz;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+  return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+  float a = roughness * roughness;
+  float a2 = a * a;
+  float NdotH = max(dot(N, H), 0.0);
+  float NdotH2 = NdotH * NdotH;
+
+  float num = a2;
+  float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+  denom = PI * denom * denom;
+
+  return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+  float r = (roughness + 1.0);
+  float k = (r * r) / 8.0;
+
+  float num = NdotV;
+  float denom = NdotV * (1.0 - k) + k;
+
+  return num / denom;
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+  float NdotV = max(dot(N, V), 0.0);
+  float NdotL = max(dot(N, L), 0.0);
+  float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+  float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+  return ggx1 * ggx2;
+}
+
 void main()
 {
-  ivec2 xy_int = ivec2(gl_GlobalInvocationID.xy);
+  float l_LightStrength = 5;
+  int u_PointLightCount = 1;
+  PointLightInfo u_PointLight;
+  u_PointLight.position = vec3(-1.2, 0.6, -1);
+  u_PointLight.color = vec3(1, 1, 1) * l_LightStrength;
 
-  /*
-  imageStore(
-      out_image, xy_int,
-      vec4(vec3(1.0) - texture(GBufferAlbedo, get_texture_coords()).xyz, 1.0));
-      */
-  float l_Depth = texture(GBufferDepth, get_texture_coords()).x;
+  ivec2 l_AbsolutePixel = ivec2(gl_GlobalInvocationID.xy);
+  vec2 l_TextureCoordinates = get_texture_coords();
+
+  float l_Depth = texture(GBufferDepth, l_TextureCoordinates).x;
 
   if (l_Depth >= 1.0) {
-    imageStore(out_image, xy_int, vec4(0, 0, 0, 0));
+    imageStore(out_image, l_AbsolutePixel, vec4(0, 0, 0, 0));
     return;
   }
 
-  vec4 l_OutColor = vec4(0, 0, 0, 1);
+  vec4 l_Albedo = texture(GBufferAlbedo, l_TextureCoordinates);
 
-  /*
-  l_OutColor =
-      vec4(vec3(texture(Albedo, get_texture_coords()).x), 1.0);
-  */
-  l_OutColor = vec4(texture(GBufferAlbedo, get_texture_coords()).xyz, 1.0);
+  vec3 l_WorldPosition = WorldPosFromDepth(l_Depth); // TODO: Implement
 
-  imageStore(out_image, xy_int, l_OutColor);
+  vec3 l_Normal = texture(GBufferNormals, l_TextureCoordinates).xyz;
+  l_Normal = normalize(vec3((l_Normal.x * 2.0) - 1.0, (l_Normal.y * 2.0) - 1.0,
+                            (l_Normal.z * 2.0) - 1.0));
+
+  float l_Roughness = texture(GBufferRoughness, l_TextureCoordinates).x;
+  float l_Metallic = texture(GBufferMetalness, l_TextureCoordinates).x;
+  float l_Ao = 0.1; // TODO: Temp
+
+  vec3 N = normalize(l_Normal);
+  vec3 V = normalize(u_CameraPosition - l_WorldPosition);
+
+  vec3 F0 = vec3(0.04);
+  F0 = mix(F0, l_Albedo.xyz, l_Metallic);
+
+  // reflectance equation
+  vec3 Lo = vec3(0.0);
+  for (int i = 0; i < u_PointLightCount; ++i) {
+    PointLightInfo i_PointLight = u_PointLight;
+
+    // calculate per-light radiance
+    vec3 L = normalize(i_PointLight.position - l_WorldPosition);
+    vec3 H = normalize(V + L);
+    float distance = length(i_PointLight.position - l_WorldPosition);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 radiance = i_PointLight.color * attenuation;
+
+    // cook-torrance brdf
+    float NDF = DistributionGGX(N, H, l_Roughness);
+    float G = GeometrySmith(N, V, L, l_Roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - l_Metallic;
+
+    vec3 numerator = NDF * G * F;
+    float denominator =
+        4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
+
+    // add to outgoing radiance Lo
+    float NdotL = max(dot(N, L), 0.0);
+    Lo += (kD * l_Albedo.xyz / PI + specular) * radiance * NdotL;
+  }
+
+  vec3 ambient = vec3(0.03) * l_Albedo.xyz * l_Ao;
+  vec3 color = ambient + Lo;
+
+  vec4 l_OutColor = vec4(color, 1.0);
+
+  imageStore(out_image, l_AbsolutePixel, l_OutColor);
 }

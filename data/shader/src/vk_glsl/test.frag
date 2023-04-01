@@ -61,6 +61,6 @@ void main()
                           (l_Normal.z + 1.0) / 2.0)),
            1.0);
 
-  o_Metalness = vec4(vec3(0.2), 1.0);
-  o_Roughness = vec4(vec3(0.6), 1.0);
+  o_Metalness = vec4(vec3(0.4), 1.0);
+  o_Roughness = vec4(vec3(0.5), 1.0);
 }

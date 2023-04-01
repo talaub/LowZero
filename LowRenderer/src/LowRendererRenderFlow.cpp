@@ -321,15 +321,10 @@ namespace Low {
 
       {
         Backend::BufferCreateParams l_Params;
-        l_Params.bufferSize = sizeof(Math::Vector2);
+        l_Params.bufferSize = sizeof(RenderFlowFrameInfo);
         l_Params.context = &p_Context.get_context();
         l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
-
-        Math::Vector2 l_InverseDimensions = {
-            1.0f / ((float)l_RenderFlow.get_dimensions().x),
-            1.0f / ((float)l_RenderFlow.get_dimensions().y)};
-
-        l_Params.data = &l_InverseDimensions;
+        l_Params.data = nullptr;
 
         l_RenderFlow.set_frame_info_buffer(
             Resource::Buffer::make(N(RenderFlowFrameInfoBuffer), l_Params));
@@ -418,8 +413,6 @@ namespace Low {
             Math::Color(0.341f, 0.4249f, 0.2341f, 1.0f));
       }
 
-      get_resource_signature().commit();
-
       Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(
           glm::radians(get_camera_fov()),
           ((float)get_dimensions().x) / ((float)get_dimensions().y),
@@ -433,6 +426,22 @@ namespace Low {
           glm::lookAt(get_camera_position(),
                       Math::VectorUtil::direction(get_camera_rotation()),
                       Math::Vector3(0.f, 1.f, 0.f));
+
+      {
+        Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
+                                             1.0f /
+                                                 ((float)get_dimensions().y)};
+
+        RenderFlowFrameInfo l_FrameInfo;
+        l_FrameInfo.cameraPosition = get_camera_position();
+        l_FrameInfo.inverseDimensions = l_InverseDimensions;
+        l_FrameInfo.projectionMatrix = l_ProjectionMatrix;
+        l_FrameInfo.viewMatrix = l_ViewMatrix; //
+
+        get_frame_info_buffer().set(&l_FrameInfo);
+      }
+
+      get_resource_signature().commit();
 
       for (Util::Handle i_Step : get_steps()) {
         if (i_Step.get_type() == ComputeStep::TYPE_ID) {
@@ -458,11 +467,6 @@ namespace Low {
       get_dimensions() = p_Dimensions;
 
       get_resources().update_dimensions(*this);
-
-      Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
-                                           1.0f / ((float)get_dimensions().y)};
-
-      get_frame_info_buffer().set(&l_InverseDimensions);
 
       for (Util::Handle i_Step : get_steps()) {
         if (i_Step.get_type() == ComputeStep::TYPE_ID) {

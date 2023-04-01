@@ -17,6 +17,13 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct RenderFlowFrameInfo
+    {
+      alignas(16) Math::Vector2 inverseDimensions;
+      alignas(16) Math::Vector3 cameraPosition;
+      alignas(16) Math::Matrix4x4 projectionMatrix;
+      alignas(16) Math::Matrix4x4 viewMatrix;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API RenderFlowData
