@@ -32,16 +32,13 @@ namespace Low {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        ComputePipelineData *l_DataPtr =
-            (ComputePipelineData
-                 *)&ms_Buffer[l_Index * sizeof(ComputePipelineData)];
-        new (l_DataPtr) ComputePipelineData();
-
         ComputePipeline l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = ComputePipeline::TYPE_ID;
 
+        new (&ACCESSOR_TYPE_SOA(l_Handle, ComputePipeline, pipeline,
+                                Backend::Pipeline)) Backend::Pipeline();
         ACCESSOR_TYPE_SOA(l_Handle, ComputePipeline, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -94,16 +91,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ComputePipelineData, pipeline);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&ComputePipeline::ms_Buffer
-                [p_Handle.get_index() * ComputePipelineData::get_size() +
-                 offsetof(ComputePipelineData, pipeline)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline,
+                                              pipeline, Backend::Pipeline);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Backend::Pipeline *)&ComputePipeline::ms_Buffer
-                 [p_Handle.get_index() * ComputePipelineData::get_size() +
-                  offsetof(ComputePipelineData, pipeline)]) =
-                *(Backend::Pipeline *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline, pipeline,
+                              Backend::Pipeline) = *(Backend::Pipeline *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -113,16 +107,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ComputePipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&ComputePipeline::ms_Buffer
-                [p_Handle.get_index() * ComputePipelineData::get_size() +
-                 offsetof(ComputePipelineData, name)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline, name,
+                                              Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Low::Util::Name *)&ComputePipeline::ms_Buffer
-                 [p_Handle.get_index() * ComputePipelineData::get_size() +
-                  offsetof(ComputePipelineData, name)]) =
-                *(Low::Util::Name *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline, name,
+                              Low::Util::Name) = *(Low::Util::Name *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }

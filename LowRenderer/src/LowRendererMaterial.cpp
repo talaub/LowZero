@@ -30,15 +30,15 @@ namespace Low {
       uint32_t l_Index = Low::Util::Instances::create_instance(
           ms_Buffer, ms_Slots, get_capacity());
 
-      MaterialData *l_DataPtr =
-          (MaterialData *)&ms_Buffer[l_Index * sizeof(MaterialData)];
-      new (l_DataPtr) MaterialData();
-
       Material l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Material::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, material_type, MaterialType))
+          MaterialType();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, context, Interface::Context))
+          Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Material, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -89,17 +89,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Material::ms_Buffer[p_Handle.get_index() *
-                                                  MaterialData::get_size() +
-                                              offsetof(MaterialData,
-                                                       material_type)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, material_type,
+                                            MaterialType);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(MaterialType *)&Material::ms_Buffer[p_Handle.get_index() *
-                                                     MaterialData::get_size() +
-                                                 offsetof(MaterialData,
-                                                          material_type)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, Material, material_type, MaterialType) =
               *(MaterialType *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -110,16 +105,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Material::ms_Buffer[p_Handle.get_index() *
-                                                  MaterialData::get_size() +
-                                              offsetof(MaterialData, context)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, context,
+                                            Interface::Context);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Interface::Context
-                 *)&Material::ms_Buffer[p_Handle.get_index() *
-                                            MaterialData::get_size() +
-                                        offsetof(MaterialData, context)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, Material, context, Interface::Context) =
               *(Interface::Context *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -130,15 +121,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Material::ms_Buffer[p_Handle.get_index() *
-                                                  MaterialData::get_size() +
-                                              offsetof(MaterialData, name)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, name,
+                                            Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Low::Util::Name *)&Material::ms_Buffer
-               [p_Handle.get_index() * MaterialData::get_size() +
-                offsetof(MaterialData, name)]) = *(Low::Util::Name *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, Material, name, Low::Util::Name) =
+              *(Low::Util::Name *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }

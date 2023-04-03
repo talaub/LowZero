@@ -30,16 +30,17 @@ namespace Low {
       uint32_t l_Index = Low::Util::Instances::create_instance(
           ms_Buffer, ms_Slots, get_capacity());
 
-      ComputeStepConfigData *l_DataPtr =
-          (ComputeStepConfigData
-               *)&ms_Buffer[l_Index * sizeof(ComputeStepConfigData)];
-      new (l_DataPtr) ComputeStepConfigData();
-
       ComputeStepConfig l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = ComputeStepConfig::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, resources,
+                              Util::List<ResourceConfig>))
+          Util::List<ResourceConfig>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, pipelines,
+                              Util::List<ComputePipelineConfig>))
+          Util::List<ComputePipelineConfig>();
       ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -90,15 +91,14 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ComputeStepConfig::ms_Buffer
-              [p_Handle.get_index() * ComputeStepConfigData::get_size() +
-               offsetof(ComputeStepConfigData, resources)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
+                                            resources,
+                                            Util::List<ResourceConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Util::List<ResourceConfig> *)&ComputeStepConfig::ms_Buffer
-               [p_Handle.get_index() * ComputeStepConfigData::get_size() +
-                offsetof(ComputeStepConfigData, resources)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig, resources,
+                            Util::List<ResourceConfig>) =
               *(Util::List<ResourceConfig> *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -109,15 +109,14 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ComputeStepConfig::ms_Buffer
-              [p_Handle.get_index() * ComputeStepConfigData::get_size() +
-               offsetof(ComputeStepConfigData, pipelines)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
+                                            pipelines,
+                                            Util::List<ComputePipelineConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Util::List<ComputePipelineConfig> *)&ComputeStepConfig::ms_Buffer
-               [p_Handle.get_index() * ComputeStepConfigData::get_size() +
-                offsetof(ComputeStepConfigData, pipelines)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig, pipelines,
+                            Util::List<ComputePipelineConfig>) =
               *(Util::List<ComputePipelineConfig> *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -128,16 +127,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ComputeStepConfig::ms_Buffer
-              [p_Handle.get_index() * ComputeStepConfigData::get_size() +
-               offsetof(ComputeStepConfigData, name)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig, name,
+                                            Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Low::Util::Name *)&ComputeStepConfig::ms_Buffer
-               [p_Handle.get_index() * ComputeStepConfigData::get_size() +
-                offsetof(ComputeStepConfigData, name)]) =
-              *(Low::Util::Name *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig, name,
+                            Low::Util::Name) = *(Low::Util::Name *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }

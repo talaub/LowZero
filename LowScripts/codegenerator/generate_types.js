@@ -421,9 +421,6 @@ function generate_source(p_Type) {
     }
     t += line(`uint32_t l_Index = Low::Util::Instances::create_instance(ms_Buffer, ms_Slots, get_capacity());`);
     t += empty();
-    t += line(`${p_Type.name}Data *l_DataPtr = (${p_Type.name}Data *) &ms_Buffer[l_Index * sizeof(${p_Type.name}Data)];`);
-    t += line(`new (l_DataPtr) ${p_Type.name}Data();`);
-    t += empty();
     t += line(`${p_Type.name} l_Handle;`);
     t += line(`l_Handle.m_Data.m_Index = l_Index;`);
     t += line(`l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;`);
@@ -433,8 +430,11 @@ function generate_source(p_Type) {
 	if (['bool', 'boolean'].includes(i_Prop.type)) {
 	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = false;`);
 	}
-	if (['Name', 'Low::Util::Name'].includes(i_Prop.type)) {
+	else if (['Name', 'Low::Util::Name'].includes(i_Prop.type)) {
 	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = Low::Util::Name(0u);`);
+	}
+	else if (is_reference_type(i_Prop.type)) {
+	    t += line(`new (&ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type})) ${i_Prop.plain_type}();`);
 	}
     }
     t += empty();
@@ -504,10 +504,10 @@ function generate_source(p_Type) {
 	t += line(`l_PropertyInfo.dataOffset = offsetof(${p_Type.name}Data, ${i_PropName});`);
 	t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`);
 	t += line(`l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`);
-	t += line(`return (void*)&${p_Type.name}::ms_Buffer[p_Handle.get_index() * ${p_Type.name}Data::get_size() + offsetof(${p_Type.name}Data, ${i_PropName})];`);
+	t += line(`return (void*)&ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type});`);
 	t += line(`};`);
 	t += line(`l_PropertyInfo.set = [](Low::Util::Handle p_Handle, const void* p_Data) -> void {`);
-	t += line(`(*(${i_Prop.plain_type}*)&${p_Type.name}::ms_Buffer[p_Handle.get_index() * ${p_Type.name}Data::get_size() + offsetof(${p_Type.name}Data, ${i_PropName})]) = *(${i_Prop.plain_type}*)p_Data;`);
+	t += line(`ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = *(${i_Prop.plain_type}*)p_Data;`);
 	t += line(`};`);
 	t += line(`l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;`);
 	t += line(`}`);

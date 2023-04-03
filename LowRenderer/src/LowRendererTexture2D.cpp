@@ -30,15 +30,15 @@ namespace Low {
       uint32_t l_Index = Low::Util::Instances::create_instance(
           ms_Buffer, ms_Slots, get_capacity());
 
-      Texture2DData *l_DataPtr =
-          (Texture2DData *)&ms_Buffer[l_Index * sizeof(Texture2DData)];
-      new (l_DataPtr) Texture2DData();
-
       Texture2D l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, image, Resource::Image))
+          Resource::Image();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, context, Interface::Context))
+          Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -90,15 +90,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Texture2D::ms_Buffer[p_Handle.get_index() *
-                                                   Texture2DData::get_size() +
-                                               offsetof(Texture2DData, image)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image,
+                                            Resource::Image);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Resource::Image *)&Texture2D::ms_Buffer
-               [p_Handle.get_index() * Texture2DData::get_size() +
-                offsetof(Texture2DData, image)]) = *(Resource::Image *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image, Resource::Image) =
+              *(Resource::Image *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -108,17 +106,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (
-              void *)&Texture2D::ms_Buffer[p_Handle.get_index() *
-                                               Texture2DData::get_size() +
-                                           offsetof(Texture2DData, context)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, context,
+                                            Interface::Context);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Interface::Context
-                 *)&Texture2D::ms_Buffer[p_Handle.get_index() *
-                                             Texture2DData::get_size() +
-                                         offsetof(Texture2DData, context)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, context, Interface::Context) =
               *(Interface::Context *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -129,15 +122,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Texture2D::ms_Buffer[p_Handle.get_index() *
-                                                   Texture2DData::get_size() +
-                                               offsetof(Texture2DData, name)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name,
+                                            Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Low::Util::Name *)&Texture2D::ms_Buffer
-               [p_Handle.get_index() * Texture2DData::get_size() +
-                offsetof(Texture2DData, name)]) = *(Low::Util::Name *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name, Low::Util::Name) =
+              *(Low::Util::Name *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }

@@ -29,15 +29,13 @@ namespace Low {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        BufferData *l_DataPtr =
-            (BufferData *)&ms_Buffer[l_Index * sizeof(BufferData)];
-        new (l_DataPtr) BufferData();
-
         Buffer l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Buffer::TYPE_ID;
 
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Buffer, buffer, Backend::Buffer))
+            Backend::Buffer();
         ACCESSOR_TYPE_SOA(l_Handle, Buffer, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -89,15 +87,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(BufferData, buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Buffer::ms_Buffer[p_Handle.get_index() *
-                                                  BufferData::get_size() +
-                                              offsetof(BufferData, buffer)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, buffer,
+                                              Backend::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Backend::Buffer *)&Buffer::ms_Buffer
-                 [p_Handle.get_index() * BufferData::get_size() +
-                  offsetof(BufferData, buffer)]) = *(Backend::Buffer *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, Buffer, buffer, Backend::Buffer) =
+                *(Backend::Buffer *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -107,15 +103,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(BufferData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Buffer::ms_Buffer[p_Handle.get_index() *
-                                                  BufferData::get_size() +
-                                              offsetof(BufferData, name)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, name,
+                                              Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Low::Util::Name *)&Buffer::ms_Buffer
-                 [p_Handle.get_index() * BufferData::get_size() +
-                  offsetof(BufferData, name)]) = *(Low::Util::Name *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, Buffer, name, Low::Util::Name) =
+                *(Low::Util::Name *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }

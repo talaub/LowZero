@@ -33,16 +33,13 @@ namespace Low {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        GraphicsPipelineData *l_DataPtr =
-            (GraphicsPipelineData
-                 *)&ms_Buffer[l_Index * sizeof(GraphicsPipelineData)];
-        new (l_DataPtr) GraphicsPipelineData();
-
         GraphicsPipeline l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = GraphicsPipeline::TYPE_ID;
 
+        new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsPipeline, pipeline,
+                                Backend::Pipeline)) Backend::Pipeline();
         ACCESSOR_TYPE_SOA(l_Handle, GraphicsPipeline, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -95,16 +92,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(GraphicsPipelineData, pipeline);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&GraphicsPipeline::ms_Buffer
-                [p_Handle.get_index() * GraphicsPipelineData::get_size() +
-                 offsetof(GraphicsPipelineData, pipeline)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsPipeline,
+                                              pipeline, Backend::Pipeline);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Backend::Pipeline *)&GraphicsPipeline::ms_Buffer
-                 [p_Handle.get_index() * GraphicsPipelineData::get_size() +
-                  offsetof(GraphicsPipelineData, pipeline)]) =
-                *(Backend::Pipeline *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, GraphicsPipeline, pipeline,
+                              Backend::Pipeline) = *(Backend::Pipeline *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -114,16 +108,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(GraphicsPipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&GraphicsPipeline::ms_Buffer
-                [p_Handle.get_index() * GraphicsPipelineData::get_size() +
-                 offsetof(GraphicsPipelineData, name)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsPipeline, name,
+                                              Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Low::Util::Name *)&GraphicsPipeline::ms_Buffer
-                 [p_Handle.get_index() * GraphicsPipelineData::get_size() +
-                  offsetof(GraphicsPipelineData, name)]) =
-                *(Low::Util::Name *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, GraphicsPipeline, name,
+                              Low::Util::Name) = *(Low::Util::Name *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }

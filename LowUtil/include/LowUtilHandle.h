@@ -11,13 +11,14 @@
 #define SINGLE_ARG(...) __VA_ARGS__
 
 #define TYPE_SOA(type, member, membertype)                                     \
-  *((membertype *)&(ms_Buffer[offsetof(##type##Data, member) +                 \
-                              (m_Data.m_Index * ##type##Data::get_size())]))
+  *((membertype *)&(                                                           \
+      ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \
+                (m_Data.m_Index * sizeof(membertype))]))
 
 #define ACCESSOR_TYPE_SOA(accessor, type, member, membertype)                  \
   *((membertype *)&(                                                           \
-      ms_Buffer[offsetof(##type##Data, member) +                               \
-                (accessor.m_Data.m_Index * ##type##Data::get_size())]))
+      ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \
+                (accessor.m_Data.m_Index * sizeof(membertype))]))
 
 namespace Low {
   namespace Util {

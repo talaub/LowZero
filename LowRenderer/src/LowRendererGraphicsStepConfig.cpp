@@ -33,16 +33,23 @@ namespace Low {
       uint32_t l_Index = Low::Util::Instances::create_instance(
           ms_Buffer, ms_Slots, get_capacity());
 
-      GraphicsStepConfigData *l_DataPtr =
-          (GraphicsStepConfigData
-               *)&ms_Buffer[l_Index * sizeof(GraphicsStepConfigData)];
-      new (l_DataPtr) GraphicsStepConfigData();
-
       GraphicsStepConfig l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, resources,
+                              Util::List<ResourceConfig>))
+          Util::List<ResourceConfig>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, pipelines,
+                              Util::List<GraphicsPipelineConfig>))
+          Util::List<GraphicsPipelineConfig>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, rendertargets,
+                              Util::List<PipelineResourceBindingConfig>))
+          Util::List<PipelineResourceBindingConfig>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_rendertarget,
+                              PipelineResourceBindingConfig))
+          PipelineResourceBindingConfig();
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, use_depth, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_clear, bool) =
           false;
@@ -99,15 +106,14 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, resources)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            resources,
+                                            Util::List<ResourceConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Util::List<ResourceConfig> *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, resources)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, resources,
+                            Util::List<ResourceConfig>) =
               *(Util::List<ResourceConfig> *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -118,15 +124,14 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, pipelines)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            pipelines,
+                                            Util::List<GraphicsPipelineConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Util::List<GraphicsPipelineConfig> *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, pipelines)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, pipelines,
+                            Util::List<GraphicsPipelineConfig>) =
               *(Util::List<GraphicsPipelineConfig> *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -138,16 +143,14 @@ namespace Low {
             offsetof(GraphicsStepConfigData, rendertargets);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, rendertargets)];
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GraphicsStepConfig, rendertargets,
+              Util::List<PipelineResourceBindingConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Util::List<PipelineResourceBindingConfig>
-                 *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, rendertargets)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, rendertargets,
+                            Util::List<PipelineResourceBindingConfig>) =
               *(Util::List<PipelineResourceBindingConfig> *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -159,15 +162,14 @@ namespace Low {
             offsetof(GraphicsStepConfigData, depth_rendertarget);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, depth_rendertarget)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            depth_rendertarget,
+                                            PipelineResourceBindingConfig);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(PipelineResourceBindingConfig *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, depth_rendertarget)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_rendertarget,
+                            PipelineResourceBindingConfig) =
               *(PipelineResourceBindingConfig *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -178,15 +180,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, use_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, use_depth)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            use_depth, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(bool *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, use_depth)]) = *(bool *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, use_depth, bool) =
+              *(bool *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -197,15 +197,12 @@ namespace Low {
             offsetof(GraphicsStepConfigData, depth_clear);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, depth_clear)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            depth_clear, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(bool *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, depth_clear)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_clear, bool) =
               *(bool *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -217,15 +214,12 @@ namespace Low {
             offsetof(GraphicsStepConfigData, depth_test);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, depth_test)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            depth_test, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(bool *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, depth_test)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_test, bool) =
               *(bool *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -237,15 +231,12 @@ namespace Low {
             offsetof(GraphicsStepConfigData, depth_write);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, depth_write)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            depth_write, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(bool *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, depth_write)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_write, bool) =
               *(bool *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -257,15 +248,13 @@ namespace Low {
             offsetof(GraphicsStepConfigData, depth_compare_operation);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, depth_compare_operation)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            depth_compare_operation, uint8_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(uint8_t *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, depth_compare_operation)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                            depth_compare_operation, uint8_t) =
               *(uint8_t *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -276,16 +265,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&GraphicsStepConfig::ms_Buffer
-              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-               offsetof(GraphicsStepConfigData, name)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, name,
+                                            Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Low::Util::Name *)&GraphicsStepConfig::ms_Buffer
-               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
-                offsetof(GraphicsStepConfigData, name)]) =
-              *(Low::Util::Name *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, name,
+                            Low::Util::Name) = *(Low::Util::Name *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }

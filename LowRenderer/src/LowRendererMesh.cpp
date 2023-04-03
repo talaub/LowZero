@@ -27,9 +27,6 @@ namespace Low {
       uint32_t l_Index = Low::Util::Instances::create_instance(
           ms_Buffer, ms_Slots, get_capacity());
 
-      MeshData *l_DataPtr = (MeshData *)&ms_Buffer[l_Index * sizeof(MeshData)];
-      new (l_DataPtr) MeshData();
-
       Mesh l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
@@ -85,16 +82,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (
-              void *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                          MeshData::get_size() +
-                                      offsetof(MeshData, vertex_buffer_start)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_buffer_start,
+                                            uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(uint32_t *)&Mesh::ms_Buffer
-               [p_Handle.get_index() * MeshData::get_size() +
-                offsetof(MeshData, vertex_buffer_start)]) = *(uint32_t *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_buffer_start, uint32_t) =
+              *(uint32_t *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -104,15 +98,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                              MeshData::get_size() +
-                                          offsetof(MeshData, vertex_count)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count,
+                                            uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(uint32_t *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                             MeshData::get_size() +
-                                         offsetof(MeshData, vertex_count)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count, uint32_t) =
               *(uint32_t *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -123,16 +114,13 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (
-              void *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                          MeshData::get_size() +
-                                      offsetof(MeshData, index_buffer_start)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_buffer_start,
+                                            uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(uint32_t *)&Mesh::ms_Buffer
-               [p_Handle.get_index() * MeshData::get_size() +
-                offsetof(MeshData, index_buffer_start)]) = *(uint32_t *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_buffer_start, uint32_t) =
+              *(uint32_t *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -142,15 +130,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                              MeshData::get_size() +
-                                          offsetof(MeshData, index_count)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count,
+                                            uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(uint32_t *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                             MeshData::get_size() +
-                                         offsetof(MeshData, index_count)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count, uint32_t) =
               *(uint32_t *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -161,15 +146,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                              MeshData::get_size() +
-                                          offsetof(MeshData, name)];
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, name,
+                                            Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          (*(Low::Util::Name *)&Mesh::ms_Buffer[p_Handle.get_index() *
-                                                    MeshData::get_size() +
-                                                offsetof(MeshData, name)]) =
+          ACCESSOR_TYPE_SOA(p_Handle, Mesh, name, Low::Util::Name) =
               *(Low::Util::Name *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;

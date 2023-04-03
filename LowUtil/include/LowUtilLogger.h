@@ -24,6 +24,7 @@
 
 namespace Low {
   namespace Util {
+    struct LOW_EXPORT Handle;
     namespace Log {
       namespace LogLevel {
         enum Enum
@@ -58,6 +59,7 @@ namespace Low {
         LogStream &operator<<(uint32_t p_Message);
         LogStream &operator<<(uint64_t p_Message);
         LogStream &operator<<(float p_Message);
+        LogStream &operator<<(bool p_Message);
 
         LogStream &operator<<(Math::Vector2 &p_Vec);
         LogStream &operator<<(Math::Vector3 &p_Vec);
@@ -66,6 +68,7 @@ namespace Low {
         LogStream &operator<<(Math::UVector3 &p_Vec);
 
         LogStream &operator<<(Name &p_Name);
+        LogStream &operator<<(Handle &p_Message);
 
       private:
         String m_Content;

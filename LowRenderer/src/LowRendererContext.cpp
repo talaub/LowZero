@@ -34,15 +34,23 @@ namespace Low {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        ContextData *l_DataPtr =
-            (ContextData *)&ms_Buffer[l_Index * sizeof(ContextData)];
-        new (l_DataPtr) ContextData();
-
         Context l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Context::TYPE_ID;
 
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, context, Backend::Context))
+            Backend::Context();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, renderpasses,
+                                Util::List<Renderpass>))
+            Util::List<Renderpass>();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, global_signature,
+                                PipelineResourceSignature))
+            PipelineResourceSignature();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, frame_info_buffer,
+                                Resource::Buffer)) Resource::Buffer();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, material_data_buffer,
+                                Resource::Buffer)) Resource::Buffer();
         ACCESSOR_TYPE_SOA(l_Handle, Context, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -94,16 +102,12 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, context);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
-                                                   ContextData::get_size() +
-                                               offsetof(ContextData, context)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, context,
+                                              Backend::Context);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Backend::Context
-                   *)&Context::ms_Buffer[p_Handle.get_index() *
-                                             ContextData::get_size() +
-                                         offsetof(ContextData, context)]) =
+            ACCESSOR_TYPE_SOA(p_Handle, Context, context, Backend::Context) =
                 *(Backend::Context *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -114,17 +118,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, renderpasses);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (
-                void *)&Context::ms_Buffer[p_Handle.get_index() *
-                                               ContextData::get_size() +
-                                           offsetof(ContextData, renderpasses)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, renderpasses,
+                                              Util::List<Renderpass>);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Util::List<Renderpass>
-                   *)&Context::ms_Buffer[p_Handle.get_index() *
-                                             ContextData::get_size() +
-                                         offsetof(ContextData, renderpasses)]) =
+            ACCESSOR_TYPE_SOA(p_Handle, Context, renderpasses,
+                              Util::List<Renderpass>) =
                 *(Util::List<Renderpass> *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -135,16 +135,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, global_signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
-                                                   ContextData::get_size() +
-                                               offsetof(ContextData,
-                                                        global_signature)];
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Context, global_signature, PipelineResourceSignature);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(PipelineResourceSignature *)&Context::ms_Buffer
-                 [p_Handle.get_index() * ContextData::get_size() +
-                  offsetof(ContextData, global_signature)]) =
+            ACCESSOR_TYPE_SOA(p_Handle, Context, global_signature,
+                              PipelineResourceSignature) =
                 *(PipelineResourceSignature *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -155,17 +152,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, frame_info_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
-                                                   ContextData::get_size() +
-                                               offsetof(ContextData,
-                                                        frame_info_buffer)];
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Context, frame_info_buffer, Resource::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Resource::Buffer *)&Context::ms_Buffer
-                 [p_Handle.get_index() * ContextData::get_size() +
-                  offsetof(ContextData, frame_info_buffer)]) =
-                *(Resource::Buffer *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, Context, frame_info_buffer,
+                              Resource::Buffer) = *(Resource::Buffer *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -176,17 +169,13 @@ namespace Low {
               offsetof(ContextData, material_data_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
-                                                   ContextData::get_size() +
-                                               offsetof(ContextData,
-                                                        material_data_buffer)];
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Context, material_data_buffer, Resource::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Resource::Buffer *)&Context::ms_Buffer
-                 [p_Handle.get_index() * ContextData::get_size() +
-                  offsetof(ContextData, material_data_buffer)]) =
-                *(Resource::Buffer *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, Context, material_data_buffer,
+                              Resource::Buffer) = *(Resource::Buffer *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -196,15 +185,13 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
-                                                   ContextData::get_size() +
-                                               offsetof(ContextData, name)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, name,
+                                              Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Low::Util::Name *)&Context::ms_Buffer
-                 [p_Handle.get_index() * ContextData::get_size() +
-                  offsetof(ContextData, name)]) = *(Low::Util::Name *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, Context, name, Low::Util::Name) =
+                *(Low::Util::Name *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }

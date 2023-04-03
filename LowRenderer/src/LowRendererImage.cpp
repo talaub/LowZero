@@ -29,15 +29,13 @@ namespace Low {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        ImageData *l_DataPtr =
-            (ImageData *)&ms_Buffer[l_Index * sizeof(ImageData)];
-        new (l_DataPtr) ImageData();
-
         Image l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Image::TYPE_ID;
 
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Image, image, Backend::ImageResource))
+            Backend::ImageResource();
         ACCESSOR_TYPE_SOA(l_Handle, Image, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -89,16 +87,12 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImageData, image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Image::ms_Buffer[p_Handle.get_index() *
-                                                 ImageData::get_size() +
-                                             offsetof(ImageData, image)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, image,
+                                              Backend::ImageResource);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Backend::ImageResource
-                   *)&Image::ms_Buffer[p_Handle.get_index() *
-                                           ImageData::get_size() +
-                                       offsetof(ImageData, image)]) =
+            ACCESSOR_TYPE_SOA(p_Handle, Image, image, Backend::ImageResource) =
                 *(Backend::ImageResource *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -109,15 +103,12 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImageData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&Image::ms_Buffer[p_Handle.get_index() *
-                                                 ImageData::get_size() +
-                                             offsetof(ImageData, name)];
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, name,
+                                              Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Low::Util::Name *)&Image::ms_Buffer[p_Handle.get_index() *
-                                                       ImageData::get_size() +
-                                                   offsetof(ImageData, name)]) =
+            ACCESSOR_TYPE_SOA(p_Handle, Image, name, Low::Util::Name) =
                 *(Low::Util::Name *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;

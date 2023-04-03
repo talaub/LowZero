@@ -9,6 +9,8 @@
 #include <thread>
 #include <sstream>
 
+#include "LowUtilHandle.h"
+
 #include <microprofile.h>
 
 namespace Low {
@@ -112,6 +114,15 @@ namespace Low {
         return *this << p_Name.c_str();
       }
 
+      LogStream &LogStream::operator<<(Handle &p_Message)
+      {
+        RTTI::TypeInfo &l_TypeInfo =
+            Handle::get_type_info(p_Message.get_type());
+        return *this << l_TypeInfo.name << "(Index: " << p_Message.get_index()
+                     << ", Generation: " << p_Message.get_generation()
+                     << ", Alive: " << l_TypeInfo.is_alive(p_Message) << ")";
+      }
+
       LogStream &LogStream::operator<<(int p_Message)
       {
         return *this << std::to_string(p_Message);
@@ -130,6 +141,15 @@ namespace Low {
       LogStream &LogStream::operator<<(float p_Message)
       {
         return *this << std::to_string(p_Message);
+      }
+
+      LogStream &LogStream::operator<<(bool p_Message)
+      {
+        if (p_Message) {
+          return *this << "true";
+        } else {
+          return *this << "false";
+        }
       }
 
       LogStream &LogStream::operator<<(Math::Vector2 &p_Vec)

@@ -37,16 +37,14 @@ namespace Low {
         uint32_t l_Index = Low::Util::Instances::create_instance(
             ms_Buffer, ms_Slots, get_capacity());
 
-        PipelineResourceSignatureData *l_DataPtr =
-            (PipelineResourceSignatureData
-                 *)&ms_Buffer[l_Index * sizeof(PipelineResourceSignatureData)];
-        new (l_DataPtr) PipelineResourceSignatureData();
-
         PipelineResourceSignature l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = PipelineResourceSignature::TYPE_ID;
 
+        new (&ACCESSOR_TYPE_SOA(l_Handle, PipelineResourceSignature, signature,
+                                Backend::PipelineResourceSignature))
+            Backend::PipelineResourceSignature();
         ACCESSOR_TYPE_SOA(l_Handle, PipelineResourceSignature, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
@@ -98,18 +96,14 @@ namespace Low {
               offsetof(PipelineResourceSignatureData, signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&PipelineResourceSignature::ms_Buffer
-                [p_Handle.get_index() *
-                     PipelineResourceSignatureData::get_size() +
-                 offsetof(PipelineResourceSignatureData, signature)];
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PipelineResourceSignature, signature,
+                Backend::PipelineResourceSignature);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Backend::PipelineResourceSignature
-                   *)&PipelineResourceSignature::ms_Buffer
-                 [p_Handle.get_index() *
-                      PipelineResourceSignatureData::get_size() +
-                  offsetof(PipelineResourceSignatureData, signature)]) =
+            ACCESSOR_TYPE_SOA(p_Handle, PipelineResourceSignature, signature,
+                              Backend::PipelineResourceSignature) =
                 *(Backend::PipelineResourceSignature *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -121,18 +115,13 @@ namespace Low {
               offsetof(PipelineResourceSignatureData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-            return (void *)&PipelineResourceSignature::ms_Buffer
-                [p_Handle.get_index() *
-                     PipelineResourceSignatureData::get_size() +
-                 offsetof(PipelineResourceSignatureData, name)];
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PipelineResourceSignature, name, Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            (*(Low::Util::Name *)&PipelineResourceSignature::ms_Buffer
-                 [p_Handle.get_index() *
-                      PipelineResourceSignatureData::get_size() +
-                  offsetof(PipelineResourceSignatureData, name)]) =
-                *(Low::Util::Name *)p_Data;
+            ACCESSOR_TYPE_SOA(p_Handle, PipelineResourceSignature, name,
+                              Low::Util::Name) = *(Low::Util::Name *)p_Data;
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
