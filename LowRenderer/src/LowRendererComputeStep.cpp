@@ -77,6 +77,136 @@ namespace Low {
 
       LOW_PROFILE_ALLOC(type_buffer_ComputeStep);
       LOW_PROFILE_ALLOC(type_slots_ComputeStep);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(ComputeStep);
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &ComputeStep::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(resources);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, resources);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStep::ms_Buffer
+              [p_Handle.get_index() * ComputeStepData::get_size() +
+               offsetof(ComputeStepData, resources)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::Map<RenderFlow, ResourceRegistry> *)&ComputeStep::ms_Buffer
+               [p_Handle.get_index() * ComputeStepData::get_size() +
+                offsetof(ComputeStepData, resources)]) =
+              *(Util::Map<RenderFlow, ResourceRegistry> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(config);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, config);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (
+              void *)&ComputeStep::ms_Buffer[p_Handle.get_index() *
+                                                 ComputeStepData::get_size() +
+                                             offsetof(ComputeStepData, config)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(ComputeStepConfig
+                 *)&ComputeStep::ms_Buffer[p_Handle.get_index() *
+                                               ComputeStepData::get_size() +
+                                           offsetof(ComputeStepData, config)]) =
+              *(ComputeStepConfig *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(pipelines);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, pipelines);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStep::ms_Buffer
+              [p_Handle.get_index() * ComputeStepData::get_size() +
+               offsetof(ComputeStepData, pipelines)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>>
+                 *)&ComputeStep::ms_Buffer[p_Handle.get_index() *
+                                               ComputeStepData::get_size() +
+                                           offsetof(ComputeStepData,
+                                                    pipelines)]) =
+              *(Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> *)
+                  p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(signatures);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, signatures);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStep::ms_Buffer
+              [p_Handle.get_index() * ComputeStepData::get_size() +
+               offsetof(ComputeStepData, signatures)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::Map<RenderFlow,
+                       Util::List<Interface::PipelineResourceSignature>>
+                 *)&ComputeStep::ms_Buffer[p_Handle.get_index() *
+                                               ComputeStepData::get_size() +
+                                           offsetof(ComputeStepData,
+                                                    signatures)]) =
+              *(Util::Map<RenderFlow,
+                          Util::List<Interface::PipelineResourceSignature>> *)
+                  p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(context);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, context);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStep::ms_Buffer
+              [p_Handle.get_index() * ComputeStepData::get_size() +
+               offsetof(ComputeStepData, context)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Interface::Context *)&ComputeStep::ms_Buffer
+               [p_Handle.get_index() * ComputeStepData::get_size() +
+                offsetof(ComputeStepData, context)]) =
+              *(Interface::Context *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (
+              void *)&ComputeStep::ms_Buffer[p_Handle.get_index() *
+                                                 ComputeStepData::get_size() +
+                                             offsetof(ComputeStepData, name)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Low::Util::Name *)&ComputeStep::ms_Buffer
+               [p_Handle.get_index() * ComputeStepData::get_size() +
+                offsetof(ComputeStepData, name)]) = *(Low::Util::Name *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
     void ComputeStep::cleanup()

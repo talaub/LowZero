@@ -77,6 +77,89 @@ namespace Low {
 
       LOW_PROFILE_ALLOC(type_buffer_MaterialType);
       LOW_PROFILE_ALLOC(type_slots_MaterialType);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(MaterialType);
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &MaterialType::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(gbuffer_pipeline);
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialTypeData, gbuffer_pipeline);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&MaterialType::ms_Buffer
+              [p_Handle.get_index() * MaterialTypeData::get_size() +
+               offsetof(MaterialTypeData, gbuffer_pipeline)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(GraphicsPipelineConfig *)&MaterialType::ms_Buffer
+               [p_Handle.get_index() * MaterialTypeData::get_size() +
+                offsetof(MaterialTypeData, gbuffer_pipeline)]) =
+              *(GraphicsPipelineConfig *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_pipeline);
+        l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, depth_pipeline);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&MaterialType::ms_Buffer
+              [p_Handle.get_index() * MaterialTypeData::get_size() +
+               offsetof(MaterialTypeData, depth_pipeline)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(GraphicsPipelineConfig *)&MaterialType::ms_Buffer
+               [p_Handle.get_index() * MaterialTypeData::get_size() +
+                offsetof(MaterialTypeData, depth_pipeline)]) =
+              *(GraphicsPipelineConfig *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(properties);
+        l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, properties);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&MaterialType::ms_Buffer
+              [p_Handle.get_index() * MaterialTypeData::get_size() +
+               offsetof(MaterialTypeData, properties)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::List<MaterialTypeProperty> *)&MaterialType::ms_Buffer
+               [p_Handle.get_index() * MaterialTypeData::get_size() +
+                offsetof(MaterialTypeData, properties)]) =
+              *(Util::List<MaterialTypeProperty> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (
+              void *)&MaterialType::ms_Buffer[p_Handle.get_index() *
+                                                  MaterialTypeData::get_size() +
+                                              offsetof(MaterialTypeData, name)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Low::Util::Name *)&MaterialType::ms_Buffer
+               [p_Handle.get_index() * MaterialTypeData::get_size() +
+                offsetof(MaterialTypeData, name)]) = *(Low::Util::Name *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
     void MaterialType::cleanup()

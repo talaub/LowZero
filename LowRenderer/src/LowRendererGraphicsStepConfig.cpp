@@ -88,6 +88,208 @@ namespace Low {
 
       LOW_PROFILE_ALLOC(type_buffer_GraphicsStepConfig);
       LOW_PROFILE_ALLOC(type_slots_GraphicsStepConfig);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(GraphicsStepConfig);
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &GraphicsStepConfig::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(resources);
+        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, resources);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, resources)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::List<ResourceConfig> *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, resources)]) =
+              *(Util::List<ResourceConfig> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(pipelines);
+        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, pipelines);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, pipelines)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::List<GraphicsPipelineConfig> *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, pipelines)]) =
+              *(Util::List<GraphicsPipelineConfig> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(rendertargets);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, rendertargets);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, rendertargets)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::List<PipelineResourceBindingConfig>
+                 *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, rendertargets)]) =
+              *(Util::List<PipelineResourceBindingConfig> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_rendertarget);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, depth_rendertarget);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, depth_rendertarget)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(PipelineResourceBindingConfig *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, depth_rendertarget)]) =
+              *(PipelineResourceBindingConfig *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(use_depth);
+        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, use_depth);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, use_depth)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(bool *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, use_depth)]) = *(bool *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_clear);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, depth_clear);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, depth_clear)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(bool *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, depth_clear)]) =
+              *(bool *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_test);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, depth_test);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, depth_test)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(bool *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, depth_test)]) =
+              *(bool *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_write);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, depth_write);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, depth_write)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(bool *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, depth_write)]) =
+              *(bool *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_compare_operation);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, depth_compare_operation);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, depth_compare_operation)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(uint8_t *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, depth_compare_operation)]) =
+              *(uint8_t *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&GraphicsStepConfig::ms_Buffer
+              [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+               offsetof(GraphicsStepConfigData, name)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Low::Util::Name *)&GraphicsStepConfig::ms_Buffer
+               [p_Handle.get_index() * GraphicsStepConfigData::get_size() +
+                offsetof(GraphicsStepConfigData, name)]) =
+              *(Low::Util::Name *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
     void GraphicsStepConfig::cleanup()

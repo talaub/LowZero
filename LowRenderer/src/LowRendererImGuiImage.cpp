@@ -79,6 +79,71 @@ namespace Low {
 
         LOW_PROFILE_ALLOC(type_buffer_ImGuiImage);
         LOW_PROFILE_ALLOC(type_slots_ImGuiImage);
+
+        Low::Util::RTTI::TypeInfo l_TypeInfo;
+        l_TypeInfo.name = N(ImGuiImage);
+        l_TypeInfo.get_capacity = &get_capacity;
+        l_TypeInfo.is_alive = &ImGuiImage::is_alive;
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(imgui_image);
+          l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, imgui_image);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&ImGuiImage::ms_Buffer
+                [p_Handle.get_index() * ImGuiImageData::get_size() +
+                 offsetof(ImGuiImageData, imgui_image)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Backend::ImGuiImage *)&ImGuiImage::ms_Buffer
+                 [p_Handle.get_index() * ImGuiImageData::get_size() +
+                  offsetof(ImGuiImageData, imgui_image)]) =
+                *(Backend::ImGuiImage *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(image);
+          l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, image);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (
+                void *)&ImGuiImage::ms_Buffer[p_Handle.get_index() *
+                                                  ImGuiImageData::get_size() +
+                                              offsetof(ImGuiImageData, image)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Resource::Image
+                   *)&ImGuiImage::ms_Buffer[p_Handle.get_index() *
+                                                ImGuiImageData::get_size() +
+                                            offsetof(ImGuiImageData, image)]) =
+                *(Resource::Image *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(name);
+          l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, name);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (
+                void *)&ImGuiImage::ms_Buffer[p_Handle.get_index() *
+                                                  ImGuiImageData::get_size() +
+                                              offsetof(ImGuiImageData, name)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Low::Util::Name *)&ImGuiImage::ms_Buffer
+                 [p_Handle.get_index() * ImGuiImageData::get_size() +
+                  offsetof(ImGuiImageData, name)]) = *(Low::Util::Name *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
       void ImGuiImage::cleanup()

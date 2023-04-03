@@ -4,6 +4,10 @@
 
 #include <stdint.h>
 
+#include "LowUtilName.h"
+#include "LowUtilAssert.h"
+#include "LowUtilContainers.h"
+
 #define SINGLE_ARG(...) __VA_ARGS__
 
 #define TYPE_SOA(type, member, membertype)                                     \
@@ -38,6 +42,37 @@ namespace Low {
 
     } // namespace Instances
 
+    struct LOW_EXPORT Handle;
+
+    namespace RTTI {
+      namespace PropertyType {
+        enum Enum
+        {
+          UNKNOWN,
+          VECTOR2,
+          VECTOR3,
+          NAME
+        };
+      }
+
+      struct PropertyInfo
+      {
+        Util::Name name;
+        uint32_t dataOffset;
+        uint32_t type;
+        void const *(*get)(Handle);
+        void (*set)(Handle, const void *);
+      };
+
+      struct TypeInfo
+      {
+        Name name;
+        Map<Name, PropertyInfo> properties;
+        uint32_t (*get_capacity)();
+        bool (*is_alive)(Handle);
+      };
+    } // namespace RTTI
+
     struct LOW_EXPORT Handle
     {
       union
@@ -66,6 +101,12 @@ namespace Low {
       uint16_t get_type() const;
 
       bool check_alive(Instances::Slot *p_Slots, uint32_t p_Capacity) const;
+
+      static RTTI::TypeInfo &get_type_info(uint16_t p_TypeId);
+
+    protected:
+      static void register_type_info(uint16_t p_TypeId,
+                                     RTTI::TypeInfo &p_TypeInfo);
     };
 
   } // namespace Util

@@ -70,6 +70,11 @@ namespace Low {
 
       static uint32_t get_capacity();
 
+      static bool is_alive(Low::Util::Handle p_Handle)
+      {
+        return p_Handle.check_alive(ms_Slots, get_capacity());
+      }
+
       MaterialType get_material_type() const;
       void set_material_type(MaterialType p_Value);
 

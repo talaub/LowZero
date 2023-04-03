@@ -77,6 +77,126 @@ namespace Low {
 
       LOW_PROFILE_ALLOC(type_buffer_RenderObject);
       LOW_PROFILE_ALLOC(type_slots_RenderObject);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(RenderObject);
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &RenderObject::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(mesh);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, mesh);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (
+              void *)&RenderObject::ms_Buffer[p_Handle.get_index() *
+                                                  RenderObjectData::get_size() +
+                                              offsetof(RenderObjectData, mesh)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Mesh *)&RenderObject::ms_Buffer[p_Handle.get_index() *
+                                                 RenderObjectData::get_size() +
+                                             offsetof(RenderObjectData,
+                                                      mesh)]) = *(Mesh *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(material);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, material);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&RenderObject::ms_Buffer
+              [p_Handle.get_index() * RenderObjectData::get_size() +
+               offsetof(RenderObjectData, material)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Material *)&RenderObject::ms_Buffer
+               [p_Handle.get_index() * RenderObjectData::get_size() +
+                offsetof(RenderObjectData, material)]) = *(Material *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(world_position);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, world_position);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&RenderObject::ms_Buffer
+              [p_Handle.get_index() * RenderObjectData::get_size() +
+               offsetof(RenderObjectData, world_position)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Math::Vector3 *)&RenderObject::ms_Buffer
+               [p_Handle.get_index() * RenderObjectData::get_size() +
+                offsetof(RenderObjectData, world_position)]) =
+              *(Math::Vector3 *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(world_rotation);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, world_rotation);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&RenderObject::ms_Buffer
+              [p_Handle.get_index() * RenderObjectData::get_size() +
+               offsetof(RenderObjectData, world_rotation)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Math::Quaternion *)&RenderObject::ms_Buffer
+               [p_Handle.get_index() * RenderObjectData::get_size() +
+                offsetof(RenderObjectData, world_rotation)]) =
+              *(Math::Quaternion *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(world_scale);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, world_scale);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&RenderObject::ms_Buffer
+              [p_Handle.get_index() * RenderObjectData::get_size() +
+               offsetof(RenderObjectData, world_scale)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Math::Vector3 *)&RenderObject::ms_Buffer
+               [p_Handle.get_index() * RenderObjectData::get_size() +
+                offsetof(RenderObjectData, world_scale)]) =
+              *(Math::Vector3 *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (
+              void *)&RenderObject::ms_Buffer[p_Handle.get_index() *
+                                                  RenderObjectData::get_size() +
+                                              offsetof(RenderObjectData, name)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Low::Util::Name *)&RenderObject::ms_Buffer
+               [p_Handle.get_index() * RenderObjectData::get_size() +
+                offsetof(RenderObjectData, name)]) = *(Low::Util::Name *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
     void RenderObject::cleanup()

@@ -7,6 +7,8 @@
 
 namespace Low {
   namespace Util {
+    Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
+
     Handle::Handle()
     {
     }
@@ -61,6 +63,23 @@ namespace Low {
              p_Slots[m_Data.m_Index].m_Generation == m_Data.m_Generation;
     }
 
+    void Handle::register_type_info(uint16_t p_TypeId,
+                                    RTTI::TypeInfo &p_TypeInfo)
+    {
+      LOW_ASSERT(g_TypeInfos.find(p_TypeId) == g_TypeInfos.end(),
+                 "Type info for this type id has already been registered");
+
+      g_TypeInfos[p_TypeId] = p_TypeInfo;
+    }
+
+    RTTI::TypeInfo &Handle::get_type_info(uint16_t p_TypeId)
+    {
+      LOW_ASSERT(g_TypeInfos.find(p_TypeId) != g_TypeInfos.end(),
+                 "Type info has not been registered for type id");
+
+      return g_TypeInfos[p_TypeId];
+    }
+
     namespace Instances {
 
       void initialize_buffer(uint8_t **p_Buffer, size_t p_ElementSize,
@@ -82,24 +101,24 @@ namespace Low {
         }
       }
 
-    uint32_t create_instance(uint8_t *p_Buffer, Instances::Slot *p_Slots,
-			    uint32_t p_Capacity)
-    {
-    uint32_t l_Index = 0u;
+      uint32_t create_instance(uint8_t *p_Buffer, Instances::Slot *p_Slots,
+                               uint32_t p_Capacity)
+      {
+        uint32_t l_Index = 0u;
 
-    // Find free index
-    for (; l_Index < p_Capacity; ++l_Index) {
-	if (!p_Slots[l_Index].m_Occupied &&
-	    p_Slots[l_Index].m_Generation <= 255)
-	break;
-    }
+        // Find free index
+        for (; l_Index < p_Capacity; ++l_Index) {
+          if (!p_Slots[l_Index].m_Occupied &&
+              p_Slots[l_Index].m_Generation <= 255)
+            break;
+        }
 
-    LOW_ASSERT(l_Index < p_Capacity,
-		"Cannot create new instance. Budget blown.");
+        LOW_ASSERT(l_Index < p_Capacity,
+                   "Cannot create new instance. Budget blown.");
 
-    p_Slots[l_Index].m_Occupied = true;
-    return l_Index;
-    }
+        p_Slots[l_Index].m_Occupied = true;
+        return l_Index;
+      }
     } // namespace Instances
   }   // namespace Util
 } // namespace Low

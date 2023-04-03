@@ -30,7 +30,6 @@ namespace Low {
 
       static uint32_t to_hash(const char *p_String);
 
-    private:
       uint32_t m_Index;
     };
 

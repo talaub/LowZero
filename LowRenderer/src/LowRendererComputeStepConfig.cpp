@@ -79,6 +79,69 @@ namespace Low {
 
       LOW_PROFILE_ALLOC(type_buffer_ComputeStepConfig);
       LOW_PROFILE_ALLOC(type_slots_ComputeStepConfig);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(ComputeStepConfig);
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &ComputeStepConfig::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(resources);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, resources);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStepConfig::ms_Buffer
+              [p_Handle.get_index() * ComputeStepConfigData::get_size() +
+               offsetof(ComputeStepConfigData, resources)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::List<ResourceConfig> *)&ComputeStepConfig::ms_Buffer
+               [p_Handle.get_index() * ComputeStepConfigData::get_size() +
+                offsetof(ComputeStepConfigData, resources)]) =
+              *(Util::List<ResourceConfig> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(pipelines);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, pipelines);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStepConfig::ms_Buffer
+              [p_Handle.get_index() * ComputeStepConfigData::get_size() +
+               offsetof(ComputeStepConfigData, pipelines)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Util::List<ComputePipelineConfig> *)&ComputeStepConfig::ms_Buffer
+               [p_Handle.get_index() * ComputeStepConfigData::get_size() +
+                offsetof(ComputeStepConfigData, pipelines)]) =
+              *(Util::List<ComputePipelineConfig> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ComputeStepConfig::ms_Buffer
+              [p_Handle.get_index() * ComputeStepConfigData::get_size() +
+               offsetof(ComputeStepConfigData, name)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Low::Util::Name *)&ComputeStepConfig::ms_Buffer
+               [p_Handle.get_index() * ComputeStepConfigData::get_size() +
+                offsetof(ComputeStepConfigData, name)]) =
+              *(Low::Util::Name *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
     void ComputeStepConfig::cleanup()

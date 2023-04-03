@@ -93,7 +93,7 @@ void main()
   float l_LightStrength = 5;
   int u_PointLightCount = 1;
   PointLightInfo u_PointLight;
-  u_PointLight.position = vec3(-1.2, 0.6, -1);
+  u_PointLight.position = vec3(-1.5, 0.6, -1);
   u_PointLight.color = vec3(1, 1, 1) * l_LightStrength;
 
   ivec2 l_AbsolutePixel = ivec2(gl_GlobalInvocationID.xy);

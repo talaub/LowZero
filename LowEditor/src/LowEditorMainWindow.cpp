@@ -4,8 +4,11 @@
 
 #include "LowEditorLogWidget.h"
 #include "LowEditorRenderFlowWidget.h"
+#include "LowEditorDetailsWidget.h"
 
 #include "LowUtilContainers.h"
+
+#include "LowRendererTexture2D.h"
 
 #include <functional>
 
@@ -16,6 +19,7 @@ namespace Low {
 
     LogWidget g_LogWidget;
     RenderFlowWidget *g_MainViewportWidget;
+    DetailsWidget *g_DetailsWidget;
 
     static void render_menu_bar(float p_Delta)
     {
@@ -63,6 +67,8 @@ namespace Low {
     {
       g_MainViewportWidget = new RenderFlowWidget(
           "Viewport", Renderer::RenderFlow::ms_LivingInstances[0]);
+
+      g_DetailsWidget = new DetailsWidget();
     }
 
     void tick(float p_Delta)
@@ -71,8 +77,26 @@ namespace Low {
 
       render_central_docking_space(p_Delta);
 
+      if (ImGui::Button("RenderFlow")) {
+        g_DetailsWidget->add_section(
+            Renderer::RenderFlow::living_instances()[0]);
+      }
+      if (ImGui::Button("Context")) {
+        g_DetailsWidget->add_section(
+            Renderer::Interface::Context::living_instances()[0]);
+      }
+      if (ImGui::Button("Texture2D")) {
+        g_DetailsWidget->add_section(
+            Renderer::Texture2D::living_instances()[1]);
+      }
+
+      if (ImGui::Button("Clear")) {
+        g_DetailsWidget->clear();
+      }
+
       g_LogWidget.render(p_Delta);
       g_MainViewportWidget->render(p_Delta);
+      g_DetailsWidget->render(p_Delta);
     }
   } // namespace Editor
 } // namespace Low

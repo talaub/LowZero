@@ -76,6 +76,11 @@ namespace Low {
 
         static uint32_t get_capacity();
 
+        static bool is_alive(Low::Util::Handle p_Handle)
+        {
+          return p_Handle.check_alive(ms_Slots, get_capacity());
+        }
+
         Backend::Context &get_context() const;
 
         Util::List<Renderpass> &get_renderpasses() const;

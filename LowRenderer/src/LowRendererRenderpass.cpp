@@ -84,6 +84,50 @@ namespace Low {
 
         LOW_PROFILE_ALLOC(type_buffer_Renderpass);
         LOW_PROFILE_ALLOC(type_slots_Renderpass);
+
+        Low::Util::RTTI::TypeInfo l_TypeInfo;
+        l_TypeInfo.name = N(Renderpass);
+        l_TypeInfo.get_capacity = &get_capacity;
+        l_TypeInfo.is_alive = &Renderpass::is_alive;
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(renderpass);
+          l_PropertyInfo.dataOffset = offsetof(RenderpassData, renderpass);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&Renderpass::ms_Buffer
+                [p_Handle.get_index() * RenderpassData::get_size() +
+                 offsetof(RenderpassData, renderpass)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Backend::Renderpass *)&Renderpass::ms_Buffer
+                 [p_Handle.get_index() * RenderpassData::get_size() +
+                  offsetof(RenderpassData, renderpass)]) =
+                *(Backend::Renderpass *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(name);
+          l_PropertyInfo.dataOffset = offsetof(RenderpassData, name);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (
+                void *)&Renderpass::ms_Buffer[p_Handle.get_index() *
+                                                  RenderpassData::get_size() +
+                                              offsetof(RenderpassData, name)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Low::Util::Name *)&Renderpass::ms_Buffer
+                 [p_Handle.get_index() * RenderpassData::get_size() +
+                  offsetof(RenderpassData, name)]) = *(Low::Util::Name *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
       void Renderpass::cleanup()

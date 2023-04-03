@@ -83,6 +83,11 @@ namespace Low {
 
       static uint32_t get_capacity();
 
+      static bool is_alive(Low::Util::Handle p_Handle)
+      {
+        return p_Handle.check_alive(ms_Slots, get_capacity());
+      }
+
       GraphicsPipelineConfig &get_gbuffer_pipeline() const;
       void set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value);
 

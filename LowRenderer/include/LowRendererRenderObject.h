@@ -71,6 +71,11 @@ namespace Low {
 
       static uint32_t get_capacity();
 
+      static bool is_alive(Low::Util::Handle p_Handle)
+      {
+        return p_Handle.check_alive(ms_Slots, get_capacity());
+      }
+
       Mesh get_mesh() const;
       void set_mesh(Mesh p_Value);
 

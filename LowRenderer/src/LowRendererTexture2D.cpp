@@ -79,6 +79,69 @@ namespace Low {
 
       LOW_PROFILE_ALLOC(type_buffer_Texture2D);
       LOW_PROFILE_ALLOC(type_slots_Texture2D);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(Texture2D);
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &Texture2D::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(image);
+        l_PropertyInfo.dataOffset = offsetof(Texture2DData, image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&Texture2D::ms_Buffer[p_Handle.get_index() *
+                                                   Texture2DData::get_size() +
+                                               offsetof(Texture2DData, image)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Resource::Image *)&Texture2D::ms_Buffer
+               [p_Handle.get_index() * Texture2DData::get_size() +
+                offsetof(Texture2DData, image)]) = *(Resource::Image *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(context);
+        l_PropertyInfo.dataOffset = offsetof(Texture2DData, context);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (
+              void *)&Texture2D::ms_Buffer[p_Handle.get_index() *
+                                               Texture2DData::get_size() +
+                                           offsetof(Texture2DData, context)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Interface::Context
+                 *)&Texture2D::ms_Buffer[p_Handle.get_index() *
+                                             Texture2DData::get_size() +
+                                         offsetof(Texture2DData, context)]) =
+              *(Interface::Context *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&Texture2D::ms_Buffer[p_Handle.get_index() *
+                                                   Texture2DData::get_size() +
+                                               offsetof(Texture2DData, name)];
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          (*(Low::Util::Name *)&Texture2D::ms_Buffer
+               [p_Handle.get_index() * Texture2DData::get_size() +
+                offsetof(Texture2DData, name)]) = *(Low::Util::Name *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
     void Texture2D::cleanup()

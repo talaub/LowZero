@@ -21,6 +21,19 @@ function format(p_FilePath, p_Content) {
     return l_Formatted;
 }
 
+function get_property_type(p_Type) {
+    if (p_Type.endsWith('Math::Vector2')) {
+	return 'VECTOR2';
+    }
+    if (p_Type.endsWith('Math::Vector3')) {
+	return 'VECTOR3';
+    }
+    if (p_Type.endsWith('Util::Name')) {
+	return 'NAME';
+    }
+    return "UNKNOWN";
+}
+
 function save_file(p_FilePath, p_Content) {
     fs.writeFileSync(p_FilePath, p_Content);
 }
@@ -261,7 +274,7 @@ function generate_header(p_Type) {
     t += empty();
     t += line(`static void initialize();`);
     t += line(`static void cleanup();`);
-    
+
     t += empty();
     t += line('static uint32_t living_count() {');
     t += line('return static_cast<uint32_t>(ms_LivingInstances.size());');
@@ -275,6 +288,11 @@ function generate_header(p_Type) {
     
     t += empty();
     t += line(`static uint32_t get_capacity();`);
+    t += empty();
+
+    t += line('static bool is_alive(Low::Util::Handle p_Handle) {');
+    t += line('return p_Handle.check_alive(ms_Slots, get_capacity());');
+    t += line('}');
     t += empty();
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
@@ -474,6 +492,27 @@ function generate_source(p_Type) {
     t += empty();
     t += line(`LOW_PROFILE_ALLOC(type_buffer_${p_Type.name});`);
     t += line(`LOW_PROFILE_ALLOC(type_slots_${p_Type.name});`);
+    t += empty();
+    t += line(`Low::Util::RTTI::TypeInfo l_TypeInfo;`);
+    t += line(`l_TypeInfo.name = N(${p_Type.name});`);
+    t += line(`l_TypeInfo.get_capacity = &get_capacity;`);
+    t += line(`l_TypeInfo.is_alive = &${p_Type.name}::is_alive;`);
+    for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	t += line(`{`);
+	t += line(`Low::Util::RTTI::PropertyInfo l_PropertyInfo;`);
+	t += line(`l_PropertyInfo.name = N(${i_PropName});`);
+	t += line(`l_PropertyInfo.dataOffset = offsetof(${p_Type.name}Data, ${i_PropName});`);
+	t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`);
+	t += line(`l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`);
+	t += line(`return (void*)&${p_Type.name}::ms_Buffer[p_Handle.get_index() * ${p_Type.name}Data::get_size() + offsetof(${p_Type.name}Data, ${i_PropName})];`);
+	t += line(`};`);
+	t += line(`l_PropertyInfo.set = [](Low::Util::Handle p_Handle, const void* p_Data) -> void {`);
+	t += line(`(*(${i_Prop.plain_type}*)&${p_Type.name}::ms_Buffer[p_Handle.get_index() * ${p_Type.name}Data::get_size() + offsetof(${p_Type.name}Data, ${i_PropName})]) = *(${i_Prop.plain_type}*)p_Data;`);
+	t += line(`};`);
+	t += line(`l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;`);
+	t += line(`}`);
+    }
+    t += line(`Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);`);
     t += line('}');
     t += empty();
     t += line(`void ${p_Type.name}::cleanup() {`);

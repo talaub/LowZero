@@ -89,6 +89,11 @@ namespace Low {
 
       static uint32_t get_capacity();
 
+      static bool is_alive(Low::Util::Handle p_Handle)
+      {
+        return p_Handle.check_alive(ms_Slots, get_capacity());
+      }
+
       Math::UVector2 &get_dimensions() const;
 
       Resource::Image get_output_image() const;

@@ -83,6 +83,132 @@ namespace Low {
 
         LOW_PROFILE_ALLOC(type_buffer_Context);
         LOW_PROFILE_ALLOC(type_slots_Context);
+
+        Low::Util::RTTI::TypeInfo l_TypeInfo;
+        l_TypeInfo.name = N(Context);
+        l_TypeInfo.get_capacity = &get_capacity;
+        l_TypeInfo.is_alive = &Context::is_alive;
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(context);
+          l_PropertyInfo.dataOffset = offsetof(ContextData, context);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
+                                                   ContextData::get_size() +
+                                               offsetof(ContextData, context)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Backend::Context
+                   *)&Context::ms_Buffer[p_Handle.get_index() *
+                                             ContextData::get_size() +
+                                         offsetof(ContextData, context)]) =
+                *(Backend::Context *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(renderpasses);
+          l_PropertyInfo.dataOffset = offsetof(ContextData, renderpasses);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (
+                void *)&Context::ms_Buffer[p_Handle.get_index() *
+                                               ContextData::get_size() +
+                                           offsetof(ContextData, renderpasses)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Util::List<Renderpass>
+                   *)&Context::ms_Buffer[p_Handle.get_index() *
+                                             ContextData::get_size() +
+                                         offsetof(ContextData, renderpasses)]) =
+                *(Util::List<Renderpass> *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(global_signature);
+          l_PropertyInfo.dataOffset = offsetof(ContextData, global_signature);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
+                                                   ContextData::get_size() +
+                                               offsetof(ContextData,
+                                                        global_signature)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(PipelineResourceSignature *)&Context::ms_Buffer
+                 [p_Handle.get_index() * ContextData::get_size() +
+                  offsetof(ContextData, global_signature)]) =
+                *(PipelineResourceSignature *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(frame_info_buffer);
+          l_PropertyInfo.dataOffset = offsetof(ContextData, frame_info_buffer);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
+                                                   ContextData::get_size() +
+                                               offsetof(ContextData,
+                                                        frame_info_buffer)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Resource::Buffer *)&Context::ms_Buffer
+                 [p_Handle.get_index() * ContextData::get_size() +
+                  offsetof(ContextData, frame_info_buffer)]) =
+                *(Resource::Buffer *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(material_data_buffer);
+          l_PropertyInfo.dataOffset =
+              offsetof(ContextData, material_data_buffer);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
+                                                   ContextData::get_size() +
+                                               offsetof(ContextData,
+                                                        material_data_buffer)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Resource::Buffer *)&Context::ms_Buffer
+                 [p_Handle.get_index() * ContextData::get_size() +
+                  offsetof(ContextData, material_data_buffer)]) =
+                *(Resource::Buffer *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(name);
+          l_PropertyInfo.dataOffset = offsetof(ContextData, name);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&Context::ms_Buffer[p_Handle.get_index() *
+                                                   ContextData::get_size() +
+                                               offsetof(ContextData, name)];
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            (*(Low::Util::Name *)&Context::ms_Buffer
+                 [p_Handle.get_index() * ContextData::get_size() +
+                  offsetof(ContextData, name)]) = *(Low::Util::Name *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
       void Context::cleanup()
