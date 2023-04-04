@@ -32,7 +32,16 @@ function get_property_type(p_Type) {
 	return 'NAME';
     }
     if (['bool'].includes(p_Type)) {
-	return 'NAME';
+	return 'BOOL';
+    }
+    if (['float'].includes(p_Type)) {
+	return 'FLOAT';
+    }
+    if (['uint32_t'].includes(p_Type)) {
+	return 'UINT32';
+    }
+    if (['int'].includes(p_Type)) {
+	return 'INT';
     }
     return "UNKNOWN";
 }

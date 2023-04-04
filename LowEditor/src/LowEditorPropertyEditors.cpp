@@ -80,6 +80,19 @@ namespace Low {
         ImGui::Checkbox(l_Label.c_str(), &p_Bool);
       }
 
+      void render_float_editor(Util::String &p_Label, float &p_Float,
+                               bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        ImGui::DragFloat(l_Label.c_str(), &p_Float);
+      }
+
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          const void *p_DataPtr)
       {
@@ -95,6 +108,9 @@ namespace Low {
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::BOOL) {
           render_checkbox_bool_editor(Util::String(p_PropertyInfo.name.c_str()),
                                       *(bool *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::BOOL) {
+          render_float_editor(Util::String(p_PropertyInfo.name.c_str()),
+                              *(float *)p_DataPtr, true);
         }
       }
     } // namespace PropertyEditors

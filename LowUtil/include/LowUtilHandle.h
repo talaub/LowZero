@@ -54,6 +54,8 @@ namespace Low {
           VECTOR3,
           NAME,
           FLOAT,
+          UINT32,
+          INT,
           BOOL
         };
       }
