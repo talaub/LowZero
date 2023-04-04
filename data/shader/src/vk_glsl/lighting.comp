@@ -34,11 +34,12 @@ const float PI = 3.14159265359;
 
 vec3 WorldPosFromDepth(float depth)
 {
-  float z = depth * 2.0 - 1.0;
+  float z = depth;
 
   vec2 TexCoord = get_texture_coords();
 
   vec4 clipSpacePosition = vec4(TexCoord * 2.0 - 1.0, z, 1.0);
+
   vec4 viewSpacePosition = inverse(u_ProjectionMatrix) * clipSpacePosition;
 
   // Perspective division
@@ -108,7 +109,7 @@ void main()
 
   vec4 l_Albedo = texture(GBufferAlbedo, l_TextureCoordinates);
 
-  vec3 l_WorldPosition = WorldPosFromDepth(l_Depth); // TODO: Implement
+  vec3 l_WorldPosition = WorldPosFromDepth(l_Depth);
 
   vec3 l_Normal = texture(GBufferNormals, l_TextureCoordinates).xyz;
   l_Normal = normalize(vec3((l_Normal.x * 2.0) - 1.0, (l_Normal.y * 2.0) - 1.0,

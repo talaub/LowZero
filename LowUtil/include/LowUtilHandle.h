@@ -52,7 +52,9 @@ namespace Low {
           UNKNOWN,
           VECTOR2,
           VECTOR3,
-          NAME
+          NAME,
+          FLOAT,
+          BOOL
         };
       }
 

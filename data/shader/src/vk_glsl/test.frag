@@ -37,6 +37,7 @@ layout(location = 1) out vec4 o_SurfaceNormal;
 layout(location = 2) out vec4 o_Normal;
 layout(location = 3) out vec4 o_Metalness;
 layout(location = 4) out vec4 o_Roughness;
+
 void main()
 {
   uint l_MaterialIndex = u_RenderObjects[in_InstanceId].material_index;

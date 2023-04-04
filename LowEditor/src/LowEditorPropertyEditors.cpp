@@ -4,15 +4,27 @@
 #include "IconsFontAwesome5.h"
 #include <string.h>
 
+#include <algorithm>
+
+#define DISPLAY_LABEL(s) std::replace(s.begin(), s.end(), '_', ' ')
+
 namespace Low {
   namespace Editor {
     namespace PropertyEditors {
+
+      static void render_label(Util::String &p_Label)
+      {
+        Util::String l_DisplayLabel = p_Label;
+        DISPLAY_LABEL(l_DisplayLabel);
+        ImGui::Text(l_DisplayLabel.c_str());
+        ImGui::SameLine();
+      }
+
       void render_name_editor(Util::String &p_Label, Util::Name &p_Name,
                               bool p_RenderLabel)
       {
         if (p_RenderLabel) {
-          ImGui::Text(p_Label.c_str());
-          ImGui::SameLine();
+          render_label(p_Label);
         }
 
         char l_Buffer[255];
@@ -29,12 +41,60 @@ namespace Low {
         }
       }
 
+      void render_vector3_editor(Util::String &p_Label, Math::Vector3 &p_Vector,
+                                 bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        ImGui::DragFloat3(l_Label.c_str(), (float *)&p_Vector);
+      }
+
+      void render_vector2_editor(Util::String &p_Label, Math::Vector2 &p_Vector,
+                                 bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        ImGui::DragFloat2(l_Label.c_str(), (float *)&p_Vector);
+      }
+
+      void render_checkbox_bool_editor(Util::String &p_Label, bool &p_Bool,
+                                       bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        ImGui::Checkbox(l_Label.c_str(), &p_Bool);
+      }
+
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          const void *p_DataPtr)
       {
         if (p_PropertyInfo.type == Util::RTTI::PropertyType::NAME) {
           render_name_editor(Util::String(p_PropertyInfo.name.c_str()),
                              *(Util::Name *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::VECTOR2) {
+          render_vector2_editor(Util::String(p_PropertyInfo.name.c_str()),
+                                *(Math::Vector2 *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::VECTOR3) {
+          render_vector3_editor(Util::String(p_PropertyInfo.name.c_str()),
+                                *(Math::Vector3 *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::BOOL) {
+          render_checkbox_bool_editor(Util::String(p_PropertyInfo.name.c_str()),
+                                      *(bool *)p_DataPtr, true);
         }
       }
     } // namespace PropertyEditors

@@ -57,6 +57,8 @@ namespace Low {
         p_Config.format = Backend::ImageFormat::D32_SFLOAT_S8_UINT;
       } else if (l_FormatString == "D24_UNORM_S8_UINT") {
         p_Config.format = Backend::ImageFormat::D24_UNORM_S8_UINT;
+      } else if (l_FormatString == "RGBA32_SFLOAT") {
+        p_Config.format = Backend::ImageFormat::RGBA32_SFLOAT;
       } else {
         LOW_ASSERT(false, "Unknown format");
       }

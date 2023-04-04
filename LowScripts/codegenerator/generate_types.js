@@ -31,6 +31,9 @@ function get_property_type(p_Type) {
     if (p_Type.endsWith('Util::Name')) {
 	return 'NAME';
     }
+    if (['bool'].includes(p_Type)) {
+	return 'NAME';
+    }
     return "UNKNOWN";
 }
 
