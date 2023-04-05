@@ -10,7 +10,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t RenderFlow::TYPE_ID = 1;
+    const uint16_t RenderFlow::TYPE_ID = 2;
     uint8_t *RenderFlow::ms_Buffer = 0;
     Low::Util::Instances::Slot *RenderFlow::ms_Slots = 0;
     Low::Util::List<RenderFlow> RenderFlow::ms_LivingInstances =
@@ -252,7 +252,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_fov);
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_fov);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_fov,
                                             float);
@@ -268,7 +268,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_near_plane);
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_near_plane);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
                                             camera_near_plane, float);
@@ -284,7 +284,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_far_plane);
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_far_plane);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
                                             camera_far_plane, float);

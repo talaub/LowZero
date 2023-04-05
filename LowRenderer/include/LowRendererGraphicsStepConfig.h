@@ -14,11 +14,23 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct LOW_RENDERER_API GraphicsStep;
+
+    struct GraphicsStepCallbacks
+    {
+      void (*setup_signature)(GraphicsStep, RenderFlow);
+      void (*setup_renderpass)(GraphicsStep, RenderFlow);
+      void (*setup_pipelines)(GraphicsStep, RenderFlow, bool);
+      void (*execute)(GraphicsStep, RenderFlow, Math::Matrix4x4 &,
+                      Math::Matrix4x4 &);
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API GraphicsStepConfigData
     {
+      GraphicsStepCallbacks callbacks;
       Util::List<ResourceConfig> resources;
+      DimensionsConfig dimensions_config;
       Util::List<GraphicsPipelineConfig> pipelines;
       Util::List<PipelineResourceBindingConfig> rendertargets;
       PipelineResourceBindingConfig depth_rendertarget;
@@ -81,7 +93,12 @@ namespace Low {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
+      GraphicsStepCallbacks &get_callbacks() const;
+      void set_callbacks(GraphicsStepCallbacks &p_Value);
+
       Util::List<ResourceConfig> &get_resources() const;
+
+      DimensionsConfig &get_dimensions_config() const;
 
       Util::List<GraphicsPipelineConfig> &get_pipelines() const;
 
@@ -106,6 +123,7 @@ namespace Low {
                                      Util::Yaml::Node &p_Node);
 
     private:
+      void set_dimensions_config(DimensionsConfig &p_Value);
       void set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);
       void set_use_depth(bool p_Value);
       void set_depth_clear(bool p_Value);

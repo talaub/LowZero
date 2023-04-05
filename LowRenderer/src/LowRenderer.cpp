@@ -168,6 +168,10 @@ namespace Low {
     Mesh g_CubeMesh;
     Mesh g_SphereMesh;
 
+    static void setup_custom_renderstep_configs()
+    {
+    }
+
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
                                       Math::UVector2 &p_Dimensions)
     {
@@ -603,6 +607,8 @@ namespace Low {
 
       load_material_types();
 
+      setup_custom_renderstep_configs();
+
       load_renderflows();
 
       {
@@ -685,6 +691,34 @@ namespace Low {
         GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
             .register_renderobject(g_RenderObject2);
       }
+
+      {
+        Material l_Material = Material::make(N(GroundMat), g_Context);
+        l_Material.set_material_type(MaterialType::living_instances()[0]);
+        l_Material.set_property(N(albedo_color), Util::Variant(Math::Vector4(
+                                                     0.2f, 0.8f, 1.0f, 1.0f)));
+
+        l_Material.set_property(N(albedo_map), Util::Variant(g_Texture));
+        l_Material.set_property(N(normal_map),
+                                Util::Variant(g_WoodNormalTexture));
+
+        g_RenderObject2 = RenderObject::make(N(TestRO2));
+        g_RenderObject2.set_mesh(g_CubeMesh);
+        g_RenderObject2.set_material(l_Material);
+        g_RenderObject2.set_world_position(Math::Vector3(-2.0f, -3.0f, -8.0f));
+        g_RenderObject2.set_world_rotation(
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+        g_RenderObject2.set_world_scale(Math::Vector3(10.0f, 0.4f, 10.0f));
+
+        GraphicsStep(g_MainRenderFlow.get_steps()[0].get_id())
+            .register_renderobject(g_RenderObject2);
+        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
+            .register_renderobject(g_RenderObject2);
+      }
+
+      g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
+      g_MainRenderFlow.set_camera_rotation(
+          Math::VectorUtil::from_euler(Math::Vector3(-152.0f, 0.0f, 180.0f)));
     }
 
     void tick(float p_Delta)
@@ -712,22 +746,6 @@ namespace Low {
         ImGui::EndFrame();
         ImGui::UpdatePlatformWindows();
         return;
-      }
-
-      {
-        Math::Vector3 l_RotationEuler =
-            Math::VectorUtil::to_euler(g_RenderObject.get_world_rotation());
-
-        l_RotationEuler.y += 0.01f;
-
-        if (l_RotationEuler.y > 89.99f) {
-          l_RotationEuler.y = 0.0f;
-        }
-
-        g_RenderObject.set_world_rotation(
-            Math::VectorUtil::from_euler(l_RotationEuler));
-        g_RenderObject2.set_world_rotation(
-            Math::VectorUtil::from_euler(l_RotationEuler));
       }
 
       g_VertexBuffer.bind();

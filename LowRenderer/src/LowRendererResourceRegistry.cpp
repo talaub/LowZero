@@ -41,10 +41,10 @@ namespace Low {
       p_Params.format = p_Config.image.format;
       p_Params.writable = true;
 
-      if (p_Config.image.dimensionType ==
+      if (p_Config.image.dimensions.type ==
           ImageResourceDimensionType::ABSOLUTE) {
         p_Params.dimensions = p_Config.image.dimensions.absolute;
-      } else if (p_Config.image.dimensionType ==
+      } else if (p_Config.image.dimensions.type ==
                  ImageResourceDimensionType::RELATIVE) {
         if (p_Config.image.dimensions.relative.target ==
             ImageResourceDimensionRelativeOptions::CONTEXT) {

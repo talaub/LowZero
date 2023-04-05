@@ -1,0 +1,18 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+dll_macro: LOW_EXPORT
+types:
+  Entity:
+    properties:
+      components:
+        type: Util::Map<uint16_t, Util::Handle>
+        no_setter: true
+        private_getter: true
+    functions:
+      get_component:
+        return_type: uint64_t
+        parameters:
+          - name: typeId
+            type: uint16_t

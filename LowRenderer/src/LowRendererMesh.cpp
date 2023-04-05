@@ -7,7 +7,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Mesh::TYPE_ID = 7;
+    const uint16_t Mesh::TYPE_ID = 8;
     uint8_t *Mesh::ms_Buffer = 0;
     Low::Util::Instances::Slot *Mesh::ms_Slots = 0;
     Low::Util::List<Mesh> Mesh::ms_LivingInstances = Low::Util::List<Mesh>();
@@ -80,7 +80,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_buffer_start);
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_buffer_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_buffer_start,
                                             uint32_t);
@@ -96,7 +96,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_count);
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count,
                                             uint32_t);
@@ -112,7 +112,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_buffer_start);
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_buffer_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_buffer_start,
                                             uint32_t);
@@ -128,7 +128,7 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_count);
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count,
                                             uint32_t);

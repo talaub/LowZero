@@ -167,10 +167,16 @@ types:
     source_imports:
       - LowUtilString.h
       - LowRendererBackend.h
+      - LowRendererGraphicsStep.h
     properties:
+     callbacks:
+       type: GraphicsStepCallbacks
      resources:
        type: Util::List<ResourceConfig> 
        no_setter: true
+     dimensions_config:
+       type: DimensionsConfig
+       private_setter: true
      pipelines:
        type: Util::List<GraphicsPipelineConfig>
        no_setter: true
@@ -243,10 +249,6 @@ types:
         type: Util::Map<RenderFlow, Interface::PipelineResourceSignature>
         no_setter: true
         private_getter: true
-      object_matrix_buffers:
-        type: Util::Map<RenderFlow, Resource::Buffer>
-        no_setter: true
-        private_getter: true
     functions:
       make:
         static: true
@@ -289,22 +291,62 @@ types:
           - name: renderFlow
             type: RenderFlow
             handle: true
-      create_renderpass:
+      create_signature:
+        static: true
         return_type: void
-        private: true
         parameters:
+          - name: step
+            type: GraphicsStep
+            handle: true
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      create_renderpass:
+        static: true
+        return_type: void
+        parameters:
+          - name: step
+            type: GraphicsStep
+            handle: true
           - name: renderFlow
             type: RenderFlow
             handle: true
       create_pipelines:
+        static: true
         return_type: void
-        private: true
         parameters:
+          - name: step
+            type: GraphicsStep
+            handle: true
           - name: renderFlow
             type: RenderFlow
             handle: true
           - name: updateExisting
             type: bool
+      default_execute:
+        static: true
+        return_type: void
+        parameters:
+          - name: step
+            type: GraphicsStep
+            handle: true
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+          - name: projectionMatrix
+            type: Math::Matrix4x4
+          - name: viewMatrix
+            type: Math::Matrix4x4
+      draw_renderobjects:
+        static: true
+        return_type: void
+        parameters:
+          - name: step
+            type: GraphicsStep
+            handle: true
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
 
   Texture2D:
     private_make: true

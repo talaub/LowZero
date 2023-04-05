@@ -27,6 +27,9 @@ namespace Low {
       Resource::Buffer get_buffer_resource(Util::Name p_Name);
       Resource::Image get_image_resource(Util::Name p_Name);
 
+      void register_buffer_resource(Util::Name p_Name,
+                                    Resource::Buffer p_Buffer);
+
     private:
       Interface::Context m_Context;
       Util::Map<Util::Name, ResourceInfo> m_Resources;

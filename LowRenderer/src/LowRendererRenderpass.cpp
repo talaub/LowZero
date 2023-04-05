@@ -11,7 +11,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Renderpass::TYPE_ID = 12;
+      const uint16_t Renderpass::TYPE_ID = 13;
       uint8_t *Renderpass::ms_Buffer = 0;
       Low::Util::Instances::Slot *Renderpass::ms_Slots = 0;
       Low::Util::List<Renderpass> Renderpass::ms_LivingInstances =

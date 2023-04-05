@@ -9,7 +9,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Material::TYPE_ID = 10;
+    const uint16_t Material::TYPE_ID = 11;
     uint8_t *Material::ms_Buffer = 0;
     Low::Util::Instances::Slot *Material::ms_Slots = 0;
     Low::Util::List<Material> Material::ms_LivingInstances =

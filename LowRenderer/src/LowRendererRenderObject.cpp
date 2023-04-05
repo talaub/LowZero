@@ -7,7 +7,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t RenderObject::TYPE_ID = 8;
+    const uint16_t RenderObject::TYPE_ID = 9;
     uint8_t *RenderObject::ms_Buffer = 0;
     Low::Util::Instances::Slot *RenderObject::ms_Slots = 0;
     Low::Util::List<RenderObject> RenderObject::ms_LivingInstances =

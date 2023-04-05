@@ -6,10 +6,67 @@
 #include "LowUtilString.h"
 
 #include "LowRendererBackend.h"
+#include "LowRendererRenderFlow.h"
 
 namespace Low {
   namespace Renderer {
     Util::Map<Util::Name, GraphicsPipelineConfig> g_GraphicsPipelineConfigs;
+
+    void parse_dimensions_config(Util::Yaml::Node &p_Node,
+                                 DimensionsConfig &p_Config)
+    {
+      Util::String l_DimensionType =
+          Util::String(p_Node["type"].as<std::string>().c_str());
+
+      if (l_DimensionType == "relative") {
+        p_Config.type = ImageResourceDimensionType::RELATIVE;
+        p_Config.relative.multiplier = p_Node["multiplier"].as<float>();
+        Util::String l_RelativeString =
+            Util::String(p_Node["target"].as<std::string>().c_str());
+        if (l_RelativeString == "renderflow") {
+          p_Config.relative.target =
+              ImageResourceDimensionRelativeOptions::RENDERFLOW;
+        } else if (l_RelativeString == "context") {
+          p_Config.relative.target =
+              ImageResourceDimensionRelativeOptions::CONTEXT;
+        } else {
+          LOW_ASSERT(false, "Unknown dimension relative target option");
+        }
+      } else if (l_DimensionType == "absolute") {
+        p_Config.type = ImageResourceDimensionType::ABSOLUTE;
+        p_Config.absolute.x = p_Node["x"].as<int>();
+        p_Config.absolute.y = p_Node["y"].as<int>();
+      } else {
+        LOW_ASSERT(false, "Unknown dimension type");
+      }
+    }
+
+    void apply_dimensions_config(Interface::Context p_Context,
+                                 RenderFlow p_RenderFlow,
+                                 DimensionsConfig &p_Config,
+                                 Math::UVector2 &p_Dimensions)
+    {
+      if (p_Config.type == ImageResourceDimensionType::ABSOLUTE) {
+        p_Dimensions.x = p_Config.absolute.x;
+        p_Dimensions.y = p_Config.absolute.y;
+      } else if (p_Config.type == ImageResourceDimensionType::RELATIVE) {
+        Math::Vector2 l_Dimensions;
+        if (p_Config.relative.target ==
+            ImageResourceDimensionRelativeOptions::RENDERFLOW) {
+          l_Dimensions = p_RenderFlow.get_dimensions();
+        } else if (p_Config.relative.target ==
+                   ImageResourceDimensionRelativeOptions::CONTEXT) {
+          l_Dimensions = p_Context.get_dimensions();
+        } else {
+          LOW_ASSERT(false, "Unknown dimensions relative target option");
+        }
+        l_Dimensions *= p_Config.relative.multiplier;
+        p_Dimensions = l_Dimensions;
+
+      } else {
+        LOW_ASSERT(false, "Unknown dimensions config type");
+      }
+    }
 
     static void parse_resource_image_config(Util::Yaml::Node &p_Node,
                                             ImageResourceConfig &p_Config)
@@ -18,28 +75,7 @@ namespace Low {
       LOW_ASSERT((bool)p_Node["format"], "Missing format information");
 
       Util::Yaml::Node &l_DimensionConfig = p_Node["dimensions"];
-
-      Util::String l_DimensionType =
-          Util::String(l_DimensionConfig["type"].as<std::string>().c_str());
-
-      if (l_DimensionType == "relative") {
-        p_Config.dimensionType = ImageResourceDimensionType::RELATIVE;
-        p_Config.dimensions.relative.multiplier =
-            l_DimensionConfig["multiplier"].as<float>();
-        Util::String l_RelativeString =
-            Util::String(l_DimensionConfig["target"].as<std::string>().c_str());
-        if (l_RelativeString == "renderflow") {
-          p_Config.dimensions.relative.target =
-              ImageResourceDimensionRelativeOptions::RENDERFLOW;
-        } else if (l_RelativeString == "context") {
-          p_Config.dimensions.relative.target =
-              ImageResourceDimensionRelativeOptions::CONTEXT;
-        } else {
-          LOW_ASSERT(false, "Unknown dimension relative target option");
-        }
-      } else {
-        LOW_ASSERT(false, "Unknown dimension type");
-      }
+      parse_dimensions_config(l_DimensionConfig, p_Config.dimensions);
 
       p_Config.depth = false;
       if (p_Node["depth"]) {

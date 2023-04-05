@@ -7,7 +7,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t GraphicsStep::TYPE_ID = 5;
+    const uint16_t GraphicsStep::TYPE_ID = 6;
     uint8_t *GraphicsStep::ms_Buffer = 0;
     Low::Util::Instances::Slot *GraphicsStep::ms_Slots = 0;
     Low::Util::List<GraphicsStep> GraphicsStep::ms_LivingInstances =
@@ -61,10 +61,6 @@ namespace Low {
           SINGLE_ARG(
               Util::Map<RenderFlow, Interface::PipelineResourceSignature>)))
           Util::Map<RenderFlow, Interface::PipelineResourceSignature>();
-      new (&ACCESSOR_TYPE_SOA(
-          l_Handle, GraphicsStep, object_matrix_buffers,
-          SINGLE_ARG(Util::Map<RenderFlow, Resource::Buffer>)))
-          Util::Map<RenderFlow, Resource::Buffer>();
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStep, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -248,26 +244,6 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(object_matrix_buffers);
-        l_PropertyInfo.dataOffset =
-            offsetof(GraphicsStepData, object_matrix_buffers);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, object_matrix_buffers,
-              SINGLE_ARG(Util::Map<RenderFlow, Resource::Buffer>));
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, object_matrix_buffers,
-              SINGLE_ARG(Util::Map<RenderFlow, Resource::Buffer>)) =
-              *(Util::Map<RenderFlow, Resource::Buffer> *)p_Data;
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
@@ -391,14 +367,6 @@ namespace Low {
               Util::Map<RenderFlow, Interface::PipelineResourceSignature>));
     }
 
-    Util::Map<RenderFlow, Resource::Buffer> &
-    GraphicsStep::get_object_matrix_buffers() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(GraphicsStep, object_matrix_buffers,
-                      SINGLE_ARG(Util::Map<RenderFlow, Resource::Buffer>));
-    }
-
     Low::Util::Name GraphicsStep::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -431,40 +399,12 @@ namespace Low {
     void GraphicsStep::prepare(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
-      {
-        Backend::BufferCreateParams l_Params;
-        l_Params.context = &get_context().get_context();
-        l_Params.bufferSize = sizeof(RenderObjectShaderInfo) * 32u;
-        l_Params.data = nullptr;
-        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+      get_resources()[p_RenderFlow].initialize(get_config().get_resources(),
+                                               get_context(), p_RenderFlow);
 
-        get_object_matrix_buffers()[p_RenderFlow] =
-            Resource::Buffer::make(N(ObjectMatrixBuffer), l_Params);
-      }
-
-      {
-        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
-
-        {
-          Backend::PipelineResourceDescription l_ResourceDescription;
-          l_ResourceDescription.arraySize = 1;
-          l_ResourceDescription.name = N(u_RenderObjects);
-          l_ResourceDescription.step = Backend::ResourcePipelineStep::GRAPHICS;
-          l_ResourceDescription.type = Backend::ResourceType::BUFFER;
-
-          l_ResourceDescriptions.push_back(l_ResourceDescription);
-        }
-        get_signatures()[p_RenderFlow] =
-            Interface::PipelineResourceSignature::make(N(StepResourceSignature),
-                                                       get_context(), 2,
-                                                       l_ResourceDescriptions);
-
-        get_signatures()[p_RenderFlow].set_buffer_resource(
-            N(u_RenderObjects), 0, get_object_matrix_buffers()[p_RenderFlow]);
-      }
-
-      create_renderpass(p_RenderFlow);
-      create_pipelines(p_RenderFlow, false);
+      get_config().get_callbacks().setup_signature(*this, p_RenderFlow);
+      get_config().get_callbacks().setup_renderpass(*this, p_RenderFlow);
+      get_config().get_callbacks().setup_pipelines(*this, p_RenderFlow, false);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
     }
 
@@ -487,73 +427,9 @@ namespace Low {
 
       get_renderpasses()[p_RenderFlow].begin();
 
-      RenderObjectShaderInfo l_ObjectShaderInfos[32];
-      uint32_t l_ObjectIndex = 0;
+      get_config().get_callbacks().execute(*this, p_RenderFlow,
+                                           p_ProjectionMatrix, p_ViewMatrix);
 
-      for (auto pit = get_pipelines()[p_RenderFlow].begin();
-           pit != get_pipelines()[p_RenderFlow].end(); ++pit) {
-        Interface::GraphicsPipeline i_Pipeline = *pit;
-        i_Pipeline.bind();
-
-        auto &renderobjects = get_renderobjects()[pit->get_name()];
-
-        for (auto mit = get_renderobjects()[pit->get_name()].begin();
-             mit != get_renderobjects()[pit->get_name()].end(); ++mit) {
-          for (auto it = mit->second.begin(); it != mit->second.end();) {
-            RenderObject i_RenderObject = *it;
-
-            if (!i_RenderObject.is_alive()) {
-              it = mit->second.erase(it);
-              continue;
-            }
-
-            Math::Matrix4x4 l_ModelMatrix =
-                glm::translate(glm::mat4(1.0f),
-                               i_RenderObject.get_world_position()) *
-                glm::toMat4(i_RenderObject.get_world_rotation()) *
-                glm::scale(glm::mat4(1.0f), i_RenderObject.get_world_scale());
-
-            Math::Matrix4x4 l_MVPMatrix =
-                p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
-
-            l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
-            l_ObjectShaderInfos[l_ObjectIndex].model_matrix = l_ModelMatrix;
-
-            l_ObjectShaderInfos[l_ObjectIndex].material_index =
-                i_RenderObject.get_material().get_index();
-
-            l_ObjectIndex++;
-
-            ++it;
-          }
-        }
-      }
-
-      get_object_matrix_buffers()[p_RenderFlow].set(
-          (void *)l_ObjectShaderInfos);
-
-      uint32_t l_InstanceId = 0;
-
-      for (auto pit = get_pipelines()[p_RenderFlow].begin();
-           pit != get_pipelines()[p_RenderFlow].end(); ++pit) {
-        Interface::GraphicsPipeline i_Pipeline = *pit;
-        i_Pipeline.bind();
-
-        for (auto it = get_renderobjects()[pit->get_name()].begin();
-             it != get_renderobjects()[pit->get_name()].end(); ++it) {
-          Backend::DrawIndexedParams i_Params;
-          i_Params.context = &get_context().get_context();
-          i_Params.firstIndex = it->first.get_index_buffer_start();
-          i_Params.indexCount = it->first.get_index_count();
-          i_Params.instanceCount = it->second.size();
-          i_Params.vertexOffset = it->first.get_vertex_buffer_start();
-          i_Params.firstInstance = l_InstanceId;
-
-          l_InstanceId += it->second.size();
-
-          Backend::callbacks().draw_indexed(i_Params);
-        }
-      }
       get_renderpasses()[p_RenderFlow].end();
 
       if (get_context().is_debug_enabled()) {
@@ -587,32 +463,63 @@ namespace Low {
 
       // Recreate renderpass
       get_renderpasses()[p_RenderFlow].destroy();
-      create_renderpass(p_RenderFlow);
-      create_pipelines(p_RenderFlow, true);
+      get_config().get_callbacks().setup_renderpass(*this, p_RenderFlow);
+      get_config().get_callbacks().setup_pipelines(*this, p_RenderFlow, true);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
     }
 
-    void GraphicsStep::create_renderpass(RenderFlow p_RenderFlow)
+    void GraphicsStep::create_signature(GraphicsStep p_Step,
+                                        RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_signature
+      Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+
+      {
+        Backend::PipelineResourceDescription l_ResourceDescription;
+        l_ResourceDescription.arraySize = 1;
+        l_ResourceDescription.name = N(u_RenderObjects);
+        l_ResourceDescription.step = Backend::ResourcePipelineStep::GRAPHICS;
+        l_ResourceDescription.type = Backend::ResourceType::BUFFER;
+
+        l_ResourceDescriptions.push_back(l_ResourceDescription);
+      }
+      p_Step.get_signatures()[p_RenderFlow] =
+          Interface::PipelineResourceSignature::make(N(StepResourceSignature),
+                                                     p_Step.get_context(), 2,
+                                                     l_ResourceDescriptions);
+
+      p_Step.get_signatures()[p_RenderFlow].set_buffer_resource(
+          N(u_RenderObjects), 0,
+          p_Step.get_resources()[p_RenderFlow].get_buffer_resource(
+              N(_renderobject_buffer)));
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_signature
+    }
+
+    void GraphicsStep::create_renderpass(GraphicsStep p_Step,
+                                         RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_renderpass
       Interface::RenderpassCreateParams l_Params;
-      l_Params.context = get_context();
-      l_Params.dimensions = p_RenderFlow.get_dimensions();
-      l_Params.useDepth = get_config().is_use_depth();
-      if (get_config().is_depth_clear()) {
+      l_Params.context = p_Step.get_context();
+      apply_dimensions_config(p_Step.get_context(), p_RenderFlow,
+                              p_Step.get_config().get_dimensions_config(),
+                              l_Params.dimensions);
+      l_Params.useDepth = p_Step.get_config().is_use_depth();
+      if (p_Step.get_config().is_depth_clear()) {
         l_Params.clearDepthColor = {1.0f, 1.0f};
       } else {
         l_Params.clearDepthColor = {1.0f, 0.0f};
       }
 
-      for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
+      for (uint8_t i = 0u; i < p_Step.get_config().get_rendertargets().size();
+           ++i) {
         l_Params.clearColors.push_back({0.0f, 0.0f, 0.0f, 1.0f});
 
-        if (get_config().get_rendertargets()[i].resourceScope ==
+        if (p_Step.get_config().get_rendertargets()[i].resourceScope ==
             ResourceBindScope::RENDERFLOW) {
           Resource::Image i_Image =
               p_RenderFlow.get_resources().get_image_resource(
-                  get_config().get_rendertargets()[i].resourceName);
+                  p_Step.get_config().get_rendertargets()[i].resourceName);
           LOW_ASSERT(i_Image.is_alive(),
                      "Could not find rendertarget image resource");
 
@@ -622,56 +529,65 @@ namespace Low {
         }
       }
 
-      if (get_config().is_use_depth()) {
+      if (p_Step.get_config().is_use_depth()) {
         Resource::Image l_Image =
             p_RenderFlow.get_resources().get_image_resource(
-                get_config().get_depth_rendertarget().resourceName);
+                p_Step.get_config().get_depth_rendertarget().resourceName);
         LOW_ASSERT(l_Image.is_alive(),
                    "Could not find rendertarget image resource");
         l_Params.depthRenderTarget = l_Image;
       }
 
-      get_renderpasses()[p_RenderFlow] =
-          Interface::Renderpass::make(get_name(), l_Params);
+      p_Step.get_renderpasses()[p_RenderFlow] =
+          Interface::Renderpass::make(p_Step.get_name(), l_Params);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_renderpass
     }
 
-    void GraphicsStep::create_pipelines(RenderFlow p_RenderFlow,
+    void GraphicsStep::create_pipelines(GraphicsStep p_Step,
+                                        RenderFlow p_RenderFlow,
                                         bool p_UpdateExisting)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_pipelines
-      for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
-        GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
+      Math::UVector2 l_Dimensions;
+      apply_dimensions_config(p_Step.get_context(), p_RenderFlow,
+                              p_Step.get_config().get_dimensions_config(),
+                              l_Dimensions);
+
+      for (uint32_t i = 0u; i < p_Step.get_config().get_pipelines().size();
+           ++i) {
+        GraphicsPipelineConfig &i_Config =
+            p_Step.get_config().get_pipelines()[i];
         Interface::PipelineGraphicsCreateParams i_Params;
-        i_Params.context = get_context();
+        i_Params.context = p_Step.get_context();
         i_Params.cullMode = i_Config.cullMode;
         i_Params.polygonMode = i_Config.polygonMode;
         i_Params.frontFace = i_Config.frontFace;
-        i_Params.dimensions = p_RenderFlow.get_dimensions();
-        i_Params.signatures = {get_context().get_global_signature(),
+        i_Params.dimensions = l_Dimensions;
+        i_Params.signatures = {p_Step.get_context().get_global_signature(),
                                p_RenderFlow.get_resource_signature(),
-                               get_signatures()[p_RenderFlow]};
+                               p_Step.get_signatures()[p_RenderFlow]};
         i_Params.vertexShaderPath = i_Config.vertexPath;
         i_Params.fragmentShaderPath = i_Config.fragmentPath;
-        i_Params.renderpass = get_renderpasses()[p_RenderFlow];
-        i_Params.depthTest = get_config().is_depth_test();
-        i_Params.depthWrite = get_config().is_depth_write();
+        i_Params.renderpass = p_Step.get_renderpasses()[p_RenderFlow];
+        i_Params.depthTest = p_Step.get_config().is_depth_test();
+        i_Params.depthWrite = p_Step.get_config().is_depth_write();
         i_Params.depthCompareOperation =
-            get_config().get_depth_compare_operation();
+            p_Step.get_config().get_depth_compare_operation();
         i_Params.vertexDataAttributeTypes = {
             Backend::VertexAttributeType::VECTOR3,
             Backend::VertexAttributeType::VECTOR2,
             Backend::VertexAttributeType::VECTOR3,
             Backend::VertexAttributeType::VECTOR3,
             Backend::VertexAttributeType::VECTOR3};
-        for (uint8_t i = 0u; i < get_config().get_rendertargets().size(); ++i) {
+        for (uint8_t i = 0u; i < p_Step.get_config().get_rendertargets().size();
+             ++i) {
           Backend::GraphicsPipelineColorTarget i_ColorTarget;
 
-          if (get_config().get_rendertargets()[i].resourceScope ==
+          if (p_Step.get_config().get_rendertargets()[i].resourceScope ==
               ResourceBindScope::RENDERFLOW) {
             Resource::Image i_Image =
                 p_RenderFlow.get_resources().get_image_resource(
-                    get_config().get_rendertargets()[i].resourceName);
+                    p_Step.get_config().get_rendertargets()[i].resourceName);
             LOW_ASSERT(i_Image.is_alive(),
                        "Could not find rendertarget image resource");
 
@@ -688,13 +604,96 @@ namespace Low {
 
         if (p_UpdateExisting) {
           Interface::PipelineManager::register_graphics_pipeline(
-              get_pipelines()[p_RenderFlow][i], i_Params);
+              p_Step.get_pipelines()[p_RenderFlow][i], i_Params);
         } else {
-          get_pipelines()[p_RenderFlow].push_back(
+          p_Step.get_pipelines()[p_RenderFlow].push_back(
               Interface::GraphicsPipeline::make(i_Config.name, i_Params));
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_pipelines
+    }
+
+    void GraphicsStep::default_execute(GraphicsStep p_Step,
+                                       RenderFlow p_RenderFlow,
+                                       Math::Matrix4x4 &p_ProjectionMatrix,
+                                       Math::Matrix4x4 &p_ViewMatrix)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
+      RenderObjectShaderInfo l_ObjectShaderInfos[32];
+      uint32_t l_ObjectIndex = 0;
+
+      for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
+           pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {
+        Interface::GraphicsPipeline i_Pipeline = *pit;
+        i_Pipeline.bind();
+
+        for (auto mit = p_Step.get_renderobjects()[pit->get_name()].begin();
+             mit != p_Step.get_renderobjects()[pit->get_name()].end(); ++mit) {
+          for (auto it = mit->second.begin(); it != mit->second.end();) {
+            RenderObject i_RenderObject = *it;
+
+            if (!i_RenderObject.is_alive()) {
+              it = mit->second.erase(it);
+              continue;
+            }
+
+            Math::Matrix4x4 l_ModelMatrix =
+                glm::translate(glm::mat4(1.0f),
+                               i_RenderObject.get_world_position()) *
+                glm::toMat4(i_RenderObject.get_world_rotation()) *
+                glm::scale(glm::mat4(1.0f), i_RenderObject.get_world_scale());
+
+            Math::Matrix4x4 l_MVPMatrix =
+                p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
+
+            l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
+            l_ObjectShaderInfos[l_ObjectIndex].model_matrix = l_ModelMatrix;
+
+            l_ObjectShaderInfos[l_ObjectIndex].material_index =
+                i_RenderObject.get_material().get_index();
+
+            l_ObjectIndex++;
+
+            ++it;
+          }
+        }
+      }
+
+      p_Step.get_resources()[p_RenderFlow]
+          .get_buffer_resource(N(_renderobject_buffer))
+          .set((void *)l_ObjectShaderInfos);
+
+      GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
+    }
+
+    void GraphicsStep::draw_renderobjects(GraphicsStep p_Step,
+                                          RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_draw_renderobjects
+      uint32_t l_InstanceId = 0;
+
+      for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
+           pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {
+        Interface::GraphicsPipeline i_Pipeline = *pit;
+        i_Pipeline.bind();
+
+        for (auto it = p_Step.get_renderobjects()[pit->get_name()].begin();
+             it != p_Step.get_renderobjects()[pit->get_name()].end(); ++it) {
+          Backend::DrawIndexedParams i_Params;
+          i_Params.context = &p_Step.get_context().get_context();
+          i_Params.firstIndex = it->first.get_index_buffer_start();
+          i_Params.indexCount = it->first.get_index_count();
+          i_Params.instanceCount = it->second.size();
+          i_Params.vertexOffset = it->first.get_vertex_buffer_start();
+          i_Params.firstInstance = l_InstanceId;
+
+          l_InstanceId += it->second.size();
+
+          Backend::callbacks().draw_indexed(i_Params);
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_draw_renderobjects
     }
 
   } // namespace Renderer

@@ -1,4 +1,8 @@
 type: graphics
+dimensions:
+  type: relative
+  target: renderflow
+  multiplier: 1.0
 rendertargets:
   - renderflow:GBufferAlbedo
   - renderflow:GBufferSurfaceNormals

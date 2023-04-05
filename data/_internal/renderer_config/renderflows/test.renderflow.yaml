@@ -56,6 +56,15 @@ resources:
     type: image
     format: RGBA8_UNORM
     array_size: 1
+  ShadowAtlas:
+    dimensions:
+      type: absolute
+      x: 500
+      y: 500
+    type: image
+    format: D32_SFLOAT
+    array_size: 1
+    depth: true
     
 output_image: DeferredLit
 steps:

@@ -13,7 +13,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Context::TYPE_ID = 11;
+      const uint16_t Context::TYPE_ID = 12;
       uint8_t *Context::ms_Buffer = 0;
       Low::Util::Instances::Slot *Context::ms_Slots = 0;
       Low::Util::List<Context> Context::ms_LivingInstances =

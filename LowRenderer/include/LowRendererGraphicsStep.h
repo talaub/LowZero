@@ -39,7 +39,6 @@ namespace Low {
       Util::Map<RenderFlow, Interface::Renderpass> renderpasses;
       Interface::Context context;
       Util::Map<RenderFlow, Interface::PipelineResourceSignature> signatures;
-      Util::Map<RenderFlow, Resource::Buffer> object_matrix_buffers;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -116,6 +115,17 @@ namespace Low {
                    Math::Matrix4x4 &p_ViewMatrix);
       void register_renderobject(RenderObject p_RenderObject);
       void update_dimensions(RenderFlow p_RenderFlow);
+      static void create_signature(GraphicsStep p_Step,
+                                   RenderFlow p_RenderFlow);
+      static void create_renderpass(GraphicsStep p_Step,
+                                    RenderFlow p_RenderFlow);
+      static void create_pipelines(GraphicsStep p_Step, RenderFlow p_RenderFlow,
+                                   bool p_UpdateExisting);
+      static void default_execute(GraphicsStep p_Step, RenderFlow p_RenderFlow,
+                                  Math::Matrix4x4 &p_ProjectionMatrix,
+                                  Math::Matrix4x4 &p_ViewMatrix);
+      static void draw_renderobjects(GraphicsStep p_Step,
+                                     RenderFlow p_RenderFlow);
 
     private:
       void set_config(GraphicsStepConfig p_Value);
@@ -123,11 +133,6 @@ namespace Low {
       void set_context(Interface::Context p_Value);
       Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
       get_signatures() const;
-      Util::Map<RenderFlow, Resource::Buffer> &
-      get_object_matrix_buffers() const;
-      void create_renderpass(RenderFlow p_RenderFlow);
-
-      void create_pipelines(RenderFlow p_RenderFlow, bool p_UpdateExisting);
     };
   } // namespace Renderer
 } // namespace Low

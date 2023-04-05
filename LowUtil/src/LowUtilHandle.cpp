@@ -2,6 +2,7 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
+#include "LowUtilLogger.h"
 
 #include <stdlib.h>
 

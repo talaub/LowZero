@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t PipelineResourceSignature::TYPE_ID = 13;
+      const uint16_t PipelineResourceSignature::TYPE_ID = 14;
       uint8_t *PipelineResourceSignature::ms_Buffer = 0;
       Low::Util::Instances::Slot *PipelineResourceSignature::ms_Slots = 0;
       Low::Util::List<PipelineResourceSignature>

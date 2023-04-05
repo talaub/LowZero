@@ -8,7 +8,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t ImGuiImage::TYPE_ID = 16;
+      const uint16_t ImGuiImage::TYPE_ID = 17;
       uint8_t *ImGuiImage::ms_Buffer = 0;
       Low::Util::Instances::Slot *ImGuiImage::ms_Slots = 0;
       Low::Util::List<ImGuiImage> ImGuiImage::ms_LivingInstances =

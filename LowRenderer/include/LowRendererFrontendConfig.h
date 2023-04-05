@@ -8,6 +8,11 @@
 
 namespace Low {
   namespace Renderer {
+    namespace Interface {
+      struct Context;
+    }
+    struct RenderFlow;
+
     namespace ResourceType {
       enum Enum
       {
@@ -43,17 +48,30 @@ namespace Low {
       float multiplier;
     };
 
-    struct ImageResourceConfig
+    struct DimensionsConfig
     {
-      uint8_t format;
-      uint8_t dimensionType;
-      bool depth;
+      uint8_t type;
 
       union
       {
         Math::UVector2 absolute;
         ImageResourceDimensionRelativeConfig relative;
-      } dimensions;
+      };
+    };
+
+    void parse_dimensions_config(Util::Yaml::Node &p_Node,
+                                 DimensionsConfig &p_Config);
+    void apply_dimensions_config(Interface::Context p_Context,
+                                 RenderFlow p_RenderFlow,
+                                 DimensionsConfig &p_Config,
+                                 Math::UVector2 &p_Dimensions);
+
+    struct ImageResourceConfig
+    {
+      uint8_t format;
+      bool depth;
+
+      DimensionsConfig dimensions;
     };
 
     struct ResourceConfig

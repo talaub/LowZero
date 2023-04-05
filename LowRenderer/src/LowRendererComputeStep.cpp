@@ -7,7 +7,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t ComputeStep::TYPE_ID = 2;
+    const uint16_t ComputeStep::TYPE_ID = 3;
     uint8_t *ComputeStep::ms_Buffer = 0;
     Low::Util::Instances::Slot *ComputeStep::ms_Slots = 0;
     Low::Util::List<ComputeStep> ComputeStep::ms_LivingInstances =
