@@ -425,12 +425,8 @@ namespace Low {
       p_RenderFlow.get_resource_signature().commit();
       get_signatures()[p_RenderFlow].commit();
 
-      get_renderpasses()[p_RenderFlow].begin();
-
       get_config().get_callbacks().execute(*this, p_RenderFlow,
                                            p_ProjectionMatrix, p_ViewMatrix);
-
-      get_renderpasses()[p_RenderFlow].end();
 
       if (get_context().is_debug_enabled()) {
         LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
@@ -619,6 +615,8 @@ namespace Low {
                                        Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
+      p_Step.get_renderpasses()[p_RenderFlow].begin();
+
       RenderObjectShaderInfo l_ObjectShaderInfos[32];
       uint32_t l_ObjectIndex = 0;
 
@@ -664,6 +662,8 @@ namespace Low {
           .set((void *)l_ObjectShaderInfos);
 
       GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
+
+      p_Step.get_renderpasses()[p_RenderFlow].end();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
     }
 

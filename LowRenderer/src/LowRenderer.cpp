@@ -31,6 +31,7 @@
 
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererFrontendConfig.h"
+#include "LowRendererCustomRenderSteps.h"
 
 #include <stdint.h>
 
@@ -148,6 +149,7 @@ namespace Low {
 
     RenderObject g_RenderObject;
     RenderObject g_RenderObject2;
+    RenderObject g_RenderObjectGround;
 
     MeshBuffer g_VertexBuffer;
     MeshBuffer g_IndexBuffer;
@@ -170,6 +172,7 @@ namespace Low {
 
     static void setup_custom_renderstep_configs()
     {
+      ShadowStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
@@ -625,6 +628,15 @@ namespace Low {
       }
 
       {
+        DirectionalLight l_DirectionalLight;
+        l_DirectionalLight.color = Math::ColorRGB(1.0f, 0.0f, 0.0f) * 2.0f;
+        l_DirectionalLight.direction =
+            Math::VectorUtil::normalize(Math::Vector3(2.0f, -2.5f, -0.5f));
+
+        g_MainRenderFlow.set_directional_light(l_DirectionalLight);
+      }
+
+      {
         Backend::PipelineResourceDescription l_ResourceDescription;
         l_ResourceDescription.name = N(u_FinalImage);
         l_ResourceDescription.arraySize = 1;
@@ -662,10 +674,7 @@ namespace Low {
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
         g_RenderObject.set_world_scale(Math::Vector3(1.0f));
 
-        GraphicsStep(g_MainRenderFlow.get_steps()[0].get_id())
-            .register_renderobject(g_RenderObject);
-        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
-            .register_renderobject(g_RenderObject);
+        g_MainRenderFlow.register_renderobject(g_RenderObject);
       }
 
       {
@@ -686,10 +695,7 @@ namespace Low {
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
         g_RenderObject2.set_world_scale(Math::Vector3(1.0f));
 
-        GraphicsStep(g_MainRenderFlow.get_steps()[0].get_id())
-            .register_renderobject(g_RenderObject2);
-        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
-            .register_renderobject(g_RenderObject2);
+        g_MainRenderFlow.register_renderobject(g_RenderObject2);
       }
 
       {
@@ -702,18 +708,16 @@ namespace Low {
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_WoodNormalTexture));
 
-        g_RenderObject2 = RenderObject::make(N(TestRO2));
-        g_RenderObject2.set_mesh(g_CubeMesh);
-        g_RenderObject2.set_material(l_Material);
-        g_RenderObject2.set_world_position(Math::Vector3(-2.0f, -3.0f, -8.0f));
-        g_RenderObject2.set_world_rotation(
+        g_RenderObjectGround = RenderObject::make(N(TestRO2));
+        g_RenderObjectGround.set_mesh(g_CubeMesh);
+        g_RenderObjectGround.set_material(l_Material);
+        g_RenderObjectGround.set_world_position(
+            Math::Vector3(-2.0f, -3.0f, -8.0f));
+        g_RenderObjectGround.set_world_rotation(
             Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
-        g_RenderObject2.set_world_scale(Math::Vector3(10.0f, 0.4f, 10.0f));
+        g_RenderObjectGround.set_world_scale(Math::Vector3(20.0f, 0.4f, 20.0f));
 
-        GraphicsStep(g_MainRenderFlow.get_steps()[0].get_id())
-            .register_renderobject(g_RenderObject2);
-        GraphicsStep(g_MainRenderFlow.get_steps()[1].get_id())
-            .register_renderobject(g_RenderObject2);
+        g_MainRenderFlow.register_renderobject(g_RenderObjectGround);
       }
 
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
@@ -746,6 +750,40 @@ namespace Low {
         ImGui::EndFrame();
         ImGui::UpdatePlatformWindows();
         return;
+      }
+
+      {
+        static bool dir = false;
+        Math::Vector3 l_Rot =
+            Math::VectorUtil::to_euler(g_RenderObject.get_world_rotation());
+        l_Rot.y += 0.04;
+        if (l_Rot.y > 89.9) {
+          l_Rot.y = 0.0f;
+        }
+        g_RenderObject.set_world_rotation(Math::VectorUtil::from_euler(l_Rot));
+
+        Math::Vector3 l_Pos = g_RenderObject.get_world_position();
+        if (dir) {
+          l_Pos.y -= 0.001f;
+        } else {
+          l_Pos.y += 0.001f;
+        }
+        if (!dir && l_Pos.y > 2.0f) {
+          dir = !dir;
+        } else if (dir && l_Pos.y < -1.0f) {
+          dir = !dir;
+        }
+        g_RenderObject.set_world_position(l_Pos);
+      }
+
+      {
+        Math::Vector3 l_Rot =
+            Math::VectorUtil::to_euler(g_RenderObject2.get_world_rotation());
+        l_Rot.y += 0.04;
+        if (l_Rot.y > 89.9) {
+          l_Rot.y = 0.0f;
+        }
+        g_RenderObject2.set_world_rotation(Math::VectorUtil::from_euler(l_Rot));
       }
 
       g_VertexBuffer.bind();

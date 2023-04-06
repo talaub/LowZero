@@ -61,10 +61,7 @@ namespace Low {
       GraphicsStepConfig(uint64_t p_Id);
       GraphicsStepConfig(GraphicsStepConfig &p_Copy);
 
-    private:
       static GraphicsStepConfig make(Low::Util::Name p_Name);
-
-    public:
       explicit GraphicsStepConfig(const GraphicsStepConfig &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -105,16 +102,22 @@ namespace Low {
       Util::List<PipelineResourceBindingConfig> &get_rendertargets() const;
 
       PipelineResourceBindingConfig &get_depth_rendertarget() const;
+      void set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);
 
       bool is_use_depth() const;
+      void set_use_depth(bool p_Value);
 
       bool is_depth_clear() const;
+      void set_depth_clear(bool p_Value);
 
       bool is_depth_test() const;
+      void set_depth_test(bool p_Value);
 
       bool is_depth_write() const;
+      void set_depth_write(bool p_Value);
 
       uint8_t get_depth_compare_operation() const;
+      void set_depth_compare_operation(uint8_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -124,12 +127,6 @@ namespace Low {
 
     private:
       void set_dimensions_config(DimensionsConfig &p_Value);
-      void set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);
-      void set_use_depth(bool p_Value);
-      void set_depth_clear(bool p_Value);
-      void set_depth_test(bool p_Value);
-      void set_depth_write(bool p_Value);
-      void set_depth_compare_operation(uint8_t p_Value);
     };
   } // namespace Renderer
 } // namespace Low

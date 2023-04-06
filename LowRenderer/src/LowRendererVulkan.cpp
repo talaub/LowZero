@@ -2028,7 +2028,7 @@ namespace Low {
 
           l_SamplerInfo.maxAnisotropy =
               l_Properties.limits.maxSamplerAnisotropy;
-          l_SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+          l_SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
           l_SamplerInfo.unnormalizedCoordinates = VK_FALSE;
           l_SamplerInfo.compareEnable = VK_FALSE;
           l_SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

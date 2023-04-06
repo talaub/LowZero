@@ -10,6 +10,7 @@ types:
       - LowRendererInterface.h
       - LowRendererResourceRegistry.h
       - LowRendererMesh.h
+      - LowRendererLights.h
       - LowUtilYaml.h
     source_imports:
       - LowRendererComputeStep.h
@@ -49,6 +50,8 @@ types:
         type: float
       camera_far_plane:
         type: float
+      directional_light:
+        type: DirectionalLight
     functions:
       make:
         static: true
@@ -69,6 +72,12 @@ types:
         parameters:
           - name: dimensions
             type: Math::UVector2
+      register_renderobject:
+        return_type: void
+        parameters:
+          - name: renderObject
+            type: RenderObject
+            handle: true
     
   ComputeStep:
     private_make: true
@@ -130,10 +139,43 @@ types:
           - name: renderFlow
             type: RenderFlow
             handle: true
-      prepare_signature:
+      create_pipelines:
+        static: true
         return_type: void
-        private: true
         parameters:
+          - name: step
+            type: ComputeStep
+            handle: true
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      create_signatures:
+        static: true
+        return_type: void
+        parameters:
+          - name: step
+            type: ComputeStep
+            handle: true
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      prepare_signatures:
+        return_type: void
+        static: true
+        parameters:
+          - name: step
+            type: ComputeStep
+            handle: true
+          - name: renderFlow
+            type: RenderFlow
+            handle: true
+      default_execute:
+        return_type: void
+        static: true
+        parameters:
+          - name: step
+            type: ComputeStep
+            handle: true
           - name: renderFlow
             type: RenderFlow
             handle: true
@@ -142,7 +184,11 @@ types:
     private_make: true
     header_imports:
       - LowRendererFrontendConfig.h
+    source_imports:
+      - LowRendererComputeStep.h
     properties:
+     callbacks:
+       type: ComputeStepCallbacks
      resources:
        type: Util::List<ResourceConfig> 
        no_setter: true
@@ -161,7 +207,6 @@ types:
             type: Util::Yaml::Node
 
   GraphicsStepConfig:
-    private_make: true
     header_imports:
       - LowRendererFrontendConfig.h
     source_imports:
@@ -185,22 +230,16 @@ types:
        no_setter: true
      depth_rendertarget:
        type: PipelineResourceBindingConfig
-       private_setter: true
      use_depth:
        type: bool
-       private_setter: true
      depth_clear:
        type: bool
-       private_setter: true
      depth_test:
        type: bool
-       private_setter: true
      depth_write:
        type: bool
-       private_setter: true
      depth_compare_operation:
        type: uint8_t
-       private_setter: true
     functions:
       make:
         static: true
@@ -244,11 +283,9 @@ types:
         type: Interface::Context
         handle: true
         private_setter: true
-        private_getter: true
       signatures:
         type: Util::Map<RenderFlow, Interface::PipelineResourceSignature>
         no_setter: true
-        private_getter: true
     functions:
       make:
         static: true

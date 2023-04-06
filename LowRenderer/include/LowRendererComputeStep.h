@@ -101,12 +101,17 @@ namespace Low {
       void prepare(RenderFlow p_RenderFlow);
       void execute(RenderFlow p_RenderFlow);
       void update_dimensions(RenderFlow p_RenderFlow);
+      static void create_pipelines(ComputeStep p_Step, RenderFlow p_RenderFlow);
+      static void create_signatures(ComputeStep p_Step,
+                                    RenderFlow p_RenderFlow);
+      static void prepare_signatures(ComputeStep p_Step,
+                                     RenderFlow p_RenderFlow);
+      static void default_execute(ComputeStep p_Step, RenderFlow p_RenderFlow);
 
     private:
       void set_config(ComputeStepConfig p_Value);
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
-      void prepare_signature(RenderFlow p_RenderFlow);
     };
   } // namespace Renderer
 } // namespace Low

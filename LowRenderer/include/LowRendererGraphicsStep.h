@@ -105,6 +105,11 @@ namespace Low {
 
       Util::Map<RenderFlow, Interface::Renderpass> &get_renderpasses() const;
 
+      Interface::Context get_context() const;
+
+      Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
+      get_signatures() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -129,10 +134,7 @@ namespace Low {
 
     private:
       void set_config(GraphicsStepConfig p_Value);
-      Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
-      Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
-      get_signatures() const;
     };
   } // namespace Renderer
 } // namespace Low

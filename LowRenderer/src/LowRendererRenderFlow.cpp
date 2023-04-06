@@ -56,6 +56,8 @@ namespace Low {
                               Math::Vector3)) Math::Vector3();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_rotation,
                               Math::Quaternion)) Math::Quaternion();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, directional_light,
+                              DirectionalLight)) DirectionalLight();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -298,6 +300,22 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(directional_light);
+        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, directional_light);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderFlow, directional_light, DirectionalLight);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, directional_light,
+                            DirectionalLight) = *(DirectionalLight *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
@@ -520,6 +538,22 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_far_plane
     }
 
+    DirectionalLight &RenderFlow::get_directional_light() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, directional_light, DirectionalLight);
+    }
+    void RenderFlow::set_directional_light(DirectionalLight &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(RenderFlow, directional_light, DirectionalLight) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light
+      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light
+    }
+
     Low::Util::Name RenderFlow::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -564,12 +598,36 @@ namespace Low {
             Resource::Buffer::make(N(RenderFlowFrameInfoBuffer), l_Params));
       }
 
+      Util::List<ResourceConfig> l_ResourceConfigs;
+      if (p_Config["resources"]) {
+        parse_resource_configs(p_Config["resources"], l_ResourceConfigs);
+      }
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.name = N(_directional_light_info);
+        l_ResourceConfig.buffer.size = sizeof(DirectionalLightShaderInfo);
+        l_ResourceConfigs.push_back(l_ResourceConfig);
+      }
+
+      l_RenderFlow.get_resources().initialize(l_ResourceConfigs, p_Context,
+                                              l_RenderFlow);
+
       {
         Util::List<Backend::PipelineResourceDescription> l_Resources;
 
         {
           Backend::PipelineResourceDescription l_Resource;
           l_Resource.name = N(u_RenderFlowFrameInfo);
+          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
+          l_Resource.arraySize = 1;
+          l_Resources.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_DirectionalLightInfo);
           l_Resource.step = Backend::ResourcePipelineStep::ALL;
           l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
           l_Resource.arraySize = 1;
@@ -582,13 +640,10 @@ namespace Low {
 
         l_RenderFlow.get_resource_signature().set_constant_buffer_resource(
             N(u_RenderFlowFrameInfo), 0, l_RenderFlow.get_frame_info_buffer());
-      }
-
-      if (p_Config["resources"]) {
-        Util::List<ResourceConfig> l_ResourceConfigs;
-        parse_resource_configs(p_Config["resources"], l_ResourceConfigs);
-        l_RenderFlow.get_resources().initialize(l_ResourceConfigs, p_Context,
-                                                l_RenderFlow);
+        l_RenderFlow.get_resource_signature().set_constant_buffer_resource(
+            N(u_DirectionalLightInfo), 0,
+            l_RenderFlow.get_resources().get_buffer_resource(
+                N(_directional_light_info)));
       }
 
       for (auto it = p_Config["steps"].begin(); it != p_Config["steps"].end();
@@ -715,6 +770,18 @@ namespace Low {
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
+    }
+
+    void RenderFlow::register_renderobject(RenderObject p_RenderObject)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
+      for (Util::Handle i_Step : get_steps()) {
+        if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
+          GraphicsStep i_GraphicsStep = i_Step.get_id();
+          i_GraphicsStep.register_renderobject(p_RenderObject);
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject
     }
 
   } // namespace Renderer

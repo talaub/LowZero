@@ -26,3 +26,4 @@ pipelines:
       renderflow:GBufferRoughness: sampler
       renderflow:GBufferMetalness: sampler
       renderflow:GBufferDepth: sampler
+      renderflow:ShadowAtlas: sampler

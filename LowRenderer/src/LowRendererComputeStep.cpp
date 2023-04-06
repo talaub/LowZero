@@ -341,8 +341,74 @@ namespace Low {
       l_Resources[p_RenderFlow].initialize(get_config().get_resources(),
                                            get_context(), p_RenderFlow);
 
-      for (uint32_t i = 0; i < get_config().get_pipelines().size(); ++i) {
-        ComputePipelineConfig &i_Config = get_config().get_pipelines()[i];
+      get_config().get_callbacks().setup_signatures(*this, p_RenderFlow);
+      get_config().get_callbacks().setup_pipelines(*this, p_RenderFlow);
+
+      get_config().get_callbacks().populate_signatures(*this, p_RenderFlow);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
+    }
+
+    void ComputeStep::execute(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      LOW_ASSERT(get_resources().find(p_RenderFlow) != get_resources().end(),
+                 "Step not prepared for renderflow");
+
+      if (get_context().is_debug_enabled()) {
+        Util::String l_RenderDocLabel =
+            Util::String("ComputeStep - ") + get_name().c_str();
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            get_context().get_context(), l_RenderDocLabel,
+            Math::Color(0.4249f, 0.2341f, 0.341f, 1.0f));
+      }
+
+      get_config().get_callbacks().execute(*this, p_RenderFlow);
+
+      if (get_context().is_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
+      }
+
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
+    }
+
+    void ComputeStep::update_dimensions(RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+      get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
+
+      get_config().get_callbacks().populate_signatures(*this, p_RenderFlow);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
+    }
+
+    void ComputeStep::create_pipelines(ComputeStep p_Step,
+                                       RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_pipelines
+      for (uint32_t i = 0; i < p_Step.get_config().get_pipelines().size();
+           ++i) {
+        ComputePipelineConfig &i_Config =
+            p_Step.get_config().get_pipelines()[i];
+
+        Interface::PipelineComputeCreateParams l_Params;
+        l_Params.context = p_Step.get_context();
+        l_Params.shaderPath = i_Config.shader;
+        l_Params.signatures = {p_Step.get_context().get_global_signature(),
+                               p_RenderFlow.get_resource_signature(),
+                               p_Step.get_signatures()[p_RenderFlow][i]};
+        p_Step.get_pipelines()[p_RenderFlow].push_back(
+            Interface::ComputePipeline::make(p_Step.get_name(), l_Params));
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_pipelines
+    }
+
+    void ComputeStep::create_signatures(ComputeStep p_Step,
+                                        RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_signatures
+      for (uint32_t i = 0; i < p_Step.get_config().get_pipelines().size();
+           ++i) {
+        ComputePipelineConfig &i_Config =
+            p_Step.get_config().get_pipelines()[i];
 
         Util::List<Backend::PipelineResourceDescription> i_ResourceDescriptions;
         for (auto it = i_Config.resourceBinding.begin();
@@ -361,8 +427,8 @@ namespace Low {
 
           if (it->resourceScope == ResourceBindScope::LOCAL) {
             bool i_Found = false;
-            for (auto rit = get_config().get_resources().begin();
-                 rit != get_config().get_resources().end(); ++rit) {
+            for (auto rit = p_Step.get_config().get_resources().begin();
+                 rit != p_Step.get_config().get_resources().end(); ++rit) {
               if (rit->name == it->resourceName) {
                 i_Found = true;
                 i_Resource.arraySize = rit->arraySize;
@@ -379,111 +445,33 @@ namespace Low {
           i_ResourceDescriptions.push_back(i_Resource);
         }
 
-        get_signatures()[p_RenderFlow].push_back(
-            Interface::PipelineResourceSignature::make(
-                get_name(), get_context(), 2, i_ResourceDescriptions));
-
-        Interface::PipelineComputeCreateParams l_Params;
-        l_Params.context = get_context();
-        l_Params.shaderPath = i_Config.shader;
-        l_Params.signatures = {get_context().get_global_signature(),
-                               p_RenderFlow.get_resource_signature(),
-                               get_signatures()[p_RenderFlow][i]};
-        get_pipelines()[p_RenderFlow].push_back(
-            Interface::ComputePipeline::make(get_name(), l_Params));
+        p_Step.get_signatures()[p_RenderFlow].push_back(
+            Interface::PipelineResourceSignature::make(p_Step.get_name(),
+                                                       p_Step.get_context(), 2,
+                                                       i_ResourceDescriptions));
       }
-
-      prepare_signature(p_RenderFlow);
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_signatures
     }
 
-    void ComputeStep::execute(RenderFlow p_RenderFlow)
+    void ComputeStep::prepare_signatures(ComputeStep p_Step,
+                                         RenderFlow p_RenderFlow)
     {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
-      LOW_ASSERT(get_resources().find(p_RenderFlow) != get_resources().end(),
-                 "Step not prepared for renderflow");
-
-      if (get_context().is_debug_enabled()) {
-        Util::String l_RenderDocLabel =
-            Util::String("ComputeStep - ") + get_name().c_str();
-        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
-            get_context().get_context(), l_RenderDocLabel,
-            Math::Color(0.4249f, 0.2341f, 0.341f, 1.0f));
-      }
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_signatures
 
       Util::List<ComputePipelineConfig> &l_Configs =
-          get_config().get_pipelines();
+          p_Step.get_config().get_pipelines();
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
         ComputePipelineConfig &i_Config = l_Configs[i];
 
         Interface::PipelineResourceSignature i_Signature =
-            get_signatures()[p_RenderFlow][i];
-        i_Signature.commit();
-
-        get_pipelines()[p_RenderFlow][i].bind();
-
-        Math::UVector3 i_DispatchDimensions;
-        if (i_Config.dispatchConfig.dimensionType ==
-            ComputeDispatchDimensionType::ABSOLUTE) {
-          i_DispatchDimensions = i_Config.dispatchConfig.absolute;
-        } else if (i_Config.dispatchConfig.dimensionType ==
-                   ComputeDispatchDimensionType::RELATIVE) {
-          Math::UVector2 i_Dimensions;
-          if (i_Config.dispatchConfig.relative.target ==
-              ComputeDispatchRelativeTarget::RENDERFLOW) {
-            i_Dimensions = p_RenderFlow.get_dimensions();
-          } else if (i_Config.dispatchConfig.relative.target ==
-                     ComputeDispatchRelativeTarget::CONTEXT) {
-            i_Dimensions = get_context().get_dimensions();
-          } else {
-            LOW_ASSERT(false, "Unknown dispatch dimensions relative target");
-          }
-          Math::Vector2 i_FloatDimensions = i_Dimensions;
-          i_FloatDimensions *= i_Config.dispatchConfig.relative.multiplier;
-          i_DispatchDimensions.x = i_FloatDimensions.x;
-          i_DispatchDimensions.y = i_FloatDimensions.y;
-          i_DispatchDimensions.z = 1;
-        } else {
-          LOW_ASSERT(false, "Unknown dispatch dimensions type");
-        }
-
-        Backend::callbacks().compute_dispatch(get_context().get_context(),
-                                              i_DispatchDimensions);
-
-        if (get_context().is_debug_enabled()) {
-          LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
-        }
-      }
-
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
-    }
-
-    void ComputeStep::update_dimensions(RenderFlow p_RenderFlow)
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
-      get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
-
-      prepare_signature(p_RenderFlow);
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
-    }
-
-    void ComputeStep::prepare_signature(RenderFlow p_RenderFlow)
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_signature
-      Util::List<ComputePipelineConfig> &l_Configs =
-          get_config().get_pipelines();
-      for (uint32_t i = 0; i < l_Configs.size(); ++i) {
-        ComputePipelineConfig &i_Config = l_Configs[i];
-
-        Interface::PipelineResourceSignature i_Signature =
-            get_signatures()[p_RenderFlow][i];
+            p_Step.get_signatures()[p_RenderFlow][i];
         for (auto it = i_Config.resourceBinding.begin();
              it != i_Config.resourceBinding.end(); ++it) {
           if (it->bindType == ResourceBindType::IMAGE) {
             Resource::Image i_Image;
 
             if (it->resourceScope == ResourceBindScope::LOCAL) {
-              i_Image = get_resources()[p_RenderFlow].get_image_resource(
+              i_Image = p_Step.get_resources()[p_RenderFlow].get_image_resource(
                   it->resourceName);
             } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
               i_Image = p_RenderFlow.get_resources().get_image_resource(
@@ -496,7 +484,7 @@ namespace Low {
             Resource::Image i_Image;
 
             if (it->resourceScope == ResourceBindScope::LOCAL) {
-              i_Image = get_resources()[p_RenderFlow].get_image_resource(
+              i_Image = p_Step.get_resources()[p_RenderFlow].get_image_resource(
                   it->resourceName);
             } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
               i_Image = p_RenderFlow.get_resources().get_image_resource(
@@ -510,8 +498,53 @@ namespace Low {
           }
         }
       }
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare_signature
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare_signatures
     }
 
+    void ComputeStep::default_execute(ComputeStep p_Step,
+                                      RenderFlow p_RenderFlow)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
+      Util::List<ComputePipelineConfig> &l_Configs =
+          p_Step.get_config().get_pipelines();
+      for (uint32_t i = 0; i < l_Configs.size(); ++i) {
+        ComputePipelineConfig &i_Config = l_Configs[i];
+
+        Interface::PipelineResourceSignature i_Signature =
+            p_Step.get_signatures()[p_RenderFlow][i];
+        i_Signature.commit();
+
+        p_Step.get_pipelines()[p_RenderFlow][i].bind();
+
+        Math::UVector3 i_DispatchDimensions;
+        if (i_Config.dispatchConfig.dimensionType ==
+            ComputeDispatchDimensionType::ABSOLUTE) {
+          i_DispatchDimensions = i_Config.dispatchConfig.absolute;
+        } else if (i_Config.dispatchConfig.dimensionType ==
+                   ComputeDispatchDimensionType::RELATIVE) {
+          Math::UVector2 i_Dimensions;
+          if (i_Config.dispatchConfig.relative.target ==
+              ComputeDispatchRelativeTarget::RENDERFLOW) {
+            i_Dimensions = p_RenderFlow.get_dimensions();
+          } else if (i_Config.dispatchConfig.relative.target ==
+                     ComputeDispatchRelativeTarget::CONTEXT) {
+            i_Dimensions = p_Step.get_context().get_dimensions();
+          } else {
+            LOW_ASSERT(false, "Unknown dispatch dimensions relative target");
+          }
+          Math::Vector2 i_FloatDimensions = i_Dimensions;
+          i_FloatDimensions *= i_Config.dispatchConfig.relative.multiplier;
+          i_DispatchDimensions.x = i_FloatDimensions.x;
+          i_DispatchDimensions.y = i_FloatDimensions.y;
+          i_DispatchDimensions.z = 1;
+        } else {
+          LOW_ASSERT(false, "Unknown dispatch dimensions type");
+        }
+
+        Backend::callbacks().compute_dispatch(
+            p_Step.get_context().get_context(), i_DispatchDimensions);
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
+    }
   } // namespace Renderer
 } // namespace Low

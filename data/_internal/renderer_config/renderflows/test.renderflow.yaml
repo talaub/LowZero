@@ -59,8 +59,8 @@ resources:
   ShadowAtlas:
     dimensions:
       type: absolute
-      x: 500
-      y: 500
+      x: 1024
+      y: 1024
     type: image
     format: D32_SFLOAT
     array_size: 1
@@ -70,4 +70,5 @@ output_image: DeferredLit
 steps:
   - name: depthprepass
   - name: graph
+  - name: ShadowPass
   - name: lighting

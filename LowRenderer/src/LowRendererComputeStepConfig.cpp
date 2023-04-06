@@ -5,6 +5,8 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
+#include "LowRendererComputeStep.h"
+
 namespace Low {
   namespace Renderer {
     const uint16_t ComputeStepConfig::TYPE_ID = 4;
@@ -35,6 +37,8 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = ComputeStepConfig::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, callbacks,
+                              ComputeStepCallbacks)) ComputeStepCallbacks();
       new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, resources,
                               Util::List<ResourceConfig>))
           Util::List<ResourceConfig>();
@@ -85,6 +89,23 @@ namespace Low {
       l_TypeInfo.name = N(ComputeStepConfig);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &ComputeStepConfig::is_alive;
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(callbacks);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, callbacks);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
+                                            callbacks, ComputeStepCallbacks);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig, callbacks,
+                            ComputeStepCallbacks) =
+              *(ComputeStepCallbacks *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);
@@ -169,6 +190,22 @@ namespace Low {
       return l_Capacity;
     }
 
+    ComputeStepCallbacks &ComputeStepConfig::get_callbacks() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(ComputeStepConfig, callbacks, ComputeStepCallbacks);
+    }
+    void ComputeStepConfig::set_callbacks(ComputeStepCallbacks &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(ComputeStepConfig, callbacks, ComputeStepCallbacks) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_callbacks
+      // LOW_CODEGEN::END::CUSTOM:SETTER_callbacks
+    }
+
     Util::List<ResourceConfig> &ComputeStepConfig::get_resources() const
     {
       _LOW_ASSERT(is_alive());
@@ -203,6 +240,13 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       ComputeStepConfig l_Config = ComputeStepConfig::make(p_Name);
+
+      l_Config.get_callbacks().setup_pipelines = &ComputeStep::create_pipelines;
+      l_Config.get_callbacks().setup_signatures =
+          &ComputeStep::create_signatures;
+      l_Config.get_callbacks().populate_signatures =
+          &ComputeStep::prepare_signatures;
+      l_Config.get_callbacks().execute = &ComputeStep::default_execute;
 
       if (p_Node["resources"]) {
         parse_resource_configs(p_Node["resources"], l_Config.get_resources());

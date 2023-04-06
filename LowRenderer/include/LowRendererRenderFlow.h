@@ -9,6 +9,7 @@
 #include "LowRendererInterface.h"
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererMesh.h"
+#include "LowRendererLights.h"
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -24,6 +25,12 @@ namespace Low {
       alignas(16) Math::Matrix4x4 projectionMatrix;
       alignas(16) Math::Matrix4x4 viewMatrix;
     };
+    struct DirectionalLightShaderInfo
+    {
+      alignas(16) Math::Matrix4x4 lightSpaceMatrix;
+      alignas(16) Math::Vector4 atlasBounds;
+    };
+    struct RenderObject;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API RenderFlowData
@@ -40,6 +47,7 @@ namespace Low {
       float camera_fov;
       float camera_near_plane;
       float camera_far_plane;
+      DirectionalLight directional_light;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -123,6 +131,9 @@ namespace Low {
       float get_camera_far_plane() const;
       void set_camera_far_plane(float p_Value);
 
+      DirectionalLight &get_directional_light() const;
+      void set_directional_light(DirectionalLight &p_Value);
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -130,6 +141,7 @@ namespace Low {
                              Util::Yaml::Node &p_Config);
       void execute();
       void update_dimensions(Math::UVector2 &p_Dimensions);
+      void register_renderobject(RenderObject p_RenderObject);
 
     private:
       Interface::Context get_context() const;

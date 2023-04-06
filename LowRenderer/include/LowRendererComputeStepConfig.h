@@ -14,10 +14,20 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct LOW_RENDERER_API ComputeStep;
+
+    struct ComputeStepCallbacks
+    {
+      void (*setup_signatures)(ComputeStep, RenderFlow);
+      void (*setup_pipelines)(ComputeStep, RenderFlow);
+      void (*populate_signatures)(ComputeStep, RenderFlow);
+      void (*execute)(ComputeStep, RenderFlow);
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API ComputeStepConfigData
     {
+      ComputeStepCallbacks callbacks;
       Util::List<ResourceConfig> resources;
       Util::List<ComputePipelineConfig> pipelines;
       Low::Util::Name name;
@@ -73,6 +83,9 @@ namespace Low {
       {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
+
+      ComputeStepCallbacks &get_callbacks() const;
+      void set_callbacks(ComputeStepCallbacks &p_Value);
 
       Util::List<ResourceConfig> &get_resources() const;
 
