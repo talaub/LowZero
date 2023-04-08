@@ -73,6 +73,9 @@ namespace Low {
       uint64_t get_component(uint16_t p_TypeId);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       Util::Map<uint16_t, Util::Handle> &get_components() const;
     };
   } // namespace Core

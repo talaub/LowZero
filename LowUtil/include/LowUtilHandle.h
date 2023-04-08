@@ -31,12 +31,7 @@ namespace Low {
 
       LOW_EXPORT void initialize_buffer(uint8_t **p_Buffer,
                                         size_t p_ElementSize,
-                                        size_t p_ElementCount,
-                                        Low::Util::Instances::Slot **p_Slots);
-
-      LOW_EXPORT uint32_t create_instance(uint8_t *p_Buffer,
-                                          Instances::Slot *p_Slots,
-                                          uint32_t p_Capacity);
+                                        size_t p_ElementCount, Slot **p_Slots);
 
       void initialize();
       void cleanup();

@@ -85,6 +85,11 @@ namespace Low {
         void write(void *p_Data, uint32_t p_DataSize, uint32_t p_Start);
         void bind_vertex();
         void bind_index(uint8_t p_BindType);
+
+      private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
       };
     } // namespace Resource
   }   // namespace Renderer

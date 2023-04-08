@@ -83,6 +83,11 @@ namespace Low {
         Math::UVector2 &get_dimensions();
         void begin();
         void end();
+
+      private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
       };
     } // namespace Interface
   }   // namespace Renderer

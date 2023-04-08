@@ -91,6 +91,9 @@ namespace Low {
                             Util::Resource::Image2D &p_Image2d);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       void set_image(Resource::Image p_Value);
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);

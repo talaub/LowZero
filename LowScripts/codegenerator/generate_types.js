@@ -361,9 +361,11 @@ function generate_header(p_Type) {
 	}
     }
 
+    t += line('private:');
+    t += line(`static uint32_t ms_Capacity;`);
+    t += line(`static uint32_t create_instance();`);
+    t += line(`static void increase_budget();`);
     if (privatelines.length) {
-	t += line('private:');
-
 	for (const l of privatelines) {
 	    t += line(l);
 	}
@@ -395,6 +397,8 @@ function generate_source(p_Type) {
 
     t += include(p_Type.header_file_name, n);
     t += empty();
+    t += line("#include<algorithm>", n);
+    t += empty();
     t += include("LowUtilAssert.h", n);
     t += include("LowUtilLogger.h", n);
     t += include("LowUtilProfiler.h", n);
@@ -412,6 +416,7 @@ function generate_source(p_Type) {
     }
 
     t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${g_TypeId++};`, n);
+    t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
     t += line(`uint8_t *${p_Type.name}::ms_Buffer = 0;`, n);
     t += line(`Low::Util::Instances::Slot *${p_Type.name}::ms_Slots = 0;`, n);
     t += line(`Low::Util::List<${p_Type.name}> ${p_Type.name}::ms_LivingInstances = Low::Util::List<${p_Type.name}>();`, n);
@@ -431,7 +436,7 @@ function generate_source(p_Type) {
     else {
 	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name){`);
     }
-    t += line(`uint32_t l_Index = Low::Util::Instances::create_instance(ms_Buffer, ms_Slots, get_capacity());`);
+    t += line(`uint32_t l_Index = create_instance();`);
     t += empty();
     t += line(`${p_Type.name} l_Handle;`);
     t += line(`l_Handle.m_Data.m_Index = l_Index;`);
@@ -498,6 +503,8 @@ function generate_source(p_Type) {
     t += line('}');
     t += empty();
     t += line(`void ${p_Type.name}::initialize() {`);
+    t += line(`ms_Capacity = Low::Util::Config::get_capacity(N(${p_Type.module}), N(${p_Type.name}));`);
+    t += empty();
     t += line(`initialize_buffer(`);
     t += line(`&ms_Buffer, ${p_Type.name}Data::get_size(), get_capacity(), &ms_Slots`);
     t += line(`);`);
@@ -546,11 +553,7 @@ function generate_source(p_Type) {
 
     t += empty();
     t += line(`uint32_t ${p_Type.name}::get_capacity(){`);
-    t += line('static uint32_t l_Capacity = 0u;');
-    t += line('if (l_Capacity == 0u) {');
-    t += line(`l_Capacity = Low::Util::Config::get_capacity(N(${p_Type.module}), N(${p_Type.name}));`);
-    t += line('}');
-    t += line('return l_Capacity;');
+    t += line('return ms_Capacity;');
     t += line('}');
     t += empty();
 
@@ -642,6 +645,51 @@ function generate_source(p_Type) {
 	    t += empty();
 	}
     }
+
+    t += line(`uint32_t ${p_Type.name}::create_instance(){`);
+    t += line(`uint32_t l_Index = 0u;`);
+    t += empty();
+    t += line(`for (;l_Index<get_capacity();++l_Index){`);
+    t += line(`if (!ms_Slots[l_Index].m_Occupied){`);
+    t += line(`break;`);
+    t += line('}');
+    t += line('}');
+    t += line(`if (l_Index >= get_capacity()) {`);
+    t += line(`increase_budget();`);
+    t += line('}');
+    t += line(`ms_Slots[l_Index].m_Occupied = true;`);
+    t += line('return l_Index;');
+    t += line('}');
+    t += empty();
+
+    t += line(`void ${p_Type.name}::increase_budget(){`);
+    t += line(`uint32_t l_Capacity = get_capacity();`);
+    t += line(`uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);`);
+    t += line(`l_CapacityIncrease = std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);`);
+    t += empty();
+    t += line(`LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");`);
+    t += empty();
+    t += line(`uint8_t *l_NewBuffer = (uint8_t*) malloc((l_Capacity + l_CapacityIncrease) * sizeof(${p_Type.name}Data));`);
+    t += line(`Low::Util::Instances::Slot *l_NewSlots = (Low::Util::Instances::Slot*) malloc((l_Capacity + l_CapacityIncrease) * sizeof(Low::Util::Instances::Slot));`);
+    t += empty();
+    t += line(`memcpy(l_NewSlots, ms_Slots, l_Capacity * sizeof(Low::Util::Instances::Slot));`);
+    for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	t += line('{');
+	t += line(`memcpy(&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease)], &ms_Buffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity)], l_Capacity * sizeof(${i_Prop.plain_type}));`);
+	t += line('}');
+    }
+    t += line(`for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;++i) {`);
+    t += line(`l_NewSlots[i].m_Occupied = false;`);
+    t += line(`l_NewSlots[i].m_Generation = 0;`);
+    t += line('}');
+    t += line('free(ms_Buffer);');
+    t += line('free(ms_Slots);');
+    t += line('ms_Buffer = l_NewBuffer;');
+    t += line('ms_Slots = l_NewSlots;');
+    t += line(`ms_Capacity = l_Capacity + l_CapacityIncrease;`);
+    t += empty();
+    t += line(`LOW_LOG_DEBUG << "Auto-increased budget for ${p_Type.name} from " << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;`);
+    t += line('}');
     
     for (let i_Namespace of p_Type.namespace) {
 	t += line('}', --n);

@@ -1,5 +1,7 @@
 #include "LowRendererRenderFlow.h"
 
+#include <algorithm>
+
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -11,6 +13,7 @@
 namespace Low {
   namespace Renderer {
     const uint16_t RenderFlow::TYPE_ID = 2;
+    uint32_t RenderFlow::ms_Capacity = 0u;
     uint8_t *RenderFlow::ms_Buffer = 0;
     Low::Util::Instances::Slot *RenderFlow::ms_Slots = 0;
     Low::Util::List<RenderFlow> RenderFlow::ms_LivingInstances =
@@ -28,8 +31,7 @@ namespace Low {
 
     RenderFlow RenderFlow::make(Low::Util::Name p_Name)
     {
-      uint32_t l_Index = Low::Util::Instances::create_instance(
-          ms_Buffer, ms_Slots, get_capacity());
+      uint32_t l_Index = create_instance();
 
       RenderFlow l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
@@ -92,6 +94,9 @@ namespace Low {
 
     void RenderFlow::initialize()
     {
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowRenderer), N(RenderFlow));
+
       initialize_buffer(&ms_Buffer, RenderFlowData::get_size(), get_capacity(),
                         &ms_Slots);
 
@@ -354,12 +359,7 @@ namespace Low {
 
     uint32_t RenderFlow::get_capacity()
     {
-      static uint32_t l_Capacity = 0u;
-      if (l_Capacity == 0u) {
-        l_Capacity =
-            Low::Util::Config::get_capacity(N(LowRenderer), N(RenderFlow));
-      }
-      return l_Capacity;
+      return ms_Capacity;
     }
 
     Interface::Context RenderFlow::get_context() const
@@ -784,5 +784,145 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject
     }
 
+    uint32_t RenderFlow::create_instance()
+    {
+      uint32_t l_Index = 0u;
+
+      for (; l_Index < get_capacity(); ++l_Index) {
+        if (!ms_Slots[l_Index].m_Occupied) {
+          break;
+        }
+      }
+      if (l_Index >= get_capacity()) {
+        increase_budget();
+      }
+      ms_Slots[l_Index].m_Occupied = true;
+      return l_Index;
+    }
+
+    void RenderFlow::increase_budget()
+    {
+      uint32_t l_Capacity = get_capacity();
+      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      l_CapacityIncrease =
+          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+
+      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+
+      uint8_t *l_NewBuffer = (uint8_t *)malloc(
+          (l_Capacity + l_CapacityIncrease) * sizeof(RenderFlowData));
+      Low::Util::Instances::Slot *l_NewSlots =
+          (Low::Util::Instances::Slot *)malloc(
+              (l_Capacity + l_CapacityIncrease) *
+              sizeof(Low::Util::Instances::Slot));
+
+      memcpy(l_NewSlots, ms_Slots,
+             l_Capacity * sizeof(Low::Util::Instances::Slot));
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, context) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, context) * (l_Capacity)],
+               l_Capacity * sizeof(Interface::Context));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, dimensions) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, dimensions) * (l_Capacity)],
+               l_Capacity * sizeof(Math::UVector2));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(RenderFlowData, output_image) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(RenderFlowData, output_image) * (l_Capacity)],
+            l_Capacity * sizeof(Resource::Image));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, steps) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, steps) * (l_Capacity)],
+               l_Capacity * sizeof(Util::List<Util::Handle>));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, resources) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, resources) * (l_Capacity)],
+               l_Capacity * sizeof(ResourceRegistry));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, frame_info_buffer) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, frame_info_buffer) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Resource::Buffer));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, resource_signature) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, resource_signature) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Interface::PipelineResourceSignature));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_position) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, camera_position) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Math::Vector3));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_rotation) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, camera_rotation) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Math::Quaternion));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_fov) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, camera_fov) * (l_Capacity)],
+               l_Capacity * sizeof(float));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_near_plane) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, camera_near_plane) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(float));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_far_plane) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, camera_far_plane) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(float));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, directional_light) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, directional_light) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(DirectionalLight));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, name) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, name) * (l_Capacity)],
+               l_Capacity * sizeof(Low::Util::Name));
+      }
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+        l_NewSlots[i].m_Occupied = false;
+        l_NewSlots[i].m_Generation = 0;
+      }
+      free(ms_Buffer);
+      free(ms_Slots);
+      ms_Buffer = l_NewBuffer;
+      ms_Slots = l_NewSlots;
+      ms_Capacity = l_Capacity + l_CapacityIncrease;
+
+      LOW_LOG_DEBUG << "Auto-increased budget for RenderFlow from "
+                    << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
+    }
   } // namespace Renderer
 } // namespace Low

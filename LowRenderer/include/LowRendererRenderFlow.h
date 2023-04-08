@@ -144,6 +144,9 @@ namespace Low {
       void register_renderobject(RenderObject p_RenderObject);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
       void set_frame_info_buffer(Resource::Buffer p_Value);

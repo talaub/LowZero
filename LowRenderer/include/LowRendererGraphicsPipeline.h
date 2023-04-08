@@ -83,6 +83,11 @@ namespace Low {
         static GraphicsPipeline make(Util::Name p_Name,
                                      PipelineGraphicsCreateParams &p_Params);
         void bind();
+
+      private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
       };
     } // namespace Interface
   }   // namespace Renderer

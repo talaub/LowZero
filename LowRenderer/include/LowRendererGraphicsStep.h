@@ -134,6 +134,9 @@ namespace Low {
                                      RenderFlow p_RenderFlow);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       void set_config(GraphicsStepConfig p_Value);
       void set_context(Interface::Context p_Value);
     };

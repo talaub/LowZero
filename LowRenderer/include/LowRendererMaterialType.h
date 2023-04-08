@@ -99,6 +99,11 @@ namespace Low {
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
+
+    private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
     };
   } // namespace Renderer
 } // namespace Low

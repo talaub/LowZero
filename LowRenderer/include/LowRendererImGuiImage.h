@@ -88,6 +88,9 @@ namespace Low {
         void render(Math::UVector2 &p_Dimensions);
 
       private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
         void set_image(Resource::Image p_Value);
       };
     } // namespace Interface

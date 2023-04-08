@@ -96,6 +96,11 @@ namespace Low {
 
       static ComputeStepConfig make(Util::Name p_Name,
                                     Util::Yaml::Node &p_Node);
+
+    private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
     };
   } // namespace Renderer
 } // namespace Low

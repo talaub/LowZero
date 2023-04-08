@@ -5,6 +5,7 @@
 #include "LowUtilLogger.h"
 
 #include <stdlib.h>
+#include <vcruntime_string.h>
 
 namespace Low {
   namespace Util {
@@ -84,8 +85,7 @@ namespace Low {
     namespace Instances {
 
       void initialize_buffer(uint8_t **p_Buffer, size_t p_ElementSize,
-                             size_t p_ElementCount,
-                             Low::Util::Instances::Slot **p_Slots)
+                             size_t p_ElementCount, Slot **p_Slots)
       {
         void *l_Buffer =
             calloc(p_ElementCount * p_ElementSize, sizeof(uint8_t));
@@ -100,25 +100,6 @@ namespace Low {
           (*p_Slots)[i_Iter].m_Occupied = false;
           (*p_Slots)[i_Iter].m_Generation = 0;
         }
-      }
-
-      uint32_t create_instance(uint8_t *p_Buffer, Instances::Slot *p_Slots,
-                               uint32_t p_Capacity)
-      {
-        uint32_t l_Index = 0u;
-
-        // Find free index
-        for (; l_Index < p_Capacity; ++l_Index) {
-          if (!p_Slots[l_Index].m_Occupied &&
-              p_Slots[l_Index].m_Generation <= 255)
-            break;
-        }
-
-        LOW_ASSERT(l_Index < p_Capacity,
-                   "Cannot create new instance. Budget blown.");
-
-        p_Slots[l_Index].m_Occupied = true;
-        return l_Index;
       }
     } // namespace Instances
   }   // namespace Util

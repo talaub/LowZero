@@ -109,6 +109,9 @@ namespace Low {
       static void default_execute(ComputeStep p_Step, RenderFlow p_RenderFlow);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       void set_config(ComputeStepConfig p_Value);
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);

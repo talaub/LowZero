@@ -82,6 +82,11 @@ namespace Low {
         static Image make(Util::Name p_Name,
                           Backend::ImageResourceCreateParams &p_Params);
         void reinitialize(Backend::ImageResourceCreateParams &p_Params);
+
+      private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
       };
     } // namespace Resource
   }   // namespace Renderer

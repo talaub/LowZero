@@ -104,6 +104,11 @@ namespace Low {
         void set_buffer_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
                                  Resource::Buffer p_Value);
         uint8_t get_binding();
+
+      private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
       };
     } // namespace Interface
   }   // namespace Renderer

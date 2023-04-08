@@ -115,6 +115,9 @@ namespace Low {
         void clear_committed_resource_signatures();
 
       private:
+        static uint32_t ms_Capacity;
+        static uint32_t create_instance();
+        static void increase_budget();
         void set_global_signature(PipelineResourceSignature p_Value);
         void set_frame_info_buffer(Resource::Buffer p_Value);
         void set_material_data_buffer(Resource::Buffer p_Value);

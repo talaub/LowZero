@@ -1,5 +1,7 @@
 #include "LowRendererTexture2D.h"
 
+#include <algorithm>
+
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -10,6 +12,7 @@
 namespace Low {
   namespace Renderer {
     const uint16_t Texture2D::TYPE_ID = 7;
+    uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;
     Low::Util::Instances::Slot *Texture2D::ms_Slots = 0;
     Low::Util::List<Texture2D> Texture2D::ms_LivingInstances =
@@ -27,8 +30,7 @@ namespace Low {
 
     Texture2D Texture2D::make(Low::Util::Name p_Name)
     {
-      uint32_t l_Index = Low::Util::Instances::create_instance(
-          ms_Buffer, ms_Slots, get_capacity());
+      uint32_t l_Index = create_instance();
 
       Texture2D l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
@@ -74,6 +76,9 @@ namespace Low {
 
     void Texture2D::initialize()
     {
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowRenderer), N(Texture2D));
+
       initialize_buffer(&ms_Buffer, Texture2DData::get_size(), get_capacity(),
                         &ms_Slots);
 
@@ -156,12 +161,7 @@ namespace Low {
 
     uint32_t Texture2D::get_capacity()
     {
-      static uint32_t l_Capacity = 0u;
-      if (l_Capacity == 0u) {
-        l_Capacity =
-            Low::Util::Config::get_capacity(N(LowRenderer), N(Texture2D));
-      }
-      return l_Capacity;
+      return ms_Capacity;
     }
 
     Resource::Image Texture2D::get_image() const
@@ -238,5 +238,71 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
+    uint32_t Texture2D::create_instance()
+    {
+      uint32_t l_Index = 0u;
+
+      for (; l_Index < get_capacity(); ++l_Index) {
+        if (!ms_Slots[l_Index].m_Occupied) {
+          break;
+        }
+      }
+      if (l_Index >= get_capacity()) {
+        increase_budget();
+      }
+      ms_Slots[l_Index].m_Occupied = true;
+      return l_Index;
+    }
+
+    void Texture2D::increase_budget()
+    {
+      uint32_t l_Capacity = get_capacity();
+      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      l_CapacityIncrease =
+          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+
+      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+
+      uint8_t *l_NewBuffer = (uint8_t *)malloc(
+          (l_Capacity + l_CapacityIncrease) * sizeof(Texture2DData));
+      Low::Util::Instances::Slot *l_NewSlots =
+          (Low::Util::Instances::Slot *)malloc(
+              (l_Capacity + l_CapacityIncrease) *
+              sizeof(Low::Util::Instances::Slot));
+
+      memcpy(l_NewSlots, ms_Slots,
+             l_Capacity * sizeof(Low::Util::Instances::Slot));
+      {
+        memcpy(&l_NewBuffer[offsetof(Texture2DData, image) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(Texture2DData, image) * (l_Capacity)],
+               l_Capacity * sizeof(Resource::Image));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(Texture2DData, context) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(Texture2DData, context) * (l_Capacity)],
+               l_Capacity * sizeof(Interface::Context));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(Texture2DData, name) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(Texture2DData, name) * (l_Capacity)],
+               l_Capacity * sizeof(Low::Util::Name));
+      }
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+        l_NewSlots[i].m_Occupied = false;
+        l_NewSlots[i].m_Generation = 0;
+      }
+      free(ms_Buffer);
+      free(ms_Slots);
+      ms_Buffer = l_NewBuffer;
+      ms_Slots = l_NewSlots;
+      ms_Capacity = l_Capacity + l_CapacityIncrease;
+
+      LOW_LOG_DEBUG << "Auto-increased budget for Texture2D from " << l_Capacity
+                    << " to " << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
+    }
   } // namespace Renderer
 } // namespace Low

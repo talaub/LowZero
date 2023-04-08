@@ -85,6 +85,9 @@ namespace Low {
       void set_property(Util::Name p_PropertyName, Util::Variant &p_Value);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
     };

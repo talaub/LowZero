@@ -1,5 +1,7 @@
 #include "LowRendererGraphicsStepConfig.h"
 
+#include <algorithm>
+
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -12,6 +14,7 @@
 namespace Low {
   namespace Renderer {
     const uint16_t GraphicsStepConfig::TYPE_ID = 5;
+    uint32_t GraphicsStepConfig::ms_Capacity = 0u;
     uint8_t *GraphicsStepConfig::ms_Buffer = 0;
     Low::Util::Instances::Slot *GraphicsStepConfig::ms_Slots = 0;
     Low::Util::List<GraphicsStepConfig> GraphicsStepConfig::ms_LivingInstances =
@@ -31,8 +34,7 @@ namespace Low {
 
     GraphicsStepConfig GraphicsStepConfig::make(Low::Util::Name p_Name)
     {
-      uint32_t l_Index = Low::Util::Instances::create_instance(
-          ms_Buffer, ms_Slots, get_capacity());
+      uint32_t l_Index = create_instance();
 
       GraphicsStepConfig l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
@@ -95,6 +97,9 @@ namespace Low {
 
     void GraphicsStepConfig::initialize()
     {
+      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                    N(GraphicsStepConfig));
+
       initialize_buffer(&ms_Buffer, GraphicsStepConfigData::get_size(),
                         get_capacity(), &ms_Slots);
 
@@ -339,12 +344,7 @@ namespace Low {
 
     uint32_t GraphicsStepConfig::get_capacity()
     {
-      static uint32_t l_Capacity = 0u;
-      if (l_Capacity == 0u) {
-        l_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
-                                                     N(GraphicsStepConfig));
-      }
-      return l_Capacity;
+      return ms_Capacity;
     }
 
     GraphicsStepCallbacks &GraphicsStepConfig::get_callbacks() const
@@ -616,5 +616,141 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
+    uint32_t GraphicsStepConfig::create_instance()
+    {
+      uint32_t l_Index = 0u;
+
+      for (; l_Index < get_capacity(); ++l_Index) {
+        if (!ms_Slots[l_Index].m_Occupied) {
+          break;
+        }
+      }
+      if (l_Index >= get_capacity()) {
+        increase_budget();
+      }
+      ms_Slots[l_Index].m_Occupied = true;
+      return l_Index;
+    }
+
+    void GraphicsStepConfig::increase_budget()
+    {
+      uint32_t l_Capacity = get_capacity();
+      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      l_CapacityIncrease =
+          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+
+      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+
+      uint8_t *l_NewBuffer = (uint8_t *)malloc(
+          (l_Capacity + l_CapacityIncrease) * sizeof(GraphicsStepConfigData));
+      Low::Util::Instances::Slot *l_NewSlots =
+          (Low::Util::Instances::Slot *)malloc(
+              (l_Capacity + l_CapacityIncrease) *
+              sizeof(Low::Util::Instances::Slot));
+
+      memcpy(l_NewSlots, ms_Slots,
+             l_Capacity * sizeof(Low::Util::Instances::Slot));
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, callbacks) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, callbacks) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(GraphicsStepCallbacks));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, resources) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, resources) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::List<ResourceConfig>));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(GraphicsStepConfigData, dimensions_config) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(GraphicsStepConfigData, dimensions_config) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(DimensionsConfig));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, pipelines) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, pipelines) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::List<GraphicsPipelineConfig>));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, rendertargets) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, rendertargets) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::List<PipelineResourceBindingConfig>));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(GraphicsStepConfigData, depth_rendertarget) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(GraphicsStepConfigData, depth_rendertarget) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(PipelineResourceBindingConfig));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, use_depth) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, use_depth) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, depth_clear) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, depth_clear) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, depth_test) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, depth_test) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, depth_write) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, depth_write) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData,
+                                     depth_compare_operation) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData,
+                                   depth_compare_operation) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint8_t));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(GraphicsStepConfigData, name) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(GraphicsStepConfigData, name) * (l_Capacity)],
+            l_Capacity * sizeof(Low::Util::Name));
+      }
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+        l_NewSlots[i].m_Occupied = false;
+        l_NewSlots[i].m_Generation = 0;
+      }
+      free(ms_Buffer);
+      free(ms_Slots);
+      ms_Buffer = l_NewBuffer;
+      ms_Slots = l_NewSlots;
+      ms_Capacity = l_Capacity + l_CapacityIncrease;
+
+      LOW_LOG_DEBUG << "Auto-increased budget for GraphicsStepConfig from "
+                    << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
+    }
   } // namespace Renderer
 } // namespace Low

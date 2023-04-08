@@ -126,6 +126,9 @@ namespace Low {
                                      Util::Yaml::Node &p_Node);
 
     private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
       void set_dimensions_config(DimensionsConfig &p_Value);
     };
   } // namespace Renderer
