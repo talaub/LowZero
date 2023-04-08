@@ -81,10 +81,19 @@ resources:
     type: buffer
     array_size: 1
     buffer_size: 8
+  HoverHighlightImage:
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 1.0
+    type: image
+    format: RGBA8_UNORM
+    array_size: 1
     
-output_image: DeferredLit
+output_image: HoverHighlightImage
 steps:
   - name: depthprepass
   - name: graph
   - name: ShadowPass
   - name: lighting
+  - name: highlight_edge

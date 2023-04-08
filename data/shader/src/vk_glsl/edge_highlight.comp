@@ -1,0 +1,86 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, set = 1) uniform FrameInfoWrapper
+{
+  vec2 u_InverseDimensions;
+  vec3 u_CameraPosition;
+  mat4 u_ProjectionMatrix;
+  mat4 u_ViewMatrix;
+};
+
+layout(binding = 0, set = 2, rgba32f) uniform image2D out_image;
+layout(binding = 1, set = 2) uniform sampler2D DeferredLit;
+layout(binding = 2, set = 2) uniform sampler2D GBufferDepth;
+layout(binding = 3, set = 2) uniform utexture2D EntityIndexMap;
+layout(binding = 4, set = 2) uniform sampler EntityIndexMapSampler;
+layout(std140, binding = 5, set = 2) buffer EntityIndexWritebackWrapper
+{
+  uint u_HoveredEntityIndex;
+};
+
+float edge_detection(vec2 p_AbsoluteCoordinates, vec2 p_TextureCoordinates)
+{
+  float h = 3.0;
+
+  float l_Depth = texture(GBufferDepth, p_TextureCoordinates).x;
+  if (l_Depth >= 1.0) {
+    return 0.0;
+  }
+
+  uint index = texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                       p_TextureCoordinates)
+                   .x;
+  float o = texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                    (p_AbsoluteCoordinates + vec2(0, 0)) * u_InverseDimensions)
+                .x;
+
+  if (index != u_HoveredEntityIndex) {
+    return 0.0;
+  }
+
+  float n = texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                    (p_AbsoluteCoordinates + vec2(0, h)) * u_InverseDimensions)
+                .x;
+  float e = texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                    (p_AbsoluteCoordinates + vec2(h, 0)) * u_InverseDimensions)
+                .x;
+  float s = texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                    (p_AbsoluteCoordinates + vec2(0, -h)) * u_InverseDimensions)
+                .x;
+  float w = texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                    (p_AbsoluteCoordinates + vec2(-h, 0)) * u_InverseDimensions)
+                .x;
+
+  float dy = (n - s) * .5;
+  float dx = (e - w) * .5;
+
+  float edge = sqrt(dx * dx + dy * dy);
+  float angle = atan(dy, dx);
+
+  float color = edge * 5.0;
+
+  return color;
+}
+
+vec2 get_texture_coords()
+{
+  ivec2 l_AbsolutePixel = ivec2(gl_GlobalInvocationID.xy);
+  return vec2((float(l_AbsolutePixel.x) + 0.5) * u_InverseDimensions.x,
+              (float(l_AbsolutePixel.y) + 0.5) * u_InverseDimensions.y);
+}
+
+void main()
+{
+  ivec2 l_AbsolutePixel = ivec2(gl_GlobalInvocationID.xy);
+  vec2 l_TextureCoordinates = get_texture_coords();
+
+  vec3 l_OutColor = texture(DeferredLit, l_TextureCoordinates).xyz;
+
+  if (edge_detection(l_AbsolutePixel, l_TextureCoordinates) > 0.5) {
+    l_OutColor = vec3(1.0, 0.0, 0.0);
+  }
+
+  imageStore(out_image, l_AbsolutePixel, vec4(l_OutColor, 1.0));
+}
