@@ -84,6 +84,13 @@ namespace Low {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
+      static void destroy(Low::Util::Handle p_Handle)
+      {
+        _LOW_ASSERT(is_alive(p_Handle));
+        ComputeStepConfig l_ComputeStepConfig = p_Handle.get_id();
+        l_ComputeStepConfig.destroy();
+      }
+
       ComputeStepCallbacks &get_callbacks() const;
       void set_callbacks(ComputeStepCallbacks &p_Value);
 

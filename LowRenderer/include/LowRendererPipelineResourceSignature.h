@@ -79,6 +79,14 @@ namespace Low {
           return p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
+        static void destroy(Low::Util::Handle p_Handle)
+        {
+          _LOW_ASSERT(is_alive(p_Handle));
+          PipelineResourceSignature l_PipelineResourceSignature =
+              p_Handle.get_id();
+          l_PipelineResourceSignature.destroy();
+        }
+
         Backend::PipelineResourceSignature &get_signature() const;
 
         Low::Util::Name get_name() const;

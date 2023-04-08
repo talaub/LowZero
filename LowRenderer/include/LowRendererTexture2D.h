@@ -82,6 +82,13 @@ namespace Low {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
+      static void destroy(Low::Util::Handle p_Handle)
+      {
+        _LOW_ASSERT(is_alive(p_Handle));
+        Texture2D l_Texture2D = p_Handle.get_id();
+        l_Texture2D.destroy();
+      }
+
       Resource::Image get_image() const;
 
       Low::Util::Name get_name() const;

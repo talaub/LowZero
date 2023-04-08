@@ -11,7 +11,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Texture2D::TYPE_ID = 7;
+    const uint16_t Texture2D::TYPE_ID = 8;
     uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;
     Low::Util::Instances::Slot *Texture2D::ms_Slots = 0;
@@ -89,6 +89,8 @@ namespace Low {
       l_TypeInfo.name = N(Texture2D);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Texture2D::is_alive;
+      l_TypeInfo.destroy = &Texture2D::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(image);

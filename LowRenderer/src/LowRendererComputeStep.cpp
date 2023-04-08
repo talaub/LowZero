@@ -9,7 +9,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t ComputeStep::TYPE_ID = 3;
+    const uint16_t ComputeStep::TYPE_ID = 4;
     uint32_t ComputeStep::ms_Capacity = 0u;
     uint8_t *ComputeStep::ms_Buffer = 0;
     Low::Util::Instances::Slot *ComputeStep::ms_Slots = 0;
@@ -103,6 +103,8 @@ namespace Low {
       l_TypeInfo.name = N(ComputeStep);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &ComputeStep::is_alive;
+      l_TypeInfo.destroy = &ComputeStep::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);

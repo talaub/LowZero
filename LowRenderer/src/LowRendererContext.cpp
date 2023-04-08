@@ -15,7 +15,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t Context::TYPE_ID = 12;
+      const uint16_t Context::TYPE_ID = 13;
       uint32_t Context::ms_Capacity = 0u;
       uint8_t *Context::ms_Buffer = 0;
       Low::Util::Instances::Slot *Context::ms_Slots = 0;
@@ -101,6 +101,8 @@ namespace Low {
         l_TypeInfo.name = N(Context);
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Context::is_alive;
+        l_TypeInfo.destroy = &Context::destroy;
+        l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(context);

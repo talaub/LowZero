@@ -11,7 +11,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Material::TYPE_ID = 11;
+    const uint16_t Material::TYPE_ID = 12;
     uint32_t Material::ms_Capacity = 0u;
     uint8_t *Material::ms_Buffer = 0;
     Low::Util::Instances::Slot *Material::ms_Slots = 0;
@@ -88,6 +88,8 @@ namespace Low {
       l_TypeInfo.name = N(Material);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Material::is_alive;
+      l_TypeInfo.destroy = &Material::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(material_type);

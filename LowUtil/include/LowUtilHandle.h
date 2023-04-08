@@ -67,9 +67,11 @@ namespace Low {
       struct TypeInfo
       {
         Name name;
+        bool component;
         Map<Name, PropertyInfo> properties;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
+        void (*destroy)(Handle);
       };
     } // namespace RTTI
 

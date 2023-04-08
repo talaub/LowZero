@@ -9,7 +9,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t GraphicsStep::TYPE_ID = 6;
+    const uint16_t GraphicsStep::TYPE_ID = 7;
     uint32_t GraphicsStep::ms_Capacity = 0u;
     uint8_t *GraphicsStep::ms_Buffer = 0;
     Low::Util::Instances::Slot *GraphicsStep::ms_Slots = 0;
@@ -110,6 +110,8 @@ namespace Low {
       l_TypeInfo.name = N(GraphicsStep);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &GraphicsStep::is_alive;
+      l_TypeInfo.destroy = &GraphicsStep::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);

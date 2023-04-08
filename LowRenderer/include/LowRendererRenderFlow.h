@@ -102,6 +102,13 @@ namespace Low {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
+      static void destroy(Low::Util::Handle p_Handle)
+      {
+        _LOW_ASSERT(is_alive(p_Handle));
+        RenderFlow l_RenderFlow = p_Handle.get_id();
+        l_RenderFlow.destroy();
+      }
+
       Math::UVector2 &get_dimensions() const;
 
       Resource::Image get_output_image() const;

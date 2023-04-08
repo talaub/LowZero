@@ -1,0 +1,21 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+  - Component
+dll_macro: LOW_CORE_API
+types:
+  Transform:
+    component: true
+    header_imports:
+      - LowMath.h
+    properties:
+      position:
+        type: Math::Vector3
+        dirty_flag: dirty
+      rotation:
+        type: Math::Quaternion
+        dirty_flag: dirty
+      scale:
+        type: Math::Vector3
+        dirty_flag: dirty

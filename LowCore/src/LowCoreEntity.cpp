@@ -53,6 +53,13 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      for (auto it = get_components().begin(); it != get_components().end();
+           ++it) {
+        Util::Handle i_Handle = it->second;
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(i_Handle.get_type());
+        i_TypeInfo.destroy(i_Handle);
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -84,6 +91,8 @@ namespace Low {
       l_TypeInfo.name = N(Entity);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Entity::is_alive;
+      l_TypeInfo.destroy = &Entity::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(components);
@@ -171,7 +180,26 @@ namespace Low {
     uint64_t Entity::get_component(uint16_t p_TypeId)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_component
+      if (get_components().find(p_TypeId) == get_components().end()) {
+        return ~0ull;
+      }
+      return get_components()[p_TypeId].get_id();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_component
+    }
+
+    void Entity::add_component(Util::Handle &p_Component)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
+      Util::Handle l_ExistingComponent = get_component(p_Component.get_type());
+      Util::RTTI::TypeInfo l_ComponentTypeInfo =
+          get_type_info(p_Component.get_type());
+      LOW_ASSERT(!l_ComponentTypeInfo.is_alive(l_ExistingComponent),
+                 "An entity can only hold one component of a given type");
+
+      l_ComponentTypeInfo.properties[N(entity)].set(p_Component, this);
+
+      get_components()[p_Component.get_type()] = p_Component.get_id();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_component
     }
 
     uint32_t Entity::create_instance()

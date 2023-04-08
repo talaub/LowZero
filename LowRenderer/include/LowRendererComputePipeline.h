@@ -75,6 +75,13 @@ namespace Low {
           return p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
+        static void destroy(Low::Util::Handle p_Handle)
+        {
+          _LOW_ASSERT(is_alive(p_Handle));
+          ComputePipeline l_ComputePipeline = p_Handle.get_id();
+          l_ComputePipeline.destroy();
+        }
+
         Backend::Pipeline &get_pipeline() const;
 
         Low::Util::Name get_name() const;

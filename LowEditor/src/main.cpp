@@ -16,6 +16,10 @@
 #include "LowRenderer.h"
 #include "LowRendererRenderFlow.h"
 
+#include "LowCore.h"
+#include "LowCoreEntity.h"
+#include "LowCoreTransform.h"
+
 #include <stdint.h>
 
 #include <microprofile.h>
@@ -43,6 +47,12 @@ int main()
 
   Low::Renderer::initialize();
 
+  Low::Core::initialize();
+
+  Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Entity1));
+  Low::Core::Component::Transform l_Transform =
+      Low::Core::Component::Transform::make(l_Entity);
+
   Low::Editor::initialize();
 
   while (Low::Renderer::window_is_open()) {
@@ -56,6 +66,8 @@ int main()
 
     MicroProfileFlip(nullptr);
   }
+
+  Low::Core::cleanup();
 
   Low::Renderer::cleanup();
 

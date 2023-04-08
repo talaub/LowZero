@@ -9,7 +9,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t RenderObject::TYPE_ID = 9;
+    const uint16_t RenderObject::TYPE_ID = 10;
     uint32_t RenderObject::ms_Capacity = 0u;
     uint8_t *RenderObject::ms_Buffer = 0;
     Low::Util::Instances::Slot *RenderObject::ms_Slots = 0;
@@ -92,6 +92,8 @@ namespace Low {
       l_TypeInfo.name = N(RenderObject);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderObject::is_alive;
+      l_TypeInfo.destroy = &RenderObject::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(mesh);

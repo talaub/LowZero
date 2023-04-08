@@ -1,50 +1,54 @@
 #pragma once
 
-#include "LowRendererApi.h"
+#include "LowCoreApi.h"
 
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
 
-#include "LowRendererBackend.h"
+#include "LowCoreEntity.h"
+
+#include "LowMath.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
-  namespace Renderer {
-    namespace Interface {
+  namespace Core {
+    namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-      struct RenderpassCreateParams;
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_RENDERER_API RenderpassData
+      struct LOW_CORE_API TransformData
       {
-        Backend::Renderpass renderpass;
-        Low::Util::Name name;
+        Math::Vector3 position;
+        Math::Quaternion rotation;
+        Math::Vector3 scale;
+        Low::Core::Entity entity;
+        bool dirty;
 
         static size_t get_size()
         {
-          return sizeof(RenderpassData);
+          return sizeof(TransformData);
         }
       };
 
-      struct LOW_RENDERER_API Renderpass : public Low::Util::Handle
+      struct LOW_CORE_API Transform : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<Renderpass> ms_LivingInstances;
+        static Low::Util::List<Transform> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        Renderpass();
-        Renderpass(uint64_t p_Id);
-        Renderpass(Renderpass &p_Copy);
+        Transform();
+        Transform(uint64_t p_Id);
+        Transform(Transform &p_Copy);
 
-        static Renderpass make(Low::Util::Name p_Name);
-        explicit Renderpass(const Renderpass &p_Copy)
+        static Transform make(Low::Core::Entity p_Entity);
+        explicit Transform(const Transform &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -58,7 +62,7 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static Renderpass *living_instances()
+        static Transform *living_instances()
         {
           return ms_LivingInstances.data();
         }
@@ -75,27 +79,30 @@ namespace Low {
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          Renderpass l_Renderpass = p_Handle.get_id();
-          l_Renderpass.destroy();
+          Transform l_Transform = p_Handle.get_id();
+          l_Transform.destroy();
         }
 
-        Backend::Renderpass &get_renderpass() const;
-        void set_renderpass(Backend::Renderpass &p_Value);
+        Math::Vector3 &get_position() const;
+        void set_position(Math::Vector3 &p_Value);
 
-        Low::Util::Name get_name() const;
-        void set_name(Low::Util::Name p_Value);
+        Math::Quaternion &get_rotation() const;
+        void set_rotation(Math::Quaternion &p_Value);
 
-        static Renderpass make(Util::Name p_Name,
-                               RenderpassCreateParams &p_Params);
-        Math::UVector2 &get_dimensions();
-        void begin();
-        void end();
+        Math::Vector3 &get_scale() const;
+        void set_scale(Math::Vector3 &p_Value);
+
+        Low::Core::Entity get_entity() const;
+        void set_entity(Low::Core::Entity p_Value);
+
+        bool is_dirty() const;
+        void set_dirty(bool p_Value);
 
       private:
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
       };
-    } // namespace Interface
-  }   // namespace Renderer
+    } // namespace Component
+  }   // namespace Core
 } // namespace Low

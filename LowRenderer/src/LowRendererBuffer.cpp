@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Resource {
-      const uint16_t Buffer::TYPE_ID = 19;
+      const uint16_t Buffer::TYPE_ID = 20;
       uint32_t Buffer::ms_Capacity = 0u;
       uint8_t *Buffer::ms_Buffer = 0;
       Low::Util::Instances::Slot *Buffer::ms_Slots = 0;
@@ -86,6 +86,8 @@ namespace Low {
         l_TypeInfo.name = N(Buffer);
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Buffer::is_alive;
+        l_TypeInfo.destroy = &Buffer::destroy;
+        l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(buffer);

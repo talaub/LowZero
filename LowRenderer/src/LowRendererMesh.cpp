@@ -9,7 +9,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Mesh::TYPE_ID = 8;
+    const uint16_t Mesh::TYPE_ID = 9;
     uint32_t Mesh::ms_Capacity = 0u;
     uint8_t *Mesh::ms_Buffer = 0;
     Low::Util::Instances::Slot *Mesh::ms_Slots = 0;
@@ -80,6 +80,8 @@ namespace Low {
       l_TypeInfo.name = N(Mesh);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Mesh::is_alive;
+      l_TypeInfo.destroy = &Mesh::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_buffer_start);

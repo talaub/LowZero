@@ -14,7 +14,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_EXPORT EntityData
+    struct LOW_CORE_API EntityData
     {
       Util::Map<uint16_t, Util::Handle> components;
       Low::Util::Name name;
@@ -25,7 +25,7 @@ namespace Low {
       }
     };
 
-    struct LOW_EXPORT Entity : public Low::Util::Handle
+    struct LOW_CORE_API Entity : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;
@@ -67,10 +67,18 @@ namespace Low {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
+      static void destroy(Low::Util::Handle p_Handle)
+      {
+        _LOW_ASSERT(is_alive(p_Handle));
+        Entity l_Entity = p_Handle.get_id();
+        l_Entity.destroy();
+      }
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       uint64_t get_component(uint16_t p_TypeId);
+      void add_component(Util::Handle &p_Component);
 
     private:
       static uint32_t ms_Capacity;

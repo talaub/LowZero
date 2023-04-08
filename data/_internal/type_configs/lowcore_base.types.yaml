@@ -2,7 +2,7 @@ module: LowCore
 namespace:
   - Low
   - Core
-dll_macro: LOW_EXPORT
+dll_macro: LOW_CORE_API
 types:
   Entity:
     properties:
@@ -16,3 +16,8 @@ types:
         parameters:
           - name: typeId
             type: uint16_t
+      add_component:
+        return_type: void
+        parameters:
+          - name: component
+            type: Util::Handle

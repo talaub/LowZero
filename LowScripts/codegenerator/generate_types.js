@@ -179,6 +179,10 @@ function generate_header(p_Type) {
     t += include('LowUtilName.h');
     t += include('LowUtilContainers.h');
     t += empty();
+    if (p_Type.component) {
+	t += include('LowCoreEntity.h');
+	t += empty();
+    }
 
     if (p_Type.header_imports) {
 	for (const i_Import of p_Type.header_imports) {
@@ -271,7 +275,7 @@ function generate_header(p_Type) {
 	t += line('private:');
     }
     if (p_Type.component) {
-	t += line(`static ${p_Type.name} make();`);
+	t += line(`static ${p_Type.name} make(Low::Core::Entity p_Entity);`);
     }
     else {
 	t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
@@ -304,6 +308,12 @@ function generate_header(p_Type) {
 
     t += line('static bool is_alive(Low::Util::Handle p_Handle) {');
     t += line('return p_Handle.check_alive(ms_Slots, get_capacity());');
+    t += line('}');
+    t += empty();
+    t += line('static void destroy(Low::Util::Handle p_Handle) {');
+    t += line('_LOW_ASSERT(is_alive(p_Handle));');
+    t += line(`${p_Type.name} l_${p_Type.name} = p_Handle.get_id();`);
+    t += line(`l_${p_Type.name}.destroy();`);
     t += line('}');
     t += empty();
 
@@ -431,7 +441,7 @@ function generate_source(p_Type) {
     
     t += empty();
     if (p_Type.component) {
-	t += line(`${p_Type.name} ${p_Type.name}::make(){`);
+	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Core::Entity p_Entity){`);
     }
     else {
 	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name){`);
@@ -455,7 +465,12 @@ function generate_source(p_Type) {
 	}
     }
     t += empty();
-    if (!p_Type.component) {
+    if (p_Type.component) {
+	t += line('l_Handle.set_entity(p_Entity);');
+	t += line('p_Entity.add_component(l_Handle);');
+	t += empty();
+    } else
+    {
 	t += line('l_Handle.set_name(p_Name);');
 	t += empty();
     }
@@ -516,6 +531,12 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.name = N(${p_Type.name});`);
     t += line(`l_TypeInfo.get_capacity = &get_capacity;`);
     t += line(`l_TypeInfo.is_alive = &${p_Type.name}::is_alive;`);
+    t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);
+    if (p_Type.component) {
+	t += line(`l_TypeInfo.component = true;`);
+    } else {
+	t += line(`l_TypeInfo.component = false;`);
+    }
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	t += line(`{`);
 	t += line(`Low::Util::RTTI::PropertyInfo l_PropertyInfo;`);
@@ -720,6 +741,13 @@ function process_file(p_FileName) {
 
 	i_Type.namespace_string = '';
 
+	if (i_Type.component) {
+	    i_Type.properties['entity'] = {
+		type: 'Low::Core::Entity',
+		handle: true
+	    }
+	}
+
 	const l_DirtyFlags = [];
 	for (let [i_PropName, i_Prop] of Object.entries(i_Type.properties)) {
 	    if (!i_Prop.dirty_flag) {
@@ -736,6 +764,7 @@ function process_file(p_FileName) {
 		l_DirtyFlags.push(i_Prop.dirty_flag);
 	    }
 	}
+
 
 	i_Type.dirty_flags = l_DirtyFlags;
 

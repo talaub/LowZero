@@ -77,6 +77,13 @@ namespace Low {
           return p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
+        static void destroy(Low::Util::Handle p_Handle)
+        {
+          _LOW_ASSERT(is_alive(p_Handle));
+          ImGuiImage l_ImGuiImage = p_Handle.get_id();
+          l_ImGuiImage.destroy();
+        }
+
         Backend::ImGuiImage &get_imgui_image() const;
 
         Resource::Image get_image() const;

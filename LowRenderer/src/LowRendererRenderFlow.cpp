@@ -12,7 +12,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t RenderFlow::TYPE_ID = 2;
+    const uint16_t RenderFlow::TYPE_ID = 3;
     uint32_t RenderFlow::ms_Capacity = 0u;
     uint8_t *RenderFlow::ms_Buffer = 0;
     Low::Util::Instances::Slot *RenderFlow::ms_Slots = 0;
@@ -107,6 +107,8 @@ namespace Low {
       l_TypeInfo.name = N(RenderFlow);
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderFlow::is_alive;
+      l_TypeInfo.destroy = &RenderFlow::destroy;
+      l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(context);

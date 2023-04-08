@@ -8,6 +8,7 @@ add_dependencies(LowEditor
   LowUtil
   LowMath
   LowRenderer
+  LowCore
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
@@ -25,6 +26,7 @@ include_directories(
 set_target_properties(LowEditor PROPERTIES OUTPUT_NAME "lowed")
 
 target_link_libraries(LowEditor PRIVATE
+  LowCore
   LowRenderer
   LowUtil
   LowMath

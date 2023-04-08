@@ -73,6 +73,13 @@ namespace Low {
           return p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
+        static void destroy(Low::Util::Handle p_Handle)
+        {
+          _LOW_ASSERT(is_alive(p_Handle));
+          Buffer l_Buffer = p_Handle.get_id();
+          l_Buffer.destroy();
+        }
+
         Backend::Buffer &get_buffer() const;
         void set_buffer(Backend::Buffer &p_Value);
 

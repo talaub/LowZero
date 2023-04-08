@@ -75,6 +75,13 @@ namespace Low {
         return p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
+      static void destroy(Low::Util::Handle p_Handle)
+      {
+        _LOW_ASSERT(is_alive(p_Handle));
+        Material l_Material = p_Handle.get_id();
+        l_Material.destroy();
+      }
+
       MaterialType get_material_type() const;
       void set_material_type(MaterialType p_Value);
 

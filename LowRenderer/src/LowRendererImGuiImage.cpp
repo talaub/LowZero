@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t ImGuiImage::TYPE_ID = 17;
+      const uint16_t ImGuiImage::TYPE_ID = 18;
       uint32_t ImGuiImage::ms_Capacity = 0u;
       uint8_t *ImGuiImage::ms_Buffer = 0;
       Low::Util::Instances::Slot *ImGuiImage::ms_Slots = 0;
@@ -89,6 +89,8 @@ namespace Low {
         l_TypeInfo.name = N(ImGuiImage);
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &ImGuiImage::is_alive;
+        l_TypeInfo.destroy = &ImGuiImage::destroy;
+        l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(imgui_image);

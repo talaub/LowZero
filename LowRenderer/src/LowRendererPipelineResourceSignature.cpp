@@ -12,7 +12,7 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
-      const uint16_t PipelineResourceSignature::TYPE_ID = 14;
+      const uint16_t PipelineResourceSignature::TYPE_ID = 15;
       uint32_t PipelineResourceSignature::ms_Capacity = 0u;
       uint8_t *PipelineResourceSignature::ms_Buffer = 0;
       Low::Util::Instances::Slot *PipelineResourceSignature::ms_Slots = 0;
@@ -94,6 +94,8 @@ namespace Low {
         l_TypeInfo.name = N(PipelineResourceSignature);
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &PipelineResourceSignature::is_alive;
+        l_TypeInfo.destroy = &PipelineResourceSignature::destroy;
+        l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(signature);
