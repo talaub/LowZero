@@ -594,7 +594,7 @@ namespace Low {
             LOW_ASSERT(false, "Unsupported rendertarget resource scope");
           }
 
-          i_ColorTarget.blendEnable = true;
+          i_ColorTarget.blendEnable = false;
           i_Params.colorTargets.push_back(i_ColorTarget);
         }
 
@@ -649,6 +649,8 @@ namespace Low {
 
             l_ObjectShaderInfos[l_ObjectIndex].material_index =
                 i_RenderObject.get_material().get_index();
+            l_ObjectShaderInfos[l_ObjectIndex].entity_id =
+                i_RenderObject.get_index();
 
             l_ObjectIndex++;
 

@@ -5,6 +5,7 @@ struct ObjectInfo
   mat4 mvp;
   mat4 model_matrix;
   uint material_index;
+  uint entity_index;
 };
 
 struct MaterialInfo
@@ -37,6 +38,7 @@ layout(location = 1) out vec4 o_SurfaceNormal;
 layout(location = 2) out vec4 o_Normal;
 layout(location = 3) out vec4 o_Metalness;
 layout(location = 4) out vec4 o_Roughness;
+layout(location = 5) out uvec4 o_EntityIndex;
 
 void main()
 {
@@ -64,4 +66,7 @@ void main()
 
   o_Metalness = vec4(vec3(0.4), 1.0);
   o_Roughness = vec4(vec3(0.5), 1.0);
+
+  o_EntityIndex =
+      uvec4(uvec3(u_RenderObjects[in_InstanceId].entity_index), 1.0);
 }

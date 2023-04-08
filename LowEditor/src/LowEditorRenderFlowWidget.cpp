@@ -2,6 +2,8 @@
 
 #include "LowRenderer.h"
 
+#include "LowUtilLogger.h"
+
 #include "imgui.h"
 
 namespace Low {
@@ -19,6 +21,8 @@ namespace Low {
     void RenderFlowWidget::render(float p_Delta)
     {
       ImGui::Begin(m_Title.c_str());
+
+      Math::Vector2 l_HoverRelativePosition{2.0f, 2.0f};
 
       ImVec2 l_ViewportSize = ImGui::GetContentRegionAvail();
       Math::UVector2 l_ViewportDimensions((uint32_t)l_ViewportSize.x,
@@ -40,11 +44,29 @@ namespace Low {
 
       } else if (m_ImGuiImage.is_alive()) {
         if (l_ViewportDimensions.x > 0u && l_ViewportDimensions.y > 0u) {
-          m_ImGuiImage.render(l_ViewportDimensions);
+          ImVec2 l_ImGuiMousePosition = ImGui::GetMousePos();
+          ImVec2 l_ImGuiCursorPosition = ImGui::GetCursorScreenPos();
+          ImVec2 l_WindowMousePos = {
+              l_ImGuiMousePosition.x - l_ImGuiCursorPosition.x,
+              l_ImGuiMousePosition.y - l_ImGuiCursorPosition.y};
+
+          if (l_WindowMousePos.x > 0.0f && l_WindowMousePos.y > 0.0f &&
+              l_WindowMousePos.x < l_ViewportDimensions.x &&
+              l_WindowMousePos.y < l_ViewportDimensions.y) {
+            l_HoverRelativePosition.x =
+                ((float)l_WindowMousePos.x) / ((float)l_ViewportDimensions.x);
+            l_HoverRelativePosition.y =
+                ((float)l_WindowMousePos.y) / ((float)l_ViewportDimensions.y);
+          }
         }
+        m_ImGuiImage.render(l_ViewportDimensions);
       }
 
       ImGui::End();
+
+      m_RenderFlow.get_resources()
+          .get_buffer_resource(N(HoverCoordinatesBuffer))
+          .set(&l_HoverRelativePosition);
 
       {
         m_SaveDimensionTicker += p_Delta;

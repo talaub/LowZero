@@ -93,6 +93,11 @@ namespace Low {
                                 Resource::Image p_Value);
         void set_sampler_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
                                   Resource::Image p_Value);
+        void set_unbound_sampler_resource(Util::Name p_Name,
+                                          uint32_t p_ArrayIndex,
+                                          Resource::Image p_Value);
+        void set_texture2d_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
+                                    Resource::Image p_Value);
         void set_constant_buffer_resource(Util::Name p_Name,
                                           uint32_t p_ArrayIndex,
                                           Resource::Buffer p_Value);

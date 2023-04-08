@@ -12,6 +12,12 @@ namespace Low {
   namespace Renderer {
     Util::Map<Util::Name, GraphicsPipelineConfig> g_GraphicsPipelineConfigs;
 
+    static void parse_resource_buffer_config(Util::Yaml::Node &p_Node,
+                                             BufferResourceConfig &p_Config)
+    {
+      p_Config.size = p_Node["buffer_size"].as<int>();
+    }
+
     void parse_dimensions_config(Util::Yaml::Node &p_Node,
                                  DimensionsConfig &p_Config)
     {
@@ -87,6 +93,8 @@ namespace Low {
         p_Config.format = Backend::ImageFormat::RGBA8_UNORM;
       } else if (l_FormatString == "R8_UNORM") {
         p_Config.format = Backend::ImageFormat::R8_UNORM;
+      } else if (l_FormatString == "R32_UINT") {
+        p_Config.format = Backend::ImageFormat::R32_UINT;
       } else if (l_FormatString == "D32_SFLOAT") {
         p_Config.format = Backend::ImageFormat::D32_SFLOAT;
       } else if (l_FormatString == "D32_SFLOAT_S8_UINT") {
@@ -115,6 +123,10 @@ namespace Low {
           i_Resource.type = ResourceType::IMAGE;
 
           parse_resource_image_config(it->second, i_Resource.image);
+        } else if (i_TypeString == "buffer") {
+          i_Resource.type = ResourceType::BUFFER;
+
+          parse_resource_buffer_config(it->second, i_Resource.buffer);
         } else {
           LOW_ASSERT(false, "Unknown resource type");
         }
@@ -150,6 +162,12 @@ namespace Low {
         p_BindingConfig.bindType = ResourceBindType::IMAGE;
       } else if (p_TypeName == "sampler") {
         p_BindingConfig.bindType = ResourceBindType::SAMPLER;
+      } else if (p_TypeName == "buffer") {
+        p_BindingConfig.bindType = ResourceBindType::BUFFER;
+      } else if (p_TypeName == "texture2d") {
+        p_BindingConfig.bindType = ResourceBindType::TEXTURE2D;
+      } else if (p_TypeName == "unbound_sampler") {
+        p_BindingConfig.bindType = ResourceBindType::UNBOUND_SAMPLER;
       } else {
         LOW_ASSERT(false, "Unknown resource binding type");
       }

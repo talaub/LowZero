@@ -421,6 +421,12 @@ namespace Low {
             i_Resource.type = Backend::ResourceType::IMAGE;
           } else if (it->bindType == ResourceBindType::SAMPLER) {
             i_Resource.type = Backend::ResourceType::SAMPLER;
+          } else if (it->bindType == ResourceBindType::BUFFER) {
+            i_Resource.type = Backend::ResourceType::BUFFER;
+          } else if (it->bindType == ResourceBindType::UNBOUND_SAMPLER) {
+            i_Resource.type = Backend::ResourceType::UNBOUND_SAMPLER;
+          } else if (it->bindType == ResourceBindType::TEXTURE2D) {
+            i_Resource.type = Backend::ResourceType::TEXTURE2D;
           } else {
             LOW_ASSERT(false, "Unknown resource bind type");
           }
@@ -493,6 +499,47 @@ namespace Low {
               LOW_ASSERT(false, "Resource bind scope not supported");
             }
             i_Signature.set_sampler_resource(it->resourceName, 0, i_Image);
+          } else if (it->bindType == ResourceBindType::TEXTURE2D) {
+            Resource::Image i_Image;
+
+            if (it->resourceScope == ResourceBindScope::LOCAL) {
+              i_Image = p_Step.get_resources()[p_RenderFlow].get_image_resource(
+                  it->resourceName);
+            } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
+              i_Image = p_RenderFlow.get_resources().get_image_resource(
+                  it->resourceName);
+            } else {
+              LOW_ASSERT(false, "Resource bind scope not supported");
+            }
+            i_Signature.set_texture2d_resource(it->resourceName, 0, i_Image);
+          } else if (it->bindType == ResourceBindType::UNBOUND_SAMPLER) {
+            Resource::Image i_Image;
+
+            if (it->resourceScope == ResourceBindScope::LOCAL) {
+              i_Image = p_Step.get_resources()[p_RenderFlow].get_image_resource(
+                  it->resourceName);
+            } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
+              i_Image = p_RenderFlow.get_resources().get_image_resource(
+                  it->resourceName);
+            } else {
+              LOW_ASSERT(false, "Resource bind scope not supported");
+            }
+            i_Signature.set_unbound_sampler_resource(it->resourceName, 0,
+                                                     i_Image);
+          } else if (it->bindType == ResourceBindType::BUFFER) {
+            Resource::Buffer i_Buffer;
+
+            if (it->resourceScope == ResourceBindScope::LOCAL) {
+              i_Buffer =
+                  p_Step.get_resources()[p_RenderFlow].get_buffer_resource(
+                      it->resourceName);
+            } else if (it->resourceScope == ResourceBindScope::RENDERFLOW) {
+              i_Buffer = p_RenderFlow.get_resources().get_buffer_resource(
+                  it->resourceName);
+            } else {
+              LOW_ASSERT(false, "Resource bind scope not supported");
+            }
+            i_Signature.set_buffer_resource(it->resourceName, 0, i_Buffer);
           } else {
             LOW_ASSERT(false, "Unsupported resource bind type");
           }
@@ -546,5 +593,6 @@ namespace Low {
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
     }
+
   } // namespace Renderer
 } // namespace Low

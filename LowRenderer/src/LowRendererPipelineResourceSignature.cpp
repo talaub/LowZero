@@ -230,6 +230,24 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_sampler_resource
       }
 
+      void PipelineResourceSignature::set_unbound_sampler_resource(
+          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_unbound_sampler_resource
+        Backend::callbacks().pipeline_resource_signature_set_unbound_sampler(
+            get_signature(), p_Name, p_ArrayIndex, p_Value);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_unbound_sampler_resource
+      }
+
+      void PipelineResourceSignature::set_texture2d_resource(
+          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_texture2d_resource
+        Backend::callbacks().pipeline_resource_signature_set_texture2d(
+            get_signature(), p_Name, p_ArrayIndex, p_Value);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_texture2d_resource
+      }
+
       void PipelineResourceSignature::set_constant_buffer_resource(
           Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Buffer p_Value)
       {

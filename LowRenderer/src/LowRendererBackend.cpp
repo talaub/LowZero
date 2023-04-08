@@ -50,6 +50,7 @@ namespace Low {
                  LOW_RENDERER_COLOR_WRITE_BIT_BLUE |
                  LOW_RENDERER_COLOR_WRITE_BIT_ALPHA;
         case ImageFormat::R8_UNORM:
+        case ImageFormat::R32_UINT:
           return LOW_RENDERER_COLOR_WRITE_BIT_RED;
         default:
           LOW_ASSERT(false, "Unknown image format");

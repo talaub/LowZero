@@ -31,6 +31,7 @@ namespace Low {
           RGBA32_SFLOAT,
           RGBA8_UNORM,
           R8_UNORM,
+          R32_UINT,
           D32_SFLOAT,
           D32_SFLOAT_S8_UINT,
           D24_UNORM_S8_UINT
@@ -114,7 +115,9 @@ namespace Low {
           CONSTANT_BUFFER,
           BUFFER,
           SAMPLER,
-          IMAGE
+          IMAGE,
+          TEXTURE2D,
+          UNBOUND_SAMPLER
         };
       };
 
@@ -387,6 +390,10 @@ namespace Low {
             PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
         void (*pipeline_resource_signature_set_sampler)(
             PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
+        void (*pipeline_resource_signature_set_unbound_sampler)(
+            PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
+        void (*pipeline_resource_signature_set_texture2d)(
+            PipelineResourceSignature &, Util::Name, uint32_t, Resource::Image);
         void (*pipeline_resource_signature_commit)(PipelineResourceSignature &);
         void (*pipeline_resource_signature_commit_clear)(Context &);
 
@@ -406,6 +413,7 @@ namespace Low {
         void (*imageresource_cleanup)(ImageResource &);
 
         void (*buffer_create)(Buffer &, BufferCreateParams &);
+        void (*buffer_read)(Buffer &, void *, uint32_t, uint32_t);
         void (*buffer_write)(Buffer &, void *, uint32_t, uint32_t);
         void (*buffer_set)(Buffer &, void *);
         void (*buffer_cleanup)(Buffer &);

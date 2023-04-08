@@ -36,6 +36,18 @@ layout(binding = 4, set = 2) uniform sampler2D GBufferRoughness;
 layout(binding = 5, set = 2) uniform sampler2D GBufferMetalness;
 layout(binding = 6, set = 2) uniform sampler2D GBufferDepth;
 layout(binding = 7, set = 2) uniform sampler2D ShadowAtlas;
+layout(binding = 8, set = 2) uniform utexture2D EntityIndexMap;
+layout(binding = 9, set = 2) uniform sampler EntityIndexMapSampler;
+
+layout(std140, binding = 10, set = 2) buffer EntityIndexWritebackWrapper
+{
+  uint u_HoveredEntityIndex;
+};
+
+layout(std140, binding = 11, set = 2) readonly buffer HoverCoordinatesWrapper
+{
+  vec2 u_HoverCoordinates;
+};
 
 vec2 get_texture_coords()
 {
@@ -182,6 +194,21 @@ void main()
   if (l_Depth >= 1.0) {
     imageStore(out_image, l_AbsolutePixel, vec4(0, 0, 0, 0));
     return;
+  }
+
+  if (u_HoverCoordinates.x <= 1.0 && u_HoverCoordinates.y <= 1.0) {
+
+    float l_HoverDepth = texture(GBufferDepth, u_HoverCoordinates).x;
+    if (l_HoverDepth < 1.0) {
+      u_HoveredEntityIndex =
+          texture(usampler2D(EntityIndexMap, EntityIndexMapSampler),
+                  u_HoverCoordinates)
+              .x;
+    } else {
+      u_HoveredEntityIndex = ~0u;
+    }
+  } else {
+    u_HoveredEntityIndex = ~0u;
   }
 
   vec4 l_Albedo = texture(GBufferAlbedo, l_TextureCoordinates);

@@ -27,3 +27,7 @@ pipelines:
       renderflow:GBufferMetalness: sampler
       renderflow:GBufferDepth: sampler
       renderflow:ShadowAtlas: sampler
+      renderflow:EntityIndexMap: texture2d
+      renderflow:EntityIndexMap: unbound_sampler
+      renderflow:IdWritebackBuffer: buffer
+      renderflow:HoverCoordinatesBuffer: buffer

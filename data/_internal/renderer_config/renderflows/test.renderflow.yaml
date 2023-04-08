@@ -48,6 +48,14 @@ resources:
     format: D32_SFLOAT
     array_size: 1
     depth: true
+  EntityIndexMap:
+    dimensions:
+      type: relative
+      target: renderflow
+      multiplier: 1.0
+    type: image
+    format: R32_UINT
+    array_size: 1
   DeferredLit:
     dimensions:
       type: relative
@@ -65,6 +73,14 @@ resources:
     format: D32_SFLOAT
     array_size: 1
     depth: true
+  IdWritebackBuffer:
+    type: buffer
+    array_size: 1
+    buffer_size: 4
+  HoverCoordinatesBuffer:
+    type: buffer
+    array_size: 1
+    buffer_size: 8
     
 output_image: DeferredLit
 steps:

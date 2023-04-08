@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowRendererApi.h"
+
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
 
@@ -16,7 +18,7 @@ namespace Low {
       uint64_t handleId;
     };
 
-    struct ResourceRegistry
+    struct LOW_RENDERER_API ResourceRegistry
     {
       void initialize(Util::List<ResourceConfig> &p_Configs,
                       Interface::Context p_Context, RenderFlow p_RenderFlow);

@@ -161,6 +161,26 @@ types:
           - name: value
             type: Resource::Image
             handle: true
+      set_unbound_sampler_resource:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: arrayIndex
+            type: uint32_t
+          - name: value
+            type: Resource::Image
+            handle: true
+      set_texture2d_resource:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: arrayIndex
+            type: uint32_t
+          - name: value
+            type: Resource::Image
+            handle: true
       set_constant_buffer_resource:
         return_type: void
         parameters:

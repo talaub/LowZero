@@ -5,6 +5,7 @@ struct ObjectInfo
   mat4 mvp;
   mat4 model_matrix;
   uint material_index;
+  uint entity_index;
 };
 
 layout(location = 0) in vec3 inPosition;

@@ -231,6 +231,8 @@ namespace Low {
             return Backend::ImageFormat::RGBA8_UNORM;
           case VK_FORMAT_R8_UNORM:
             return Backend::ImageFormat::R8_UNORM;
+          case VK_FORMAT_R32_UINT:
+            return Backend::ImageFormat::R32_UINT;
           case VK_FORMAT_D32_SFLOAT:
             return Backend::ImageFormat::D32_SFLOAT;
           case VK_FORMAT_D32_SFLOAT_S8_UINT:
@@ -256,6 +258,8 @@ namespace Low {
             return VK_FORMAT_R8G8B8A8_UNORM;
           case Backend::ImageFormat::R8_UNORM:
             return VK_FORMAT_R8_UNORM;
+          case Backend::ImageFormat::R32_UINT:
+            return VK_FORMAT_R32_UINT;
           case Backend::ImageFormat::D32_SFLOAT:
             return VK_FORMAT_D32_SFLOAT;
           case Backend::ImageFormat::D32_SFLOAT_S8_UINT:
@@ -2030,7 +2034,7 @@ namespace Low {
               l_Properties.limits.maxSamplerAnisotropy;
           l_SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
           l_SamplerInfo.unnormalizedCoordinates = VK_FALSE;
-          l_SamplerInfo.compareEnable = VK_FALSE;
+          l_SamplerInfo.compareEnable = VK_TRUE;
           l_SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
           l_SamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
           l_SamplerInfo.mipLodBias = 0.f;
@@ -2172,9 +2176,10 @@ namespace Low {
 
         p_Image.handleId = 0ull;
 
-        VkImageUsageFlags l_UsageFlags =
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        VkImageUsageFlags l_UsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                         VK_IMAGE_USAGE_SAMPLED_BIT |
+                                         VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         if (p_Params.depth) {
           l_UsageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
@@ -2290,6 +2295,13 @@ namespace Low {
             } else if (i_Resource.type == Backend::ResourceType::SAMPLER) {
               i_Binding.descriptorType =
                   VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            } else if (i_Resource.type ==
+                       Backend::ResourceType::UNBOUND_SAMPLER) {
+              i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+            } else if (i_Resource.type == Backend::ResourceType::TEXTURE2D) {
+              i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+            } else if (i_Resource.type == Backend::ResourceType::IMAGE) {
+              i_Binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             } else {
               LOW_ASSERT(false, "Unknown uniform interface type");
             }
@@ -2380,24 +2392,29 @@ namespace Low {
       }
 
       uint32_t vk_pipeline_resource_signature_get_binding(
-          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name)
+          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
+          uint8_t p_PreferredType)
       {
+        uint32_t l_Index = ~0u;
 
         for (uint32_t i = 0u; i < p_Signature.resourceCount; ++i) {
           if (p_Signature.resources[i].description.name == p_Name) {
-            return i;
+            if (p_Signature.resources[i].description.type == p_PreferredType) {
+              return i;
+            }
+            l_Index = i;
           }
         }
-        LOW_ASSERT(false, "Unable to find resource binding");
-        return ~0u;
+        LOW_ASSERT(l_Index != ~0u, "Unable to find resource binding");
+        return l_Index;
       }
 
       void vk_pipeline_resource_signature_set_buffer(
           Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
           uint32_t p_ArrayIndex, Resource::Buffer p_BufferResource)
       {
-        uint32_t l_ResourceIndex =
-            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        uint32_t l_ResourceIndex = vk_pipeline_resource_signature_get_binding(
+            p_Signature, p_Name, Backend::ResourceType::BUFFER);
         Backend::PipelineResourceBinding &l_Resource =
             p_Signature.resources[l_ResourceIndex];
 
@@ -2444,8 +2461,8 @@ namespace Low {
           Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
           uint32_t p_ArrayIndex, Resource::Buffer p_BufferResource)
       {
-        uint32_t l_ResourceIndex =
-            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        uint32_t l_ResourceIndex = vk_pipeline_resource_signature_get_binding(
+            p_Signature, p_Name, Backend::ResourceType::CONSTANT_BUFFER);
         Backend::PipelineResourceBinding &l_Resource =
             p_Signature.resources[l_ResourceIndex];
 
@@ -2493,8 +2510,8 @@ namespace Low {
           Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
           uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
       {
-        uint32_t l_ResourceIndex =
-            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        uint32_t l_ResourceIndex = vk_pipeline_resource_signature_get_binding(
+            p_Signature, p_Name, Backend::ResourceType::SAMPLER);
         Backend::PipelineResourceBinding &l_Resource =
             p_Signature.resources[l_ResourceIndex];
 
@@ -2539,12 +2556,110 @@ namespace Low {
         }
       }
 
+      void vk_pipeline_resource_signature_set_unbound_sampler(
+          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
+          uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
+      {
+        uint32_t l_ResourceIndex = vk_pipeline_resource_signature_get_binding(
+            p_Signature, p_Name, Backend::ResourceType::UNBOUND_SAMPLER);
+        Backend::PipelineResourceBinding &l_Resource =
+            p_Signature.resources[l_ResourceIndex];
+
+        LOW_ASSERT(l_Resource.description.type ==
+                       Backend::ResourceType::UNBOUND_SAMPLER,
+                   "Expected unbound_sampler resource type");
+        LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
+                   "Resource array index out of bounds");
+
+        l_Resource.boundResourceHandleId[p_ArrayIndex] =
+            p_ImageResource.get_id();
+        p_Signature.context->vk
+            .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+            .m_Bindings[l_ResourceIndex]
+            .boundResourceHandleId[p_ArrayIndex] = p_ImageResource.get_id();
+
+        for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
+          VkDescriptorImageInfo i_ImageInfo;
+          i_ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+          i_ImageInfo.imageView = p_ImageResource.get_image().vk.m_ImageView;
+          i_ImageInfo.sampler = p_ImageResource.get_image().vk.m_Sampler;
+
+          VkWriteDescriptorSet i_DescriptorWrite;
+
+          i_DescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          i_DescriptorWrite.dstSet =
+              p_Signature.context->vk
+                  .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+                  .m_DescriptorSets[j];
+          i_DescriptorWrite.dstBinding = l_ResourceIndex;
+          i_DescriptorWrite.dstArrayElement = p_ArrayIndex;
+          i_DescriptorWrite.pNext = nullptr;
+          i_DescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+          i_DescriptorWrite.descriptorCount = 1;
+          i_DescriptorWrite.pBufferInfo = nullptr;
+          i_DescriptorWrite.pImageInfo = &(i_ImageInfo);
+          i_DescriptorWrite.pTexelBufferView = nullptr;
+
+          vkUpdateDescriptorSets(p_Signature.context->vk.m_Device, 1,
+                                 &i_DescriptorWrite, 0, nullptr);
+        }
+      }
+
+      void vk_pipeline_resource_signature_set_texture2d(
+          Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
+          uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
+      {
+        uint32_t l_ResourceIndex = vk_pipeline_resource_signature_get_binding(
+            p_Signature, p_Name, Backend::ResourceType::TEXTURE2D);
+        Backend::PipelineResourceBinding &l_Resource =
+            p_Signature.resources[l_ResourceIndex];
+
+        LOW_ASSERT(l_Resource.description.type ==
+                       Backend::ResourceType::TEXTURE2D,
+                   "Expected texture2d resource type");
+        LOW_ASSERT(p_ArrayIndex < l_Resource.description.arraySize,
+                   "Resource array index out of bounds");
+
+        l_Resource.boundResourceHandleId[p_ArrayIndex] =
+            p_ImageResource.get_id();
+        p_Signature.context->vk
+            .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+            .m_Bindings[l_ResourceIndex]
+            .boundResourceHandleId[p_ArrayIndex] = p_ImageResource.get_id();
+
+        for (uint8_t j = 0u; j < p_Signature.context->framesInFlight; ++j) {
+          VkDescriptorImageInfo i_ImageInfo;
+          i_ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+          i_ImageInfo.imageView = p_ImageResource.get_image().vk.m_ImageView;
+          i_ImageInfo.sampler = p_ImageResource.get_image().vk.m_Sampler;
+
+          VkWriteDescriptorSet i_DescriptorWrite;
+
+          i_DescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          i_DescriptorWrite.dstSet =
+              p_Signature.context->vk
+                  .m_PipelineResourceSignatures[p_Signature.vk.m_Index]
+                  .m_DescriptorSets[j];
+          i_DescriptorWrite.dstBinding = l_ResourceIndex;
+          i_DescriptorWrite.dstArrayElement = p_ArrayIndex;
+          i_DescriptorWrite.pNext = nullptr;
+          i_DescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+          i_DescriptorWrite.descriptorCount = 1;
+          i_DescriptorWrite.pBufferInfo = nullptr;
+          i_DescriptorWrite.pImageInfo = &(i_ImageInfo);
+          i_DescriptorWrite.pTexelBufferView = nullptr;
+
+          vkUpdateDescriptorSets(p_Signature.context->vk.m_Device, 1,
+                                 &i_DescriptorWrite, 0, nullptr);
+        }
+      }
+
       void vk_pipeline_resource_signature_set_image(
           Backend::PipelineResourceSignature &p_Signature, Util::Name p_Name,
           uint32_t p_ArrayIndex, Resource::Image p_ImageResource)
       {
-        uint32_t l_ResourceIndex =
-            vk_pipeline_resource_signature_get_binding(p_Signature, p_Name);
+        uint32_t l_ResourceIndex = vk_pipeline_resource_signature_get_binding(
+            p_Signature, p_Name, Backend::ResourceType::IMAGE);
         Backend::PipelineResourceBinding &l_Resource =
             p_Signature.resources[l_ResourceIndex];
 
@@ -3042,7 +3157,9 @@ namespace Low {
                     p_Context, i_Binding.boundResourceHandleId[i]);
               }
             } else if (i_Binding.description.type ==
-                       Backend::ResourceType::SAMPLER) {
+                           Backend::ResourceType::SAMPLER ||
+                       i_Binding.description.type ==
+                           Backend::ResourceType::UNBOUND_SAMPLER) {
               for (uint32_t i = 0u; i < i_Binding.description.arraySize; ++i) {
                 BarrierHelper::perform_resource_barrier_sampler(
                     p_Context, i_Binding.boundResourceHandleId[i]);
@@ -3153,7 +3270,8 @@ namespace Low {
         }
         if ((p_Params.usageFlags & LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER) ==
             LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER) {
-          l_UsageFlage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+          l_UsageFlage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
         Helper::create_buffer(*p_Params.context, l_BufferSize, l_UsageFlage,
@@ -3176,6 +3294,35 @@ namespace Low {
         vkDestroyBuffer(p_Buffer.context->vk.m_Device, p_Buffer.vk.m_Buffer,
                         nullptr);
         vkFreeMemory(p_Buffer.context->vk.m_Device, p_Buffer.vk.m_Memory,
+                     nullptr);
+      }
+
+      void vk_buffer_read(Backend::Buffer &p_Buffer, void *p_Data,
+                          uint32_t p_DataSize, uint32_t p_Start)
+      {
+
+        VkBuffer l_StagingBuffer;
+        VkDeviceMemory l_StagingBufferMemory;
+
+        Helper::create_buffer(*p_Buffer.context, p_DataSize,
+                              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                              l_StagingBuffer, l_StagingBufferMemory);
+
+        void *l_Data;
+        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
+                    p_DataSize, 0, &l_Data);
+
+        Helper::copy_buffer(*p_Buffer.context, p_Buffer.vk.m_Buffer,
+                            l_StagingBuffer, p_DataSize, p_Start, 0);
+
+        memcpy(p_Data, l_Data, (size_t)p_DataSize);
+        vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
+
+        vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
                      nullptr);
       }
 
@@ -3377,6 +3524,10 @@ namespace Low {
             &vk_pipeline_resource_signature_set_image;
         p_Callbacks.pipeline_resource_signature_set_sampler =
             &vk_pipeline_resource_signature_set_sampler;
+        p_Callbacks.pipeline_resource_signature_set_unbound_sampler =
+            &vk_pipeline_resource_signature_set_unbound_sampler;
+        p_Callbacks.pipeline_resource_signature_set_texture2d =
+            &vk_pipeline_resource_signature_set_texture2d;
         p_Callbacks.pipeline_resource_signature_commit =
             &vk_pipeline_resource_signature_commit;
         p_Callbacks.pipeline_resource_signature_commit_clear =
@@ -3398,6 +3549,7 @@ namespace Low {
         p_Callbacks.buffer_cleanup = &vk_buffer_cleanup;
         p_Callbacks.buffer_set = &vk_buffer_set;
         p_Callbacks.buffer_write = &vk_buffer_write;
+        p_Callbacks.buffer_read = &vk_buffer_read;
         p_Callbacks.buffer_bind_vertex = &vk_buffer_bind_vertex;
         p_Callbacks.buffer_bind_index = &vk_buffer_bind_index;
 

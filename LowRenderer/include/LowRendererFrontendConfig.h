@@ -94,7 +94,9 @@ namespace Low {
       {
         IMAGE,
         SAMPLER,
-        BUFFER
+        BUFFER,
+        UNBOUND_SAMPLER,
+        TEXTURE2D
       };
     }
 

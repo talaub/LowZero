@@ -727,6 +727,15 @@ namespace Low {
 
     void tick(float p_Delta)
     {
+      Resource::Buffer l_WriteBackBuffer =
+          g_MainRenderFlow.get_resources().get_buffer_resource(
+              N(IdWritebackBuffer));
+
+      uint32_t l_HoveredIndex;
+
+      Backend::callbacks().buffer_read(l_WriteBackBuffer.get_buffer(),
+                                       &l_HoveredIndex, sizeof(uint32_t), 0);
+
       g_Context.get_window().tick();
 
       Interface::PipelineManager::tick(p_Delta);
