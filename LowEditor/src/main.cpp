@@ -17,6 +17,7 @@
 #include "LowRendererRenderFlow.h"
 
 #include "LowCore.h"
+#include "LowCoreGameLoop.h"
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
 
@@ -55,17 +56,9 @@ int main()
 
   Low::Editor::initialize();
 
-  while (Low::Renderer::window_is_open()) {
-    {
-      Low::Renderer::tick(delta);
+  Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
-      Low::Editor::tick(delta);
-
-      Low::Renderer::late_tick(delta);
-    }
-
-    MicroProfileFlip(nullptr);
-  }
+  Low::Core::GameLoop::start();
 
   Low::Core::cleanup();
 

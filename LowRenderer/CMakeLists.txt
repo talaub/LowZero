@@ -8,6 +8,7 @@ set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders
 SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui.cpp"
   "${IMGUI_PATH}/imgui_draw.cpp"
+  "${IMGUI_PATH}/imgui_demo.cpp"
   "${IMGUI_PATH}/imgui_tables.cpp"
   "${IMGUI_PATH}/imgui_widgets.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_glfw.cpp"

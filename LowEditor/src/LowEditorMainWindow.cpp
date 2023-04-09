@@ -5,6 +5,7 @@
 #include "LowEditorLogWidget.h"
 #include "LowEditorRenderFlowWidget.h"
 #include "LowEditorDetailsWidget.h"
+#include "LowEditorProfilerWidget.h"
 
 #include "LowUtilContainers.h"
 
@@ -20,6 +21,7 @@ namespace Low {
     LogWidget g_LogWidget;
     RenderFlowWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
+    ProfilerWidget *g_ProfilerWidget;
 
     static void render_menu_bar(float p_Delta)
     {
@@ -69,6 +71,7 @@ namespace Low {
           "Viewport", Renderer::RenderFlow::ms_LivingInstances[0]);
 
       g_DetailsWidget = new DetailsWidget();
+      g_ProfilerWidget = new ProfilerWidget();
     }
 
     void tick(float p_Delta)
@@ -97,6 +100,7 @@ namespace Low {
       g_LogWidget.render(p_Delta);
       g_MainViewportWidget->render(p_Delta);
       g_DetailsWidget->render(p_Delta);
+      g_ProfilerWidget->render(p_Delta);
     }
   } // namespace Editor
 } // namespace Low
