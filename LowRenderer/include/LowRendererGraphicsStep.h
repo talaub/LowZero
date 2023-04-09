@@ -10,9 +10,9 @@
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererGraphicsStepConfig.h"
 #include "LowRendererGraphicsPipeline.h"
-#include "LowRendererRenderObject.h"
 #include "LowRendererRenderFlow.h"
 #include "LowRendererBuffer.h"
+#include "LowRendererExposedObjects.h"
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -126,7 +126,7 @@ namespace Low {
       void prepare(RenderFlow p_RenderFlow);
       void execute(RenderFlow p_RenderFlow, Math::Matrix4x4 &p_ProjectionMatrix,
                    Math::Matrix4x4 &p_ViewMatrix);
-      void register_renderobject(RenderObject p_RenderObject);
+      void register_renderobject(RenderObject &p_RenderObject);
       void update_dimensions(RenderFlow p_RenderFlow);
       static void create_signature(GraphicsStep p_Step,
                                    RenderFlow p_RenderFlow);

@@ -24,7 +24,6 @@
 #include "LowRendererRenderFlow.h"
 #include "LowRendererTexture2D.h"
 #include "LowRendererMesh.h"
-#include "LowRendererRenderObject.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererMaterialType.h"
 #include "LowRendererImGuiImage.h"
@@ -147,10 +146,6 @@ namespace Low {
 
     Util::List<RenderFlowUpdateData> g_PendingRenderFlowUpdates;
 
-    RenderObject g_RenderObject;
-    RenderObject g_RenderObject2;
-    RenderObject g_RenderObjectGround;
-
     MeshBuffer g_VertexBuffer;
     MeshBuffer g_IndexBuffer;
 
@@ -159,6 +154,10 @@ namespace Low {
 
     RenderFlow g_MainRenderFlow;
     Util::Name g_MainRenderFlowName;
+
+    RenderObject g_SphereRenderObject;
+    RenderObject g_CubeRenderObject;
+    RenderObject g_GroundRenderObject;
 
     Interface::GraphicsPipeline g_FullscreenPipeline;
     Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
@@ -210,7 +209,6 @@ namespace Low {
       Mesh::initialize();
       MaterialType::initialize();
       Material::initialize();
-      RenderObject::initialize();
     }
 
     static void initialize_resource_types()
@@ -666,15 +664,13 @@ namespace Low {
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_RustNormalTexture));
 
-        g_RenderObject = RenderObject::make(N(TestRO));
-        g_RenderObject.set_mesh(g_SphereMesh);
-        g_RenderObject.set_material(l_Material);
-        g_RenderObject.set_world_position(Math::Vector3(0.0f, 0.0f, -5.0f));
-        g_RenderObject.set_world_rotation(
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
-        g_RenderObject.set_world_scale(Math::Vector3(1.0f));
-
-        g_MainRenderFlow.register_renderobject(g_RenderObject);
+        g_SphereRenderObject.mesh = g_SphereMesh;
+        g_SphereRenderObject.material = l_Material;
+        g_SphereRenderObject.world_position = Math::Vector3(0.0f, 0.0f, -5.0f);
+        g_SphereRenderObject.world_rotation =
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        g_SphereRenderObject.world_scale = Math::Vector3(1.0f);
+        g_SphereRenderObject.entity_id = 1;
       }
 
       {
@@ -687,15 +683,13 @@ namespace Low {
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_WoodNormalTexture));
 
-        g_RenderObject2 = RenderObject::make(N(TestRO2));
-        g_RenderObject2.set_mesh(g_CubeMesh);
-        g_RenderObject2.set_material(l_Material);
-        g_RenderObject2.set_world_position(Math::Vector3(-2.0f, 0.0f, -8.0f));
-        g_RenderObject2.set_world_rotation(
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
-        g_RenderObject2.set_world_scale(Math::Vector3(1.0f));
-
-        g_MainRenderFlow.register_renderobject(g_RenderObject2);
+        g_CubeRenderObject.mesh = g_CubeMesh;
+        g_CubeRenderObject.material = l_Material;
+        g_CubeRenderObject.world_position = Math::Vector3(-2.0f, 0.0f, -8.0f);
+        g_CubeRenderObject.world_rotation =
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        g_CubeRenderObject.world_scale = Math::Vector3(1.0f);
+        g_CubeRenderObject.entity_id = 2;
       }
 
       {
@@ -708,16 +702,14 @@ namespace Low {
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_WoodNormalTexture));
 
-        g_RenderObjectGround = RenderObject::make(N(TestRO2));
-        g_RenderObjectGround.set_mesh(g_CubeMesh);
-        g_RenderObjectGround.set_material(l_Material);
-        g_RenderObjectGround.set_world_position(
-            Math::Vector3(-2.0f, -3.0f, -8.0f));
-        g_RenderObjectGround.set_world_rotation(
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
-        g_RenderObjectGround.set_world_scale(Math::Vector3(20.0f, 0.4f, 20.0f));
-
-        g_MainRenderFlow.register_renderobject(g_RenderObjectGround);
+        g_GroundRenderObject.mesh = g_CubeMesh;
+        g_GroundRenderObject.material = l_Material;
+        g_GroundRenderObject.world_position =
+            Math::Vector3(-2.0f, -3.0f, -8.0f);
+        g_GroundRenderObject.world_rotation =
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        g_GroundRenderObject.world_scale = Math::Vector3(20.0f, 0.4f, 20.0f);
+        g_GroundRenderObject.entity_id = 3;
       }
 
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
@@ -764,14 +756,15 @@ namespace Low {
       {
         static bool dir = false;
         Math::Vector3 l_Rot =
-            Math::VectorUtil::to_euler(g_RenderObject.get_world_rotation());
+            Math::VectorUtil::to_euler(g_SphereRenderObject.world_rotation);
         l_Rot.y += 0.04;
         if (l_Rot.y > 89.9) {
           l_Rot.y = 0.0f;
         }
-        g_RenderObject.set_world_rotation(Math::VectorUtil::from_euler(l_Rot));
+        g_SphereRenderObject.world_rotation =
+            Math::VectorUtil::from_euler(l_Rot);
 
-        Math::Vector3 l_Pos = g_RenderObject.get_world_position();
+        Math::Vector3 l_Pos = g_SphereRenderObject.world_position;
         if (dir) {
           l_Pos.y -= 0.001f;
         } else {
@@ -782,18 +775,22 @@ namespace Low {
         } else if (dir && l_Pos.y < -1.0f) {
           dir = !dir;
         }
-        g_RenderObject.set_world_position(l_Pos);
+        g_SphereRenderObject.world_position = l_Pos;
       }
 
       {
         Math::Vector3 l_Rot =
-            Math::VectorUtil::to_euler(g_RenderObject2.get_world_rotation());
+            Math::VectorUtil::to_euler(g_CubeRenderObject.world_rotation);
         l_Rot.y += 0.04;
         if (l_Rot.y > 89.9) {
           l_Rot.y = 0.0f;
         }
-        g_RenderObject2.set_world_rotation(Math::VectorUtil::from_euler(l_Rot));
+        g_CubeRenderObject.world_rotation = Math::VectorUtil::from_euler(l_Rot);
       }
+
+      g_MainRenderFlow.register_renderobject(g_SphereRenderObject);
+      g_MainRenderFlow.register_renderobject(g_CubeRenderObject);
+      g_MainRenderFlow.register_renderobject(g_GroundRenderObject);
 
       g_VertexBuffer.bind();
       g_IndexBuffer.bind();
@@ -854,7 +851,6 @@ namespace Low {
       GraphicsStep::cleanup();
       ComputeStepConfig::cleanup();
       GraphicsStepConfig::cleanup();
-      RenderObject::cleanup();
       Material::cleanup();
       MaterialType::cleanup();
       Texture2D::cleanup();

@@ -430,25 +430,27 @@ namespace Low {
       get_config().get_callbacks().execute(*this, p_RenderFlow,
                                            p_ProjectionMatrix, p_ViewMatrix);
 
+      get_renderobjects().clear();
+
       if (get_context().is_debug_enabled()) {
         LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
       }
+
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
     }
 
-    void GraphicsStep::register_renderobject(RenderObject p_RenderObject)
+    void GraphicsStep::register_renderobject(RenderObject &p_RenderObject)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
 
-      MaterialType l_MaterialType =
-          p_RenderObject.get_material().get_material_type();
+      MaterialType l_MaterialType = p_RenderObject.material.get_material_type();
 
       for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
         GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
         if (i_Config.name == l_MaterialType.get_gbuffer_pipeline().name ||
             i_Config.name == l_MaterialType.get_depth_pipeline().name) {
-          get_renderobjects()[i_Config.name][p_RenderObject.get_mesh()]
-              .push_back(p_RenderObject);
+          get_renderobjects()[i_Config.name][p_RenderObject.mesh].push_back(
+              p_RenderObject);
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject
@@ -630,18 +632,12 @@ namespace Low {
         for (auto mit = p_Step.get_renderobjects()[pit->get_name()].begin();
              mit != p_Step.get_renderobjects()[pit->get_name()].end(); ++mit) {
           for (auto it = mit->second.begin(); it != mit->second.end();) {
-            RenderObject i_RenderObject = *it;
-
-            if (!i_RenderObject.is_alive()) {
-              it = mit->second.erase(it);
-              continue;
-            }
+            RenderObject &i_RenderObject = *it;
 
             Math::Matrix4x4 l_ModelMatrix =
-                glm::translate(glm::mat4(1.0f),
-                               i_RenderObject.get_world_position()) *
-                glm::toMat4(i_RenderObject.get_world_rotation()) *
-                glm::scale(glm::mat4(1.0f), i_RenderObject.get_world_scale());
+                glm::translate(glm::mat4(1.0f), i_RenderObject.world_position) *
+                glm::toMat4(i_RenderObject.world_rotation) *
+                glm::scale(glm::mat4(1.0f), i_RenderObject.world_scale);
 
             Math::Matrix4x4 l_MVPMatrix =
                 p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
@@ -650,9 +646,9 @@ namespace Low {
             l_ObjectShaderInfos[l_ObjectIndex].model_matrix = l_ModelMatrix;
 
             l_ObjectShaderInfos[l_ObjectIndex].material_index =
-                i_RenderObject.get_material().get_index();
+                i_RenderObject.material.get_index();
             l_ObjectShaderInfos[l_ObjectIndex].entity_id =
-                i_RenderObject.get_index();
+                i_RenderObject.entity_id;
 
             l_ObjectIndex++;
 

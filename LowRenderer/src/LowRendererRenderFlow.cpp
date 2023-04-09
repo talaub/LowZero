@@ -774,7 +774,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_dimensions
     }
 
-    void RenderFlow::register_renderobject(RenderObject p_RenderObject)
+    void RenderFlow::register_renderobject(RenderObject &p_RenderObject)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
       for (Util::Handle i_Step : get_steps()) {

@@ -10,6 +10,7 @@
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererMesh.h"
 #include "LowRendererLights.h"
+#include "LowRendererExposedObjects.h"
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -30,7 +31,6 @@ namespace Low {
       alignas(16) Math::Matrix4x4 lightSpaceMatrix;
       alignas(16) Math::Vector4 atlasBounds;
     };
-    struct RenderObject;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API RenderFlowData
@@ -148,7 +148,7 @@ namespace Low {
                              Util::Yaml::Node &p_Config);
       void execute();
       void update_dimensions(Math::UVector2 &p_Dimensions);
-      void register_renderobject(RenderObject p_RenderObject);
+      void register_renderobject(RenderObject &p_RenderObject);
 
     private:
       static uint32_t ms_Capacity;
