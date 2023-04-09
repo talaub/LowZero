@@ -24,8 +24,13 @@ namespace Low {
         Math::Vector3 position;
         Math::Quaternion rotation;
         Math::Vector3 scale;
+        uint64_t parent;
+        Math::Vector3 world_position;
+        Math::Quaternion world_rotation;
+        Math::Vector3 world_scale;
         Low::Core::Entity entity;
         bool dirty;
+        bool world_dirty;
 
         static size_t get_size()
         {
@@ -83,14 +88,23 @@ namespace Low {
           l_Transform.destroy();
         }
 
-        Math::Vector3 &get_position() const;
-        void set_position(Math::Vector3 &p_Value);
+        Math::Vector3 &position() const;
+        void position(Math::Vector3 &p_Value);
 
-        Math::Quaternion &get_rotation() const;
-        void set_rotation(Math::Quaternion &p_Value);
+        Math::Quaternion &rotation() const;
+        void rotation(Math::Quaternion &p_Value);
 
-        Math::Vector3 &get_scale() const;
-        void set_scale(Math::Vector3 &p_Value);
+        Math::Vector3 &scale() const;
+        void scale(Math::Vector3 &p_Value);
+
+        uint64_t get_parent() const;
+        void set_parent(uint64_t p_Value);
+
+        Math::Vector3 &get_world_position() const;
+
+        Math::Quaternion &get_world_rotation() const;
+
+        Math::Vector3 &get_world_scale() const;
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);
@@ -98,10 +112,18 @@ namespace Low {
         bool is_dirty() const;
         void set_dirty(bool p_Value);
 
+        bool is_world_dirty() const;
+        void set_world_dirty(bool p_Value);
+
+        void recalculate_world_transform();
+
       private:
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
+        void set_world_position(Math::Vector3 &p_Value);
+        void set_world_rotation(Math::Quaternion &p_Value);
+        void set_world_scale(Math::Vector3 &p_Value);
       };
     } // namespace Component
   }   // namespace Core

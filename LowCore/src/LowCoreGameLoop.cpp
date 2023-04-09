@@ -1,5 +1,7 @@
 #include "LowCoreGameLoop.h"
 
+#include "LowCoreTransformSystem.h"
+
 #include <chrono>
 #include <microprofile.h>
 
@@ -22,6 +24,8 @@ namespace Low {
       {
         Renderer::tick(p_Delta);
 
+        System::Transform::tick(p_Delta);
+
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {
           (*it)(p_Delta);
@@ -30,6 +34,8 @@ namespace Low {
 
       static void execute_late_ticks(float p_Delta)
       {
+        System::Transform::late_tick(p_Delta);
+
         Renderer::late_tick(p_Delta);
       }
 
