@@ -280,62 +280,10 @@ namespace Low {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
-      }
+      LOW_ASSERT(l_Index < get_capacity(), "Budget blown for type Material");
       ms_Slots[l_Index].m_Occupied = true;
       return l_Index;
     }
 
-    void Material::increase_budget()
-    {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
-
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
-
-      uint8_t *l_NewBuffer = (uint8_t *)malloc(
-          (l_Capacity + l_CapacityIncrease) * sizeof(MaterialData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
-
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialData, material_type) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialData, material_type) * (l_Capacity)],
-               l_Capacity * sizeof(MaterialType));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialData, context) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialData, context) * (l_Capacity)],
-               l_Capacity * sizeof(Interface::Context));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialData, name) * (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for Material from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
-    }
   } // namespace Renderer
 } // namespace Low

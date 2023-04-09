@@ -374,7 +374,9 @@ function generate_header(p_Type) {
     t += line('private:');
     t += line(`static uint32_t ms_Capacity;`);
     t += line(`static uint32_t create_instance();`);
-    t += line(`static void increase_budget();`);
+    if (p_Type.dynamic_increase) {
+	t += line(`static void increase_budget();`);
+    }
     if (privatelines.length) {
 	for (const l of privatelines) {
 	    t += line(l);
@@ -675,42 +677,49 @@ function generate_source(p_Type) {
     t += line(`break;`);
     t += line('}');
     t += line('}');
-    t += line(`if (l_Index >= get_capacity()) {`);
-    t += line(`increase_budget();`);
-    t += line('}');
+    if (p_Type.dynamic_increase) {
+	t += line(`if (l_Index >= get_capacity()) {`);
+	t += line(`increase_budget();`);
+	t += line('}');
+    }
+    else {
+	t += line(`LOW_ASSERT(l_Index < get_capacity(), "Budget blown for type ${p_Type.name}");`);
+    }
     t += line(`ms_Slots[l_Index].m_Occupied = true;`);
     t += line('return l_Index;');
     t += line('}');
     t += empty();
 
-    t += line(`void ${p_Type.name}::increase_budget(){`);
-    t += line(`uint32_t l_Capacity = get_capacity();`);
-    t += line(`uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);`);
-    t += line(`l_CapacityIncrease = std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);`);
-    t += empty();
-    t += line(`LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");`);
-    t += empty();
-    t += line(`uint8_t *l_NewBuffer = (uint8_t*) malloc((l_Capacity + l_CapacityIncrease) * sizeof(${p_Type.name}Data));`);
-    t += line(`Low::Util::Instances::Slot *l_NewSlots = (Low::Util::Instances::Slot*) malloc((l_Capacity + l_CapacityIncrease) * sizeof(Low::Util::Instances::Slot));`);
-    t += empty();
-    t += line(`memcpy(l_NewSlots, ms_Slots, l_Capacity * sizeof(Low::Util::Instances::Slot));`);
-    for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-	t += line('{');
-	t += line(`memcpy(&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease)], &ms_Buffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity)], l_Capacity * sizeof(${i_Prop.plain_type}));`);
+    if (p_Type.dynamic_increase) {
+	t += line(`void ${p_Type.name}::increase_budget(){`);
+	t += line(`uint32_t l_Capacity = get_capacity();`);
+	t += line(`uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);`);
+	t += line(`l_CapacityIncrease = std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);`);
+	t += empty();
+	t += line(`LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");`);
+	t += empty();
+	t += line(`uint8_t *l_NewBuffer = (uint8_t*) malloc((l_Capacity + l_CapacityIncrease) * sizeof(${p_Type.name}Data));`);
+	t += line(`Low::Util::Instances::Slot *l_NewSlots = (Low::Util::Instances::Slot*) malloc((l_Capacity + l_CapacityIncrease) * sizeof(Low::Util::Instances::Slot));`);
+	t += empty();
+	t += line(`memcpy(l_NewSlots, ms_Slots, l_Capacity * sizeof(Low::Util::Instances::Slot));`);
+	for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	    t += line('{');
+	    t += line(`memcpy(&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease)], &ms_Buffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity)], l_Capacity * sizeof(${i_Prop.plain_type}));`);
+	    t += line('}');
+	}
+	t += line(`for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;++i) {`);
+	t += line(`l_NewSlots[i].m_Occupied = false;`);
+	t += line(`l_NewSlots[i].m_Generation = 0;`);
+	t += line('}');
+	t += line('free(ms_Buffer);');
+	t += line('free(ms_Slots);');
+	t += line('ms_Buffer = l_NewBuffer;');
+	t += line('ms_Slots = l_NewSlots;');
+	t += line(`ms_Capacity = l_Capacity + l_CapacityIncrease;`);
+	t += empty();
+	t += line(`LOW_LOG_DEBUG << "Auto-increased budget for ${p_Type.name} from " << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;`);
 	t += line('}');
     }
-    t += line(`for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;++i) {`);
-    t += line(`l_NewSlots[i].m_Occupied = false;`);
-    t += line(`l_NewSlots[i].m_Generation = 0;`);
-    t += line('}');
-    t += line('free(ms_Buffer);');
-    t += line('free(ms_Slots);');
-    t += line('ms_Buffer = l_NewBuffer;');
-    t += line('ms_Slots = l_NewSlots;');
-    t += line(`ms_Capacity = l_Capacity + l_CapacityIncrease;`);
-    t += empty();
-    t += line(`LOW_LOG_DEBUG << "Auto-increased budget for ${p_Type.name} from " << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;`);
-    t += line('}');
     
     for (let i_Namespace of p_Type.namespace) {
 	t += line('}', --n);
@@ -738,6 +747,10 @@ function process_file(p_FileName) {
 	i_Type.name = i_TypeName;
 	i_Type.module = l_Config.module;
 	i_Type.namespace = l_Config.namespace;
+
+	if (i_Type.dynamic_increase === undefined) {
+	    i_Type.dynamic_increase = true;
+	}
 
 	i_Type.namespace_string = '';
 

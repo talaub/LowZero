@@ -386,6 +386,7 @@ types:
             handle: true
 
   Texture2D:
+    dynamic_increase: false
     private_make: true
     header_imports:
       - LowRendererImage.h
@@ -458,6 +459,7 @@ types:
         type: Util::List<MaterialTypeProperty>
 
   Material:
+    dynamic_increase: false
     private_make: true
     header_imports:
       - LowRendererMaterialType.h
