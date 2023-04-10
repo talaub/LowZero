@@ -2,6 +2,7 @@
 
 #include "LowCoreTransformSystem.h"
 #include "LowCoreMeshRendererSystem.h"
+#include "LowCoreTaskScheduler.h"
 
 #include <chrono>
 #include <microprofile.h>
@@ -57,6 +58,7 @@ namespace Low {
           l_LastTime = i_Now;
 
           if (l_Accumulator < l_TimeStep) {
+            TaskScheduler::tick();
             continue;
           }
 

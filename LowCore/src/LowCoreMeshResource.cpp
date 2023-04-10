@@ -274,6 +274,7 @@ namespace Low {
     void MeshResource::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+      LOW_ASSERT(is_alive(), "Mesh resource was not alive on load");
       LOW_ASSERT_WARN(!is_loaded(), "Trying to load already loaded mesh");
 
       Util::Resource::Mesh l_Mesh;

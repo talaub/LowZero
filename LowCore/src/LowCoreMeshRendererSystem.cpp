@@ -7,6 +7,7 @@
 
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreTransform.h"
+#include "LowCoreTaskScheduler.h"
 
 #include "LowRenderer.h"
 
@@ -28,7 +29,9 @@ namespace Low {
 
             if (!i_MeshRenderer.get_mesh().get_lod0().is_loaded()) {
               // HACK
-              i_MeshRenderer.get_mesh().get_lod0().load();
+              TaskScheduler::schedule_mesh_resource_load(
+                  i_MeshRenderer.get_mesh().get_lod0());
+              continue;
             }
 
             Renderer::RenderObject i_RenderObject;
