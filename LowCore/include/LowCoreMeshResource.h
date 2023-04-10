@@ -6,44 +6,49 @@
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
 
+#include "LowRendererExposedObjects.h"
+
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    namespace Component {
-      struct Transform;
-    }
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_CORE_API EntityData
+    struct LOW_CORE_API MeshResourceData
     {
-      Util::Map<uint16_t, Util::Handle> components;
+      Util::String path;
+      Renderer::Mesh renderer_mesh;
+      uint32_t reference_count;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(EntityData);
+        return sizeof(MeshResourceData);
       }
     };
 
-    struct LOW_CORE_API Entity : public Low::Util::Handle
+    struct LOW_CORE_API MeshResource : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Entity> ms_LivingInstances;
+      static Low::Util::List<MeshResource> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Entity();
-      Entity(uint64_t p_Id);
-      Entity(Entity &p_Copy);
+      MeshResource();
+      MeshResource(uint64_t p_Id);
+      MeshResource(MeshResource &p_Copy);
 
-      static Entity make(Low::Util::Name p_Name);
-      explicit Entity(const Entity &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+    private:
+      static MeshResource make(Low::Util::Name p_Name);
+
+    public:
+      explicit MeshResource(const MeshResource &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -56,7 +61,7 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Entity *living_instances()
+      static MeshResource *living_instances()
       {
         return ms_LivingInstances.data();
       }
@@ -73,22 +78,29 @@ namespace Low {
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Entity l_Entity = p_Handle.get_id();
-        l_Entity.destroy();
+        MeshResource l_MeshResource = p_Handle.get_id();
+        l_MeshResource.destroy();
       }
+
+      Util::String &get_path() const;
+
+      Renderer::Mesh get_renderer_mesh() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      uint64_t get_component(uint16_t p_TypeId);
-      void add_component(Util::Handle &p_Component);
-      Component::Transform get_transform();
+      static MeshResource make(Util::String &p_Path);
+      bool is_loaded();
+      void load();
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      Util::Map<uint16_t, Util::Handle> &get_components() const;
+      void set_path(Util::String &p_Value);
+      void set_renderer_mesh(Renderer::Mesh p_Value);
+      uint32_t get_reference_count() const;
+      void set_reference_count(uint32_t p_Value);
     };
   } // namespace Core
 } // namespace Low

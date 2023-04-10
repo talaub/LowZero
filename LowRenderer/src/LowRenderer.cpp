@@ -2,7 +2,6 @@
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
-#include "LowUtilResource.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
@@ -184,7 +183,7 @@ namespace Low {
       g_PendingRenderFlowUpdates.push_back(l_UpdateData);
     }
 
-    static Mesh upload_mesh(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
+    Mesh upload_mesh(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
     {
       Mesh l_Mesh = Mesh::make(p_Name);
 
@@ -557,9 +556,9 @@ namespace Low {
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 MeshBufferType::VERTEX,
-                                sizeof(Util::Resource::Vertex), 1024u);
+                                sizeof(Util::Resource::Vertex), 8192u);
       g_IndexBuffer.initialize(N(IndexBuffer), g_Context, MeshBufferType::INDEX,
-                               sizeof(uint32_t), 8192u);
+                               sizeof(uint32_t), 32768u);
 
       {
         Util::Resource::Image2D l_Image;
@@ -885,6 +884,11 @@ namespace Low {
       g_Context.wait_idle();
 
       cleanup_types();
+    }
+
+    RenderFlow get_main_renderflow()
+    {
+      return g_MainRenderFlow;
     }
   } // namespace Renderer
 } // namespace Low

@@ -7,9 +7,11 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
+#include "LowCoreTransform.h"
+
 namespace Low {
   namespace Core {
-    const uint16_t Entity::TYPE_ID = 1;
+    const uint16_t Entity::TYPE_ID = 18;
     uint32_t Entity::ms_Capacity = 0u;
     uint8_t *Entity::ms_Buffer = 0;
     Low::Util::Instances::Slot *Entity::ms_Slots = 0;
@@ -193,6 +195,9 @@ namespace Low {
       Util::Handle l_ExistingComponent = get_component(p_Component.get_type());
       Util::RTTI::TypeInfo l_ComponentTypeInfo =
           get_type_info(p_Component.get_type());
+
+      LOW_ASSERT(l_ComponentTypeInfo.component,
+                 "Can only add components to an entity");
       LOW_ASSERT(!l_ComponentTypeInfo.is_alive(l_ExistingComponent),
                  "An entity can only hold one component of a given type");
 
@@ -200,6 +205,13 @@ namespace Low {
 
       get_components()[p_Component.get_type()] = p_Component.get_id();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_component
+    }
+
+    Component::Transform Entity::get_transform()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
+      return get_component(Component::Transform::TYPE_ID);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
     }
 
     uint32_t Entity::create_instance()

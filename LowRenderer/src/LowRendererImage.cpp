@@ -10,7 +10,7 @@
 namespace Low {
   namespace Renderer {
     namespace Resource {
-      const uint16_t Image::TYPE_ID = 18;
+      const uint16_t Image::TYPE_ID = 7;
       uint32_t Image::ms_Capacity = 0u;
       uint8_t *Image::ms_Buffer = 0;
       Low::Util::Instances::Slot *Image::ms_Slots = 0;

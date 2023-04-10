@@ -12,7 +12,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t RenderFlow::TYPE_ID = 3;
+    const uint16_t RenderFlow::TYPE_ID = 9;
     uint32_t RenderFlow::ms_Capacity = 0u;
     uint8_t *RenderFlow::ms_Buffer = 0;
     Low::Util::Instances::Slot *RenderFlow::ms_Slots = 0;

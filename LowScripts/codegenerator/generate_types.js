@@ -912,16 +912,49 @@ function generate_type_initializer(p_Types) {
     save_file(g_TypeInitializerCppPath, t);
 }
 
+function removeItemOnce(arr, value) {
+  var index = arr.indexOf(value);
+  if (index > -1) {
+    arr.splice(index, 1);
+  }
+  return arr;
+}
+
 function main () {
     const l_FileList = fs.readdirSync(g_Directory);
 
     const l_Types = [];
 
+    const l_TypeFiles = [];
+
+    const l_Order = [
+	'lowrenderer_interface',
+	'lowrenderer_resources',
+	'lowrenderer',
+	'lowcore_base',
+	'lowcore_resources'
+    ];
+
     for (let i_FileName of l_FileList) {
 	if (i_FileName.endsWith('.types.yaml')) {
-	    l_Types.push(...process_file(i_FileName));
+	    l_TypeFiles.push(i_FileName);
 	}
     }
+
+    for (let i_OrderItem of l_Order) {
+	for (let i_FileName of l_TypeFiles) {
+	    if (i_FileName.endsWith(`${i_OrderItem}.types.yaml`)) {
+		l_Types.push(...process_file(i_FileName));
+		removeItemOnce(l_TypeFiles, i_FileName);
+		break;
+	    }
+	}
+    }
+
+    for (let i_FileName of l_TypeFiles) {
+	l_Types.push(...process_file(i_FileName));
+    }
+
 
     // generate_type_initializer(l_Types);
 }

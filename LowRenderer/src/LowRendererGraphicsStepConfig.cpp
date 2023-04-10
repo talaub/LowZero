@@ -13,7 +13,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t GraphicsStepConfig::TYPE_ID = 6;
+    const uint16_t GraphicsStepConfig::TYPE_ID = 12;
     uint32_t GraphicsStepConfig::ms_Capacity = 0u;
     uint8_t *GraphicsStepConfig::ms_Buffer = 0;
     Low::Util::Instances::Slot *GraphicsStepConfig::ms_Slots = 0;

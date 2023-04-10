@@ -48,3 +48,12 @@ types:
     functions:
       recalculate_world_transform:
         return_type: void
+
+  MeshRenderer:
+    component: true
+    header_imports:
+      - LowCoreMeshAsset.h
+    properties:
+      mesh:
+        type: MeshAsset
+        handle: true

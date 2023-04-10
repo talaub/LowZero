@@ -11,7 +11,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Texture2D::TYPE_ID = 8;
+    const uint16_t Texture2D::TYPE_ID = 14;
     uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;
     Low::Util::Instances::Slot *Texture2D::ms_Slots = 0;

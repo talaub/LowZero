@@ -10,7 +10,7 @@
 namespace Low {
   namespace Core {
     namespace Component {
-      const uint16_t Transform::TYPE_ID = 2;
+      const uint16_t Transform::TYPE_ID = 21;
       uint32_t Transform::ms_Capacity = 0u;
       uint8_t *Transform::ms_Buffer = 0;
       Low::Util::Instances::Slot *Transform::ms_Slots = 0;

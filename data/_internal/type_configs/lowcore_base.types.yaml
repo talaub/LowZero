@@ -5,6 +5,8 @@ namespace:
 dll_macro: LOW_CORE_API
 types:
   Entity:
+    source_imports:
+      - LowCoreTransform.h
     properties:
       components:
         type: Util::Map<uint16_t, Util::Handle>
@@ -21,3 +23,6 @@ types:
         parameters:
           - name: component
             type: Util::Handle
+      get_transform:
+        return_type: Component::Transform
+        return_handle: true

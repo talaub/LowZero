@@ -2,6 +2,9 @@
 
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreMeshRenderer.h"
+#include "LowCoreMeshAsset.h"
+#include "LowCoreMeshResource.h"
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -18,9 +21,20 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 namespace Low {
   namespace Core {
+    static void initialize_asset_types()
+    {
+      MeshAsset::initialize();
+    }
+
+    static void initialize_resource_types()
+    {
+      MeshResource::initialize();
+    }
+
     static void initialize_component_types()
     {
       Component::Transform::initialize();
+      Component::MeshRenderer::initialize();
     }
 
     static void initialize_base_types()
@@ -30,6 +44,8 @@ namespace Low {
 
     static void initialize_types()
     {
+      initialize_resource_types();
+      initialize_asset_types();
       initialize_base_types();
       initialize_component_types();
     }
@@ -39,9 +55,20 @@ namespace Low {
       initialize_types();
     }
 
+    static void cleanup_asset_types()
+    {
+      MeshAsset::cleanup();
+    }
+
+    static void cleanup_resource_types()
+    {
+      MeshResource::cleanup();
+    }
+
     static void cleanup_component_types()
     {
       Component::Transform::cleanup();
+      Component::MeshRenderer::cleanup();
     }
 
     static void cleanup_base_types()
@@ -53,6 +80,8 @@ namespace Low {
     {
       cleanup_base_types();
       cleanup_component_types();
+      cleanup_asset_types();
+      cleanup_resource_types();
     }
 
     void cleanup()

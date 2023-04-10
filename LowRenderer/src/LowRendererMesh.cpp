@@ -9,7 +9,7 @@
 
 namespace Low {
   namespace Renderer {
-    const uint16_t Mesh::TYPE_ID = 9;
+    const uint16_t Mesh::TYPE_ID = 15;
     uint32_t Mesh::ms_Capacity = 0u;
     uint8_t *Mesh::ms_Buffer = 0;
     Low::Util::Instances::Slot *Mesh::ms_Slots = 0;

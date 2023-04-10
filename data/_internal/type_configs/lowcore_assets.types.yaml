@@ -1,0 +1,13 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+dll_macro: LOW_CORE_API
+types:
+  MeshAsset:
+    header_imports:
+      - LowCoreMeshResource.h
+    properties:
+      lod0:
+        type: MeshResource
+        handle: true
