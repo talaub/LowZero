@@ -840,10 +840,16 @@ namespace Low {
             l_Capacity * sizeof(Resource::Image));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(RenderFlowData, steps) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, steps) * (l_Capacity)],
-               l_Capacity * sizeof(Util::List<Util::Handle>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(RenderFlowData, steps) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<Util::Handle>))])
+                  Util::List<Util::Handle>();
+          *i_ValPtr = it->get_steps();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, resources) *

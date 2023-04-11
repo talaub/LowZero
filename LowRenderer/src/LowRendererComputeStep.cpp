@@ -631,10 +631,16 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, resources) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, resources) * (l_Capacity)],
-               l_Capacity * sizeof(Util::Map<RenderFlow, ResourceRegistry>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(ComputeStepData, resources) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<RenderFlow, ResourceRegistry>))])
+              Util::Map<RenderFlow, ResourceRegistry>();
+          *i_ValPtr = it->get_resources();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(ComputeStepData, config) *
@@ -643,21 +649,34 @@ namespace Low {
                l_Capacity * sizeof(ComputeStepConfig));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, pipelines) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, pipelines) * (l_Capacity)],
-               l_Capacity *
-                   sizeof(Util::Map<RenderFlow,
-                                    Util::List<Interface::ComputePipeline>>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer
+                  [offsetof(ComputeStepData, pipelines) *
+                       (l_Capacity + l_CapacityIncrease) +
+                   (it->get_index() *
+                    sizeof(Util::Map<RenderFlow,
+                                     Util::List<Interface::ComputePipeline>>))])
+              Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>>();
+          *i_ValPtr = it->get_pipelines();
+        }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, signatures) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, signatures) * (l_Capacity)],
-               l_Capacity *
-                   sizeof(Util::Map<
-                          RenderFlow,
-                          Util::List<Interface::PipelineResourceSignature>>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer
+                  [offsetof(ComputeStepData, signatures) *
+                       (l_Capacity + l_CapacityIncrease) +
+                   (it->get_index() *
+                    sizeof(Util::Map<
+                           RenderFlow,
+                           Util::List<Interface::PipelineResourceSignature>>))])
+              Util::Map<RenderFlow,
+                        Util::List<Interface::PipelineResourceSignature>>();
+          *i_ValPtr = it->get_signatures();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(ComputeStepData, context) *

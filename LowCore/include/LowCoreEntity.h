@@ -82,6 +82,8 @@ namespace Low {
 
       uint64_t get_component(uint16_t p_TypeId);
       void add_component(Util::Handle &p_Component);
+      void remove_component(uint16_t p_ComponentType);
+      bool has_component(uint16_t p_ComponentType);
       Component::Transform get_transform();
 
     private:

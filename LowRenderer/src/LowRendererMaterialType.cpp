@@ -303,11 +303,16 @@ namespace Low {
                l_Capacity * sizeof(GraphicsPipelineConfig));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MaterialTypeData, properties) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MaterialTypeData, properties) * (l_Capacity)],
-            l_Capacity * sizeof(Util::List<MaterialTypeProperty>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(MaterialTypeData, properties) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<MaterialTypeProperty>))])
+                  Util::List<MaterialTypeProperty>();
+          *i_ValPtr = it->get_properties();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(MaterialTypeData, name) *

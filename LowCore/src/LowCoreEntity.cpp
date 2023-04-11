@@ -55,12 +55,21 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      Util::List<uint16_t> l_ComponentTypes;
       for (auto it = get_components().begin(); it != get_components().end();
            ++it) {
-        Util::Handle i_Handle = it->second;
-        Util::RTTI::TypeInfo &i_TypeInfo =
-            Util::Handle::get_type_info(i_Handle.get_type());
-        i_TypeInfo.destroy(i_Handle);
+        if (has_component(it->first)) {
+          l_ComponentTypes.push_back(it->first);
+        }
+      }
+
+      for (auto it = l_ComponentTypes.begin(); it != l_ComponentTypes.end();
+           ++it) {
+        Util::Handle i_Handle = get_component(*it);
+        Util::RTTI::TypeInfo &i_TypeInfo = Util::Handle::get_type_info(*it);
+        if (i_TypeInfo.is_alive(i_Handle)) {
+          i_TypeInfo.destroy(i_Handle);
+        }
       }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -207,6 +216,36 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_component
     }
 
+    void Entity::remove_component(uint16_t p_ComponentType)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_component
+      LOW_ASSERT(has_component(p_ComponentType),
+                 "Cannot remove component from entity. This entity does not "
+                 "have a component of the specified type");
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_ComponentType);
+
+      l_TypeInfo.destroy(get_components()[p_ComponentType]);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_remove_component
+    }
+
+    bool Entity::has_component(uint16_t p_ComponentType)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_component
+      if (get_components().find(p_ComponentType) == get_components().end()) {
+        return false;
+      }
+
+      Util::Handle l_Handle = get_components()[p_ComponentType];
+
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_ComponentType);
+
+      return l_TypeInfo.is_alive(l_Handle);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_component
+    }
+
     Component::Transform Entity::get_transform()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
@@ -249,10 +288,16 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(EntityData, components) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(EntityData, components) * (l_Capacity)],
-               l_Capacity * sizeof(Util::Map<uint16_t, Util::Handle>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(EntityData, components) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::Map<uint16_t, Util::Handle>))])
+                  Util::Map<uint16_t, Util::Handle>();
+          *i_ValPtr = it->get_components();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(EntityData, name) *

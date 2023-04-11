@@ -23,6 +23,16 @@ types:
         parameters:
           - name: component
             type: Util::Handle
+      remove_component:
+        return_type: void
+        parameters:
+          - name: componentType
+            type: uint16_t
+      has_component:
+        return_type: bool
+        parameters:
+          - name: componentType
+            type: uint16_t
       get_transform:
         return_type: Component::Transform
         return_handle: true

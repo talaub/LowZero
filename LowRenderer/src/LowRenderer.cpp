@@ -154,10 +154,6 @@ namespace Low {
     RenderFlow g_MainRenderFlow;
     Util::Name g_MainRenderFlowName;
 
-    RenderObject g_SphereRenderObject;
-    RenderObject g_CubeRenderObject;
-    RenderObject g_GroundRenderObject;
-
     Interface::GraphicsPipeline g_FullscreenPipeline;
     Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
 
@@ -165,8 +161,6 @@ namespace Low {
     Texture2D g_RustNormalTexture;
     Texture2D g_Texture2;
     Texture2D g_WoodNormalTexture;
-    Mesh g_CubeMesh;
-    Mesh g_SphereMesh;
 
     static void setup_custom_renderstep_configs()
     {
@@ -590,19 +584,6 @@ namespace Low {
             Texture2D::make(N(RustNormalTexture), g_Context, l_Image);
       }
 
-      {
-        Util::Resource::Mesh l_Mesh;
-        Util::Resource::load_mesh("C:\\Users\\tlaub\\Desktop\\cube.glb",
-                                  l_Mesh);
-        g_CubeMesh = upload_mesh(N(Cube), l_Mesh);
-      }
-      {
-        Util::Resource::Mesh l_Mesh;
-        Util::Resource::load_mesh(
-            Util::String(LOW_DATA_PATH) + "/assets/model/sphere.glb", l_Mesh);
-        g_SphereMesh = upload_mesh(N(Sphere), l_Mesh);
-      }
-
       initialize_global_resources();
 
       load_material_types();
@@ -662,14 +643,6 @@ namespace Low {
         l_Material.set_property(N(albedo_map), Util::Variant(g_Texture2));
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_RustNormalTexture));
-
-        g_SphereRenderObject.mesh = g_SphereMesh;
-        g_SphereRenderObject.material = l_Material;
-        g_SphereRenderObject.world_position = Math::Vector3(0.0f, 0.0f, -5.0f);
-        g_SphereRenderObject.world_rotation =
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-        g_SphereRenderObject.world_scale = Math::Vector3(1.0f);
-        g_SphereRenderObject.entity_id = 1;
       }
 
       {
@@ -681,14 +654,6 @@ namespace Low {
         l_Material.set_property(N(albedo_map), Util::Variant(g_Texture));
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_WoodNormalTexture));
-
-        g_CubeRenderObject.mesh = g_CubeMesh;
-        g_CubeRenderObject.material = l_Material;
-        g_CubeRenderObject.world_position = Math::Vector3(-2.0f, 0.0f, -8.0f);
-        g_CubeRenderObject.world_rotation =
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-        g_CubeRenderObject.world_scale = Math::Vector3(1.0f);
-        g_CubeRenderObject.entity_id = 2;
       }
 
       {
@@ -700,15 +665,6 @@ namespace Low {
         l_Material.set_property(N(albedo_map), Util::Variant(g_Texture));
         l_Material.set_property(N(normal_map),
                                 Util::Variant(g_WoodNormalTexture));
-
-        g_GroundRenderObject.mesh = g_CubeMesh;
-        g_GroundRenderObject.material = l_Material;
-        g_GroundRenderObject.world_position =
-            Math::Vector3(-2.0f, -3.0f, -8.0f);
-        g_GroundRenderObject.world_rotation =
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-        g_GroundRenderObject.world_scale = Math::Vector3(20.0f, 0.4f, 20.0f);
-        g_GroundRenderObject.entity_id = 3;
       }
 
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
@@ -751,45 +707,6 @@ namespace Low {
         ImGui::UpdatePlatformWindows();
         return;
       }
-
-      {
-        static bool dir = false;
-        Math::Vector3 l_Rot =
-            Math::VectorUtil::to_euler(g_SphereRenderObject.world_rotation);
-        l_Rot.y += 0.04;
-        if (l_Rot.y > 89.9) {
-          l_Rot.y = 0.0f;
-        }
-        g_SphereRenderObject.world_rotation =
-            Math::VectorUtil::from_euler(l_Rot);
-
-        Math::Vector3 l_Pos = g_SphereRenderObject.world_position;
-        if (dir) {
-          l_Pos.y -= 0.001f;
-        } else {
-          l_Pos.y += 0.001f;
-        }
-        if (!dir && l_Pos.y > 2.0f) {
-          dir = !dir;
-        } else if (dir && l_Pos.y < -1.0f) {
-          dir = !dir;
-        }
-        g_SphereRenderObject.world_position = l_Pos;
-      }
-
-      {
-        Math::Vector3 l_Rot =
-            Math::VectorUtil::to_euler(g_CubeRenderObject.world_rotation);
-        l_Rot.y += 0.04;
-        if (l_Rot.y > 89.9) {
-          l_Rot.y = 0.0f;
-        }
-        g_CubeRenderObject.world_rotation = Math::VectorUtil::from_euler(l_Rot);
-      }
-
-      g_MainRenderFlow.register_renderobject(g_SphereRenderObject);
-      g_MainRenderFlow.register_renderobject(g_CubeRenderObject);
-      g_MainRenderFlow.register_renderobject(g_GroundRenderObject);
 
       g_VertexBuffer.bind();
       g_IndexBuffer.bind();

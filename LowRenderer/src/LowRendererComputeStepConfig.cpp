@@ -302,18 +302,28 @@ namespace Low {
                l_Capacity * sizeof(ComputeStepCallbacks));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData, resources) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepConfigData, resources) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::List<ResourceConfig>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(ComputeStepConfigData, resources) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<ResourceConfig>))])
+                  Util::List<ResourceConfig>();
+          *i_ValPtr = it->get_resources();
+        }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData, pipelines) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepConfigData, pipelines) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::List<ComputePipelineConfig>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(ComputeStepConfigData, pipelines) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<ComputePipelineConfig>))])
+                  Util::List<ComputePipelineConfig>();
+          *i_ValPtr = it->get_pipelines();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData, name) *

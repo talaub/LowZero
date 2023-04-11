@@ -660,11 +660,16 @@ namespace Low {
                l_Capacity * sizeof(GraphicsStepCallbacks));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, resources) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(GraphicsStepConfigData, resources) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::List<ResourceConfig>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(GraphicsStepConfigData, resources) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<ResourceConfig>))])
+                  Util::List<ResourceConfig>();
+          *i_ValPtr = it->get_resources();
+        }
       }
       {
         memcpy(
@@ -675,18 +680,28 @@ namespace Low {
             l_Capacity * sizeof(DimensionsConfig));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, pipelines) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(GraphicsStepConfigData, pipelines) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::List<GraphicsPipelineConfig>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(GraphicsStepConfigData, pipelines) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<GraphicsPipelineConfig>))])
+                  Util::List<GraphicsPipelineConfig>();
+          *i_ValPtr = it->get_pipelines();
+        }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, rendertargets) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(GraphicsStepConfigData, rendertargets) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::List<PipelineResourceBindingConfig>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepConfigData, rendertargets) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::List<PipelineResourceBindingConfig>))])
+              Util::List<PipelineResourceBindingConfig>();
+          *i_ValPtr = it->get_rendertargets();
+        }
       }
       {
         memcpy(

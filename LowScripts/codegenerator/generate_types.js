@@ -21,6 +21,32 @@ function format(p_FilePath, p_Content) {
     return l_Formatted;
 }
 
+function is_container_type(p_Type) {
+    const l_Containers = [
+	'List',
+	'Array',
+	'Map',
+	'Set',
+	'Queue'
+    ];
+
+    const l_Prefixes = [
+	'Low::Util::',
+	'Util::',
+	''
+    ];
+
+    for (const i_Container of l_Containers) {
+	for (const i_Prefix of l_Prefixes) {
+	    if (p_Type.startsWith(`${i_Prefix}${i_Container}<`)) {
+		return true;
+	    }
+	}
+    }
+
+    return false;
+}
+
 function get_property_type(p_Type) {
     if (p_Type.endsWith('Math::Vector2')) {
 	return 'VECTOR2';
@@ -704,7 +730,14 @@ function generate_source(p_Type) {
 	t += line(`memcpy(l_NewSlots, ms_Slots, l_Capacity * sizeof(Low::Util::Instances::Slot));`);
 	for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	    t += line('{');
-	    t += line(`memcpy(&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease)], &ms_Buffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity)], l_Capacity * sizeof(${i_Prop.plain_type}));`);
+	    if (is_container_type(i_Prop.plain_type)) {
+		t += line(`for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`);
+		t += line(`auto* i_ValPtr = new (&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease) + (it->get_index() * sizeof(${i_Prop.plain_type}))]) ${i_Prop.plain_type}();`);
+		t += line(`*i_ValPtr = it->${i_Prop.getter_name}();`);
+		t += line('}');
+	    } else {
+		t += line(`memcpy(&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease)], &ms_Buffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity)], l_Capacity * sizeof(${i_Prop.plain_type}));`);
+	    }
 	    t += line('}');
 	}
 	t += line(`for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;++i) {`);

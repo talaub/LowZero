@@ -731,10 +731,16 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(GraphicsStepData, resources) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(GraphicsStepData, resources) * (l_Capacity)],
-               l_Capacity * sizeof(Util::Map<RenderFlow, ResourceRegistry>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepData, resources) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<RenderFlow, ResourceRegistry>))])
+              Util::Map<RenderFlow, ResourceRegistry>();
+          *i_ValPtr = it->get_resources();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(GraphicsStepData, config) *
@@ -743,29 +749,47 @@ namespace Low {
                l_Capacity * sizeof(GraphicsStepConfig));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(GraphicsStepData, pipelines) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(GraphicsStepData, pipelines) * (l_Capacity)],
-               l_Capacity *
-                   sizeof(Util::Map<RenderFlow,
-                                    Util::List<Interface::GraphicsPipeline>>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepData, pipelines) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<
+                                   RenderFlow,
+                                   Util::List<Interface::GraphicsPipeline>>))])
+              Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>>();
+          *i_ValPtr = it->get_pipelines();
+        }
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(GraphicsStepData, renderobjects) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(GraphicsStepData, renderobjects) *
-                       (l_Capacity)],
-            l_Capacity *
-                sizeof(Util::Map<Util::Name,
-                                 Util::Map<Mesh, Util::List<RenderObject>>>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer
+                  [offsetof(GraphicsStepData, renderobjects) *
+                       (l_Capacity + l_CapacityIncrease) +
+                   (it->get_index() *
+                    sizeof(
+                        Util::Map<Util::Name,
+                                  Util::Map<Mesh, Util::List<RenderObject>>>))])
+              Util::Map<Util::Name,
+                        Util::Map<Mesh, Util::List<RenderObject>>>();
+          *i_ValPtr = it->get_renderobjects();
+        }
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(GraphicsStepData, renderpasses) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(GraphicsStepData, renderpasses) * (l_Capacity)],
-            l_Capacity * sizeof(Util::Map<RenderFlow, Interface::Renderpass>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepData, renderpasses) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(
+                                Util::Map<RenderFlow, Interface::Renderpass>))])
+              Util::Map<RenderFlow, Interface::Renderpass>();
+          *i_ValPtr = it->get_renderpasses();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(GraphicsStepData, context) *
@@ -774,13 +798,18 @@ namespace Low {
                l_Capacity * sizeof(Interface::Context));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(GraphicsStepData, signatures) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(GraphicsStepData, signatures) * (l_Capacity)],
-            l_Capacity *
-                sizeof(Util::Map<RenderFlow,
-                                 Interface::PipelineResourceSignature>));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer
+                  [offsetof(GraphicsStepData, signatures) *
+                       (l_Capacity + l_CapacityIncrease) +
+                   (it->get_index() *
+                    sizeof(Util::Map<RenderFlow,
+                                     Interface::PipelineResourceSignature>))])
+              Util::Map<RenderFlow, Interface::PipelineResourceSignature>();
+          *i_ValPtr = it->get_signatures();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(GraphicsStepData, name) *

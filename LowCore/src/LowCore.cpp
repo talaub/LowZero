@@ -78,8 +78,8 @@ namespace Low {
 
     static void cleanup_types()
     {
-      cleanup_base_types();
       cleanup_component_types();
+      cleanup_base_types();
       cleanup_asset_types();
       cleanup_resource_types();
     }

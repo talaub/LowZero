@@ -10,11 +10,11 @@ LowRenderer:
   ComputeStep: 1
   ComputeStepConfig: 1
   GraphicsStepConfig: 1
+  GraphicsStep: 1
   RenderFlow: 1
   Mesh: 1
   RenderObject: 1
   MaterialType: 1
   # FIXED values: Have to be set to the final value
   Material: 8
-  GraphicsStep: 16
   Texture2D: 8

@@ -587,10 +587,16 @@ namespace Low {
                  l_Capacity * sizeof(Backend::Context));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(ContextData, renderpasses) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ContextData, renderpasses) * (l_Capacity)],
-                 l_Capacity * sizeof(Util::List<Renderpass>));
+          for (auto it = ms_LivingInstances.begin();
+               it != ms_LivingInstances.end(); ++it) {
+            auto *i_ValPtr =
+                new (&l_NewBuffer[offsetof(ContextData, renderpasses) *
+                                      (l_Capacity + l_CapacityIncrease) +
+                                  (it->get_index() *
+                                   sizeof(Util::List<Renderpass>))])
+                    Util::List<Renderpass>();
+            *i_ValPtr = it->get_renderpasses();
+          }
         }
         {
           memcpy(&l_NewBuffer[offsetof(ContextData, global_signature) *
