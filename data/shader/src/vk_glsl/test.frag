@@ -46,6 +46,8 @@ void main()
 
   uint l_AlbedoTextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.x);
   uint l_NormalTextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.y);
+  uint l_RoughnessTextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.z);
+  uint l_MetalnessTextureId = uint(g_MaterialInfos[l_MaterialIndex].v1.w);
 
   o_Albedo = vec4(
       texture(g_Texture2Ds[l_AlbedoTextureId], in_TextureCoordinates).xyz, 1.0);
@@ -59,13 +61,23 @@ void main()
       texture(g_Texture2Ds[l_NormalTextureId], in_TextureCoordinates).xyz;
 
   l_Normal = normalize(in_TBN * l_Normal);
+  // l_Normal = in_SurfaceNormal;
   o_Normal =
       vec4(normalize(vec3((l_Normal.x + 1.0) / 2.0, (l_Normal.y + 1.0) / 2.0,
                           (l_Normal.z + 1.0) / 2.0)),
            1.0);
 
-  o_Metalness = vec4(vec3(0.4), 1.0);
-  o_Roughness = vec4(vec3(0.5), 1.0);
+  o_Metalness = vec4(
+      vec3(
+          texture(g_Texture2Ds[l_MetalnessTextureId], in_TextureCoordinates).x),
+      1.0);
+  o_Roughness = vec4(
+      vec3(
+          texture(g_Texture2Ds[l_RoughnessTextureId], in_TextureCoordinates).x),
+      1.0);
+
+  o_Metalness = vec4(vec3(0.2), 1.0);
+  o_Roughness = vec4(vec3(0.2), 1.0);
 
   o_EntityIndex =
       uvec4(uvec3(u_RenderObjects[in_InstanceId].entity_index), 1.0);

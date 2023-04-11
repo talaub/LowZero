@@ -8,3 +8,7 @@ mantest:
       type: Texture2D
     normal_map:
       type: Texture2D
+    roughness_map:
+      type: Texture2D
+    metalness_map:
+      type: Texture2D

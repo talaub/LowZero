@@ -52,10 +52,8 @@ namespace Low {
 
         Assimp::Importer l_Importer;
         const aiScene *l_AiScene = l_Importer.ReadFile(
-            p_FilePath.c_str(), aiProcess_CalcTangentSpace |
-                                    aiProcess_FixInfacingNormals |
-                                    aiProcess_CalcTangentSpace |
-                                    aiProcess_Triangulate | aiProcess_FlipUVs);
+            p_FilePath.c_str(),
+            aiProcess_ConvertToLeftHanded | aiProcess_CalcTangentSpace);
 
         LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
 

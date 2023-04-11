@@ -3,6 +3,7 @@
 #include "LowCoreTransformSystem.h"
 #include "LowCoreMeshRendererSystem.h"
 #include "LowCoreTaskScheduler.h"
+#include "LowCoreTransform.h"
 
 #include <chrono>
 #include <microprofile.h>
@@ -25,6 +26,35 @@ namespace Low {
       static void execute_ticks(float p_Delta)
       {
         Renderer::tick(p_Delta);
+
+        Component::Transform l_SuzanneTransform =
+            Component::Transform::ms_LivingInstances[1];
+        Component::Transform l_SphereTransform =
+            Component::Transform::ms_LivingInstances[0];
+        /*
+              l_SuzanneTransform.position(
+                  l_SuzanneTransform.position() +
+                  (Math::Vector3(0.0f, 1.0f, 0.0f) * p_Delta));
+        */
+
+        {
+          Math::Vector3 l_Euler =
+              Math::VectorUtil::to_euler(l_SuzanneTransform.rotation());
+          l_Euler.y += 10.0f * p_Delta;
+          if (l_Euler.y > 89.9f) {
+            l_Euler.y = 0;
+          }
+          l_SuzanneTransform.rotation(Math::VectorUtil::from_euler(l_Euler));
+        }
+        {
+          Math::Vector3 l_Euler =
+              Math::VectorUtil::to_euler(l_SphereTransform.rotation());
+          l_Euler.y += 10.0f * p_Delta;
+          if (l_Euler.y > 89.9f) {
+            l_Euler.y = 0;
+          }
+          l_SphereTransform.rotation(Math::VectorUtil::from_euler(l_Euler));
+        }
 
         System::Transform::tick(p_Delta);
         System::MeshRenderer::tick(p_Delta);

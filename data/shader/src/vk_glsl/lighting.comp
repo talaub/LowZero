@@ -169,13 +169,14 @@ vec3 calculate_light(vec3 L, float dist, vec3 color, float p_Roughness,
 
   // add to outgoing radiance Lo
   float NdotL = max(dot(N, L), 0.0);
+  // return (kD * p_Albedo / PI) * radiance * NdotL;
   return (kD * p_Albedo / PI + specular) * radiance * NdotL;
 }
 
 void main()
 {
   float l_LightStrength = 2;
-  int u_PointLightCount = 1;
+  int u_PointLightCount = 0;
   PointLightInfo u_PointLight;
   u_PointLight.position = vec3(-2.0, 0.0, -6.0);
   u_PointLight.color = vec3(1, 1, 1) * l_LightStrength;

@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include <microprofile.h>
+#include <vector>
 
 #include "LowEditorMainWindow.h"
 
@@ -47,8 +48,19 @@ static void setup_scene()
   Low::Core::MeshAsset l_SphereMeshAsset =
       Low::Core::MeshAsset::make(N(Asset1));
   Low::Core::MeshResource l_SphereMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/model/sphere.glb");
+      Low::Util::String(LOW_DATA_PATH) + "/assets/model/sphere_flat.glb");
   l_SphereMeshAsset.set_lod0(l_SphereMeshResource);
+
+  Low::Core::MeshAsset l_CubeMeshAsset = Low::Core::MeshAsset::make(N(Asset2));
+  Low::Core::MeshResource l_CubeMeshResource = Low::Core::MeshResource::make(
+      Low::Util::String(LOW_DATA_PATH) + "/assets/model/cube.glb");
+  l_CubeMeshAsset.set_lod0(l_CubeMeshResource);
+
+  Low::Core::MeshAsset l_SuzanneMeshAsset =
+      Low::Core::MeshAsset::make(N(Asset3));
+  Low::Core::MeshResource l_SuzanneMeshResource = Low::Core::MeshResource::make(
+      Low::Util::String(LOW_DATA_PATH) + "/assets/model/suzanne.glb");
+  l_SuzanneMeshAsset.set_lod0(l_SuzanneMeshResource);
 
   {
     Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Sphere));
@@ -56,30 +68,42 @@ static void setup_scene()
         Low::Core::Component::Transform::make(l_Entity);
     Low::Core::Component::MeshRenderer l_MeshRenderer =
         Low::Core::Component::MeshRenderer::make(l_Entity);
-    l_MeshRenderer.set_mesh(l_SphereMeshAsset);
+    l_MeshRenderer.set_mesh(l_CubeMeshAsset);
 
     l_Transform.position(Low::Math::Vector3(0.0f, 0.0f, -5.0f));
     l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
     l_Transform.scale(Low::Math::Vector3(1.0f));
   }
   {
-    Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Cube));
+    Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Monkey));
     Low::Core::Component::Transform l_Transform =
         Low::Core::Component::Transform::make(l_Entity);
     Low::Core::Component::MeshRenderer l_MeshRenderer =
         Low::Core::Component::MeshRenderer::make(l_Entity);
-    l_MeshRenderer.set_mesh(l_SphereMeshAsset);
+    l_MeshRenderer.set_mesh(l_SuzanneMeshAsset);
 
-    l_Transform.position(Low::Math::Vector3(2.0f, 0.0f, -5.0f));
-    l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+    l_Transform.position(Low::Math::Vector3(2.0f, 0.0f, -8.0f));
+    l_Transform.rotation(
+        Low::Math::Quaternion(Low::Math::VectorUtil::from_euler(
+            Low::Math::Vector3(0.0f, 180.0f, 180.0f))));
     l_Transform.scale(Low::Math::Vector3(1.0f));
+  }
+  {
+    Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Ground));
+    Low::Core::Component::Transform l_Transform =
+        Low::Core::Component::Transform::make(l_Entity);
+    Low::Core::Component::MeshRenderer l_MeshRenderer =
+        Low::Core::Component::MeshRenderer::make(l_Entity);
+    l_MeshRenderer.set_mesh(l_CubeMeshAsset);
+
+    l_Transform.position(Low::Math::Vector3(0.0f, -2.0f, -3.0f));
+    l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+    l_Transform.scale(Low::Math::Vector3(20.0f, 0.4f, 20.0f));
   }
 }
 
 int main()
 {
-  float delta = 0.004f;
-
   Low::Util::initialize();
 
   Low::Renderer::initialize();

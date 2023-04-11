@@ -179,7 +179,6 @@ namespace Low {
         return *this << "UVector3(" << p_Vec.x << ", " << p_Vec.y << ", "
                      << p_Vec.z << ")";
       }
-
     } // namespace Log
   }   // namespace Util
 } // namespace Low

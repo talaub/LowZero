@@ -709,8 +709,8 @@ namespace Low {
           ((float)get_dimensions().x) / ((float)get_dimensions().y),
           get_camera_near_plane(), get_camera_far_plane());
 
-      l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis to Vulkan
-                                         // y-axis
+      l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis to
+                                         // Vulkan y-axis
       l_ProjectionMatrix[0][0] *= -1.0f; // Convert to left handed system
 
       Math::Matrix4x4 l_ViewMatrix =
