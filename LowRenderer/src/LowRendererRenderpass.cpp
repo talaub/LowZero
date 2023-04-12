@@ -154,6 +154,11 @@ namespace Low {
         return ms_Capacity;
       }
 
+      void Renderpass::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+        p_Node["name"] = get_name().c_str();
+      }
+
       Backend::Renderpass &Renderpass::get_renderpass() const
       {
         _LOW_ASSERT(is_alive());

@@ -166,6 +166,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    void Texture2D::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["name"] = get_name().c_str();
+    }
+
     Resource::Image Texture2D::get_image() const
     {
       _LOW_ASSERT(is_alive());

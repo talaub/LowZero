@@ -285,6 +285,10 @@ namespace Low {
         return ms_Capacity;
       }
 
+      void Transform::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+      }
+
       Math::Vector3 &Transform::position() const
       {
         _LOW_ASSERT(is_alive());

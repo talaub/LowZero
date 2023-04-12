@@ -146,6 +146,11 @@ namespace Low {
         return ms_Capacity;
       }
 
+      void Image::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+        p_Node["name"] = get_name().c_str();
+      }
+
       Backend::ImageResource &Image::get_image() const
       {
         _LOW_ASSERT(is_alive());

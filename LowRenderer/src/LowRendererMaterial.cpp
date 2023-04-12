@@ -165,6 +165,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    void Material::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["name"] = get_name().c_str();
+    }
+
     MaterialType Material::get_material_type() const
     {
       _LOW_ASSERT(is_alive());

@@ -147,6 +147,11 @@ namespace Low {
         return ms_Capacity;
       }
 
+      void Buffer::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+        p_Node["name"] = get_name().c_str();
+      }
+
       Backend::Buffer &Buffer::get_buffer() const
       {
         _LOW_ASSERT(is_alive());

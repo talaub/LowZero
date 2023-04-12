@@ -51,6 +51,14 @@ static void setup_scene()
       Low::Util::String(LOW_DATA_PATH) + "/assets/model/sphere.glb");
   l_SphereMeshAsset.set_lod0(l_SphereMeshResource);
 
+  {
+    Low::Util::Yaml::Node l_Node;
+    l_SphereMeshResource.serialize(l_Node);
+    Low::Util::String l_Path = LOW_DATA_PATH;
+    l_Path += "/test.yaml";
+    Low::Util::Yaml::write_file(l_Path.c_str(), l_Node);
+  }
+
   Low::Core::MeshAsset l_CubeMeshAsset = Low::Core::MeshAsset::make(N(Asset2));
   Low::Core::MeshResource l_CubeMeshResource = Low::Core::MeshResource::make(
       Low::Util::String(LOW_DATA_PATH) + "/assets/model/cube.glb");

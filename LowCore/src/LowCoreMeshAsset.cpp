@@ -144,6 +144,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    void MeshAsset::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["name"] = get_name().c_str();
+    }
+
     MeshResource MeshAsset::get_lod0() const
     {
       _LOW_ASSERT(is_alive());

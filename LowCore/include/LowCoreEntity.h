@@ -5,6 +5,7 @@
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
+#include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -64,6 +65,8 @@ namespace Low {
       bool is_alive() const;
 
       static uint32_t get_capacity();
+
+      void serialize(Low::Util::Yaml::Node &p_Node) const;
 
       static bool is_alive(Low::Util::Handle p_Handle)
       {

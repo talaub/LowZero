@@ -14,6 +14,7 @@ namespace Low {
       typedef YAML::Node Node;
 
       LOW_EXPORT Node load_file(const char *p_Path);
+      LOW_EXPORT void write_file(const char *p_Path, Node &p_Node);
     } // namespace Yaml
   }   // namespace Util
 } // namespace Low

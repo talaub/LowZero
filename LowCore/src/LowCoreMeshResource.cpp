@@ -183,6 +183,12 @@ namespace Low {
       return ms_Capacity;
     }
 
+    void MeshResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["path"] = get_path().c_str();
+      p_Node["name"] = get_name().c_str();
+    }
+
     Util::String &MeshResource::get_path() const
     {
       _LOW_ASSERT(is_alive());

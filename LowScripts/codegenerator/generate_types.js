@@ -21,6 +21,50 @@ function format(p_FilePath, p_Content) {
     return l_Formatted;
 }
 
+function is_name_type(p_Type) {
+    const l_Name = [
+	'Name'
+    ];
+
+    const l_Prefixes = [
+	'Low::Util::',
+	'Util::',
+	''
+    ];
+
+    for (const i_Name of l_Name) {
+	for (const i_Prefix of l_Prefixes) {
+	    if (p_Type === `${i_Prefix}${i_Name}`) {
+		return true;
+	    }
+	}
+    }
+
+    return false;
+}
+
+function is_string_type(p_Type) {
+    const l_Name = [
+	'String'
+    ];
+
+    const l_Prefixes = [
+	'Low::Util::',
+	'Util::',
+	''
+    ];
+
+    for (const i_Name of l_Name) {
+	for (const i_Prefix of l_Prefixes) {
+	    if (p_Type === `${i_Prefix}${i_Name}`) {
+		return true;
+	    }
+	}
+    }
+
+    return false;
+}
+
 function is_container_type(p_Type) {
     const l_Containers = [
 	'List',
@@ -204,6 +248,7 @@ function generate_header(p_Type) {
     t += include('LowUtilHandle.h');
     t += include('LowUtilName.h');
     t += include('LowUtilContainers.h');
+    t += include('LowUtilYaml.h');
     t += empty();
     if (p_Type.component) {
 	t += include('LowCoreEntity.h');
@@ -330,6 +375,8 @@ function generate_header(p_Type) {
     
     t += empty();
     t += line(`static uint32_t get_capacity();`);
+    t += empty();
+    t += line(`void serialize(Low::Util::Yaml::Node& p_Node) const;`, n);
     t += empty();
 
     t += line('static bool is_alive(Low::Util::Handle p_Handle) {');
@@ -603,6 +650,14 @@ function generate_source(p_Type) {
     t += empty();
     t += line(`uint32_t ${p_Type.name}::get_capacity(){`);
     t += line('return ms_Capacity;');
+    t += line('}');
+    t += empty();
+    t += line(`void ${p_Type.name}::serialize(Low::Util::Yaml::Node& p_Node) const {`, n);
+    for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	if (is_name_type(i_Prop.plain_type) || is_string_type(i_Prop.plain_type)) {
+	    t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}().c_str();`);
+	}
+    }
     t += line('}');
     t += empty();
 

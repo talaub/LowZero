@@ -160,6 +160,12 @@ namespace Low {
         return ms_Capacity;
       }
 
+      void
+      PipelineResourceSignature::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+        p_Node["name"] = get_name().c_str();
+      }
+
       Backend::PipelineResourceSignature &
       PipelineResourceSignature::get_signature() const
       {

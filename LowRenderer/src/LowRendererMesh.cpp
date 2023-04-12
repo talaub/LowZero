@@ -189,6 +189,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    void Mesh::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["name"] = get_name().c_str();
+    }
+
     uint32_t Mesh::get_vertex_buffer_start() const
     {
       _LOW_ASSERT(is_alive());

@@ -148,6 +148,10 @@ namespace Low {
         return ms_Capacity;
       }
 
+      void MeshRenderer::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+      }
+
       MeshAsset MeshRenderer::get_mesh() const
       {
         _LOW_ASSERT(is_alive());
