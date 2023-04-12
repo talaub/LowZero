@@ -59,6 +59,7 @@ void main()
 
   vec3 l_Normal =
       texture(g_Texture2Ds[l_NormalTextureId], in_TextureCoordinates).xyz;
+  l_Normal = 2 * l_Normal - 1;
 
   l_Normal = normalize(in_TBN * l_Normal);
   // l_Normal = in_SurfaceNormal;
@@ -75,9 +76,6 @@ void main()
       vec3(
           texture(g_Texture2Ds[l_RoughnessTextureId], in_TextureCoordinates).x),
       1.0);
-
-  o_Metalness = vec4(vec3(0.2), 1.0);
-  o_Roughness = vec4(vec3(0.2), 1.0);
 
   o_EntityIndex =
       uvec4(uvec3(u_RenderObjects[in_InstanceId].entity_index), 1.0);

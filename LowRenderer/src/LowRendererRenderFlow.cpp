@@ -711,7 +711,7 @@ namespace Low {
 
       l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis to
                                          // Vulkan y-axis
-      l_ProjectionMatrix[0][0] *= -1.0f; // Convert to left handed system
+      l_ProjectionMatrix[0][0] *= -1.0f;
 
       Math::Matrix4x4 l_ViewMatrix =
           glm::lookAt(get_camera_position(),
