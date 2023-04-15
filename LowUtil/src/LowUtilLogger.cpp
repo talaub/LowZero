@@ -169,6 +169,12 @@ namespace Low {
                      << p_Vec.z << ", " << p_Vec.w << ")";
       }
 
+      LogStream &LogStream::operator<<(Math::Quaternion &p_Quat)
+      {
+        return *this << "Quaternion(" << p_Quat.x << ", " << p_Quat.y << ", "
+                     << p_Quat.z << ", " << p_Quat.w << ")";
+      }
+
       LogStream &LogStream::operator<<(Math::UVector2 &p_Vec)
       {
         return *this << "UVector2(" << p_Vec.x << ", " << p_Vec.y << ")";

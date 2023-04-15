@@ -44,7 +44,7 @@ namespace Low {
       Resource::Buffer frame_info_buffer;
       Interface::PipelineResourceSignature resource_signature;
       Math::Vector3 camera_position;
-      Math::Quaternion camera_rotation;
+      Math::Vector3 camera_direction;
       float camera_fov;
       float camera_near_plane;
       float camera_far_plane;
@@ -129,8 +129,8 @@ namespace Low {
       Math::Vector3 &get_camera_position() const;
       void set_camera_position(Math::Vector3 &p_Value);
 
-      Math::Quaternion &get_camera_rotation() const;
-      void set_camera_rotation(Math::Quaternion &p_Value);
+      Math::Vector3 &get_camera_direction() const;
+      void set_camera_direction(Math::Vector3 &p_Value);
 
       float get_camera_fov() const;
       void set_camera_fov(float p_Value);

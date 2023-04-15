@@ -85,7 +85,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)
       shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
     }
   }
-  shadow /= 9.0;
+  shadow /= 10.0;
 
   return shadow;
 }
@@ -175,7 +175,7 @@ vec3 calculate_light(vec3 L, float dist, vec3 color, float p_Roughness,
 
 void main()
 {
-  float l_LightStrength = 2;
+  float l_LightStrength = 4.0;
   int u_PointLightCount = 0;
   PointLightInfo u_PointLight;
   u_PointLight.position = vec3(-2.0, 0.0, -6.0);
@@ -256,7 +256,7 @@ void main()
                                           u_DirectionalLight.direction * -1.0);
 
   vec3 ambient = vec3(0.03) * l_Albedo.xyz * l_Ao;
-  vec3 color = ambient + (1.0 - l_ShadowValue) * Lo;
+  vec3 color = ambient + (1.0 - (l_ShadowValue)) * Lo;
 
   vec4 l_OutColor = vec4(color, 1.0);
 

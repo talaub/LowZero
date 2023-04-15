@@ -9,7 +9,6 @@
 
 #include "imgui.h"
 
-#include "LowRendererWindow.h"
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
 #include "LowRendererBuffer.h"
@@ -668,8 +667,8 @@ namespace Low {
       }
 
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
-      g_MainRenderFlow.set_camera_rotation(
-          Math::VectorUtil::from_euler(Math::Vector3(-152.0f, 0.0f, 180.0f)));
+      g_MainRenderFlow.set_camera_direction(Math::VectorUtil::normalize(
+          Math::Vector3(0.0f, 0.0f, -5.0f) - Math::Vector3(0.0f, 3.0f, 0.0f)));
     }
 
     void tick(float p_Delta)
@@ -806,6 +805,11 @@ namespace Low {
     RenderFlow get_main_renderflow()
     {
       return g_MainRenderFlow;
+    }
+
+    Window &get_window()
+    {
+      return g_Context.get_window();
     }
   } // namespace Renderer
 } // namespace Low

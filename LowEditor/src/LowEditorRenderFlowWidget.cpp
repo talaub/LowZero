@@ -68,6 +68,8 @@ namespace Low {
           .get_buffer_resource(N(HoverCoordinatesBuffer))
           .set(&l_HoverRelativePosition);
 
+      m_HoveredRelativePosition = l_HoverRelativePosition;
+
       {
         m_SaveDimensionTicker += p_Delta;
         if (m_SaveDimensionTicker > g_UpdateDimensionTimer) {
@@ -75,6 +77,17 @@ namespace Low {
           m_LastFrameDimensions = l_ViewportDimensions;
         }
       }
+    }
+
+    bool RenderFlowWidget::is_hovered()
+    {
+      return m_HoveredRelativePosition.x < 1.5f &&
+             m_HoveredRelativePosition.y < 1.5f;
+    }
+
+    Math::Vector2 RenderFlowWidget::get_relative_hover_position()
+    {
+      return m_HoveredRelativePosition;
     }
   } // namespace Editor
 } // namespace Low

@@ -64,6 +64,7 @@ namespace Low {
         LogStream &operator<<(Math::Vector2 &p_Vec);
         LogStream &operator<<(Math::Vector3 &p_Vec);
         LogStream &operator<<(Math::Vector4 &p_Vec);
+        LogStream &operator<<(Math::Quaternion &p_Quat);
         LogStream &operator<<(Math::UVector2 &p_Vec);
         LogStream &operator<<(Math::UVector3 &p_Vec);
 

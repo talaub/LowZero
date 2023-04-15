@@ -47,6 +47,16 @@ namespace Low {
         }
         return p_Num;
       }
+
+      float asin(float p_Value)
+      {
+        return std::asin(p_Value);
+      }
+
+      float atan2(float p_Value0, float p_Value1)
+      {
+        return std::atan2(p_Value0, p_Value1);
+      }
     } // namespace Util
   }   // namespace Math
 } // namespace Low

@@ -43,8 +43,8 @@ types:
         private_setter: true
       camera_position:
         type: Math::Vector3
-      camera_rotation:
-        type: Math::Quaternion
+      camera_direction:
+        type: Math::Vector3
       camera_fov:
         type: float
       camera_near_plane:

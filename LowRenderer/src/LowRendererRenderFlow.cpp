@@ -56,8 +56,8 @@ namespace Low {
           Interface::PipelineResourceSignature();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_position,
                               Math::Vector3)) Math::Vector3();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_rotation,
-                              Math::Quaternion)) Math::Quaternion();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_direction,
+                              Math::Vector3)) Math::Vector3();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, directional_light,
                               DirectionalLight)) DirectionalLight();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, name, Low::Util::Name) =
@@ -243,17 +243,17 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(camera_rotation);
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_rotation);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.name = N(camera_direction);
+        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_direction);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
-                                            camera_rotation, Math::Quaternion);
+                                            camera_direction, Math::Vector3);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_rotation,
-                            Math::Quaternion) = *(Math::Quaternion *)p_Data;
+          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_direction,
+                            Math::Vector3) = *(Math::Vector3 *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -481,20 +481,20 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_position
     }
 
-    Math::Quaternion &RenderFlow::get_camera_rotation() const
+    Math::Vector3 &RenderFlow::get_camera_direction() const
     {
       _LOW_ASSERT(is_alive());
-      return TYPE_SOA(RenderFlow, camera_rotation, Math::Quaternion);
+      return TYPE_SOA(RenderFlow, camera_direction, Math::Vector3);
     }
-    void RenderFlow::set_camera_rotation(Math::Quaternion &p_Value)
+    void RenderFlow::set_camera_direction(Math::Vector3 &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
       // Set new value
-      TYPE_SOA(RenderFlow, camera_rotation, Math::Quaternion) = p_Value;
+      TYPE_SOA(RenderFlow, camera_direction, Math::Vector3) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_rotation
-      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_rotation
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_direction
+      // LOW_CODEGEN::END::CUSTOM:SETTER_camera_direction
     }
 
     float RenderFlow::get_camera_fov() const
@@ -590,8 +590,7 @@ namespace Low {
         l_RenderFlow.set_camera_near_plane(0.1f);
         l_RenderFlow.set_camera_fov(45.f);
         l_RenderFlow.set_camera_position(Math::Vector3(0.0f, 0.0f, 0.0f));
-        l_RenderFlow.set_camera_rotation(
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
+        l_RenderFlow.set_camera_direction(Math::Vector3(0.0f, 0.0f, 1.0f));
       }
 
       {
@@ -716,13 +715,10 @@ namespace Low {
 
       l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis to
                                          // Vulkan y-axis
-      l_ProjectionMatrix[0][0] *= -1.0f;
 
-      Math::Matrix4x4 l_ViewMatrix =
-          glm::lookAt(get_camera_position(),
-                      get_camera_position() +
-                          Math::VectorUtil::direction(get_camera_rotation()),
-                      Math::Vector3(0.f, 1.f, 0.f));
+      Math::Matrix4x4 l_ViewMatrix = glm::lookAt(
+          get_camera_position(), get_camera_position() + get_camera_direction(),
+          LOW_VECTOR3_UP);
 
       {
         Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
@@ -884,11 +880,11 @@ namespace Low {
                l_Capacity * sizeof(Math::Vector3));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_rotation) *
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_direction) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, camera_rotation) *
+               &ms_Buffer[offsetof(RenderFlowData, camera_direction) *
                           (l_Capacity)],
-               l_Capacity * sizeof(Math::Quaternion));
+               l_Capacity * sizeof(Math::Vector3));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_fov) *

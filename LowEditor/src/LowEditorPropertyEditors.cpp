@@ -51,7 +51,11 @@ namespace Low {
         Util::String l_Label = "##";
         l_Label += p_Label.c_str();
 
-        ImGui::DragFloat3(l_Label.c_str(), (float *)&p_Vector, 0.2f);
+        Math::Vector3 l_Vector = p_Vector;
+
+        if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
+          p_Vector = l_Vector;
+        }
       }
 
       void render_vector2_editor(Util::String &p_Label, Math::Vector2 &p_Vector,

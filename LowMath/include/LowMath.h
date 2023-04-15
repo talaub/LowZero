@@ -9,6 +9,7 @@
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include <stdint.h>
 
@@ -45,6 +46,10 @@
 #define LOW_MATH_MIN(x, y) (x < y ? x : y)
 #define LOW_MATH_ABS(x) (x < 0 ? -x : x)
 
+#define LOW_VECTOR3_UP Low::Math::Vector3(0.0f, 1.0f, 0.0f)
+#define LOW_VECTOR3_FRONT Low::Math::Vector3(0.0f, 0.0f, -1.0f)
+#define LOW_VECTOR3_RIGHT Low::Math::Vector3(1.0f, 0.0f, 0.0f)
+
 namespace Low {
   namespace Math {
     typedef glm::vec2 Vector2;
@@ -69,6 +74,9 @@ namespace Low {
       LOW_EXPORT float clamp(float p_Num, float p_Low, float p_High);
       LOW_EXPORT uint32_t clamp(uint32_t p_Num, uint32_t p_Low,
                                 uint32_t p_High);
+
+      LOW_EXPORT float asin(float p_Value);
+      LOW_EXPORT float atan2(float p_Value0, float p_Value1);
     } // namespace Util
   }   // namespace Math
 } // namespace Low

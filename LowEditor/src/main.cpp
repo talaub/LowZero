@@ -120,7 +120,7 @@ static void setup_scene()
             Low::Math::Vector3(0.0f, 180.0f, 180.0f))));
     l_Transform.scale(Low::Math::Vector3(1.0f));
   }
-}
+};
 
 int main()
 {

@@ -1,7 +1,7 @@
 testgp:
   vertex: test.vert
   fragment: test.frag
-  cull_mode: back
+  cull_mode: front
   front_face: clockwise
   polygon_mode: fill
   translucency: false
@@ -9,7 +9,7 @@ testgp:
 testgp_depth:
   vertex: test_depth.vert
   fragment: test_depth.frag
-  cull_mode: back
+  cull_mode: front
   front_face: clockwise
   polygon_mode: fill
   translucency: false

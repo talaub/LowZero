@@ -6,6 +6,7 @@
 #include "LowEditorRenderFlowWidget.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorProfilerWidget.h"
+#include "LowEditorEditingWidget.h"
 
 #include "LowUtilContainers.h"
 
@@ -19,7 +20,7 @@ namespace Low {
     bool g_CentralDockOpen = true;
 
     LogWidget g_LogWidget;
-    RenderFlowWidget *g_MainViewportWidget;
+    EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
     ProfilerWidget *g_ProfilerWidget;
 
@@ -67,8 +68,7 @@ namespace Low {
 
     void initialize()
     {
-      g_MainViewportWidget = new RenderFlowWidget(
-          "Viewport", Renderer::RenderFlow::ms_LivingInstances[0]);
+      g_MainViewportWidget = new EditingWidget();
 
       g_DetailsWidget = new DetailsWidget();
       g_ProfilerWidget = new ProfilerWidget();

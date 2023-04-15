@@ -50,7 +50,6 @@ namespace Low {
             glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
         l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis to
                                            // Vulkan y-axis
-        l_ProjectionMatrix[0][0] *= -1.0f; // Convert to left handed system
 
         Math::Vector3 l_DirectionalLightPosition =
             Math::Vector3(0.0f, 0.0f, -5.0f);
