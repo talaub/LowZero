@@ -16,6 +16,8 @@ namespace Low {
       Mesh mesh;
       Material material;
 
+      Math::Color color;
+
       uint64_t entity_id;
     };
   } // namespace Renderer

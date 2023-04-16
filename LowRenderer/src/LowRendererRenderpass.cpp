@@ -195,8 +195,9 @@ namespace Low {
                                   RenderpassCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         LOW_ASSERT(p_Params.clearColors.size() == p_Params.renderTargets.size(),
-                   "If clear is enabled you have to submit the same amount of "
+                   "You have to submit the same amount of "
                    "clearcolors as rendertargets");
 
         Renderpass l_Renderpass = Renderpass::make(p_Name);

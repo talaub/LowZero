@@ -2,12 +2,14 @@
 
 #include "imgui.h"
 #include "IconsFontAwesome5.h"
+#include "LowEditorGui.h"
 
 namespace Low {
   namespace Editor {
     void LogWidget::render(float p_Delta)
     {
       ImGui::Begin(ICON_FA_SCROLL " Log");
+
       ImGui::End();
     }
   } // namespace Editor

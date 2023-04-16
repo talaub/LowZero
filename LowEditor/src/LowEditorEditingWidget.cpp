@@ -13,6 +13,20 @@ namespace Low {
       m_RenderFlowWidget =
           new RenderFlowWidget("Viewport", Renderer::get_main_renderflow());
       m_LastPitchYaw = Math::Vector2(0.0f, -90.0f);
+
+      for (auto it = Renderer::MaterialType::ms_LivingInstances.begin();
+           it != Renderer::MaterialType::ms_LivingInstances.end(); ++it) {
+
+        if (it->get_name() == N(debuggeometry)) {
+          m_Material = Renderer::create_material(N(DebugGeometryMaterial), *it);
+          m_Material.set_property(
+              N(fallback_color),
+              Util::Variant(Math::Vector4(0.2f, 0.8f, 1.0f, 1.0f)));
+
+          return;
+        }
+      }
+      LOW_ASSERT(false, "Could not find material type");
     }
 
     void EditingWidget::set_camera_rotation(const float p_Pitch,
@@ -113,6 +127,20 @@ namespace Low {
       }
 
       m_LastMousePosition = m_RenderFlowWidget->get_relative_hover_position();
+
+      if (!Renderer::Mesh::ms_LivingInstances.empty()) {
+        Renderer::RenderObject l_RenderObject;
+        l_RenderObject.world_position = Math::Vector3(1.0f, 2.0f, -10.0f);
+        l_RenderObject.world_rotation =
+            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        l_RenderObject.world_scale = Math::Vector3(1.0f);
+        l_RenderObject.color = Math::Color(1.0f, 0.0, 0.0f, 1.0f);
+        l_RenderObject.entity_id = 0;
+        l_RenderObject.mesh = Renderer::Mesh::ms_LivingInstances[0];
+        l_RenderObject.material = m_Material;
+
+        Renderer::get_main_renderflow().register_renderobject(l_RenderObject);
+      }
     }
   } // namespace Editor
 } // namespace Low

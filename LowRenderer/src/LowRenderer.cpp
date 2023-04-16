@@ -166,6 +166,7 @@ namespace Low {
     static void setup_custom_renderstep_configs()
     {
       ShadowStep::setup_config();
+      DebugGeometryStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
@@ -810,6 +811,15 @@ namespace Low {
     Window &get_window()
     {
       return g_Context.get_window();
+    }
+
+    Material create_material(Util::Name, MaterialType p_Type)
+    {
+      Material l_Material =
+          Renderer::Material::make(N(DebugGeometryMaterial), g_Context);
+      l_Material.set_material_type(p_Type);
+
+      return l_Material;
     }
   } // namespace Renderer
 } // namespace Low

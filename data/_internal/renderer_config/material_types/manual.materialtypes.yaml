@@ -12,3 +12,10 @@ mantest:
       type: Texture2D
     metalness_map:
       type: Texture2D
+
+debuggeometry:
+  GBufferPipeline: debuggeometry
+  DepthPipeline: debuggeometry
+  properties:
+    fallback_color:
+      type: Vector4

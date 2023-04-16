@@ -3,6 +3,8 @@
 #include "LowEditorWidget.h"
 #include "LowEditorRenderFlowWidget.h"
 
+#include "LowRendererExposedObjects.h"
+
 namespace Low {
   namespace Editor {
     struct EditingWidget : public Widget
@@ -19,6 +21,8 @@ namespace Low {
       void camera_movement(float p_Delta);
       void set_camera_rotation(const float p_PitchRadians,
                                const float p_YawRadians);
+
+      Renderer::Material m_Material;
     };
   } // namespace Editor
 } // namespace Low

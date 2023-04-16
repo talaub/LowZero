@@ -13,3 +13,11 @@ testgp_depth:
   front_face: clockwise
   polygon_mode: fill
   translucency: false
+
+debuggeometry:
+  vertex: debuggeometry.vert
+  fragment: debuggeometry.frag
+  cull_mode: front
+  front_face: clockwise
+  polygon_mode: fill
+  translucency: false

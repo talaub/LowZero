@@ -1247,6 +1247,56 @@ namespace Low {
         }
 
         static void
+        perform_resource_barrier_rendertarget(Backend::Context &p_Context,
+                                              Resource::Image p_Image)
+        {
+          if (!p_Image.is_alive()) {
+            return;
+          }
+
+          VkCommandBuffer l_CommandBuffer =
+              ContextHelper::get_current_commandbuffer(p_Context);
+
+          if (p_Image.get_image().vk.m_State == ImageState::UNDEFINED) {
+            return;
+          } else if (p_Image.get_image().vk.m_State ==
+                         ImageState::DEPTH_STENCIL_ATTACHMENT &&
+                     p_Image.get_image().depth) {
+            return;
+          } else if (p_Image.get_image().vk.m_State ==
+                     ImageState::SHADER_READ_ONLY_OPTIMAL) {
+            if (p_Image.get_image().depth) {
+              transition_image_barrier(
+                  l_CommandBuffer, p_Image.get_image(),
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                  VK_ACCESS_SHADER_READ_BIT, 0,
+                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+              p_Image.get_image().vk.m_State =
+                  ImageState::DEPTH_STENCIL_ATTACHMENT;
+            } else {
+              transition_image_barrier(l_CommandBuffer, p_Image.get_image(),
+                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                       VK_ACCESS_SHADER_READ_BIT, 0,
+                                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            }
+          } else if (p_Image.get_image().vk.m_State == ImageState::GENERAL) {
+            transition_image_barrier(l_CommandBuffer, p_Image.get_image(),
+                                     VK_IMAGE_LAYOUT_GENERAL,
+                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                     VK_ACCESS_SHADER_WRITE_BIT, 0,
+                                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            p_Image.get_image().vk.m_State = ImageState::UNDEFINED;
+          } else {
+            LOW_ASSERT_WARN(false, "Unsupported image state for transition");
+          }
+        }
+
+        static void
         perform_resource_barrier_sampler(Backend::Context &p_Context,
                                          Resource::Image p_Image)
         {
@@ -1729,17 +1779,20 @@ namespace Low {
           p_Renderpass.clearTargetColor[i] = p_Params.clearTargetColor[i];
           p_Renderpass.renderTargets[i] = p_Params.renderTargets[i];
 
+          bool i_Clear = p_Params.clearTargetColor[i].a > 0.0f;
+
           VkAttachmentDescription l_ColorAttachment{};
           l_ColorAttachment.format = Helper::imageformat_to_vkformat(
               p_Renderpass.renderTargets[i].format);
           l_ColorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-          l_ColorAttachment.loadOp = p_Params.clearTargetColor[i].a > 0.0f
-                                         ? VK_ATTACHMENT_LOAD_OP_CLEAR
-                                         : VK_ATTACHMENT_LOAD_OP_LOAD;
+          l_ColorAttachment.loadOp = i_Clear ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                             : VK_ATTACHMENT_LOAD_OP_LOAD;
           l_ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
           l_ColorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
           l_ColorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-          l_ColorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+          l_ColorAttachment.initialLayout =
+              i_Clear ? VK_IMAGE_LAYOUT_UNDEFINED
+                      : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
           l_ColorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
           l_Attachments.push_back(l_ColorAttachment);
@@ -1898,9 +1951,27 @@ namespace Low {
         renderpass_cleanup_internal(p_Renderpass, true);
       }
 
-      void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
+      static void
+      vk_renderpass_perform_barriers(Backend::Renderpass &p_Renderpass)
       {
         vk_perform_barriers(*p_Renderpass.context);
+
+        if (p_Renderpass.useDepth) {
+          Resource::Image l_Image = p_Renderpass.depthRenderTargetHandleId;
+          BarrierHelper::perform_resource_barrier_rendertarget(
+              *p_Renderpass.context, l_Image);
+        }
+
+        for (uint32_t i = 0u; i < p_Renderpass.renderTargetCount; ++i) {
+          BarrierHelper::perform_resource_barrier_rendertarget(
+              *p_Renderpass.context, p_Renderpass.renderTargets[i].handleId);
+        }
+      }
+
+      void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
+      {
+
+        vk_renderpass_perform_barriers(p_Renderpass);
 
         if (p_Renderpass.swapchainRenderpass) {
           for (Interface::ImGuiImage i_ImGuiImage :

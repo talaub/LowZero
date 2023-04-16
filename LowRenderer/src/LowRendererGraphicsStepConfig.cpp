@@ -577,12 +577,11 @@ namespace Low {
       for (auto it = l_RenderTargetsNode.begin();
            it != l_RenderTargetsNode.end(); ++it) {
         Util::String i_TargetString = LOW_YAML_AS_STRING((*it));
-        PipelineResourceBindingConfig i_BindConfig;
-
-        parse_pipeline_resource_binding(i_BindConfig, i_TargetString,
+        PipelineResourceBindingConfig i_ResourceBinding;
+        parse_pipeline_resource_binding(i_ResourceBinding, i_TargetString,
                                         Util::String("sampler"));
 
-        l_Config.get_rendertargets().push_back(i_BindConfig);
+        l_Config.get_rendertargets().push_back(i_ResourceBinding);
       }
 
       l_Config.set_use_depth(false);

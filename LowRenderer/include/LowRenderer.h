@@ -27,5 +27,8 @@ namespace Low {
                                       Util::Resource::Mesh &p_Mesh);
 
     LOW_RENDERER_API RenderFlow get_main_renderflow();
+
+    LOW_RENDERER_API Material create_material(Util::Name p_Name,
+                                              MaterialType p_Tyoe);
   } // namespace Renderer
 } // namespace Low
