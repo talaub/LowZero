@@ -35,3 +35,6 @@
 [submodule "LowDependencies/IconFontCppHeaders"]
 	path = LowDependencies/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
+[submodule "LowDependencies/ImGuizmo"]
+	path = LowDependencies/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

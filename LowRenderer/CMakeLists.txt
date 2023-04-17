@@ -5,6 +5,8 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui")
 set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders")
 
+set(IMGUIZMO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/ImGuizmo")
+
 SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui.cpp"
   "${IMGUI_PATH}/imgui_draw.cpp"
@@ -14,9 +16,18 @@ SET(IMGUI_SOURCES
   "${IMGUI_PATH}/backends/imgui_impl_glfw.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_vulkan.cpp"
 )
+
+SET(IMGUIZMO_SOURCES
+  "${IMGUIZMO_PATH}/GraphEditor.cpp"
+  "${IMGUIZMO_PATH}/ImCurveEdit.cpp"
+  "${IMGUIZMO_PATH}/ImGradient.cpp"
+  "${IMGUIZMO_PATH}/ImGuizmo.cpp"
+  "${IMGUIZMO_PATH}/ImSequencer.cpp"
+)
   
 add_library(LowRenderer SHARED
   ${IMGUI_SOURCES}
+  ${IMGUIZMO_SOURCES}
   ${SOURCES}
 )
 
@@ -42,6 +53,7 @@ target_include_directories(LowRenderer PUBLIC
   $ENV{VK_SDK_PATH}/Include
   "${IMGUI_PATH}"
   "${IMGUI_PATH}/backends"
+  "${IMGUIZMO_PATH}"
   "${ICON_PATH}"
 )
 

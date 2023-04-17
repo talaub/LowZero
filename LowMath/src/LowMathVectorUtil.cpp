@@ -164,6 +164,19 @@ namespace Low {
       {
         return glm::degrees(roll(p_Rotation, p_ReprojectAxis));
       }
+
+      Matrix4x4 to_row_major(const Matrix4x4 p_Matrix)
+      {
+        glm::mat4 rowMajorMatrix;
+
+        for (int i = 0; i < 4; ++i) {
+          for (int j = 0; j < 4; ++j) {
+            rowMajorMatrix[j][i] = p_Matrix[i][j];
+          }
+        }
+
+        return rowMajorMatrix;
+      }
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

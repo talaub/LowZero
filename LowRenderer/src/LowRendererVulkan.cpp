@@ -2,6 +2,8 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_impl_glfw.h"
 
+#include "ImGuizmo.h"
+
 #include "vulkan/vulkan_core.h"
 #define VMA_IMPLEMENTATION
 #define VMA_VULKAN_VERSION 1002000
@@ -1667,6 +1669,7 @@ namespace Low {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+        ImGuizmo::BeginFrame();
       }
 
       void vk_imgui_render(Backend::Context &p_Context)

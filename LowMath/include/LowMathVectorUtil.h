@@ -36,6 +36,8 @@ namespace Low {
       LOW_EXPORT Vector3 to_euler(Quaternion &p_Rotation);
 
       LOW_EXPORT Quaternion from_euler(Math::Vector3 &p_EulerAngles);
+
+      LOW_EXPORT Matrix4x4 to_row_major(const Matrix4x4 p_Matrix);
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

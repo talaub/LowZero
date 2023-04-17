@@ -7,9 +7,15 @@
 
 namespace Low {
   namespace Editor {
+    struct RenderFlowWidget;
+
+    typedef void (*RenderFlowWidgetCallback)(float, RenderFlowWidget &);
+
     struct RenderFlowWidget
     {
-      RenderFlowWidget(Util::String p_Title, Renderer::RenderFlow p_RenderFlow);
+      RenderFlowWidget(Util::String p_Title, Renderer::RenderFlow p_RenderFlow,
+                       RenderFlowWidgetCallback p_Callback);
+
       void render(float p_Delta);
 
       Renderer::RenderFlow get_renderflow()
@@ -29,6 +35,8 @@ namespace Low {
       Math::UVector2 m_LastSavedDimensions = {800, 600};
       float m_SaveDimensionTicker = 0.0f;
       Math::Vector2 m_HoveredRelativePosition;
+
+      RenderFlowWidgetCallback m_Callback;
     };
   } // namespace Editor
 } // namespace Low

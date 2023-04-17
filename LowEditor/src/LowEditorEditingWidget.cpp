@@ -3,20 +3,92 @@
 #include "LowEditorMainWindow.h"
 
 #include "imgui.h"
+#include "ImGuizmo.h"
 #include "IconsFontAwesome5.h"
 #include "LowRenderer.h"
 
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreEntity.h"
+#include "LowCoreTransform.h"
 
 #include "LowMathQuaternionUtil.h"
 
 namespace Low {
   namespace Editor {
+    void render_gizmos(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
+    {
+      Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
+
+      static const float identityMatrix[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f,
+                                               0.f, 0.f, 0.f, 0.f, 1.f, 0.f,
+                                               0.f, 0.f, 0.f, 1.f};
+
+      ImGuizmo::SetDrawlist();
+      ImGuizmo::SetOrthographic(false);
+      float windowWidth = (float)ImGui::GetWindowWidth();
+      float windowHeight = (float)ImGui::GetWindowHeight();
+      ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y,
+                        windowWidth, windowHeight);
+
+      Math::Matrix4x4 l_ProjectionMatrix =
+          glm::perspective(glm::radians(l_RenderFlow.get_camera_fov()),
+                           ((float)l_RenderFlow.get_dimensions().x) /
+                               ((float)l_RenderFlow.get_dimensions().y),
+                           l_RenderFlow.get_camera_near_plane(),
+                           l_RenderFlow.get_camera_far_plane());
+
+      Math::Matrix4x4 l_ViewMatrix =
+          glm::lookAt(l_RenderFlow.get_camera_position(),
+                      l_RenderFlow.get_camera_position() +
+                          l_RenderFlow.get_camera_direction(),
+                      LOW_VECTOR3_UP);
+
+      Core::Entity l_Entity = get_selected_entity();
+
+      if (l_Entity.is_alive()) {
+        Core::Component::Transform l_Transform = l_Entity.get_transform();
+
+        Math::Matrix4x4 l_ModelMatrix =
+            glm::translate(glm::mat4(1.0f), l_Transform.get_world_position()) *
+            glm::toMat4(l_Transform.get_world_rotation()) *
+            glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
+
+        /*
+              ImGuizmo::DrawGrid((float *)&l_ViewMatrix, (float
+           *)&l_ProjectionMatrix, identityMatrix, 100.f);
+        */
+
+        /*
+              ImGuizmo::DrawCubes((float *)&l_ViewMatrix,
+                                  (float *)&l_ProjectionMatrix,
+                                  (float *)&l_ModelMatrix, 1);
+        */
+
+        if (ImGuizmo::Manipulate(
+                (float *)&l_ViewMatrix, (float *)&l_ProjectionMatrix,
+                ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, (float *)&l_ModelMatrix,
+                NULL, NULL, NULL, NULL)) {
+          Math::Vector3 l_Position;
+          Math::Quaternion l_Rotation;
+          Math::Vector3 l_Scale;
+
+          ImGuizmo::DecomposeMatrixToComponents(
+              (float *)&l_ModelMatrix, (float *)&l_Position,
+              (float *)&l_Rotation, (float *)&l_Scale);
+
+          l_Rotation = glm::quat_cast(l_ModelMatrix);
+
+          l_Transform.position(l_Position);
+          l_Transform.rotation(l_Rotation);
+          l_Transform.scale(l_Scale);
+        }
+      }
+    }
+
     EditingWidget::EditingWidget() : m_CameraSpeed(3.5f)
     {
-      m_RenderFlowWidget =
-          new RenderFlowWidget("Viewport", Renderer::get_main_renderflow());
+      m_RenderFlowWidget = new RenderFlowWidget(
+          "Viewport", Renderer::get_main_renderflow(), &render_gizmos);
       m_LastPitchYaw = Math::Vector2(0.0f, -90.0f);
     }
 
@@ -128,6 +200,7 @@ namespace Low {
 
       m_LastMousePosition = m_RenderFlowWidget->get_relative_hover_position();
 
+      /*
       Math::Box l_Box;
       l_Box.position = {1.0f, 2.0f, -10.0f};
       l_Box.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -164,6 +237,7 @@ namespace Low {
           0.6f * l_ScreenSpaceMultiplier, 0.05f * l_ScreenSpaceMultiplier,
           0.13f * l_ScreenSpaceMultiplier, 0.15f * l_ScreenSpaceMultiplier,
           {1.0f, 0.0f, 0.0f, 1.0f}, true, false);
+      */
 
       Math::Vector2 l_HoverCoordinates = {2.0f, 2.0f};
 

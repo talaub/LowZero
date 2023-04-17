@@ -5,14 +5,16 @@
 #include "LowUtilLogger.h"
 
 #include "imgui.h"
+#include "ImGuizmo.h"
 
 namespace Low {
   namespace Editor {
     const float g_UpdateDimensionTimer = 1.8f;
 
     RenderFlowWidget::RenderFlowWidget(Util::String p_Title,
-                                       Renderer::RenderFlow p_RenderFlow)
-        : m_RenderFlow(p_RenderFlow), m_Title(p_Title)
+                                       Renderer::RenderFlow p_RenderFlow,
+                                       RenderFlowWidgetCallback p_Callback)
+        : m_RenderFlow(p_RenderFlow), m_Title(p_Title), m_Callback(p_Callback)
     {
       m_ImGuiImage = Renderer::Interface::ImGuiImage::make(
           N(RenderFlowImGuiImage), p_RenderFlow.get_output_image());
@@ -27,6 +29,8 @@ namespace Low {
       ImVec2 l_ViewportSize = ImGui::GetContentRegionAvail();
       Math::UVector2 l_ViewportDimensions((uint32_t)l_ViewportSize.x,
                                           (uint32_t)l_ViewportSize.y);
+
+      Renderer::RenderFlow l_RenderFlow = m_RenderFlow;
 
       if (!m_ImGuiImage.is_alive()) {
         m_ImGuiImage = Renderer::Interface::ImGuiImage::make(
@@ -60,6 +64,10 @@ namespace Low {
           }
         }
         m_ImGuiImage.render(l_ViewportDimensions);
+      }
+
+      if (m_Callback) {
+        m_Callback(p_Delta, *this);
       }
 
       ImGui::End();
