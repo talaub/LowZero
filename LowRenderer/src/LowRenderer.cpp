@@ -166,7 +166,6 @@ namespace Low {
     static void setup_custom_renderstep_configs()
     {
       ShadowStep::setup_config();
-      DebugGeometryStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
@@ -668,8 +667,8 @@ namespace Low {
       }
 
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
-      g_MainRenderFlow.set_camera_direction(Math::VectorUtil::normalize(
-          Math::Vector3(0.0f, 0.0f, -5.0f) - Math::Vector3(0.0f, 3.0f, 0.0f)));
+      g_MainRenderFlow.set_camera_direction(
+          Math::VectorUtil::normalize(Math::Vector3(0.0f, 0.0f, -1.0f)));
     }
 
     void tick(float p_Delta)

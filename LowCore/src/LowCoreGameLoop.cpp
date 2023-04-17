@@ -26,23 +26,6 @@ namespace Low {
       static void execute_ticks(float p_Delta)
       {
         Renderer::tick(p_Delta);
-
-        Util::List<Component::Transform> l_Transforms = {
-            Component::Transform::ms_LivingInstances[1],
-            Component::Transform::ms_LivingInstances[2],
-            Component::Transform::ms_LivingInstances[3],
-        };
-
-        for (auto it = l_Transforms.begin(); it != l_Transforms.end(); ++it) {
-          float i_Yaw = Math::VectorUtil::yaw(it->rotation());
-          i_Yaw += 10.0f * p_Delta;
-          if (i_Yaw > 359.9f) {
-            i_Yaw = 0.0f;
-          }
-          it->rotation(
-              Math::VectorUtil::from_euler(Math::Vector3(0.0f, i_Yaw, 0.0f)));
-        }
-
         System::Transform::tick(p_Delta);
         System::MeshRenderer::tick(p_Delta);
 

@@ -18,8 +18,10 @@ namespace Low {
         for (auto pit = m_TypeInfo.properties.begin();
              pit != m_TypeInfo.properties.end(); ++pit) {
 
-          PropertyEditors::render_editor(pit->second,
-                                         pit->second.get(m_Handle));
+          if (pit->second.editorProperty) {
+            PropertyEditors::render_editor(pit->second,
+                                           pit->second.get(m_Handle));
+          }
         }
         ImGui::PopID();
       }

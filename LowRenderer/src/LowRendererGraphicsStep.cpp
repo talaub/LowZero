@@ -115,6 +115,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -134,6 +135,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(config);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -150,6 +152,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(pipelines);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -172,6 +175,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(renderobjects);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, renderobjects);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -195,6 +199,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(renderpasses);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, renderpasses);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -214,6 +219,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(context);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -230,6 +236,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(signatures);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, signatures);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -252,6 +259,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -279,6 +287,18 @@ namespace Low {
 
       LOW_PROFILE_FREE(type_buffer_GraphicsStep);
       LOW_PROFILE_FREE(type_slots_GraphicsStep);
+    }
+
+    GraphicsStep GraphicsStep::find_by_index(uint32_t p_Index)
+    {
+      LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+      GraphicsStep l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+      l_Handle.m_Data.m_Type = GraphicsStep::TYPE_ID;
+
+      return l_Handle;
     }
 
     bool GraphicsStep::is_alive() const
@@ -488,6 +508,15 @@ namespace Low {
 
         l_ResourceDescriptions.push_back(l_ResourceDescription);
       }
+      {
+        Backend::PipelineResourceDescription l_ResourceDescription;
+        l_ResourceDescription.arraySize = 1;
+        l_ResourceDescription.name = N(u_Colors);
+        l_ResourceDescription.step = Backend::ResourcePipelineStep::GRAPHICS;
+        l_ResourceDescription.type = Backend::ResourceType::BUFFER;
+
+        l_ResourceDescriptions.push_back(l_ResourceDescription);
+      }
       p_Step.get_signatures()[p_RenderFlow] =
           Interface::PipelineResourceSignature::make(N(StepResourceSignature),
                                                      p_Step.get_context(), 2,
@@ -497,6 +526,11 @@ namespace Low {
           N(u_RenderObjects), 0,
           p_Step.get_resources()[p_RenderFlow].get_buffer_resource(
               N(_renderobject_buffer)));
+
+      p_Step.get_signatures()[p_RenderFlow].set_buffer_resource(
+          N(u_Colors), 0,
+          p_Step.get_resources()[p_RenderFlow].get_buffer_resource(
+              N(_color_buffer)));
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_signature
     }
 
@@ -518,7 +552,8 @@ namespace Low {
 
       for (uint8_t i = 0u; i < p_Step.get_config().get_rendertargets().size();
            ++i) {
-        l_Params.clearColors.push_back({0.0f, 0.0f, 0.0f, 1.0f});
+        l_Params.clearColors.push_back(
+            p_Step.get_config().get_rendertargets_clearcolor());
 
         if (p_Step.get_config().get_rendertargets()[i].resourceScope ==
             ResourceBindScope::RENDERFLOW) {
@@ -627,6 +662,7 @@ namespace Low {
       p_Step.get_renderpasses()[p_RenderFlow].begin();
 
       RenderObjectShaderInfo l_ObjectShaderInfos[32];
+      Math::Vector4 l_Colors[32];
       uint32_t l_ObjectIndex = 0;
 
       for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
@@ -647,6 +683,8 @@ namespace Low {
             Math::Matrix4x4 l_MVPMatrix =
                 p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
 
+            l_Colors[l_ObjectIndex] = i_RenderObject.color;
+
             l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
             l_ObjectShaderInfos[l_ObjectIndex].model_matrix = l_ModelMatrix;
 
@@ -665,6 +703,10 @@ namespace Low {
       p_Step.get_resources()[p_RenderFlow]
           .get_buffer_resource(N(_renderobject_buffer))
           .set((void *)l_ObjectShaderInfos);
+
+      p_Step.get_resources()[p_RenderFlow]
+          .get_buffer_resource(N(_color_buffer))
+          .set((void *)l_Colors);
 
       GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
 

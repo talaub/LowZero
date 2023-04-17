@@ -91,6 +91,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(buffer);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(BufferData, buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -107,6 +108,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(BufferData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -134,6 +136,18 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_Buffer);
         LOW_PROFILE_FREE(type_slots_Buffer);
+      }
+
+      Buffer Buffer::find_by_index(uint32_t p_Index)
+      {
+        LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+        Buffer l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+        l_Handle.m_Data.m_Type = Buffer::TYPE_ID;
+
+        return l_Handle;
       }
 
       bool Buffer::is_alive() const
@@ -209,6 +223,14 @@ namespace Low {
         Backend::callbacks().buffer_write(get_buffer(), p_Data, p_DataSize,
                                           p_Start);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_write
+      }
+
+      void Buffer::read(void *p_Data, uint32_t p_DataSize, uint32_t p_Start)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_read
+        Backend::callbacks().buffer_read(get_buffer(), p_Data, p_DataSize,
+                                         p_Start);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_read
       }
 
       void Buffer::bind_vertex()

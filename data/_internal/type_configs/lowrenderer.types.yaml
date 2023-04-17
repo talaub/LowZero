@@ -228,6 +228,8 @@ types:
      rendertargets:
        type: Util::List<PipelineResourceBindingConfig>
        no_setter: true
+     rendertargets_clearcolor:
+       type: Math::Color
      depth_rendertarget:
        type: PipelineResourceBindingConfig
      use_depth:

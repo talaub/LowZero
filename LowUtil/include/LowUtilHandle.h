@@ -47,6 +47,7 @@ namespace Low {
           UNKNOWN,
           VECTOR2,
           VECTOR3,
+          QUATERNION,
           NAME,
           FLOAT,
           UINT32,
@@ -60,6 +61,7 @@ namespace Low {
         Util::Name name;
         uint32_t dataOffset;
         uint32_t type;
+        bool editorProperty;
         void const *(*get)(Handle);
         void (*set)(Handle, const void *);
       };

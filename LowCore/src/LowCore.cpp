@@ -5,6 +5,7 @@
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMeshResource.h"
+#include "LowCoreDebugGeometry.h"
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -53,6 +54,8 @@ namespace Low {
     void initialize()
     {
       initialize_types();
+
+      DebugGeometry::initialize();
     }
 
     static void cleanup_asset_types()

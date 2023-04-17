@@ -92,6 +92,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(mesh);
+          l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(MeshRendererData, mesh);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -108,6 +109,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(MeshRendererData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -135,6 +137,18 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_MeshRenderer);
         LOW_PROFILE_FREE(type_slots_MeshRenderer);
+      }
+
+      MeshRenderer MeshRenderer::find_by_index(uint32_t p_Index)
+      {
+        LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+        MeshRenderer l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+        l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
+
+        return l_Handle;
       }
 
       bool MeshRenderer::is_alive() const

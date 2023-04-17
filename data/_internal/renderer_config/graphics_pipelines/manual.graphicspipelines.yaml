@@ -21,3 +21,27 @@ debuggeometry:
   front_face: clockwise
   polygon_mode: fill
   translucency: false
+
+debuggeometry_nodepth:
+  vertex: debuggeometry.vert
+  fragment: debuggeometry.frag
+  cull_mode: front
+  front_face: clockwise
+  polygon_mode: fill
+  translucency: false
+
+debuggeometry_wireframe:
+  vertex: debuggeometry.vert
+  fragment: debuggeometry.frag
+  cull_mode: front
+  front_face: clockwise
+  polygon_mode: line
+  translucency: false
+
+debuggeometry_wireframe_nodepth:
+  vertex: debuggeometry.vert
+  fragment: debuggeometry.frag
+  cull_mode: front
+  front_face: clockwise
+  polygon_mode: line
+  translucency: false

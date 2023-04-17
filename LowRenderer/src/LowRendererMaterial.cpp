@@ -93,6 +93,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(material_type);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -109,6 +110,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(context);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -125,6 +127,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -152,6 +155,18 @@ namespace Low {
 
       LOW_PROFILE_FREE(type_buffer_Material);
       LOW_PROFILE_FREE(type_slots_Material);
+    }
+
+    Material Material::find_by_index(uint32_t p_Index)
+    {
+      LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+      Material l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+      l_Handle.m_Data.m_Type = Material::TYPE_ID;
+
+      return l_Handle;
     }
 
     bool Material::is_alive() const

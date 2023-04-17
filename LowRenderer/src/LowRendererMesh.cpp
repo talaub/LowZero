@@ -85,6 +85,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_buffer_start);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -101,6 +102,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_count);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -117,6 +119,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_buffer_start);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -133,6 +136,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_count);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -149,6 +153,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -176,6 +181,18 @@ namespace Low {
 
       LOW_PROFILE_FREE(type_buffer_Mesh);
       LOW_PROFILE_FREE(type_slots_Mesh);
+    }
+
+    Mesh Mesh::find_by_index(uint32_t p_Index)
+    {
+      LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+      Mesh l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+      l_Handle.m_Data.m_Type = Mesh::TYPE_ID;
+
+      return l_Handle;
     }
 
     bool Mesh::is_alive() const

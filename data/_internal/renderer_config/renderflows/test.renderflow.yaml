@@ -97,4 +97,5 @@ steps:
   - name: ShadowPass
   - name: lighting
   - name: highlight_edge
-  - name: DebugGeometryStep
+  - name: debuggeometry
+  - name: debuggeometry_nodepth

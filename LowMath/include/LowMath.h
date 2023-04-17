@@ -4,12 +4,9 @@
 
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
-#include "glm/gtx/quaternion.hpp"
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/quaternion_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
-#include <glm/gtx/euler_angles.hpp>
 
 #include <stdint.h>
 
@@ -65,6 +62,35 @@ namespace Low {
     typedef glm::quat Quaternion;
 
     typedef glm::mat4 Matrix4x4;
+
+    struct Cylinder
+    {
+      Vector3 position;
+      Quaternion rotation;
+      float radius;
+      float height;
+    };
+
+    struct Box
+    {
+      Vector3 position;
+      Quaternion rotation;
+      Vector3 halfExtents;
+    };
+
+    struct Sphere
+    {
+      Vector3 position;
+      float radius;
+    };
+
+    struct Cone
+    {
+      Vector3 position;
+      Quaternion rotation;
+      float radius;
+      float height;
+    };
 
     namespace Util {
       LOW_EXPORT float lerp(float p_Start, float p_End, float p_Delta);

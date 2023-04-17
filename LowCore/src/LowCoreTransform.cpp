@@ -102,6 +102,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(position);
+          l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, position);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -118,8 +119,9 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(rotation);
+          l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, rotation);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, rotation,
                                               Math::Quaternion);
@@ -134,6 +136,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(scale);
+          l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -150,6 +153,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(parent);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, parent);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -166,6 +170,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_position);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_position);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -182,8 +187,9 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_rotation);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_rotation);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_rotation, Math::Quaternion);
@@ -198,6 +204,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_scale);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -214,6 +221,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -230,6 +238,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(dirty);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -245,6 +254,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_dirty);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -272,6 +282,18 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_Transform);
         LOW_PROFILE_FREE(type_slots_Transform);
+      }
+
+      Transform Transform::find_by_index(uint32_t p_Index)
+      {
+        LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+        Transform l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+        l_Handle.m_Data.m_Type = Transform::TYPE_ID;
+
+        return l_Handle;
       }
 
       bool Transform::is_alive() const

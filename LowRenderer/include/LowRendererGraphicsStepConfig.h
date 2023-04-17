@@ -34,6 +34,7 @@ namespace Low {
       DimensionsConfig dimensions_config;
       Util::List<GraphicsPipelineConfig> pipelines;
       Util::List<PipelineResourceBindingConfig> rendertargets;
+      Math::Color rendertargets_clearcolor;
       PipelineResourceBindingConfig depth_rendertarget;
       bool use_depth;
       bool depth_clear;
@@ -82,6 +83,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static GraphicsStepConfig find_by_index(uint32_t p_Index);
+
       bool is_alive() const;
 
       static uint32_t get_capacity();
@@ -110,6 +113,9 @@ namespace Low {
       Util::List<GraphicsPipelineConfig> &get_pipelines() const;
 
       Util::List<PipelineResourceBindingConfig> &get_rendertargets() const;
+
+      Math::Color &get_rendertargets_clearcolor() const;
+      void set_rendertargets_clearcolor(Math::Color &p_Value);
 
       PipelineResourceBindingConfig &get_depth_rendertarget() const;
       void set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);

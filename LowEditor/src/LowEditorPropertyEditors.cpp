@@ -41,6 +41,25 @@ namespace Low {
         }
       }
 
+      void render_quaternion_editor(Util::String &p_Label,
+                                    Math::Quaternion &p_Quaternion,
+                                    bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        Math::Vector3 l_Vector = Math::VectorUtil::to_euler(p_Quaternion);
+
+        if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
+          LOW_LOG_DEBUG << l_Vector << LOW_LOG_END;
+          p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
+        }
+      }
+
       void render_vector3_editor(Util::String &p_Label, Math::Vector3 &p_Vector,
                                  bool p_RenderLabel)
       {
@@ -109,6 +128,10 @@ namespace Low {
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::VECTOR3) {
           render_vector3_editor(Util::String(p_PropertyInfo.name.c_str()),
                                 *(Math::Vector3 *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type ==
+                   Util::RTTI::PropertyType::QUATERNION) {
+          render_quaternion_editor(Util::String(p_PropertyInfo.name.c_str()),
+                                   *(Math::Quaternion *)p_DataPtr, true);
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::BOOL) {
           render_checkbox_bool_editor(Util::String(p_PropertyInfo.name.c_str()),
                                       *(bool *)p_DataPtr, true);

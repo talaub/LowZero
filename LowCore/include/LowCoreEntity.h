@@ -62,6 +62,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static Entity find_by_index(uint32_t p_Index);
+
       bool is_alive() const;
 
       static uint32_t get_capacity();
@@ -80,6 +82,8 @@ namespace Low {
         l_Entity.destroy();
       }
 
+      Util::Map<uint16_t, Util::Handle> &get_components() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -93,7 +97,6 @@ namespace Low {
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      Util::Map<uint16_t, Util::Handle> &get_components() const;
     };
   } // namespace Core
 } // namespace Low

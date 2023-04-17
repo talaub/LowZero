@@ -12,6 +12,7 @@ types:
     properties:
       position:
         type: Math::Vector3
+        editor_editable: true
         getter_name: position
         setter_name: position
         dirty_flag:
@@ -19,12 +20,14 @@ types:
           - world_dirty
       rotation:
         type: Math::Quaternion
+        editor_editable: true
         getter_name: rotation
         setter_name: rotation
         dirty_flag:
           - dirty
           - world_dirty
       scale:
+        editor_editable: true
         getter_name: scale
         setter_name: scale
         type: Math::Vector3
@@ -55,5 +58,6 @@ types:
       - LowCoreMeshAsset.h
     properties:
       mesh:
+        editor_editable: true
         type: MeshAsset
         handle: true

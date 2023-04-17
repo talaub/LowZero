@@ -64,10 +64,6 @@ namespace Low {
 
       ImGui::End();
 
-      m_RenderFlow.get_resources()
-          .get_buffer_resource(N(HoverCoordinatesBuffer))
-          .set(&l_HoverRelativePosition);
-
       m_HoveredRelativePosition = l_HoverRelativePosition;
 
       {

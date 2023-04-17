@@ -98,6 +98,9 @@ function get_property_type(p_Type) {
     if (p_Type.endsWith('Math::Vector3')) {
 	return 'VECTOR3';
     }
+    if (p_Type.endsWith('Math::Quaternion')) {
+	return 'QUATERNION';
+    }
     if (p_Type.endsWith('Util::Name')) {
 	return 'NAME';
     }
@@ -371,6 +374,9 @@ function generate_header(p_Type) {
     t += line('}');
     t += empty();
 
+    t += line(`static ${p_Type.name} find_by_index(uint32_t p_Index);`);
+    t += empty();
+
     t += line(`bool is_alive() const;`, n);
     
     t += empty();
@@ -616,6 +622,7 @@ function generate_source(p_Type) {
 	t += line(`{`);
 	t += line(`Low::Util::RTTI::PropertyInfo l_PropertyInfo;`);
 	t += line(`l_PropertyInfo.name = N(${i_PropName});`);
+	t += line(`l_PropertyInfo.editorProperty = ${i_Prop.editor_editable ? 'true' : 'false'};`);
 	t += line(`l_PropertyInfo.dataOffset = offsetof(${p_Type.name}Data, ${i_PropName});`);
 	t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`);
 	t += line(`l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`);
@@ -640,6 +647,18 @@ function generate_source(p_Type) {
     t += empty();
     t += line(`LOW_PROFILE_FREE(type_buffer_${p_Type.name});`);
     t += line(`LOW_PROFILE_FREE(type_slots_${p_Type.name});`);
+    t += line('}');
+    t += empty();
+
+    t += line(`${p_Type.name} ${p_Type.name}::find_by_index(uint32_t p_Index) {`);
+    t += line(`LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");`);
+    t += empty();
+    t += line(`${p_Type.name} l_Handle;`);
+    t += line(`l_Handle.m_Data.m_Index = p_Index;`);
+    t += line(`l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;`);
+    t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::TYPE_ID;`);
+    t += empty();
+    t += line('return l_Handle;');
     t += line('}');
     t += empty();
 

@@ -1,3 +1,5 @@
+#include <glm/gtx/euler_angles.hpp>
+
 #include "LowMathVectorUtil.h"
 
 #include <math.h>
@@ -58,20 +60,24 @@ namespace Low {
 
       Vector3 to_euler(Quaternion &p_Rotation)
       {
-        bool l_ReprojectAxis = true;
-        return Vector3(pitch_degrees(p_Rotation, true),
-                       yaw_degrees(p_Rotation, true),
-                       roll_degrees(p_Rotation, true));
+        glm::vec3 l_Radians = glm::eulerAngles(p_Rotation);
+
+        glm::vec3 l_Degrees = glm::degrees(l_Radians);
+
+        return l_Degrees;
       }
 
       Quaternion from_euler(Math::Vector3 &p_EulerAngles)
       {
-        Math::Vector3 l_Radians = glm::radians(p_EulerAngles);
+        glm::vec3 l_Radians = glm::radians(p_EulerAngles);
 
-        Matrix4x4 l_Mat =
-            glm::yawPitchRoll(l_Radians.y, l_Radians.x, l_Radians.z);
+        glm::mat4 rotationMatrix =
+            glm::rotate(glm::mat4(1.0f), l_Radians.y, glm::vec3(0, 1, 0)) *
+            glm::rotate(glm::mat4(1.0f), l_Radians.x, glm::vec3(1, 0, 0)) *
+            glm::rotate(glm::mat4(1.0f), l_Radians.z, glm::vec3(0, 0, 1));
 
-        return Quaternion(l_Mat);
+        glm::quat l_Quat = glm::quat_cast(rotationMatrix);
+        return l_Quat;
       }
 
       Vector3 rotate_by_quaternion(Vector3 &p_Vec, Quaternion &p_Quat)

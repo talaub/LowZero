@@ -95,6 +95,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(gbuffer_pipeline);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(MaterialTypeData, gbuffer_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -113,6 +114,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_pipeline);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, depth_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -130,6 +132,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(properties);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -147,6 +150,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -174,6 +178,18 @@ namespace Low {
 
       LOW_PROFILE_FREE(type_buffer_MaterialType);
       LOW_PROFILE_FREE(type_slots_MaterialType);
+    }
+
+    MaterialType MaterialType::find_by_index(uint32_t p_Index)
+    {
+      LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+      MaterialType l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+      l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+
+      return l_Handle;
     }
 
     bool MaterialType::is_alive() const

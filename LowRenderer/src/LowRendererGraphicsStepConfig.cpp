@@ -54,6 +54,9 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, rendertargets,
                               Util::List<PipelineResourceBindingConfig>))
           Util::List<PipelineResourceBindingConfig>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig,
+                              rendertargets_clearcolor, Math::Color))
+          Math::Color();
       new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_rendertarget,
                               PipelineResourceBindingConfig))
           PipelineResourceBindingConfig();
@@ -115,6 +118,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(callbacks);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, callbacks);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -132,6 +136,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -150,6 +155,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(dimensions_config);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, dimensions_config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -168,6 +174,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(pipelines);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -186,6 +193,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(rendertargets);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, rendertargets);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -204,7 +212,28 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(rendertargets_clearcolor);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, rendertargets_clearcolor);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            rendertargets_clearcolor,
+                                            Math::Color);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                            rendertargets_clearcolor, Math::Color) =
+              *(Math::Color *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_rendertarget);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_rendertarget);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -224,6 +253,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(use_depth);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, use_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -240,6 +270,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_clear);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_clear);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -257,6 +288,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_test);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_test);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -274,6 +306,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_write);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_write);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -291,6 +324,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_compare_operation);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_compare_operation);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -309,6 +343,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -336,6 +371,18 @@ namespace Low {
 
       LOW_PROFILE_FREE(type_buffer_GraphicsStepConfig);
       LOW_PROFILE_FREE(type_slots_GraphicsStepConfig);
+    }
+
+    GraphicsStepConfig GraphicsStepConfig::find_by_index(uint32_t p_Index)
+    {
+      LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+      GraphicsStepConfig l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+      l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
+
+      return l_Handle;
     }
 
     bool GraphicsStepConfig::is_alive() const
@@ -408,6 +455,24 @@ namespace Low {
       _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, rendertargets,
                       Util::List<PipelineResourceBindingConfig>);
+    }
+
+    Math::Color &GraphicsStepConfig::get_rendertargets_clearcolor() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor,
+                      Math::Color);
+    }
+    void GraphicsStepConfig::set_rendertargets_clearcolor(Math::Color &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // Set new value
+      TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor, Math::Color) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rendertargets_clearcolor
+      // LOW_CODEGEN::END::CUSTOM:SETTER_rendertargets_clearcolor
     }
 
     PipelineResourceBindingConfig &
@@ -555,12 +620,22 @@ namespace Low {
         parse_resource_configs(p_Node["resources"], l_Config.get_resources());
       }
 
-      ResourceConfig l_ResourceConfig;
-      l_ResourceConfig.arraySize = 1;
-      l_ResourceConfig.name = N(_renderobject_buffer);
-      l_ResourceConfig.type = ResourceType::BUFFER;
-      l_ResourceConfig.buffer.size = sizeof(RenderObjectShaderInfo) * 32u;
-      l_Config.get_resources().push_back(l_ResourceConfig);
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.name = N(_renderobject_buffer);
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.buffer.size = sizeof(RenderObjectShaderInfo) * 32u;
+        l_Config.get_resources().push_back(l_ResourceConfig);
+      }
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.name = N(_color_buffer);
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.buffer.size = sizeof(Math::Vector4) * 32u;
+        l_Config.get_resources().push_back(l_ResourceConfig);
+      }
 
       Util::Yaml::Node &l_PipelinesNode = p_Node["pipelines"];
       for (auto it = l_PipelinesNode.begin(); it != l_PipelinesNode.end();
@@ -568,6 +643,19 @@ namespace Low {
         Util::Name i_PipelineName = LOW_YAML_AS_NAME((*it)["name"]);
         l_Config.get_pipelines().push_back(
             get_graphics_pipeline_config(i_PipelineName));
+      }
+
+      l_Config.set_rendertargets_clearcolor(
+          Math::Color(0.0f, 0.0f, 0.0f, 1.0f));
+
+      if (p_Node["clear_color"]) {
+        Math::Color l_ClearColor;
+        l_ClearColor.r = p_Node["clear_color"]["r"].as<float>();
+        l_ClearColor.g = p_Node["clear_color"]["g"].as<float>();
+        l_ClearColor.b = p_Node["clear_color"]["b"].as<float>();
+        l_ClearColor.a = p_Node["clear_color"]["a"].as<float>();
+
+        l_Config.set_rendertargets_clearcolor(l_ClearColor);
       }
 
       Util::String l_ContextPrefix = "context:";
@@ -706,6 +794,15 @@ namespace Low {
               Util::List<PipelineResourceBindingConfig>();
           *i_ValPtr = it->get_rendertargets();
         }
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData,
+                                     rendertargets_clearcolor) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData,
+                                   rendertargets_clearcolor) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Math::Color));
       }
       {
         memcpy(

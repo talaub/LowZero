@@ -18,6 +18,13 @@ namespace Low {
 
     void DetailsWidget::add_section(const Util::Handle p_Handle)
     {
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Handle.get_type());
+
+      if (!l_TypeInfo.is_alive(p_Handle)) {
+        return;
+      }
+
       m_Sections.push_back(HandlePropertiesSection(p_Handle));
     }
 

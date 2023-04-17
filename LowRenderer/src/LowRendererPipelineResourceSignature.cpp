@@ -99,6 +99,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(signature);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(PipelineResourceSignatureData, signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -118,6 +119,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(PipelineResourceSignatureData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
@@ -147,6 +149,19 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_PipelineResourceSignature);
         LOW_PROFILE_FREE(type_slots_PipelineResourceSignature);
+      }
+
+      PipelineResourceSignature
+      PipelineResourceSignature::find_by_index(uint32_t p_Index)
+      {
+        LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+        PipelineResourceSignature l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+        l_Handle.m_Data.m_Type = PipelineResourceSignature::TYPE_ID;
+
+        return l_Handle;
       }
 
       bool PipelineResourceSignature::is_alive() const

@@ -1,8 +1,13 @@
 #include "LowEditorEditingWidget.h"
 
+#include "LowEditorMainWindow.h"
+
 #include "imgui.h"
 #include "IconsFontAwesome5.h"
 #include "LowRenderer.h"
+
+#include "LowCoreDebugGeometry.h"
+#include "LowCoreEntity.h"
 
 #include "LowMathQuaternionUtil.h"
 
@@ -13,20 +18,6 @@ namespace Low {
       m_RenderFlowWidget =
           new RenderFlowWidget("Viewport", Renderer::get_main_renderflow());
       m_LastPitchYaw = Math::Vector2(0.0f, -90.0f);
-
-      for (auto it = Renderer::MaterialType::ms_LivingInstances.begin();
-           it != Renderer::MaterialType::ms_LivingInstances.end(); ++it) {
-
-        if (it->get_name() == N(debuggeometry)) {
-          m_Material = Renderer::create_material(N(DebugGeometryMaterial), *it);
-          m_Material.set_property(
-              N(fallback_color),
-              Util::Variant(Math::Vector4(0.2f, 0.8f, 1.0f, 1.0f)));
-
-          return;
-        }
-      }
-      LOW_ASSERT(false, "Could not find material type");
     }
 
     void EditingWidget::set_camera_rotation(const float p_Pitch,
@@ -57,8 +48,10 @@ namespace Low {
       m_LastPitchYaw.y = l_Yaw;
     }
 
-    void EditingWidget::camera_movement(float p_Delta)
+    bool EditingWidget::camera_movement(float p_Delta)
     {
+      bool l_ReturnValue = false;
+
       Math::Vector3 l_CameraPosition =
           m_RenderFlowWidget->get_renderflow().get_camera_position();
       Math::Vector3 l_CameraDirection =
@@ -112,35 +105,90 @@ namespace Low {
 
         set_camera_rotation(l_MousePositionDifference.y,
                             l_MousePositionDifference.x);
+
+        l_ReturnValue = true;
       }
 
       m_RenderFlowWidget->get_renderflow().set_camera_position(
           l_CameraPosition);
+
+      return l_ReturnValue;
     }
 
     void EditingWidget::render(float p_Delta)
     {
       m_RenderFlowWidget->render(p_Delta);
 
+      bool l_AllowRendererBasedPicking = m_RenderFlowWidget->is_hovered();
+
       if (m_RenderFlowWidget->is_hovered()) {
-        camera_movement(p_Delta);
+        l_AllowRendererBasedPicking =
+            l_AllowRendererBasedPicking && !camera_movement(p_Delta);
       }
 
       m_LastMousePosition = m_RenderFlowWidget->get_relative_hover_position();
 
-      if (!Renderer::Mesh::ms_LivingInstances.empty()) {
-        Renderer::RenderObject l_RenderObject;
-        l_RenderObject.world_position = Math::Vector3(1.0f, 2.0f, -10.0f);
-        l_RenderObject.world_rotation =
-            Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
-        l_RenderObject.world_scale = Math::Vector3(1.0f);
-        l_RenderObject.color = Math::Color(1.0f, 0.0, 0.0f, 1.0f);
-        l_RenderObject.entity_id = 0;
-        l_RenderObject.mesh = Renderer::Mesh::ms_LivingInstances[0];
-        l_RenderObject.material = m_Material;
+      Math::Box l_Box;
+      l_Box.position = {1.0f, 2.0f, -10.0f};
+      l_Box.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+      l_Box.halfExtents = {0.5f, 0.5f, 0.5f};
 
-        Renderer::get_main_renderflow().register_renderobject(l_RenderObject);
+      Core::DebugGeometry::render_box(l_Box, {0.0f, 1.0f, 0.0f, 1.0f}, false,
+                                      true);
+
+      Math::Cylinder l_Cylinder;
+      l_Cylinder.position = {1.0f, 2.0f, 3.0f};
+      l_Cylinder.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+      l_Cylinder.radius = 0.3f;
+      l_Cylinder.height = 8.0f;
+
+      Core::DebugGeometry::render_cylinder(l_Cylinder, {0.0f, 0.0f, 1.0f, 1.0f},
+                                           true, false);
+
+      Math::Cone l_Cone;
+      l_Cone.position = {4.0f, 2.0f, 3.0f};
+      l_Cone.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
+      l_Cone.radius = 0.3f;
+      l_Cone.height = 0.8f;
+
+      Core::DebugGeometry::render_cone(l_Cone, {1.0f, 0.0f, 1.0f, 1.0f}, true,
+                                       true);
+
+      Math::Vector3 l_ArrowPosition = {-3.0f, 2.0f, 5.0f};
+      float l_ScreenSpaceMultiplier =
+          Core::DebugGeometry::screen_space_multiplier(
+              m_RenderFlowWidget->get_renderflow(), l_ArrowPosition);
+
+      Core::DebugGeometry::render_arrow(
+          l_ArrowPosition, {0.0f, 0.0f, 0.0f, 1.0f},
+          0.6f * l_ScreenSpaceMultiplier, 0.05f * l_ScreenSpaceMultiplier,
+          0.13f * l_ScreenSpaceMultiplier, 0.15f * l_ScreenSpaceMultiplier,
+          {1.0f, 0.0f, 0.0f, 1.0f}, true, false);
+
+      Math::Vector2 l_HoverCoordinates = {2.0f, 2.0f};
+
+      if (l_AllowRendererBasedPicking) {
+        l_HoverCoordinates = m_RenderFlowWidget->get_relative_hover_position();
+
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+          uint32_t l_EntityIndex;
+          m_RenderFlowWidget->get_renderflow()
+              .get_resources()
+              .get_buffer_resource(N(IdWritebackBuffer))
+              .read(&l_EntityIndex, sizeof(uint32_t), 0);
+
+          Core::Entity l_Entity = Core::Entity::find_by_index(l_EntityIndex);
+
+          if (l_Entity.is_alive()) {
+            set_selected_entity(l_Entity);
+          }
+        }
       }
+
+      m_RenderFlowWidget->get_renderflow()
+          .get_resources()
+          .get_buffer_resource(N(HoverCoordinatesBuffer))
+          .set(&l_HoverCoordinates);
     }
   } // namespace Editor
 } // namespace Low

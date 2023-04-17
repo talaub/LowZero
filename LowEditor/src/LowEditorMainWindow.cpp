@@ -24,6 +24,29 @@ namespace Low {
     DetailsWidget *g_DetailsWidget;
     ProfilerWidget *g_ProfilerWidget;
 
+    Core::Entity g_SelectedEntity;
+
+    void set_selected_entity(Core::Entity p_Entity)
+    {
+      g_SelectedEntity = p_Entity;
+
+      g_DetailsWidget->clear();
+
+      if (!g_SelectedEntity.is_alive()) {
+        return;
+      }
+
+      for (auto it = g_SelectedEntity.get_components().begin();
+           it != g_SelectedEntity.get_components().end(); ++it) {
+        g_DetailsWidget->add_section(it->second);
+      }
+    }
+
+    Core::Entity get_selected_entity()
+    {
+      return g_SelectedEntity;
+    }
+
     static void render_menu_bar(float p_Delta)
     {
       // Menu
@@ -79,23 +102,6 @@ namespace Low {
       render_menu_bar(p_Delta);
 
       render_central_docking_space(p_Delta);
-
-      if (ImGui::Button("RenderFlow")) {
-        g_DetailsWidget->add_section(
-            Renderer::RenderFlow::living_instances()[0]);
-      }
-      if (ImGui::Button("Context")) {
-        g_DetailsWidget->add_section(
-            Renderer::Interface::Context::living_instances()[0]);
-      }
-      if (ImGui::Button("Texture2D")) {
-        g_DetailsWidget->add_section(
-            Renderer::Texture2D::living_instances()[1]);
-      }
-
-      if (ImGui::Button("Clear")) {
-        g_DetailsWidget->clear();
-      }
 
       g_LogWidget.render(p_Delta);
       g_MainViewportWidget->render(p_Delta);

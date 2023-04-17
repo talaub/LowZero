@@ -77,6 +77,7 @@ namespace Low {
         uint8_t imageFormat;
         Renderpass *renderpasses;
         bool debugEnabled;
+        bool running;
       };
 
       struct ContextCreateParams

@@ -19,3 +19,24 @@ debuggeometry:
   properties:
     fallback_color:
       type: Vector4
+
+debuggeometry_nodepth:
+  GBufferPipeline: debuggeometry_nodepth
+  DepthPipeline: debuggeometry_nodepth
+  properties:
+    fallback_color:
+      type: Vector4
+
+debuggeometry_wireframe:
+  GBufferPipeline: debuggeometry_wireframe
+  DepthPipeline: debuggeometry_wireframe
+  properties:
+    fallback_color:
+      type: Vector4
+
+debuggeometry_wireframe_nodepth:
+  GBufferPipeline: debuggeometry_wireframe_nodepth
+  DepthPipeline: debuggeometry_wireframe_nodepth
+  properties:
+    fallback_color:
+      type: Vector4

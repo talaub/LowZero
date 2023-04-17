@@ -79,7 +79,7 @@ void main()
   vec3 l_OutColor = texture(DeferredLit, l_TextureCoordinates).xyz;
 
   if (edge_detection(l_AbsolutePixel, l_TextureCoordinates) > 0.5) {
-    l_OutColor = vec3(1.0, 0.0, 0.0);
+    l_OutColor = vec3(1.0f, 0.27f, 0.0f);
   }
 
   imageStore(out_image, l_AbsolutePixel, vec4(l_OutColor, 1.0));

@@ -62,6 +62,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static Mesh find_by_index(uint32_t p_Index);
+
       bool is_alive() const;
 
       static uint32_t get_capacity();

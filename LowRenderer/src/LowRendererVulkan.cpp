@@ -1291,6 +1291,14 @@ namespace Low {
                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                      VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
             p_Image.get_image().vk.m_State = ImageState::UNDEFINED;
+          } else if (p_Image.get_image().vk.m_State ==
+                     ImageState::PRESENT_SRC) {
+            transition_image_barrier(l_CommandBuffer, p_Image.get_image(),
+                                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                     0, 0, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+            p_Image.get_image().vk.m_State = ImageState::UNDEFINED;
           } else {
             LOW_ASSERT_WARN(false, "Unsupported image state for transition");
           }
@@ -1612,6 +1620,8 @@ namespace Low {
             &p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex],
             VK_TRUE, UINT64_MAX);
 
+        p_Context.running = false;
+
         uint32_t l_CurrentImage;
 
         VkResult l_Result = vkAcquireNextImageKHR(
@@ -1630,6 +1640,8 @@ namespace Low {
 
         LOW_ASSERT(l_Result == VK_SUCCESS || l_Result == VK_SUBOPTIMAL_KHR,
                    "Failed to acquire swapchain image");
+
+        p_Context.running = true;
 
         vkResetFences(
             p_Context.vk.m_Device, 1,
@@ -1733,6 +1745,8 @@ namespace Low {
         } else {
           LOW_ASSERT(l_Result == VK_SUCCESS,
                      "Failed to present swapchain image");
+
+          p_Context.running = false;
         }
 
         p_Context.currentFrameIndex =
