@@ -84,13 +84,18 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MeshAsset::is_alive;
       l_TypeInfo.destroy = &MeshAsset::destroy;
+      l_TypeInfo.get_living_instances =
+          reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+              &MeshAsset::living_instances);
+      l_TypeInfo.get_living_count = &MeshAsset::living_count;
       l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(lod0);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, lod0);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = MeshResource::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, lod0,
                                             MeshResource);

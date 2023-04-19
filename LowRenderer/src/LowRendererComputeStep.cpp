@@ -104,6 +104,10 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &ComputeStep::is_alive;
       l_TypeInfo.destroy = &ComputeStep::destroy;
+      l_TypeInfo.get_living_instances =
+          reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+              &ComputeStep::living_instances);
+      l_TypeInfo.get_living_count = &ComputeStep::living_count;
       l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -130,7 +134,8 @@ namespace Low {
         l_PropertyInfo.name = N(config);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, config);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = ComputeStepConfig::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep, config,
                                             ComputeStepConfig);
@@ -196,7 +201,8 @@ namespace Low {
         l_PropertyInfo.name = N(context);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, context);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep, context,
                                             Interface::Context);

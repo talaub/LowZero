@@ -90,13 +90,18 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Texture2D::is_alive;
       l_TypeInfo.destroy = &Texture2D::destroy;
+      l_TypeInfo.get_living_instances =
+          reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+              &Texture2D::living_instances);
+      l_TypeInfo.get_living_count = &Texture2D::living_count;
       l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(image);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, image);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image,
                                             Resource::Image);
@@ -113,7 +118,8 @@ namespace Low {
         l_PropertyInfo.name = N(context);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, context);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, context,
                                             Interface::Context);

@@ -11,10 +11,9 @@ namespace Low {
     {
       EditingWidget();
       void render(float p_Delta) override;
-
-    private:
       RenderFlowWidget *m_RenderFlowWidget;
 
+    private:
       float m_CameraSpeed;
       Math::Vector2 m_LastMousePosition;
       Math::Vector2 m_LastPitchYaw;

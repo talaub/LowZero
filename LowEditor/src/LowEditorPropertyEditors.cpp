@@ -116,6 +116,61 @@ namespace Low {
         ImGui::DragFloat(l_Label.c_str(), &p_Float);
       }
 
+      void render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
+                                  Util::Handle p_Handle)
+      {
+        Util::String l_Label = p_PropertyInfo.name.c_str();
+        render_label(l_Label);
+
+        ImGui::BeginGroup();
+        Util::RTTI::TypeInfo &l_TypeInfo =
+            Util::Handle::get_type_info(p_Handle.get_type());
+
+        Util::RTTI::TypeInfo &l_PropTypeInfo =
+            Util::Handle::get_type_info(p_PropertyInfo.handleType);
+        const char *l_DisplayName = "Object";
+
+        Util::RTTI::PropertyInfo l_NameProperty;
+        bool l_HasNameProperty = false;
+
+        if (l_PropTypeInfo.properties.find(N(name)) !=
+            l_PropTypeInfo.properties.end()) {
+
+          Util::Handle l_PropValueHandle =
+              *(Util::Handle *)p_PropertyInfo.get(p_Handle);
+
+          l_NameProperty = l_PropTypeInfo.properties[N(name)];
+
+          l_DisplayName = ((Util::Name *)l_PropTypeInfo.properties[N(name)].get(
+                               l_PropValueHandle))
+                              ->c_str();
+          l_HasNameProperty = true;
+        }
+        ImGui::Text(l_DisplayName);
+        ImGui::SameLine();
+        if (ImGui::Button("Choose...")) {
+          ImGui::OpenPopup("_choose_element");
+        }
+
+        if (ImGui::BeginPopup("_choose_element")) {
+          Util::Handle *l_Handles = l_PropTypeInfo.get_living_instances();
+
+          for (uint32_t i = 0u; i < l_PropTypeInfo.get_living_count(); ++i) {
+            char *i_DisplayName = "Object";
+            if (l_HasNameProperty) {
+              l_DisplayName =
+                  ((Util::Name *)l_NameProperty.get(l_Handles[i]))->c_str();
+            }
+            if (ImGui::Selectable(l_DisplayName)) {
+              p_PropertyInfo.set(p_Handle, &(l_Handles[i]));
+            }
+          }
+          ImGui::EndPopup();
+        }
+
+        ImGui::EndGroup();
+      }
+
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          const void *p_DataPtr)
       {

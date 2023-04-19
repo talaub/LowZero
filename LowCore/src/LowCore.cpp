@@ -7,6 +7,9 @@
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
 
+#include "LowUtilFileIO.h"
+#include "LowUtilString.h"
+
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
 {
@@ -51,11 +54,34 @@ namespace Low {
       initialize_component_types();
     }
 
+    static void load_mesh_resources()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "/assets/meshes";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".materialtypes.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          MeshResource::make(i_Path);
+        }
+      }
+    }
+
+    static void load_resources()
+    {
+      load_mesh_resources();
+    }
+
     void initialize()
     {
       initialize_types();
 
       DebugGeometry::initialize();
+
+      load_mesh_resources();
     }
 
     static void cleanup_asset_types()

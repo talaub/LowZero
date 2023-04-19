@@ -103,6 +103,10 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Entity::is_alive;
       l_TypeInfo.destroy = &Entity::destroy;
+      l_TypeInfo.get_living_instances =
+          reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+              &Entity::living_instances);
+      l_TypeInfo.get_living_count = &Entity::living_count;
       l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;

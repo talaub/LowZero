@@ -44,6 +44,17 @@ namespace Low {
 
       struct LogStream;
 
+      struct LogEntry
+      {
+        uint8_t level;
+        String module;
+        int threadId;
+        time_t time;
+        String message;
+      };
+
+      typedef void (*LogCallback)(const LogEntry &);
+
       LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module);
 
       struct LOW_EXPORT LogStream
@@ -72,8 +83,10 @@ namespace Low {
         LogStream &operator<<(Handle &p_Message);
 
       private:
-        String m_Content;
+        LogEntry m_Entry;
       };
+
+      LOW_EXPORT void register_log_callback(LogCallback p_Callback);
 
     } // namespace Log
   }   // namespace Util

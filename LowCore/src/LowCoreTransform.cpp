@@ -98,6 +98,10 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Transform::is_alive;
         l_TypeInfo.destroy = &Transform::destroy;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &Transform::living_instances);
+        l_TypeInfo.get_living_count = &Transform::living_count;
         l_TypeInfo.component = true;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -136,7 +140,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(scale);
-          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -223,7 +227,8 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, entity);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, entity,
                                               Low::Core::Entity);

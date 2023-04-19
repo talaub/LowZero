@@ -2,11 +2,14 @@
 
 #include "imgui.h"
 
+#include "IconsFontAwesome5.h"
+
 #include "LowEditorLogWidget.h"
 #include "LowEditorRenderFlowWidget.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorProfilerWidget.h"
 #include "LowEditorEditingWidget.h"
+#include "LowEditorAssetWidget.h"
 
 #include "LowUtilContainers.h"
 
@@ -23,6 +26,7 @@ namespace Low {
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
     ProfilerWidget *g_ProfilerWidget;
+    AssetWidget *g_AssetWidget;
 
     Core::Entity g_SelectedEntity;
 
@@ -33,8 +37,19 @@ namespace Low {
       g_DetailsWidget->clear();
 
       if (!g_SelectedEntity.is_alive()) {
+        uint32_t l_Id = ~0u;
+        g_MainViewportWidget->m_RenderFlowWidget->get_renderflow()
+            .get_resources()
+            .get_buffer_resource(N(SelectedIdBuffer))
+            .set(&l_Id);
         return;
       }
+      uint32_t l_Id = p_Entity.get_index();
+
+      g_MainViewportWidget->m_RenderFlowWidget->get_renderflow()
+          .get_resources()
+          .get_buffer_resource(N(SelectedIdBuffer))
+          .set(&l_Id);
 
       for (auto it = g_SelectedEntity.get_components().begin();
            it != g_SelectedEntity.get_components().end(); ++it) {
@@ -51,6 +66,12 @@ namespace Low {
     {
       // Menu
       if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Scene")) {
+          if (ImGui::MenuItem("Save", NULL, nullptr)) {
+          }
+
+          ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
       }
     }
@@ -91,10 +112,13 @@ namespace Low {
 
     void initialize()
     {
+      LogWidget::initialize();
+
       g_MainViewportWidget = new EditingWidget();
 
       g_DetailsWidget = new DetailsWidget();
       g_ProfilerWidget = new ProfilerWidget();
+      g_AssetWidget = new AssetWidget();
     }
 
     void tick(float p_Delta)
@@ -107,6 +131,9 @@ namespace Low {
       g_MainViewportWidget->render(p_Delta);
       g_DetailsWidget->render(p_Delta);
       g_ProfilerWidget->render(p_Delta);
+      g_AssetWidget->render(p_Delta);
+
+      // ImGui::ShowDemoWindow();
     }
   } // namespace Editor
 } // namespace Low

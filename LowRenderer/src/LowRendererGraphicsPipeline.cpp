@@ -92,6 +92,10 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &GraphicsPipeline::is_alive;
         l_TypeInfo.destroy = &GraphicsPipeline::destroy;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &GraphicsPipeline::living_instances);
+        l_TypeInfo.get_living_count = &GraphicsPipeline::living_count;
         l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;

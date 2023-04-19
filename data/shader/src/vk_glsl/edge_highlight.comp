@@ -19,11 +19,14 @@ layout(std140, binding = 5, set = 2) buffer EntityIndexWritebackWrapper
 {
   uint u_HoveredEntityIndex;
 };
-
-float edge_detection(vec2 p_AbsoluteCoordinates, vec2 p_TextureCoordinates)
+layout(std140, binding = 6, set = 2) buffer EntityIndexWrapper
 {
-  float h = 3.0;
+  uint u_SelectedEntityIndex;
+};
 
+float edge_detection(uint p_Id, float h, vec2 p_AbsoluteCoordinates,
+                     vec2 p_TextureCoordinates)
+{
   float l_Depth = texture(GBufferDepth, p_TextureCoordinates).x;
   if (l_Depth >= 1.0) {
     return 0.0;
@@ -36,7 +39,7 @@ float edge_detection(vec2 p_AbsoluteCoordinates, vec2 p_TextureCoordinates)
                     (p_AbsoluteCoordinates + vec2(0, 0)) * u_InverseDimensions)
                 .x;
 
-  if (index != u_HoveredEntityIndex) {
+  if (index != p_Id) {
     return 0.0;
   }
 
@@ -78,7 +81,11 @@ void main()
 
   vec3 l_OutColor = texture(DeferredLit, l_TextureCoordinates).xyz;
 
-  if (edge_detection(l_AbsolutePixel, l_TextureCoordinates) > 0.5) {
+  if (edge_detection(u_SelectedEntityIndex, 2.0f, l_AbsolutePixel,
+                     l_TextureCoordinates) > 0.5) {
+    l_OutColor = vec3(0.27f, 0.27f, 1.0f);
+  } else if (edge_detection(u_HoveredEntityIndex, 3.0, l_AbsolutePixel,
+                            l_TextureCoordinates) > 0.5) {
     l_OutColor = vec3(1.0f, 0.27f, 0.0f);
   }
 

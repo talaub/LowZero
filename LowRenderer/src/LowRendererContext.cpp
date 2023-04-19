@@ -102,6 +102,10 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Context::is_alive;
         l_TypeInfo.destroy = &Context::destroy;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &Context::living_instances);
+        l_TypeInfo.get_living_count = &Context::living_count;
         l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -143,7 +147,8 @@ namespace Low {
           l_PropertyInfo.name = N(global_signature);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, global_signature);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = PipelineResourceSignature::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, global_signature, PipelineResourceSignature);
@@ -161,7 +166,8 @@ namespace Low {
           l_PropertyInfo.name = N(frame_info_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, frame_info_buffer);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, frame_info_buffer, Resource::Buffer);
@@ -179,7 +185,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ContextData, material_data_buffer);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, material_data_buffer, Resource::Buffer);

@@ -613,6 +613,8 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.get_capacity = &get_capacity;`);
     t += line(`l_TypeInfo.is_alive = &${p_Type.name}::is_alive;`);
     t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);
+    t += line(`l_TypeInfo.get_living_instances = reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(&${p_Type.name}::living_instances);`);
+    t += line(`l_TypeInfo.get_living_count = &${p_Type.name}::living_count;`);
     if (p_Type.component) {
 	t += line(`l_TypeInfo.component = true;`);
     } else {
@@ -624,7 +626,12 @@ function generate_source(p_Type) {
 	t += line(`l_PropertyInfo.name = N(${i_PropName});`);
 	t += line(`l_PropertyInfo.editorProperty = ${i_Prop.editor_editable ? 'true' : 'false'};`);
 	t += line(`l_PropertyInfo.dataOffset = offsetof(${p_Type.name}Data, ${i_PropName});`);
-	t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`);
+	if (i_Prop.handle) {
+	    t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
+	    t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::TYPE_ID;`);
+	} else {
+	    t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`);
+	}
 	t += line(`l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`);
 	t += line(`return (void*)&ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type});`);
 	t += line(`};`);

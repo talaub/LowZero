@@ -27,7 +27,6 @@ types:
           - dirty
           - world_dirty
       scale:
-        editor_editable: true
         getter_name: scale
         setter_name: scale
         type: Math::Vector3

@@ -19,6 +19,24 @@ namespace Low {
     {
       Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
 
+      static bool l_ToolsWindowOpen = true;
+
+      static ImGuizmo::OPERATION l_Operation = ImGuizmo::TRANSLATE;
+
+      ImGui::Begin("Tools", &l_ToolsWindowOpen,
+                   ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
+                       ImGuiWindowFlags_NoCollapse |
+                       ImGuiWindowFlags_NoDecoration |
+                       ImGuiWindowFlags_AlwaysAutoResize);
+      if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
+        l_Operation = ImGuizmo::TRANSLATE;
+      }
+      ImGui::SameLine();
+      if (ImGui::Button(ICON_FA_SYNC)) {
+        l_Operation = ImGuizmo::ROTATE;
+      }
+      ImGui::End();
+
       static const float identityMatrix[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f,
                                                0.f, 0.f, 0.f, 0.f, 1.f, 0.f,
                                                0.f, 0.f, 0.f, 1.f};
@@ -64,31 +82,34 @@ namespace Low {
                                   (float *)&l_ModelMatrix, 1);
         */
 
-        if (ImGuizmo::Manipulate(
-                (float *)&l_ViewMatrix, (float *)&l_ProjectionMatrix,
-                ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, (float *)&l_ModelMatrix,
-                NULL, NULL, NULL, NULL)) {
+        if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
+                                 (float *)&l_ProjectionMatrix, l_Operation,
+                                 ImGuizmo::LOCAL, (float *)&l_ModelMatrix, NULL,
+                                 NULL, NULL, NULL)) {
           Math::Vector3 l_Position;
-          Math::Quaternion l_Rotation;
+          Math::Vector3 l_Rotation;
           Math::Vector3 l_Scale;
 
           ImGuizmo::DecomposeMatrixToComponents(
               (float *)&l_ModelMatrix, (float *)&l_Position,
               (float *)&l_Rotation, (float *)&l_Scale);
 
-          l_Rotation = glm::quat_cast(l_ModelMatrix);
+          Math::Quaternion l_RotQuat = glm::quat_cast(l_ModelMatrix);
 
           l_Transform.position(l_Position);
-          l_Transform.rotation(l_Rotation);
-          l_Transform.scale(l_Scale);
+          l_Transform.rotation(l_RotQuat);
+          /*
+                l_Transform.scale(l_Scale);
+          */
         }
       }
     }
 
     EditingWidget::EditingWidget() : m_CameraSpeed(3.5f)
     {
-      m_RenderFlowWidget = new RenderFlowWidget(
-          "Viewport", Renderer::get_main_renderflow(), &render_gizmos);
+      m_RenderFlowWidget =
+          new RenderFlowWidget(ICON_FA_EYE " Viewport",
+                               Renderer::get_main_renderflow(), &render_gizmos);
       m_LastPitchYaw = Math::Vector2(0.0f, -90.0f);
     }
 
@@ -136,31 +157,33 @@ namespace Low {
       Math::Vector3 l_CameraUp =
           glm::cross(l_CameraFront, l_CameraRight) * -1.0f;
 
-      if (Renderer::get_window().keyboard_button_down(
-              Renderer::Input::KeyboardButton::W)) {
-        l_CameraPosition -= (l_CameraFront * p_Delta * m_CameraSpeed);
-      }
-      if (Renderer::get_window().keyboard_button_down(
-              Renderer::Input::KeyboardButton::S)) {
-        l_CameraPosition += (l_CameraFront * p_Delta * m_CameraSpeed);
-      }
+      if (!ImGui::IsAnyItemActive()) {
+        if (Renderer::get_window().keyboard_button_down(
+                Renderer::Input::KeyboardButton::W)) {
+          l_CameraPosition -= (l_CameraFront * p_Delta * m_CameraSpeed);
+        }
+        if (Renderer::get_window().keyboard_button_down(
+                Renderer::Input::KeyboardButton::S)) {
+          l_CameraPosition += (l_CameraFront * p_Delta * m_CameraSpeed);
+        }
 
-      if (Renderer::get_window().keyboard_button_down(
-              Renderer::Input::KeyboardButton::A)) {
-        l_CameraPosition += (l_CameraRight * p_Delta * m_CameraSpeed);
-      }
-      if (Renderer::get_window().keyboard_button_down(
-              Renderer::Input::KeyboardButton::D)) {
-        l_CameraPosition -= (l_CameraRight * p_Delta * m_CameraSpeed);
-      }
+        if (Renderer::get_window().keyboard_button_down(
+                Renderer::Input::KeyboardButton::A)) {
+          l_CameraPosition += (l_CameraRight * p_Delta * m_CameraSpeed);
+        }
+        if (Renderer::get_window().keyboard_button_down(
+                Renderer::Input::KeyboardButton::D)) {
+          l_CameraPosition -= (l_CameraRight * p_Delta * m_CameraSpeed);
+        }
 
-      if (Renderer::get_window().keyboard_button_down(
-              Renderer::Input::KeyboardButton::Q)) {
-        l_CameraPosition += (l_CameraUp * p_Delta * m_CameraSpeed);
-      }
-      if (Renderer::get_window().keyboard_button_down(
-              Renderer::Input::KeyboardButton::E)) {
-        l_CameraPosition -= (l_CameraUp * p_Delta * m_CameraSpeed);
+        if (Renderer::get_window().keyboard_button_down(
+                Renderer::Input::KeyboardButton::Q)) {
+          l_CameraPosition += (l_CameraUp * p_Delta * m_CameraSpeed);
+        }
+        if (Renderer::get_window().keyboard_button_down(
+                Renderer::Input::KeyboardButton::E)) {
+          l_CameraPosition -= (l_CameraUp * p_Delta * m_CameraSpeed);
+        }
       }
 
       float m_Sensitivity = 3000.0f;
@@ -239,6 +262,13 @@ namespace Low {
           {1.0f, 0.0f, 0.0f, 1.0f}, true, false);
       */
 
+      if (ImGuizmo::IsOver()) {
+        l_AllowRendererBasedPicking = false;
+      }
+      if (ImGui::IsAnyItemHovered()) {
+        l_AllowRendererBasedPicking = false;
+      }
+
       Math::Vector2 l_HoverCoordinates = {2.0f, 2.0f};
 
       if (l_AllowRendererBasedPicking) {
@@ -251,11 +281,12 @@ namespace Low {
               .get_buffer_resource(N(IdWritebackBuffer))
               .read(&l_EntityIndex, sizeof(uint32_t), 0);
 
-          Core::Entity l_Entity = Core::Entity::find_by_index(l_EntityIndex);
-
-          if (l_Entity.is_alive()) {
-            set_selected_entity(l_Entity);
+          Core::Entity l_Entity;
+          if (l_EntityIndex != ~0u) {
+            l_Entity = Core::Entity::find_by_index(l_EntityIndex);
           }
+
+          set_selected_entity(l_Entity);
         }
       }
 

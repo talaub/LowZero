@@ -88,13 +88,18 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &MeshRenderer::is_alive;
         l_TypeInfo.destroy = &MeshRenderer::destroy;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &MeshRenderer::living_instances);
+        l_TypeInfo.get_living_count = &MeshRenderer::living_count;
         l_TypeInfo.component = true;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(mesh);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(MeshRendererData, mesh);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = MeshAsset::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, mesh,
                                               MeshAsset);
@@ -111,7 +116,8 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(MeshRendererData, entity);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, entity,
                                               Low::Core::Entity);

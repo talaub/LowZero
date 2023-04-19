@@ -1,5 +1,7 @@
 #pragma once
 
+#include "imgui.h"
+
 #include "LowCoreEntity.h"
 
 namespace Low {

@@ -91,6 +91,10 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MeshResource::is_alive;
       l_TypeInfo.destroy = &MeshResource::destroy;
+      l_TypeInfo.get_living_instances =
+          reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+              &MeshResource::living_instances);
+      l_TypeInfo.get_living_count = &MeshResource::living_count;
       l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -114,7 +118,8 @@ namespace Low {
         l_PropertyInfo.name = N(renderer_mesh);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, renderer_mesh);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Renderer::Mesh::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
                                             renderer_mesh, Renderer::Mesh);

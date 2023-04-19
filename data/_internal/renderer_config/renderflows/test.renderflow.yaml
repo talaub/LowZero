@@ -77,6 +77,10 @@ resources:
     type: buffer
     array_size: 1
     buffer_size: 4
+  SelectedIdBuffer:
+    type: buffer
+    array_size: 1
+    buffer_size: 4
   HoverCoordinatesBuffer:
     type: buffer
     array_size: 1

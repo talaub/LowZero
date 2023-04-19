@@ -14,7 +14,7 @@ namespace Low {
 
     void ProfilerWidget::render(float p_Delta)
     {
-      ImGui::Begin("Profiler");
+      ImGui::Begin(ICON_FA_STOPWATCH " Profiler");
 
       ImGui::Text("FPS: ");
       ImGui::SameLine();

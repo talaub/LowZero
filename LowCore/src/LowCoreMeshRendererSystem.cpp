@@ -27,8 +27,11 @@ namespace Low {
             Component::Transform i_Transform =
                 i_MeshRenderer.get_entity().get_transform();
 
+            if (!i_MeshRenderer.get_mesh().get_lod0().is_alive()) {
+              continue;
+            }
+
             if (!i_MeshRenderer.get_mesh().get_lod0().is_loaded()) {
-              // HACK
               TaskScheduler::schedule_mesh_resource_load(
                   i_MeshRenderer.get_mesh().get_lod0());
               continue;

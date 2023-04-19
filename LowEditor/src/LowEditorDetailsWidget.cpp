@@ -7,7 +7,7 @@ namespace Low {
   namespace Editor {
     void DetailsWidget::render(float p_Delta)
     {
-      ImGui::Begin("Details");
+      ImGui::Begin(ICON_FA_GLASSES " Details");
 
       for (auto it = m_Sections.begin(); it != m_Sections.end(); ++it) {
         it->render(p_Delta);

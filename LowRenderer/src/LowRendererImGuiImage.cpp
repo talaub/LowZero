@@ -90,6 +90,10 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &ImGuiImage::is_alive;
         l_TypeInfo.destroy = &ImGuiImage::destroy;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &ImGuiImage::living_instances);
+        l_TypeInfo.get_living_count = &ImGuiImage::living_count;
         l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -114,7 +118,8 @@ namespace Low {
           l_PropertyInfo.name = N(image);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, image);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, image,
                                               Resource::Image);

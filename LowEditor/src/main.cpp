@@ -46,9 +46,9 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 static void setup_scene()
 {
   Low::Core::MeshAsset l_SphereMeshAsset =
-      Low::Core::MeshAsset::make(N(Asset1));
+      Low::Core::MeshAsset::make(N(Sphere));
   Low::Core::MeshResource l_SphereMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/model/sphere.glb");
+      Low::Util::String(LOW_DATA_PATH) + "/assets/meshes/sphere.glb");
   l_SphereMeshAsset.set_lod0(l_SphereMeshResource);
 
   {
@@ -59,15 +59,15 @@ static void setup_scene()
     Low::Util::Yaml::write_file(l_Path.c_str(), l_Node);
   }
 
-  Low::Core::MeshAsset l_CubeMeshAsset = Low::Core::MeshAsset::make(N(Asset2));
+  Low::Core::MeshAsset l_CubeMeshAsset = Low::Core::MeshAsset::make(N(Cube));
   Low::Core::MeshResource l_CubeMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/model/cube.glb");
+      Low::Util::String(LOW_DATA_PATH) + "/assets/meshes/cube.glb");
   l_CubeMeshAsset.set_lod0(l_CubeMeshResource);
 
   Low::Core::MeshAsset l_SuzanneMeshAsset =
-      Low::Core::MeshAsset::make(N(Asset3));
+      Low::Core::MeshAsset::make(N(Suzanne));
   Low::Core::MeshResource l_SuzanneMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/model/suzanne.glb");
+      Low::Util::String(LOW_DATA_PATH) + "/assets/meshes/suzanne.glb");
   l_SuzanneMeshAsset.set_lod0(l_SuzanneMeshResource);
 
   {

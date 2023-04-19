@@ -19,8 +19,12 @@ namespace Low {
              pit != m_TypeInfo.properties.end(); ++pit) {
 
           if (pit->second.editorProperty) {
-            PropertyEditors::render_editor(pit->second,
-                                           pit->second.get(m_Handle));
+            if (pit->second.type == Util::RTTI::PropertyType::HANDLE) {
+              PropertyEditors::render_handle_selector(pit->second, m_Handle);
+            } else {
+              PropertyEditors::render_editor(pit->second,
+                                             pit->second.get(m_Handle));
+            }
           }
         }
         ImGui::PopID();

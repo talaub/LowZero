@@ -2,6 +2,8 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_impl_glfw.h"
 
+#include "LowRendererImGuiHelper.h"
+
 #include "ImGuizmo.h"
 
 #include "vulkan/vulkan_core.h"
@@ -1080,6 +1082,10 @@ namespace Low {
             io.Fonts->AddFontFromFileTTF(l_FontPath.c_str(), iconFontSize,
                                          &icons_config, icons_ranges);
           }
+
+          ImGuiHelper::initialize();
+
+          io.Fonts->Build();
 
           /*
           io.ConfigFlags |=

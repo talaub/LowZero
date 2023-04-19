@@ -25,3 +25,4 @@ pipelines:
       renderflow:EntityIndexMap: texture2d
       renderflow:EntityIndexMap: unbound_sampler
       renderflow:IdWritebackBuffer: buffer
+      renderflow:SelectedIdBuffer: buffer

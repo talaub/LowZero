@@ -31,6 +31,7 @@ namespace Low {
 
     template <typename T> using Stack = eastl::stack<T>;
     template <typename T> using Queue = eastl::queue<T>;
+    template <typename T> using Deque = eastl::deque<T>;
 
     template <typename T> using Optional = eastl::optional<T>;
 

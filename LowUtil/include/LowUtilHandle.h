@@ -52,15 +52,19 @@ namespace Low {
           FLOAT,
           UINT32,
           INT,
-          BOOL
+          BOOL,
+          HANDLE
         };
       }
+
+      typedef Util::Handle *(*LivingInstancesGetter)();
 
       struct PropertyInfo
       {
         Util::Name name;
         uint32_t dataOffset;
         uint32_t type;
+        uint16_t handleType;
         bool editorProperty;
         void const *(*get)(Handle);
         void (*set)(Handle, const void *);
@@ -74,6 +78,8 @@ namespace Low {
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
         void (*destroy)(Handle);
+        LivingInstancesGetter get_living_instances;
+        uint32_t (*get_living_count)();
       };
     } // namespace RTTI
 

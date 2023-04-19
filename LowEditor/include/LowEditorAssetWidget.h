@@ -4,11 +4,16 @@
 
 namespace Low {
   namespace Editor {
-    struct LogWidget : public Widget
+    struct AssetWidget : public Widget
     {
-      static void initialize();
+      AssetWidget();
 
       void render(float p_Delta) override;
+
+    protected:
+      int m_SelectedCategory;
+
+      void render_meshes();
     };
   } // namespace Editor
 } // namespace Low
