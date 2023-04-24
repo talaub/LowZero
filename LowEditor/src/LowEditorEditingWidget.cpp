@@ -67,45 +67,15 @@ namespace Low {
       if (l_Entity.is_alive()) {
         Core::Component::Transform l_Transform = l_Entity.get_transform();
 
-        float l_ModelMatrix[16];
-        Math::Vector3 l_SourcePosition = l_Transform.get_world_position();
-        Math::Vector3 l_SourceEuler =
-            Math::VectorUtil::to_euler(l_Transform.get_world_rotation());
-        Math::Vector3 l_SourceScale = l_Transform.get_world_scale();
-
         Math::Matrix4x4 l_TransformMatrix =
             glm::translate(glm::mat4(1.0f), l_Transform.get_world_position()) *
             glm::toMat4(l_Transform.get_world_rotation()) *
             glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
 
-        ImGuizmo::RecomposeMatrixFromComponents(
-            (float *)&l_SourcePosition, (float *)&l_SourceEuler,
-            (float *)&l_SourceScale, l_ModelMatrix);
-
         if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
                                  (float *)&l_ProjectionMatrix, l_Operation,
                                  ImGuizmo::LOCAL, (float *)&l_TransformMatrix,
                                  NULL, NULL, NULL, NULL)) {
-
-          /*
-          float l_Position[3];
-          float l_Rotation[3];
-          float l_Scale[3];
-
-          ImGuizmo::DecomposeMatrixToComponents(
-              (float *)&l_TransformMatrix, (float *)&l_Position,
-              (float *)&l_Rotation, (float *)&l_Scale);
-
-                Math::Quaternion l_RotQuat = Math::VectorUtil::from_euler(
-                    Math::Vector3(l_Rotation[0], l_Rotation[1], l_Rotation[2]));
-          Math::Quaternion l_RotQuat = glm::quat_cast(l_TransformMatrix);
-
-          l_Transform.position(
-              Math::Vector3(l_Position[0], l_Position[1], l_Position[2]));
-          l_Transform.rotation(l_RotQuat);
-           l_Transform.scale(Math::Vector3(l_Scale[0], l_Scale[1],
-           l_Scale[2]));
-          */
 
           glm::vec3 scale;
           glm::quat rotation;
