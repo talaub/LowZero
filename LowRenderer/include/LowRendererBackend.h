@@ -43,6 +43,7 @@ namespace Low {
       struct Context;
       struct ImageResource;
       struct PipelineResourceSignature;
+      struct Buffer;
 
       struct Renderpass
       {

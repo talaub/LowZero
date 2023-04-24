@@ -7,6 +7,7 @@
 
 #include "LowEditorGui.h"
 #include "LowEditorMainWindow.h"
+#include "LowEditorDetailsWidget.h"
 
 #include "LowCoreMeshAsset.h"
 
@@ -131,7 +132,10 @@ namespace Low {
 
       for (auto it = Core::MeshAsset::ms_LivingInstances.begin();
            it != Core::MeshAsset::ms_LivingInstances.end(); ++it) {
-        render_element(l_Id++, ICON_FA_CUBE, it->get_name().c_str());
+        if (render_element(l_Id++, ICON_FA_CUBE, it->get_name().c_str())) {
+          get_details_widget()->clear();
+          get_details_widget()->add_section(*it);
+        }
         ImGui::NextColumn();
       }
 

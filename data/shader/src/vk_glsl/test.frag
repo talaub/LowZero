@@ -33,12 +33,33 @@ layout(std140, set = 2, binding = 0) readonly buffer ObjectInfoWrapper
   ObjectInfo u_RenderObjects[];
 };
 
+layout(binding = 0, set = 1) uniform FrameInfoWrapper
+{
+  vec2 u_InverseDimensions;
+  vec3 u_CameraPosition;
+  mat4 u_ProjectionMatrix;
+  mat4 u_ViewMatrix;
+};
+
 layout(location = 0) out vec4 o_Albedo;
 layout(location = 1) out vec4 o_SurfaceNormal;
 layout(location = 2) out vec4 o_Normal;
 layout(location = 3) out vec4 o_Metalness;
 layout(location = 4) out vec4 o_Roughness;
-layout(location = 5) out uvec4 o_EntityIndex;
+layout(location = 5) out vec4 o_BentNormal;
+layout(location = 6) out uvec4 o_EntityIndex;
+
+float weighting_function(float cosTheta, float falloff)
+{
+  // Calculate the weight based on the cosine of the angle between
+  // the bent normal and the occlusion cone axis
+  float weight = 1.0 - falloff * abs(cosTheta);
+
+  // Clamp the weight to ensure it is between 0 and 1
+  weight = clamp(weight, 0.0, 1.0);
+
+  return weight;
+}
 
 void main()
 {
@@ -52,6 +73,8 @@ void main()
   o_Albedo = vec4(
       texture(g_Texture2Ds[l_AlbedoTextureId], in_TextureCoordinates).xyz, 1.0);
 
+  vec3 l_SurfaceNormal = in_SurfaceNormal;
+
   o_SurfaceNormal = vec4(vec3((in_SurfaceNormal.x + 1.0) / 2.0,
                               (in_SurfaceNormal.y + 1.0) / 2.0,
                               (in_SurfaceNormal.z + 1.0) / 2.0),
@@ -62,7 +85,6 @@ void main()
   l_Normal = 2 * l_Normal - 1;
 
   l_Normal = normalize(in_TBN * l_Normal);
-  // l_Normal = in_SurfaceNormal;
   o_Normal =
       vec4(normalize(vec3((l_Normal.x + 1.0) / 2.0, (l_Normal.y + 1.0) / 2.0,
                           (l_Normal.z + 1.0) / 2.0)),
@@ -79,4 +101,23 @@ void main()
 
   o_EntityIndex =
       uvec4(uvec3(u_RenderObjects[in_InstanceId].entity_index), 1.0);
+
+  vec3 l_NormalForBentNormals = l_SurfaceNormal.xyz;
+
+  vec3 l_CameraPosition = vec3(u_ViewMatrix[3]);
+  vec3 l_ViewVector = normalize(vec3(gl_FragCoord.xy, 1.0) - l_CameraPosition);
+  vec3 l_OcclusionDirection = -normalize(l_ViewVector);
+  float l_CosTheta = dot(l_OcclusionDirection, l_NormalForBentNormals);
+
+  // Clamp the cosine value to ensure it is between -1 and 1
+  l_CosTheta = clamp(l_CosTheta, -1.0, 1.0);
+
+  vec3 l_BentNormal =
+      normalize(l_NormalForBentNormals +
+                l_OcclusionDirection * weighting_function(l_CosTheta, 0.5));
+
+  o_BentNormal = vec4(
+      normalize(vec3((l_BentNormal.x + 1.0) / 2.0, (l_BentNormal.y + 1.0) / 2.0,
+                     (l_BentNormal.z + 1.0) / 2.0)),
+      1.0);
 }

@@ -60,9 +60,33 @@ namespace Low {
 
       Vector3 to_euler(Quaternion &p_Rotation)
       {
-        glm::vec3 l_Radians = glm::eulerAngles(p_Rotation);
+        const Quaternion &q = p_Rotation;
+        float x, y, z, w;
+        x = q.x;
+        y = q.y;
+        z = q.z;
+        w = q.w;
 
-        glm::vec3 l_Degrees = glm::degrees(l_Radians);
+        float pitchf, yawf, rollf;
+        float test = x * y + z * w;
+        if (test > 0.49999f) { // singularity at north pole
+          yawf = 2 * atan2(x, w);
+          rollf = 1.5707963267948966192313216916398f;
+          pitchf = 0;
+        } else if (test < -0.49999f) { // singularity at south pole
+          yawf = -2 * atan2(x, w);
+          rollf = -1.5707963267948966192313216916398f;
+          pitchf = 0;
+        } else {
+          float sqX = x * x;
+          float sqY = y * y;
+          float sqZ = z * z;
+          yawf = atan2(2 * y * w - 2 * x * z, 1 - 2 * sqY - 2 * sqZ);
+          rollf = asin(2 * test);
+          pitchf = atan2(2 * x * w - 2 * y * z, 1 - 2 * sqX - 2 * sqZ);
+        }
+
+        glm::vec3 l_Degrees = glm::degrees(Math::Vector3(pitchf, yawf, rollf));
 
         return l_Degrees;
       }
@@ -71,13 +95,31 @@ namespace Low {
       {
         glm::vec3 l_Radians = glm::radians(p_EulerAngles);
 
-        glm::mat4 rotationMatrix =
-            glm::rotate(glm::mat4(1.0f), l_Radians.y, glm::vec3(0, 1, 0)) *
-            glm::rotate(glm::mat4(1.0f), l_Radians.x, glm::vec3(1, 0, 0)) *
-            glm::rotate(glm::mat4(1.0f), l_Radians.z, glm::vec3(0, 0, 1));
+        /*
+              glm::mat4 rotationMatrix =
+                  glm::rotate(glm::mat4(1.0f), l_Radians.y, glm::vec3(0, 1, 0))
+           * glm::rotate(glm::mat4(1.0f), l_Radians.x, glm::vec3(1, 0, 0)) *
+                  glm::rotate(glm::mat4(1.0f), l_Radians.z, glm::vec3(0, 0, 1));
 
-        glm::quat l_Quat = glm::quat_cast(rotationMatrix);
-        return l_Quat;
+              glm::quat l_Quat = glm::quat_cast(rotationMatrix);
+        */
+        Quaternion q;
+        // xzy
+        // currently the default case (confirmed to be working) :)
+        double c1 = cos(l_Radians.y * 0.5);
+        double s1 = sin(l_Radians.y * 0.5);
+        double c2 = cos(l_Radians.z * 0.5);
+        double s2 = sin(l_Radians.z * 0.5);
+        double c3 = cos(l_Radians.x * 0.5);
+        double s3 = sin(l_Radians.x * 0.5);
+        double c1c2 = c1 * c2;
+        double s1s2 = s1 * s2;
+        q.w = float(c1c2 * c3 - s1s2 * s3);
+        q.x = float(c1c2 * s3 + s1s2 * c3);
+        q.y = float(s1 * c2 * c3 + c1 * s2 * s3);
+        q.z = float(c1 * s2 * c3 - s1 * c2 * s3);
+
+        return q;
       }
 
       Vector3 rotate_by_quaternion(Vector3 &p_Vec, Quaternion &p_Quat)

@@ -681,18 +681,14 @@ namespace Low {
           for (auto it = mit->second.begin(); it != mit->second.end();) {
             RenderObject &i_RenderObject = *it;
 
-            Math::Matrix4x4 l_ModelMatrix =
-                glm::translate(glm::mat4(1.0f), i_RenderObject.world_position) *
-                glm::toMat4(i_RenderObject.world_rotation) *
-                glm::scale(glm::mat4(1.0f), i_RenderObject.world_scale);
-
             Math::Matrix4x4 l_MVPMatrix =
-                p_ProjectionMatrix * p_ViewMatrix * l_ModelMatrix;
+                p_ProjectionMatrix * p_ViewMatrix * i_RenderObject.transform;
 
             l_Colors[l_ObjectIndex] = i_RenderObject.color;
 
             l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
-            l_ObjectShaderInfos[l_ObjectIndex].model_matrix = l_ModelMatrix;
+            l_ObjectShaderInfos[l_ObjectIndex].model_matrix =
+                i_RenderObject.transform;
 
             l_ObjectShaderInfos[l_ObjectIndex].material_index =
                 i_RenderObject.material.get_index();

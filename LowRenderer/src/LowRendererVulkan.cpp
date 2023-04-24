@@ -41,6 +41,23 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
+      struct UploadCommandBuffers
+      {};
+
+      struct StagingBufferSlot
+      {
+        Backend::Context *context;
+        uint32_t start;
+        uint32_t length;
+        bool free;
+        VkFence fence;
+      };
+
+      Util::Map<uint32_t, Util::List<StagingBufferSlot>>
+          g_ScheduledBufferCopies;
+
+      uint32_t g_NextContextId = 0;
+
       void renderpass_create_internal(Backend::Renderpass &p_Renderpass,
                                       Backend::RenderpassCreateParams &p_Params,
                                       bool, bool);
@@ -77,10 +94,12 @@ namespace Low {
         {
           Util::Optional<uint32_t> m_GraphicsFamily;
           Util::Optional<uint32_t> m_PresentFamily;
+          Util::Optional<uint32_t> m_TransferFamily;
 
           bool is_complete()
           {
-            return m_GraphicsFamily.has_value() && m_PresentFamily.has_value();
+            return m_GraphicsFamily.has_value() &&
+                   m_PresentFamily.has_value() && m_TransferFamily.has_value();
           }
         };
 
@@ -191,6 +210,9 @@ namespace Low {
 
             if (i_QueueFamiliy.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
               l_Indices.m_GraphicsFamily = l_Iterator;
+            }
+            if (i_QueueFamiliy.queueFlags & VK_QUEUE_TRANSFER_BIT) {
+              l_Indices.m_TransferFamily = l_Iterator;
             }
             l_Iterator++;
           }
@@ -352,11 +374,11 @@ namespace Low {
                              0);
         }
         static void copy_buffer(Backend::Context &p_Context,
-
                                 VkBuffer p_SourceBuffer, VkBuffer p_DestBuffer,
                                 VkDeviceSize p_Size,
                                 VkDeviceSize p_SourceOffset = 0u,
-                                VkDeviceSize p_DestOffset = 0u)
+                                VkDeviceSize p_DestOffset = 0u,
+                                bool p_Immediate = false)
         {
           VkCommandBufferAllocateInfo l_AllocInfo{};
           l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -747,6 +769,9 @@ namespace Low {
           vkGetDeviceQueue(p_Context.m_Device,
                            l_Indices.m_PresentFamily.value(), 0,
                            &(p_Context.m_PresentQueue));
+          vkGetDeviceQueue(p_Context.m_Device,
+                           l_Indices.m_TransferFamily.value(), 0,
+                           &(p_Context.m_TransferQueue));
         }
 
         static VkExtent2D
@@ -1406,6 +1431,7 @@ namespace Low {
       void vk_context_create(Backend::Context &p_Context,
                              Backend::ContextCreateParams &p_Params)
       {
+        p_Context.vk.m_Id = g_NextContextId++;
         p_Context.framesInFlight = p_Params.framesInFlight;
         p_Context.vk.m_PipelineResourceSignatureIndex = 0u;
         p_Context.vk.m_PipelineResourceSignatures =
@@ -1507,6 +1533,17 @@ namespace Low {
                      "Failed to create descriptor pools");
         }
 
+        {
+          uint32_t l_StagingBufferSize = LOW_KILOBYTE_I;
+
+          p_Context.vk.m_StagingBufferSize = l_StagingBufferSize;
+          Helper::create_buffer(
+              p_Context, l_StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+              p_Context.vk.m_StagingBuffer, p_Context.vk.m_StagingBufferMemory);
+        }
+
         p_Context.state = Backend::ContextState::SUCCESS;
 
         ContextHelper::setup_imgui(p_Context);
@@ -1575,6 +1612,11 @@ namespace Low {
           vkDestroyCommandPool(p_Context.vk.m_Device,
                                p_Context.vk.m_CommandPool, nullptr);
         }
+
+        vkDestroyBuffer(p_Context.vk.m_Device, p_Context.vk.m_StagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Context.vk.m_Device, p_Context.vk.m_StagingBufferMemory,
+                     nullptr);
 
         vmaDestroyAllocator(p_Context.vk.m_Alloc);
 
@@ -3409,7 +3451,7 @@ namespace Low {
                     p_DataSize, 0, &l_Data);
 
         Helper::copy_buffer(*p_Buffer.context, p_Buffer.vk.m_Buffer,
-                            l_StagingBuffer, p_DataSize, p_Start, 0);
+                            l_StagingBuffer, p_DataSize, p_Start, 0, true);
 
         memcpy(p_Data, l_Data, (size_t)p_DataSize);
         vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
@@ -3498,9 +3540,11 @@ namespace Low {
 
       static Util::String compile_vk_glsl_to_spv(Util::String p_Path)
       {
-        Util::String l_SourcePath = get_source_path_vk_glsl(p_Path);
         Util::String l_OutPath =
             Util::String(LOW_DATA_PATH) + "/shader/dst/spv/" + p_Path + ".spv";
+
+#if LOW_RENDERER_COMPILE_SHADERS
+        Util::String l_SourcePath = get_source_path_vk_glsl(p_Path);
 
         Util::String l_Command = "glslc " + l_SourcePath + " -o " + l_OutPath;
 
@@ -3508,6 +3552,7 @@ namespace Low {
 
         LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
         system(l_Command.c_str());
+#endif
 
         return l_OutPath;
       }

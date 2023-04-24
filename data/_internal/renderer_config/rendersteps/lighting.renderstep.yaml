@@ -23,6 +23,7 @@ pipelines:
       renderflow:GBufferAlbedo: sampler
       renderflow:GBufferSurfaceNormals: sampler
       renderflow:GBufferNormals: sampler
+      renderflow:GBufferBentNormals: sampler
       renderflow:GBufferRoughness: sampler
       renderflow:GBufferMetalness: sampler
       renderflow:GBufferDepth: sampler

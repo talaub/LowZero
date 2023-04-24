@@ -24,7 +24,7 @@ namespace Low {
                                  Math::UVector2 &p_Dimensions);
 
     LOW_RENDERER_API Mesh upload_mesh(Util::Name p_Name,
-                                      Util::Resource::Mesh &p_Mesh);
+                                      Util::Resource::MeshInfo &p_MeshInfo);
 
     LOW_RENDERER_API RenderFlow get_main_renderflow();
 

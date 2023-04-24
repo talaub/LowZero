@@ -15,10 +15,9 @@ types:
       path:
         type: Util::String
         private_setter: true
-      renderer_mesh:
-        type: Renderer::Mesh
-        handle: true
-        private_setter: true
+      submeshes:
+        type: Util::List<Submesh>
+        no_setter: true
       reference_count:
         type: uint32_t
         private_setter: true

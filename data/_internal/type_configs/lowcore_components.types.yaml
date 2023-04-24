@@ -30,6 +30,7 @@ types:
         getter_name: scale
         setter_name: scale
         type: Math::Vector3
+        editor_editable: true
         dirty_flag:
           - dirty
           - world_dirty

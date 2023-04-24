@@ -55,7 +55,6 @@ namespace Low {
         Math::Vector3 l_Vector = Math::VectorUtil::to_euler(p_Quaternion);
 
         if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
-          LOW_LOG_DEBUG << l_Vector << LOW_LOG_END;
           p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
         }
       }

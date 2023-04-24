@@ -15,6 +15,33 @@ namespace Low {
   namespace Core {
     namespace System {
       namespace MeshRenderer {
+        static void render_submesh(Submesh &p_Submesh,
+                                   Math::Matrix4x4 &p_TransformMatrix,
+                                   Renderer::Material p_Material,
+                                   uint32_t p_EntityIndex)
+        {
+          Renderer::RenderObject i_RenderObject;
+          i_RenderObject.entity_id = p_EntityIndex;
+          i_RenderObject.mesh = p_Submesh.mesh;
+          i_RenderObject.material = p_Material;
+          i_RenderObject.transform =
+              p_TransformMatrix * p_Submesh.transformation;
+
+          Renderer::get_main_renderflow().register_renderobject(i_RenderObject);
+        }
+
+        static void render_mesh(MeshResource p_MeshResource,
+                                Math::Matrix4x4 &p_TransformMatrix,
+                                Renderer::Material p_Material,
+                                uint32_t p_EntityIndex)
+        {
+          for (uint32_t i = 0u; i < p_MeshResource.get_submeshes().size();
+               ++i) {
+            render_submesh(p_MeshResource.get_submeshes()[i], p_TransformMatrix,
+                           p_Material, p_EntityIndex);
+          }
+        }
+
         void tick(float p_Delta)
         {
           Component::MeshRenderer *l_MeshRenderers =
@@ -37,17 +64,15 @@ namespace Low {
               continue;
             }
 
-            Renderer::RenderObject i_RenderObject;
-            i_RenderObject.entity_id = i_MeshRenderer.get_entity().get_index();
-            i_RenderObject.mesh =
-                i_MeshRenderer.get_mesh().get_lod0().get_renderer_mesh();
-            i_RenderObject.material = Renderer::Material::ms_LivingInstances[0];
-            i_RenderObject.world_position = i_Transform.get_world_position();
-            i_RenderObject.world_rotation = i_Transform.get_world_rotation();
-            i_RenderObject.world_scale = i_Transform.get_world_scale();
+            Math::Matrix4x4 i_TransformMatrix =
+                glm::translate(glm::mat4(1.0f),
+                               i_Transform.get_world_position()) *
+                glm::toMat4(i_Transform.get_world_rotation()) *
+                glm::scale(glm::mat4(1.0f), i_Transform.get_world_scale());
 
-            Renderer::get_main_renderflow().register_renderobject(
-                i_RenderObject);
+            render_mesh(i_MeshRenderer.get_mesh().get_lod0(), i_TransformMatrix,
+                        Renderer::Material::ms_LivingInstances[0],
+                        i_MeshRenderer.get_entity().get_index());
           }
         }
       } // namespace MeshRenderer

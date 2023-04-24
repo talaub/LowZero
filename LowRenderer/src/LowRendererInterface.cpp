@@ -185,7 +185,6 @@ namespace Low {
 
         static void recreate_pipeline(Util::String p_OutPath)
         {
-
           bool l_Waited = false;
 
           for (uint32_t i = 0; i < g_GraphicsPipelines[p_OutPath].size(); ++i) {
@@ -234,7 +233,9 @@ namespace Low {
 
         void tick(float p_Delta)
         {
+#if LOW_RENDERER_COMPILE_SHADERS
           do_tick(p_Delta);
+#endif
         }
 
         void delist_compute_pipeline(ComputePipeline p_Pipeline)

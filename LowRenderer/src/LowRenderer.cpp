@@ -178,16 +178,16 @@ namespace Low {
       g_PendingRenderFlowUpdates.push_back(l_UpdateData);
     }
 
-    Mesh upload_mesh(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
+    Mesh upload_mesh(Util::Name p_Name, Util::Resource::MeshInfo &p_MeshInfo)
     {
       Mesh l_Mesh = Mesh::make(p_Name);
 
-      l_Mesh.set_vertex_buffer_start(
-          g_VertexBuffer.write(p_Mesh.vertices.data(), p_Mesh.vertices.size()));
-      l_Mesh.set_index_buffer_start(
-          g_IndexBuffer.write(p_Mesh.indices.data(), p_Mesh.indices.size()));
-      l_Mesh.set_vertex_count(p_Mesh.vertices.size());
-      l_Mesh.set_index_count(p_Mesh.indices.size());
+      l_Mesh.set_vertex_buffer_start(g_VertexBuffer.write(
+          p_MeshInfo.vertices.data(), p_MeshInfo.vertices.size()));
+      l_Mesh.set_index_buffer_start(g_IndexBuffer.write(
+          p_MeshInfo.indices.data(), p_MeshInfo.indices.size()));
+      l_Mesh.set_vertex_count(p_MeshInfo.vertices.size());
+      l_Mesh.set_index_count(p_MeshInfo.indices.size());
 
       return l_Mesh;
     }
@@ -547,7 +547,7 @@ namespace Low {
       window_initialize(l_Window, l_WindowInit);
 
       g_Context =
-          Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
+          Interface::Context::make(N(DefaultContext), &l_Window, 2, false);
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 MeshBufferType::VERTEX,

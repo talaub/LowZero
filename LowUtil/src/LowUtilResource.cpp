@@ -45,11 +45,74 @@ namespace Low {
         }
       }
 
+      static void parse_mesh(const aiMesh *p_AiMesh, MeshInfo &p_MeshInfo)
+      {
+
+        LOW_ASSERT(p_AiMesh->HasPositions(),
+                   "Mesh has no position information");
+        LOW_ASSERT(p_AiMesh->HasNormals(), "Mesh has no normal information");
+        LOW_ASSERT(p_AiMesh->HasTangentsAndBitangents(),
+                   "Mesh has no tanged/bitangent information");
+
+        p_MeshInfo.vertices.resize(p_AiMesh->mNumVertices);
+        for (uint32_t i = 0u; i < p_AiMesh->mNumVertices; ++i) {
+          p_MeshInfo.vertices[i].position = {p_AiMesh->mVertices[i].x,
+                                             p_AiMesh->mVertices[i].y,
+                                             p_AiMesh->mVertices[i].z};
+
+          p_MeshInfo.vertices[i].texture_coordinates = {
+              p_AiMesh->mTextureCoords[0][i].x,
+              p_AiMesh->mTextureCoords[0][i].y};
+
+          p_MeshInfo.vertices[i].normal = {p_AiMesh->mNormals[i].x,
+                                           p_AiMesh->mNormals[i].y,
+                                           p_AiMesh->mNormals[i].z};
+
+          p_MeshInfo.vertices[i].tangent = {p_AiMesh->mTangents[i].x,
+                                            p_AiMesh->mTangents[i].y,
+                                            p_AiMesh->mTangents[i].z};
+          p_MeshInfo.vertices[i].bitangent = {p_AiMesh->mBitangents[i].x,
+                                              p_AiMesh->mBitangents[i].y,
+                                              p_AiMesh->mBitangents[i].z};
+        }
+
+        LOW_ASSERT(p_AiMesh->HasFaces(), "Mesh has no index information");
+        for (uint32_t i = 0u; i < p_AiMesh->mNumFaces; ++i) {
+          for (uint32_t j = 0u; j < p_AiMesh->mFaces[i].mNumIndices; ++j) {
+            p_MeshInfo.indices.push_back(p_AiMesh->mFaces[i].mIndices[j]);
+          }
+        }
+      }
+
+      static void parse_submesh(const aiScene *p_AiScene,
+                                const aiNode *p_AiNode, Mesh &p_Mesh,
+                                Math::Matrix4x4 &p_Transformation)
+      {
+        aiMatrix4x4 l_TransformationMatrix = p_AiNode->mTransformation;
+
+        Submesh l_Submesh;
+
+        l_Submesh.transform = *(Math::Matrix4x4 *)&l_TransformationMatrix;
+
+        l_Submesh.transform = p_Transformation * l_Submesh.transform;
+
+        l_Submesh.meshInfos.resize(p_AiNode->mNumMeshes);
+
+        for (uint32_t i = 0; i < l_Submesh.meshInfos.size(); ++i) {
+          parse_mesh(p_AiScene->mMeshes[p_AiNode->mMeshes[i]],
+                     l_Submesh.meshInfos[i]);
+        }
+
+        p_Mesh.submeshes.push_back(l_Submesh);
+
+        for (uint32_t i = 0; i < p_AiNode->mNumChildren; ++i) {
+          parse_submesh(p_AiScene, p_AiNode->mChildren[i], p_Mesh,
+                        l_Submesh.transform);
+        }
+      }
+
       void load_mesh(String p_FilePath, Mesh &p_Mesh)
       {
-        // TODO: This is a test implementation that only reads the toplevel mesh
-        // from a file
-
         Assimp::Importer l_Importer;
         const aiScene *l_AiScene = l_Importer.ReadFile(
             p_FilePath.c_str(),
@@ -57,44 +120,12 @@ namespace Low {
 
         LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
 
-        const aiMesh *l_AiMesh = l_AiScene->mMeshes[0];
+        const aiNode *l_RootNode = l_AiScene->mRootNode;
 
-        LOW_ASSERT(l_AiMesh->HasPositions(),
-                   "Mesh has no position information");
-        LOW_ASSERT(l_AiMesh->HasNormals(), "Mesh has no normal information");
-        LOW_ASSERT(l_AiMesh->HasTangentsAndBitangents(),
-                   "Mesh has no tanged/bitangent information");
+        Math::Matrix4x4 l_Transformation = Math::Matrix4x4(1.0);
 
-        p_Mesh.vertices.resize(l_AiMesh->mNumVertices);
-        for (uint32_t i = 0u; i < l_AiMesh->mNumVertices; ++i) {
-          p_Mesh.vertices[i].position = {l_AiMesh->mVertices[i].x,
-                                         l_AiMesh->mVertices[i].y,
-                                         l_AiMesh->mVertices[i].z};
-
-          p_Mesh.vertices[i].texture_coordinates = {
-              l_AiMesh->mTextureCoords[0][i].x,
-              l_AiMesh->mTextureCoords[0][i].y};
-
-          p_Mesh.vertices[i].normal = {l_AiMesh->mNormals[i].x,
-                                       l_AiMesh->mNormals[i].y,
-                                       l_AiMesh->mNormals[i].z};
-
-          p_Mesh.vertices[i].tangent = {l_AiMesh->mTangents[i].x,
-                                        l_AiMesh->mTangents[i].y,
-                                        l_AiMesh->mTangents[i].z};
-          p_Mesh.vertices[i].bitangent = {l_AiMesh->mBitangents[i].x,
-                                          l_AiMesh->mBitangents[i].y,
-                                          l_AiMesh->mBitangents[i].z};
-        }
-
-        LOW_ASSERT(l_AiMesh->HasFaces(), "Mesh has no index information");
-        for (uint32_t i = 0u; i < l_AiMesh->mNumFaces; ++i) {
-          for (uint32_t j = 0u; j < l_AiMesh->mFaces[i].mNumIndices; ++j) {
-            p_Mesh.indices.push_back(l_AiMesh->mFaces[i].mIndices[j]);
-          }
-        }
+        parse_submesh(l_AiScene, l_RootNode, p_Mesh, l_Transformation);
       }
-
     } // namespace Resource
   }   // namespace Util
 } // namespace Low

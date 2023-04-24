@@ -24,10 +24,21 @@ namespace Low {
         Math::Vector3 bitangent;
       };
 
-      struct Mesh
+      struct MeshInfo
       {
         List<Vertex> vertices;
         List<uint32_t> indices;
+      };
+
+      struct Submesh
+      {
+        Math::Matrix4x4 transform;
+        List<MeshInfo> meshInfos;
+      };
+
+      struct Mesh
+      {
+        List<Submesh> submeshes;
       };
 
       LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image);

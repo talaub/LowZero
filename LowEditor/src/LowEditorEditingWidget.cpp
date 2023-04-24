@@ -12,6 +12,7 @@
 #include "LowCoreTransform.h"
 
 #include "LowMathQuaternionUtil.h"
+#include <stdint.h>
 
 namespace Low {
   namespace Editor {
@@ -35,11 +36,11 @@ namespace Low {
       if (ImGui::Button(ICON_FA_SYNC)) {
         l_Operation = ImGuizmo::ROTATE;
       }
+      ImGui::SameLine();
+      if (ImGui::Button(ICON_FA_ARROWS_ALT_H)) {
+        l_Operation = ImGuizmo::SCALE;
+      }
       ImGui::End();
-
-      static const float identityMatrix[16] = {1.f, 0.f, 0.f, 0.f, 0.f, 1.f,
-                                               0.f, 0.f, 0.f, 0.f, 1.f, 0.f,
-                                               0.f, 0.f, 0.f, 1.f};
 
       ImGuizmo::SetDrawlist();
       ImGuizmo::SetOrthographic(false);
@@ -66,41 +67,57 @@ namespace Low {
       if (l_Entity.is_alive()) {
         Core::Component::Transform l_Transform = l_Entity.get_transform();
 
-        Math::Matrix4x4 l_ModelMatrix =
+        float l_ModelMatrix[16];
+        Math::Vector3 l_SourcePosition = l_Transform.get_world_position();
+        Math::Vector3 l_SourceEuler =
+            Math::VectorUtil::to_euler(l_Transform.get_world_rotation());
+        Math::Vector3 l_SourceScale = l_Transform.get_world_scale();
+
+        Math::Matrix4x4 l_TransformMatrix =
             glm::translate(glm::mat4(1.0f), l_Transform.get_world_position()) *
             glm::toMat4(l_Transform.get_world_rotation()) *
             glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
 
-        /*
-              ImGuizmo::DrawGrid((float *)&l_ViewMatrix, (float
-           *)&l_ProjectionMatrix, identityMatrix, 100.f);
-        */
-
-        /*
-              ImGuizmo::DrawCubes((float *)&l_ViewMatrix,
-                                  (float *)&l_ProjectionMatrix,
-                                  (float *)&l_ModelMatrix, 1);
-        */
+        ImGuizmo::RecomposeMatrixFromComponents(
+            (float *)&l_SourcePosition, (float *)&l_SourceEuler,
+            (float *)&l_SourceScale, l_ModelMatrix);
 
         if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
                                  (float *)&l_ProjectionMatrix, l_Operation,
-                                 ImGuizmo::LOCAL, (float *)&l_ModelMatrix, NULL,
-                                 NULL, NULL, NULL)) {
-          Math::Vector3 l_Position;
-          Math::Vector3 l_Rotation;
-          Math::Vector3 l_Scale;
+                                 ImGuizmo::LOCAL, (float *)&l_TransformMatrix,
+                                 NULL, NULL, NULL, NULL)) {
+
+          /*
+          float l_Position[3];
+          float l_Rotation[3];
+          float l_Scale[3];
 
           ImGuizmo::DecomposeMatrixToComponents(
-              (float *)&l_ModelMatrix, (float *)&l_Position,
+              (float *)&l_TransformMatrix, (float *)&l_Position,
               (float *)&l_Rotation, (float *)&l_Scale);
 
-          Math::Quaternion l_RotQuat = glm::quat_cast(l_ModelMatrix);
+                Math::Quaternion l_RotQuat = Math::VectorUtil::from_euler(
+                    Math::Vector3(l_Rotation[0], l_Rotation[1], l_Rotation[2]));
+          Math::Quaternion l_RotQuat = glm::quat_cast(l_TransformMatrix);
 
-          l_Transform.position(l_Position);
+          l_Transform.position(
+              Math::Vector3(l_Position[0], l_Position[1], l_Position[2]));
           l_Transform.rotation(l_RotQuat);
-          /*
-                l_Transform.scale(l_Scale);
+           l_Transform.scale(Math::Vector3(l_Scale[0], l_Scale[1],
+           l_Scale[2]));
           */
+
+          glm::vec3 scale;
+          glm::quat rotation;
+          glm::vec3 translation;
+          glm::vec3 skew;
+          glm::vec4 perspective;
+          glm::decompose(l_TransformMatrix, scale, rotation, translation, skew,
+                         perspective);
+
+          l_Transform.position(translation);
+          l_Transform.rotation(rotation);
+          l_Transform.scale(scale);
         }
       }
     }
@@ -238,8 +255,8 @@ namespace Low {
       l_Cylinder.radius = 0.3f;
       l_Cylinder.height = 8.0f;
 
-      Core::DebugGeometry::render_cylinder(l_Cylinder, {0.0f, 0.0f, 1.0f, 1.0f},
-                                           true, false);
+      Core::DebugGeometry::render_cylinder(l_Cylinder, {0.0f,
+      0.0f, 1.0f, 1.0f}, true, false);
 
       Math::Cone l_Cone;
       l_Cone.position = {4.0f, 2.0f, 3.0f};

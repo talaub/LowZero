@@ -92,7 +92,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(lod0);
-        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, lod0);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MeshResource::TYPE_ID;

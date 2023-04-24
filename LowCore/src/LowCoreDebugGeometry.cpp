@@ -111,24 +111,20 @@ namespace Low {
       }
 
       void render_mesh(Renderer::Mesh p_Mesh, Renderer::Material p_Material,
-                       Math::Color p_Color, Math::Vector3 p_Position,
-                       Math::Quaternion p_Rotation, Math::Vector3 p_Scale)
+                       Math::Color p_Color, Math::Matrix4x4 p_Transformation)
       {
         Renderer::RenderObject l_RenderObject;
         l_RenderObject.color = p_Color;
         l_RenderObject.material = p_Material;
         l_RenderObject.mesh = p_Mesh;
         l_RenderObject.entity_id = 0;
-        l_RenderObject.world_position = p_Position;
-        l_RenderObject.world_rotation = p_Rotation;
-        l_RenderObject.world_scale = p_Scale;
+        l_RenderObject.transform = p_Transformation;
 
         Renderer::get_main_renderflow().register_renderobject(l_RenderObject);
       }
 
-      void render_mesh(Renderer::Mesh p_Mesh, Math::Color p_Color,
-                       Math::Vector3 p_Position, Math::Quaternion p_Rotation,
-                       Math::Vector3 p_Scale, bool p_DepthTest,
+      void render_mesh(MeshResource p_MeshResource, Math::Color p_Color,
+                       Math::Matrix4x4 &p_Transformation, bool p_DepthTest,
                        bool p_Wireframe)
       {
         Renderer::Material l_Material = g_Materials.onesided_fill_depthtested;
@@ -145,33 +141,51 @@ namespace Low {
           }
         }
 
-        render_mesh(p_Mesh, l_Material, p_Color, p_Position, p_Rotation,
-                    p_Scale);
+        for (uint32_t i = 0u; i < p_MeshResource.get_submeshes().size(); ++i) {
+          render_mesh(p_MeshResource.get_submeshes()[i].mesh, l_Material,
+                      p_Color,
+                      p_Transformation *
+                          p_MeshResource.get_submeshes()[i].transformation);
+        }
       }
 
       void render_box(Math::Box p_Box, Math::Color p_Color, bool p_DepthTest,
                       bool p_Wireframe)
       {
-        render_mesh(g_Meshes.cube.get_renderer_mesh(), p_Color, p_Box.position,
-                    p_Box.rotation, p_Box.halfExtents * 2.0f, p_DepthTest,
+        Math::Matrix4x4 l_Transform =
+            glm::translate(glm::mat4(1.0f), p_Box.position) *
+            glm::toMat4(p_Box.rotation) *
+            glm::scale(glm::mat4(1.0f), p_Box.halfExtents * 2.0f);
+
+        render_mesh(g_Meshes.cube, p_Color, l_Transform, p_DepthTest,
                     p_Wireframe);
       }
 
       void render_cylinder(Math::Cylinder p_Cylinder, Math::Color p_Color,
                            bool p_DepthTest, bool p_Wireframe)
       {
-        render_mesh(g_Meshes.cylinder.get_renderer_mesh(), p_Color,
-                    p_Cylinder.position, p_Cylinder.rotation,
-                    {p_Cylinder.radius, p_Cylinder.height, p_Cylinder.radius},
-                    p_DepthTest, p_Wireframe);
+        Math::Matrix4x4 l_Transform =
+            glm::translate(glm::mat4(1.0f), p_Cylinder.position) *
+            glm::toMat4(p_Cylinder.rotation) *
+            glm::scale(glm::mat4(1.0f),
+                       Math::Vector3(p_Cylinder.radius, p_Cylinder.height,
+                                     p_Cylinder.radius));
+
+        render_mesh(g_Meshes.cylinder, p_Color, l_Transform, p_DepthTest,
+                    p_Wireframe);
       }
 
       void render_cone(Math::Cone p_Cone, Math::Color p_Color, bool p_DepthTest,
                        bool p_Wireframe)
       {
-        render_mesh(g_Meshes.cone.get_renderer_mesh(), p_Color, p_Cone.position,
-                    p_Cone.rotation,
-                    {p_Cone.radius, p_Cone.height, p_Cone.radius}, p_DepthTest,
+        Math::Matrix4x4 l_Transform =
+            glm::translate(glm::mat4(1.0f), p_Cone.position) *
+            glm::toMat4(p_Cone.rotation) *
+            glm::scale(
+                glm::mat4(1.0f),
+                Math::Vector3(p_Cone.radius, p_Cone.height, p_Cone.radius));
+
+        render_mesh(g_Meshes.cone, p_Color, l_Transform, p_DepthTest,
                     p_Wireframe);
       }
 

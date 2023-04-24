@@ -135,5 +135,10 @@ namespace Low {
 
       // ImGui::ShowDemoWindow();
     }
+
+    DetailsWidget *get_details_widget()
+    {
+      return g_DetailsWidget;
+    }
   } // namespace Editor
 } // namespace Low

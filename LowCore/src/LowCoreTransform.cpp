@@ -140,7 +140,7 @@ namespace Low {
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(scale);
-          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -510,9 +510,17 @@ namespace Low {
         Low::Math::Quaternion l_Rotation = rotation();
         Low::Math::Vector3 l_Scale = scale();
 
+        /*
+              LOW_LOG_DEBUG << "-----------TRANSFORM---------" << LOW_LOG_END;
+              LOW_LOG_DEBUG << l_Position << LOW_LOG_END;
+              LOW_LOG_DEBUG << l_Rotation << LOW_LOG_END;
+              LOW_LOG_DEBUG << l_Scale << LOW_LOG_END;
+        */
+
         Transform l_Parent = get_parent();
 
         if (l_Parent.is_alive()) {
+          LOW_LOG_ERROR << "Parent alive" << LOW_LOG_END;
           if (l_Parent.is_world_dirty()) {
             l_Parent.recalculate_world_transform();
           }

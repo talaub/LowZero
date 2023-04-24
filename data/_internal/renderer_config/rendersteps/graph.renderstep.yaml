@@ -9,6 +9,7 @@ rendertargets:
   - renderflow:GBufferNormals
   - renderflow:GBufferMetalness
   - renderflow:GBufferRoughness
+  - renderflow:GBufferBentNormals
   - renderflow:EntityIndexMap
 depth_rendertarget: renderflow:GBufferDepth
 depth_test: true

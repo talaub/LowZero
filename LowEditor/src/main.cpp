@@ -48,7 +48,7 @@ static void setup_scene()
   Low::Core::MeshAsset l_SphereMeshAsset =
       Low::Core::MeshAsset::make(N(Sphere));
   Low::Core::MeshResource l_SphereMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/meshes/sphere.glb");
+      Low::Util::String(LOW_DATA_PATH) + "\\assets\\meshes\\sphere.glb");
   l_SphereMeshAsset.set_lod0(l_SphereMeshResource);
 
   {
@@ -61,13 +61,13 @@ static void setup_scene()
 
   Low::Core::MeshAsset l_CubeMeshAsset = Low::Core::MeshAsset::make(N(Cube));
   Low::Core::MeshResource l_CubeMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/meshes/cube.glb");
+      Low::Util::String(LOW_DATA_PATH) + "\\assets\\meshes\\cube.glb");
   l_CubeMeshAsset.set_lod0(l_CubeMeshResource);
 
   Low::Core::MeshAsset l_SuzanneMeshAsset =
       Low::Core::MeshAsset::make(N(Suzanne));
   Low::Core::MeshResource l_SuzanneMeshResource = Low::Core::MeshResource::make(
-      Low::Util::String(LOW_DATA_PATH) + "/assets/meshes/suzanne.glb");
+      Low::Util::String(LOW_DATA_PATH) + "\\assets\\meshes\\suzanne.glb");
   l_SuzanneMeshAsset.set_lod0(l_SuzanneMeshResource);
 
   {
@@ -106,6 +106,7 @@ static void setup_scene()
     l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
     l_Transform.scale(Low::Math::Vector3(1.0f));
   }
+
   {
     Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Monkey));
     Low::Core::Component::Transform l_Transform =

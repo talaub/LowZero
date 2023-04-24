@@ -9,5 +9,6 @@ types:
       - LowCoreMeshResource.h
     properties:
       lod0:
+        editor_editable: true
         type: MeshResource
         handle: true

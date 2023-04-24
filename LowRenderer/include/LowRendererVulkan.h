@@ -31,6 +31,8 @@ namespace Low {
 
       struct Context
       {
+        uint32_t m_Id;
+
         VkSurfaceKHR m_Surface;
         VkInstance m_Instance;
         VkPhysicalDevice m_PhysicalDevice;
@@ -46,6 +48,9 @@ namespace Low {
         VkFence *m_InFlightFences;
         VkCommandBuffer *m_CommandBuffers;
 
+        VkQueue m_TransferQueue;
+        VkSemaphore *m_TransferFinishedSemaphores;
+
         VkCommandPool m_CommandPool;
         VkDescriptorPool m_DescriptorPool;
 
@@ -60,6 +65,10 @@ namespace Low {
         uint32_t *m_CommittedPipelineResourceSignatures;
 
         VkDescriptorPool m_ImGuiDescriptorPool;
+
+        VkBuffer m_StagingBuffer;
+        VkDeviceMemory m_StagingBufferMemory;
+        VkDeviceSize m_StagingBufferSize;
       };
 
       struct Renderpass

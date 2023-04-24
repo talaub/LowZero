@@ -9,9 +9,7 @@ namespace Low {
   namespace Renderer {
     struct RenderObject
     {
-      Math::Vector3 world_position;
-      Math::Quaternion world_rotation;
-      Math::Vector3 world_scale;
+      Math::Matrix4x4 transform;
 
       Mesh mesh;
       Material material;

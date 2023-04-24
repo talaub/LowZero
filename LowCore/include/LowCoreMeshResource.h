@@ -15,12 +15,17 @@
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct Submesh
+    {
+      Math::Matrix4x4 transformation;
+      Renderer::Mesh mesh;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_CORE_API MeshResourceData
     {
       Util::String path;
-      Renderer::Mesh renderer_mesh;
+      Util::List<Submesh> submeshes;
       uint32_t reference_count;
       Low::Util::Name name;
 
@@ -89,7 +94,7 @@ namespace Low {
 
       Util::String &get_path() const;
 
-      Renderer::Mesh get_renderer_mesh() const;
+      Util::List<Submesh> &get_submeshes() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -103,7 +108,6 @@ namespace Low {
       static uint32_t create_instance();
       static void increase_budget();
       void set_path(Util::String &p_Value);
-      void set_renderer_mesh(Renderer::Mesh p_Value);
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
     };

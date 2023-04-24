@@ -85,13 +85,8 @@ namespace Low {
                mit != p_Step.get_renderobjects()[pit->get_name()].end();
                ++mit) {
             for (auto it = mit->second.begin(); it != mit->second.end();) {
-              Math::Matrix4x4 l_ModelMatrix =
-                  glm::translate(glm::mat4(1.0f), it->world_position) *
-                  glm::toMat4(it->world_rotation) *
-                  glm::scale(glm::mat4(1.0f), it->world_scale);
-
               Math::Matrix4x4 l_MVPMatrix =
-                  l_ProjectionMatrix * l_ViewMatrix * l_ModelMatrix;
+                  l_ProjectionMatrix * l_ViewMatrix * it->transform;
 
               l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
 
