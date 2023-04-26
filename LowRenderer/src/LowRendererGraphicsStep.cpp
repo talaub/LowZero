@@ -665,8 +665,6 @@ namespace Low {
                                        Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
-      p_Step.get_renderpasses()[p_RenderFlow].begin();
-
       RenderObjectShaderInfo l_ObjectShaderInfos[32];
       Math::Vector4 l_Colors[32];
       uint32_t l_ObjectIndex = 0;
@@ -710,8 +708,8 @@ namespace Low {
           .get_buffer_resource(N(_color_buffer))
           .set((void *)l_Colors);
 
+      p_Step.get_renderpasses()[p_RenderFlow].begin();
       GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
-
       p_Step.get_renderpasses()[p_RenderFlow].end();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
     }

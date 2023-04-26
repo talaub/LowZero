@@ -189,6 +189,20 @@ namespace Low {
       l_Mesh.set_vertex_count(p_MeshInfo.vertices.size());
       l_Mesh.set_index_count(p_MeshInfo.indices.size());
 
+      /*
+      LOW_LOG_DEBUG << "UPLOADED: " << p_Name
+                   << " VERTEX: " << l_Mesh.get_vertex_buffer_start() << " -> "
+                   << l_Mesh.get_vertex_count() << " ("
+                   << (l_Mesh.get_vertex_buffer_start() +
+                       l_Mesh.get_vertex_count())
+                   << ")"
+                   << " INDEX: " << l_Mesh.get_index_buffer_start() << " -> "
+                   << l_Mesh.get_index_count() << " ("
+                   << (l_Mesh.get_index_buffer_start() +
+                       l_Mesh.get_index_count())
+                   << ")" << LOW_LOG_END;
+      */
+
       return l_Mesh;
     }
 
@@ -547,7 +561,7 @@ namespace Low {
       window_initialize(l_Window, l_WindowInit);
 
       g_Context =
-          Interface::Context::make(N(DefaultContext), &l_Window, 2, false);
+          Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 MeshBufferType::VERTEX,
@@ -673,15 +687,6 @@ namespace Low {
 
     void tick(float p_Delta)
     {
-      Resource::Buffer l_WriteBackBuffer =
-          g_MainRenderFlow.get_resources().get_buffer_resource(
-              N(IdWritebackBuffer));
-
-      uint32_t l_HoveredIndex;
-
-      Backend::callbacks().buffer_read(l_WriteBackBuffer.get_buffer(),
-                                       &l_HoveredIndex, sizeof(uint32_t), 0);
-
       g_Context.get_window().tick();
 
       Interface::PipelineManager::tick(p_Delta);

@@ -71,8 +71,6 @@ namespace Low {
             .get_buffer_resource(N(_directional_light_info))
             .set(&l_DirectionalLightShaderInfo);
 
-        p_Step.get_renderpasses()[p_RenderFlow].begin();
-
         RenderObjectShaderInfo l_ObjectShaderInfos[32];
         uint32_t l_ObjectIndex = 0;
 
@@ -101,8 +99,8 @@ namespace Low {
             .get_buffer_resource(N(_renderobject_buffer))
             .set((void *)l_ObjectShaderInfos);
 
+        p_Step.get_renderpasses()[p_RenderFlow].begin();
         GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
-
         p_Step.get_renderpasses()[p_RenderFlow].end();
       }
 

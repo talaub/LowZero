@@ -204,7 +204,7 @@ void main()
   float l_Depth = texture(GBufferDepth, l_TextureCoordinates).x;
 
   if (l_Depth >= 1.0) {
-    imageStore(out_image, l_AbsolutePixel, vec4(0, 0, 0, 0));
+    imageStore(out_image, l_AbsolutePixel, vec4(0.8, 0.8, 1, 1));
     return;
   }
 

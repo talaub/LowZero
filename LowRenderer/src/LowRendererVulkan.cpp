@@ -41,23 +41,6 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
-      struct UploadCommandBuffers
-      {};
-
-      struct StagingBufferSlot
-      {
-        Backend::Context *context;
-        uint32_t start;
-        uint32_t length;
-        bool free;
-        VkFence fence;
-      };
-
-      Util::Map<uint32_t, Util::List<StagingBufferSlot>>
-          g_ScheduledBufferCopies;
-
-      uint32_t g_NextContextId = 0;
-
       void renderpass_create_internal(Backend::Renderpass &p_Renderpass,
                                       Backend::RenderpassCreateParams &p_Params,
                                       bool, bool);
@@ -377,24 +360,30 @@ namespace Low {
                                 VkBuffer p_SourceBuffer, VkBuffer p_DestBuffer,
                                 VkDeviceSize p_Size,
                                 VkDeviceSize p_SourceOffset = 0u,
-                                VkDeviceSize p_DestOffset = 0u,
-                                bool p_Immediate = false)
+                                VkDeviceSize p_DestOffset = 0u)
         {
-          VkCommandBufferAllocateInfo l_AllocInfo{};
-          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-          l_AllocInfo.commandPool = p_Context.vk.m_CommandPool;
-          l_AllocInfo.commandBufferCount = 1;
 
           VkCommandBuffer l_CommandBuffer;
-          vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
-                                   &l_CommandBuffer);
 
-          VkCommandBufferBeginInfo l_BeginInfo{};
-          l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-          l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+          bool l_UsingTransferCommandBuffer = p_Context.running;
 
-          vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo);
+          if (l_UsingTransferCommandBuffer) {
+            l_CommandBuffer = p_Context.vk.m_TransferCommandBuffer;
+          } else {
+            VkCommandBufferAllocateInfo l_AllocInfo{};
+            l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            l_AllocInfo.commandPool = p_Context.vk.m_TransferCommandPool;
+            l_AllocInfo.commandBufferCount = 1;
+            vkAllocateCommandBuffers(p_Context.vk.m_Device, &l_AllocInfo,
+                                     &l_CommandBuffer);
+
+            VkCommandBufferBeginInfo l_BeginInfo{};
+            l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            l_BeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+            vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo);
+          }
 
           VkBufferCopy l_CopyRegion{};
           l_CopyRegion.srcOffset = p_SourceOffset;
@@ -403,19 +392,22 @@ namespace Low {
           vkCmdCopyBuffer(l_CommandBuffer, p_SourceBuffer, p_DestBuffer, 1,
                           &l_CopyRegion);
 
-          vkEndCommandBuffer(l_CommandBuffer);
+          if (!l_UsingTransferCommandBuffer) {
+            vkEndCommandBuffer(l_CommandBuffer);
 
-          VkSubmitInfo l_SubmitInfo{};
-          l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-          l_SubmitInfo.commandBufferCount = 1;
-          l_SubmitInfo.pCommandBuffers = &l_CommandBuffer;
+            VkSubmitInfo l_SubmitInfo{};
+            l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            l_SubmitInfo.commandBufferCount = 1;
+            l_SubmitInfo.pCommandBuffers = &l_CommandBuffer;
 
-          vkQueueSubmit(p_Context.vk.m_GraphicsQueue, 1, &l_SubmitInfo,
-                        VK_NULL_HANDLE);
-          vkQueueWaitIdle(p_Context.vk.m_GraphicsQueue);
+            vkQueueSubmit(p_Context.vk.m_TransferQueue, 1, &l_SubmitInfo,
+                          VK_NULL_HANDLE);
+            vkQueueWaitIdle(p_Context.vk.m_TransferQueue);
 
-          vkFreeCommandBuffers(p_Context.vk.m_Device,
-                               p_Context.vk.m_CommandPool, 1, &l_CommandBuffer);
+            vkFreeCommandBuffers(p_Context.vk.m_Device,
+                                 p_Context.vk.m_TransferCommandPool, 1,
+                                 &l_CommandBuffer);
+          }
         }
 
         VkFormat vkformat_get_depth(Backend::Context &p_Context)
@@ -883,6 +875,60 @@ namespace Low {
           }
         }
 
+        static void create_staging_buffer(Backend::Context &p_Context)
+        {
+          VkSemaphoreCreateInfo l_SemaphoreInfo{};
+          l_SemaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+          LOW_ASSERT(vkCreateSemaphore(
+                         p_Context.vk.m_Device, &l_SemaphoreInfo, nullptr,
+                         &p_Context.vk.m_StagingBufferSemaphore) == VK_SUCCESS,
+                     "Failed to create staging buffer semaphore");
+
+          VkFenceCreateInfo l_FenceInfo{};
+          l_FenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+          l_FenceInfo.flags =
+              VK_FENCE_CREATE_SIGNALED_BIT; // Set to resolved immidiately to
+                                            // not get stuck on frame one
+
+          LOW_ASSERT(vkCreateFence(p_Context.vk.m_Device, &l_FenceInfo, nullptr,
+                                   &p_Context.vk.m_StagingBufferFence) ==
+                         VK_SUCCESS,
+                     "Failed to create staging buffer fence");
+
+          p_Context.vk.m_StagingBufferUsage = 0u;
+          p_Context.vk.m_ReadStagingBufferUsage = 0u;
+
+          uint32_t l_StagingBufferSize = 1 * LOW_MEGABYTE_I;
+          uint32_t l_ReadStagingBufferSize = 1 * LOW_KILOBYTE_I;
+
+          p_Context.vk.m_StagingBufferSize = l_StagingBufferSize;
+          Helper::create_buffer(
+              p_Context, l_StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+              p_Context.vk.m_StagingBuffer, p_Context.vk.m_StagingBufferMemory);
+
+          p_Context.vk.m_ReadStagingBufferSize = l_ReadStagingBufferSize;
+          Helper::create_buffer(p_Context, l_ReadStagingBufferSize,
+                                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                p_Context.vk.m_ReadStagingBuffer,
+                                p_Context.vk.m_ReadStagingBufferMemory);
+
+          VkCommandBufferAllocateInfo l_AllocInfo{};
+          l_AllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+          l_AllocInfo.commandPool = p_Context.vk.m_TransferCommandPool;
+          l_AllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+          l_AllocInfo.commandBufferCount = 1;
+
+          LOW_ASSERT(vkAllocateCommandBuffers(
+                         p_Context.vk.m_Device, &l_AllocInfo,
+                         &(p_Context.vk.m_TransferCommandBuffer)) == VK_SUCCESS,
+                     "Failed to allocate transfer command buffer");
+        }
+
         static void create_command_buffers(Backend::Context &p_Context)
         {
           p_Context.vk.m_CommandBuffers =
@@ -1115,7 +1161,8 @@ namespace Low {
           /*
           io.ConfigFlags |=
               ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-          // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable
+          // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      //
+          Enable
           // Gamepad Controls
                   */
 
@@ -1242,6 +1289,81 @@ namespace Low {
           Helper::end_single_time_commands(p_Context, l_CommandBuffer);
 
           ImGui_ImplVulkan_DestroyFontUploadObjects();
+        }
+
+        uint32_t staging_buffer_get_free_block(Backend::Context &p_Context,
+                                               uint32_t p_Size)
+        {
+          if (p_Context.vk.m_StagingBufferSize <=
+              p_Context.vk.m_StagingBufferUsage + p_Size) {
+
+            LOW_ASSERT(p_Size <= p_Context.vk.m_StagingBufferSize,
+                       "Requested data does not fit in staging buffer");
+
+            LOW_ASSERT(vkEndCommandBuffer(
+                           p_Context.vk.m_TransferCommandBuffer) == VK_SUCCESS,
+                       "Failed to stop recording transfer command buffer");
+
+            VkSubmitInfo l_TransferSubmitInfo{};
+            l_TransferSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+            // VkSemaphore l_WaitSemaphores[] = {};
+            VkPipelineStageFlags l_WaitStages[] = {
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+            l_TransferSubmitInfo.waitSemaphoreCount = 0;
+            l_TransferSubmitInfo.pWaitSemaphores = nullptr;
+            l_TransferSubmitInfo.pWaitDstStageMask = nullptr;
+            l_TransferSubmitInfo.commandBufferCount = 1;
+            l_TransferSubmitInfo.pCommandBuffers =
+                &p_Context.vk.m_TransferCommandBuffer;
+
+            l_TransferSubmitInfo.signalSemaphoreCount = 0;
+            l_TransferSubmitInfo.pSignalSemaphores = nullptr;
+
+            VkResult l_SubmitResult = vkQueueSubmit(
+                p_Context.vk.m_TransferQueue, 1, &l_TransferSubmitInfo,
+                p_Context.vk.m_StagingBufferFence);
+
+            LOW_ASSERT(l_SubmitResult == VK_SUCCESS,
+                       "Failed to submit transfer command buffer");
+
+            vkWaitForFences(p_Context.vk.m_Device, 1,
+                            &p_Context.vk.m_StagingBufferFence, VK_TRUE,
+                            UINT64_MAX);
+
+            vkResetFences(p_Context.vk.m_Device, 1,
+                          &p_Context.vk.m_StagingBufferFence);
+
+            p_Context.vk.m_StagingBufferUsage = 0;
+
+            VkCommandBufferBeginInfo l_BeginInfo{};
+            l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            l_BeginInfo.flags = 0;
+            l_BeginInfo.pInheritanceInfo = nullptr;
+
+            LOW_ASSERT(
+                vkBeginCommandBuffer(p_Context.vk.m_TransferCommandBuffer,
+                                     &l_BeginInfo) == VK_SUCCESS,
+                "Failed to begin recording transfer command buffer");
+          }
+
+          uint32_t l_StartHolder = p_Context.vk.m_StagingBufferUsage;
+          p_Context.vk.m_StagingBufferUsage += p_Size;
+
+          return l_StartHolder;
+        }
+
+        uint32_t read_staging_buffer_get_free_block(Backend::Context &p_Context,
+                                                    uint32_t p_Size)
+        {
+          LOW_ASSERT(p_Context.vk.m_StagingBufferSize >
+                         p_Context.vk.m_StagingBufferUsage + p_Size,
+                     "Read staging buffer blown");
+
+          uint32_t l_StartHolder = p_Context.vk.m_ReadStagingBufferUsage;
+          p_Context.vk.m_ReadStagingBufferUsage += p_Size;
+
+          return l_StartHolder;
         }
 
       } // namespace ContextHelper
@@ -1431,7 +1553,6 @@ namespace Low {
       void vk_context_create(Backend::Context &p_Context,
                              Backend::ContextCreateParams &p_Params)
       {
-        p_Context.vk.m_Id = g_NextContextId++;
         p_Context.framesInFlight = p_Params.framesInFlight;
         p_Context.vk.m_PipelineResourceSignatureIndex = 0u;
         p_Context.vk.m_PipelineResourceSignatures =
@@ -1489,9 +1610,23 @@ namespace Low {
               "Failed to create command pool");
         }
 
+        {
+          VkCommandPoolCreateInfo l_PoolInfo{};
+          l_PoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+          l_PoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+          l_PoolInfo.queueFamilyIndex =
+              l_QueueFamilyIndices.m_TransferFamily.value();
+
+          LOW_ASSERT(vkCreateCommandPool(
+                         p_Context.vk.m_Device, &l_PoolInfo, nullptr,
+                         &(p_Context.vk.m_TransferCommandPool)) == VK_SUCCESS,
+                     "Failed to create transfer command pool");
+        }
+
         ContextHelper::create_swapchain(p_Context);
 
         ContextHelper::create_sync_objects(p_Context);
+        ContextHelper::create_staging_buffer(p_Context);
         ContextHelper::create_command_buffers(p_Context);
 
         {
@@ -1531,17 +1666,6 @@ namespace Low {
                          p_Context.vk.m_Device, &l_PoolInfo, nullptr,
                          &(p_Context.vk.m_DescriptorPool)) == VK_SUCCESS,
                      "Failed to create descriptor pools");
-        }
-
-        {
-          uint32_t l_StagingBufferSize = LOW_KILOBYTE_I;
-
-          p_Context.vk.m_StagingBufferSize = l_StagingBufferSize;
-          Helper::create_buffer(
-              p_Context, l_StagingBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-              p_Context.vk.m_StagingBuffer, p_Context.vk.m_StagingBufferMemory);
         }
 
         p_Context.state = Backend::ContextState::SUCCESS;
@@ -1611,12 +1735,24 @@ namespace Low {
                                   p_Context.vk.m_DescriptorPool, nullptr);
           vkDestroyCommandPool(p_Context.vk.m_Device,
                                p_Context.vk.m_CommandPool, nullptr);
+          vkDestroyCommandPool(p_Context.vk.m_Device,
+                               p_Context.vk.m_TransferCommandPool, nullptr);
         }
 
         vkDestroyBuffer(p_Context.vk.m_Device, p_Context.vk.m_StagingBuffer,
                         nullptr);
         vkFreeMemory(p_Context.vk.m_Device, p_Context.vk.m_StagingBufferMemory,
                      nullptr);
+
+        vkDestroyBuffer(p_Context.vk.m_Device, p_Context.vk.m_ReadStagingBuffer,
+                        nullptr);
+        vkFreeMemory(p_Context.vk.m_Device,
+                     p_Context.vk.m_ReadStagingBufferMemory, nullptr);
+
+        vkDestroySemaphore(p_Context.vk.m_Device,
+                           p_Context.vk.m_StagingBufferSemaphore, nullptr);
+        vkDestroyFence(p_Context.vk.m_Device, p_Context.vk.m_StagingBufferFence,
+                       nullptr);
 
         vmaDestroyAllocator(p_Context.vk.m_Alloc);
 
@@ -1665,10 +1801,15 @@ namespace Low {
 
       uint8_t vk_frame_prepare(Backend::Context &p_Context)
       {
-        vkWaitForFences(
-            p_Context.vk.m_Device, 1,
-            &p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex],
-            VK_TRUE, UINT64_MAX);
+        VkFence l_Fences[] = {
+            p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex],
+            p_Context.vk.m_StagingBufferFence};
+
+        vkWaitForFences(p_Context.vk.m_Device, 2, l_Fences, VK_TRUE,
+                        UINT64_MAX);
+
+        p_Context.vk.m_StagingBufferUsage = 0u;
+        p_Context.vk.m_ReadStagingBufferUsage = 0u;
 
         p_Context.running = false;
 
@@ -1693,9 +1834,7 @@ namespace Low {
 
         p_Context.running = true;
 
-        vkResetFences(
-            p_Context.vk.m_Device, 1,
-            &p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex]);
+        vkResetFences(p_Context.vk.m_Device, 2, l_Fences);
 
         VkCommandBufferBeginInfo l_BeginInfo{};
         l_BeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1707,6 +1846,10 @@ namespace Low {
         LOW_ASSERT(vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo) ==
                        VK_SUCCESS,
                    "Failed to begin recording command buffer");
+
+        LOW_ASSERT(vkBeginCommandBuffer(p_Context.vk.m_TransferCommandBuffer,
+                                        &l_BeginInfo) == VK_SUCCESS,
+                   "Failed to begin recording transfer command buffer");
 
         p_Context.state = Backend::ContextState::SUCCESS;
         return p_Context.state;
@@ -1744,15 +1887,49 @@ namespace Low {
         LOW_ASSERT(vkEndCommandBuffer(l_CommandBuffer) == VK_SUCCESS,
                    "Failed to stop recording the command buffer");
 
+        {
+
+          LOW_ASSERT(vkEndCommandBuffer(p_Context.vk.m_TransferCommandBuffer) ==
+                         VK_SUCCESS,
+                     "Failed to stop recording transfer command buffer");
+
+          VkSubmitInfo l_TransferSubmitInfo{};
+          l_TransferSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+          // VkSemaphore l_WaitSemaphores[] = {};
+          VkPipelineStageFlags l_WaitStages[] = {
+              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+          l_TransferSubmitInfo.waitSemaphoreCount = 0;
+          l_TransferSubmitInfo.pWaitSemaphores = nullptr;
+          l_TransferSubmitInfo.pWaitDstStageMask = nullptr;
+          l_TransferSubmitInfo.commandBufferCount = 1;
+          l_TransferSubmitInfo.pCommandBuffers =
+              &p_Context.vk.m_TransferCommandBuffer;
+
+          VkSemaphore l_SignalSemaphores[] = {
+              p_Context.vk.m_StagingBufferSemaphore};
+          l_TransferSubmitInfo.signalSemaphoreCount = 1;
+          l_TransferSubmitInfo.pSignalSemaphores = l_SignalSemaphores;
+
+          VkResult l_SubmitResult = vkQueueSubmit(
+              p_Context.vk.m_TransferQueue, 1, &l_TransferSubmitInfo,
+              p_Context.vk.m_StagingBufferFence);
+
+          LOW_ASSERT(l_SubmitResult == VK_SUCCESS,
+                     "Failed to submit transfer command buffer");
+        }
+
         VkSubmitInfo l_SubmitInfo{};
         l_SubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
         VkSemaphore l_WaitSemaphores[] = {
             p_Context.vk
-                .m_ImageAvailableSemaphores[p_Context.currentFrameIndex]};
+                .m_ImageAvailableSemaphores[p_Context.currentFrameIndex],
+            p_Context.vk.m_StagingBufferSemaphore};
         VkPipelineStageFlags l_WaitStages[] = {
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        l_SubmitInfo.waitSemaphoreCount = 1;
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT};
+        l_SubmitInfo.waitSemaphoreCount = 2;
         l_SubmitInfo.pWaitSemaphores = l_WaitSemaphores;
         l_SubmitInfo.pWaitDstStageMask = l_WaitStages;
         l_SubmitInfo.commandBufferCount = 1;
@@ -1796,9 +1973,8 @@ namespace Low {
         } else {
           LOW_ASSERT(l_Result == VK_SUCCESS,
                      "Failed to present swapchain image");
-
-          p_Context.running = false;
         }
+        p_Context.running = false;
 
         p_Context.currentFrameIndex =
             (p_Context.currentFrameIndex + 1) % p_Context.framesInFlight;
@@ -3439,27 +3615,34 @@ namespace Low {
 
         VkBuffer l_StagingBuffer;
         VkDeviceMemory l_StagingBufferMemory;
-
-        Helper::create_buffer(*p_Buffer.context, p_DataSize,
-                              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                              l_StagingBuffer, l_StagingBufferMemory);
-
         void *l_Data;
-        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
-                    p_DataSize, 0, &l_Data);
+        uint32_t l_StagingBufferOffset = 0;
+
+        bool l_Running = p_Buffer.context->running;
+
+        LOW_ASSERT(
+            l_Running,
+            "Can only read from buffer when context is in running state");
+
+        l_StagingBuffer = p_Buffer.context->vk.m_ReadStagingBuffer;
+        l_StagingBufferMemory = p_Buffer.context->vk.m_ReadStagingBufferMemory;
+
+        l_StagingBufferOffset =
+            ContextHelper::read_staging_buffer_get_free_block(*p_Buffer.context,
+                                                              p_DataSize);
+
+        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
+                    p_Buffer.vk.m_StagingBufferReadOffset, p_DataSize, 0,
+                    &l_Data);
 
         Helper::copy_buffer(*p_Buffer.context, p_Buffer.vk.m_Buffer,
-                            l_StagingBuffer, p_DataSize, p_Start, 0, true);
+                            l_StagingBuffer, p_DataSize, p_Start,
+                            l_StagingBufferOffset);
 
         memcpy(p_Data, l_Data, (size_t)p_DataSize);
         vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
 
-        vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
-                        nullptr);
-        vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
-                     nullptr);
+        p_Buffer.vk.m_StagingBufferReadOffset = l_StagingBufferOffset;
       }
 
       void vk_buffer_write(Backend::Buffer &p_Buffer, void *p_Data,
@@ -3468,26 +3651,45 @@ namespace Low {
 
         VkBuffer l_StagingBuffer;
         VkDeviceMemory l_StagingBufferMemory;
-
-        Helper::create_buffer(*p_Buffer.context, p_DataSize,
-                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                              l_StagingBuffer, l_StagingBufferMemory);
-
         void *l_Data;
-        vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
-                    p_DataSize, 0, &l_Data);
+        uint32_t l_StagingBufferOffset = 0;
+
+        if (p_Buffer.context->running) {
+          l_StagingBuffer = p_Buffer.context->vk.m_StagingBuffer;
+          l_StagingBufferMemory = p_Buffer.context->vk.m_StagingBufferMemory;
+
+          l_StagingBufferOffset = ContextHelper::staging_buffer_get_free_block(
+              *p_Buffer.context, p_DataSize);
+
+          vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
+                      l_StagingBufferOffset, p_DataSize, 0, &l_Data);
+
+        } else {
+          Helper::create_buffer(*p_Buffer.context, p_DataSize,
+                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                l_StagingBuffer, l_StagingBufferMemory);
+
+          vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory, 0,
+                      p_DataSize, 0, &l_Data);
+
+          l_StagingBufferOffset = 0;
+        }
+
         memcpy(l_Data, p_Data, (size_t)p_DataSize);
         vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
 
         Helper::copy_buffer(*p_Buffer.context, l_StagingBuffer,
-                            p_Buffer.vk.m_Buffer, p_DataSize, 0, p_Start);
+                            p_Buffer.vk.m_Buffer, p_DataSize,
+                            l_StagingBufferOffset, p_Start);
 
-        vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
-                        nullptr);
-        vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
-                     nullptr);
+        if (!p_Buffer.context->running) {
+          vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
+                          nullptr);
+          vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
+                       nullptr);
+        }
       }
 
       void vk_buffer_set(Backend::Buffer &p_Buffer, void *p_Data)

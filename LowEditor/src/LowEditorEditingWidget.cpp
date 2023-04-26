@@ -261,12 +261,13 @@ namespace Low {
       if (l_AllowRendererBasedPicking) {
         l_HoverCoordinates = m_RenderFlowWidget->get_relative_hover_position();
 
+        uint32_t l_EntityIndex;
+        m_RenderFlowWidget->get_renderflow()
+            .get_resources()
+            .get_buffer_resource(N(IdWritebackBuffer))
+            .read(&l_EntityIndex, sizeof(uint32_t), 0);
+
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-          uint32_t l_EntityIndex;
-          m_RenderFlowWidget->get_renderflow()
-              .get_resources()
-              .get_buffer_resource(N(IdWritebackBuffer))
-              .read(&l_EntityIndex, sizeof(uint32_t), 0);
 
           Core::Entity l_Entity;
           if (l_EntityIndex != ~0u) {
