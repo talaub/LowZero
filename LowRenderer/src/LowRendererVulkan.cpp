@@ -3617,23 +3617,34 @@ namespace Low {
         VkDeviceMemory l_StagingBufferMemory;
         void *l_Data;
         uint32_t l_StagingBufferOffset = 0;
+        uint32_t l_ReadOffset = 0;
 
         bool l_Running = p_Buffer.context->running;
 
-        LOW_ASSERT(
-            l_Running,
-            "Can only read from buffer when context is in running state");
+        if (l_Running) {
 
-        l_StagingBuffer = p_Buffer.context->vk.m_ReadStagingBuffer;
-        l_StagingBufferMemory = p_Buffer.context->vk.m_ReadStagingBufferMemory;
+          l_StagingBuffer = p_Buffer.context->vk.m_ReadStagingBuffer;
+          l_StagingBufferMemory =
+              p_Buffer.context->vk.m_ReadStagingBufferMemory;
 
-        l_StagingBufferOffset =
-            ContextHelper::read_staging_buffer_get_free_block(*p_Buffer.context,
-                                                              p_DataSize);
+          l_StagingBufferOffset =
+              ContextHelper::read_staging_buffer_get_free_block(
+                  *p_Buffer.context, p_DataSize);
+
+          l_ReadOffset = p_Buffer.vk.m_StagingBufferReadOffset;
+        } else {
+          Helper::create_buffer(*p_Buffer.context, p_DataSize,
+                                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                l_StagingBuffer, l_StagingBufferMemory);
+
+          l_StagingBufferOffset = 0u;
+          l_ReadOffset = 0u;
+        }
 
         vkMapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
-                    p_Buffer.vk.m_StagingBufferReadOffset, p_DataSize, 0,
-                    &l_Data);
+                    l_ReadOffset, p_DataSize, 0, &l_Data);
 
         Helper::copy_buffer(*p_Buffer.context, p_Buffer.vk.m_Buffer,
                             l_StagingBuffer, p_DataSize, p_Start,
@@ -3642,7 +3653,14 @@ namespace Low {
         memcpy(p_Data, l_Data, (size_t)p_DataSize);
         vkUnmapMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory);
 
-        p_Buffer.vk.m_StagingBufferReadOffset = l_StagingBufferOffset;
+        if (l_Running) {
+          p_Buffer.vk.m_StagingBufferReadOffset = l_StagingBufferOffset;
+        } else {
+          vkDestroyBuffer(p_Buffer.context->vk.m_Device, l_StagingBuffer,
+                          nullptr);
+          vkFreeMemory(p_Buffer.context->vk.m_Device, l_StagingBufferMemory,
+                       nullptr);
+        }
       }
 
       void vk_buffer_write(Backend::Buffer &p_Buffer, void *p_Data,
