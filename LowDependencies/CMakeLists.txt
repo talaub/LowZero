@@ -15,3 +15,15 @@ target_include_directories(tlsf PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/tlsf"
 )
 cmake_minimum_required(VERSION 3.20)
+
+project(nativefiledialog)
+
+add_library(nativefiledialog STATIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_win.cpp"
+)
+
+target_include_directories(nativefiledialog PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/include"
+  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src"
+)

@@ -9,6 +9,7 @@ add_dependencies(LowEditor
   LowMath
   LowRenderer
   LowCore
+  nativefiledialog
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
@@ -30,4 +31,5 @@ target_link_libraries(LowEditor PRIVATE
   LowRenderer
   LowUtil
   LowMath
+  nativefiledialog
 )

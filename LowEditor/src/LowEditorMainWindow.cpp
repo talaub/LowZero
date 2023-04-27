@@ -10,8 +10,11 @@
 #include "LowEditorProfilerWidget.h"
 #include "LowEditorEditingWidget.h"
 #include "LowEditorAssetWidget.h"
+#include "LowEditorGui.h"
+#include "LowEditorResourceProcessor.h"
 
 #include "LowUtilContainers.h"
+#include "LowUtilString.h"
 
 #include "LowRendererTexture2D.h"
 
@@ -68,6 +71,31 @@ namespace Low {
       if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Scene")) {
           if (ImGui::MenuItem("Save", NULL, nullptr)) {
+          }
+
+          ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Resources")) {
+          if (ImGui::MenuItem("Import", NULL, nullptr)) {
+            Util::String l_Path = Gui::FileExplorer();
+
+            if (!l_Path.empty()) {
+              if (Util::StringHelper::ends_with(l_Path, Util::String(".png"))) {
+                ResourceProcessor::Image::Image2D l_Image;
+                ResourceProcessor::Image::load_png(l_Path, l_Image);
+                Util::String l_FileName = l_Path.substr(
+                    l_Path.find_last_of('\\') + 1,
+                    l_Path.find_last_of('.') - l_Path.find_last_of('\\') - 1);
+                ResourceProcessor::Image::process(Util::String(LOW_DATA_PATH) +
+                                                      "\\resources\\img2d\\" +
+                                                      l_FileName,
+                                                  l_Image);
+
+                LOW_LOG_INFO << "Image file '" << l_FileName
+                             << "' has been successfully imported."
+                             << LOW_LOG_END;
+              }
+            }
           }
 
           ImGui::EndMenu();

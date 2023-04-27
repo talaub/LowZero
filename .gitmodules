@@ -38,3 +38,6 @@
 [submodule "LowDependencies/ImGuizmo"]
 	path = LowDependencies/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "LowDependencies/nativefiledialog"]
+	path = LowDependencies/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog.git

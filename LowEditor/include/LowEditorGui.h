@@ -6,6 +6,7 @@ namespace Low {
   namespace Editor {
     namespace Gui {
       bool Vector3Edit(Math::Vector3 &p_Vector);
-    }
-  } // namespace Editor
+      Util::String FileExplorer();
+    } // namespace Gui
+  }   // namespace Editor
 } // namespace Low
