@@ -89,6 +89,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Material::is_alive;
       l_TypeInfo.destroy = &Material::destroy;
+      l_TypeInfo.serialize = &Material::serialize;
+      l_TypeInfo.deserialize = &Material::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Material::living_instances);
@@ -186,9 +188,52 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Material Material::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void Material::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
+      get_material_type().serialize(p_Node["material_type"]);
+      get_context().serialize(p_Node["context"]);
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void Material::serialize(Low::Util::Handle p_Handle,
+                             Low::Util::Yaml::Node &p_Node)
+    {
+      Material l_Material = p_Handle.get_id();
+      l_Material.serialize(p_Node);
+    }
+
+    Low::Util::Handle Material::deserialize(Low::Util::Yaml::Node &p_Node,
+                                            Low::Util::Handle p_Creator)
+    {
+      Material l_Handle = Material::make(N(Material));
+
+      l_Handle.set_material_type(
+          MaterialType::deserialize(p_Node["material_type"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_context(
+          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     MaterialType Material::get_material_type() const

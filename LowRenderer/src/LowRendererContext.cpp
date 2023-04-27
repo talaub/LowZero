@@ -102,6 +102,8 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Context::is_alive;
         l_TypeInfo.destroy = &Context::destroy;
+        l_TypeInfo.serialize = &Context::serialize;
+        l_TypeInfo.deserialize = &Context::deserialize;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Context::living_instances);
@@ -254,9 +256,59 @@ namespace Low {
         return ms_Capacity;
       }
 
+      Context Context::find_by_name(Low::Util::Name p_Name)
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          if (it->get_name() == p_Name) {
+            return *it;
+          }
+        }
+      }
+
       void Context::serialize(Low::Util::Yaml::Node &p_Node) const
       {
+        _LOW_ASSERT(is_alive());
+
+        get_global_signature().serialize(p_Node["global_signature"]);
+        get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
+        get_material_data_buffer().serialize(p_Node["material_data_buffer"]);
         p_Node["name"] = get_name().c_str();
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void Context::serialize(Low::Util::Handle p_Handle,
+                              Low::Util::Yaml::Node &p_Node)
+      {
+        Context l_Context = p_Handle.get_id();
+        l_Context.serialize(p_Node);
+      }
+
+      Low::Util::Handle Context::deserialize(Low::Util::Yaml::Node &p_Node,
+                                             Low::Util::Handle p_Creator)
+      {
+        Context l_Handle = Context::make(N(Context));
+
+        l_Handle.set_global_signature(
+            PipelineResourceSignature::deserialize(p_Node["global_signature"],
+                                                   l_Handle.get_id())
+                .get_id());
+        l_Handle.set_frame_info_buffer(
+            Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
+                                          l_Handle.get_id())
+                .get_id());
+        l_Handle.set_material_data_buffer(
+            Resource::Buffer::deserialize(p_Node["material_data_buffer"],
+                                          l_Handle.get_id())
+                .get_id());
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+        return l_Handle;
       }
 
       Backend::Context &Context::get_context() const

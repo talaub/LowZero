@@ -114,6 +114,7 @@ namespace Low {
       void load_mesh(String p_FilePath, Mesh &p_Mesh)
       {
         Assimp::Importer l_Importer;
+
         // Should not need to triangulate and should not need to fix infacing
         // normals. This was basiacally just for testing
         const aiScene *l_AiScene = l_Importer.ReadFile(

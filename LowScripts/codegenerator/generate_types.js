@@ -384,7 +384,13 @@ function generate_header(p_Type) {
     t += empty();
     t += line(`void serialize(Low::Util::Yaml::Node& p_Node) const;`, n);
     t += empty();
+    if (!p_Type.component) {
+	t += line(`static ${p_Type.name} find_by_name(Low::Util::Name p_Name);`, n);
+	t += empty();
+    }
 
+    t += line(`static void serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node& p_Node);`, n);
+    t += line(`static Low::Util::Handle deserialize(Low::Util::Yaml::Node& p_Node, Low::Util::Handle p_Creator);`, n);
     t += line('static bool is_alive(Low::Util::Handle p_Handle) {');
     t += line('return p_Handle.check_alive(ms_Slots, get_capacity());');
     t += line('}');
@@ -613,6 +619,8 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.get_capacity = &get_capacity;`);
     t += line(`l_TypeInfo.is_alive = &${p_Type.name}::is_alive;`);
     t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);
+    t += line(`l_TypeInfo.serialize = &${p_Type.name}::serialize;`);
+    t += line(`l_TypeInfo.deserialize = &${p_Type.name}::deserialize;`);
     t += line(`l_TypeInfo.get_living_instances = reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(&${p_Type.name}::living_instances);`);
     t += line(`l_TypeInfo.get_living_count = &${p_Type.name}::living_count;`);
     if (p_Type.component) {
@@ -678,11 +686,123 @@ function generate_source(p_Type) {
     t += line('return ms_Capacity;');
     t += line('}');
     t += empty();
+    if (!p_Type.component) {
+	t += line(`${p_Type.name} ${p_Type.name}::find_by_name(Low::Util::Name p_Name) {`, n);
+	t += line(`for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`);
+	t += line(`if (it->get_name() == p_Name) {`);
+	t += line(`return *it;`);
+	t += line('}');
+	t += line('}');
+	t += line('}');
+    }
+    t += empty();
+
+    const l_SerializerMarkerName = `CUSTOM:SERIALIZER`;
+
+    const l_SerializerBeginMarker = get_marker_begin(l_SerializerMarkerName);
+    const l_SerializerEndMarker = get_marker_end(l_SerializerMarkerName);
+
+    const l_SerializerBeginMarkerIndex =
+	  find_begin_marker_end(l_OldCode, l_SerializerMarkerName);
+
+    let l_SerializerCustomCode = '';
+
+    if (l_SerializerBeginMarkerIndex >= 0) {
+	const l_SerializerEndMarkerIndex =
+	      find_end_marker_start(l_OldCode, l_SerializerMarkerName);
+
+	l_SerializerCustomCode =
+	    l_OldCode.substring(l_SerializerBeginMarkerIndex,
+					  l_SerializerEndMarkerIndex);
+    }
     t += line(`void ${p_Type.name}::serialize(Low::Util::Yaml::Node& p_Node) const {`, n);
-    for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-	if (is_name_type(i_Prop.plain_type) || is_string_type(i_Prop.plain_type)) {
-	    t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}().c_str();`);
+    t += line(`_LOW_ASSERT(is_alive());`);
+    if (!p_Type.no_auto_serialize) {
+	t += empty();
+	for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	    if (i_Prop.skip_serialization) {
+		continue;
+	    }
+	    if (is_name_type(i_Prop.plain_type) || is_string_type(i_Prop.plain_type)) {
+		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}().c_str();`);
+	    }
+	    else if (['int', 'uint32_t', 'uint8_t', 'uint16_t', 'uint64_t']
+		    .includes(i_Prop.plain_type)) {
+		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
+	    }
+	    else if (['float', 'double']
+		    .includes(i_Prop.plain_type)) {
+		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
+	    }
+	    else if (i_Prop.handle) {
+		t += line(`${i_Prop.getter_name}().serialize(p_Node["${i_PropName}"]);`);
+	    }
 	}
+    }
+
+    t += empty();
+    t += line(l_SerializerBeginMarker);
+    t += l_SerializerCustomCode;
+    t += line(l_SerializerEndMarker);
+    t += line('}');
+    t += empty();
+    t += line(`void ${p_Type.name}::serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node& p_Node) {`, n);
+    t += line(`${p_Type.name} l_${p_Type.name} = p_Handle.get_id();`);
+    t += line(`l_${p_Type.name}.serialize(p_Node);`);
+    t += line('}');
+    t += empty();
+
+    const l_DeserializerMarkerName = `CUSTOM:DESERIALIZER`;
+
+    const l_DeserializerBeginMarker = get_marker_begin(l_DeserializerMarkerName);
+    const l_DeserializerEndMarker = get_marker_end(l_DeserializerMarkerName);
+
+    const l_DeserializerBeginMarkerIndex =
+	  find_begin_marker_end(l_OldCode, l_DeserializerMarkerName);
+
+    let l_DeserializerCustomCode = '';
+
+    if (l_DeserializerBeginMarkerIndex >= 0) {
+	const l_DeserializerEndMarkerIndex =
+	      find_end_marker_start(l_OldCode, l_DeserializerMarkerName);
+
+	l_DeserializerCustomCode =
+	    l_OldCode.substring(l_DeserializerBeginMarkerIndex,
+					  l_DeserializerEndMarkerIndex);
+    }
+    t += line(`Low::Util::Handle ${p_Type.name}::deserialize(Low::Util::Yaml::Node& p_Node, Low::Util::Handle p_Creator) {`, n);
+    if (!p_Type.no_auto_deserialize) {
+	if (p_Type.component) {
+	    t += line(`${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id());`);
+	} else {
+	    t += line(`${p_Type.name} l_Handle = ${p_Type.name}::make(N(${p_Type.name}));`);
+	}
+	t += empty();
+
+	for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	    if (i_Prop.skip_deserialization) {
+		continue;
+	    }
+
+	    if (is_name_type(i_Prop.plain_type)) {
+		t += line(`l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_NAME(p_Node["${i_PropName}"]));`);
+	    }
+	    else if (is_string_type(i_Prop.plain_type)) {
+		t += line(`l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_STRING(p_Node["${i_PropName}"]));`);
+	    }
+	    else if (i_Prop.handle) {
+		t += line(`l_Handle.${i_Prop.setter_name}(${i_Prop.plain_type}::deserialize(p_Node["${i_PropName}"], l_Handle.get_id()).get_id());`);
+	    }
+	}
+    }
+
+    t += empty();
+    t += line(l_DeserializerBeginMarker);
+    t += l_DeserializerCustomCode;
+    t += line(l_DeserializerEndMarker);
+    if (!p_Type.no_auto_deserialize) {
+	t += empty();
+	t += line(`return l_Handle;`);
     }
     t += line('}');
     t += empty();
@@ -871,7 +991,9 @@ function process_file(p_FileName) {
 	if (i_Type.component) {
 	    i_Type.properties['entity'] = {
 		type: 'Low::Core::Entity',
-		handle: true
+		handle: true,
+		skip_serialization: true,
+		skip_deserialization: true
 	    }
 	}
 
@@ -904,6 +1026,12 @@ function process_file(p_FileName) {
 	if (!i_Type.component) {
 	    i_Type.properties['name'] = {
 		'type': 'Low::Util::Name'
+	    }
+	    if (i_Type.skip_name_serialization) {
+		i_Type.properties['name']['skip_serialization'] = true;
+	    }
+	    if (i_Type.skip_name_deserialization) {
+		i_Type.properties['name']['skip_deserialization'] = true;
 	    }
 	}
 

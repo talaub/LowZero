@@ -103,6 +103,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Entity::is_alive;
       l_TypeInfo.destroy = &Entity::destroy;
+      l_TypeInfo.serialize = &Entity::serialize;
+      l_TypeInfo.deserialize = &Entity::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Entity::living_instances);
@@ -183,9 +185,44 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Entity Entity::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void Entity::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void Entity::serialize(Low::Util::Handle p_Handle,
+                           Low::Util::Yaml::Node &p_Node)
+    {
+      Entity l_Entity = p_Handle.get_id();
+      l_Entity.serialize(p_Node);
+    }
+
+    Low::Util::Handle Entity::deserialize(Low::Util::Yaml::Node &p_Node,
+                                          Low::Util::Handle p_Creator)
+    {
+      Entity l_Handle = Entity::make(N(Entity));
+
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     Util::Map<uint16_t, Util::Handle> &Entity::get_components() const

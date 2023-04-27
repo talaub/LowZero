@@ -104,6 +104,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &ComputeStep::is_alive;
       l_TypeInfo.destroy = &ComputeStep::destroy;
+      l_TypeInfo.serialize = &ComputeStep::serialize;
+      l_TypeInfo.deserialize = &ComputeStep::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &ComputeStep::living_instances);
@@ -270,9 +272,52 @@ namespace Low {
       return ms_Capacity;
     }
 
+    ComputeStep ComputeStep::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void ComputeStep::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
+      get_config().serialize(p_Node["config"]);
+      get_context().serialize(p_Node["context"]);
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void ComputeStep::serialize(Low::Util::Handle p_Handle,
+                                Low::Util::Yaml::Node &p_Node)
+    {
+      ComputeStep l_ComputeStep = p_Handle.get_id();
+      l_ComputeStep.serialize(p_Node);
+    }
+
+    Low::Util::Handle ComputeStep::deserialize(Low::Util::Yaml::Node &p_Node,
+                                               Low::Util::Handle p_Creator)
+    {
+      ComputeStep l_Handle = ComputeStep::make(N(ComputeStep));
+
+      l_Handle.set_config(
+          ComputeStepConfig::deserialize(p_Node["config"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_context(
+          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     Util::Map<RenderFlow, ResourceRegistry> &ComputeStep::get_resources() const

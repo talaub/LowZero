@@ -7,6 +7,7 @@
 #include "LowUtilName.h"
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
+#include "LowUtilYaml.h"
 
 #define SINGLE_ARG(...) __VA_ARGS__
 
@@ -77,6 +78,8 @@ namespace Low {
         Map<Name, PropertyInfo> properties;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
+        void (*serialize)(Handle, Yaml::Node &);
+        Handle (*deserialize)(Yaml::Node &, Handle);
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
         uint32_t (*get_living_count)();

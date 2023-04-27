@@ -13,7 +13,9 @@ namespace Low {
         return;
       }
 
-      if (ImGui::CollapsingHeader(m_TypeInfo.name.c_str())) {
+      if (ImGui::CollapsingHeader(m_TypeInfo.name.c_str(),
+                                  m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen
+                                                : 0)) {
         ImGui::PushID(m_Handle.get_id());
         for (auto pit = m_TypeInfo.properties.begin();
              pit != m_TypeInfo.properties.end(); ++pit) {
@@ -27,13 +29,16 @@ namespace Low {
             }
           }
         }
+        if (render_footer != nullptr) {
+          render_footer(m_Handle, m_TypeInfo);
+        }
         ImGui::PopID();
       }
     }
 
     HandlePropertiesSection::HandlePropertiesSection(
-        const Util::Handle p_Handle)
-        : m_Handle(p_Handle)
+        const Util::Handle p_Handle, bool p_DefaultOpen)
+        : m_Handle(p_Handle), m_DefaultOpen(p_DefaultOpen)
     {
       m_TypeInfo = Util::Handle::get_type_info(p_Handle.get_type());
     }

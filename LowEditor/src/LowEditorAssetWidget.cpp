@@ -18,7 +18,26 @@ namespace Low {
 
     const float g_ElementSize = 128.0f;
 
-    AssetWidget::AssetWidget() : m_SelectedCategory(-1)
+    void render_mesh_asset_details_footer(Util::Handle p_Handle,
+                                          Util::RTTI::TypeInfo &p_TypeInfo)
+    {
+      Core::MeshAsset l_Asset = p_Handle.get_id();
+
+      if (ImGui::Button("Save")) {
+
+        Util::Yaml::Node l_Node;
+        l_Asset.serialize(l_Node);
+        Util::String l_Path = LOW_DATA_PATH;
+        l_Path += "/assets/meshes/" + Util::String(l_Asset.get_name().c_str()) +
+                  ".mesh.yaml";
+        Util::Yaml::write_file(l_Path.c_str(), l_Node);
+
+        LOW_LOG_INFO << "Saved mesh asset '" << l_Asset.get_name()
+                     << "' to file." << LOW_LOG_END;
+      }
+    }
+
+    AssetWidget::AssetWidget() : m_SelectedCategory(0)
     {
     }
 
@@ -112,7 +131,7 @@ namespace Low {
           for (auto it = Core::MeshAsset::ms_LivingInstances.begin();
                it != Core::MeshAsset::ms_LivingInstances.end(); ++it) {
             if (l_Name == it->get_name()) {
-              LOW_LOG_ERROR << "Cannot create mesh instance. The chosen name '"
+              LOW_LOG_ERROR << "Cannot create mesh asset. The chosen name '"
                             << l_Name << "' is already in use" << LOW_LOG_END;
               l_Ok = false;
               break;
@@ -134,7 +153,9 @@ namespace Low {
            it != Core::MeshAsset::ms_LivingInstances.end(); ++it) {
         if (render_element(l_Id++, ICON_FA_CUBE, it->get_name().c_str())) {
           get_details_widget()->clear();
-          get_details_widget()->add_section(*it);
+          HandlePropertiesSection i_Section(*it, true);
+          i_Section.render_footer = &render_mesh_asset_details_footer;
+          get_details_widget()->add_section(i_Section);
         }
         ImGui::NextColumn();
       }

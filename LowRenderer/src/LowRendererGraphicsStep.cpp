@@ -111,6 +111,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &GraphicsStep::is_alive;
       l_TypeInfo.destroy = &GraphicsStep::destroy;
+      l_TypeInfo.serialize = &GraphicsStep::serialize;
+      l_TypeInfo.deserialize = &GraphicsStep::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &GraphicsStep::living_instances);
@@ -318,9 +320,52 @@ namespace Low {
       return ms_Capacity;
     }
 
+    GraphicsStep GraphicsStep::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void GraphicsStep::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
+      get_config().serialize(p_Node["config"]);
+      get_context().serialize(p_Node["context"]);
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void GraphicsStep::serialize(Low::Util::Handle p_Handle,
+                                 Low::Util::Yaml::Node &p_Node)
+    {
+      GraphicsStep l_GraphicsStep = p_Handle.get_id();
+      l_GraphicsStep.serialize(p_Node);
+    }
+
+    Low::Util::Handle GraphicsStep::deserialize(Low::Util::Yaml::Node &p_Node,
+                                                Low::Util::Handle p_Creator)
+    {
+      GraphicsStep l_Handle = GraphicsStep::make(N(GraphicsStep));
+
+      l_Handle.set_config(
+          GraphicsStepConfig::deserialize(p_Node["config"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_context(
+          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     Util::Map<RenderFlow, ResourceRegistry> &GraphicsStep::get_resources() const

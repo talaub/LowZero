@@ -12,6 +12,7 @@ namespace Low {
       void render(float p_Delta) override;
 
       void add_section(const Util::Handle p_Handle);
+      void add_section(HandlePropertiesSection p_Section);
       void clear();
 
     private:

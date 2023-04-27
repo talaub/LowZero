@@ -92,6 +92,8 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &GraphicsPipeline::is_alive;
         l_TypeInfo.destroy = &GraphicsPipeline::destroy;
+        l_TypeInfo.serialize = &GraphicsPipeline::serialize;
+        l_TypeInfo.deserialize = &GraphicsPipeline::deserialize;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &GraphicsPipeline::living_instances);
@@ -170,9 +172,45 @@ namespace Low {
         return ms_Capacity;
       }
 
+      GraphicsPipeline GraphicsPipeline::find_by_name(Low::Util::Name p_Name)
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          if (it->get_name() == p_Name) {
+            return *it;
+          }
+        }
+      }
+
       void GraphicsPipeline::serialize(Low::Util::Yaml::Node &p_Node) const
       {
+        _LOW_ASSERT(is_alive());
+
         p_Node["name"] = get_name().c_str();
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void GraphicsPipeline::serialize(Low::Util::Handle p_Handle,
+                                       Low::Util::Yaml::Node &p_Node)
+      {
+        GraphicsPipeline l_GraphicsPipeline = p_Handle.get_id();
+        l_GraphicsPipeline.serialize(p_Node);
+      }
+
+      Low::Util::Handle
+      GraphicsPipeline::deserialize(Low::Util::Yaml::Node &p_Node,
+                                    Low::Util::Handle p_Creator)
+      {
+        GraphicsPipeline l_Handle = GraphicsPipeline::make(N(GraphicsPipeline));
+
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+        return l_Handle;
       }
 
       Backend::Pipeline &GraphicsPipeline::get_pipeline() const

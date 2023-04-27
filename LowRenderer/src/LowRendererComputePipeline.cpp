@@ -91,6 +91,8 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &ComputePipeline::is_alive;
         l_TypeInfo.destroy = &ComputePipeline::destroy;
+        l_TypeInfo.serialize = &ComputePipeline::serialize;
+        l_TypeInfo.deserialize = &ComputePipeline::deserialize;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &ComputePipeline::living_instances);
@@ -169,9 +171,45 @@ namespace Low {
         return ms_Capacity;
       }
 
+      ComputePipeline ComputePipeline::find_by_name(Low::Util::Name p_Name)
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          if (it->get_name() == p_Name) {
+            return *it;
+          }
+        }
+      }
+
       void ComputePipeline::serialize(Low::Util::Yaml::Node &p_Node) const
       {
+        _LOW_ASSERT(is_alive());
+
         p_Node["name"] = get_name().c_str();
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void ComputePipeline::serialize(Low::Util::Handle p_Handle,
+                                      Low::Util::Yaml::Node &p_Node)
+      {
+        ComputePipeline l_ComputePipeline = p_Handle.get_id();
+        l_ComputePipeline.serialize(p_Node);
+      }
+
+      Low::Util::Handle
+      ComputePipeline::deserialize(Low::Util::Yaml::Node &p_Node,
+                                   Low::Util::Handle p_Creator)
+      {
+        ComputePipeline l_Handle = ComputePipeline::make(N(ComputePipeline));
+
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+        return l_Handle;
       }
 
       Backend::Pipeline &ComputePipeline::get_pipeline() const

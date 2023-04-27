@@ -25,7 +25,15 @@ namespace Low {
         return;
       }
 
-      m_Sections.push_back(HandlePropertiesSection(p_Handle));
+      HandlePropertiesSection l_Section(p_Handle, false);
+      l_Section.render_footer = nullptr;
+
+      add_section(l_Section);
+    }
+
+    void DetailsWidget::add_section(HandlePropertiesSection p_Section)
+    {
+      m_Sections.push_back(p_Section);
     }
 
     void DetailsWidget::clear()

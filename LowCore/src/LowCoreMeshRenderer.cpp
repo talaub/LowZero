@@ -88,6 +88,8 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &MeshRenderer::is_alive;
         l_TypeInfo.destroy = &MeshRenderer::destroy;
+        l_TypeInfo.serialize = &MeshRenderer::serialize;
+        l_TypeInfo.deserialize = &MeshRenderer::deserialize;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &MeshRenderer::living_instances);
@@ -170,6 +172,33 @@ namespace Low {
 
       void MeshRenderer::serialize(Low::Util::Yaml::Node &p_Node) const
       {
+        _LOW_ASSERT(is_alive());
+
+        get_mesh().serialize(p_Node["mesh"]);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void MeshRenderer::serialize(Low::Util::Handle p_Handle,
+                                   Low::Util::Yaml::Node &p_Node)
+      {
+        MeshRenderer l_MeshRenderer = p_Handle.get_id();
+        l_MeshRenderer.serialize(p_Node);
+      }
+
+      Low::Util::Handle MeshRenderer::deserialize(Low::Util::Yaml::Node &p_Node,
+                                                  Low::Util::Handle p_Creator)
+      {
+        MeshRenderer l_Handle = MeshRenderer::make(p_Creator.get_id());
+
+        l_Handle.set_mesh(
+            MeshAsset::deserialize(p_Node["mesh"], l_Handle.get_id()).get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+        return l_Handle;
       }
 
       MeshAsset MeshRenderer::get_mesh() const

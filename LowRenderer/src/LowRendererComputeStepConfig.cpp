@@ -95,6 +95,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &ComputeStepConfig::is_alive;
       l_TypeInfo.destroy = &ComputeStepConfig::destroy;
+      l_TypeInfo.serialize = &ComputeStepConfig::serialize;
+      l_TypeInfo.deserialize = &ComputeStepConfig::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &ComputeStepConfig::living_instances);
@@ -212,9 +214,46 @@ namespace Low {
       return ms_Capacity;
     }
 
+    ComputeStepConfig ComputeStepConfig::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void ComputeStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void ComputeStepConfig::serialize(Low::Util::Handle p_Handle,
+                                      Low::Util::Yaml::Node &p_Node)
+    {
+      ComputeStepConfig l_ComputeStepConfig = p_Handle.get_id();
+      l_ComputeStepConfig.serialize(p_Node);
+    }
+
+    Low::Util::Handle
+    ComputeStepConfig::deserialize(Low::Util::Yaml::Node &p_Node,
+                                   Low::Util::Handle p_Creator)
+    {
+      ComputeStepConfig l_Handle =
+          ComputeStepConfig::make(N(ComputeStepConfig));
+
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     ComputeStepCallbacks &ComputeStepConfig::get_callbacks() const

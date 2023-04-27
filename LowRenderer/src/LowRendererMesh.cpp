@@ -81,6 +81,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Mesh::is_alive;
       l_TypeInfo.destroy = &Mesh::destroy;
+      l_TypeInfo.serialize = &Mesh::serialize;
+      l_TypeInfo.deserialize = &Mesh::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Mesh::living_instances);
@@ -210,9 +212,48 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Mesh Mesh::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void Mesh::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
+      p_Node["vertex_buffer_start"] = get_vertex_buffer_start();
+      p_Node["vertex_count"] = get_vertex_count();
+      p_Node["index_buffer_start"] = get_index_buffer_start();
+      p_Node["index_count"] = get_index_count();
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void Mesh::serialize(Low::Util::Handle p_Handle,
+                         Low::Util::Yaml::Node &p_Node)
+    {
+      Mesh l_Mesh = p_Handle.get_id();
+      l_Mesh.serialize(p_Node);
+    }
+
+    Low::Util::Handle Mesh::deserialize(Low::Util::Yaml::Node &p_Node,
+                                        Low::Util::Handle p_Creator)
+    {
+      Mesh l_Handle = Mesh::make(N(Mesh));
+
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     uint32_t Mesh::get_vertex_buffer_start() const

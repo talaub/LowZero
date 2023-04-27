@@ -91,6 +91,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MeshResource::is_alive;
       l_TypeInfo.destroy = &MeshResource::destroy;
+      l_TypeInfo.serialize = &MeshResource::serialize;
+      l_TypeInfo.deserialize = &MeshResource::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &MeshResource::living_instances);
@@ -204,10 +206,41 @@ namespace Low {
       return ms_Capacity;
     }
 
+    MeshResource MeshResource::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void MeshResource::serialize(Low::Util::Yaml::Node &p_Node) const
     {
-      p_Node["path"] = get_path().c_str();
-      p_Node["name"] = get_name().c_str();
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      p_Node = get_path().c_str();
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void MeshResource::serialize(Low::Util::Handle p_Handle,
+                                 Low::Util::Yaml::Node &p_Node)
+    {
+      MeshResource l_MeshResource = p_Handle.get_id();
+      l_MeshResource.serialize(p_Node);
+    }
+
+    Low::Util::Handle MeshResource::deserialize(Low::Util::Yaml::Node &p_Node,
+                                                Low::Util::Handle p_Creator)
+    {
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      MeshResource l_Resource = MeshResource::make(LOW_YAML_AS_STRING(p_Node));
+
+      return l_Resource;
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
     Util::String &MeshResource::get_path() const
@@ -295,8 +328,11 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Mesh resource was not alive on load");
       LOW_ASSERT_WARN(!is_loaded(), "Trying to load already loaded mesh");
 
+      Util::String l_FullPath =
+          Util::String(LOW_DATA_PATH) + "\\resources\\meshes\\" + get_path();
+
       Util::Resource::Mesh l_Mesh;
-      Util::Resource::load_mesh(get_path(), l_Mesh);
+      Util::Resource::load_mesh(l_FullPath, l_Mesh);
 
       for (uint32_t i = 0u; i < l_Mesh.submeshes.size(); ++i) {
         for (uint32_t j = 0u; j < l_Mesh.submeshes[i].meshInfos.size(); ++j) {

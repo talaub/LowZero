@@ -9,6 +9,7 @@
 
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
+#include "LowUtilLogger.h"
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -56,7 +57,7 @@ namespace Low {
 
     static void load_mesh_resources()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\resources\\meshes";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -65,7 +66,24 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          MeshResource::make(i_Path);
+          MeshResource::make(i_Path.substr(i_Path.find_last_of('\\') + 1));
+        }
+      }
+    }
+
+    static void load_mesh_assets()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".mesh.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          MeshAsset::deserialize(i_Node, 0);
         }
       }
     }
@@ -75,13 +93,19 @@ namespace Low {
       load_mesh_resources();
     }
 
+    static void load_assets()
+    {
+      load_mesh_assets();
+    }
+
     void initialize()
     {
       initialize_types();
 
       DebugGeometry::initialize();
 
-      load_mesh_resources();
+      load_resources();
+      load_assets();
     }
 
     static void cleanup_asset_types()

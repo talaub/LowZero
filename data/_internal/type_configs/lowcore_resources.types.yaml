@@ -6,6 +6,10 @@ dll_macro: LOW_CORE_API
 types:
   MeshResource:
     private_make: true
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
     header_imports:
       - LowRendererExposedObjects.h
     source_imports:
@@ -16,9 +20,13 @@ types:
         type: Util::String
         private_setter: true
       submeshes:
+        skip_serialization: true
+        skip_deserialization: true
         type: Util::List<Submesh>
         no_setter: true
       reference_count:
+        skip_serialization: true
+        skip_deserialization: true
         type: uint32_t
         private_setter: true
         private_getter: true

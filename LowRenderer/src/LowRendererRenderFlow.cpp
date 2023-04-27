@@ -108,6 +108,8 @@ namespace Low {
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderFlow::is_alive;
       l_TypeInfo.destroy = &RenderFlow::destroy;
+      l_TypeInfo.serialize = &RenderFlow::serialize;
+      l_TypeInfo.deserialize = &RenderFlow::deserialize;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &RenderFlow::living_instances);
@@ -399,9 +401,65 @@ namespace Low {
       return ms_Capacity;
     }
 
+    RenderFlow RenderFlow::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
+           ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+    }
+
     void RenderFlow::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      _LOW_ASSERT(is_alive());
+
+      get_context().serialize(p_Node["context"]);
+      get_output_image().serialize(p_Node["output_image"]);
+      get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
+      get_resource_signature().serialize(p_Node["resource_signature"]);
+      p_Node["camera_fov"] = get_camera_fov();
+      p_Node["camera_near_plane"] = get_camera_near_plane();
+      p_Node["camera_far_plane"] = get_camera_far_plane();
       p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void RenderFlow::serialize(Low::Util::Handle p_Handle,
+                               Low::Util::Yaml::Node &p_Node)
+    {
+      RenderFlow l_RenderFlow = p_Handle.get_id();
+      l_RenderFlow.serialize(p_Node);
+    }
+
+    Low::Util::Handle RenderFlow::deserialize(Low::Util::Yaml::Node &p_Node,
+                                              Low::Util::Handle p_Creator)
+    {
+      RenderFlow l_Handle = RenderFlow::make(N(RenderFlow));
+
+      l_Handle.set_context(
+          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_output_image(Resource::Image::deserialize(
+                                    p_Node["output_image"], l_Handle.get_id())
+                                    .get_id());
+      l_Handle.set_frame_info_buffer(
+          Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
+                                        l_Handle.get_id())
+              .get_id());
+      l_Handle.set_resource_signature(
+          Interface::PipelineResourceSignature::deserialize(
+              p_Node["resource_signature"], l_Handle.get_id())
+              .get_id());
+      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
     }
 
     Interface::Context RenderFlow::get_context() const

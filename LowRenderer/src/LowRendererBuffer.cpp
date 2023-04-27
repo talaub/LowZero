@@ -87,6 +87,8 @@ namespace Low {
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Buffer::is_alive;
         l_TypeInfo.destroy = &Buffer::destroy;
+        l_TypeInfo.serialize = &Buffer::serialize;
+        l_TypeInfo.deserialize = &Buffer::deserialize;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Buffer::living_instances);
@@ -165,9 +167,44 @@ namespace Low {
         return ms_Capacity;
       }
 
+      Buffer Buffer::find_by_name(Low::Util::Name p_Name)
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          if (it->get_name() == p_Name) {
+            return *it;
+          }
+        }
+      }
+
       void Buffer::serialize(Low::Util::Yaml::Node &p_Node) const
       {
+        _LOW_ASSERT(is_alive());
+
         p_Node["name"] = get_name().c_str();
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void Buffer::serialize(Low::Util::Handle p_Handle,
+                             Low::Util::Yaml::Node &p_Node)
+      {
+        Buffer l_Buffer = p_Handle.get_id();
+        l_Buffer.serialize(p_Node);
+      }
+
+      Low::Util::Handle Buffer::deserialize(Low::Util::Yaml::Node &p_Node,
+                                            Low::Util::Handle p_Creator)
+      {
+        Buffer l_Handle = Buffer::make(N(Buffer));
+
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+        return l_Handle;
       }
 
       Backend::Buffer &Buffer::get_buffer() const
