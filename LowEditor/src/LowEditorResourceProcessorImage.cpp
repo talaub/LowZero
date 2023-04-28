@@ -1,4 +1,4 @@
-#include "LowEditorResourceProcessor.h"
+#include "LowEditorResourceProcessorImage.h"
 
 #include <gli/gli.hpp>
 #include <gli/make_texture.hpp>
@@ -6,7 +6,10 @@
 #include <gli/generate_mipmaps.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
 #include "../../LowDependencies/stb/stb_image.h"
+
+#include "LowUtilAssert.h"
 
 namespace Low {
   namespace Editor {

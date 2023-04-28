@@ -560,14 +560,19 @@ namespace Low {
 
       window_initialize(l_Window, l_WindowInit);
 
+#ifdef LOW_RENDERER_VALIDATION_ENABLED
       g_Context =
           Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
+#else
+      g_Context =
+          Interface::Context::make(N(DefaultContext), &l_Window, 2, false);
+#endif
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 MeshBufferType::VERTEX,
-                                sizeof(Util::Resource::Vertex), 8192u);
+                                sizeof(Util::Resource::Vertex), 128000u);
       g_IndexBuffer.initialize(N(IndexBuffer), g_Context, MeshBufferType::INDEX,
-                               sizeof(uint32_t), 32768u);
+                               sizeof(uint32_t), 256000u);
 
       {
         Util::Resource::Image2D l_Image;

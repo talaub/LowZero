@@ -33,16 +33,25 @@ namespace Low {
 
         strftime(buffer, 80, "%F %X", timeinfo);
 
+#ifdef LOW_COLOR_LOG
         printf("\x1B[90m%s\033[0m\t", buffer);
+#else
+        printf("%s\t", buffer);
+#endif
       }
 
       static void print_thread_id(LogEntry &p_Entry)
       {
+#ifdef LOW_COLOR_LOG
         printf("\x1B[35m%i\033[0m\t", p_Entry.threadId);
+#else
+        printf("%i\t", p_Entry.threadId);
+#endif
       }
 
       static void print_log_level(uint8_t p_LogLevel)
       {
+#ifdef LOW_COLOR_LOG
         if (p_LogLevel == LogLevel::DEBUG) {
           printf("\x1B[96mDEBUG\033[0m\t");
         } else if (p_LogLevel == LogLevel::INFO) {
@@ -54,6 +63,19 @@ namespace Low {
         } else if (p_LogLevel == LogLevel::PROFILE) {
           printf("\x1B[35mPRFLR\033[0m\t");
         }
+#else
+        if (p_LogLevel == LogLevel::DEBUG) {
+          printf("DEBUG\t");
+        } else if (p_LogLevel == LogLevel::INFO) {
+          printf("INFO \t");
+        } else if (p_LogLevel == LogLevel::WARN) {
+          printf("WARN \t");
+        } else if (p_LogLevel == LogLevel::ERROR) {
+          printf("ERROR \t");
+        } else if (p_LogLevel == LogLevel::PROFILE) {
+          printf("PRFLR\t");
+        }
+#endif
       }
 
       static void print_module(LogEntry &p_Entry)
@@ -73,7 +95,11 @@ namespace Low {
           l_ModBuffer[i] = p_Entry.module[i];
         }
 
+#ifdef LOW_COLOR_LOG
         printf("\x1B[90m[%s]\033[0m ", l_ModBuffer);
+#else
+        printf("[%s] ", l_ModBuffer);
+#endif
       }
 
       LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module)

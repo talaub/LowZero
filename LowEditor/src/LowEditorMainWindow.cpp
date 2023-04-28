@@ -11,12 +11,15 @@
 #include "LowEditorEditingWidget.h"
 #include "LowEditorAssetWidget.h"
 #include "LowEditorGui.h"
-#include "LowEditorResourceProcessor.h"
+#include "LowEditorResourceProcessorImage.h"
+#include "LowEditorResourceProcessorMesh.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 
 #include "LowRendererTexture2D.h"
+
+#include "LowCoreMeshResource.h"
 
 #include <functional>
 
@@ -92,6 +95,23 @@ namespace Low {
                                                   l_Image);
 
                 LOW_LOG_INFO << "Image file '" << l_FileName
+                             << "' has been successfully imported."
+                             << LOW_LOG_END;
+              } else if (Util::StringHelper::ends_with(l_Path,
+                                                       Util::String(".obj")) ||
+                         Util::StringHelper::ends_with(l_Path,
+                                                       Util::String(".glb"))) {
+                Util::String l_FileName = l_Path.substr(
+                    l_Path.find_last_of('\\') + 1,
+                    l_Path.find_last_of('.') - l_Path.find_last_of('\\') - 1);
+                ResourceProcessor::Mesh::process(l_Path.c_str(),
+                                                 Util::String(LOW_DATA_PATH) +
+                                                     "\\resources\\meshes\\" +
+                                                     l_FileName + ".glb");
+
+                Core::MeshResource::make(Util::String(l_FileName + ".glb"));
+
+                LOW_LOG_INFO << "Mesh file '" << l_FileName
                              << "' has been successfully imported."
                              << LOW_LOG_END;
               }

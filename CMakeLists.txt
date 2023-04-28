@@ -1,9 +1,16 @@
 project(LowEngineZero)
 
+set(ENGINE_BUILD OFF)
+
 
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_BUILD_TYPE Debug)
+if (ENGINE_BUILD)
+  set(CMAKE_BUILD_TYPE Release)
+ELSE()
+  set(CMAKE_BUILD_TYPE Debug)
+ENDIF()
+
 set(CMAKE_CONFIGURATION_TYPES "Debug" "Release")
 set(TARGET_BUILD_PLATFORM "windows")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -12,8 +19,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
-set(APP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/app)
+if (ENGINE_BUILD)
+  set(APP_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/misteda/bin)
+ELSE()
+  set(APP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/app)
+ENDIF()
 set(LIB_OUTPUT_DIR ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/lib)
 set(PDB_OUTPUT_DIR ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/pdb)
 
@@ -36,11 +46,22 @@ FILE(GLOB SUBFOLDERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE
 SET(SUBPROJECTS "")
 SET(FOUND "")
 
+if (ENGINE_BUILD)
 add_compile_definitions(
-  LOW_EDITOR_BUILD LOW_DATA_PATH="../../../data"
+  LOW_EDITOR_BUILD
+  LOW_DATA_PATH="./data"
+  IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
+)
+else()
+add_compile_definitions(
+  LOW_EDITOR_BUILD
+  LOW_DATA_PATH="../../../misteda/data"
   IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
   LOW_RENDERER_COMPILE_SHADERS
+  LOW_RENDERER_VALIDATION_ENABLED
+  LOW_COLOR_LOG
 )
+endif()
 
 # Excluded directories
 # These directorories are not part of the build tree
