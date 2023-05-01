@@ -54,6 +54,14 @@ namespace Low {
             l_Material.set_property(pit->name,
                                     Util::Variant::from_handle(i_TextureId));
           }
+        } else if (pit->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+          Math::Vector4 l_Color = l_Material.get_property(pit->name);
+
+          if (PropertyEditors::render_color_selector(pit->name.c_str(),
+                                                     &l_Color)) {
+            l_Color.a = 1.0f;
+            l_Material.set_property(pit->name, Util::Variant(l_Color));
+          }
         }
         ImGui::PopID();
       }

@@ -21,6 +21,7 @@ namespace Low {
     {
       Util::String path;
       Renderer::Texture2D renderer_texture;
+      uint32_t reference_count;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -102,6 +103,7 @@ namespace Low {
       static Texture2D make(Util::String &p_Path);
       bool is_loaded();
       void load();
+      void unload();
 
     private:
       static uint32_t ms_Capacity;
@@ -109,6 +111,9 @@ namespace Low {
       static void increase_budget();
       void set_path(Util::String &p_Value);
       void set_renderer_texture(Renderer::Texture2D p_Value);
+      uint32_t get_reference_count() const;
+      void set_reference_count(uint32_t p_Value);
+      void _unload();
     };
   } // namespace Core
 } // namespace Low

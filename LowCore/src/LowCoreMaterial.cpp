@@ -61,6 +61,8 @@ namespace Low {
       }
       LOW_ASSERT(l_Handle.get_material_type().is_alive(),
                  "Could not find valid material type");
+
+      l_Handle.set_reference_count(0);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -71,11 +73,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
-      // TODO: Unload
-      if (get_renderer_material().is_alive()) {
-        get_renderer_material().destroy();
-      }
+      _unload();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -168,6 +166,23 @@ namespace Low {
           ACCESSOR_TYPE_SOA(p_Handle, Material, properties,
                             SINGLE_ARG(Util::Map<Util::Name, Util::Variant>)) =
               *(Util::Map<Util::Name, Util::Variant> *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(reference_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MaterialData, reference_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, reference_count,
+                                            uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          ACCESSOR_TYPE_SOA(p_Handle, Material, reference_count, uint32_t) =
+              *(uint32_t *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -316,6 +331,22 @@ namespace Low {
                       SINGLE_ARG(Util::Map<Util::Name, Util::Variant>));
     }
 
+    uint32_t Material::get_reference_count() const
+    {
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      return TYPE_SOA(Material, reference_count, uint32_t);
+    }
+    void Material::set_reference_count(uint32_t p_Value)
+    {
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // Set new value
+      TYPE_SOA(Material, reference_count, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
+    }
+
     Low::Util::Name Material::get_name() const
     {
       LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
@@ -352,9 +383,7 @@ namespace Low {
         if (l_PropertyType == Renderer::MaterialTypePropertyType::TEXTURE2D) {
           Texture2D l_OldTexture = get_property(p_Name).m_Uint64;
           if (l_OldTexture.is_alive() && l_OldTexture.is_loaded()) {
-            // l_OldTexture.unload();
-            // TODO: Unload - in this case it means decreasing the reference
-            // count
+            l_OldTexture.unload();
           }
           Texture2D l_Texture = p_Value.m_Uint64;
           if (!l_Texture.is_loaded()) {
@@ -387,6 +416,12 @@ namespace Low {
     void Material::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+      set_reference_count(get_reference_count() + 1);
+
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased Texture2D reference count, but its not over 0. "
+                 "Something went wrong.");
+
       if (is_loaded()) {
         return;
       }
@@ -397,17 +432,50 @@ namespace Low {
            it != get_material_type().get_properties().end(); ++it) {
         if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
           Texture2D l_Texture = get_property(it->name).m_Uint64;
-          l_Texture.load();
+          if (l_Texture.is_alive()) {
+            l_Texture.load();
 
-          get_renderer_material().set_property(
-              it->name,
-              Util::Variant::from_handle(l_Texture.get_renderer_texture()));
+            get_renderer_material().set_property(
+                it->name,
+                Util::Variant::from_handle(l_Texture.get_renderer_texture()));
+          }
         } else {
           get_renderer_material().set_property(it->name,
                                                get_property(it->name));
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+    }
+
+    void Material::unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+      set_reference_count(get_reference_count() - 1);
+
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "Texture2D reference count < 0. Something went wrong.");
+
+      if (get_reference_count() <= 0) {
+        _unload();
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload
+    }
+
+    void Material::_unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__undload
+      for (auto it = get_material_type().get_properties().begin();
+           it != get_material_type().get_properties().end(); ++it) {
+        if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
+          Texture2D l_Texture = get_property(it->name);
+          if (l_Texture.is_alive() && l_Texture.is_loaded()) {
+            l_Texture.unload();
+          }
+        }
+      }
+
+      get_renderer_material().destroy();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__undload
     }
 
     uint32_t Material::create_instance()
@@ -468,6 +536,13 @@ namespace Low {
                   Util::Map<Util::Name, Util::Variant>();
           *i_ValPtr = it->get_properties();
         }
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(MaterialData, reference_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MaterialData, reference_count) * (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MaterialData, name) *

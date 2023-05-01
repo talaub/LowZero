@@ -137,6 +137,23 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(reference_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Texture2DData, reference_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
+                                            reference_count, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, reference_count, uint32_t) =
+              *(uint32_t *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
@@ -259,6 +276,22 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_texture
     }
 
+    uint32_t Texture2D::get_reference_count() const
+    {
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      return TYPE_SOA(Texture2D, reference_count, uint32_t);
+    }
+    void Texture2D::set_reference_count(uint32_t p_Value)
+    {
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // Set new value
+      TYPE_SOA(Texture2D, reference_count, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
+    }
+
     Low::Util::Name Texture2D::get_name() const
     {
       LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
@@ -289,6 +322,8 @@ namespace Low {
       Texture2D l_Texture = Texture2D::make(LOW_NAME(l_FileName.c_str()));
       l_Texture.set_path(p_Path);
 
+      l_Texture.set_reference_count(0);
+
       return l_Texture;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
@@ -305,6 +340,12 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
       LOW_ASSERT(is_alive(), "Texture2D was not alive on load");
 
+      set_reference_count(get_reference_count() + 1);
+
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased Texture2D reference count, but its not over 0. "
+                 "Something went wrong.");
+
       if (is_loaded()) {
         return;
       }
@@ -320,6 +361,27 @@ namespace Low {
 
       set_renderer_texture(l_RendererTexture);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+    }
+
+    void Texture2D::unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+      set_reference_count(get_reference_count() - 1);
+
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "Texture2D reference count < 0. Something went wrong.");
+
+      if (get_reference_count() <= 0) {
+        _unload();
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload
+    }
+
+    void Texture2D::_unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      get_renderer_texture().destroy();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 
     uint32_t Texture2D::create_instance()
@@ -368,6 +430,13 @@ namespace Low {
                &ms_Buffer[offsetof(Texture2DData, renderer_texture) *
                           (l_Capacity)],
                l_Capacity * sizeof(Renderer::Texture2D));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(Texture2DData, reference_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(Texture2DData, reference_count) * (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(Texture2DData, name) *

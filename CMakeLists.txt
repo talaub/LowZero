@@ -2,7 +2,6 @@ project(LowEngineZero)
 
 set(ENGINE_BUILD OFF)
 
-
 cmake_minimum_required(VERSION 3.10)
 
 if (ENGINE_BUILD)

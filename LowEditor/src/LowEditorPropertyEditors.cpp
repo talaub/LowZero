@@ -194,6 +194,14 @@ namespace Low {
         }
       }
 
+      bool render_color_selector(Util::String p_Label, Math::Color *p_Color)
+      {
+        render_label(p_Label);
+
+        return ImGui::ColorEdit4((Util::String("##") + p_Label).c_str(),
+                                 (float *)p_Color);
+      }
+
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          const void *p_DataPtr)
       {

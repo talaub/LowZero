@@ -23,6 +23,7 @@ namespace Low {
       Renderer::MaterialType material_type;
       Renderer::Material renderer_material;
       Util::Map<Util::Name, Util::Variant> properties;
+      uint32_t reference_count;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -102,6 +103,7 @@ namespace Low {
       Util::Variant &get_property(Util::Name p_Name);
       bool is_loaded();
       void load();
+      void unload();
 
     private:
       static uint32_t ms_Capacity;
@@ -109,6 +111,9 @@ namespace Low {
       static void increase_budget();
       void set_renderer_material(Renderer::Material p_Value);
       Util::Map<Util::Name, Util::Variant> &get_properties() const;
+      uint32_t get_reference_count() const;
+      void set_reference_count(uint32_t p_Value);
+      void _unload();
     };
   } // namespace Core
 } // namespace Low

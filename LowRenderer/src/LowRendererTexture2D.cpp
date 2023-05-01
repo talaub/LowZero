@@ -59,6 +59,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      Backend::callbacks().context_wait_idle(*get_image().get_image().context);
       get_image().destroy();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 

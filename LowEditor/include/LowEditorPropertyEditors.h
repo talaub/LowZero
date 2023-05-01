@@ -10,6 +10,8 @@ namespace Low {
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          const void *p_DataPtr);
 
+      bool render_color_selector(Util::String p_Label, Math::Color *p_Color);
+
       bool render_handle_selector(Util::String p_Label,
                                   Util::RTTI::TypeInfo &p_TypeInfo,
                                   uint64_t *p_HandleId);
