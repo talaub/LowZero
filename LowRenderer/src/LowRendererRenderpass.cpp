@@ -49,6 +49,9 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
         return l_Handle;
       }
 
@@ -216,12 +219,12 @@ namespace Low {
 
       Backend::Renderpass &Renderpass::get_renderpass() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Renderpass, renderpass, Backend::Renderpass);
       }
       void Renderpass::set_renderpass(Backend::Renderpass &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Renderpass, renderpass, Backend::Renderpass) = p_Value;
@@ -232,12 +235,12 @@ namespace Low {
 
       Low::Util::Name Renderpass::get_name() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Renderpass, name, Low::Util::Name);
       }
       void Renderpass::set_name(Low::Util::Name p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Renderpass, name, Low::Util::Name) = p_Value;

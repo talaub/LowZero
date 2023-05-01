@@ -47,6 +47,9 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      // LOW_CODEGEN::END::CUSTOM:MAKE
+
       return l_Handle;
     }
 
@@ -227,19 +230,19 @@ namespace Low {
 
     Util::Map<uint16_t, Util::Handle> &Entity::get_components() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(Entity, components,
                       SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
     }
 
     Low::Util::Name Entity::get_name() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(Entity, name, Low::Util::Name);
     }
     void Entity::set_name(Low::Util::Name p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(Entity, name, Low::Util::Name) = p_Value;

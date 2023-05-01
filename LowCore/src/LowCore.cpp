@@ -6,6 +6,8 @@
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
+#include "LowCoreTexture2D.h"
+#include "LowCoreMaterial.h"
 
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
@@ -29,11 +31,13 @@ namespace Low {
     static void initialize_asset_types()
     {
       MeshAsset::initialize();
+      Material::initialize();
     }
 
     static void initialize_resource_types()
     {
       MeshResource::initialize();
+      Texture2D::initialize();
     }
 
     static void initialize_component_types()
@@ -71,6 +75,22 @@ namespace Low {
       }
     }
 
+    static void load_texture2d_resources()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\resources\\img2d";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".ktx";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Texture2D::make(i_Path.substr(i_Path.find_last_of('\\') + 1));
+        }
+      }
+    }
+
     static void load_mesh_assets()
     {
       Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
@@ -91,6 +111,7 @@ namespace Low {
     static void load_resources()
     {
       load_mesh_resources();
+      load_texture2d_resources();
     }
 
     static void load_assets()
@@ -111,11 +132,13 @@ namespace Low {
     static void cleanup_asset_types()
     {
       MeshAsset::cleanup();
+      Material::cleanup();
     }
 
     static void cleanup_resource_types()
     {
       MeshResource::cleanup();
+      Texture2D::cleanup();
     }
 
     static void cleanup_component_types()

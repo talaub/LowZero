@@ -73,6 +73,9 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      // LOW_CODEGEN::END::CUSTOM:MAKE
+
       return l_Handle;
     }
 
@@ -447,12 +450,12 @@ namespace Low {
 
     GraphicsStepCallbacks &GraphicsStepConfig::get_callbacks() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks);
     }
     void GraphicsStepConfig::set_callbacks(GraphicsStepCallbacks &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks) = p_Value;
@@ -463,19 +466,19 @@ namespace Low {
 
     Util::List<ResourceConfig> &GraphicsStepConfig::get_resources() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, resources,
                       Util::List<ResourceConfig>);
     }
 
     DimensionsConfig &GraphicsStepConfig::get_dimensions_config() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, dimensions_config, DimensionsConfig);
     }
     void GraphicsStepConfig::set_dimensions_config(DimensionsConfig &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, dimensions_config, DimensionsConfig) =
@@ -488,7 +491,7 @@ namespace Low {
     Util::List<GraphicsPipelineConfig> &
     GraphicsStepConfig::get_pipelines() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, pipelines,
                       Util::List<GraphicsPipelineConfig>);
     }
@@ -496,20 +499,20 @@ namespace Low {
     Util::List<PipelineResourceBindingConfig> &
     GraphicsStepConfig::get_rendertargets() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, rendertargets,
                       Util::List<PipelineResourceBindingConfig>);
     }
 
     Math::Color &GraphicsStepConfig::get_rendertargets_clearcolor() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor,
                       Math::Color);
     }
     void GraphicsStepConfig::set_rendertargets_clearcolor(Math::Color &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor, Math::Color) =
@@ -522,14 +525,14 @@ namespace Low {
     PipelineResourceBindingConfig &
     GraphicsStepConfig::get_depth_rendertarget() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
                       PipelineResourceBindingConfig);
     }
     void GraphicsStepConfig::set_depth_rendertarget(
         PipelineResourceBindingConfig &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
@@ -541,12 +544,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_use_depth() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, use_depth, bool);
     }
     void GraphicsStepConfig::set_use_depth(bool p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, use_depth, bool) = p_Value;
@@ -557,12 +560,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_depth_clear() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, depth_clear, bool);
     }
     void GraphicsStepConfig::set_depth_clear(bool p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_clear, bool) = p_Value;
@@ -573,12 +576,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_depth_test() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, depth_test, bool);
     }
     void GraphicsStepConfig::set_depth_test(bool p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_test, bool) = p_Value;
@@ -589,12 +592,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_depth_write() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, depth_write, bool);
     }
     void GraphicsStepConfig::set_depth_write(bool p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_write, bool) = p_Value;
@@ -605,12 +608,12 @@ namespace Low {
 
     uint8_t GraphicsStepConfig::get_depth_compare_operation() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t);
     }
     void GraphicsStepConfig::set_depth_compare_operation(uint8_t p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t) = p_Value;
@@ -621,12 +624,12 @@ namespace Low {
 
     Low::Util::Name GraphicsStepConfig::get_name() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(GraphicsStepConfig, name, Low::Util::Name);
     }
     void GraphicsStepConfig::set_name(Low::Util::Name p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, name, Low::Util::Name) = p_Value;

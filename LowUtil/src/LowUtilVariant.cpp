@@ -1,3 +1,4 @@
+
 #include "LowUtilVariant.h"
 
 namespace Low {
@@ -111,13 +112,13 @@ namespace Low {
       return *this;
     }
 
-    void Variant::set_handle(Handle &p_Value)
+    void Variant::set_handle(Handle p_Value)
     {
       m_Type = VariantType::Handle;
       m_Uint64 = p_Value.get_id();
     }
 
-    Variant Variant::from_handle(Handle &p_Value)
+    Variant Variant::from_handle(Handle p_Value)
     {
       Variant l_Variant;
       l_Variant.set_handle(p_Value);

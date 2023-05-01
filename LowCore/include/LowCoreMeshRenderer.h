@@ -10,6 +10,7 @@
 #include "LowCoreEntity.h"
 
 #include "LowCoreMeshAsset.h"
+#include "LowCoreMaterial.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -23,6 +24,7 @@ namespace Low {
       struct LOW_CORE_API MeshRendererData
       {
         MeshAsset mesh;
+        Material material;
         Low::Core::Entity entity;
 
         static size_t get_size()
@@ -91,6 +93,9 @@ namespace Low {
 
         MeshAsset get_mesh() const;
         void set_mesh(MeshAsset p_Value);
+
+        Material get_material() const;
+        void set_material(Material p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);

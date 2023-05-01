@@ -18,6 +18,9 @@ namespace Low {
       const Util::Handle m_Handle;
       Util::RTTI::TypeInfo m_TypeInfo;
       bool m_DefaultOpen;
+
+      void render_default(float p_Delta);
+      void render_material(float p_Delta);
     };
   } // namespace Editor
 } // namespace Low

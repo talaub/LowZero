@@ -48,6 +48,9 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
         return l_Handle;
       }
 
@@ -235,18 +238,18 @@ namespace Low {
 
       Backend::ImGuiImage &ImGuiImage::get_imgui_image() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(ImGuiImage, imgui_image, Backend::ImGuiImage);
       }
 
       Resource::Image ImGuiImage::get_image() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(ImGuiImage, image, Resource::Image);
       }
       void ImGuiImage::set_image(Resource::Image p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(ImGuiImage, image, Resource::Image) = p_Value;
@@ -257,12 +260,12 @@ namespace Low {
 
       Low::Util::Name ImGuiImage::get_name() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(ImGuiImage, name, Low::Util::Name);
       }
       void ImGuiImage::set_name(Low::Util::Name p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(ImGuiImage, name, Low::Util::Name) = p_Value;

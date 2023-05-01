@@ -10,7 +10,7 @@
 namespace Low {
   namespace Core {
     namespace Component {
-      const uint16_t Transform::TYPE_ID = 21;
+      const uint16_t Transform::TYPE_ID = 23;
       uint32_t Transform::ms_Capacity = 0u;
       uint8_t *Transform::ms_Buffer = 0;
       Low::Util::Instances::Slot *Transform::ms_Slots = 0;
@@ -57,6 +57,9 @@ namespace Low {
         p_Entity.add_component(l_Handle);
 
         ms_LivingInstances.push_back(l_Handle);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
       }
@@ -344,12 +347,12 @@ namespace Low {
 
       Math::Vector3 &Transform::position() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, position, Math::Vector3);
       }
       void Transform::position(Math::Vector3 &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         if (position() != p_Value) {
           // Set dirty flags
@@ -366,12 +369,12 @@ namespace Low {
 
       Math::Quaternion &Transform::rotation() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, rotation, Math::Quaternion);
       }
       void Transform::rotation(Math::Quaternion &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         if (rotation() != p_Value) {
           // Set dirty flags
@@ -388,12 +391,12 @@ namespace Low {
 
       Math::Vector3 &Transform::scale() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, scale, Math::Vector3);
       }
       void Transform::scale(Math::Vector3 &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         if (scale() != p_Value) {
           // Set dirty flags
@@ -410,12 +413,12 @@ namespace Low {
 
       uint64_t Transform::get_parent() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, parent, uint64_t);
       }
       void Transform::set_parent(uint64_t p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         if (get_parent() != p_Value) {
           // Set dirty flags
@@ -432,12 +435,12 @@ namespace Low {
 
       Math::Vector3 &Transform::get_world_position() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, world_position, Math::Vector3);
       }
       void Transform::set_world_position(Math::Vector3 &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Transform, world_position, Math::Vector3) = p_Value;
@@ -448,12 +451,12 @@ namespace Low {
 
       Math::Quaternion &Transform::get_world_rotation() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, world_rotation, Math::Quaternion);
       }
       void Transform::set_world_rotation(Math::Quaternion &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Transform, world_rotation, Math::Quaternion) = p_Value;
@@ -464,12 +467,12 @@ namespace Low {
 
       Math::Vector3 &Transform::get_world_scale() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, world_scale, Math::Vector3);
       }
       void Transform::set_world_scale(Math::Vector3 &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Transform, world_scale, Math::Vector3) = p_Value;
@@ -480,12 +483,12 @@ namespace Low {
 
       Low::Core::Entity Transform::get_entity() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, entity, Low::Core::Entity);
       }
       void Transform::set_entity(Low::Core::Entity p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Transform, entity, Low::Core::Entity) = p_Value;
@@ -496,12 +499,12 @@ namespace Low {
 
       bool Transform::is_dirty() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, dirty, bool);
       }
       void Transform::set_dirty(bool p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Transform, dirty, bool) = p_Value;
@@ -512,12 +515,12 @@ namespace Low {
 
       bool Transform::is_world_dirty() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Transform, world_dirty, bool);
       }
       void Transform::set_world_dirty(bool p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Transform, world_dirty, bool) = p_Value;

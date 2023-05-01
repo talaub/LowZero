@@ -1,0 +1,114 @@
+#pragma once
+
+#include "LowCoreApi.h"
+
+#include "LowUtilHandle.h"
+#include "LowUtilName.h"
+#include "LowUtilContainers.h"
+#include "LowUtilYaml.h"
+
+#include "LowCoreTexture2D.h"
+#include "LowRendererExposedObjects.h"
+
+// LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+// LOW_CODEGEN::END::CUSTOM:HEADER_CODE
+
+namespace Low {
+  namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
+    struct LOW_CORE_API MaterialData
+    {
+      Renderer::MaterialType material_type;
+      Renderer::Material renderer_material;
+      Util::Map<Util::Name, Util::Variant> properties;
+      Low::Util::Name name;
+
+      static size_t get_size()
+      {
+        return sizeof(MaterialData);
+      }
+    };
+
+    struct LOW_CORE_API Material : public Low::Util::Handle
+    {
+    public:
+      static uint8_t *ms_Buffer;
+      static Low::Util::Instances::Slot *ms_Slots;
+
+      static Low::Util::List<Material> ms_LivingInstances;
+
+      const static uint16_t TYPE_ID;
+
+      Material();
+      Material(uint64_t p_Id);
+      Material(Material &p_Copy);
+
+      static Material make(Low::Util::Name p_Name);
+      explicit Material(const Material &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      {
+      }
+
+      void destroy();
+
+      static void initialize();
+      static void cleanup();
+
+      static uint32_t living_count()
+      {
+        return static_cast<uint32_t>(ms_LivingInstances.size());
+      }
+      static Material *living_instances()
+      {
+        return ms_LivingInstances.data();
+      }
+
+      static Material find_by_index(uint32_t p_Index);
+
+      bool is_alive() const;
+
+      static uint32_t get_capacity();
+
+      void serialize(Low::Util::Yaml::Node &p_Node) const;
+
+      static Material find_by_name(Low::Util::Name p_Name);
+
+      static void serialize(Low::Util::Handle p_Handle,
+                            Low::Util::Yaml::Node &p_Node);
+      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
+                                           Low::Util::Handle p_Creator);
+      static bool is_alive(Low::Util::Handle p_Handle)
+      {
+        return p_Handle.check_alive(ms_Slots, get_capacity());
+      }
+
+      static void destroy(Low::Util::Handle p_Handle)
+      {
+        _LOW_ASSERT(is_alive(p_Handle));
+        Material l_Material = p_Handle.get_id();
+        l_Material.destroy();
+      }
+
+      Renderer::MaterialType get_material_type() const;
+      void set_material_type(Renderer::MaterialType p_Value);
+
+      Renderer::Material get_renderer_material() const;
+
+      Low::Util::Name get_name() const;
+      void set_name(Low::Util::Name p_Value);
+
+      void set_property(Util::Name p_Name, Util::Variant &p_Value);
+      Util::Variant &get_property(Util::Name p_Name);
+      bool is_loaded();
+      void load();
+
+    private:
+      static uint32_t ms_Capacity;
+      static uint32_t create_instance();
+      static void increase_budget();
+      void set_renderer_material(Renderer::Material p_Value);
+      Util::Map<Util::Name, Util::Variant> &get_properties() const;
+    };
+  } // namespace Core
+} // namespace Low

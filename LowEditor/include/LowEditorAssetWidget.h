@@ -14,6 +14,7 @@ namespace Low {
       int m_SelectedCategory;
 
       void render_meshes();
+      void render_materials();
     };
   } // namespace Editor
 } // namespace Low

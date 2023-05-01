@@ -15,6 +15,7 @@
 #include "LowUtilContainers.h"
 
 #include "LowRenderer.h"
+#include "LowRendererExposedObjects.h"
 #include "LowRendererRenderFlow.h"
 
 #include "LowCore.h"
@@ -45,6 +46,27 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 static void setup_scene()
 {
+  Low::Core::Material l_Material = Low::Core::Material::make(N(TestMat));
+  {
+    Low::Core::Texture2D l_AlbedoTexture =
+        Low::Core::Texture2D::find_by_name(N(out_rust.ktx));
+    Low::Core::Texture2D l_NormalTexture =
+        Low::Core::Texture2D::find_by_name(N(rust_normal.ktx));
+    Low::Core::Texture2D l_Roughness =
+        Low::Core::Texture2D::find_by_name(N(rust_roughness.ktx));
+    Low::Core::Texture2D l_Metalness =
+        Low::Core::Texture2D::find_by_name(N(rust_metalness.ktx));
+
+    l_Material.set_property(N(albedo_map), Low::Util::Variant::from_handle(
+                                               l_AlbedoTexture.get_id()));
+    l_Material.set_property(N(normal_map), Low::Util::Variant::from_handle(
+                                               l_NormalTexture.get_id()));
+    l_Material.set_property(N(roughness_map), Low::Util::Variant::from_handle(
+                                                  l_Roughness.get_id()));
+    l_Material.set_property(N(metalness_map), Low::Util::Variant::from_handle(
+                                                  l_Metalness.get_id()));
+  }
+
   Low::Core::MeshAsset l_SphereMeshAsset =
       Low::Core::MeshAsset::find_by_name(N(Sphere));
   Low::Core::MeshAsset l_CubeMeshAsset =
@@ -59,6 +81,7 @@ static void setup_scene()
     Low::Core::Component::MeshRenderer l_MeshRenderer =
         Low::Core::Component::MeshRenderer::make(l_Entity);
     l_MeshRenderer.set_mesh(l_CubeMeshAsset);
+    l_MeshRenderer.set_material(l_Material);
 
     l_Transform.position(Low::Math::Vector3(0.0f, 0.0f, -3.0f));
     l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
@@ -71,6 +94,7 @@ static void setup_scene()
     Low::Core::Component::MeshRenderer l_MeshRenderer =
         Low::Core::Component::MeshRenderer::make(l_Entity);
     l_MeshRenderer.set_mesh(l_SphereMeshAsset);
+    l_MeshRenderer.set_material(l_Material);
 
     l_Transform.position(Low::Math::Vector3(0.0f, 3.0f, -5.0f));
     l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
@@ -83,6 +107,7 @@ static void setup_scene()
     Low::Core::Component::MeshRenderer l_MeshRenderer =
         Low::Core::Component::MeshRenderer::make(l_Entity);
     l_MeshRenderer.set_mesh(l_CubeMeshAsset);
+    l_MeshRenderer.set_material(l_Material);
 
     l_Transform.position(Low::Math::Vector3(-3.0f, 3.0f, -8.0f));
     l_Transform.rotation(Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f));
@@ -96,6 +121,7 @@ static void setup_scene()
     Low::Core::Component::MeshRenderer l_MeshRenderer =
         Low::Core::Component::MeshRenderer::make(l_Entity);
     l_MeshRenderer.set_mesh(l_SuzanneMeshAsset);
+    l_MeshRenderer.set_material(l_Material);
 
     l_Transform.position(Low::Math::Vector3(2.0f, 3.0f, -8.0f));
     l_Transform.rotation(

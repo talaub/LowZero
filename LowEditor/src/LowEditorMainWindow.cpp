@@ -74,6 +74,8 @@ namespace Low {
       if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Scene")) {
           if (ImGui::MenuItem("Save", NULL, nullptr)) {
+            LOW_LOG_WARN << "Saving scenes is not yet implemented"
+                         << LOW_LOG_END;
           }
 
           ImGui::EndMenu();

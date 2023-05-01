@@ -10,7 +10,7 @@
 namespace Low {
   namespace Core {
     namespace Component {
-      const uint16_t MeshRenderer::TYPE_ID = 22;
+      const uint16_t MeshRenderer::TYPE_ID = 24;
       uint32_t MeshRenderer::ms_Capacity = 0u;
       uint8_t *MeshRenderer::ms_Buffer = 0;
       Low::Util::Instances::Slot *MeshRenderer::ms_Slots = 0;
@@ -39,6 +39,8 @@ namespace Low {
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, mesh, MeshAsset))
             MeshAsset();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, material, Material))
+            Material();
         new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, entity,
                                 Low::Core::Entity)) Low::Core::Entity();
 
@@ -46,6 +48,9 @@ namespace Low {
         p_Entity.add_component(l_Handle);
 
         ms_LivingInstances.push_back(l_Handle);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
       }
@@ -115,6 +120,24 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(material);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(MeshRendererData, material);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Material::TYPE_ID;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, material,
+                                              Material);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, material, Material) =
+                *(Material *)p_Data;
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(MeshRendererData, entity);
@@ -175,6 +198,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         get_mesh().serialize(p_Node["mesh"]);
+        get_material().serialize(p_Node["material"]);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
@@ -194,6 +218,9 @@ namespace Low {
 
         l_Handle.set_mesh(
             MeshAsset::deserialize(p_Node["mesh"], l_Handle.get_id()).get_id());
+        l_Handle.set_material(
+            Material::deserialize(p_Node["material"], l_Handle.get_id())
+                .get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -203,12 +230,12 @@ namespace Low {
 
       MeshAsset MeshRenderer::get_mesh() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(MeshRenderer, mesh, MeshAsset);
       }
       void MeshRenderer::set_mesh(MeshAsset p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(MeshRenderer, mesh, MeshAsset) = p_Value;
@@ -217,14 +244,30 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
       }
 
+      Material MeshRenderer::get_material() const
+      {
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        return TYPE_SOA(MeshRenderer, material, Material);
+      }
+      void MeshRenderer::set_material(Material p_Value)
+      {
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // Set new value
+        TYPE_SOA(MeshRenderer, material, Material) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+        // LOW_CODEGEN::END::CUSTOM:SETTER_material
+      }
+
       Low::Core::Entity MeshRenderer::get_entity() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(MeshRenderer, entity, Low::Core::Entity);
       }
       void MeshRenderer::set_entity(Low::Core::Entity p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(MeshRenderer, entity, Low::Core::Entity) = p_Value;
@@ -272,6 +315,13 @@ namespace Low {
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(MeshRendererData, mesh) * (l_Capacity)],
                  l_Capacity * sizeof(MeshAsset));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(MeshRendererData, material) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(MeshRendererData, material) * (l_Capacity)],
+              l_Capacity * sizeof(Material));
         }
         {
           memcpy(&l_NewBuffer[offsetof(MeshRendererData, entity) *

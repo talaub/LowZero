@@ -45,6 +45,9 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
         return l_Handle;
       }
 
@@ -209,12 +212,12 @@ namespace Low {
 
       Backend::Buffer &Buffer::get_buffer() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Buffer, buffer, Backend::Buffer);
       }
       void Buffer::set_buffer(Backend::Buffer &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Buffer, buffer, Backend::Buffer) = p_Value;
@@ -225,12 +228,12 @@ namespace Low {
 
       Low::Util::Name Buffer::get_name() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Buffer, name, Low::Util::Name);
       }
       void Buffer::set_name(Low::Util::Name p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Buffer, name, Low::Util::Name) = p_Value;

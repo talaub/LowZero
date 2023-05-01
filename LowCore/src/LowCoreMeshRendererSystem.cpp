@@ -54,10 +54,14 @@ namespace Low {
             Component::Transform i_Transform =
                 i_MeshRenderer.get_entity().get_transform();
 
-            if (!i_MeshRenderer.get_mesh().get_lod0().is_alive()) {
+            if (!i_MeshRenderer.get_mesh().get_lod0().is_alive() ||
+                !i_MeshRenderer.get_material().is_alive()) {
               continue;
             }
 
+            if (!i_MeshRenderer.get_material().is_loaded()) {
+              i_MeshRenderer.get_material().load();
+            }
             if (!i_MeshRenderer.get_mesh().get_lod0().is_loaded()) {
               TaskScheduler::schedule_mesh_resource_load(
                   i_MeshRenderer.get_mesh().get_lod0());
@@ -71,7 +75,7 @@ namespace Low {
                 glm::scale(glm::mat4(1.0f), i_Transform.get_world_scale());
 
             render_mesh(i_MeshRenderer.get_mesh().get_lod0(), i_TransformMatrix,
-                        Renderer::Material::ms_LivingInstances[0],
+                        i_MeshRenderer.get_material().get_renderer_material(),
                         i_MeshRenderer.get_entity().get_index());
           }
         }

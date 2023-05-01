@@ -45,6 +45,9 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
         return l_Handle;
       }
 
@@ -208,12 +211,12 @@ namespace Low {
 
       Backend::ImageResource &Image::get_image() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Image, image, Backend::ImageResource);
       }
       void Image::set_image(Backend::ImageResource &p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Image, image, Backend::ImageResource) = p_Value;
@@ -224,12 +227,12 @@ namespace Low {
 
       Low::Util::Name Image::get_name() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Image, name, Low::Util::Name);
       }
       void Image::set_name(Low::Util::Name p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Image, name, Low::Util::Name) = p_Value;

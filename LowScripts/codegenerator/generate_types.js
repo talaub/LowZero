@@ -3,7 +3,7 @@ const os = require('os');
 const exec = require('child_process').execSync;
 const YAML = require('yaml');
 
-const g_Directory = `${__dirname}\\..\\..\\data\\_internal\\type_configs`; 
+const g_Directory = `${__dirname}\\..\\..\\misteda\\data\\_internal\\type_configs`; 
 const g_TypeInitializerCppPath = `${__dirname}\\..\\..\\LowUtil\\src\\LowUtilTypeInitializer.cpp`; 
 let g_TypeId = 1;
 
@@ -563,6 +563,24 @@ function generate_source(p_Type) {
     }
     t += line(`ms_LivingInstances.push_back(l_Handle);`);
     t += empty();
+    const l_MakeMarkerName = `CUSTOM:MAKE`;
+
+    const l_MakeBeginMarker = get_marker_begin(l_MakeMarkerName);
+    const l_MakeEndMarker = get_marker_end(l_MakeMarkerName);
+
+    const l_MakeBeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MakeMarkerName);
+
+    let l_MakeCustomCode = '';
+
+    if (l_MakeBeginMarkerIndex >= 0) {
+	const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MakeMarkerName);
+
+	l_MakeCustomCode = l_OldCode.substring(l_MakeBeginMarkerIndex, l_EndMarkerIndex);
+    }
+    t += line(l_MakeBeginMarker);
+    t += l_MakeCustomCode;
+    t += line(l_MakeEndMarker);
+    t += empty();
     t += line('return l_Handle;');
 
     t += line('}');
@@ -811,7 +829,7 @@ function generate_source(p_Type) {
 	if (!i_Prop.no_getter) {
 	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() const`, n);
 	    t += line('{', n++);
-	    t += line('_LOW_ASSERT(is_alive());');
+	    t += line('LOW_ASSERT(is_alive(), "Cannot get property from dead handle");');
 	    t += line(`return TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type});`, n);
 	    t += line('}', --n);
 	}
@@ -833,7 +851,7 @@ function generate_source(p_Type) {
 	    
 	    t += line(`void ${p_Type.name}::${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value)`, n);
 	    t += line('{', n++);
-	    t += line('_LOW_ASSERT(is_alive());');
+	    t += line('LOW_ASSERT(is_alive(), "Cannot set property on dead handle");');
 	    t += empty();
 	    if (i_Prop.dirty_flag) {
 		t += line(`if (${i_Prop.getter_name}() != p_Value) {`);

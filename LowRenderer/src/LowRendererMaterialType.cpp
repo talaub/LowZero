@@ -40,6 +40,7 @@ namespace Low {
                               GraphicsPipelineConfig)) GraphicsPipelineConfig();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, depth_pipeline,
                               GraphicsPipelineConfig)) GraphicsPipelineConfig();
+      ACCESSOR_TYPE_SOA(l_Handle, MaterialType, internal, bool) = false;
       new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, properties,
                               Util::List<MaterialTypeProperty>))
           Util::List<MaterialTypeProperty>();
@@ -49,6 +50,9 @@ namespace Low {
       l_Handle.set_name(p_Name);
 
       ms_LivingInstances.push_back(l_Handle);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
     }
@@ -132,6 +136,23 @@ namespace Low {
           ACCESSOR_TYPE_SOA(p_Handle, MaterialType, depth_pipeline,
                             GraphicsPipelineConfig) =
               *(GraphicsPipelineConfig *)p_Data;
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(internal);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, internal);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, internal,
+                                            bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          ACCESSOR_TYPE_SOA(p_Handle, MaterialType, internal, bool) =
+              *(bool *)p_Data;
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -251,12 +272,12 @@ namespace Low {
 
     GraphicsPipelineConfig &MaterialType::get_gbuffer_pipeline() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MaterialType, gbuffer_pipeline, GraphicsPipelineConfig);
     }
     void MaterialType::set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MaterialType, gbuffer_pipeline, GraphicsPipelineConfig) =
@@ -268,12 +289,12 @@ namespace Low {
 
     GraphicsPipelineConfig &MaterialType::get_depth_pipeline() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig);
     }
     void MaterialType::set_depth_pipeline(GraphicsPipelineConfig &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig) = p_Value;
@@ -282,15 +303,31 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline
     }
 
+    bool MaterialType::is_internal() const
+    {
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      return TYPE_SOA(MaterialType, internal, bool);
+    }
+    void MaterialType::set_internal(bool p_Value)
+    {
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // Set new value
+      TYPE_SOA(MaterialType, internal, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
+      // LOW_CODEGEN::END::CUSTOM:SETTER_internal
+    }
+
     Util::List<MaterialTypeProperty> &MaterialType::get_properties() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MaterialType, properties,
                       Util::List<MaterialTypeProperty>);
     }
     void MaterialType::set_properties(Util::List<MaterialTypeProperty> &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MaterialType, properties, Util::List<MaterialTypeProperty>) =
@@ -302,12 +339,12 @@ namespace Low {
 
     Low::Util::Name MaterialType::get_name() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MaterialType, name, Low::Util::Name);
     }
     void MaterialType::set_name(Low::Util::Name p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MaterialType, name, Low::Util::Name) = p_Value;
@@ -363,6 +400,12 @@ namespace Low {
                &ms_Buffer[offsetof(MaterialTypeData, depth_pipeline) *
                           (l_Capacity)],
                l_Capacity * sizeof(GraphicsPipelineConfig));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MaterialTypeData, internal) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MaterialTypeData, internal) * (l_Capacity)],
+               l_Capacity * sizeof(bool));
       }
       {
         for (auto it = ms_LivingInstances.begin();

@@ -1987,6 +1987,9 @@ namespace Low {
                                       bool p_CreateVulkanRenderpass,
                                       bool p_UpdateExisting)
       {
+        LOW_LOG_DEBUG << "Creating internal renderpass with p_UpdateExisting: "
+                      << p_UpdateExisting
+                      << "and usedepth: " << p_Params.useDepth << LOW_LOG_END;
         p_Renderpass.context = p_Params.context;
         p_Renderpass.dimensions = p_Params.dimensions;
         p_Renderpass.clearDepthColor = p_Params.clearDepthColor;
@@ -1996,6 +1999,7 @@ namespace Low {
           p_Renderpass.renderTargets = nullptr;
           p_Renderpass.clearTargetColor = nullptr;
           if (p_Params.renderTargetCount > 0) {
+            LOW_LOG_DEBUG << "Allocating rendertargets" << LOW_LOG_END;
             p_Renderpass.renderTargets =
                 (Backend::ImageResource *)Util::Memory::main_allocator()
                     ->allocate(p_Params.renderTargetCount *
@@ -2122,6 +2126,8 @@ namespace Low {
         l_RenderpassInfo.dependencyCount = l_Dependencies.size();
         l_RenderpassInfo.pDependencies = l_Dependencies.data();
 
+        LOW_LOG_DEBUG << "Is creating renderpass? " << p_CreateVulkanRenderpass
+                      << LOW_LOG_END;
         if (p_CreateVulkanRenderpass) {
           LOW_ASSERT(vkCreateRenderPass(p_Params.context->vk.m_Device,
                                         &l_RenderpassInfo, nullptr,
@@ -2155,6 +2161,7 @@ namespace Low {
           l_FramebufferInfo.height = p_Params.dimensions.y;
           l_FramebufferInfo.layers = 1;
 
+          LOW_LOG_DEBUG << "Creating framebuffer" << LOW_LOG_END;
           LOW_ASSERT(vkCreateFramebuffer(p_Params.context->vk.m_Device,
                                          &l_FramebufferInfo, nullptr,
                                          &(p_Renderpass.vk.m_Framebuffer)) ==

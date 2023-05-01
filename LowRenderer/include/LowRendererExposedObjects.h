@@ -2,6 +2,7 @@
 
 #include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
+#include "LowRendererTexture2D.h"
 
 #include "LowMath.h"
 

@@ -60,6 +60,9 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
         return l_Handle;
       }
 
@@ -313,24 +316,24 @@ namespace Low {
 
       Backend::Context &Context::get_context() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Context, context, Backend::Context);
       }
 
       Util::List<Renderpass> &Context::get_renderpasses() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Context, renderpasses, Util::List<Renderpass>);
       }
 
       PipelineResourceSignature Context::get_global_signature() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Context, global_signature, PipelineResourceSignature);
       }
       void Context::set_global_signature(PipelineResourceSignature p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Context, global_signature, PipelineResourceSignature) =
@@ -342,12 +345,12 @@ namespace Low {
 
       Resource::Buffer Context::get_frame_info_buffer() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Context, frame_info_buffer, Resource::Buffer);
       }
       void Context::set_frame_info_buffer(Resource::Buffer p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Context, frame_info_buffer, Resource::Buffer) = p_Value;
@@ -358,12 +361,12 @@ namespace Low {
 
       Resource::Buffer Context::get_material_data_buffer() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Context, material_data_buffer, Resource::Buffer);
       }
       void Context::set_material_data_buffer(Resource::Buffer p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Context, material_data_buffer, Resource::Buffer) = p_Value;
@@ -374,12 +377,12 @@ namespace Low {
 
       Low::Util::Name Context::get_name() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(Context, name, Low::Util::Name);
       }
       void Context::set_name(Low::Util::Name p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(Context, name, Low::Util::Name) = p_Value;
@@ -413,9 +416,17 @@ namespace Low {
           l_Params.context = &l_Context.get_context();
           l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
 
+          Math::UVector2 l_ContextDimensions = {1, 1};
+          if (l_Context.get_dimensions().x > 0) {
+            l_ContextDimensions.x = l_ContextDimensions.x;
+          }
+          if (l_Context.get_dimensions().y > 0) {
+            l_ContextDimensions.y = l_ContextDimensions.y;
+          }
+
           Math::Vector2 l_InverseDimensions = {
-              1.0f / ((float)l_Context.get_dimensions().x),
-              1.0f / ((float)l_Context.get_dimensions().y)};
+              1.0f / ((float)l_ContextDimensions.x),
+              1.0f / ((float)l_ContextDimensions.y)};
 
           l_Params.data = &l_InverseDimensions;
 

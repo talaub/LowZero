@@ -156,13 +156,6 @@ namespace Low {
     Interface::GraphicsPipeline g_FullscreenPipeline;
     Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
 
-    Texture2D g_Texture;
-    Texture2D g_RustNormalTexture;
-    Texture2D g_RustRoughnessTexture;
-    Texture2D g_RustMetalnessTexture;
-    Texture2D g_Texture2;
-    Texture2D g_WoodNormalTexture;
-
     static void setup_custom_renderstep_configs()
     {
       ShadowStep::setup_config();
@@ -204,6 +197,12 @@ namespace Low {
       */
 
       return l_Mesh;
+    }
+
+    Texture2D upload_texture(Util::Name p_Name,
+                             Util::Resource::Image2D &p_Image)
+    {
+      return Texture2D::make(p_Name, g_Context, p_Image);
     }
 
     static void initialize_frontend_types()
@@ -407,6 +406,11 @@ namespace Low {
 
             MaterialType i_MaterialType = MaterialType::make(i_Name);
 
+            i_MaterialType.set_internal(false);
+            if (it->second["internal"]) {
+              i_MaterialType.set_internal(it->second["internal"].as<bool>());
+            }
+
             i_MaterialType.set_gbuffer_pipeline(
                 get_graphics_pipeline_config(i_GBufferPipelineName));
             i_MaterialType.set_depth_pipeline(
@@ -574,52 +578,6 @@ namespace Low {
       g_IndexBuffer.initialize(N(IndexBuffer), g_Context, MeshBufferType::INDEX,
                                sizeof(uint32_t), 256000u);
 
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(
-            Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.ktx", l_Image);
-        g_Texture = Texture2D::make(N(TestTexture), g_Context, l_Image);
-      }
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
-                                         "/assets/img2d/wb_normal.ktx",
-                                     l_Image);
-        g_WoodNormalTexture =
-            Texture2D::make(N(WoodBoxNormal), g_Context, l_Image);
-      }
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
-                                         "/assets/img2d/out_rust.ktx",
-                                     l_Image);
-        g_Texture2 = Texture2D::make(N(TestTextureRust), g_Context, l_Image);
-      }
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
-                                         "/assets/img2d/rust_normal.ktx",
-                                     l_Image);
-        g_RustNormalTexture =
-            Texture2D::make(N(RustNormalTexture), g_Context, l_Image);
-      }
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
-                                         "/assets/img2d/rust_roughness.ktx",
-                                     l_Image);
-        g_RustRoughnessTexture =
-            Texture2D::make(N(RustRoughnessTexture), g_Context, l_Image);
-      }
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(Util::String(LOW_DATA_PATH) +
-                                         "/assets/img2d/rust_metalness.ktx",
-                                     l_Image);
-        g_RustMetalnessTexture =
-            Texture2D::make(N(RustMetalnessTexture), g_Context, l_Image);
-      }
-
       initialize_global_resources();
 
       load_material_types();
@@ -668,21 +626,6 @@ namespace Low {
 
         g_FullScreenPipelineSignature.set_sampler_resource(
             N(u_FinalImage), 0, Texture2D::ms_LivingInstances[0].get_image());
-      }
-
-      {
-        Material l_Material = Material::make(N(TestMat), g_Context);
-        l_Material.set_material_type(MaterialType::living_instances()[0]);
-        l_Material.set_property(N(albedo_color), Util::Variant(Math::Vector4(
-                                                     0.2f, 0.8f, 1.0f, 1.0f)));
-
-        l_Material.set_property(N(albedo_map), Util::Variant(g_Texture2));
-        l_Material.set_property(N(normal_map),
-                                Util::Variant(g_RustNormalTexture));
-        l_Material.set_property(N(roughness_map),
-                                Util::Variant(g_RustRoughnessTexture));
-        l_Material.set_property(N(metalness_map),
-                                Util::Variant(g_RustMetalnessTexture));
       }
 
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));

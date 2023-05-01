@@ -1,68 +1,53 @@
 #pragma once
 
-#include "LowRendererApi.h"
+#include "LowCoreApi.h"
 
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "LowRendererFrontendConfig.h"
+#include "LowRendererExposedObjects.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
-  namespace Renderer {
+  namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    namespace MaterialTypePropertyType {
-      enum Enum
-      {
-        VECTOR4,
-        VECTOR3,
-        VECTOR2,
-        TEXTURE2D
-      };
-    }
-
-    struct MaterialTypeProperty
-    {
-      Util::Name name;
-      uint8_t type;
-      uint32_t offset;
-    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER_API MaterialTypeData
+    struct LOW_CORE_API Texture2DData
     {
-      GraphicsPipelineConfig gbuffer_pipeline;
-      GraphicsPipelineConfig depth_pipeline;
-      bool internal;
-      Util::List<MaterialTypeProperty> properties;
+      Util::String path;
+      Renderer::Texture2D renderer_texture;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(MaterialTypeData);
+        return sizeof(Texture2DData);
       }
     };
 
-    struct LOW_RENDERER_API MaterialType : public Low::Util::Handle
+    struct LOW_CORE_API Texture2D : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<MaterialType> ms_LivingInstances;
+      static Low::Util::List<Texture2D> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      MaterialType();
-      MaterialType(uint64_t p_Id);
-      MaterialType(MaterialType &p_Copy);
+      Texture2D();
+      Texture2D(uint64_t p_Id);
+      Texture2D(Texture2D &p_Copy);
 
-      static MaterialType make(Low::Util::Name p_Name);
-      explicit MaterialType(const MaterialType &p_Copy)
+    private:
+      static Texture2D make(Low::Util::Name p_Name);
+
+    public:
+      explicit Texture2D(const Texture2D &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -76,12 +61,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static MaterialType *living_instances()
+      static Texture2D *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static MaterialType find_by_index(uint32_t p_Index);
+      static Texture2D find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
 
@@ -89,7 +74,7 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      static MaterialType find_by_name(Low::Util::Name p_Name);
+      static Texture2D find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
@@ -103,29 +88,27 @@ namespace Low {
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        MaterialType l_MaterialType = p_Handle.get_id();
-        l_MaterialType.destroy();
+        Texture2D l_Texture2D = p_Handle.get_id();
+        l_Texture2D.destroy();
       }
 
-      GraphicsPipelineConfig &get_gbuffer_pipeline() const;
-      void set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value);
+      Util::String &get_path() const;
 
-      GraphicsPipelineConfig &get_depth_pipeline() const;
-      void set_depth_pipeline(GraphicsPipelineConfig &p_Value);
-
-      bool is_internal() const;
-      void set_internal(bool p_Value);
-
-      Util::List<MaterialTypeProperty> &get_properties() const;
-      void set_properties(Util::List<MaterialTypeProperty> &p_Value);
+      Renderer::Texture2D get_renderer_texture() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
+
+      static Texture2D make(Util::String &p_Path);
+      bool is_loaded();
+      void load();
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
+      void set_path(Util::String &p_Value);
+      void set_renderer_texture(Renderer::Texture2D p_Value);
     };
-  } // namespace Renderer
+  } // namespace Core
 } // namespace Low

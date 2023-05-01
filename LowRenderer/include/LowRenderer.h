@@ -29,6 +29,9 @@ namespace Low {
     LOW_RENDERER_API RenderFlow get_main_renderflow();
 
     LOW_RENDERER_API Material create_material(Util::Name p_Name,
-                                              MaterialType p_Tyoe);
+                                              MaterialType p_Type);
+
+    LOW_RENDERER_API Texture2D upload_texture(Util::Name p_Name,
+                                              Util::Resource::Image2D &p_Image);
   } // namespace Renderer
 } // namespace Low

@@ -115,59 +115,83 @@ namespace Low {
         ImGui::DragFloat(l_Label.c_str(), &p_Float);
       }
 
-      void render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
-                                  Util::Handle p_Handle)
+      bool render_handle_selector(Util::String p_Label, uint16_t p_Type,
+                                  uint64_t *p_HandleId)
       {
-        Util::String l_Label = p_PropertyInfo.name.c_str();
-        render_label(l_Label);
+        return render_handle_selector(
+            p_Label, Util::Handle::get_type_info(p_Type), p_HandleId);
+      }
 
+      bool render_handle_selector(Util::String p_Label,
+                                  Util::RTTI::TypeInfo &p_TypeInfo,
+                                  uint64_t *p_HandleId)
+      {
         ImGui::BeginGroup();
-        Util::RTTI::TypeInfo &l_TypeInfo =
-            Util::Handle::get_type_info(p_Handle.get_type());
+        render_label(p_Label);
 
-        Util::RTTI::TypeInfo &l_PropTypeInfo =
-            Util::Handle::get_type_info(p_PropertyInfo.handleType);
-        const char *l_DisplayName = "Object";
+        bool l_Changed = false;
+
+        Util::Handle l_CurrentHandle = *p_HandleId;
+
+        Util::String l_PopupName = Util::String("_choose_element_") + p_Label;
+
+        const char *l_DisplayName = "None";
 
         Util::RTTI::PropertyInfo l_NameProperty;
         bool l_HasNameProperty = false;
 
-        if (l_PropTypeInfo.properties.find(N(name)) !=
-            l_PropTypeInfo.properties.end()) {
+        if (p_TypeInfo.properties.find(N(name)) !=
+            p_TypeInfo.properties.end()) {
 
-          Util::Handle l_PropValueHandle =
-              *(Util::Handle *)p_PropertyInfo.get(p_Handle);
+          l_NameProperty = p_TypeInfo.properties[N(name)];
 
-          l_NameProperty = l_PropTypeInfo.properties[N(name)];
-
-          l_DisplayName = ((Util::Name *)l_PropTypeInfo.properties[N(name)].get(
-                               l_PropValueHandle))
-                              ->c_str();
+          if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+            l_DisplayName = ((Util::Name *)p_TypeInfo.properties[N(name)].get(
+                                 l_CurrentHandle))
+                                ->c_str();
+          }
           l_HasNameProperty = true;
         }
         ImGui::Text(l_DisplayName);
         ImGui::SameLine();
         if (ImGui::Button("Choose...")) {
-          ImGui::OpenPopup("_choose_element");
+          ImGui::OpenPopup(l_PopupName.c_str());
         }
 
-        if (ImGui::BeginPopup("_choose_element")) {
-          Util::Handle *l_Handles = l_PropTypeInfo.get_living_instances();
+        if (ImGui::BeginPopup(l_PopupName.c_str())) {
+          Util::Handle *l_Handles = p_TypeInfo.get_living_instances();
 
-          for (uint32_t i = 0u; i < l_PropTypeInfo.get_living_count(); ++i) {
+          for (uint32_t i = 0u; i < p_TypeInfo.get_living_count(); ++i) {
             char *i_DisplayName = "Object";
             if (l_HasNameProperty) {
               l_DisplayName =
                   ((Util::Name *)l_NameProperty.get(l_Handles[i]))->c_str();
             }
             if (ImGui::Selectable(l_DisplayName)) {
-              p_PropertyInfo.set(p_Handle, &(l_Handles[i]));
+              *p_HandleId = l_Handles[i].get_id();
+              l_Changed = true;
             }
           }
           ImGui::EndPopup();
         }
 
         ImGui::EndGroup();
+        return l_Changed;
+      }
+
+      void render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
+                                  Util::Handle p_Handle)
+      {
+        Util::String l_Label = p_PropertyInfo.name.c_str();
+
+        Util::RTTI::TypeInfo &l_PropTypeInfo =
+            Util::Handle::get_type_info(p_PropertyInfo.handleType);
+
+        uint64_t l_CurrentValue = *(uint64_t *)p_PropertyInfo.get(p_Handle);
+
+        if (render_handle_selector(l_Label, l_PropTypeInfo, &l_CurrentValue)) {
+          p_PropertyInfo.set(p_Handle, &l_CurrentValue);
+        }
       }
 
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,

@@ -65,9 +65,9 @@ namespace Low {
       Variant &Variant::operator=(Math::Quaternion p_Value);
       Variant &Variant::operator=(Handle p_Value);
 
-      void set_handle(Handle &p_Value);
+      void set_handle(Handle p_Value);
 
-      static Variant from_handle(Handle &p_Value);
+      static Variant from_handle(Handle p_Value);
 
       operator bool() const;
       operator float() const;

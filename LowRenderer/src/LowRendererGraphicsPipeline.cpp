@@ -49,6 +49,9 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
         return l_Handle;
       }
 
@@ -215,18 +218,18 @@ namespace Low {
 
       Backend::Pipeline &GraphicsPipeline::get_pipeline() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(GraphicsPipeline, pipeline, Backend::Pipeline);
       }
 
       Low::Util::Name GraphicsPipeline::get_name() const
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
         return TYPE_SOA(GraphicsPipeline, name, Low::Util::Name);
       }
       void GraphicsPipeline::set_name(Low::Util::Name p_Value)
       {
-        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // Set new value
         TYPE_SOA(GraphicsPipeline, name, Low::Util::Name) = p_Value;

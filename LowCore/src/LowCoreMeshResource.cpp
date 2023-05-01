@@ -50,6 +50,9 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      // LOW_CODEGEN::END::CUSTOM:MAKE
+
       return l_Handle;
     }
 
@@ -245,12 +248,12 @@ namespace Low {
 
     Util::String &MeshResource::get_path() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MeshResource, path, Util::String);
     }
     void MeshResource::set_path(Util::String &p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MeshResource, path, Util::String) = p_Value;
@@ -261,18 +264,18 @@ namespace Low {
 
     Util::List<Submesh> &MeshResource::get_submeshes() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MeshResource, submeshes, Util::List<Submesh>);
     }
 
     uint32_t MeshResource::get_reference_count() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MeshResource, reference_count, uint32_t);
     }
     void MeshResource::set_reference_count(uint32_t p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MeshResource, reference_count, uint32_t) = p_Value;
@@ -283,12 +286,12 @@ namespace Low {
 
     Low::Util::Name MeshResource::get_name() const
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
     }
     void MeshResource::set_name(Low::Util::Name p_Value)
     {
-      _LOW_ASSERT(is_alive());
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
       // Set new value
       TYPE_SOA(MeshResource, name, Low::Util::Name) = p_Value;
