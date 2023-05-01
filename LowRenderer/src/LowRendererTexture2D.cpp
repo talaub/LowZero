@@ -113,10 +113,7 @@ namespace Low {
                                             Resource::Image);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image, Resource::Image) =
-              *(Resource::Image *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -127,14 +124,10 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, context,
-                                            Interface::Context);
+          return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, context, Interface::Context) =
-              *(Interface::Context *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -149,8 +142,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -250,6 +243,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
+
       // Set new value
       TYPE_SOA(Texture2D, image, Resource::Image) = p_Value;
 
@@ -266,6 +262,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
+
       // Set new value
       TYPE_SOA(Texture2D, context, Interface::Context) = p_Value;
 
@@ -281,6 +280,9 @@ namespace Low {
     void Texture2D::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Texture2D, name, Low::Util::Name) = p_Value;

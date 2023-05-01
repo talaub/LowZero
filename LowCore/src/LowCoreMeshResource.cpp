@@ -51,6 +51,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_reference_count(0);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -112,10 +113,7 @@ namespace Low {
                                             Util::String);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, MeshResource, path, Util::String) =
-              *(Util::String *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -129,11 +127,7 @@ namespace Low {
                                             Util::List<Submesh>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, MeshResource, submeshes,
-                            Util::List<Submesh>) =
-              *(Util::List<Submesh> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -143,14 +137,10 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
-                                            reference_count, uint32_t);
+          return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, MeshResource, reference_count, uint32_t) =
-              *(uint32_t *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -165,8 +155,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, MeshResource, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -255,6 +245,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
+
       // Set new value
       TYPE_SOA(MeshResource, path, Util::String) = p_Value;
 
@@ -277,6 +270,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
+
       // Set new value
       TYPE_SOA(MeshResource, reference_count, uint32_t) = p_Value;
 
@@ -292,6 +288,9 @@ namespace Low {
     void MeshResource::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MeshResource, name, Low::Util::Name) = p_Value;
@@ -329,7 +328,16 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
       LOW_ASSERT(is_alive(), "Mesh resource was not alive on load");
-      LOW_ASSERT_WARN(!is_loaded(), "Trying to load already loaded mesh");
+
+      set_reference_count(get_reference_count() + 1);
+
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased MeshResource reference count, but its not over 0. "
+                 "Something went wrong.");
+
+      if (is_loaded()) {
+        return;
+      }
 
       Util::String l_FullPath =
           Util::String(LOW_DATA_PATH) + "\\resources\\meshes\\" + get_path();
@@ -348,6 +356,32 @@ namespace Low {
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+    }
+
+    void MeshResource::unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+      set_reference_count(get_reference_count() - 1);
+
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "MeshResource reference count < 0. Something went wrong.");
+
+      if (get_reference_count() <= 0) {
+        _unload();
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload
+    }
+
+    void MeshResource::_unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      for (auto it = get_submeshes().begin(); it != get_submeshes().end();
+           ++it) {
+        Renderer::unload_mesh(it->mesh);
+      }
+
+      get_submeshes().clear();
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 
     uint32_t MeshResource::create_instance()

@@ -114,6 +114,57 @@ namespace Low {
         return l_SavePoint;
       }
 
+      void free(uint32_t p_Position, uint32_t p_ElementCount)
+      {
+        LOW_ASSERT(m_Initialized, "Cannot free from uninitialized MeshBuffer");
+
+        uint32_t l_ClosestUnder = ~0u;
+        uint32_t l_ClosestOver = ~0u;
+        uint32_t l_UnderDiff = ~0u;
+        uint32_t l_OverDiff = ~0u;
+
+        for (uint32_t i = 0u; i < m_FreeSlots.size(); ++i) {
+          MeshBufferFreeSlot &i_Slot = m_FreeSlots[i];
+
+          if (i_Slot.start < p_Position) {
+            LOW_ASSERT((i_Slot.start + i_Slot.length) <= p_Position,
+                       "Tried to double free from mesh buffer");
+
+            uint32_t i_Diff = p_Position - (i_Slot.start + i_Slot.length);
+            if (i_Diff < l_UnderDiff) {
+              l_UnderDiff = i_Diff;
+              l_ClosestUnder = i;
+            }
+          } else {
+            LOW_ASSERT((p_Position + p_ElementCount) <= i_Slot.start,
+                       "Tried to double free from mesh buffer");
+
+            uint32_t i_Diff = i_Slot.start - (p_Position + p_ElementCount);
+            if (i_Diff < l_OverDiff) {
+              l_OverDiff = i_Diff;
+              l_ClosestOver = i;
+            }
+          }
+        }
+
+        if (l_UnderDiff == 0 && l_ClosestOver == 0) {
+          m_FreeSlots[l_ClosestUnder].length =
+              m_FreeSlots[l_ClosestUnder].length + p_ElementCount +
+              m_FreeSlots[l_ClosestOver].length;
+
+          m_FreeSlots.erase(m_FreeSlots.begin() + l_ClosestOver);
+        } else if (l_UnderDiff == 0) {
+          m_FreeSlots[l_ClosestUnder].length =
+              m_FreeSlots[l_ClosestUnder].length + p_ElementCount;
+        } else if (l_OverDiff == 0) {
+          m_FreeSlots[l_ClosestOver].start = p_Position;
+          m_FreeSlots[l_ClosestOver].length =
+              m_FreeSlots[l_ClosestOver].length + p_ElementCount;
+        } else {
+          m_FreeSlots.push_back({p_Position, p_ElementCount});
+        }
+      }
+
       void bind()
       {
         if (m_Type == MeshBufferType::VERTEX) {
@@ -197,6 +248,16 @@ namespace Low {
       */
 
       return l_Mesh;
+    }
+
+    void unload_mesh(Mesh p_Mesh)
+    {
+      g_VertexBuffer.free(p_Mesh.get_vertex_buffer_start(),
+                          p_Mesh.get_vertex_count());
+      g_IndexBuffer.free(p_Mesh.get_index_buffer_start(),
+                         p_Mesh.get_index_count());
+
+      p_Mesh.destroy();
     }
 
     Texture2D upload_texture(Util::Name p_Name,

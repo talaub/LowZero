@@ -133,12 +133,7 @@ namespace Low {
               SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, resources,
-              SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>)) =
-              *(Util::Map<RenderFlow, ResourceRegistry> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -153,10 +148,7 @@ namespace Low {
                                             GraphicsStepConfig);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStep, config,
-                            GraphicsStepConfig) = *(GraphicsStepConfig *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -172,14 +164,7 @@ namespace Low {
                                    Util::List<Interface::GraphicsPipeline>>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, pipelines,
-              SINGLE_ARG(Util::Map<RenderFlow,
-                                   Util::List<Interface::GraphicsPipeline>>)) =
-              *(Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>>
-                    *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -195,15 +180,7 @@ namespace Low {
                                    Util::Map<Mesh, Util::List<RenderObject>>>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, renderobjects,
-              SINGLE_ARG(
-                  Util::Map<Util::Name,
-                            Util::Map<Mesh, Util::List<RenderObject>>>)) =
-              *(Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
-                    *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -218,12 +195,7 @@ namespace Low {
               SINGLE_ARG(Util::Map<RenderFlow, Interface::Renderpass>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, renderpasses,
-              SINGLE_ARG(Util::Map<RenderFlow, Interface::Renderpass>)) =
-              *(Util::Map<RenderFlow, Interface::Renderpass> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -238,10 +210,7 @@ namespace Low {
                                             Interface::Context);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStep, context,
-                            Interface::Context) = *(Interface::Context *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -257,14 +226,7 @@ namespace Low {
                   Util::Map<RenderFlow, Interface::PipelineResourceSignature>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(
-              p_Handle, GraphicsStep, signatures,
-              SINGLE_ARG(Util::Map<RenderFlow,
-                                   Interface::PipelineResourceSignature>)) =
-              *(Util::Map<RenderFlow, Interface::PipelineResourceSignature> *)
-                  p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -279,8 +241,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStep, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -387,6 +349,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_config
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
+
       // Set new value
       TYPE_SOA(GraphicsStep, config, GraphicsStepConfig) = p_Value;
 
@@ -431,6 +396,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
+
       // Set new value
       TYPE_SOA(GraphicsStep, context, Interface::Context) = p_Value;
 
@@ -456,6 +424,9 @@ namespace Low {
     void GraphicsStep::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(GraphicsStep, name, Low::Util::Name) = p_Value;

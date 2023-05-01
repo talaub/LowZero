@@ -107,8 +107,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, lod0, MeshResource) =
-              *(MeshResource *)p_Data;
+          MeshAsset l_Handle = p_Handle.get_id();
+          l_Handle.set_lod0(*(MeshResource *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -124,8 +124,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          MeshAsset l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -221,6 +221,12 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod0
+      if (get_lod0().is_alive() && get_lod0().is_loaded()) {
+        get_lod0().unload();
+      }
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_lod0
+
       // Set new value
       TYPE_SOA(MeshAsset, lod0, MeshResource) = p_Value;
 
@@ -236,6 +242,9 @@ namespace Low {
     void MeshAsset::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MeshAsset, name, Low::Util::Name) = p_Value;

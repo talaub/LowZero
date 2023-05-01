@@ -659,10 +659,20 @@ function generate_source(p_Type) {
 	    t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`);
 	}
 	t += line(`l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`);
-	t += line(`return (void*)&ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type});`);
+	if (!i_Prop.no_getter && !i_Prop.private_getter) {
+	    t += line(`return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName},
+                                            ${i_Prop.soa_type});`);
+
+	}
+	else {
+	    t += line(`return nullptr;`);
+	}
 	t += line(`};`);
 	t += line(`l_PropertyInfo.set = [](Low::Util::Handle p_Handle, const void* p_Data) -> void {`);
-	t += line(`ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = *(${i_Prop.plain_type}*)p_Data;`);
+	if (!i_Prop.no_setter && !i_Prop.private_setter) {
+	    t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
+	    t += line(`l_Handle.${i_Prop.setter_name}(*(${i_Prop.plain_type}*)p_Data);`);
+	}
 	t += line(`};`);
 	t += line(`l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;`);
 	t += line(`}`);
@@ -853,6 +863,27 @@ function generate_source(p_Type) {
 	    t += line('{', n++);
 	    t += line('LOW_ASSERT(is_alive(), "Cannot set property on dead handle");');
 	    t += empty();
+	    if (true) {
+		const l_MarkerName = `CUSTOM:PRESETTER_${i_PropName}`;
+
+		const i_SetterBeginMarker = get_marker_begin(l_MarkerName);
+		const i_SetterEndMarker = get_marker_end(l_MarkerName);
+
+		const i_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+		let i_CustomCode = '';
+
+		if (i_BeginMarkerIndex >= 0) {
+		    const i_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+		    i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
+		}
+		t += line(i_SetterBeginMarker);
+		t += i_CustomCode;
+		t += line(i_SetterEndMarker);
+		t += empty();
+
+	    }
 	    if (i_Prop.dirty_flag) {
 		t += line(`if (${i_Prop.getter_name}() != p_Value) {`);
 		t += line('// Set dirty flags');

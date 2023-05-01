@@ -115,9 +115,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Renderpass, renderpass,
-                              Backend::Renderpass) =
-                *(Backend::Renderpass *)p_Data;
+            Renderpass l_Handle = p_Handle.get_id();
+            l_Handle.set_renderpass(*(Backend::Renderpass *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -133,8 +132,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Renderpass, name, Low::Util::Name) =
-                *(Low::Util::Name *)p_Data;
+            Renderpass l_Handle = p_Handle.get_id();
+            l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -226,6 +225,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderpass
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderpass
+
         // Set new value
         TYPE_SOA(Renderpass, renderpass, Backend::Renderpass) = p_Value;
 
@@ -241,6 +243,9 @@ namespace Low {
       void Renderpass::set_name(Low::Util::Name p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Renderpass, name, Low::Util::Name) = p_Value;

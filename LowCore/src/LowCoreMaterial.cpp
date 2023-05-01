@@ -126,9 +126,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Material, material_type,
-                            Renderer::MaterialType) =
-              *(Renderer::MaterialType *)p_Data;
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.set_material_type(*(Renderer::MaterialType *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -144,10 +143,7 @@ namespace Low {
               p_Handle, Material, renderer_material, Renderer::Material);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Material, renderer_material,
-                            Renderer::Material) = *(Renderer::Material *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -157,16 +153,10 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, Material, properties,
-              SINGLE_ARG(Util::Map<Util::Name, Util::Variant>));
+          return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Material, properties,
-                            SINGLE_ARG(Util::Map<Util::Name, Util::Variant>)) =
-              *(Util::Map<Util::Name, Util::Variant> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -176,14 +166,10 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, reference_count,
-                                            uint32_t);
+          return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Material, reference_count, uint32_t) =
-              *(uint32_t *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -198,8 +184,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Material, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -300,6 +286,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_type
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_type
+
       // Set new value
       TYPE_SOA(Material, material_type, Renderer::MaterialType) = p_Value;
 
@@ -316,6 +305,9 @@ namespace Low {
     void Material::set_renderer_material(Renderer::Material p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_material
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_material
 
       // Set new value
       TYPE_SOA(Material, renderer_material, Renderer::Material) = p_Value;
@@ -340,6 +332,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
+
       // Set new value
       TYPE_SOA(Material, reference_count, uint32_t) = p_Value;
 
@@ -355,6 +350,9 @@ namespace Low {
     void Material::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Material, name, Low::Util::Name) = p_Value;
@@ -463,19 +461,8 @@ namespace Low {
 
     void Material::_unload()
     {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__undload
-      for (auto it = get_material_type().get_properties().begin();
-           it != get_material_type().get_properties().end(); ++it) {
-        if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
-          Texture2D l_Texture = get_property(it->name);
-          if (l_Texture.is_alive() && l_Texture.is_loaded()) {
-            l_Texture.unload();
-          }
-        }
-      }
-
-      get_renderer_material().destroy();
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION__undload
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 
     uint32_t Material::create_instance()

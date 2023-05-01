@@ -123,10 +123,7 @@ namespace Low {
                                               Backend::Context);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Context, context, Backend::Context) =
-                *(Backend::Context *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -140,11 +137,7 @@ namespace Low {
                                               Util::List<Renderpass>);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Context, renderpasses,
-                              Util::List<Renderpass>) =
-                *(Util::List<Renderpass> *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -159,11 +152,7 @@ namespace Low {
                 p_Handle, Context, global_signature, PipelineResourceSignature);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Context, global_signature,
-                              PipelineResourceSignature) =
-                *(PipelineResourceSignature *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -178,10 +167,7 @@ namespace Low {
                 p_Handle, Context, frame_info_buffer, Resource::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Context, frame_info_buffer,
-                              Resource::Buffer) = *(Resource::Buffer *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -197,10 +183,7 @@ namespace Low {
                 p_Handle, Context, material_data_buffer, Resource::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Context, material_data_buffer,
-                              Resource::Buffer) = *(Resource::Buffer *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -215,8 +198,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Context, name, Low::Util::Name) =
-                *(Low::Util::Name *)p_Data;
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -335,6 +318,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_global_signature
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_global_signature
+
         // Set new value
         TYPE_SOA(Context, global_signature, PipelineResourceSignature) =
             p_Value;
@@ -352,6 +338,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
+
         // Set new value
         TYPE_SOA(Context, frame_info_buffer, Resource::Buffer) = p_Value;
 
@@ -368,6 +357,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_data_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_data_buffer
+
         // Set new value
         TYPE_SOA(Context, material_data_buffer, Resource::Buffer) = p_Value;
 
@@ -383,6 +375,9 @@ namespace Low {
       void Context::set_name(Low::Util::Name p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Context, name, Low::Util::Name) = p_Value;

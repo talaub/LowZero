@@ -125,11 +125,7 @@ namespace Low {
               SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Entity, components,
-                            SINGLE_ARG(Util::Map<uint16_t, Util::Handle>)) =
-              *(Util::Map<uint16_t, Util::Handle> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -144,8 +140,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Entity, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          Entity l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -243,6 +239,9 @@ namespace Low {
     void Entity::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Entity, name, Low::Util::Name) = p_Value;

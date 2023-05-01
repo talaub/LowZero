@@ -111,11 +111,7 @@ namespace Low {
                                               Backend::ImGuiImage);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, imgui_image,
-                              Backend::ImGuiImage) =
-                *(Backend::ImGuiImage *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -130,10 +126,7 @@ namespace Low {
                                               Resource::Image);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, image, Resource::Image) =
-                *(Resource::Image *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -148,8 +141,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, name, Low::Util::Name) =
-                *(Low::Util::Name *)p_Data;
+            ImGuiImage l_Handle = p_Handle.get_id();
+            l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -251,6 +244,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
+
         // Set new value
         TYPE_SOA(ImGuiImage, image, Resource::Image) = p_Value;
 
@@ -266,6 +262,9 @@ namespace Low {
       void ImGuiImage::set_name(Low::Util::Name p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(ImGuiImage, name, Low::Util::Name) = p_Value;

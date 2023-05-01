@@ -113,8 +113,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, mesh, MeshAsset) =
-                *(MeshAsset *)p_Data;
+            MeshRenderer l_Handle = p_Handle.get_id();
+            l_Handle.set_mesh(*(MeshAsset *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -131,8 +131,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, material, Material) =
-                *(Material *)p_Data;
+            MeshRenderer l_Handle = p_Handle.get_id();
+            l_Handle.set_material(*(Material *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -149,8 +149,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, entity,
-                              Low::Core::Entity) = *(Low::Core::Entity *)p_Data;
+            MeshRenderer l_Handle = p_Handle.get_id();
+            l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -237,6 +237,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
+
         // Set new value
         TYPE_SOA(MeshRenderer, mesh, MeshAsset) = p_Value;
 
@@ -253,6 +256,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
+
         // Set new value
         TYPE_SOA(MeshRenderer, material, Material) = p_Value;
 
@@ -268,6 +274,9 @@ namespace Low {
       void MeshRenderer::set_entity(Low::Core::Entity p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(MeshRenderer, entity, Low::Core::Entity) = p_Value;

@@ -25,6 +25,7 @@ namespace Low {
 
     LOW_RENDERER_API Mesh upload_mesh(Util::Name p_Name,
                                       Util::Resource::MeshInfo &p_MeshInfo);
+    LOW_RENDERER_API void unload_mesh(Mesh p_Mesh);
 
     LOW_RENDERER_API RenderFlow get_main_renderflow();
 

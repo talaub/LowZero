@@ -136,9 +136,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, callbacks,
-                            GraphicsStepCallbacks) =
-              *(GraphicsStepCallbacks *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_callbacks(*(GraphicsStepCallbacks *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -154,11 +153,7 @@ namespace Low {
                                             Util::List<ResourceConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, resources,
-                            Util::List<ResourceConfig>) =
-              *(Util::List<ResourceConfig> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -174,10 +169,7 @@ namespace Low {
                                             DimensionsConfig);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, dimensions_config,
-                            DimensionsConfig) = *(DimensionsConfig *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -192,11 +184,7 @@ namespace Low {
                                             Util::List<GraphicsPipelineConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, pipelines,
-                            Util::List<GraphicsPipelineConfig>) =
-              *(Util::List<GraphicsPipelineConfig> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -212,11 +200,7 @@ namespace Low {
               Util::List<PipelineResourceBindingConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, rendertargets,
-                            Util::List<PipelineResourceBindingConfig>) =
-              *(Util::List<PipelineResourceBindingConfig> *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -233,9 +217,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
-                            rendertargets_clearcolor, Math::Color) =
-              *(Math::Color *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_rendertargets_clearcolor(*(Math::Color *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -253,9 +236,9 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_rendertarget,
-                            PipelineResourceBindingConfig) =
-              *(PipelineResourceBindingConfig *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_depth_rendertarget(
+              *(PipelineResourceBindingConfig *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -271,8 +254,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, use_depth, bool) =
-              *(bool *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_use_depth(*(bool *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -289,8 +272,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_clear, bool) =
-              *(bool *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_depth_clear(*(bool *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -307,8 +290,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_test, bool) =
-              *(bool *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_depth_test(*(bool *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -325,8 +308,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, depth_write, bool) =
-              *(bool *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_depth_write(*(bool *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -343,9 +326,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
-                            depth_compare_operation, uint8_t) =
-              *(uint8_t *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_depth_compare_operation(*(uint8_t *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -361,8 +343,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, name,
-                            Low::Util::Name) = *(Low::Util::Name *)p_Data;
+          GraphicsStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -457,6 +439,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_callbacks
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_callbacks
+
       // Set new value
       TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks) = p_Value;
 
@@ -479,6 +464,9 @@ namespace Low {
     void GraphicsStepConfig::set_dimensions_config(DimensionsConfig &p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions_config
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions_config
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, dimensions_config, DimensionsConfig) =
@@ -514,6 +502,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rendertargets_clearcolor
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_rendertargets_clearcolor
+
       // Set new value
       TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor, Math::Color) =
           p_Value;
@@ -534,6 +525,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_rendertarget
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_rendertarget
+
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
                PipelineResourceBindingConfig) = p_Value;
@@ -551,6 +545,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_use_depth
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_use_depth
+
       // Set new value
       TYPE_SOA(GraphicsStepConfig, use_depth, bool) = p_Value;
 
@@ -566,6 +563,9 @@ namespace Low {
     void GraphicsStepConfig::set_depth_clear(bool p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_clear
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_clear
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_clear, bool) = p_Value;
@@ -583,6 +583,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_test
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_test
+
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_test, bool) = p_Value;
 
@@ -598,6 +601,9 @@ namespace Low {
     void GraphicsStepConfig::set_depth_write(bool p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_write
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_write
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_write, bool) = p_Value;
@@ -615,6 +621,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_compare_operation
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_compare_operation
+
       // Set new value
       TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t) = p_Value;
 
@@ -630,6 +639,9 @@ namespace Low {
     void GraphicsStepConfig::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(GraphicsStepConfig, name, Low::Util::Name) = p_Value;

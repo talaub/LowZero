@@ -108,6 +108,7 @@ namespace Low {
       static MeshResource make(Util::String &p_Path);
       bool is_loaded();
       void load();
+      void unload();
 
     private:
       static uint32_t ms_Capacity;
@@ -116,6 +117,7 @@ namespace Low {
       void set_path(Util::String &p_Value);
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
+      void _unload();
     };
   } // namespace Core
 } // namespace Low

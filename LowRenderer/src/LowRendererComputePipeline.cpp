@@ -112,10 +112,7 @@ namespace Low {
                                               pipeline, Backend::Pipeline);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline, pipeline,
-                              Backend::Pipeline) = *(Backend::Pipeline *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -130,8 +127,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline, name,
-                              Low::Util::Name) = *(Low::Util::Name *)p_Data;
+            ComputePipeline l_Handle = p_Handle.get_id();
+            l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -229,6 +226,9 @@ namespace Low {
       void ComputePipeline::set_name(Low::Util::Name p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(ComputePipeline, name, Low::Util::Name) = p_Value;

@@ -120,8 +120,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, position, Math::Vector3) =
-                *(Math::Vector3 *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.position(*(Math::Vector3 *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -137,8 +137,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, rotation, Math::Quaternion) =
-                *(Math::Quaternion *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.rotation(*(Math::Quaternion *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -154,8 +154,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, scale, Math::Vector3) =
-                *(Math::Vector3 *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.scale(*(Math::Vector3 *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -171,8 +171,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, parent, uint64_t) =
-                *(uint64_t *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.set_parent(*(uint64_t *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -187,10 +187,7 @@ namespace Low {
                                               world_position, Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, world_position,
-                              Math::Vector3) = *(Math::Vector3 *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -204,10 +201,7 @@ namespace Low {
                                               world_rotation, Math::Quaternion);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, world_rotation,
-                              Math::Quaternion) = *(Math::Quaternion *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -221,10 +215,7 @@ namespace Low {
                                               Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, world_scale, Math::Vector3) =
-                *(Math::Vector3 *)p_Data;
-          };
+                                  const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -240,8 +231,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, entity, Low::Core::Entity) =
-                *(Low::Core::Entity *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -256,8 +247,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, dirty, bool) =
-                *(bool *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.set_dirty(*(bool *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -273,8 +264,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Transform, world_dirty, bool) =
-                *(bool *)p_Data;
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.set_world_dirty(*(bool *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -354,6 +345,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
+
         if (position() != p_Value) {
           // Set dirty flags
           TYPE_SOA(Transform, dirty, bool) = true;
@@ -375,6 +369,9 @@ namespace Low {
       void Transform::rotation(Math::Quaternion &p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
 
         if (rotation() != p_Value) {
           // Set dirty flags
@@ -398,6 +395,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale
+
         if (scale() != p_Value) {
           // Set dirty flags
           TYPE_SOA(Transform, dirty, bool) = true;
@@ -419,6 +419,9 @@ namespace Low {
       void Transform::set_parent(uint64_t p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent
 
         if (get_parent() != p_Value) {
           // Set dirty flags
@@ -442,6 +445,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_position
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
+
         // Set new value
         TYPE_SOA(Transform, world_position, Math::Vector3) = p_Value;
 
@@ -457,6 +463,9 @@ namespace Low {
       void Transform::set_world_rotation(Math::Quaternion &p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_rotation
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_rotation
 
         // Set new value
         TYPE_SOA(Transform, world_rotation, Math::Quaternion) = p_Value;
@@ -474,6 +483,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_scale
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_scale
+
         // Set new value
         TYPE_SOA(Transform, world_scale, Math::Vector3) = p_Value;
 
@@ -489,6 +501,9 @@ namespace Low {
       void Transform::set_entity(Low::Core::Entity p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(Transform, entity, Low::Core::Entity) = p_Value;
@@ -506,6 +521,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+
         // Set new value
         TYPE_SOA(Transform, dirty, bool) = p_Value;
 
@@ -521,6 +539,9 @@ namespace Low {
       void Transform::set_world_dirty(bool p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
         // Set new value
         TYPE_SOA(Transform, world_dirty, bool) = p_Value;

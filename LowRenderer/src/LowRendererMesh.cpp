@@ -103,8 +103,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_buffer_start, uint32_t) =
-              *(uint32_t *)p_Data;
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_vertex_buffer_start(*(uint32_t *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -120,8 +120,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count, uint32_t) =
-              *(uint32_t *)p_Data;
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_vertex_count(*(uint32_t *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -137,8 +137,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_buffer_start, uint32_t) =
-              *(uint32_t *)p_Data;
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_index_buffer_start(*(uint32_t *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -154,8 +154,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count, uint32_t) =
-              *(uint32_t *)p_Data;
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_index_count(*(uint32_t *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -171,8 +171,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Mesh, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -268,6 +268,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_buffer_start
+
       // Set new value
       TYPE_SOA(Mesh, vertex_buffer_start, uint32_t) = p_Value;
 
@@ -283,6 +286,9 @@ namespace Low {
     void Mesh::set_vertex_count(uint32_t p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
 
       // Set new value
       TYPE_SOA(Mesh, vertex_count, uint32_t) = p_Value;
@@ -300,6 +306,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_buffer_start
+
       // Set new value
       TYPE_SOA(Mesh, index_buffer_start, uint32_t) = p_Value;
 
@@ -316,6 +325,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_count
+
       // Set new value
       TYPE_SOA(Mesh, index_count, uint32_t) = p_Value;
 
@@ -331,6 +343,9 @@ namespace Low {
     void Mesh::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Mesh, name, Low::Util::Name) = p_Value;

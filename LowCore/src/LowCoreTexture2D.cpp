@@ -110,10 +110,7 @@ namespace Low {
                                             Util::String);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, path, Util::String) =
-              *(Util::String *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -128,11 +125,7 @@ namespace Low {
               p_Handle, Texture2D, renderer_texture, Renderer::Texture2D);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, renderer_texture,
-                            Renderer::Texture2D) =
-              *(Renderer::Texture2D *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -142,14 +135,10 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
-                                            reference_count, uint32_t);
+          return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, reference_count, uint32_t) =
-              *(uint32_t *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -164,8 +153,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -253,6 +242,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
+
       // Set new value
       TYPE_SOA(Texture2D, path, Util::String) = p_Value;
 
@@ -268,6 +260,9 @@ namespace Low {
     void Texture2D::set_renderer_texture(Renderer::Texture2D p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_texture
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_texture
 
       // Set new value
       TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D) = p_Value;
@@ -285,6 +280,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
+
       // Set new value
       TYPE_SOA(Texture2D, reference_count, uint32_t) = p_Value;
 
@@ -300,6 +298,9 @@ namespace Low {
     void Texture2D::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Texture2D, name, Low::Util::Name) = p_Value;

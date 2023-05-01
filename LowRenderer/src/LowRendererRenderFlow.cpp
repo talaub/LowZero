@@ -126,14 +126,10 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, context,
-                                            Interface::Context);
+          return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, context, Interface::Context) =
-              *(Interface::Context *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -147,10 +143,7 @@ namespace Low {
                                             Math::UVector2);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, dimensions, Math::UVector2) =
-              *(Math::UVector2 *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -166,8 +159,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, output_image,
-                            Resource::Image) = *(Resource::Image *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_output_image(*(Resource::Image *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -183,9 +176,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, steps,
-                            Util::List<Util::Handle>) =
-              *(Util::List<Util::Handle> *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_steps(*(Util::List<Util::Handle> *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -200,10 +192,7 @@ namespace Low {
                                             ResourceRegistry);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, resources, ResourceRegistry) =
-              *(ResourceRegistry *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -218,10 +207,7 @@ namespace Low {
               p_Handle, RenderFlow, frame_info_buffer, Resource::Buffer);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, frame_info_buffer,
-                            Resource::Buffer) = *(Resource::Buffer *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -239,11 +225,7 @@ namespace Low {
               Interface::PipelineResourceSignature);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, resource_signature,
-                            Interface::PipelineResourceSignature) =
-              *(Interface::PipelineResourceSignature *)p_Data;
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -258,8 +240,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_position,
-                            Math::Vector3) = *(Math::Vector3 *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_camera_position(*(Math::Vector3 *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -275,8 +257,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_direction,
-                            Math::Vector3) = *(Math::Vector3 *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_camera_direction(*(Math::Vector3 *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -292,8 +274,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_fov, float) =
-              *(float *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_camera_fov(*(float *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -309,8 +291,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_near_plane, float) =
-              *(float *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_camera_near_plane(*(float *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -326,8 +308,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_far_plane, float) =
-              *(float *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_camera_far_plane(*(float *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -343,8 +325,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, directional_light,
-                            DirectionalLight) = *(DirectionalLight *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_directional_light(*(DirectionalLight *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -360,8 +342,8 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
-          ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, name, Low::Util::Name) =
-              *(Low::Util::Name *)p_Data;
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -474,6 +456,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
+
       // Set new value
       TYPE_SOA(RenderFlow, context, Interface::Context) = p_Value;
 
@@ -496,6 +481,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
+
       // Set new value
       TYPE_SOA(RenderFlow, output_image, Resource::Image) = p_Value;
 
@@ -511,6 +499,9 @@ namespace Low {
     void RenderFlow::set_steps(Util::List<Util::Handle> &p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_steps
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_steps
 
       // Set new value
       TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>) = p_Value;
@@ -534,6 +525,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
+
       // Set new value
       TYPE_SOA(RenderFlow, frame_info_buffer, Resource::Buffer) = p_Value;
 
@@ -553,6 +547,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource_signature
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource_signature
+
       // Set new value
       TYPE_SOA(RenderFlow, resource_signature,
                Interface::PipelineResourceSignature) = p_Value;
@@ -570,6 +567,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_position
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_position
+
       // Set new value
       TYPE_SOA(RenderFlow, camera_position, Math::Vector3) = p_Value;
 
@@ -585,6 +585,9 @@ namespace Low {
     void RenderFlow::set_camera_direction(Math::Vector3 &p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_direction
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_direction
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_direction, Math::Vector3) = p_Value;
@@ -602,6 +605,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_fov
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_fov
+
       // Set new value
       TYPE_SOA(RenderFlow, camera_fov, float) = p_Value;
 
@@ -617,6 +623,9 @@ namespace Low {
     void RenderFlow::set_camera_near_plane(float p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_near_plane
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_near_plane
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_near_plane, float) = p_Value;
@@ -634,6 +643,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_far_plane
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_far_plane
+
       // Set new value
       TYPE_SOA(RenderFlow, camera_far_plane, float) = p_Value;
 
@@ -650,6 +662,9 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light
+
       // Set new value
       TYPE_SOA(RenderFlow, directional_light, DirectionalLight) = p_Value;
 
@@ -665,6 +680,9 @@ namespace Low {
     void RenderFlow::set_name(Low::Util::Name p_Value)
     {
       LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(RenderFlow, name, Low::Util::Name) = p_Value;

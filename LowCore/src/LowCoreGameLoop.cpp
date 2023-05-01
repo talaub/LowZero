@@ -27,12 +27,13 @@ namespace Low {
       {
         Renderer::tick(p_Delta);
         System::Transform::tick(p_Delta);
-        System::MeshRenderer::tick(p_Delta);
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {
           (*it)(p_Delta);
         }
+
+        System::MeshRenderer::tick(p_Delta);
       }
 
       static void execute_late_ticks(float p_Delta)

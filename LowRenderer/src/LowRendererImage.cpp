@@ -108,8 +108,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Image, image, Backend::ImageResource) =
-                *(Backend::ImageResource *)p_Data;
+            Image l_Handle = p_Handle.get_id();
+            l_Handle.set_image(*(Backend::ImageResource *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -125,8 +125,8 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            ACCESSOR_TYPE_SOA(p_Handle, Image, name, Low::Util::Name) =
-                *(Low::Util::Name *)p_Data;
+            Image l_Handle = p_Handle.get_id();
+            l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -218,6 +218,9 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
+
         // Set new value
         TYPE_SOA(Image, image, Backend::ImageResource) = p_Value;
 
@@ -233,6 +236,9 @@ namespace Low {
       void Image::set_name(Low::Util::Name p_Value)
       {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Image, name, Low::Util::Name) = p_Value;
