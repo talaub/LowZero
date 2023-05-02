@@ -238,12 +238,20 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+        if (get_mesh().is_alive() && get_mesh().is_loaded()) {
+          get_mesh().unload();
+        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
         // Set new value
         TYPE_SOA(MeshRenderer, mesh, MeshAsset) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+        if (p_Value.is_loaded()) {
+          // If the newly assigned mesh asset is already loaded we need to
+          // increase the reference count like this.
+          p_Value.load();
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
       }
 

@@ -46,7 +46,7 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 static void setup_scene()
 {
-  Low::Core::Material l_Material = Low::Core::Material::make(N(TestMat));
+  Low::Core::Material l_Material = Low::Core::Material::make(N(RustMetal));
   {
     Low::Core::Texture2D l_AlbedoTexture =
         Low::Core::Texture2D::find_by_name(N(out_rust.ktx));

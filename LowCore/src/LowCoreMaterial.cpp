@@ -243,10 +243,19 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       get_material_type().serialize(p_Node["material_type"]);
-      get_renderer_material().serialize(p_Node["renderer_material"]);
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      Util::Yaml::Node l_Properties;
+      for (auto it = get_material_type().get_properties().begin();
+           it != get_material_type().get_properties().end(); ++it) {
+        if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
+          Texture2D i_Texture = get_properties()[it->name].m_Uint64;
+          const char *i_PropName = it->name.c_str();
+          i_Texture.serialize(l_Properties[i_PropName]);
+        }
+      }
+      p_Node["properties"] = l_Properties;
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -265,13 +274,17 @@ namespace Low {
       l_Handle.set_material_type(Renderer::MaterialType::deserialize(
                                      p_Node["material_type"], l_Handle.get_id())
                                      .get_id());
-      l_Handle.set_renderer_material(
-          Renderer::Material::deserialize(p_Node["renderer_material"],
-                                          l_Handle.get_id())
-              .get_id());
       l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      for (auto it = l_Handle.get_material_type().get_properties().begin();
+           it != l_Handle.get_material_type().get_properties().end(); ++it) {
+        if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
+          Texture2D i_Texture = l_Handle.get_properties()[it->name].m_Uint64;
+          const char *i_PropName = it->name.c_str();
+          // i_Texture.serialize(l_Properties[i_PropName]);
+        }
+      }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;

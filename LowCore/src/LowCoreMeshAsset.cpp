@@ -7,6 +7,8 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 
+#include "LowCoreTaskScheduler.h"
+
 namespace Low {
   namespace Core {
     const uint16_t MeshAsset::TYPE_ID = 21;
@@ -45,6 +47,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_reference_count(0u);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -55,6 +58,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      _unload();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -110,6 +114,19 @@ namespace Low {
           MeshAsset l_Handle = p_Handle.get_id();
           l_Handle.set_lod0(*(MeshResource *)p_Data);
         };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(reference_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshAssetData, reference_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return nullptr;
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -234,6 +251,25 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod0
     }
 
+    uint32_t MeshAsset::get_reference_count() const
+    {
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      return TYPE_SOA(MeshAsset, reference_count, uint32_t);
+    }
+    void MeshAsset::set_reference_count(uint32_t p_Value)
+    {
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
+
+      // Set new value
+      TYPE_SOA(MeshAsset, reference_count, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
+    }
+
     Low::Util::Name MeshAsset::get_name() const
     {
       LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
@@ -251,6 +287,65 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+    }
+
+    bool MeshAsset::is_loaded()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
+      return get_reference_count() > 0;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
+    }
+
+    void MeshAsset::load()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+      LOW_ASSERT(is_alive(), "MeshAsset was not alive on load");
+
+      bool l_HasBeenLoaded = is_loaded();
+
+      set_reference_count(get_reference_count() + 1);
+
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased MeshAsset reference count, but its not over 0. "
+                 "Something went wrong.");
+
+      if (l_HasBeenLoaded) {
+        return;
+      }
+
+      if (get_lod0().is_alive() && !get_lod0().is_loaded()) {
+        TaskScheduler::schedule_mesh_resource_load(get_lod0());
+      } else if (get_lod0().is_alive() && get_lod0().is_loaded()) {
+        get_lod0().load();
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+    }
+
+    void MeshAsset::unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+      LOW_ASSERT(is_alive(), "MeshAsset was not alive on unload");
+
+      set_reference_count(get_reference_count() - 1);
+
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "MeshAsset reference count < 0. Something went wrong.");
+
+      if (get_reference_count() <= 0) {
+        _unload();
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload
+    }
+
+    void MeshAsset::_unload()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      LOW_ASSERT(is_alive(), "Cannot unload dead meshasset");
+
+      if (get_lod0().is_alive() && get_lod0().is_loaded()) {
+        get_lod0().unload();
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 
     uint32_t MeshAsset::create_instance()
@@ -292,6 +387,13 @@ namespace Low {
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(MeshAssetData, lod0) * (l_Capacity)],
                l_Capacity * sizeof(MeshResource));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(MeshAssetData, reference_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MeshAssetData, reference_count) * (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshAssetData, name) *

@@ -26,21 +26,16 @@ namespace Low {
       Core::Material l_Asset = p_Handle.get_id();
 
       if (ImGui::Button("Save")) {
-        LOW_LOG_WARN << "Saving materials is not yet implemented"
+
+        Util::Yaml::Node l_Node;
+        l_Asset.serialize(l_Node);
+        Util::String l_Path = LOW_DATA_PATH;
+        l_Path += "/assets/materials/" +
+                  Util::String(l_Asset.get_name().c_str()) + ".material.yaml";
+        Util::Yaml::write_file(l_Path.c_str(), l_Node);
+
+        LOW_LOG_INFO << "Saved material '" << l_Asset.get_name() << "' to file."
                      << LOW_LOG_END;
-
-        /*
-              Util::Yaml::Node l_Node;
-              l_Asset.serialize(l_Node);
-              Util::String l_Path = LOW_DATA_PATH;
-              l_Path += "/assets/meshes/" +
-           Util::String(l_Asset.get_name().c_str()) +
-                        ".mesh.yaml";
-              Util::Yaml::write_file(l_Path.c_str(), l_Node);
-
-              LOW_LOG_INFO << "Saved mesh asset '" << l_Asset.get_name()
-                           << "' to file." << LOW_LOG_END;
-        */
       }
     }
 

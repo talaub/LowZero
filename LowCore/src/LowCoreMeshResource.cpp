@@ -375,6 +375,9 @@ namespace Low {
     void MeshResource::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      if (!is_loaded()) {
+        return;
+      }
       for (auto it = get_submeshes().begin(); it != get_submeshes().end();
            ++it) {
         Renderer::unload_mesh(it->mesh);

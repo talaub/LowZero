@@ -147,7 +147,7 @@ namespace Low {
           }
         }
 
-        if (l_UnderDiff == 0 && l_ClosestOver == 0) {
+        if (l_UnderDiff == 0 && l_OverDiff == 0) {
           m_FreeSlots[l_ClosestUnder].length =
               m_FreeSlots[l_ClosestUnder].length + p_ElementCount +
               m_FreeSlots[l_ClosestOver].length;

@@ -241,9 +241,8 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["name"] = get_name().c_str();
-
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      p_Node = get_name().c_str();
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -257,14 +256,10 @@ namespace Low {
     Low::Util::Handle MaterialType::deserialize(Low::Util::Yaml::Node &p_Node,
                                                 Low::Util::Handle p_Creator)
     {
-      MaterialType l_Handle = MaterialType::make(N(MaterialType));
-
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      return MaterialType::find_by_name(LOW_YAML_AS_NAME(p_Node)).get_id();
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
-
-      return l_Handle;
     }
 
     GraphicsPipelineConfig &MaterialType::get_gbuffer_pipeline() const

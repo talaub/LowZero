@@ -212,7 +212,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-      LOW_ASSERT(false, "Not implemented");
+      p_Node = get_path().c_str();
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -228,9 +228,9 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-      LOW_ASSERT(false, "Not implemented");
-      return 0; // TODO: Implement
-                // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+      Texture2D l_Texture = Texture2D::make(LOW_YAML_AS_STRING(p_Node));
+      return l_Texture;
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
     Util::String &Texture2D::get_path() const

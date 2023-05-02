@@ -20,6 +20,7 @@ namespace Low {
     struct LOW_CORE_API MeshAssetData
     {
       MeshResource lod0;
+      uint32_t reference_count;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -94,10 +95,17 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
+      bool is_loaded();
+      void load();
+      void unload();
+
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
+      uint32_t get_reference_count() const;
+      void set_reference_count(uint32_t p_Value);
+      void _unload();
     };
   } // namespace Core
 } // namespace Low
