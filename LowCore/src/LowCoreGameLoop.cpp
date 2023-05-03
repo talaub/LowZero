@@ -1,6 +1,7 @@
 #include "LowCoreGameLoop.h"
 
 #include "LowCoreTransformSystem.h"
+#include "LowCoreLightSystem.h"
 #include "LowCoreMeshRendererSystem.h"
 #include "LowCoreTaskScheduler.h"
 #include "LowCoreTransform.h"
@@ -27,6 +28,7 @@ namespace Low {
       {
         Renderer::tick(p_Delta);
         System::Transform::tick(p_Delta);
+        System::Light::tick(p_Delta);
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {

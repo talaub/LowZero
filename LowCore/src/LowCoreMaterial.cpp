@@ -8,6 +8,7 @@
 #include "LowUtilConfig.h"
 
 #include "LowRenderer.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Core {
@@ -249,10 +250,13 @@ namespace Low {
       Util::Yaml::Node l_Properties;
       for (auto it = get_material_type().get_properties().begin();
            it != get_material_type().get_properties().end(); ++it) {
+        const char *i_PropName = it->name.c_str();
         if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
           Texture2D i_Texture = get_properties()[it->name].m_Uint64;
-          const char *i_PropName = it->name.c_str();
           i_Texture.serialize(l_Properties[i_PropName]);
+        } else if (it->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+          Math::Vector4 i_Value = get_properties()[it->name];
+          Util::Serialization::serialize(l_Properties[i_PropName], i_Value);
         }
       }
       p_Node["properties"] = l_Properties;
@@ -279,10 +283,15 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       for (auto it = l_Handle.get_material_type().get_properties().begin();
            it != l_Handle.get_material_type().get_properties().end(); ++it) {
+        const char *i_PropName = it->name.c_str();
         if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
-          Texture2D i_Texture = l_Handle.get_properties()[it->name].m_Uint64;
-          const char *i_PropName = it->name.c_str();
-          // i_Texture.serialize(l_Properties[i_PropName]);
+          l_Handle.get_properties()[it->name] =
+              Texture2D::deserialize(p_Node["properties"][i_PropName], l_Handle)
+                  .get_id();
+        } else if (it->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+          l_Handle.get_properties()[it->name] =
+              Util::Serialization::deserialize_vector4(
+                  p_Node["properties"][i_PropName]);
         }
       }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

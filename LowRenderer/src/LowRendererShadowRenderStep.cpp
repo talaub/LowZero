@@ -52,7 +52,7 @@ namespace Low {
                                            // Vulkan y-axis
 
         Math::Vector3 l_DirectionalLightPosition =
-            Math::Vector3(0.0f, 0.0f, -5.0f);
+            p_RenderFlow.get_camera_position();
         l_DirectionalLightPosition += (l_DirectionalLight.direction * -13.0f);
 
         Math::Matrix4x4 l_ViewMatrix = glm::lookAt(
@@ -66,6 +66,10 @@ namespace Low {
         l_DirectionalLightShaderInfo.lightSpaceMatrix = l_LightSpace;
         l_DirectionalLightShaderInfo.atlasBounds =
             Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f);
+        l_DirectionalLightShaderInfo.direction =
+            p_RenderFlow.get_directional_light().direction;
+        l_DirectionalLightShaderInfo.color =
+            p_RenderFlow.get_directional_light().color;
 
         p_RenderFlow.get_resources()
             .get_buffer_resource(N(_directional_light_info))

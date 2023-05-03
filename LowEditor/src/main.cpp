@@ -23,6 +23,7 @@
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
 #include "LowCoreMeshRenderer.h"
+#include "LowCoreDirectionalLight.h"
 
 #include <stdint.h>
 
@@ -46,7 +47,8 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 static void setup_scene()
 {
-  Low::Core::Material l_Material = Low::Core::Material::make(N(RustMetal));
+  Low::Core::Material l_Material =
+      Low::Core::Material::find_by_name(N(RustMetal));
   {
     Low::Core::Texture2D l_AlbedoTexture =
         Low::Core::Texture2D::find_by_name(N(out_rust.ktx));
@@ -74,6 +76,19 @@ static void setup_scene()
   Low::Core::MeshAsset l_SuzanneMeshAsset =
       Low::Core::MeshAsset::find_by_name(N(Suzanne));
 
+  {
+    Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Sun));
+    Low::Core::Component::Transform l_Transform =
+        Low::Core::Component::Transform::make(l_Entity);
+    Low::Core::Component::DirectionalLight l_DirectionalLight =
+        Low::Core::Component::DirectionalLight::make(l_Entity);
+    l_DirectionalLight.set_color(Low::Math::ColorRGB(1.0f, 1.0f, 1.0f));
+
+    l_Transform.position(Low::Math::Vector3(0.0f, 0.0f, -3.0f));
+    l_Transform.rotation(Low::Math::VectorUtil::from_direction(
+        Low::Math::Vector3(2.0f, -2.5f, -0.5f), LOW_VECTOR3_FRONT * -1.0f));
+    l_Transform.scale(Low::Math::Vector3(20.0f, 0.4f, 20.0f));
+  }
   {
     Low::Core::Entity l_Entity = Low::Core::Entity::make(N(Ground));
     Low::Core::Component::Transform l_Transform =

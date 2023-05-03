@@ -31,6 +31,8 @@ namespace Low {
     {
       alignas(16) Math::Matrix4x4 lightSpaceMatrix;
       alignas(16) Math::Vector4 atlasBounds;
+      alignas(16) Math::Vector3 direction;
+      alignas(16) Math::Vector3 color;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 

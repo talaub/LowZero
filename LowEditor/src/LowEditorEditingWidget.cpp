@@ -3,6 +3,7 @@
 #include "LowEditorMainWindow.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "ImGuizmo.h"
 #include "IconsFontAwesome5.h"
 #include "LowRenderer.h"
@@ -173,7 +174,7 @@ namespace Low {
         }
       }
 
-      float m_Sensitivity = 3000.0f;
+      float m_Sensitivity = 5000.0f;
 
       Math::Vector2 l_MousePositionDifference =
           m_LastMousePosition -
@@ -199,6 +200,8 @@ namespace Low {
 
     void EditingWidget::render(float p_Delta)
     {
+      ImGuiIO &io = ImGui::GetIO();
+
       m_RenderFlowWidget->render(p_Delta);
 
       bool l_AllowRendererBasedPicking = m_RenderFlowWidget->is_hovered();
@@ -207,6 +210,14 @@ namespace Low {
         l_AllowRendererBasedPicking =
             l_AllowRendererBasedPicking && !camera_movement(p_Delta);
       }
+
+      if (io.MouseWheel > 0.05f) {
+        m_CameraSpeed += 0.25f;
+      } else if (io.MouseWheel < -0.05f) {
+        m_CameraSpeed -= 0.25f;
+      }
+
+      m_CameraSpeed = Math::Util::clamp(m_CameraSpeed, 0.1f, 15.0f);
 
       m_LastMousePosition = m_RenderFlowWidget->get_relative_hover_position();
 
@@ -225,8 +236,8 @@ namespace Low {
       l_Cylinder.radius = 0.3f;
       l_Cylinder.height = 8.0f;
 
-      Core::DebugGeometry::render_cylinder(l_Cylinder, {0.0f,
-      0.0f, 1.0f, 1.0f}, true, false);
+      Core::DebugGeometry::render_cylinder(l_Cylinder, {0.0f, 0.0f, 1.0f, 1.0f},
+                                           true, false);
 
       Math::Cone l_Cone;
       l_Cone.position = {4.0f, 2.0f, 3.0f};

@@ -248,6 +248,11 @@ namespace Low {
       TYPE_SOA(MeshAsset, lod0, MeshResource) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod0
+      if (is_loaded()) {
+        // If this asset is already loaded we need to increase the reference
+        // count of the resource
+        p_Value.load();
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod0
     }
 

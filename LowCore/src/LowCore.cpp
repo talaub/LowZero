@@ -2,6 +2,7 @@
 
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreDirectionalLight.h"
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMeshResource.h"
@@ -44,6 +45,7 @@ namespace Low {
     {
       Component::Transform::initialize();
       Component::MeshRenderer::initialize();
+      Component::DirectionalLight::initialize();
     }
 
     static void initialize_base_types()
@@ -108,6 +110,23 @@ namespace Low {
       }
     }
 
+    static void load_materials()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\materials";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".material.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Material::deserialize(i_Node, 0);
+        }
+      }
+    }
+
     static void load_resources()
     {
       load_mesh_resources();
@@ -117,6 +136,7 @@ namespace Low {
     static void load_assets()
     {
       load_mesh_assets();
+      load_materials();
     }
 
     void initialize()
@@ -143,6 +163,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Component::DirectionalLight::cleanup();
       Component::Transform::cleanup();
       Component::MeshRenderer::cleanup();
     }

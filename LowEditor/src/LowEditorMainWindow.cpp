@@ -10,6 +10,7 @@
 #include "LowEditorProfilerWidget.h"
 #include "LowEditorEditingWidget.h"
 #include "LowEditorAssetWidget.h"
+#include "LowEditorSceneWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
@@ -33,6 +34,7 @@ namespace Low {
     DetailsWidget *g_DetailsWidget;
     ProfilerWidget *g_ProfilerWidget;
     AssetWidget *g_AssetWidget;
+    SceneWidget *g_SceneWidget;
 
     Core::Entity g_SelectedEntity;
 
@@ -169,6 +171,7 @@ namespace Low {
       g_DetailsWidget = new DetailsWidget();
       g_ProfilerWidget = new ProfilerWidget();
       g_AssetWidget = new AssetWidget();
+      g_SceneWidget = new SceneWidget();
     }
 
     void tick(float p_Delta)
@@ -182,6 +185,7 @@ namespace Low {
       g_DetailsWidget->render(p_Delta);
       g_ProfilerWidget->render(p_Delta);
       g_AssetWidget->render(p_Delta);
+      g_SceneWidget->render(p_Delta);
 
       // ImGui::ShowDemoWindow();
     }
