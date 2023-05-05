@@ -4,12 +4,83 @@
 #include "LowUtilContainers.h"
 #include "LowUtilLogger.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <vcruntime_string.h>
 
 namespace Low {
   namespace Util {
     Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
+    Map<UniqueId, Handle> g_UniqueIdRegistry;
+
+    union UniqueIdCombination
+    {
+      UniqueId id;
+      struct
+      {
+        uint32_t nameHash;
+        uint16_t type;
+        uint16_t randomComponent;
+      } data;
+    };
+
+    UniqueId generate_unique_id(Handle p_Handle)
+    {
+      static Name l_NameName = N(name);
+      static Name l_EntityPropertyName = N(entity);
+
+      RTTI::TypeInfo &l_TypeInfo = Handle::get_type_info(p_Handle.get_type());
+
+      UniqueIdCombination l_Combinator;
+
+      RTTI::TypeInfo &l_TypeInfoForName = l_TypeInfo;
+      Handle l_HandleForName = p_Handle;
+
+      if (l_TypeInfo.component) {
+        LOW_ASSERT(l_TypeInfo.properties.find(l_EntityPropertyName) !=
+                       l_TypeInfo.properties.end(),
+                   "Could not find entity property for component while "
+                   "generating uniqueId");
+
+        l_HandleForName =
+            *(Handle *)l_TypeInfo.properties[l_EntityPropertyName].get(
+                p_Handle);
+
+        l_TypeInfoForName = Handle::get_type_info(l_HandleForName.get_type());
+      }
+
+      LOW_ASSERT(l_TypeInfoForName.properties.find(l_NameName) !=
+                     l_TypeInfoForName.properties.end(),
+                 "Could not find name property for unique id generation");
+
+      l_Combinator.data.nameHash =
+          ((Name *)l_TypeInfoForName.properties[l_NameName].get(
+               l_HandleForName))
+              ->m_Index;
+      l_Combinator.data.type = p_Handle.get_type();
+      l_Combinator.data.randomComponent =
+          (rand() % static_cast<int>(LOW_UINT16_MAX + 1));
+
+      return l_Combinator.id;
+    }
+
+    void register_unique_id(UniqueId p_UniqueId, Handle p_Handle)
+    {
+      LOW_ASSERT(g_UniqueIdRegistry.find(p_UniqueId) ==
+                     g_UniqueIdRegistry.end(),
+                 "UniqueId collision");
+
+      g_UniqueIdRegistry[p_UniqueId] = p_Handle;
+    }
+
+    void remove_unique_id(UniqueId p_UniqueId)
+    {
+      LOW_ASSERT(g_UniqueIdRegistry.find(p_UniqueId) !=
+                     g_UniqueIdRegistry.end(),
+                 "Tried to remove unique id that wasn't registered");
+
+      g_UniqueIdRegistry.erase(p_UniqueId);
+    }
 
     Handle::Handle()
     {

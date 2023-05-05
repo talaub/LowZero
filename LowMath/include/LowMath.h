@@ -16,6 +16,8 @@
 #define LOW_UINT32_MIN 0u
 #define LOW_UINT8_MAX std::numeric_limits<uint8_t>::max()
 #define LOW_UINT8_MIN 0u
+#define LOW_UINT16_MAX std::numeric_limits<uint16_t>::max()
+#define LOW_UINT16_MIN 0u
 #define LOW_SHORT_MAX std::numeric_limits<short>::max()
 #define LOW_SHORT_MIN std::numeric_limits<short>::min()
 #define LOW_INT_MAX std::numeric_limits<int>::max()

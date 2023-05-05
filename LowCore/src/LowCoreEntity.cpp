@@ -47,6 +47,10 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
+      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                    l_Handle.get_id());
+
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -75,6 +79,8 @@ namespace Low {
         }
       }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+      Low::Util::remove_unique_id(get_unique_id());
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -123,6 +129,20 @@ namespace Low {
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Entity, components,
               SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(unique_id);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(EntityData, unique_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, unique_id,
+                                            Low::Util::UniqueId);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -216,6 +236,11 @@ namespace Low {
     {
       Entity l_Handle = Entity::make(N(Entity));
 
+      Low::Util::remove_unique_id(l_Handle.get_unique_id());
+      l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+      Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                    l_Handle.get_id());
+
       l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -229,6 +254,25 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
       return TYPE_SOA(Entity, components,
                       SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
+    }
+
+    Low::Util::UniqueId Entity::get_unique_id() const
+    {
+      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      return TYPE_SOA(Entity, unique_id, Low::Util::UniqueId);
+    }
+    void Entity::set_unique_id(Low::Util::UniqueId p_Value)
+    {
+      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
+
+      // Set new value
+      TYPE_SOA(Entity, unique_id, Low::Util::UniqueId) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
     Low::Util::Name Entity::get_name() const
@@ -360,6 +404,12 @@ namespace Low {
                   Util::Map<uint16_t, Util::Handle>();
           *i_ValPtr = it->get_components();
         }
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(EntityData, unique_id) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(EntityData, unique_id) * (l_Capacity)],
+               l_Capacity * sizeof(Low::Util::UniqueId));
       }
       {
         memcpy(&l_NewBuffer[offsetof(EntityData, name) *

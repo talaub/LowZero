@@ -23,6 +23,7 @@
 
 namespace Low {
   namespace Util {
+    typedef uint64_t UniqueId;
     namespace Instances {
       struct LOW_EXPORT Slot
       {
@@ -121,6 +122,10 @@ namespace Low {
       static void register_type_info(uint16_t p_TypeId,
                                      RTTI::TypeInfo &p_TypeInfo);
     };
+
+    UniqueId LOW_EXPORT generate_unique_id(Handle p_Handle);
+    void LOW_EXPORT register_unique_id(UniqueId p_UniqueId, Handle p_Handle);
+    void LOW_EXPORT remove_unique_id(UniqueId p_UniqueId);
 
   } // namespace Util
 } // namespace Low

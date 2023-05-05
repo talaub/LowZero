@@ -186,7 +186,9 @@ function is_reference_type(t) {
         'int16_t',
         'int32_t',
         'int64_t',
-        'size_t'
+        'size_t',
+	'Util::UniqueId',
+	'Low::Util::UniqueId'
     ].includes(t)) && !t.includes('*');
 }
 
@@ -562,6 +564,11 @@ function generate_source(p_Type) {
 	t += empty();
     }
     t += line(`ms_LivingInstances.push_back(l_Handle);`);
+    if (p_Type.unique_id) {
+	t += empty();
+	t += line(`l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));`);
+	t += line(`Low::Util::register_unique_id(l_Handle.get_unique_id(),l_Handle.get_id());`);
+    }
     t += empty();
     const l_MakeMarkerName = `CUSTOM:MAKE`;
 
@@ -607,6 +614,10 @@ function generate_source(p_Type) {
     t += l_CustomCode;
     t += line(l_DestroyEndMarker);
     t += empty();
+    if (p_Type.unique_id) {
+	t += line(`Low::Util::remove_unique_id(get_unique_id());`);
+	t += empty();
+    }
     t += line('ms_Slots[this->m_Data.m_Index].m_Occupied = false;');
     t += line('ms_Slots[this->m_Data.m_Index].m_Generation++;');
     t += empty();
@@ -806,6 +817,13 @@ function generate_source(p_Type) {
 	    t += line(`${p_Type.name} l_Handle = ${p_Type.name}::make(N(${p_Type.name}));`);
 	}
 	t += empty();
+
+	if (p_Type.unique_id) {
+	    t += line(`Low::Util::remove_unique_id(l_Handle.get_unique_id());`);
+	    t += line(`l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());`);
+	    t += line(`Low::Util::register_unique_id(l_Handle.get_unique_id(), l_Handle.get_id());`);
+	    t += empty();
+	}
 
 	for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	    if (i_Prop.skip_deserialization) {
@@ -1043,6 +1061,13 @@ function process_file(p_FileName) {
 		handle: true,
 		skip_serialization: true,
 		skip_deserialization: true
+	    }
+	}
+
+	if (i_Type.unique_id) {
+	    i_Type.properties['unique_id'] = {
+		type: 'Low::Util::UniqueId',
+		private_setter: true
 	    }
 	}
 

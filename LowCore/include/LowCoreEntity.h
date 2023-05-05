@@ -21,6 +21,7 @@ namespace Low {
     struct LOW_CORE_API EntityData
     {
       Util::Map<uint16_t, Util::Handle> components;
+      Low::Util::UniqueId unique_id;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -90,6 +91,8 @@ namespace Low {
 
       Util::Map<uint16_t, Util::Handle> &get_components() const;
 
+      Low::Util::UniqueId get_unique_id() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -103,6 +106,7 @@ namespace Low {
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
+      void set_unique_id(Low::Util::UniqueId p_Value);
     };
   } // namespace Core
 } // namespace Low
