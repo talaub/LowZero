@@ -6,7 +6,7 @@ namespace Low {
   namespace Renderer {
     struct DirectionalLight
     {
-      Math::Vector3 direction;
+      Math::Quaternion rotation;
       Math::ColorRGB color;
     };
   } // namespace Renderer

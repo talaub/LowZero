@@ -3,6 +3,8 @@
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 
+#include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "LowMathVectorUtil.h"
 
 #include "LowRendererGraphicsStepConfig.h"
@@ -38,6 +40,107 @@ namespace Low {
                 N(_renderobject_buffer)));
       }
 
+      void get_frustum_corners_world_space(const glm::mat4 &p_Projection,
+                                           const glm::mat4 &p_View,
+                                           Math::Vector4 *p_OutPositions)
+      {
+        const auto inv = glm::inverse(p_Projection * p_View);
+
+        uint32_t l_Index = 0;
+
+        for (unsigned int x = 0; x < 2; ++x) {
+          for (unsigned int y = 0; y < 2; ++y) {
+            for (unsigned int z = 0; z < 2; ++z) {
+              const glm::vec4 pt =
+                  inv * glm::vec4(2.0f * x - 1.0f, 2.0f * y - 1.0f,
+                                  2.0f * z - 1.0f, 1.0f);
+              p_OutPositions[l_Index++] = pt / pt.w;
+            }
+          }
+        }
+      }
+
+      static void
+      calculate_directional_light_matrices(RenderFlow p_RenderFlow,
+                                           Math::Matrix4x4 *p_LightProjection,
+                                           Math::Matrix4x4 *p_LightView)
+      {
+
+#define FRUSTUM_POINT_COUNT 8
+
+        Math::Matrix4x4 proj =
+            glm::perspective(glm::radians(p_RenderFlow.get_camera_fov()),
+                             ((float)p_RenderFlow.get_dimensions().x) /
+                                 ((float)p_RenderFlow.get_dimensions().y),
+                             p_RenderFlow.get_camera_near_plane(),
+                             p_RenderFlow.get_camera_far_plane());
+
+        proj[1][1] *= -1.0f; // Convert from OpenGL y-axis
+        //    to Vulkan y-axis
+
+        Math::Matrix4x4 viewMatrix =
+            glm::lookAt(p_RenderFlow.get_camera_position(),
+                        p_RenderFlow.get_camera_position() +
+                            p_RenderFlow.get_camera_direction(),
+                        LOW_VECTOR3_UP);
+
+        DirectionalLight &l_DirectionalLight =
+            p_RenderFlow.get_directional_light();
+
+        glm::vec3 lightDirection = glm::normalize(Math::VectorUtil::direction(
+                                       l_DirectionalLight.rotation)) *
+                                   -1.0f;
+
+        Math::Vector4 l_Corners[FRUSTUM_POINT_COUNT];
+        get_frustum_corners_world_space(proj, viewMatrix, l_Corners);
+
+        glm::vec3 center = glm::vec3(0, 0, 0);
+        for (uint32_t i = 0u; i < FRUSTUM_POINT_COUNT; ++i) {
+          center += glm::vec3(l_Corners[i]);
+        }
+        center /= FRUSTUM_POINT_COUNT;
+
+        const auto lightView = glm::lookAt(center + lightDirection, center,
+                                           glm::vec3(0.0f, 1.0f, 0.0f));
+
+        float minX = std::numeric_limits<float>::max();
+        float maxX = std::numeric_limits<float>::lowest();
+        float minY = std::numeric_limits<float>::max();
+        float maxY = std::numeric_limits<float>::lowest();
+        float minZ = std::numeric_limits<float>::max();
+        float maxZ = std::numeric_limits<float>::lowest();
+        for (uint32_t i = 0u; i < FRUSTUM_POINT_COUNT; ++i) {
+          const auto trf = lightView * l_Corners[i];
+          minX = std::min(minX, trf.x);
+          maxX = std::max(maxX, trf.x);
+          minY = std::min(minY, trf.y);
+          maxY = std::max(maxY, trf.y);
+          minZ = std::min(minZ, trf.z);
+          maxZ = std::max(maxZ, trf.z);
+        }
+
+        // Tune this parameter according to the scene
+        constexpr float zMult = 1.0f;
+        if (minZ < 0) {
+          minZ *= zMult;
+        } else {
+          minZ /= zMult;
+        }
+        if (maxZ < 0) {
+          maxZ /= zMult;
+        } else {
+          maxZ *= zMult;
+        }
+
+        const glm::mat4 lightProjection =
+            glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
+
+        *p_LightView = lightView;
+        *p_LightProjection = lightProjection;
+
+#undef FRUSTUM_POINT_COUNT
+      }
+
       void execute(GraphicsStep p_Step, RenderFlow p_RenderFlow,
                    Math::Matrix4x4 &p_ProjectionMatrix,
                    Math::Matrix4x4 &p_ViewMatrix)
@@ -45,20 +148,15 @@ namespace Low {
         DirectionalLight &l_DirectionalLight =
             p_RenderFlow.get_directional_light();
 
-        float near_plane = 0.1f, far_plane = 70.0f;
-        Math::Matrix4x4 l_ProjectionMatrix =
-            glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-        l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis to
-                                           // Vulkan y-axis
+        Math::Vector3 l_LightDirection =
+            Math::VectorUtil::direction(l_DirectionalLight.rotation);
 
-        Math::Vector3 l_DirectionalLightPosition =
-            p_RenderFlow.get_camera_position();
-        l_DirectionalLightPosition += (l_DirectionalLight.direction * -13.0f);
+        Math::Matrix4x4 l_ProjectionMatrix;
+        Math::Matrix4x4 l_ViewMatrix;
+        calculate_directional_light_matrices(p_RenderFlow, &l_ProjectionMatrix,
+                                             &l_ViewMatrix);
 
-        Math::Matrix4x4 l_ViewMatrix = glm::lookAt(
-            l_DirectionalLightPosition,
-            l_DirectionalLightPosition + l_DirectionalLight.direction,
-            Math::Vector3(0.0f, 1.0f, 0.0f));
+        // l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis
 
         Math::Matrix4x4 l_LightSpace = l_ProjectionMatrix * l_ViewMatrix;
 
@@ -66,8 +164,7 @@ namespace Low {
         l_DirectionalLightShaderInfo.lightSpaceMatrix = l_LightSpace;
         l_DirectionalLightShaderInfo.atlasBounds =
             Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f);
-        l_DirectionalLightShaderInfo.direction =
-            p_RenderFlow.get_directional_light().direction;
+        l_DirectionalLightShaderInfo.direction = l_LightDirection;
         l_DirectionalLightShaderInfo.color =
             p_RenderFlow.get_directional_light().color;
 
@@ -113,8 +210,8 @@ namespace Low {
         GraphicsStepConfig l_Config = GraphicsStepConfig::make(N(ShadowPass));
         l_Config.get_dimensions_config().type =
             ImageResourceDimensionType::ABSOLUTE;
-        l_Config.get_dimensions_config().absolute.x = 1024;
-        l_Config.get_dimensions_config().absolute.y = 1024;
+        l_Config.get_dimensions_config().absolute.x = 2048;
+        l_Config.get_dimensions_config().absolute.y = 2048;
 
         {
           l_Config.set_depth_clear(true);

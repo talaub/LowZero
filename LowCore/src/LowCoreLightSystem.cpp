@@ -26,8 +26,8 @@ namespace Low {
             l_RendererDirectionalLight.color =
                 Component::DirectionalLight::living_instances()[0].get_color();
 
-            l_RendererDirectionalLight.direction =
-                Math::VectorUtil::direction(l_Transform.get_world_rotation());
+            l_RendererDirectionalLight.rotation =
+                l_Transform.get_world_rotation();
 
             Renderer::get_main_renderflow().set_directional_light(
                 l_RendererDirectionalLight);

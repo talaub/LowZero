@@ -2,9 +2,6 @@
 
 #include "LowEditorWidget.h"
 
-#include "LowUtilHandle.h"
-#include "LowEditorHandlePropertiesSection.h"
-
 namespace Low {
   namespace Editor {
     struct SceneWidget : public Widget

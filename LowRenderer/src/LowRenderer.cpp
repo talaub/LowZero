@@ -661,15 +661,6 @@ namespace Low {
       }
 
       {
-        DirectionalLight l_DirectionalLight;
-        l_DirectionalLight.color = Math::ColorRGB(1.0f, 0.0f, 0.0f) * 2.0f;
-        l_DirectionalLight.direction =
-            Math::VectorUtil::normalize(Math::Vector3(2.0f, -2.5f, -0.5f));
-
-        g_MainRenderFlow.set_directional_light(l_DirectionalLight);
-      }
-
-      {
         Backend::PipelineResourceDescription l_ResourceDescription;
         l_ResourceDescription.name = N(u_FinalImage);
         l_ResourceDescription.arraySize = 1;
