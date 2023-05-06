@@ -22,6 +22,7 @@ namespace Low {
 
     void RenderFlowWidget::render(float p_Delta)
     {
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
       ImGui::Begin(m_Title.c_str());
 
       Math::Vector2 l_HoverRelativePosition{2.0f, 2.0f};
@@ -71,6 +72,8 @@ namespace Low {
       }
 
       ImGui::End();
+
+      ImGui::PopStyleVar();
 
       m_HoveredRelativePosition = l_HoverRelativePosition;
 
