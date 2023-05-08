@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Renderer {
@@ -335,19 +336,19 @@ namespace Low {
 
     Util::Map<RenderFlow, ResourceRegistry> &GraphicsStep::get_resources() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStep, resources,
                       SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
     }
 
     GraphicsStepConfig GraphicsStep::get_config() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStep, config, GraphicsStepConfig);
     }
     void GraphicsStep::set_config(GraphicsStepConfig p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_config
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
@@ -362,7 +363,7 @@ namespace Low {
     Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> &
     GraphicsStep::get_pipelines() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(
           GraphicsStep, pipelines,
           SINGLE_ARG(
@@ -372,7 +373,7 @@ namespace Low {
     Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>> &
     GraphicsStep::get_renderobjects() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(
           GraphicsStep, renderobjects,
           SINGLE_ARG(Util::Map<Util::Name,
@@ -382,19 +383,19 @@ namespace Low {
     Util::Map<RenderFlow, Interface::Renderpass> &
     GraphicsStep::get_renderpasses() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStep, renderpasses,
                       SINGLE_ARG(Util::Map<RenderFlow, Interface::Renderpass>));
     }
 
     Interface::Context GraphicsStep::get_context() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStep, context, Interface::Context);
     }
     void GraphicsStep::set_context(Interface::Context p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
@@ -409,7 +410,7 @@ namespace Low {
     Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
     GraphicsStep::get_signatures() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(
           GraphicsStep, signatures,
           SINGLE_ARG(
@@ -418,12 +419,12 @@ namespace Low {
 
     Low::Util::Name GraphicsStep::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStep, name, Low::Util::Name);
     }
     void GraphicsStep::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowRendererInterface.h"
 #include "LowRendererTexture2D.h"
@@ -299,24 +300,24 @@ namespace Low {
 
       Backend::Context &Context::get_context() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Context, context, Backend::Context);
       }
 
       Util::List<Renderpass> &Context::get_renderpasses() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Context, renderpasses, Util::List<Renderpass>);
       }
 
       PipelineResourceSignature Context::get_global_signature() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Context, global_signature, PipelineResourceSignature);
       }
       void Context::set_global_signature(PipelineResourceSignature p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_global_signature
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_global_signature
@@ -331,12 +332,12 @@ namespace Low {
 
       Resource::Buffer Context::get_frame_info_buffer() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Context, frame_info_buffer, Resource::Buffer);
       }
       void Context::set_frame_info_buffer(Resource::Buffer p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
@@ -350,12 +351,12 @@ namespace Low {
 
       Resource::Buffer Context::get_material_data_buffer() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Context, material_data_buffer, Resource::Buffer);
       }
       void Context::set_material_data_buffer(Resource::Buffer p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_data_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_data_buffer
@@ -369,12 +370,12 @@ namespace Low {
 
       Low::Util::Name Context::get_name() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Context, name, Low::Util::Name);
       }
       void Context::set_name(Low::Util::Name p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
@@ -485,7 +486,7 @@ namespace Low {
             Util::Resource::Image2D l_Image;
             Util::Resource::load_image2d(
                 Util::String(LOW_DATA_PATH) +
-                    "/assets/img2d/default_texture.ktx",
+                    "/resources/img2d/default_texture.ktx",
                 l_Image);
 
             Texture2D l_Texture2D =

@@ -24,6 +24,7 @@ namespace Low {
       {
         Math::ColorRGB color;
         Low::Core::Entity entity;
+        Low::Util::UniqueId unique_id;
 
         static size_t get_size()
         {
@@ -95,10 +96,13 @@ namespace Low {
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);
 
+        Low::Util::UniqueId get_unique_id() const;
+
       private:
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
+        void set_unique_id(Low::Util::UniqueId p_Value);
       };
     } // namespace Component
   }   // namespace Core

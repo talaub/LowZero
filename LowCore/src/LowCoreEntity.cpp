@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowCoreTransform.h"
 
@@ -40,6 +41,7 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Entity, components,
                               SINGLE_ARG(Util::Map<uint16_t, Util::Handle>)))
           Util::Map<uint16_t, Util::Handle>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Entity, region, Region)) Region();
       ACCESSOR_TYPE_SOA(l_Handle, Entity, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -136,10 +138,27 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(region);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(EntityData, region);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Region::TYPE_ID;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, region, Region);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Entity l_Handle = p_Handle.get_id();
+          l_Handle.set_region(*(Region *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EntityData, unique_id);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, unique_id,
                                             Low::Util::UniqueId);
@@ -218,9 +237,22 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["name"] = get_name().c_str();
-
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      p_Node["name"] = get_name().c_str();
+      p_Node["unique_id"] = get_unique_id();
+
+      for (auto it = get_components().begin(); it != get_components().end();
+           ++it) {
+        Util::Yaml::Node i_Node;
+        i_Node["type"] = it->first;
+
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(it->first);
+        Util::Yaml::Node i_PropertiesNode;
+        i_TypeInfo.serialize(it->second, i_PropertiesNode);
+        i_Node["properties"] = i_PropertiesNode;
+        p_Node["components"].push_back(i_Node);
+      }
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -234,36 +266,66 @@ namespace Low {
     Low::Util::Handle Entity::deserialize(Low::Util::Yaml::Node &p_Node,
                                           Low::Util::Handle p_Creator)
     {
-      Entity l_Handle = Entity::make(N(Entity));
-
-      Low::Util::remove_unique_id(l_Handle.get_unique_id());
-      l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-      Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                    l_Handle.get_id());
-
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+      Region l_Region = p_Creator.get_id();
 
-      return l_Handle;
+      Entity l_Entity =
+          Entity::make(LOW_YAML_AS_NAME(p_Node["name"]), l_Region);
+
+      Util::remove_unique_id(l_Entity.get_unique_id());
+      l_Entity.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+      Util::register_unique_id(l_Entity.get_unique_id(), l_Entity);
+
+      Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
+
+      for (auto it = l_ComponentsNode.begin(); it != l_ComponentsNode.end();
+           ++it) {
+        Util::Yaml::Node &i_ComponentNode = *it;
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(i_ComponentNode["type"].as<uint16_t>());
+
+        i_TypeInfo.deserialize(i_ComponentNode["properties"], l_Entity);
+      }
+
+      return l_Entity;
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
     Util::Map<uint16_t, Util::Handle> &Entity::get_components() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Entity, components,
                       SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
     }
 
+    Region Entity::get_region() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Entity, region, Region);
+    }
+    void Entity::set_region(Region p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_region
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_region
+
+      // Set new value
+      TYPE_SOA(Entity, region, Region) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_region
+      // LOW_CODEGEN::END::CUSTOM:SETTER_region
+    }
+
     Low::Util::UniqueId Entity::get_unique_id() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Entity, unique_id, Low::Util::UniqueId);
     }
     void Entity::set_unique_id(Low::Util::UniqueId p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
@@ -277,12 +339,12 @@ namespace Low {
 
     Low::Util::Name Entity::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Entity, name, Low::Util::Name);
     }
     void Entity::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
@@ -292,6 +354,15 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+    }
+
+    Entity Entity::make(Util::Name p_Name, Region p_Region)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      Entity l_Entity = Entity::make(p_Name);
+      p_Region.add_entity(l_Entity);
+      return l_Entity;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
     uint64_t Entity::get_component(uint16_t p_TypeId)
@@ -404,6 +475,12 @@ namespace Low {
                   Util::Map<uint16_t, Util::Handle>();
           *i_ValPtr = it->get_components();
         }
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(EntityData, region) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(EntityData, region) * (l_Capacity)],
+               l_Capacity * sizeof(Region));
       }
       {
         memcpy(&l_NewBuffer[offsetof(EntityData, unique_id) *

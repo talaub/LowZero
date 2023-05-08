@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowRendererComputeStep.h"
 
@@ -252,12 +253,12 @@ namespace Low {
 
     ComputeStepCallbacks &ComputeStepConfig::get_callbacks() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStepConfig, callbacks, ComputeStepCallbacks);
     }
     void ComputeStepConfig::set_callbacks(ComputeStepCallbacks &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_callbacks
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_callbacks
@@ -271,25 +272,25 @@ namespace Low {
 
     Util::List<ResourceConfig> &ComputeStepConfig::get_resources() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStepConfig, resources, Util::List<ResourceConfig>);
     }
 
     Util::List<ComputePipelineConfig> &ComputeStepConfig::get_pipelines() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStepConfig, pipelines,
                       Util::List<ComputePipelineConfig>);
     }
 
     Low::Util::Name ComputeStepConfig::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStepConfig, name, Low::Util::Name);
     }
     void ComputeStepConfig::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

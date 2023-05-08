@@ -11,6 +11,7 @@
 #include "LowEditorEditingWidget.h"
 #include "LowEditorAssetWidget.h"
 #include "LowEditorSceneWidget.h"
+#include "LowEditorRegionWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
@@ -29,22 +30,34 @@ namespace Low {
     const int g_DockSpaceId = 4785;
     bool g_CentralDockOpen = true;
 
-    LogWidget g_LogWidget;
+    struct EditorWidget
+    {
+      Widget *widget;
+      const char *name;
+      bool open;
+    };
+
+    Util::List<EditorWidget> g_Widgets;
+
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
-    ProfilerWidget *g_ProfilerWidget;
-    AssetWidget *g_AssetWidget;
-    SceneWidget *g_SceneWidget;
 
-    Core::Entity g_SelectedEntity;
-
-    void set_selected_entity(Core::Entity p_Entity)
+    static void register_editor_widget(const char *p_Name, Widget *p_Widget,
+                                       bool p_DefaultOpen = false)
     {
-      g_SelectedEntity = p_Entity;
+      g_Widgets.push_back({p_Widget, p_Name, p_DefaultOpen});
+    }
+
+    Util::Handle g_SelectedHandle;
+
+    void set_selected_handle(Util::Handle p_Handle)
+    {
+      g_SelectedHandle = p_Handle;
 
       g_DetailsWidget->clear();
 
-      if (!g_SelectedEntity.is_alive()) {
+      Core::Entity l_Entity = p_Handle.get_id();
+      if (!l_Entity.is_alive()) {
         uint32_t l_Id = ~0u;
         g_MainViewportWidget->m_RenderFlowWidget->get_renderflow()
             .get_resources()
@@ -52,28 +65,52 @@ namespace Low {
             .set(&l_Id);
         return;
       }
-      uint32_t l_Id = p_Entity.get_index();
+      uint32_t l_Id = l_Entity.get_index();
 
       g_MainViewportWidget->m_RenderFlowWidget->get_renderflow()
           .get_resources()
           .get_buffer_resource(N(SelectedIdBuffer))
           .set(&l_Id);
 
-      for (auto it = g_SelectedEntity.get_components().begin();
-           it != g_SelectedEntity.get_components().end(); ++it) {
+      {
+        HandlePropertiesSection l_Section(l_Entity, true);
+        l_Section.render_footer = nullptr;
+        get_details_widget()->add_section(l_Section);
+      }
+
+      for (auto it = l_Entity.get_components().begin();
+           it != l_Entity.get_components().end(); ++it) {
         g_DetailsWidget->add_section(it->second);
       }
     }
 
     Core::Entity get_selected_entity()
     {
-      return g_SelectedEntity;
+      return g_SelectedHandle.get_id();
+    }
+
+    void set_selected_entity(Core::Entity p_Entity)
+    {
+      set_selected_handle(p_Entity);
+    }
+
+    Util::Handle get_selected_handle()
+    {
+      return g_SelectedHandle;
     }
 
     static void render_menu_bar(float p_Delta)
     {
       // Menu
       if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("View")) {
+          for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+            if (ImGui::MenuItem(it->name, nullptr, it->open)) {
+              it->open = !it->open;
+            }
+          }
+          ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("Scene")) {
           if (ImGui::MenuItem("Save", NULL, nullptr)) {
             LOW_LOG_WARN << "Saving scenes is not yet implemented"
@@ -167,11 +204,14 @@ namespace Low {
       LogWidget::initialize();
 
       g_MainViewportWidget = new EditingWidget();
-
+      register_editor_widget("Viewport", g_MainViewportWidget, true);
+      register_editor_widget("Log", new LogWidget(), true);
       g_DetailsWidget = new DetailsWidget();
-      g_ProfilerWidget = new ProfilerWidget();
-      g_AssetWidget = new AssetWidget();
-      g_SceneWidget = new SceneWidget();
+      register_editor_widget("Details", g_DetailsWidget, true);
+      register_editor_widget("Profiler", new ProfilerWidget());
+      register_editor_widget("Assets", new AssetWidget(), true);
+      register_editor_widget("Scene", new SceneWidget(), true);
+      register_editor_widget("Regions", new RegionWidget(), true);
     }
 
     void tick(float p_Delta)
@@ -180,13 +220,11 @@ namespace Low {
 
       render_central_docking_space(p_Delta);
 
-      g_LogWidget.render(p_Delta);
-      g_MainViewportWidget->render(p_Delta);
-      g_DetailsWidget->render(p_Delta);
-      g_ProfilerWidget->render(p_Delta);
-      g_AssetWidget->render(p_Delta);
-      g_SceneWidget->render(p_Delta);
-
+      for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+        if (it->open) {
+          it->widget->render(p_Delta);
+        }
+      }
       // ImGui::ShowDemoWindow();
     }
 

@@ -176,7 +176,7 @@ namespace Low {
       for (auto it = Core::MeshAsset::ms_LivingInstances.begin();
            it != Core::MeshAsset::ms_LivingInstances.end(); ++it) {
         if (render_element(l_Id++, ICON_FA_CUBE, it->get_name().c_str())) {
-          get_details_widget()->clear();
+          set_selected_handle(*it);
           HandlePropertiesSection i_Section(*it, true);
           i_Section.render_footer = &render_mesh_asset_details_footer;
           get_details_widget()->add_section(i_Section);
@@ -241,7 +241,7 @@ namespace Low {
       for (auto it = Core::Material::ms_LivingInstances.begin();
            it != Core::Material::ms_LivingInstances.end(); ++it) {
         if (render_element(l_Id++, ICON_FA_SPRAY_CAN, it->get_name().c_str())) {
-          get_details_widget()->clear();
+          set_selected_handle(*it);
           HandlePropertiesSection i_Section(*it, true);
           i_Section.render_footer = &render_material_details_footer;
           get_details_widget()->add_section(i_Section);

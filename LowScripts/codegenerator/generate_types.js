@@ -7,6 +7,19 @@ const g_Directory = `${__dirname}\\..\\..\\misteda\\data\\_internal\\type_config
 const g_TypeInitializerCppPath = `${__dirname}\\..\\..\\LowUtil\\src\\LowUtilTypeInitializer.cpp`; 
 let g_TypeId = 1;
 
+let g_TypeIdMap = {};
+const g_AllTypeIds = [];
+
+function get_unused_type_id(){
+    let id = 1;
+
+    while (g_AllTypeIds.includes(id)) {
+	id++;
+    }
+
+    return id;
+}
+
 function read_file(p_FilePath) {
     return fs.readFileSync(p_FilePath, {encoding:'utf8', flag:'r'});
 }
@@ -19,6 +32,51 @@ function format(p_FilePath, p_Content) {
     fs.unlinkSync(l_TmpPath);
 
     return l_Formatted;
+}
+
+function get_deserializer_method_for_math_type(p_Type) {
+    if (!is_math_type(p_Type)) {
+	console.log("--------- ERROR NOT A MATH TYPE");
+    }
+
+    const l_Parts = p_Type.split(':');
+    let l_Type = l_Parts[l_Parts.length - 1];
+
+    if (p_Type.endsWith('Color')) {
+	l_Type = 'Vector4';
+    }
+    if (p_Type.endsWith('ColorRGB')) {
+	l_Type = 'Vector3';
+    }
+
+    return `Low::Util::Serialization::deserialize_${l_Type.toLowerCase()}`;
+}
+
+function is_math_type(p_Type) {
+    const l_Name = [
+	'Vector2',
+	'Vector3',
+	'Vector4',
+	'Color',
+	'ColorRGB',
+	'Quaternion'
+    ];
+
+    const l_Prefixes = [
+	'Low::Math::',
+	'Math::',
+	''
+    ];
+
+    for (const i_Name of l_Name) {
+	for (const i_Prefix of l_Prefixes) {
+	    if (p_Type === `${i_Prefix}${i_Name}`) {
+		return true;
+	    }
+	}
+    }
+
+    return false;
 }
 
 function is_name_type(p_Type) {
@@ -115,6 +173,9 @@ function get_property_type(p_Type) {
     }
     if (['int'].includes(p_Type)) {
 	return 'INT';
+    }
+    if (p_Type.endsWith('Util::UniqueId')) {
+	return 'UINT64';
     }
     return "UNKNOWN";
 }
@@ -502,6 +563,7 @@ function generate_source(p_Type) {
     t += include("LowUtilLogger.h", n);
     t += include("LowUtilProfiler.h", n);
     t += include("LowUtilConfig.h", n);
+    t += include("LowUtilSerialization.h", n);
     t += empty();
     if (p_Type.source_imports) {
 	for (const i_Include of p_Type.source_imports) {
@@ -514,7 +576,7 @@ function generate_source(p_Type) {
 	t += line(`namespace ${i_Namespace} {`, n++);
     }
 
-    t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${g_TypeId++};`, n);
+    t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${p_Type.typeId};`, n);
     t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
     t += line(`uint8_t *${p_Type.name}::ms_Buffer = 0;`, n);
     t += line(`Low::Util::Instances::Slot *${p_Type.name}::ms_Slots = 0;`, n);
@@ -766,12 +828,19 @@ function generate_source(p_Type) {
 		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}().c_str();`);
 	    }
 	    else if (['int', 'uint32_t', 'uint8_t', 'uint16_t', 'uint64_t']
-		    .includes(i_Prop.plain_type)) {
+		     .includes(i_Prop.plain_type) || i_Prop.plain_type.endsWith('Util::UniqueId')) {
 		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
 	    }
 	    else if (['float', 'double']
 		    .includes(i_Prop.plain_type)) {
 		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
+	    }
+	    else if (['bool']
+		    .includes(i_Prop.plain_type)) {
+		t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
+	    }
+	    else if (is_math_type(i_Prop.plain_type)) {
+		t += line(`Low::Util::Serialization::serialize(p_Node["${i_PropName}"], ${i_Prop.getter_name}());`);
 	    }
 	    else if (i_Prop.handle) {
 		t += line(`${i_Prop.getter_name}().serialize(p_Node["${i_PropName}"]);`);
@@ -836,6 +905,12 @@ function generate_source(p_Type) {
 	    else if (is_string_type(i_Prop.plain_type)) {
 		t += line(`l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_STRING(p_Node["${i_PropName}"]));`);
 	    }
+	    else if (is_math_type(i_Prop.plain_type)) {
+		t += line(`l_Handle.${i_Prop.setter_name}(${get_deserializer_method_for_math_type(i_Prop.plain_type)}(p_Node["${i_PropName}"]));`);
+	    }
+	    else if (['bool', 'float', 'int', 'double', 'uint64_t', 'uint32_t', 'uint8_t', 'uint16_t'].includes(i_Prop.plain_type) || i_Prop.plain_type.endsWith('Util::UniqueId')) {
+		t += line(`l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<${i_Prop.plain_type}>());`);
+	    }
 	    else if (i_Prop.handle) {
 		t += line(`l_Handle.${i_Prop.setter_name}(${i_Prop.plain_type}::deserialize(p_Node["${i_PropName}"], l_Handle.get_id()).get_id());`);
 	    }
@@ -857,7 +932,7 @@ function generate_source(p_Type) {
 	if (!i_Prop.no_getter) {
 	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() const`, n);
 	    t += line('{', n++);
-	    t += line('LOW_ASSERT(is_alive(), "Cannot get property from dead handle");');
+	    t += line('_LOW_ASSERT(is_alive());');
 	    t += line(`return TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type});`, n);
 	    t += line('}', --n);
 	}
@@ -879,7 +954,7 @@ function generate_source(p_Type) {
 	    
 	    t += line(`void ${p_Type.name}::${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value)`, n);
 	    t += line('{', n++);
-	    t += line('LOW_ASSERT(is_alive(), "Cannot set property on dead handle");');
+	    t += line('_LOW_ASSERT(is_alive());');
 	    t += empty();
 	    if (true) {
 		const l_MarkerName = `CUSTOM:PRESETTER_${i_PropName}`;
@@ -1042,12 +1117,25 @@ function process_file(p_FileName) {
 
     const l_Config = YAML.parse(l_FileContent);
 
+    if (!g_TypeIdMap[l_Config.module]) {
+	g_TypeIdMap[l_Config.module] = {};
+    }
+
     const l_Types = [];
 
     for (let [i_TypeName, i_Type] of Object.entries(l_Config.types)) {
 	i_Type.name = i_TypeName;
 	i_Type.module = l_Config.module;
 	i_Type.namespace = l_Config.namespace;
+	i_Type.typeId = 0;
+	if (g_TypeIdMap[l_Config.module][i_TypeName]) {
+	    i_Type.typeId = g_TypeIdMap[l_Config.module][i_TypeName];
+	}
+	else {
+	    i_Type.typeId = get_unused_type_id();
+	    g_AllTypeIds.push(i_Type.typeId);
+	    g_TypeIdMap[l_Config.module][i_TypeName] = i_Type.typeId;
+	}
 
 	if (i_Type.dynamic_increase === undefined) {
 	    i_Type.dynamic_increase = true;
@@ -1062,6 +1150,8 @@ function process_file(p_FileName) {
 		skip_serialization: true,
 		skip_deserialization: true
 	    }
+
+	    i_Type.unique_id = true;
 	}
 
 	if (i_Type.unique_id) {
@@ -1093,7 +1183,9 @@ function process_file(p_FileName) {
 
 	for (let i_Flag of i_Type.dirty_flags) {
 	    i_Type.properties[i_Flag] = {
-		type: 'bool'
+		type: 'bool',
+		skip_serialization: true,
+		skip_deserialization: true
 	    }
 	}
 
@@ -1181,53 +1273,6 @@ function process_file(p_FileName) {
     return l_Types;
 }
 
-function generate_type_initializer(p_Types) {
-    let t = '';
-
-    t += include('LowUtilHandle.h');
-    t += empty();
-    t += include('LowUtilLogger.h');
-    t += include('LowUtilAssert.h');
-    t += empty();
-
-    for (let i_Type of p_Types) {
-	t += include(`../../${i_Type.module}/include/${i_Type.module}${i_Type.name}.h`);
-    }
-    t += empty();
-
-    t += line('namespace Low{');
-    t += line('namespace Util{');
-    t += line('namespace Instances{');
-
-    t += line('void initialize() {');
-
-    for (let i_Type of p_Types) {
-	t += line(`initialize_buffer(&${i_Type.namespace_string}::${i_Type.name}::ms_Buffer, ${i_Type.namespace_string}::${i_Type.name}Data::get_size(), ${i_Type.namespace_string}::${i_Type.name}::get_capacity(), &${i_Type.namespace_string}::${i_Type.name}::ms_Slots);`);
-	t += empty();
-    }
-
-    t += line('LOW_LOG_DEBUG("Type buffers initialized");');
-    
-    t += line('}');
-
-    t += line('void cleanup() {');
-
-    for (let i_Type of p_Types) {
-	t += line(`${i_Type.namespace_string}::${i_Type.name}::cleanup();`);
-	t += empty();
-    }
-
-    t += line('LOW_LOG_DEBUG("Cleaned up type buffers");');
-    
-    t += line('}');
-    
-    t += line('}');
-    t += line('}');
-    t += line('}');
-
-    save_file(g_TypeInitializerCppPath, t);
-}
-
 function removeItemOnce(arr, value) {
   var index = arr.indexOf(value);
   if (index > -1) {
@@ -1237,6 +1282,14 @@ function removeItemOnce(arr, value) {
 }
 
 function main () {
+    const l_TypeIdContent = read_file(`codegenerator/typeids.yaml`);
+    g_TypeIdMap = YAML.parse(l_TypeIdContent);
+    for (const [key, value] of Object.entries(g_TypeIdMap)) {
+	for (const [k, v] of Object.entries(value)) {
+	    g_AllTypeIds.push(v);
+	}
+    }
+
     const l_FileList = fs.readdirSync(g_Directory);
 
     const l_Types = [];
@@ -1271,6 +1324,7 @@ function main () {
 	l_Types.push(...process_file(i_FileName));
     }
 
+    fs.writeFileSync("codegenerator/typeids.yaml", YAML.stringify(g_TypeIdMap));
 
     // generate_type_initializer(l_Types);
 }

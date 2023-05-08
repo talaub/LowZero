@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowUtilResource.h"
 
@@ -236,12 +237,12 @@ namespace Low {
 
     Resource::Image Texture2D::get_image() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, image, Resource::Image);
     }
     void Texture2D::set_image(Resource::Image p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
@@ -255,12 +256,12 @@ namespace Low {
 
     Interface::Context Texture2D::get_context() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, context, Interface::Context);
     }
     void Texture2D::set_context(Interface::Context p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
@@ -274,12 +275,12 @@ namespace Low {
 
     Low::Util::Name Texture2D::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
     }
     void Texture2D::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

@@ -33,7 +33,7 @@ namespace Low {
 
       UniqueIdCombination l_Combinator;
 
-      RTTI::TypeInfo &l_TypeInfoForName = l_TypeInfo;
+      RTTI::TypeInfo l_TypeInfoForName = l_TypeInfo;
       Handle l_HandleForName = p_Handle;
 
       if (l_TypeInfo.component) {
@@ -80,6 +80,11 @@ namespace Low {
                  "Tried to remove unique id that wasn't registered");
 
       g_UniqueIdRegistry.erase(p_UniqueId);
+    }
+
+    Handle find_handle_by_unique_id(UniqueId p_UniqueId)
+    {
+      return g_UniqueIdRegistry[p_UniqueId];
     }
 
     Handle::Handle()

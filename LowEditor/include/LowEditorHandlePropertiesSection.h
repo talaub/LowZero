@@ -21,6 +21,7 @@ namespace Low {
 
       void render_default(float p_Delta);
       void render_material(float p_Delta);
+      void render_entity(float p_Delta);
     };
   } // namespace Editor
 } // namespace Low

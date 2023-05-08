@@ -6,11 +6,12 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Core {
     namespace Component {
-      const uint16_t Transform::TYPE_ID = 23;
+      const uint16_t Transform::TYPE_ID = 25;
       uint32_t Transform::ms_Capacity = 0u;
       uint8_t *Transform::ms_Buffer = 0;
       Low::Util::Instances::Slot *Transform::ms_Slots = 0;
@@ -58,6 +59,11 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -70,6 +76,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+        Low::Util::remove_unique_id(get_unique_id());
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -238,6 +246,20 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(unique_id);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(TransformData, unique_id);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, unique_id,
+                                              Low::Util::UniqueId);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(dirty);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
@@ -312,9 +334,18 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        p_Node["parent"] = get_parent();
+        Low::Util::Serialization::serialize(p_Node["position"], position());
+        Low::Util::Serialization::serialize(p_Node["rotation"], rotation());
+        Low::Util::Serialization::serialize(p_Node["scale"], scale());
+        p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        Transform l_TransformParent = get_parent();
+        if (l_TransformParent.is_alive()) {
+          p_Node["parent"] = l_TransformParent.get_unique_id();
+        } else {
+          p_Node["parent"] = 0;
+        }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -330,6 +361,19 @@ namespace Low {
       {
         Transform l_Handle = Transform::make(p_Creator.get_id());
 
+        Low::Util::remove_unique_id(l_Handle.get_unique_id());
+        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
+        l_Handle.position(
+            Low::Util::Serialization::deserialize_vector3(p_Node["position"]));
+        l_Handle.rotation(Low::Util::Serialization::deserialize_quaternion(
+            p_Node["rotation"]));
+        l_Handle.scale(
+            Low::Util::Serialization::deserialize_vector3(p_Node["scale"]));
+        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
@@ -338,12 +382,12 @@ namespace Low {
 
       Math::Vector3 &Transform::position() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, position, Math::Vector3);
       }
       void Transform::position(Math::Vector3 &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
@@ -363,12 +407,12 @@ namespace Low {
 
       Math::Quaternion &Transform::rotation() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, rotation, Math::Quaternion);
       }
       void Transform::rotation(Math::Quaternion &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
@@ -388,12 +432,12 @@ namespace Low {
 
       Math::Vector3 &Transform::scale() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, scale, Math::Vector3);
       }
       void Transform::scale(Math::Vector3 &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale
@@ -413,12 +457,12 @@ namespace Low {
 
       uint64_t Transform::get_parent() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, parent, uint64_t);
       }
       void Transform::set_parent(uint64_t p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent
@@ -438,12 +482,12 @@ namespace Low {
 
       Math::Vector3 &Transform::get_world_position() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, world_position, Math::Vector3);
       }
       void Transform::set_world_position(Math::Vector3 &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_position
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
@@ -457,12 +501,12 @@ namespace Low {
 
       Math::Quaternion &Transform::get_world_rotation() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, world_rotation, Math::Quaternion);
       }
       void Transform::set_world_rotation(Math::Quaternion &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_rotation
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_rotation
@@ -476,12 +520,12 @@ namespace Low {
 
       Math::Vector3 &Transform::get_world_scale() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, world_scale, Math::Vector3);
       }
       void Transform::set_world_scale(Math::Vector3 &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_scale
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_scale
@@ -495,12 +539,12 @@ namespace Low {
 
       Low::Core::Entity Transform::get_entity() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, entity, Low::Core::Entity);
       }
       void Transform::set_entity(Low::Core::Entity p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
@@ -512,14 +556,33 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
       }
 
+      Low::Util::UniqueId Transform::get_unique_id() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(Transform, unique_id, Low::Util::UniqueId);
+      }
+      void Transform::set_unique_id(Low::Util::UniqueId p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
+
+        // Set new value
+        TYPE_SOA(Transform, unique_id, Low::Util::UniqueId) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+      }
+
       bool Transform::is_dirty() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, dirty, bool);
       }
       void Transform::set_dirty(bool p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
@@ -533,12 +596,12 @@ namespace Low {
 
       bool Transform::is_world_dirty() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Transform, world_dirty, bool);
       }
       void Transform::set_world_dirty(bool p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
@@ -700,6 +763,12 @@ namespace Low {
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(TransformData, entity) * (l_Capacity)],
                  l_Capacity * sizeof(Low::Core::Entity));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(TransformData, unique_id) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(TransformData, unique_id) * (l_Capacity)],
+                 l_Capacity * sizeof(Low::Util::UniqueId));
         }
         {
           memcpy(&l_NewBuffer[offsetof(TransformData, dirty) *

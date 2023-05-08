@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowRendererInterface.h"
 #include "LowRendererImage.h"
@@ -218,12 +219,12 @@ namespace Low {
 
       Backend::Renderpass &Renderpass::get_renderpass() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Renderpass, renderpass, Backend::Renderpass);
       }
       void Renderpass::set_renderpass(Backend::Renderpass &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderpass
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderpass
@@ -237,12 +238,12 @@ namespace Low {
 
       Low::Util::Name Renderpass::get_name() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Renderpass, name, Low::Util::Name);
       }
       void Renderpass::set_name(Low::Util::Name p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

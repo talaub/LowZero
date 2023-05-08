@@ -6,13 +6,14 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowUtilResource.h"
 #include "LowRenderer.h"
 
 namespace Low {
   namespace Core {
-    const uint16_t Texture2D::TYPE_ID = 20;
+    const uint16_t Texture2D::TYPE_ID = 22;
     uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;
     Low::Util::Instances::Slot *Texture2D::ms_Slots = 0;
@@ -235,12 +236,12 @@ namespace Low {
 
     Util::String &Texture2D::get_path() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, path, Util::String);
     }
     void Texture2D::set_path(Util::String &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
@@ -254,12 +255,12 @@ namespace Low {
 
     Renderer::Texture2D Texture2D::get_renderer_texture() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D);
     }
     void Texture2D::set_renderer_texture(Renderer::Texture2D p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_texture
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_texture
@@ -273,12 +274,12 @@ namespace Low {
 
     uint32_t Texture2D::get_reference_count() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, reference_count, uint32_t);
     }
     void Texture2D::set_reference_count(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
@@ -292,12 +293,12 @@ namespace Low {
 
     Low::Util::Name Texture2D::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
     }
     void Texture2D::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

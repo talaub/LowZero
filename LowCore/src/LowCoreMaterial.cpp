@@ -6,13 +6,14 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowRenderer.h"
 #include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Core {
-    const uint16_t Material::TYPE_ID = 22;
+    const uint16_t Material::TYPE_ID = 24;
     uint32_t Material::ms_Capacity = 0u;
     uint8_t *Material::ms_Buffer = 0;
     Low::Util::Instances::Slot *Material::ms_Slots = 0;
@@ -253,7 +254,9 @@ namespace Low {
         const char *i_PropName = it->name.c_str();
         if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
           Texture2D i_Texture = get_properties()[it->name].m_Uint64;
-          i_Texture.serialize(l_Properties[i_PropName]);
+          if (i_Texture.is_alive()) {
+            i_Texture.serialize(l_Properties[i_PropName]);
+          }
         } else if (it->type == Renderer::MaterialTypePropertyType::VECTOR4) {
           Math::Vector4 i_Value = get_properties()[it->name];
           Util::Serialization::serialize(l_Properties[i_PropName], i_Value);
@@ -284,6 +287,9 @@ namespace Low {
       for (auto it = l_Handle.get_material_type().get_properties().begin();
            it != l_Handle.get_material_type().get_properties().end(); ++it) {
         const char *i_PropName = it->name.c_str();
+        if (!p_Node["properties"][i_PropName]) {
+          continue;
+        }
         if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
           l_Handle.get_properties()[it->name] =
               Texture2D::deserialize(p_Node["properties"][i_PropName], l_Handle)
@@ -301,12 +307,12 @@ namespace Low {
 
     Renderer::MaterialType Material::get_material_type() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Material, material_type, Renderer::MaterialType);
     }
     void Material::set_material_type(Renderer::MaterialType p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_type
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_type
@@ -321,12 +327,12 @@ namespace Low {
 
     Renderer::Material Material::get_renderer_material() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Material, renderer_material, Renderer::Material);
     }
     void Material::set_renderer_material(Renderer::Material p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_material
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_material
@@ -340,19 +346,19 @@ namespace Low {
 
     Util::Map<Util::Name, Util::Variant> &Material::get_properties() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Material, properties,
                       SINGLE_ARG(Util::Map<Util::Name, Util::Variant>));
     }
 
     uint32_t Material::get_reference_count() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Material, reference_count, uint32_t);
     }
     void Material::set_reference_count(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
@@ -366,12 +372,12 @@ namespace Low {
 
     Low::Util::Name Material::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Material, name, Low::Util::Name);
     }
     void Material::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

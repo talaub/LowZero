@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowRendererComputeStep.h"
 #include "LowRendererGraphicsStep.h"
@@ -404,6 +405,10 @@ namespace Low {
       get_output_image().serialize(p_Node["output_image"]);
       get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
       get_resource_signature().serialize(p_Node["resource_signature"]);
+      Low::Util::Serialization::serialize(p_Node["camera_position"],
+                                          get_camera_position());
+      Low::Util::Serialization::serialize(p_Node["camera_direction"],
+                                          get_camera_direction());
       p_Node["camera_fov"] = get_camera_fov();
       p_Node["camera_near_plane"] = get_camera_near_plane();
       p_Node["camera_far_plane"] = get_camera_far_plane();
@@ -439,6 +444,15 @@ namespace Low {
           Interface::PipelineResourceSignature::deserialize(
               p_Node["resource_signature"], l_Handle.get_id())
               .get_id());
+      l_Handle.set_camera_position(
+          Low::Util::Serialization::deserialize_vector3(
+              p_Node["camera_position"]));
+      l_Handle.set_camera_direction(
+          Low::Util::Serialization::deserialize_vector3(
+              p_Node["camera_direction"]));
+      l_Handle.set_camera_fov(p_Node["camera_fov"].as<float>());
+      l_Handle.set_camera_near_plane(p_Node["camera_near_plane"].as<float>());
+      l_Handle.set_camera_far_plane(p_Node["camera_far_plane"].as<float>());
       l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -449,12 +463,12 @@ namespace Low {
 
     Interface::Context RenderFlow::get_context() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, context, Interface::Context);
     }
     void RenderFlow::set_context(Interface::Context p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
@@ -468,18 +482,18 @@ namespace Low {
 
     Math::UVector2 &RenderFlow::get_dimensions() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, dimensions, Math::UVector2);
     }
 
     Resource::Image RenderFlow::get_output_image() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, output_image, Resource::Image);
     }
     void RenderFlow::set_output_image(Resource::Image p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
@@ -493,12 +507,12 @@ namespace Low {
 
     Util::List<Util::Handle> &RenderFlow::get_steps() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>);
     }
     void RenderFlow::set_steps(Util::List<Util::Handle> &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_steps
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_steps
@@ -512,18 +526,18 @@ namespace Low {
 
     ResourceRegistry &RenderFlow::get_resources() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, resources, ResourceRegistry);
     }
 
     Resource::Buffer RenderFlow::get_frame_info_buffer() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, frame_info_buffer, Resource::Buffer);
     }
     void RenderFlow::set_frame_info_buffer(Resource::Buffer p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
@@ -538,14 +552,14 @@ namespace Low {
     Interface::PipelineResourceSignature
     RenderFlow::get_resource_signature() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, resource_signature,
                       Interface::PipelineResourceSignature);
     }
     void RenderFlow::set_resource_signature(
         Interface::PipelineResourceSignature p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource_signature
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource_signature
@@ -560,12 +574,12 @@ namespace Low {
 
     Math::Vector3 &RenderFlow::get_camera_position() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, camera_position, Math::Vector3);
     }
     void RenderFlow::set_camera_position(Math::Vector3 &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_position
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_position
@@ -579,12 +593,12 @@ namespace Low {
 
     Math::Vector3 &RenderFlow::get_camera_direction() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, camera_direction, Math::Vector3);
     }
     void RenderFlow::set_camera_direction(Math::Vector3 &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_direction
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_direction
@@ -598,12 +612,12 @@ namespace Low {
 
     float RenderFlow::get_camera_fov() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, camera_fov, float);
     }
     void RenderFlow::set_camera_fov(float p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_fov
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_fov
@@ -617,12 +631,12 @@ namespace Low {
 
     float RenderFlow::get_camera_near_plane() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, camera_near_plane, float);
     }
     void RenderFlow::set_camera_near_plane(float p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_near_plane
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_near_plane
@@ -636,12 +650,12 @@ namespace Low {
 
     float RenderFlow::get_camera_far_plane() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, camera_far_plane, float);
     }
     void RenderFlow::set_camera_far_plane(float p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_far_plane
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_far_plane
@@ -655,12 +669,12 @@ namespace Low {
 
     DirectionalLight &RenderFlow::get_directional_light() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, directional_light, DirectionalLight);
     }
     void RenderFlow::set_directional_light(DirectionalLight &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light
@@ -674,12 +688,12 @@ namespace Low {
 
     Low::Util::Name RenderFlow::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(RenderFlow, name, Low::Util::Name);
     }
     void RenderFlow::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

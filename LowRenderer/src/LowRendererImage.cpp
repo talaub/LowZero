@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Renderer {
@@ -211,12 +212,12 @@ namespace Low {
 
       Backend::ImageResource &Image::get_image() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Image, image, Backend::ImageResource);
       }
       void Image::set_image(Backend::ImageResource &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
@@ -230,12 +231,12 @@ namespace Low {
 
       Low::Util::Name Image::get_name() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(Image, name, Low::Util::Name);
       }
       void Image::set_name(Low::Util::Name p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

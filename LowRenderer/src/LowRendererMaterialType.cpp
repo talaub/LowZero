@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Renderer {
@@ -264,12 +265,12 @@ namespace Low {
 
     GraphicsPipelineConfig &MaterialType::get_gbuffer_pipeline() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MaterialType, gbuffer_pipeline, GraphicsPipelineConfig);
     }
     void MaterialType::set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_pipeline
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_pipeline
@@ -284,12 +285,12 @@ namespace Low {
 
     GraphicsPipelineConfig &MaterialType::get_depth_pipeline() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig);
     }
     void MaterialType::set_depth_pipeline(GraphicsPipelineConfig &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_pipeline
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_pipeline
@@ -303,12 +304,12 @@ namespace Low {
 
     bool MaterialType::is_internal() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MaterialType, internal, bool);
     }
     void MaterialType::set_internal(bool p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
@@ -322,13 +323,13 @@ namespace Low {
 
     Util::List<MaterialTypeProperty> &MaterialType::get_properties() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MaterialType, properties,
                       Util::List<MaterialTypeProperty>);
     }
     void MaterialType::set_properties(Util::List<MaterialTypeProperty> &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_properties
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_properties
@@ -343,12 +344,12 @@ namespace Low {
 
     Low::Util::Name MaterialType::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MaterialType, name, Low::Util::Name);
     }
     void MaterialType::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

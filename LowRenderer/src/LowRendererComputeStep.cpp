@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Renderer {
@@ -297,19 +298,19 @@ namespace Low {
 
     Util::Map<RenderFlow, ResourceRegistry> &ComputeStep::get_resources() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStep, resources,
                       SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
     }
 
     ComputeStepConfig ComputeStep::get_config() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStep, config, ComputeStepConfig);
     }
     void ComputeStep::set_config(ComputeStepConfig p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_config
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
@@ -324,7 +325,7 @@ namespace Low {
     Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> &
     ComputeStep::get_pipelines() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(
           ComputeStep, pipelines,
           SINGLE_ARG(
@@ -334,7 +335,7 @@ namespace Low {
     Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>> &
     ComputeStep::get_signatures() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(
           ComputeStep, signatures,
           SINGLE_ARG(
@@ -344,12 +345,12 @@ namespace Low {
 
     Interface::Context ComputeStep::get_context() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStep, context, Interface::Context);
     }
     void ComputeStep::set_context(Interface::Context p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
@@ -363,12 +364,12 @@ namespace Low {
 
     Low::Util::Name ComputeStep::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(ComputeStep, name, Low::Util::Name);
     }
     void ComputeStep::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

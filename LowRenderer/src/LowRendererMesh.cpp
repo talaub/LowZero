@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Renderer {
@@ -251,6 +252,12 @@ namespace Low {
     {
       Mesh l_Handle = Mesh::make(N(Mesh));
 
+      l_Handle.set_vertex_buffer_start(
+          p_Node["vertex_buffer_start"].as<uint32_t>());
+      l_Handle.set_vertex_count(p_Node["vertex_count"].as<uint32_t>());
+      l_Handle.set_index_buffer_start(
+          p_Node["index_buffer_start"].as<uint32_t>());
+      l_Handle.set_index_count(p_Node["index_count"].as<uint32_t>());
       l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -261,12 +268,12 @@ namespace Low {
 
     uint32_t Mesh::get_vertex_buffer_start() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Mesh, vertex_buffer_start, uint32_t);
     }
     void Mesh::set_vertex_buffer_start(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_buffer_start
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_buffer_start
@@ -280,12 +287,12 @@ namespace Low {
 
     uint32_t Mesh::get_vertex_count() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Mesh, vertex_count, uint32_t);
     }
     void Mesh::set_vertex_count(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
@@ -299,12 +306,12 @@ namespace Low {
 
     uint32_t Mesh::get_index_buffer_start() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Mesh, index_buffer_start, uint32_t);
     }
     void Mesh::set_index_buffer_start(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_buffer_start
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_buffer_start
@@ -318,12 +325,12 @@ namespace Low {
 
     uint32_t Mesh::get_index_count() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Mesh, index_count, uint32_t);
     }
     void Mesh::set_index_count(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_count
@@ -337,12 +344,12 @@ namespace Low {
 
     Low::Util::Name Mesh::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(Mesh, name, Low::Util::Name);
     }
     void Mesh::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

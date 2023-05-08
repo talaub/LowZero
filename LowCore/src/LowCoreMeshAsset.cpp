@@ -6,12 +6,13 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowCoreTaskScheduler.h"
 
 namespace Low {
   namespace Core {
-    const uint16_t MeshAsset::TYPE_ID = 21;
+    const uint16_t MeshAsset::TYPE_ID = 23;
     uint32_t MeshAsset::ms_Capacity = 0u;
     uint8_t *MeshAsset::ms_Buffer = 0;
     Low::Util::Instances::Slot *MeshAsset::ms_Slots = 0;
@@ -231,12 +232,12 @@ namespace Low {
 
     MeshResource MeshAsset::get_lod0() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshAsset, lod0, MeshResource);
     }
     void MeshAsset::set_lod0(MeshResource p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod0
       if (get_lod0().is_alive() && get_lod0().is_loaded()) {
@@ -258,12 +259,12 @@ namespace Low {
 
     uint32_t MeshAsset::get_reference_count() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshAsset, reference_count, uint32_t);
     }
     void MeshAsset::set_reference_count(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
@@ -277,12 +278,12 @@ namespace Low {
 
     Low::Util::Name MeshAsset::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshAsset, name, Low::Util::Name);
     }
     void MeshAsset::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

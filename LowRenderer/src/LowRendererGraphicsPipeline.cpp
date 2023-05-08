@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowRendererInterface.h"
 
@@ -215,18 +216,18 @@ namespace Low {
 
       Backend::Pipeline &GraphicsPipeline::get_pipeline() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(GraphicsPipeline, pipeline, Backend::Pipeline);
       }
 
       Low::Util::Name GraphicsPipeline::get_name() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(GraphicsPipeline, name, Low::Util::Name);
       }
       void GraphicsPipeline::set_name(Low::Util::Name p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

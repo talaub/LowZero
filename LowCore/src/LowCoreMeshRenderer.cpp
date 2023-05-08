@@ -6,11 +6,12 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Core {
     namespace Component {
-      const uint16_t MeshRenderer::TYPE_ID = 24;
+      const uint16_t MeshRenderer::TYPE_ID = 26;
       uint32_t MeshRenderer::ms_Capacity = 0u;
       uint8_t *MeshRenderer::ms_Buffer = 0;
       Low::Util::Instances::Slot *MeshRenderer::ms_Slots = 0;
@@ -49,6 +50,11 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -61,6 +67,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+        Low::Util::remove_unique_id(get_unique_id());
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -154,6 +162,20 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(unique_id);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(MeshRendererData, unique_id);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer, unique_id,
+                                              Low::Util::UniqueId);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
@@ -197,10 +219,11 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        get_mesh().serialize(p_Node["mesh"]);
-        get_material().serialize(p_Node["material"]);
+        p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        p_Node["mesh"] = get_mesh().get_name().c_str();
+        p_Node["material"] = get_material().get_name().c_str();
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -216,13 +239,18 @@ namespace Low {
       {
         MeshRenderer l_Handle = MeshRenderer::make(p_Creator.get_id());
 
-        l_Handle.set_mesh(
-            MeshAsset::deserialize(p_Node["mesh"], l_Handle.get_id()).get_id());
-        l_Handle.set_material(
-            Material::deserialize(p_Node["material"], l_Handle.get_id())
-                .get_id());
+        Low::Util::remove_unique_id(l_Handle.get_unique_id());
+        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
+        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        l_Handle.set_mesh(
+            MeshAsset::find_by_name(LOW_YAML_AS_NAME(p_Node["mesh"])));
+        l_Handle.set_material(
+            Material::find_by_name(LOW_YAML_AS_NAME(p_Node["material"])));
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -230,12 +258,12 @@ namespace Low {
 
       MeshAsset MeshRenderer::get_mesh() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(MeshRenderer, mesh, MeshAsset);
       }
       void MeshRenderer::set_mesh(MeshAsset p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
         if (get_mesh().is_alive() && get_mesh().is_loaded()) {
@@ -257,12 +285,12 @@ namespace Low {
 
       Material MeshRenderer::get_material() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(MeshRenderer, material, Material);
       }
       void MeshRenderer::set_material(Material p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
@@ -276,12 +304,12 @@ namespace Low {
 
       Low::Core::Entity MeshRenderer::get_entity() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(MeshRenderer, entity, Low::Core::Entity);
       }
       void MeshRenderer::set_entity(Low::Core::Entity p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
@@ -291,6 +319,25 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+      }
+
+      Low::Util::UniqueId MeshRenderer::get_unique_id() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(MeshRenderer, unique_id, Low::Util::UniqueId);
+      }
+      void MeshRenderer::set_unique_id(Low::Util::UniqueId p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
+
+        // Set new value
+        TYPE_SOA(MeshRenderer, unique_id, Low::Util::UniqueId) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
       uint32_t MeshRenderer::create_instance()
@@ -345,6 +392,13 @@ namespace Low {
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(MeshRendererData, entity) * (l_Capacity)],
                  l_Capacity * sizeof(Low::Core::Entity));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(MeshRendererData, unique_id) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(MeshRendererData, unique_id) * (l_Capacity)],
+              l_Capacity * sizeof(Low::Util::UniqueId));
         }
         for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
              ++i) {

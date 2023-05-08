@@ -6,6 +6,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowUtilString.h"
 #include "LowRendererBackend.h"
@@ -401,6 +402,12 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
+      Low::Util::Serialization::serialize(p_Node["rendertargets_clearcolor"],
+                                          get_rendertargets_clearcolor());
+      p_Node["use_depth"] = is_use_depth();
+      p_Node["depth_clear"] = is_depth_clear();
+      p_Node["depth_test"] = is_depth_test();
+      p_Node["depth_write"] = is_depth_write();
       p_Node["depth_compare_operation"] = get_depth_compare_operation();
       p_Node["name"] = get_name().c_str();
 
@@ -422,6 +429,15 @@ namespace Low {
       GraphicsStepConfig l_Handle =
           GraphicsStepConfig::make(N(GraphicsStepConfig));
 
+      l_Handle.set_rendertargets_clearcolor(
+          Low::Util::Serialization::deserialize_vector4(
+              p_Node["rendertargets_clearcolor"]));
+      l_Handle.set_use_depth(p_Node["use_depth"].as<bool>());
+      l_Handle.set_depth_clear(p_Node["depth_clear"].as<bool>());
+      l_Handle.set_depth_test(p_Node["depth_test"].as<bool>());
+      l_Handle.set_depth_write(p_Node["depth_write"].as<bool>());
+      l_Handle.set_depth_compare_operation(
+          p_Node["depth_compare_operation"].as<uint8_t>());
       l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -432,12 +448,12 @@ namespace Low {
 
     GraphicsStepCallbacks &GraphicsStepConfig::get_callbacks() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks);
     }
     void GraphicsStepConfig::set_callbacks(GraphicsStepCallbacks &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_callbacks
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_callbacks
@@ -451,19 +467,19 @@ namespace Low {
 
     Util::List<ResourceConfig> &GraphicsStepConfig::get_resources() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, resources,
                       Util::List<ResourceConfig>);
     }
 
     DimensionsConfig &GraphicsStepConfig::get_dimensions_config() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, dimensions_config, DimensionsConfig);
     }
     void GraphicsStepConfig::set_dimensions_config(DimensionsConfig &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions_config
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions_config
@@ -479,7 +495,7 @@ namespace Low {
     Util::List<GraphicsPipelineConfig> &
     GraphicsStepConfig::get_pipelines() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, pipelines,
                       Util::List<GraphicsPipelineConfig>);
     }
@@ -487,20 +503,20 @@ namespace Low {
     Util::List<PipelineResourceBindingConfig> &
     GraphicsStepConfig::get_rendertargets() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, rendertargets,
                       Util::List<PipelineResourceBindingConfig>);
     }
 
     Math::Color &GraphicsStepConfig::get_rendertargets_clearcolor() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor,
                       Math::Color);
     }
     void GraphicsStepConfig::set_rendertargets_clearcolor(Math::Color &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rendertargets_clearcolor
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_rendertargets_clearcolor
@@ -516,14 +532,14 @@ namespace Low {
     PipelineResourceBindingConfig &
     GraphicsStepConfig::get_depth_rendertarget() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
                       PipelineResourceBindingConfig);
     }
     void GraphicsStepConfig::set_depth_rendertarget(
         PipelineResourceBindingConfig &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_rendertarget
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_rendertarget
@@ -538,12 +554,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_use_depth() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, use_depth, bool);
     }
     void GraphicsStepConfig::set_use_depth(bool p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_use_depth
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_use_depth
@@ -557,12 +573,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_depth_clear() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, depth_clear, bool);
     }
     void GraphicsStepConfig::set_depth_clear(bool p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_clear
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_clear
@@ -576,12 +592,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_depth_test() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, depth_test, bool);
     }
     void GraphicsStepConfig::set_depth_test(bool p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_test
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_test
@@ -595,12 +611,12 @@ namespace Low {
 
     bool GraphicsStepConfig::is_depth_write() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, depth_write, bool);
     }
     void GraphicsStepConfig::set_depth_write(bool p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_write
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_write
@@ -614,12 +630,12 @@ namespace Low {
 
     uint8_t GraphicsStepConfig::get_depth_compare_operation() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t);
     }
     void GraphicsStepConfig::set_depth_compare_operation(uint8_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_compare_operation
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_compare_operation
@@ -633,12 +649,12 @@ namespace Low {
 
     Low::Util::Name GraphicsStepConfig::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(GraphicsStepConfig, name, Low::Util::Name);
     }
     void GraphicsStepConfig::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

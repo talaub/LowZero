@@ -1,5 +1,7 @@
 #include "LowCore.h"
 
+#include "LowCoreScene.h"
+#include "LowCoreRegion.h"
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
 #include "LowCoreDirectionalLight.h"
@@ -50,6 +52,8 @@ namespace Low {
 
     static void initialize_base_types()
     {
+      Scene::initialize();
+      Region::initialize();
       Entity::initialize();
     }
 
@@ -127,6 +131,23 @@ namespace Low {
       }
     }
 
+    static void load_regions()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\regions";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".region.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Region::deserialize(i_Node, 0);
+        }
+      }
+    }
+
     static void load_resources()
     {
       load_mesh_resources();
@@ -147,6 +168,8 @@ namespace Low {
 
       load_resources();
       load_assets();
+
+      load_regions();
     }
 
     static void cleanup_asset_types()
@@ -171,6 +194,8 @@ namespace Low {
     static void cleanup_base_types()
     {
       Entity::cleanup();
+      Region::cleanup();
+      Scene::cleanup();
     }
 
     static void cleanup_types()

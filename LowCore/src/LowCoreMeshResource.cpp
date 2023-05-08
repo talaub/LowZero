@@ -6,13 +6,14 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 #include "LowUtilResource.h"
 #include "LowRenderer.h"
 
 namespace Low {
   namespace Core {
-    const uint16_t MeshResource::TYPE_ID = 19;
+    const uint16_t MeshResource::TYPE_ID = 21;
     uint32_t MeshResource::ms_Capacity = 0u;
     uint8_t *MeshResource::ms_Buffer = 0;
     Low::Util::Instances::Slot *MeshResource::ms_Slots = 0;
@@ -238,12 +239,12 @@ namespace Low {
 
     Util::String &MeshResource::get_path() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshResource, path, Util::String);
     }
     void MeshResource::set_path(Util::String &p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
@@ -257,18 +258,18 @@ namespace Low {
 
     Util::List<Submesh> &MeshResource::get_submeshes() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshResource, submeshes, Util::List<Submesh>);
     }
 
     uint32_t MeshResource::get_reference_count() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshResource, reference_count, uint32_t);
     }
     void MeshResource::set_reference_count(uint32_t p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
@@ -282,12 +283,12 @@ namespace Low {
 
     Low::Util::Name MeshResource::get_name() const
     {
-      LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+      _LOW_ASSERT(is_alive());
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
     }
     void MeshResource::set_name(Low::Util::Name p_Value)
     {
-      LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+      _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name

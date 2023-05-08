@@ -612,11 +612,6 @@ namespace Low {
 
       load_renderstep_configs();
 
-      Util::Resource::Image2D l_Resource;
-      Util::Resource::load_image2d(
-          (Util::String(LOW_DATA_PATH) + "/assets/img2d/out_wb.ktx").c_str(),
-          l_Resource);
-
       Window l_Window;
       WindowInit l_WindowInit;
       l_WindowInit.dimensions.x = 1280;

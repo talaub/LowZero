@@ -7,48 +7,43 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "LowCoreRegion.h"
-
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    namespace Component {
-      struct Transform;
-    }
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_CORE_API EntityData
+    struct LOW_CORE_API SceneData
     {
-      Util::Map<uint16_t, Util::Handle> components;
-      Region region;
+      bool loaded;
+      Util::Set<Util::UniqueId> regions;
       Low::Util::UniqueId unique_id;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(EntityData);
+        return sizeof(SceneData);
       }
     };
 
-    struct LOW_CORE_API Entity : public Low::Util::Handle
+    struct LOW_CORE_API Scene : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Entity> ms_LivingInstances;
+      static Low::Util::List<Scene> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Entity();
-      Entity(uint64_t p_Id);
-      Entity(Entity &p_Copy);
+      Scene();
+      Scene(uint64_t p_Id);
+      Scene(Scene &p_Copy);
 
-      static Entity make(Low::Util::Name p_Name);
-      explicit Entity(const Entity &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      static Scene make(Low::Util::Name p_Name);
+      explicit Scene(const Scene &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -61,12 +56,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Entity *living_instances()
+      static Scene *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static Entity find_by_index(uint32_t p_Index);
+      static Scene find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
 
@@ -74,7 +69,7 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      static Entity find_by_name(Low::Util::Name p_Name);
+      static Scene find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
@@ -88,26 +83,19 @@ namespace Low {
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Entity l_Entity = p_Handle.get_id();
-        l_Entity.destroy();
+        Scene l_Scene = p_Handle.get_id();
+        l_Scene.destroy();
       }
 
-      Util::Map<uint16_t, Util::Handle> &get_components() const;
+      bool is_loaded() const;
+      void set_loaded(bool p_Value);
 
-      Region get_region() const;
-      void set_region(Region p_Value);
+      Util::Set<Util::UniqueId> &get_regions() const;
 
       Low::Util::UniqueId get_unique_id() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
-
-      static Entity make(Util::Name p_Name, Region p_Region);
-      uint64_t get_component(uint16_t p_TypeId);
-      void add_component(Util::Handle &p_Component);
-      void remove_component(uint16_t p_ComponentType);
-      bool has_component(uint16_t p_ComponentType);
-      Component::Transform get_transform();
 
     private:
       static uint32_t ms_Capacity;

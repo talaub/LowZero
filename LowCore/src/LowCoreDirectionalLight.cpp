@@ -6,11 +6,12 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
 
 namespace Low {
   namespace Core {
     namespace Component {
-      const uint16_t DirectionalLight::TYPE_ID = 25;
+      const uint16_t DirectionalLight::TYPE_ID = 27;
       uint32_t DirectionalLight::ms_Capacity = 0u;
       uint8_t *DirectionalLight::ms_Buffer = 0;
       Low::Util::Instances::Slot *DirectionalLight::ms_Slots = 0;
@@ -48,6 +49,11 @@ namespace Low {
 
         ms_LivingInstances.push_back(l_Handle);
 
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -60,6 +66,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+        Low::Util::remove_unique_id(get_unique_id());
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -134,6 +142,20 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(unique_id);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(DirectionalLightData, unique_id);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight,
+                                              unique_id, Low::Util::UniqueId);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
@@ -177,6 +199,9 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
+        Low::Util::Serialization::serialize(p_Node["color"], get_color());
+        p_Node["unique_id"] = get_unique_id();
+
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
@@ -194,6 +219,15 @@ namespace Low {
       {
         DirectionalLight l_Handle = DirectionalLight::make(p_Creator.get_id());
 
+        Low::Util::remove_unique_id(l_Handle.get_unique_id());
+        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
+        l_Handle.set_color(
+            Low::Util::Serialization::deserialize_vector3(p_Node["color"]));
+        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
@@ -202,12 +236,12 @@ namespace Low {
 
       Math::ColorRGB &DirectionalLight::get_color() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(DirectionalLight, color, Math::ColorRGB);
       }
       void DirectionalLight::set_color(Math::ColorRGB &p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
@@ -221,12 +255,12 @@ namespace Low {
 
       Low::Core::Entity DirectionalLight::get_entity() const
       {
-        LOW_ASSERT(is_alive(), "Cannot get property from dead handle");
+        _LOW_ASSERT(is_alive());
         return TYPE_SOA(DirectionalLight, entity, Low::Core::Entity);
       }
       void DirectionalLight::set_entity(Low::Core::Entity p_Value)
       {
-        LOW_ASSERT(is_alive(), "Cannot set property on dead handle");
+        _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
@@ -236,6 +270,25 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+      }
+
+      Low::Util::UniqueId DirectionalLight::get_unique_id() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(DirectionalLight, unique_id, Low::Util::UniqueId);
+      }
+      void DirectionalLight::set_unique_id(Low::Util::UniqueId p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
+
+        // Set new value
+        TYPE_SOA(DirectionalLight, unique_id, Low::Util::UniqueId) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
       uint32_t DirectionalLight::create_instance()
@@ -285,6 +338,13 @@ namespace Low {
                            (l_Capacity + l_CapacityIncrease)],
               &ms_Buffer[offsetof(DirectionalLightData, entity) * (l_Capacity)],
               l_Capacity * sizeof(Low::Core::Entity));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(DirectionalLightData, unique_id) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(DirectionalLightData, unique_id) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Util::UniqueId));
         }
         for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
              ++i) {

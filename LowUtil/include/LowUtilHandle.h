@@ -53,6 +53,7 @@ namespace Low {
           NAME,
           FLOAT,
           UINT32,
+          UINT64,
           INT,
           BOOL,
           HANDLE
@@ -126,6 +127,8 @@ namespace Low {
     UniqueId LOW_EXPORT generate_unique_id(Handle p_Handle);
     void LOW_EXPORT register_unique_id(UniqueId p_UniqueId, Handle p_Handle);
     void LOW_EXPORT remove_unique_id(UniqueId p_UniqueId);
+
+    Handle LOW_EXPORT find_handle_by_unique_id(UniqueId p_UniqueId);
 
   } // namespace Util
 } // namespace Low

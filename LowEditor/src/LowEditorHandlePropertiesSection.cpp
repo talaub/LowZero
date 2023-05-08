@@ -4,6 +4,7 @@
 #include "IconsFontAwesome5.h"
 
 #include "LowCoreMaterial.h"
+#include "LowCoreEntity.h"
 
 #include "LowEditorPropertyEditors.h"
 
@@ -11,6 +12,12 @@
 
 namespace Low {
   namespace Editor {
+    void HandlePropertiesSection::render_entity(float p_Delta)
+    {
+      Core::Entity l_Entity = m_Handle.get_id();
+      ImGui::Text("ENTITY");
+    }
+
     void HandlePropertiesSection::render_material(float p_Delta)
     {
       Core::Material l_Material = m_Handle.get_id();
@@ -99,6 +106,8 @@ namespace Low {
         ImGui::PushID(m_Handle.get_id());
         if (m_Handle.get_type() == Core::Material::TYPE_ID) {
           render_material(p_Delta);
+        } else if (m_Handle.get_type() == Core::Entity::TYPE_ID) {
+          render_entity(p_Delta);
         } else {
           render_default(p_Delta);
         }
