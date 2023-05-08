@@ -108,6 +108,7 @@ namespace Low {
       void add_entity(Entity p_Entity);
       void remove_entity(Entity p_Entity);
       void load_entities();
+      void unload_entities();
 
     private:
       static uint32_t ms_Capacity;

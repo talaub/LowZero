@@ -16,32 +16,40 @@ namespace Low {
     {
       Core::Region l_Asset = p_Handle.get_id();
 
-      if (ImGui::Button("Save")) {
+      if (l_Asset.is_loaded()) {
+        if (ImGui::Button("Save")) {
+          {
+            Util::Yaml::Node l_Node;
+            l_Asset.serialize(l_Node);
+            Util::String l_Path = LOW_DATA_PATH;
+            l_Path +=
+                "/assets/regions/" +
+                Util::String(std::to_string(l_Asset.get_unique_id()).c_str()) +
+                ".region.yaml";
+            Util::Yaml::write_file(l_Path.c_str(), l_Node);
+          }
 
-        {
-          Util::Yaml::Node l_Node;
-          l_Asset.serialize(l_Node);
-          Util::String l_Path = LOW_DATA_PATH;
-          l_Path +=
-              "/assets/regions/" +
-              Util::String(std::to_string(l_Asset.get_unique_id()).c_str()) +
-              ".region.yaml";
-          Util::Yaml::write_file(l_Path.c_str(), l_Node);
+          {
+            Util::Yaml::Node l_Node;
+            l_Asset.serialize_entities(l_Node);
+            Util::String l_Path = LOW_DATA_PATH;
+            l_Path +=
+                "/assets/regions/" +
+                Util::String(std::to_string(l_Asset.get_unique_id()).c_str()) +
+                ".entities.yaml";
+            Util::Yaml::write_file(l_Path.c_str(), l_Node);
+          }
+
+          LOW_LOG_INFO << "Saved region '" << l_Asset.get_name() << "' to file."
+                       << LOW_LOG_END;
         }
-
-        {
-          Util::Yaml::Node l_Node;
-          l_Asset.serialize_entities(l_Node);
-          Util::String l_Path = LOW_DATA_PATH;
-          l_Path +=
-              "/assets/regions/" +
-              Util::String(std::to_string(l_Asset.get_unique_id()).c_str()) +
-              ".entities.yaml";
-          Util::Yaml::write_file(l_Path.c_str(), l_Node);
+        if (ImGui::Button("Unload")) {
+          l_Asset.unload_entities();
         }
-
-        LOW_LOG_INFO << "Saved region '" << l_Asset.get_name() << "' to file."
-                     << LOW_LOG_END;
+      } else {
+        if (ImGui::Button("Load")) {
+          l_Asset.load_entities();
+        }
       }
     }
 

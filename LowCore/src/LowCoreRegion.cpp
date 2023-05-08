@@ -428,6 +428,7 @@ namespace Low {
     void Region::load_entities()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load_entities
+      LOW_ASSERT(is_alive(), "Cannot load dead region");
       LOW_ASSERT(!is_loaded(), "Region is already loaded");
 
       set_loaded(true);
@@ -445,6 +446,22 @@ namespace Low {
       }
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load_entities
+    }
+
+    void Region::unload_entities()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload_entities
+      LOW_ASSERT(is_alive(), "Cannot unload dead region");
+      LOW_ASSERT(is_loaded(), "Cannot unload region that is not loaded");
+
+      set_loaded(false);
+
+      for (auto it = get_entities().begin(); it != get_entities().end();) {
+        Entity i_Entity = Util::find_handle_by_unique_id(*it).get_id();
+        i_Entity.destroy();
+        it = get_entities().erase(it);
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload_entities
     }
 
     uint32_t Region::create_instance()
