@@ -1,7 +1,6 @@
 #include "LowCoreRegion.h"
 
 #include <algorithm>
-#include <string>
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"

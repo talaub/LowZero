@@ -273,9 +273,11 @@ namespace Low {
       Entity l_Entity =
           Entity::make(LOW_YAML_AS_NAME(p_Node["name"]), l_Region);
 
+      l_Region.remove_entity(l_Entity);
       Util::remove_unique_id(l_Entity.get_unique_id());
       l_Entity.set_unique_id(p_Node["unique_id"].as<uint64_t>());
       Util::register_unique_id(l_Entity.get_unique_id(), l_Entity);
+      l_Region.add_entity(l_Entity);
 
       Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
 
@@ -359,6 +361,8 @@ namespace Low {
     Entity Entity::make(Util::Name p_Name, Region p_Region)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      LOW_LOG_DEBUG << "Creating entity: " << p_Name << " with region"
+                    << LOW_LOG_END;
       Entity l_Entity = Entity::make(p_Name);
       p_Region.add_entity(l_Entity);
       return l_Entity;
