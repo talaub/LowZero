@@ -80,6 +80,10 @@ namespace Low {
           i_TypeInfo.destroy(i_Handle);
         }
       }
+
+      if (get_region().is_alive()) {
+        get_region().remove_entity(*this);
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       Low::Util::remove_unique_id(get_unique_id());

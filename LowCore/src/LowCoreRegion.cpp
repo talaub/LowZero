@@ -456,10 +456,10 @@ namespace Low {
 
       set_loaded(false);
 
-      for (auto it = get_entities().begin(); it != get_entities().end();) {
-        Entity i_Entity = Util::find_handle_by_unique_id(*it).get_id();
+      while (!get_entities().empty()) {
+        Entity i_Entity =
+            Util::find_handle_by_unique_id(*get_entities().begin()).get_id();
         i_Entity.destroy();
-        it = get_entities().erase(it);
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload_entities
     }
