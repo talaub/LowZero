@@ -41,7 +41,8 @@ namespace Low {
       if (!l_OpenedEntryPopup) {
         if (ImGui::BeginPopupContextWindow()) {
           if (ImGui::MenuItem("New entity")) {
-            Core::Entity l_Entity = Core::Entity::make(N(NewEntity));
+            Core::Entity l_Entity = Core::Entity::make(
+                N(NewEntity), Core::Region::ms_LivingInstances[0]);
             Core::Component::Transform::make(l_Entity);
 
             set_selected_entity(l_Entity);

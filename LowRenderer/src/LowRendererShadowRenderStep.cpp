@@ -210,8 +210,8 @@ namespace Low {
         GraphicsStepConfig l_Config = GraphicsStepConfig::make(N(ShadowPass));
         l_Config.get_dimensions_config().type =
             ImageResourceDimensionType::ABSOLUTE;
-        l_Config.get_dimensions_config().absolute.x = 2048;
-        l_Config.get_dimensions_config().absolute.y = 2048;
+        l_Config.get_dimensions_config().absolute.x = 3200;
+        l_Config.get_dimensions_config().absolute.y = 3200;
 
         {
           l_Config.set_depth_clear(true);

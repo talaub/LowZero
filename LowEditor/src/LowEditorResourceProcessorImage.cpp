@@ -60,10 +60,8 @@ namespace Low {
           for (uint64_t y = 0ull; y < p_Image.dimensions.y; ++y) {
             for (uint64_t x = 0ull; x < p_Image.dimensions.x; ++x) {
 
-              Pixel i_Data =
-                  *(Pixel *)&p_Image.data.data()[((y * p_Image.dimensions.x) +
-                                                  (p_Image.dimensions.x - x)) *
-                                                 4];
+              Pixel i_Data = *(Pixel *)&p_Image.data
+                                  .data()[((y * p_Image.dimensions.x) + x) * 4];
 
               gli::extent2d l_Extent;
               l_Extent.x = static_cast<uint32_t>(x);
