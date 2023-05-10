@@ -55,6 +55,7 @@ namespace Low {
         Transform(Transform &p_Copy);
 
         static Transform make(Low::Core::Entity p_Entity);
+        static Low::Util::Handle _make(Low::Util::Handle p_Entity);
         explicit Transform(const Transform &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -88,7 +89,8 @@ namespace Low {
                                              Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          return p_Handle.check_alive(ms_Slots, get_capacity());
+          return p_Handle.get_type() == Transform::TYPE_ID &&
+                 p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
         static void destroy(Low::Util::Handle p_Handle)

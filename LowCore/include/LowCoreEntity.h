@@ -48,6 +48,7 @@ namespace Low {
       Entity(Entity &p_Copy);
 
       static Entity make(Low::Util::Name p_Name);
+      static Low::Util::Handle _make(Low::Util::Name p_Name);
       explicit Entity(const Entity &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -82,7 +83,8 @@ namespace Low {
                                            Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        return p_Handle.check_alive(ms_Slots, get_capacity());
+        return p_Handle.get_type() == Entity::TYPE_ID &&
+               p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)

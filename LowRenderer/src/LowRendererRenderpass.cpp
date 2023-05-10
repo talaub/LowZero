@@ -32,6 +32,11 @@ namespace Low {
       {
       }
 
+      Low::Util::Handle Renderpass::_make(Low::Util::Name p_Name)
+      {
+        return make(p_Name).get_id();
+      }
+
       Renderpass Renderpass::make(Low::Util::Name p_Name)
       {
         uint32_t l_Index = create_instance();
@@ -99,6 +104,8 @@ namespace Low {
         l_TypeInfo.destroy = &Renderpass::destroy;
         l_TypeInfo.serialize = &Renderpass::serialize;
         l_TypeInfo.deserialize = &Renderpass::deserialize;
+        l_TypeInfo.make_component = nullptr;
+        l_TypeInfo.make_default = &Renderpass::_make;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Renderpass::living_instances);

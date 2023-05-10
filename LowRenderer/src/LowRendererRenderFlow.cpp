@@ -30,6 +30,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle RenderFlow::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     RenderFlow RenderFlow::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -114,6 +119,8 @@ namespace Low {
       l_TypeInfo.destroy = &RenderFlow::destroy;
       l_TypeInfo.serialize = &RenderFlow::serialize;
       l_TypeInfo.deserialize = &RenderFlow::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &RenderFlow::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &RenderFlow::living_instances);

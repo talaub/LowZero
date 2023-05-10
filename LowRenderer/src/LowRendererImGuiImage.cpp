@@ -29,6 +29,11 @@ namespace Low {
       {
       }
 
+      Low::Util::Handle ImGuiImage::_make(Low::Util::Name p_Name)
+      {
+        return make(p_Name).get_id();
+      }
+
       ImGuiImage ImGuiImage::make(Low::Util::Name p_Name)
       {
         uint32_t l_Index = create_instance();
@@ -96,6 +101,8 @@ namespace Low {
         l_TypeInfo.destroy = &ImGuiImage::destroy;
         l_TypeInfo.serialize = &ImGuiImage::serialize;
         l_TypeInfo.deserialize = &ImGuiImage::deserialize;
+        l_TypeInfo.make_component = nullptr;
+        l_TypeInfo.make_default = &ImGuiImage::_make;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &ImGuiImage::living_instances);

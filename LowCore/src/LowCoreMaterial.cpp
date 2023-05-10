@@ -30,6 +30,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle Material::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     Material Material::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -110,6 +115,8 @@ namespace Low {
       l_TypeInfo.destroy = &Material::destroy;
       l_TypeInfo.serialize = &Material::serialize;
       l_TypeInfo.deserialize = &Material::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &Material::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Material::living_instances);

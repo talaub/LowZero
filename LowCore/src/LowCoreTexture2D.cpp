@@ -30,6 +30,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle Texture2D::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     Texture2D Texture2D::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -95,6 +100,8 @@ namespace Low {
       l_TypeInfo.destroy = &Texture2D::destroy;
       l_TypeInfo.serialize = &Texture2D::serialize;
       l_TypeInfo.deserialize = &Texture2D::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &Texture2D::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Texture2D::living_instances);

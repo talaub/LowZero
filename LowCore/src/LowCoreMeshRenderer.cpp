@@ -29,6 +29,14 @@ namespace Low {
       {
       }
 
+      Low::Util::Handle MeshRenderer::_make(Low::Util::Handle p_Entity)
+      {
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        LOW_ASSERT(l_Entity.is_alive(),
+                   "Cannot create component for dead entity");
+        return make(l_Entity).get_id();
+      }
+
       MeshRenderer MeshRenderer::make(Low::Core::Entity p_Entity)
       {
         uint32_t l_Index = create_instance();
@@ -103,6 +111,8 @@ namespace Low {
         l_TypeInfo.destroy = &MeshRenderer::destroy;
         l_TypeInfo.serialize = &MeshRenderer::serialize;
         l_TypeInfo.deserialize = &MeshRenderer::deserialize;
+        l_TypeInfo.make_default = nullptr;
+        l_TypeInfo.make_component = &MeshRenderer::_make;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &MeshRenderer::living_instances);

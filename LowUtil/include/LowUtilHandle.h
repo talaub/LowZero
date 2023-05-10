@@ -82,6 +82,8 @@ namespace Low {
         bool (*is_alive)(Handle);
         void (*serialize)(Handle, Yaml::Node &);
         Handle (*deserialize)(Yaml::Node &, Handle);
+        Handle (*make_default)(Name);
+        Handle (*make_component)(Handle);
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
         uint32_t (*get_living_count)();
@@ -118,6 +120,7 @@ namespace Low {
       bool check_alive(Instances::Slot *p_Slots, uint32_t p_Capacity) const;
 
       static RTTI::TypeInfo &get_type_info(uint16_t p_TypeId);
+      static List<uint16_t> &get_component_types();
 
     protected:
       static void register_type_info(uint16_t p_TypeId,

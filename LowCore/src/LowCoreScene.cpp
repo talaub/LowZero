@@ -28,6 +28,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle Scene::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     Scene Scene::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -99,6 +104,8 @@ namespace Low {
       l_TypeInfo.destroy = &Scene::destroy;
       l_TypeInfo.serialize = &Scene::serialize;
       l_TypeInfo.deserialize = &Scene::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &Scene::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Scene::living_instances);

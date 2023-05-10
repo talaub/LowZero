@@ -17,6 +17,7 @@ namespace Low {
 
     private:
       Util::List<HandlePropertiesSection> m_Sections;
+      bool m_BreakRunning = false;
     };
   } // namespace Editor
 } // namespace Low

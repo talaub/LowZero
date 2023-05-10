@@ -32,6 +32,11 @@ namespace Low {
       {
       }
 
+      Low::Util::Handle GraphicsPipeline::_make(Low::Util::Name p_Name)
+      {
+        return make(p_Name).get_id();
+      }
+
       GraphicsPipeline GraphicsPipeline::make(Low::Util::Name p_Name)
       {
         uint32_t l_Index = create_instance();
@@ -98,6 +103,8 @@ namespace Low {
         l_TypeInfo.destroy = &GraphicsPipeline::destroy;
         l_TypeInfo.serialize = &GraphicsPipeline::serialize;
         l_TypeInfo.deserialize = &GraphicsPipeline::deserialize;
+        l_TypeInfo.make_component = nullptr;
+        l_TypeInfo.make_default = &GraphicsPipeline::_make;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &GraphicsPipeline::living_instances);

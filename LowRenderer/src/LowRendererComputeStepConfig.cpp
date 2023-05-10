@@ -31,6 +31,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle ComputeStepConfig::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     ComputeStepConfig ComputeStepConfig::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -101,6 +106,8 @@ namespace Low {
       l_TypeInfo.destroy = &ComputeStepConfig::destroy;
       l_TypeInfo.serialize = &ComputeStepConfig::serialize;
       l_TypeInfo.deserialize = &ComputeStepConfig::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &ComputeStepConfig::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &ComputeStepConfig::living_instances);

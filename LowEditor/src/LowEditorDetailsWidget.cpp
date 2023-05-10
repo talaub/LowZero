@@ -7,9 +7,14 @@ namespace Low {
   namespace Editor {
     void DetailsWidget::render(float p_Delta)
     {
+      m_BreakRunning = false;
+
       ImGui::Begin(ICON_FA_GLASSES " Details");
 
       for (auto it = m_Sections.begin(); it != m_Sections.end(); ++it) {
+        if (m_BreakRunning) {
+          break;
+        }
         it->render(p_Delta);
       }
 
@@ -34,11 +39,13 @@ namespace Low {
     void DetailsWidget::add_section(HandlePropertiesSection p_Section)
     {
       m_Sections.push_back(p_Section);
+      m_BreakRunning = true;
     }
 
     void DetailsWidget::clear()
     {
       m_Sections.clear();
+      m_BreakRunning = true;
     }
   } // namespace Editor
 } // namespace Low

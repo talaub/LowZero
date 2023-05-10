@@ -49,6 +49,7 @@ namespace Low {
         MeshRenderer(MeshRenderer &p_Copy);
 
         static MeshRenderer make(Low::Core::Entity p_Entity);
+        static Low::Util::Handle _make(Low::Util::Handle p_Entity);
         explicit MeshRenderer(const MeshRenderer &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -82,7 +83,8 @@ namespace Low {
                                              Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          return p_Handle.check_alive(ms_Slots, get_capacity());
+          return p_Handle.get_type() == MeshRenderer::TYPE_ID &&
+                 p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
         static void destroy(Low::Util::Handle p_Handle)

@@ -11,6 +11,7 @@
 namespace Low {
   namespace Util {
     Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
+    List<uint16_t> g_ComponentTypes;
     Map<UniqueId, Handle> g_UniqueIdRegistry;
 
     union UniqueIdCombination
@@ -148,6 +149,10 @@ namespace Low {
                  "Type info for this type id has already been registered");
 
       g_TypeInfos[p_TypeId] = p_TypeInfo;
+
+      if (p_TypeInfo.component) {
+        g_ComponentTypes.push_back(p_TypeId);
+      }
     }
 
     RTTI::TypeInfo &Handle::get_type_info(uint16_t p_TypeId)
@@ -156,6 +161,11 @@ namespace Low {
                  "Type info has not been registered for type id");
 
       return g_TypeInfos[p_TypeId];
+    }
+
+    List<uint16_t> &Handle::get_component_types()
+    {
+      return g_ComponentTypes;
     }
 
     namespace Instances {

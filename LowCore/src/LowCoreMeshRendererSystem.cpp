@@ -54,7 +54,8 @@ namespace Low {
             Component::Transform i_Transform =
                 i_MeshRenderer.get_entity().get_transform();
 
-            if (!i_MeshRenderer.get_mesh().get_lod0().is_alive() ||
+            if (!i_MeshRenderer.get_mesh().is_alive() ||
+                !i_MeshRenderer.get_mesh().get_lod0().is_alive() ||
                 !i_MeshRenderer.get_material().is_alive()) {
               continue;
             }

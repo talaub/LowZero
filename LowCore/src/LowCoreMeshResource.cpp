@@ -31,6 +31,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle MeshResource::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     MeshResource MeshResource::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -98,6 +103,8 @@ namespace Low {
       l_TypeInfo.destroy = &MeshResource::destroy;
       l_TypeInfo.serialize = &MeshResource::serialize;
       l_TypeInfo.deserialize = &MeshResource::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &MeshResource::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &MeshResource::living_instances);

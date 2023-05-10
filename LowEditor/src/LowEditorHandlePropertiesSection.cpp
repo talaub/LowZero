@@ -7,18 +7,61 @@
 #include "LowCoreEntity.h"
 
 #include "LowEditorPropertyEditors.h"
+#include "LowEditorMainWindow.h"
 
 #include "LowRendererExposedObjects.h"
+#include <string.h>
+#include <vcruntime_string.h>
 
 namespace Low {
   namespace Editor {
-    void HandlePropertiesSection::render_entity(float p_Delta)
+    bool HandlePropertiesSection::render_entity(float p_Delta)
     {
       Core::Entity l_Entity = m_Handle.get_id();
-      ImGui::Text("ENTITY");
+      ImGui::Text("Name");
+      ImGui::SameLine();
+
+      bool l_Added = false;
+
+      static char l_NameBuffer[255];
+      static Core::Entity l_LastEntity = 0;
+
+      if (l_LastEntity != l_Entity) {
+        memcpy(l_NameBuffer, l_Entity.get_name().c_str(),
+               strlen(l_Entity.get_name().c_str()) + 1);
+        l_LastEntity = l_Entity;
+      }
+
+      if (ImGui::InputText("##name", l_NameBuffer, 255,
+                           ImGuiInputTextFlags_EnterReturnsTrue)) {
+        l_Entity.set_name(LOW_NAME(l_NameBuffer));
+      }
+
+      if (ImGui::Button("Add component")) {
+        ImGui::OpenPopup("add_component_popup");
+      }
+
+      if (ImGui::BeginPopup("add_component_popup")) {
+        for (auto it = Util::Handle::get_component_types().begin();
+             it != Util::Handle::get_component_types().end(); ++it) {
+          if (l_Entity.has_component(*it)) {
+            continue;
+          }
+          Util::RTTI::TypeInfo &i_TypeInfo = Util::Handle::get_type_info(*it);
+
+          if (ImGui::MenuItem(i_TypeInfo.name.c_str())) {
+            i_TypeInfo.make_component(l_Entity.get_id());
+            set_selected_entity(l_Entity);
+            l_Added = true;
+          }
+        }
+        ImGui::EndPopup();
+      }
+
+      return l_Added;
     }
 
-    void HandlePropertiesSection::render_material(float p_Delta)
+    bool HandlePropertiesSection::render_material(float p_Delta)
     {
       Core::Material l_Material = m_Handle.get_id();
 
@@ -72,9 +115,11 @@ namespace Low {
         }
         ImGui::PopID();
       }
+
+      return false;
     }
 
-    void HandlePropertiesSection::render_default(float p_Delta)
+    bool HandlePropertiesSection::render_default(float p_Delta)
     {
       uint32_t l_Id = 0;
       for (auto pit = m_TypeInfo.properties.begin();
@@ -92,6 +137,8 @@ namespace Low {
         }
         ImGui::PopID();
       }
+
+      return false;
     }
 
     void HandlePropertiesSection::render(float p_Delta)
@@ -103,15 +150,17 @@ namespace Low {
       if (ImGui::CollapsingHeader(m_TypeInfo.name.c_str(),
                                   m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen
                                                 : 0)) {
+        bool l_SkipFooter = false;
+
         ImGui::PushID(m_Handle.get_id());
         if (m_Handle.get_type() == Core::Material::TYPE_ID) {
-          render_material(p_Delta);
+          l_SkipFooter = l_SkipFooter || render_material(p_Delta);
         } else if (m_Handle.get_type() == Core::Entity::TYPE_ID) {
-          render_entity(p_Delta);
+          l_SkipFooter = l_SkipFooter || render_entity(p_Delta);
         } else {
-          render_default(p_Delta);
+          l_SkipFooter = l_SkipFooter || render_default(p_Delta);
         }
-        if (render_footer != nullptr) {
+        if (!l_SkipFooter && render_footer != nullptr) {
           render_footer(m_Handle, m_TypeInfo);
         }
         ImGui::PopID();

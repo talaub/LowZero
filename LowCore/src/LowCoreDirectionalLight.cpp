@@ -30,6 +30,14 @@ namespace Low {
       {
       }
 
+      Low::Util::Handle DirectionalLight::_make(Low::Util::Handle p_Entity)
+      {
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        LOW_ASSERT(l_Entity.is_alive(),
+                   "Cannot create component for dead entity");
+        return make(l_Entity).get_id();
+      }
+
       DirectionalLight DirectionalLight::make(Low::Core::Entity p_Entity)
       {
         uint32_t l_Index = create_instance();
@@ -102,6 +110,8 @@ namespace Low {
         l_TypeInfo.destroy = &DirectionalLight::destroy;
         l_TypeInfo.serialize = &DirectionalLight::serialize;
         l_TypeInfo.deserialize = &DirectionalLight::deserialize;
+        l_TypeInfo.make_default = nullptr;
+        l_TypeInfo.make_component = &DirectionalLight::_make;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &DirectionalLight::living_instances);

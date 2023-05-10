@@ -45,6 +45,7 @@ namespace Low {
         Renderpass(Renderpass &p_Copy);
 
         static Renderpass make(Low::Util::Name p_Name);
+        static Low::Util::Handle _make(Low::Util::Name p_Name);
         explicit Renderpass(const Renderpass &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -80,7 +81,8 @@ namespace Low {
                                              Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          return p_Handle.check_alive(ms_Slots, get_capacity());
+          return p_Handle.get_type() == Renderpass::TYPE_ID &&
+                 p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
         static void destroy(Low::Util::Handle p_Handle)

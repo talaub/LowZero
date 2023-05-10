@@ -28,6 +28,11 @@ namespace Low {
     {
     }
 
+    Low::Util::Handle GraphicsStep::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
     GraphicsStep GraphicsStep::make(Low::Util::Name p_Name)
     {
       uint32_t l_Index = create_instance();
@@ -117,6 +122,8 @@ namespace Low {
       l_TypeInfo.destroy = &GraphicsStep::destroy;
       l_TypeInfo.serialize = &GraphicsStep::serialize;
       l_TypeInfo.deserialize = &GraphicsStep::deserialize;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &GraphicsStep::_make;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &GraphicsStep::living_instances);

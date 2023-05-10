@@ -413,9 +413,11 @@ function generate_header(p_Type) {
     }
     if (p_Type.component) {
 	t += line(`static ${p_Type.name} make(Low::Core::Entity p_Entity);`);
+	t += line(`static Low::Util::Handle _make(Low::Util::Handle p_Entity);`);
     }
     else {
 	t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
+	t += line(`static Low::Util::Handle _make(Low::Util::Name p_Name);`);
     }
     if (p_Type.private_make) {
 	t += line('public:');
@@ -455,7 +457,7 @@ function generate_header(p_Type) {
     t += line(`static void serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node& p_Node);`, n);
     t += line(`static Low::Util::Handle deserialize(Low::Util::Yaml::Node& p_Node, Low::Util::Handle p_Creator);`, n);
     t += line('static bool is_alive(Low::Util::Handle p_Handle) {');
-    t += line('return p_Handle.check_alive(ms_Slots, get_capacity());');
+    t += line(`return p_Handle.get_type() == ${p_Type.name}::TYPE_ID && p_Handle.check_alive(ms_Slots, get_capacity());`);
     t += line('}');
     t += empty();
     t += line('static void destroy(Low::Util::Handle p_Handle) {');
@@ -592,6 +594,18 @@ function generate_source(p_Type) {
     
     t += empty();
     if (p_Type.component) {
+	t += line(`Low::Util::Handle ${p_Type.name}::_make(Low::Util::Handle p_Entity) {`);
+	t += line(`Low::Core::Entity l_Entity = p_Entity.get_id();`);
+	t += line(`LOW_ASSERT(l_Entity.is_alive(), "Cannot create component for dead entity");`);
+	t += line(`return make(l_Entity).get_id();`);
+	t += line(`}`);
+    } else {
+	t += line(`Low::Util::Handle ${p_Type.name}::_make(Low::Util::Name p_Name) {`);
+	t += line(`return make(p_Name).get_id();`);
+	t += line(`}`);
+    }
+    t += empty();
+    if (p_Type.component) {
 	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Core::Entity p_Entity){`);
     }
     else {
@@ -712,6 +726,13 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);
     t += line(`l_TypeInfo.serialize = &${p_Type.name}::serialize;`);
     t += line(`l_TypeInfo.deserialize = &${p_Type.name}::deserialize;`);
+    if (p_Type.component) {
+	t += line(`l_TypeInfo.make_default = nullptr;`);
+	t += line(`l_TypeInfo.make_component = &${p_Type.name}::_make;`);
+    } else {
+	t += line(`l_TypeInfo.make_component = nullptr;`);
+	t += line(`l_TypeInfo.make_default = &${p_Type.name}::_make;`);
+    }
     t += line(`l_TypeInfo.get_living_instances = reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(&${p_Type.name}::living_instances);`);
     t += line(`l_TypeInfo.get_living_count = &${p_Type.name}::living_count;`);
     if (p_Type.component) {
