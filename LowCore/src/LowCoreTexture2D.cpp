@@ -369,6 +369,7 @@ namespace Low {
           Renderer::upload_texture(N(Texture2D), l_Image);
 
       set_renderer_texture(l_RendererTexture);
+
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
     }
 

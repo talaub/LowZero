@@ -307,6 +307,14 @@ namespace Low {
 
       l_Material.set_context(p_Context);
 
+      // Clear material data in buffer
+      Math::Vector4 l_EmptyData[LOW_RENDERER_MATERIAL_DATA_VECTORS];
+      l_Material.get_context().get_material_data_buffer().write(
+          l_EmptyData,
+          LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4),
+          (l_Material.get_index() *
+           (LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4))));
+
       return l_Material;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }

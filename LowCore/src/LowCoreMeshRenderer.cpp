@@ -303,12 +303,19 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+        if (get_material().is_alive() && get_material().is_loaded()) {
+          get_material().unload();
+        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
         // Set new value
         TYPE_SOA(MeshRenderer, material, Material) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+        if (p_Value.is_alive() && p_Value.is_loaded()) {
+          // Increase reference count
+          p_Value.load();
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_material
       }
 

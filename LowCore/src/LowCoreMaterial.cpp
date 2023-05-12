@@ -399,7 +399,6 @@ namespace Low {
     void Material::set_property(Util::Name p_Name, Util::Variant &p_Value)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property
-      get_properties()[p_Name] = p_Value;
       if (is_loaded()) {
         uint8_t l_PropertyType = Renderer::MaterialTypePropertyType::VECTOR3;
         bool l_FoundProperty = false;
@@ -429,6 +428,7 @@ namespace Low {
           get_renderer_material().set_property(p_Name, p_Value);
         }
       }
+      get_properties()[p_Name] = p_Value;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_property
     }
 
@@ -497,6 +497,19 @@ namespace Low {
     void Material::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      for (auto it = get_material_type().get_properties().begin();
+           it != get_material_type().get_properties().end(); ++it) {
+        if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
+          Texture2D l_Texture = get_property(it->name).m_Uint64;
+          if (l_Texture.is_alive()) {
+            l_Texture.unload();
+          }
+        }
+      }
+
+      if (get_renderer_material().is_alive()) {
+        get_renderer_material().destroy();
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 

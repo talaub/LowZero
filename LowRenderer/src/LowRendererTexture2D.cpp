@@ -65,8 +65,17 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      Backend::callbacks().context_wait_idle(*get_image().get_image().context);
-      get_image().destroy();
+      get_context().wait_idle();
+
+      if (get_image().is_alive()) {
+        get_image().destroy();
+
+        if (ms_LivingInstances.size() > 0 &&
+            ms_LivingInstances[0].get_image().is_alive()) {
+          get_context().get_global_signature().set_sampler_resource(
+              N(g_Texture2Ds), get_index(), ms_LivingInstances[0].get_image());
+        }
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -324,6 +333,12 @@ namespace Low {
 
       return l_Texture2D;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void Texture2D::tick(float p_Delta)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_tick
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_tick
     }
 
     uint32_t Texture2D::create_instance()

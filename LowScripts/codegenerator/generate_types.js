@@ -378,7 +378,9 @@ function generate_header(p_Type) {
     t += line('{', n++);
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-	t += line(`${i_Prop.plain_type} ${i_PropName};`, n);
+	if (!i_Prop.static) {
+	    t += line(`${i_Prop.plain_type} ${i_PropName};`, n);
+	}
     }
 
     t += empty();
@@ -468,6 +470,9 @@ function generate_header(p_Type) {
     t += empty();
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	if (i_Prop.static) {
+	    continue;
+	}
 	if (!i_Prop.no_getter) {
 	    const l = `${i_Prop.accessor_type}${i_Prop.getter_name}() const;`;
 	    if (i_Prop.private_getter) {

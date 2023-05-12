@@ -109,6 +109,7 @@ namespace Low {
 
       static Texture2D make(Util::Name p_Name, Interface::Context p_Context,
                             Util::Resource::Image2D &p_Image2d);
+      static void tick(float p_Delta);
 
     private:
       static uint32_t ms_Capacity;
