@@ -103,8 +103,25 @@ namespace Low {
         p_Config.format = Backend::ImageFormat::D24_UNORM_S8_UINT;
       } else if (l_FormatString == "RGBA32_SFLOAT") {
         p_Config.format = Backend::ImageFormat::RGBA32_SFLOAT;
+      } else if (l_FormatString == "RGBA16_SFLOAT") {
+        p_Config.format = Backend::ImageFormat::RGBA16_SFLOAT;
       } else {
         LOW_ASSERT(false, "Unknown format");
+      }
+
+      p_Config.sampleFilter = Backend::ImageSampleFilter::LINEAR;
+
+      if (p_Node["sample_filter"]) {
+        Util::String l_FilterString =
+            LOW_YAML_AS_STRING(p_Node["sample_filter"]);
+
+        if (l_FilterString == "LINEAR") {
+          p_Config.sampleFilter = Backend::ImageSampleFilter::LINEAR;
+        } else if (l_FilterString == "CUBIC") {
+          p_Config.sampleFilter = Backend::ImageSampleFilter::CUBIC;
+        } else {
+          LOW_ASSERT(false, "Unknown sample filter");
+        }
       }
     }
 

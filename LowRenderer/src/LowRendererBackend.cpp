@@ -44,6 +44,7 @@ namespace Low {
         case ImageFormat::BGRA8_SRGB:
         case ImageFormat::BGRA8_UNORM:
         case ImageFormat::RGBA32_SFLOAT:
+        case ImageFormat::RGBA16_SFLOAT:
         case ImageFormat::RGBA8_UNORM:
           return LOW_RENDERER_COLOR_WRITE_BIT_RED |
                  LOW_RENDERER_COLOR_WRITE_BIT_GREEN |

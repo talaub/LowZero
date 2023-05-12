@@ -315,6 +315,7 @@ namespace Low {
       l_Params.imageDataSize = p_Image2d.data[0].size();
       l_Params.imageData = p_Image2d.data[0].data();
       l_Params.dimensions = p_Image2d.dimensions[0];
+      l_Params.sampleFilter = Backend::ImageSampleFilter::LINEAR;
 
       l_Texture2D.set_image(Resource::Image::make(p_Name, l_Params));
 

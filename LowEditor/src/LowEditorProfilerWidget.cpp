@@ -28,7 +28,7 @@ namespace Low {
         g_FpsBuffer[BUFFER_SIZE - 1] = Core::GameLoop::get_fps();
       }
 
-      ImGui::PlotLines("", g_FpsBuffer, BUFFER_SIZE, 0, NULL, 0.0f, 100.0f,
+      ImGui::PlotLines("", g_FpsBuffer, BUFFER_SIZE, 0, NULL, 0.0f, 160.0f,
                        ImVec2(0.0f, 40.0f));
 
       ImGui::End();

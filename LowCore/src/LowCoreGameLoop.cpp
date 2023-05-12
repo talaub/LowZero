@@ -47,7 +47,7 @@ namespace Low {
 
       static void run()
       {
-        const auto l_TimeStep = 1'000'000'000ns / 60;
+        const auto l_TimeStep = 1'000'000'000ns / 144;
 
         auto l_Accumulator = 0ns;
         auto l_SecondAccumulator = 0ns;

@@ -72,8 +72,7 @@ namespace Low {
             glm::perspective(glm::radians(p_RenderFlow.get_camera_fov()),
                              ((float)p_RenderFlow.get_dimensions().x) /
                                  ((float)p_RenderFlow.get_dimensions().y),
-                             p_RenderFlow.get_camera_near_plane(),
-                             p_RenderFlow.get_camera_far_plane());
+                             p_RenderFlow.get_camera_near_plane(), 15.0f);
 
         proj[1][1] *= -1.0f; // Convert from OpenGL y-axis
         //    to Vulkan y-axis
@@ -120,7 +119,7 @@ namespace Low {
         }
 
         // Tune this parameter according to the scene
-        constexpr float zMult = 1.0f;
+        constexpr float zMult = 2.0f;
         if (minZ < 0) {
           minZ *= zMult;
         } else {
@@ -210,8 +209,8 @@ namespace Low {
         GraphicsStepConfig l_Config = GraphicsStepConfig::make(N(ShadowPass));
         l_Config.get_dimensions_config().type =
             ImageResourceDimensionType::ABSOLUTE;
-        l_Config.get_dimensions_config().absolute.x = 3200;
-        l_Config.get_dimensions_config().absolute.y = 3200;
+        l_Config.get_dimensions_config().absolute.x = 1024;
+        l_Config.get_dimensions_config().absolute.y = 1024;
 
         {
           l_Config.set_depth_clear(true);

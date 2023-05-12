@@ -39,6 +39,7 @@ namespace Low {
       p_Params.imageDataSize = 0;
       p_Params.depth = p_Config.image.depth;
       p_Params.format = p_Config.image.format;
+      p_Params.sampleFilter = p_Config.image.sampleFilter;
       p_Params.writable = true;
 
       if (p_Config.image.dimensions.type ==

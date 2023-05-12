@@ -59,8 +59,11 @@ namespace Low {
                l_HandleForName))
               ->m_Index;
       l_Combinator.data.type = p_Handle.get_type();
-      l_Combinator.data.randomComponent =
-          (rand() % static_cast<int>(LOW_UINT16_MAX + 1));
+      do {
+        l_Combinator.data.randomComponent =
+            (rand() % static_cast<int>(LOW_UINT16_MAX + 1));
+      } while (g_UniqueIdRegistry.find(l_Combinator.id) !=
+               g_UniqueIdRegistry.end());
 
       return l_Combinator.id;
     }

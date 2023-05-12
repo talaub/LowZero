@@ -210,6 +210,7 @@ namespace Low {
     static void setup_custom_renderstep_configs()
     {
       ShadowStep::setup_config();
+      SsaoStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,

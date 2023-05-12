@@ -113,6 +113,8 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>> &
       get_signatures() const;
 
+      Interface::Context get_context() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -133,7 +135,6 @@ namespace Low {
       static uint32_t create_instance();
       static void increase_budget();
       void set_config(ComputeStepConfig p_Value);
-      Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
     };
   } // namespace Renderer

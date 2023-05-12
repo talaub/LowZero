@@ -53,11 +53,8 @@ namespace Low {
       ComputeStepConfig(uint64_t p_Id);
       ComputeStepConfig(ComputeStepConfig &p_Copy);
 
-    private:
       static ComputeStepConfig make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-    public:
       explicit ComputeStepConfig(const ComputeStepConfig &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {

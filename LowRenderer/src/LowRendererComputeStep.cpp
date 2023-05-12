@@ -193,7 +193,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return nullptr;
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep, context,
+                                            Interface::Context);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};

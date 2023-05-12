@@ -236,6 +236,8 @@ namespace Low {
             return Backend::ImageFormat::BGRA8_UNORM;
           case VK_FORMAT_R32G32B32A32_SFLOAT:
             return Backend::ImageFormat::RGBA32_SFLOAT;
+          case VK_FORMAT_R16G16B16A16_SFLOAT:
+            return Backend::ImageFormat::RGBA16_SFLOAT;
           case VK_FORMAT_R8G8B8A8_UNORM:
             return Backend::ImageFormat::RGBA8_UNORM;
           case VK_FORMAT_R8_UNORM:
@@ -261,6 +263,8 @@ namespace Low {
             return VK_FORMAT_B8G8R8A8_SRGB;
           case Backend::ImageFormat::BGRA8_UNORM:
             return VK_FORMAT_B8G8R8A8_UNORM;
+          case Backend::ImageFormat::RGBA16_SFLOAT:
+            return VK_FORMAT_R16G16B16A16_SFLOAT;
           case Backend::ImageFormat::RGBA32_SFLOAT:
             return VK_FORMAT_R32G32B32A32_SFLOAT;
           case Backend::ImageFormat::RGBA8_UNORM:
@@ -458,7 +462,6 @@ namespace Low {
             const VkDebugUtilsMessengerCallbackDataEXT *p_CallbackData,
             void *p_UserData)
         {
-
           if (p_MessageSeverity ==
                   VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT &&
               !SKIP_DEBUG_LEVEL) {
@@ -820,6 +823,7 @@ namespace Low {
           l_Params.imageData = nullptr;
           l_Params.format = p_Context.imageFormat;
           l_Params.createImage = false;
+          l_Params.sampleFilter = Backend::ImageSampleFilter::LINEAR;
 
           for (size_t i_Iter = 0; i_Iter < p_Images.size(); i_Iter++) {
             l_Context.m_SwapchainRenderTargets[i_Iter].vk.m_Image =
@@ -2335,11 +2339,23 @@ namespace Low {
         {
           VkSamplerCreateInfo l_SamplerInfo{};
           l_SamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-          l_SamplerInfo.magFilter = VK_FILTER_LINEAR;
-          l_SamplerInfo.minFilter = VK_FILTER_LINEAR;
+          if (p_Image.sampleFilter == Backend::ImageSampleFilter::LINEAR) {
+            l_SamplerInfo.magFilter = VK_FILTER_LINEAR;
+            l_SamplerInfo.minFilter = VK_FILTER_LINEAR;
+          } else if (p_Image.sampleFilter ==
+                     Backend::ImageSampleFilter::CUBIC) {
+            l_SamplerInfo.magFilter = VK_FILTER_CUBIC_IMG;
+            l_SamplerInfo.minFilter = VK_FILTER_CUBIC_IMG;
+          } else {
+            LOW_ASSERT(false, "Unknown image sample filter");
+          }
           l_SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
           l_SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
           l_SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+
+          l_SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          l_SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          l_SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
           l_SamplerInfo.anisotropyEnable = VK_TRUE;
 
           VkPhysicalDeviceProperties l_Properties{};
@@ -2486,6 +2502,7 @@ namespace Low {
       {
         p_Image.context = p_Params.context;
         p_Image.format = p_Params.format;
+        p_Image.sampleFilter = p_Params.sampleFilter;
         p_Image.dimensions = p_Params.dimensions;
         p_Image.depth = false;
         p_Image.vk.m_State = ImageState::UNDEFINED;

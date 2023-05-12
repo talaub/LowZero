@@ -69,6 +69,7 @@ namespace Low {
     struct ImageResourceConfig
     {
       uint8_t format;
+      uint8_t sampleFilter;
       bool depth;
 
       DimensionsConfig dimensions;

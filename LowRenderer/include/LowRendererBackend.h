@@ -29,12 +29,21 @@ namespace Low {
           BGRA8_SRGB,
           BGRA8_UNORM,
           RGBA32_SFLOAT,
+          RGBA16_SFLOAT,
           RGBA8_UNORM,
           R8_UNORM,
           R32_UINT,
           D32_SFLOAT,
           D32_SFLOAT_S8_UINT,
           D24_UNORM_S8_UINT
+        };
+      }
+
+      namespace ImageSampleFilter {
+        enum Enum
+        {
+          LINEAR,
+          CUBIC
         };
       }
 
@@ -166,6 +175,7 @@ namespace Low {
         Context *context;
         bool swapchainImage;
         uint8_t format;
+        uint8_t sampleFilter;
         bool depth;
         Math::UVector2 dimensions;
         uint64_t handleId;
@@ -176,6 +186,7 @@ namespace Low {
         Context *context;
         Math::UVector2 dimensions;
         uint8_t format;
+        uint8_t sampleFilter;
         bool writable;
         bool depth;
         bool createImage;
