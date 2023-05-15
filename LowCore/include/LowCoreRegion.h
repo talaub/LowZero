@@ -7,6 +7,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
+#include "LowMath.h"
+
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -20,6 +22,7 @@ namespace Low {
     {
       bool loaded;
       bool streaming_enabled;
+      Math::Vector3 streaming_position;
       float streaming_radius;
       Util::Set<Util::UniqueId> entities;
       Low::Util::UniqueId unique_id;
@@ -97,6 +100,9 @@ namespace Low {
 
       bool is_streaming_enabled() const;
       void set_streaming_enabled(bool p_Value);
+
+      Math::Vector3 &get_streaming_position() const;
+      void set_streaming_position(Math::Vector3 &p_Value);
 
       float get_streaming_radius() const;
       void set_streaming_radius(float p_Value);

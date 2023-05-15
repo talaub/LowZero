@@ -1,5 +1,6 @@
 #include "LowCoreGameLoop.h"
 
+#include "LowCoreRegionSystem.h"
 #include "LowCoreTransformSystem.h"
 #include "LowCoreLightSystem.h"
 #include "LowCoreMeshRendererSystem.h"
@@ -27,6 +28,7 @@ namespace Low {
       static void execute_ticks(float p_Delta)
       {
         Renderer::tick(p_Delta);
+        System::Region::tick(p_Delta);
         System::Transform::tick(p_Delta);
         System::Light::tick(p_Delta);
 

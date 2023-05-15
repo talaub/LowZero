@@ -45,6 +45,8 @@ namespace Low {
 
       ACCESSOR_TYPE_SOA(l_Handle, Region, loaded, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_enabled, bool) = false;
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_position,
+                              Math::Vector3)) Math::Vector3();
       ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_radius, float) = 0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, Region, entities,
                               Util::Set<Util::UniqueId>))
@@ -144,6 +146,23 @@ namespace Low {
                                 const void *p_Data) -> void {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_streaming_enabled(*(bool *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(streaming_position);
+        l_PropertyInfo.editorProperty = true;
+        l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_position);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region,
+                                            streaming_position, Math::Vector3);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.set_streaming_position(*(Math::Vector3 *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -262,6 +281,8 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       p_Node["streaming_enabled"] = is_streaming_enabled();
+      Low::Util::Serialization::serialize(p_Node["streaming_position"],
+                                          get_streaming_position());
       p_Node["streaming_radius"] = get_streaming_radius();
       p_Node["unique_id"] = get_unique_id();
       p_Node["name"] = get_name().c_str();
@@ -291,6 +312,11 @@ namespace Low {
 
       if (p_Node["streaming_enabled"]) {
         l_Handle.set_streaming_enabled(p_Node["streaming_enabled"].as<bool>());
+      }
+      if (p_Node["streaming_position"]) {
+        l_Handle.set_streaming_position(
+            Low::Util::Serialization::deserialize_vector3(
+                p_Node["streaming_position"]));
       }
       if (p_Node["streaming_radius"]) {
         l_Handle.set_streaming_radius(p_Node["streaming_radius"].as<float>());
@@ -344,6 +370,25 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_enabled
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_enabled
+    }
+
+    Math::Vector3 &Region::get_streaming_position() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Region, streaming_position, Math::Vector3);
+    }
+    void Region::set_streaming_position(Math::Vector3 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_streaming_position
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_position
+
+      // Set new value
+      TYPE_SOA(Region, streaming_position, Math::Vector3) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_position
+      // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_position
     }
 
     float Region::get_streaming_radius() const
@@ -528,6 +573,13 @@ namespace Low {
                          (l_Capacity + l_CapacityIncrease)],
             &ms_Buffer[offsetof(RegionData, streaming_enabled) * (l_Capacity)],
             l_Capacity * sizeof(bool));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(RegionData, streaming_position) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(RegionData, streaming_position) * (l_Capacity)],
+            l_Capacity * sizeof(Math::Vector3));
       }
       {
         memcpy(
