@@ -285,19 +285,31 @@ namespace Low {
       {
         Context l_Handle = Context::make(N(Context));
 
-        l_Handle.set_global_signature(
-            PipelineResourceSignature::deserialize(p_Node["global_signature"],
-                                                   l_Handle.get_id())
-                .get_id());
-        l_Handle.set_frame_info_buffer(
-            Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
-                                          l_Handle.get_id())
-                .get_id());
-        l_Handle.set_material_data_buffer(
-            Resource::Buffer::deserialize(p_Node["material_data_buffer"],
-                                          l_Handle.get_id())
-                .get_id());
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        if (p_Node["context"]) {
+        }
+        if (p_Node["renderpasses"]) {
+        }
+        if (p_Node["global_signature"]) {
+          l_Handle.set_global_signature(
+              PipelineResourceSignature::deserialize(p_Node["global_signature"],
+                                                     l_Handle.get_id())
+                  .get_id());
+        }
+        if (p_Node["frame_info_buffer"]) {
+          l_Handle.set_frame_info_buffer(
+              Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
+                                            l_Handle.get_id())
+                  .get_id());
+        }
+        if (p_Node["material_data_buffer"]) {
+          l_Handle.set_material_data_buffer(
+              Resource::Buffer::deserialize(p_Node["material_data_buffer"],
+                                            l_Handle.get_id())
+                  .get_id());
+        }
+        if (p_Node["name"]) {
+          l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

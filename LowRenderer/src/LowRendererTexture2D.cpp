@@ -237,13 +237,19 @@ namespace Low {
     {
       Texture2D l_Handle = Texture2D::make(N(Texture2D));
 
-      l_Handle.set_image(
-          Resource::Image::deserialize(p_Node["image"], l_Handle.get_id())
-              .get_id());
-      l_Handle.set_context(
-          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
-              .get_id());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["image"]) {
+        l_Handle.set_image(
+            Resource::Image::deserialize(p_Node["image"], l_Handle.get_id())
+                .get_id());
+      }
+      if (p_Node["context"]) {
+        l_Handle.set_context(Interface::Context::deserialize(p_Node["context"],
+                                                             l_Handle.get_id())
+                                 .get_id());
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

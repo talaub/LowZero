@@ -3,6 +3,7 @@
 #include "imgui.h"
 
 #include "LowCoreEntity.h"
+#include "LowRendererMaterial.h"
 
 namespace Low {
   namespace Editor {
@@ -17,5 +18,16 @@ namespace Low {
     void set_selected_handle(Util::Handle p_Handle);
 
     DetailsWidget *get_details_widget();
-  } // namespace Editor
+
+    namespace Helper {
+      struct SphericalBillboardMaterials
+      {
+        Renderer::Material sun;
+        Renderer::Material bulb;
+        Renderer::Material camera;
+      };
+
+      SphericalBillboardMaterials get_spherical_billboard_materials();
+    } // namespace Helper
+  }   // namespace Editor
 } // namespace Low

@@ -15,6 +15,7 @@
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#define LOW_RENDERER_POINTLIGHT_COUNT 8
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -34,6 +35,11 @@ namespace Low {
       alignas(16) Math::Vector3 direction;
       alignas(16) Math::Vector3 color;
     };
+    struct PointLightShaderInfo
+    {
+      alignas(16) Math::Vector3 position;
+      alignas(16) Math::Vector3 color;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API RenderFlowData
@@ -51,6 +57,7 @@ namespace Low {
       float camera_near_plane;
       float camera_far_plane;
       DirectionalLight directional_light;
+      Util::List<PointLight> point_lights;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -155,6 +162,8 @@ namespace Low {
 
       DirectionalLight &get_directional_light() const;
       void set_directional_light(DirectionalLight &p_Value);
+
+      Util::List<PointLight> &get_point_lights() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

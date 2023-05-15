@@ -49,6 +49,7 @@ namespace Low {
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, color,
                                 Math::ColorRGB)) Math::ColorRGB();
+        ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, intensity, float) = 0.0f;
         new (&ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, entity,
                                 Low::Core::Entity)) Low::Core::Entity();
 
@@ -122,7 +123,7 @@ namespace Low {
           l_PropertyInfo.name = N(color);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(DirectionalLightData, color);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight, color,
                                               Math::ColorRGB);
@@ -131,6 +132,23 @@ namespace Low {
                                   const void *p_Data) -> void {
             DirectionalLight l_Handle = p_Handle.get_id();
             l_Handle.set_color(*(Math::ColorRGB *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(intensity);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(DirectionalLightData, intensity);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight,
+                                              intensity, float);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            DirectionalLight l_Handle = p_Handle.get_id();
+            l_Handle.set_intensity(*(float *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -210,6 +228,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         Low::Util::Serialization::serialize(p_Node["color"], get_color());
+        p_Node["intensity"] = get_intensity();
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -234,9 +253,16 @@ namespace Low {
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
-        l_Handle.set_color(
-            Low::Util::Serialization::deserialize_vector3(p_Node["color"]));
-        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        if (p_Node["color"]) {
+          l_Handle.set_color(
+              Low::Util::Serialization::deserialize_vector3(p_Node["color"]));
+        }
+        if (p_Node["intensity"]) {
+          l_Handle.set_intensity(p_Node["intensity"].as<float>());
+        }
+        if (p_Node["unique_id"]) {
+          l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -261,6 +287,25 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
+      }
+
+      float DirectionalLight::get_intensity() const
+      {
+        _LOW_ASSERT(is_alive());
+        return TYPE_SOA(DirectionalLight, intensity, float);
+      }
+      void DirectionalLight::set_intensity(float p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_intensity
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_intensity
+
+        // Set new value
+        TYPE_SOA(DirectionalLight, intensity, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_intensity
+        // LOW_CODEGEN::END::CUSTOM:SETTER_intensity
       }
 
       Low::Core::Entity DirectionalLight::get_entity() const
@@ -341,6 +386,13 @@ namespace Low {
                            (l_Capacity + l_CapacityIncrease)],
               &ms_Buffer[offsetof(DirectionalLightData, color) * (l_Capacity)],
               l_Capacity * sizeof(Math::ColorRGB));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(DirectionalLightData, intensity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(DirectionalLightData, intensity) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(float));
         }
         {
           memcpy(

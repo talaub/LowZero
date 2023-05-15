@@ -15,6 +15,8 @@ namespace Low {
       LOW_CORE_API float
       screen_space_multiplier(Renderer::RenderFlow p_RenderFlow,
                               Math::Vector3 p_Position);
+      LOW_CORE_API Renderer::Material
+      create_spherical_billboard_material(Util::String p_Path);
 
       // Primitives
       LOW_CORE_API void render_box(Math::Box p_Box, Math::Color p_Color,
@@ -32,6 +34,11 @@ namespace Low {
                                      float p_HeadRadius, float p_HeadLength,
                                      Math::Color p_Color, bool p_DepthTest,
                                      bool p_Wireframe);
+
+      // Billboards
+      LOW_CORE_API void
+      render_spherical_billboard(Math::Vector3 p_Position, float p_Size,
+                                 Renderer::Material p_Material);
     } // namespace DebugGeometry
   }   // namespace Core
 } // namespace Low

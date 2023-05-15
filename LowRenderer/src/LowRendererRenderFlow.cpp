@@ -64,8 +64,13 @@ namespace Low {
                               Math::Vector3)) Math::Vector3();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_direction,
                               Math::Vector3)) Math::Vector3();
+      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_fov, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_near_plane, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_far_plane, float) = 0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, directional_light,
                               DirectionalLight)) DirectionalLight();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, point_lights,
+                              Util::List<PointLight>)) Util::List<PointLight>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -340,6 +345,20 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(point_lights);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, point_lights);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, point_lights,
+                                            Util::List<PointLight>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, name);
@@ -437,30 +456,60 @@ namespace Low {
     {
       RenderFlow l_Handle = RenderFlow::make(N(RenderFlow));
 
-      l_Handle.set_context(
-          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
-              .get_id());
-      l_Handle.set_output_image(Resource::Image::deserialize(
-                                    p_Node["output_image"], l_Handle.get_id())
-                                    .get_id());
-      l_Handle.set_frame_info_buffer(
-          Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
-                                        l_Handle.get_id())
-              .get_id());
-      l_Handle.set_resource_signature(
-          Interface::PipelineResourceSignature::deserialize(
-              p_Node["resource_signature"], l_Handle.get_id())
-              .get_id());
-      l_Handle.set_camera_position(
-          Low::Util::Serialization::deserialize_vector3(
-              p_Node["camera_position"]));
-      l_Handle.set_camera_direction(
-          Low::Util::Serialization::deserialize_vector3(
-              p_Node["camera_direction"]));
-      l_Handle.set_camera_fov(p_Node["camera_fov"].as<float>());
-      l_Handle.set_camera_near_plane(p_Node["camera_near_plane"].as<float>());
-      l_Handle.set_camera_far_plane(p_Node["camera_far_plane"].as<float>());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["context"]) {
+        l_Handle.set_context(Interface::Context::deserialize(p_Node["context"],
+                                                             l_Handle.get_id())
+                                 .get_id());
+      }
+      if (p_Node["dimensions"]) {
+      }
+      if (p_Node["output_image"]) {
+        l_Handle.set_output_image(Resource::Image::deserialize(
+                                      p_Node["output_image"], l_Handle.get_id())
+                                      .get_id());
+      }
+      if (p_Node["steps"]) {
+      }
+      if (p_Node["resources"]) {
+      }
+      if (p_Node["frame_info_buffer"]) {
+        l_Handle.set_frame_info_buffer(
+            Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
+                                          l_Handle.get_id())
+                .get_id());
+      }
+      if (p_Node["resource_signature"]) {
+        l_Handle.set_resource_signature(
+            Interface::PipelineResourceSignature::deserialize(
+                p_Node["resource_signature"], l_Handle.get_id())
+                .get_id());
+      }
+      if (p_Node["camera_position"]) {
+        l_Handle.set_camera_position(
+            Low::Util::Serialization::deserialize_vector3(
+                p_Node["camera_position"]));
+      }
+      if (p_Node["camera_direction"]) {
+        l_Handle.set_camera_direction(
+            Low::Util::Serialization::deserialize_vector3(
+                p_Node["camera_direction"]));
+      }
+      if (p_Node["camera_fov"]) {
+        l_Handle.set_camera_fov(p_Node["camera_fov"].as<float>());
+      }
+      if (p_Node["camera_near_plane"]) {
+        l_Handle.set_camera_near_plane(p_Node["camera_near_plane"].as<float>());
+      }
+      if (p_Node["camera_far_plane"]) {
+        l_Handle.set_camera_far_plane(p_Node["camera_far_plane"].as<float>());
+      }
+      if (p_Node["directional_light"]) {
+      }
+      if (p_Node["point_lights"]) {
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -693,6 +742,12 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light
     }
 
+    Util::List<PointLight> &RenderFlow::get_point_lights() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(RenderFlow, point_lights, Util::List<PointLight>);
+    }
+
     Low::Util::Name RenderFlow::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -751,6 +806,15 @@ namespace Low {
         l_ResourceConfig.buffer.size = sizeof(DirectionalLightShaderInfo);
         l_ResourceConfigs.push_back(l_ResourceConfig);
       }
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.name = N(_point_light_info);
+        l_ResourceConfig.buffer.size =
+            16 + (sizeof(PointLightShaderInfo) * LOW_RENDERER_POINTLIGHT_COUNT);
+        l_ResourceConfigs.push_back(l_ResourceConfig);
+      }
 
       l_RenderFlow.get_resources().initialize(l_ResourceConfigs, p_Context,
                                               l_RenderFlow);
@@ -774,6 +838,14 @@ namespace Low {
           l_Resource.arraySize = 1;
           l_Resources.push_back(l_Resource);
         }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_PointLightInfo);
+          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.type = Backend::ResourceType::CONSTANT_BUFFER;
+          l_Resource.arraySize = 1;
+          l_Resources.push_back(l_Resource);
+        }
 
         l_RenderFlow.set_resource_signature(
             Interface::PipelineResourceSignature::make(
@@ -785,6 +857,10 @@ namespace Low {
             N(u_DirectionalLightInfo), 0,
             l_RenderFlow.get_resources().get_buffer_resource(
                 N(_directional_light_info)));
+        l_RenderFlow.get_resource_signature().set_constant_buffer_resource(
+            N(u_PointLightInfo), 0,
+            l_RenderFlow.get_resources().get_buffer_resource(
+                N(_point_light_info)));
       }
 
       for (auto it = p_Config["steps"].begin(); it != p_Config["steps"].end();
@@ -1047,6 +1123,17 @@ namespace Low {
                &ms_Buffer[offsetof(RenderFlowData, directional_light) *
                           (l_Capacity)],
                l_Capacity * sizeof(DirectionalLight));
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(RenderFlowData, point_lights) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() * sizeof(Util::List<PointLight>))])
+              Util::List<PointLight>();
+          *i_ValPtr = it->get_point_lights();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, name) *

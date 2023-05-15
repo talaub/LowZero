@@ -47,6 +47,7 @@ namespace Low {
         enum Enum
         {
           UNKNOWN,
+          COLORRGB,
           VECTOR2,
           VECTOR3,
           QUATERNION,

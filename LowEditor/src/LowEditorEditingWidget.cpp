@@ -11,14 +11,56 @@
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreDirectionalLight.h"
+#include "LowCorePointLight.h"
 
 #include "LowMathQuaternionUtil.h"
 #include <stdint.h>
 
 namespace Low {
   namespace Editor {
+    void render_billboards(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
+    {
+      Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
+
+      Helper::SphericalBillboardMaterials l_Materials =
+          Helper::get_spherical_billboard_materials();
+
+      float l_DrawSize = 0.5f;
+
+      for (Core::Component::DirectionalLight i_Light :
+           Core::Component::DirectionalLight::ms_LivingInstances) {
+        Core::Component::Transform i_Transform =
+            i_Light.get_entity().get_transform();
+
+        float l_ScreenSpaceAdjustment =
+            Core::DebugGeometry::screen_space_multiplier(
+                l_RenderFlow, i_Transform.get_world_position());
+
+        Core::DebugGeometry::render_spherical_billboard(
+            i_Transform.get_world_position(),
+            l_DrawSize * l_ScreenSpaceAdjustment, l_Materials.sun);
+      }
+
+      for (Core::Component::PointLight i_Light :
+           Core::Component::PointLight::ms_LivingInstances) {
+        Core::Component::Transform i_Transform =
+            i_Light.get_entity().get_transform();
+
+        float l_ScreenSpaceAdjustment =
+            Core::DebugGeometry::screen_space_multiplier(
+                l_RenderFlow, i_Transform.get_world_position());
+
+        Core::DebugGeometry::render_spherical_billboard(
+            i_Transform.get_world_position(),
+            l_DrawSize * l_ScreenSpaceAdjustment, l_Materials.bulb);
+      }
+    }
+
     void render_gizmos(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
     {
+      render_billboards(p_Delta, p_RenderFlowWidget);
+
       Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
 
       static bool l_ToolsWindowOpen = true;

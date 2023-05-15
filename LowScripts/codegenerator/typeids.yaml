@@ -27,3 +27,4 @@ LowCore:
   Transform: 25
   MeshRenderer: 26
   DirectionalLight: 27
+  PointLight: 28

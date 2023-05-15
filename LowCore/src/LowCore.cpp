@@ -5,6 +5,7 @@
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
 #include "LowCoreDirectionalLight.h"
+#include "LowCorePointLight.h"
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMeshResource.h"
@@ -48,6 +49,7 @@ namespace Low {
       Component::Transform::initialize();
       Component::MeshRenderer::initialize();
       Component::DirectionalLight::initialize();
+      Component::PointLight::initialize();
     }
 
     static void initialize_base_types()
@@ -186,6 +188,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Component::PointLight::cleanup();
       Component::DirectionalLight::cleanup();
       Component::Transform::cleanup();
       Component::MeshRenderer::cleanup();

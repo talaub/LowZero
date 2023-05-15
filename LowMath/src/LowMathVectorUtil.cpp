@@ -44,18 +44,21 @@ namespace Low {
       Quaternion from_direction(Vector3 &p_Direction, Vector3 &p_Up)
       {
         glm::vec3 direction = glm::normalize(p_Direction);
-        float dot = glm::dot(p_Up, direction);
-        if (fabs(dot - (-1.0f)) < 0.000001f) {
-          return glm::angleAxis(glm::degrees(PI), LOW_VECTOR3_UP);
-        } else if (fabs(dot - (1.0f)) < 0.000001f) {
-          return glm::quat();
-        }
+        return glm::quatLookAt(direction, p_Up);
+        /*
+              float dot = glm::dot(p_Up, direction);
+              if (fabs(dot - (-1.0f)) < 0.000001f) {
+                return glm::angleAxis(glm::degrees(PI), LOW_VECTOR3_UP);
+              } else if (fabs(dot - (1.0f)) < 0.000001f) {
+                return glm::quat();
+              }
 
-        float angle = -glm::degrees(acosf(dot));
+              float angle = -glm::degrees(acosf(dot));
 
-        glm::vec3 cross =
-            glm::normalize(glm::cross(LOW_VECTOR3_FRONT, direction));
-        return glm::normalize(glm::angleAxis(angle, cross));
+              glm::vec3 cross =
+                  glm::normalize(glm::cross(LOW_VECTOR3_FRONT, direction));
+              return glm::normalize(glm::angleAxis(angle, cross));
+        */
       }
 
       Vector3 to_euler(Quaternion &p_Rotation)

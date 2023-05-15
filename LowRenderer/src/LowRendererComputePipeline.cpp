@@ -212,7 +212,11 @@ namespace Low {
       {
         ComputePipeline l_Handle = ComputePipeline::make(N(ComputePipeline));
 
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        if (p_Node["pipeline"]) {
+        }
+        if (p_Node["name"]) {
+          l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

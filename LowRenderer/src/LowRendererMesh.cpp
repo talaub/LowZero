@@ -259,13 +259,23 @@ namespace Low {
     {
       Mesh l_Handle = Mesh::make(N(Mesh));
 
-      l_Handle.set_vertex_buffer_start(
-          p_Node["vertex_buffer_start"].as<uint32_t>());
-      l_Handle.set_vertex_count(p_Node["vertex_count"].as<uint32_t>());
-      l_Handle.set_index_buffer_start(
-          p_Node["index_buffer_start"].as<uint32_t>());
-      l_Handle.set_index_count(p_Node["index_count"].as<uint32_t>());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["vertex_buffer_start"]) {
+        l_Handle.set_vertex_buffer_start(
+            p_Node["vertex_buffer_start"].as<uint32_t>());
+      }
+      if (p_Node["vertex_count"]) {
+        l_Handle.set_vertex_count(p_Node["vertex_count"].as<uint32_t>());
+      }
+      if (p_Node["index_buffer_start"]) {
+        l_Handle.set_index_buffer_start(
+            p_Node["index_buffer_start"].as<uint32_t>());
+      }
+      if (p_Node["index_count"]) {
+        l_Handle.set_index_count(p_Node["index_count"].as<uint32_t>());
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

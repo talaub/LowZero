@@ -216,7 +216,11 @@ namespace Low {
       {
         Renderpass l_Handle = Renderpass::make(N(Renderpass));
 
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        if (p_Node["renderpass"]) {
+        }
+        if (p_Node["name"]) {
+          l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

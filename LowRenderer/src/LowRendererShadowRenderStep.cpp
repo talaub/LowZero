@@ -171,6 +171,32 @@ namespace Low {
             .get_buffer_resource(N(_directional_light_info))
             .set(&l_DirectionalLightShaderInfo);
 
+        {
+          PointLightShaderInfo l_PointLights[LOW_RENDERER_POINTLIGHT_COUNT];
+          uint32_t l_PointLightCount = p_RenderFlow.get_point_lights().size();
+          l_PointLightCount = Math::Util::clamp(l_PointLightCount, 0,
+                                                LOW_RENDERER_POINTLIGHT_COUNT);
+
+          p_RenderFlow.get_resources()
+              .get_buffer_resource(N(_point_light_info))
+              .write(&l_PointLightCount, sizeof(uint32_t), 0);
+
+          for (uint32_t i = 0u; i < l_PointLightCount; ++i) {
+            l_PointLights[i].color = p_RenderFlow.get_point_lights()[i].color;
+            l_PointLights[i].position =
+                p_RenderFlow.get_point_lights()[i].position;
+          }
+
+          p_RenderFlow.get_resources()
+              .get_buffer_resource(N(_point_light_info))
+              .write(l_PointLights,
+                     sizeof(PointLightShaderInfo) *
+                         LOW_RENDERER_POINTLIGHT_COUNT,
+                     16);
+
+          p_RenderFlow.get_point_lights().clear();
+        }
+
         RenderObjectShaderInfo l_ObjectShaderInfos[32];
         uint32_t l_ObjectIndex = 0;
 

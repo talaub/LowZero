@@ -202,6 +202,23 @@ namespace Low {
                                  (float *)p_Color);
       }
 
+      void render_colorrgb_editor(Util::String &p_Label,
+                                  Math::ColorRGB &p_Color, bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        Math::ColorRGB l_Color = p_Color;
+
+        if (ImGui::ColorEdit3(l_Label.c_str(), (float *)&l_Color)) {
+          p_Color = l_Color;
+        }
+      }
+
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          const void *p_DataPtr)
       {
@@ -218,10 +235,13 @@ namespace Low {
                    Util::RTTI::PropertyType::QUATERNION) {
           render_quaternion_editor(Util::String(p_PropertyInfo.name.c_str()),
                                    *(Math::Quaternion *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::COLORRGB) {
+          render_colorrgb_editor(Util::String(p_PropertyInfo.name.c_str()),
+                                 *(Math::ColorRGB *)p_DataPtr, true);
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::BOOL) {
           render_checkbox_bool_editor(Util::String(p_PropertyInfo.name.c_str()),
                                       *(bool *)p_DataPtr, true);
-        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::BOOL) {
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::FLOAT) {
           render_float_editor(Util::String(p_PropertyInfo.name.c_str()),
                               *(float *)p_DataPtr, true);
         }

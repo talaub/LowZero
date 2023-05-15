@@ -377,13 +377,21 @@ namespace Low {
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
-        l_Handle.position(
-            Low::Util::Serialization::deserialize_vector3(p_Node["position"]));
-        l_Handle.rotation(Low::Util::Serialization::deserialize_quaternion(
-            p_Node["rotation"]));
-        l_Handle.scale(
-            Low::Util::Serialization::deserialize_vector3(p_Node["scale"]));
-        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        if (p_Node["position"]) {
+          l_Handle.position(Low::Util::Serialization::deserialize_vector3(
+              p_Node["position"]));
+        }
+        if (p_Node["rotation"]) {
+          l_Handle.rotation(Low::Util::Serialization::deserialize_quaternion(
+              p_Node["rotation"]));
+        }
+        if (p_Node["scale"]) {
+          l_Handle.scale(
+              Low::Util::Serialization::deserialize_vector3(p_Node["scale"]));
+        }
+        if (p_Node["unique_id"]) {
+          l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

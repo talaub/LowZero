@@ -45,6 +45,7 @@ namespace Low {
 
       ACCESSOR_TYPE_SOA(l_Handle, Region, loaded, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_enabled, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_radius, float) = 0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, Region, entities,
                               Util::Set<Util::UniqueId>))
           Util::Set<Util::UniqueId>();
@@ -286,10 +287,18 @@ namespace Low {
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
-      l_Handle.set_streaming_enabled(p_Node["streaming_enabled"].as<bool>());
-      l_Handle.set_streaming_radius(p_Node["streaming_radius"].as<float>());
-      l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["streaming_enabled"]) {
+        l_Handle.set_streaming_enabled(p_Node["streaming_enabled"].as<bool>());
+      }
+      if (p_Node["streaming_radius"]) {
+        l_Handle.set_streaming_radius(p_Node["streaming_radius"].as<float>());
+      }
+      if (p_Node["unique_id"]) {
+        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

@@ -20,7 +20,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API DirectionalLightData
+      struct LOW_CORE_API PointLightData
       {
         Math::ColorRGB color;
         float intensity;
@@ -29,27 +29,27 @@ namespace Low {
 
         static size_t get_size()
         {
-          return sizeof(DirectionalLightData);
+          return sizeof(PointLightData);
         }
       };
 
-      struct LOW_CORE_API DirectionalLight : public Low::Util::Handle
+      struct LOW_CORE_API PointLight : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<DirectionalLight> ms_LivingInstances;
+        static Low::Util::List<PointLight> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        DirectionalLight();
-        DirectionalLight(uint64_t p_Id);
-        DirectionalLight(DirectionalLight &p_Copy);
+        PointLight();
+        PointLight(uint64_t p_Id);
+        PointLight(PointLight &p_Copy);
 
-        static DirectionalLight make(Low::Core::Entity p_Entity);
+        static PointLight make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
-        explicit DirectionalLight(const DirectionalLight &p_Copy)
+        explicit PointLight(const PointLight &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -63,12 +63,12 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static DirectionalLight *living_instances()
+        static PointLight *living_instances()
         {
           return ms_LivingInstances.data();
         }
 
-        static DirectionalLight find_by_index(uint32_t p_Index);
+        static PointLight find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
 
@@ -82,15 +82,15 @@ namespace Low {
                                              Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          return p_Handle.get_type() == DirectionalLight::TYPE_ID &&
+          return p_Handle.get_type() == PointLight::TYPE_ID &&
                  p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          DirectionalLight l_DirectionalLight = p_Handle.get_id();
-          l_DirectionalLight.destroy();
+          PointLight l_PointLight = p_Handle.get_id();
+          l_PointLight.destroy();
         }
 
         Math::ColorRGB &get_color() const;

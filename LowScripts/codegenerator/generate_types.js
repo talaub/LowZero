@@ -150,6 +150,9 @@ function is_container_type(p_Type) {
 }
 
 function get_property_type(p_Type) {
+    if (p_Type.endsWith('Math::ColorRGB')) {
+	return 'COLORRGB';
+    }
     if (p_Type.endsWith('Math::Vector2')) {
 	return 'VECTOR2';
     }
@@ -627,6 +630,9 @@ function generate_source(p_Type) {
 	if (['bool', 'boolean'].includes(i_Prop.type)) {
 	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = false;`);
 	}
+	else if (['float', 'double'].includes(i_Prop.type)) {
+	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = 0.0f;`);
+	}
 	else if (['Name', 'Low::Util::Name'].includes(i_Prop.type)) {
 	    t += line(`ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = Low::Util::Name(0u);`);
 	}
@@ -925,6 +931,8 @@ function generate_source(p_Type) {
 		continue;
 	    }
 
+	    t += line(`if (p_Node["${i_PropName}"]) {`);
+
 	    if (is_name_type(i_Prop.plain_type)) {
 		t += line(`l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_NAME(p_Node["${i_PropName}"]));`);
 	    }
@@ -940,6 +948,7 @@ function generate_source(p_Type) {
 	    else if (i_Prop.handle) {
 		t += line(`l_Handle.${i_Prop.setter_name}(${i_Prop.plain_type}::deserialize(p_Node["${i_PropName}"], l_Handle.get_id()).get_id());`);
 	    }
+	    t += line(`}`);
 	}
     }
 

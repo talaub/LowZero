@@ -285,10 +285,17 @@ namespace Low {
     {
       Material l_Handle = Material::make(N(Material));
 
-      l_Handle.set_material_type(Renderer::MaterialType::deserialize(
-                                     p_Node["material_type"], l_Handle.get_id())
-                                     .get_id());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["material_type"]) {
+        l_Handle.set_material_type(
+            Renderer::MaterialType::deserialize(p_Node["material_type"],
+                                                l_Handle.get_id())
+                .get_id());
+      }
+      if (p_Node["properties"]) {
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       for (auto it = l_Handle.get_material_type().get_properties().begin();

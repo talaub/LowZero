@@ -327,13 +327,29 @@ namespace Low {
     {
       GraphicsStep l_Handle = GraphicsStep::make(N(GraphicsStep));
 
-      l_Handle.set_config(
-          GraphicsStepConfig::deserialize(p_Node["config"], l_Handle.get_id())
-              .get_id());
-      l_Handle.set_context(
-          Interface::Context::deserialize(p_Node["context"], l_Handle.get_id())
-              .get_id());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["resources"]) {
+      }
+      if (p_Node["config"]) {
+        l_Handle.set_config(
+            GraphicsStepConfig::deserialize(p_Node["config"], l_Handle.get_id())
+                .get_id());
+      }
+      if (p_Node["pipelines"]) {
+      }
+      if (p_Node["renderobjects"]) {
+      }
+      if (p_Node["renderpasses"]) {
+      }
+      if (p_Node["context"]) {
+        l_Handle.set_context(Interface::Context::deserialize(p_Node["context"],
+                                                             l_Handle.get_id())
+                                 .get_id());
+      }
+      if (p_Node["signatures"]) {
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

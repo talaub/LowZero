@@ -436,16 +436,42 @@ namespace Low {
       GraphicsStepConfig l_Handle =
           GraphicsStepConfig::make(N(GraphicsStepConfig));
 
-      l_Handle.set_rendertargets_clearcolor(
-          Low::Util::Serialization::deserialize_vector4(
-              p_Node["rendertargets_clearcolor"]));
-      l_Handle.set_use_depth(p_Node["use_depth"].as<bool>());
-      l_Handle.set_depth_clear(p_Node["depth_clear"].as<bool>());
-      l_Handle.set_depth_test(p_Node["depth_test"].as<bool>());
-      l_Handle.set_depth_write(p_Node["depth_write"].as<bool>());
-      l_Handle.set_depth_compare_operation(
-          p_Node["depth_compare_operation"].as<uint8_t>());
-      l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      if (p_Node["callbacks"]) {
+      }
+      if (p_Node["resources"]) {
+      }
+      if (p_Node["dimensions_config"]) {
+      }
+      if (p_Node["pipelines"]) {
+      }
+      if (p_Node["rendertargets"]) {
+      }
+      if (p_Node["rendertargets_clearcolor"]) {
+        l_Handle.set_rendertargets_clearcolor(
+            Low::Util::Serialization::deserialize_vector4(
+                p_Node["rendertargets_clearcolor"]));
+      }
+      if (p_Node["depth_rendertarget"]) {
+      }
+      if (p_Node["use_depth"]) {
+        l_Handle.set_use_depth(p_Node["use_depth"].as<bool>());
+      }
+      if (p_Node["depth_clear"]) {
+        l_Handle.set_depth_clear(p_Node["depth_clear"].as<bool>());
+      }
+      if (p_Node["depth_test"]) {
+        l_Handle.set_depth_test(p_Node["depth_test"].as<bool>());
+      }
+      if (p_Node["depth_write"]) {
+        l_Handle.set_depth_write(p_Node["depth_write"].as<bool>());
+      }
+      if (p_Node["depth_compare_operation"]) {
+        l_Handle.set_depth_compare_operation(
+            p_Node["depth_compare_operation"].as<uint8_t>());
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER

@@ -22,6 +22,7 @@
 #include "LowRendererTexture2D.h"
 
 #include "LowCoreMeshResource.h"
+#include "LowCoreDebugGeometry.h"
 
 #include <functional>
 
@@ -41,6 +42,8 @@ namespace Low {
 
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
+
+    Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
     static void register_editor_widget(const char *p_Name, Widget *p_Widget,
                                        bool p_DefaultOpen = false)
@@ -199,8 +202,30 @@ namespace Low {
       ImGui::End();
     }
 
+    static void initialize_spherical_billboard_materials()
+    {
+      Util::String l_DataPath(LOW_DATA_PATH);
+
+      g_SphericalBillboardMaterials.sun =
+          Core::DebugGeometry::create_spherical_billboard_material(
+              l_DataPath + "/_internal/assets/editor_icons/ktx/sun.ktx");
+      g_SphericalBillboardMaterials.bulb =
+          Core::DebugGeometry::create_spherical_billboard_material(
+              l_DataPath + "/_internal/assets/editor_icons/ktx/bulb.ktx");
+      g_SphericalBillboardMaterials.camera =
+          Core::DebugGeometry::create_spherical_billboard_material(
+              l_DataPath + "/_internal/assets/editor_icons/ktx/camera.ktx");
+    }
+
+    static void initialize_billboard_materials()
+    {
+      initialize_spherical_billboard_materials();
+    }
+
     void initialize()
     {
+      initialize_billboard_materials();
+
       LogWidget::initialize();
 
       g_MainViewportWidget = new EditingWidget();
@@ -232,5 +257,12 @@ namespace Low {
     {
       return g_DetailsWidget;
     }
-  } // namespace Editor
+
+    namespace Helper {
+      SphericalBillboardMaterials get_spherical_billboard_materials()
+      {
+        return g_SphericalBillboardMaterials;
+      }
+    } // namespace Helper
+  }   // namespace Editor
 } // namespace Low
