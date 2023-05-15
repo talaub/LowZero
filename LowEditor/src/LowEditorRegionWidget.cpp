@@ -57,8 +57,11 @@ namespace Low {
     {
       ImGui::Begin(ICON_FA_MAP_MARKER_ALT " Regions");
 
+      bool l_OpenedEntryPopup = false;
+
       for (auto it = Core::Region::ms_LivingInstances.begin();
            it != Core::Region::ms_LivingInstances.end(); ++it) {
+        bool i_Break = false;
 
         Util::String i_Label(it->is_loaded() ? ICON_FA_MAP_MARKER_ALT
                                              : ICON_FA_POWER_OFF);
@@ -70,6 +73,32 @@ namespace Low {
           HandlePropertiesSection l_Section(*it, true);
           l_Section.render_footer = &render_region_details_footer;
           get_details_widget()->add_section(l_Section);
+        }
+
+        if (ImGui::BeginPopupContextItem()) {
+          l_OpenedEntryPopup = true;
+          set_selected_handle(*it);
+          if (ImGui::MenuItem("Delete")) {
+            Core::Region::destroy(*it);
+            i_Break = true;
+          }
+          ImGui::EndPopup();
+        }
+
+        if (i_Break) {
+          break;
+        }
+      }
+
+      if (!l_OpenedEntryPopup) {
+        if (ImGui::BeginPopupContextWindow()) {
+          if (ImGui::MenuItem("New Region")) {
+            Core::Region l_Region = Core::Region::make(N(NewRegion));
+            l_Region.set_loaded(true);
+
+            set_selected_handle(l_Region);
+          }
+          ImGui::EndPopup();
         }
       }
 

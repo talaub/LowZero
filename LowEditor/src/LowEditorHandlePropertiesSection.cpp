@@ -5,6 +5,7 @@
 
 #include "LowCoreMaterial.h"
 #include "LowCoreEntity.h"
+#include "LowCoreTransform.h"
 
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorMainWindow.h"
@@ -21,6 +22,10 @@ namespace Low {
       ImGui::Text("Name");
       ImGui::SameLine();
 
+      bool l_IsChildEntity =
+          Core::Component::Transform(l_Entity.get_transform().get_parent())
+              .is_alive();
+
       bool l_Added = false;
 
       static char l_NameBuffer[255];
@@ -35,6 +40,36 @@ namespace Low {
       if (ImGui::InputText("##name", l_NameBuffer, 255,
                            ImGuiInputTextFlags_EnterReturnsTrue)) {
         l_Entity.set_name(LOW_NAME(l_NameBuffer));
+      }
+
+      if (!l_IsChildEntity) {
+        ImGui::BeginGroup();
+        ImGui::Text("Region: ");
+        ImGui::SameLine();
+        if (l_Entity.get_region().is_alive()) {
+          ImGui::Text(l_Entity.get_region().get_name().c_str());
+        } else {
+          ImGui::Text("None");
+        }
+
+        ImGui::SameLine();
+        {
+          Util::String l_PopupName = "region_selector";
+          if (ImGui::Button("Choose...")) {
+            ImGui::OpenPopup(l_PopupName.c_str());
+          }
+
+          if (ImGui::BeginPopup(l_PopupName.c_str())) {
+
+            for (Core::Region i_Region : Core::Region::ms_LivingInstances) {
+              if (ImGui::Selectable(i_Region.get_name().c_str())) {
+                i_Region.add_entity(l_Entity);
+              }
+            }
+            ImGui::EndPopup();
+          }
+        }
+        ImGui::EndGroup();
       }
 
       if (ImGui::Button("Add component")) {

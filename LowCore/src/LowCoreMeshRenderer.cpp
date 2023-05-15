@@ -74,6 +74,13 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        if (get_material().is_alive() && get_material().is_loaded()) {
+          get_material().unload();
+        }
+
+        if (get_mesh().is_alive() && get_mesh().is_loaded()) {
+          get_mesh().unload();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         Low::Util::remove_unique_id(get_unique_id());
@@ -232,8 +239,8 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-        p_Node["mesh"] = get_mesh().get_name().c_str();
-        p_Node["material"] = get_material().get_name().c_str();
+        p_Node["mesh"] = get_mesh().get_unique_id();
+        p_Node["material"] = get_material().get_unique_id();
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -249,10 +256,12 @@ namespace Low {
       {
         MeshRenderer l_Handle = MeshRenderer::make(p_Creator.get_id());
 
-        Low::Util::remove_unique_id(l_Handle.get_unique_id());
-        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-        Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                      l_Handle.get_id());
+        if (p_Node["unique_id"]) {
+          Low::Util::remove_unique_id(l_Handle.get_unique_id());
+          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+          Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                        l_Handle.get_id());
+        }
 
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
@@ -260,9 +269,11 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         l_Handle.set_mesh(
-            MeshAsset::find_by_name(LOW_YAML_AS_NAME(p_Node["mesh"])));
+            Util::find_handle_by_unique_id(p_Node["mesh"].as<uint64_t>())
+                .get_id());
         l_Handle.set_material(
-            Material::find_by_name(LOW_YAML_AS_NAME(p_Node["material"])));
+            Util::find_handle_by_unique_id(p_Node["material"].as<uint64_t>())
+                .get_id());
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -287,9 +298,7 @@ namespace Low {
         TYPE_SOA(MeshRenderer, mesh, MeshAsset) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
-        if (p_Value.is_loaded()) {
-          // If the newly assigned mesh asset is already loaded we need to
-          // increase the reference count like this.
+        if (p_Value.is_alive()) {
           p_Value.load();
         }
         // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
@@ -314,8 +323,7 @@ namespace Low {
         TYPE_SOA(MeshRenderer, material, Material) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
-        if (p_Value.is_alive() && p_Value.is_loaded()) {
-          // Increase reference count
+        if (p_Value.is_alive()) {
           p_Value.load();
         }
         // LOW_CODEGEN::END::CUSTOM:SETTER_material

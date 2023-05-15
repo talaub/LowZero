@@ -194,7 +194,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
-        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(RegionData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -282,10 +282,12 @@ namespace Low {
     {
       Region l_Handle = Region::make(N(Region));
 
-      Low::Util::remove_unique_id(l_Handle.get_unique_id());
-      l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-      Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                    l_Handle.get_id());
+      if (p_Node["unique_id"]) {
+        Low::Util::remove_unique_id(l_Handle.get_unique_id());
+        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+      }
 
       if (p_Node["streaming_enabled"]) {
         l_Handle.set_streaming_enabled(p_Node["streaming_enabled"].as<bool>());

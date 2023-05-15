@@ -920,9 +920,11 @@ function generate_source(p_Type) {
 	t += empty();
 
 	if (p_Type.unique_id) {
+	    t += line(`if (p_Node["unique_id"]) {`);
 	    t += line(`Low::Util::remove_unique_id(l_Handle.get_unique_id());`);
 	    t += line(`l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());`);
 	    t += line(`Low::Util::register_unique_id(l_Handle.get_unique_id(), l_Handle.get_id());`);
+	    t += line('}');
 	    t += empty();
 	}
 
@@ -1227,6 +1229,9 @@ function process_file(p_FileName) {
 	if (!i_Type.component) {
 	    i_Type.properties['name'] = {
 		'type': 'Low::Util::Name'
+	    }
+	    if (i_Type.name_editable) {
+		i_Type.properties.name.editor_editable = true;
 	    }
 	    if (i_Type.skip_name_serialization) {
 		i_Type.properties['name']['skip_serialization'] = true;

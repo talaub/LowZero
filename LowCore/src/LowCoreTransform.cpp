@@ -372,10 +372,12 @@ namespace Low {
       {
         Transform l_Handle = Transform::make(p_Creator.get_id());
 
-        Low::Util::remove_unique_id(l_Handle.get_unique_id());
-        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-        Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                      l_Handle.get_id());
+        if (p_Node["unique_id"]) {
+          Low::Util::remove_unique_id(l_Handle.get_unique_id());
+          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+          Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                        l_Handle.get_id());
+        }
 
         if (p_Node["position"]) {
           l_Handle.position(Low::Util::Serialization::deserialize_vector3(

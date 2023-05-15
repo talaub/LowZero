@@ -60,13 +60,6 @@ namespace Low {
               continue;
             }
 
-            if (!i_MeshRenderer.get_material().is_loaded()) {
-              i_MeshRenderer.get_material().load();
-            }
-            if (!i_MeshRenderer.get_mesh().is_loaded()) {
-              i_MeshRenderer.get_mesh().load();
-            }
-
             if (!i_MeshRenderer.get_mesh().get_lod0().is_loaded()) {
               continue;
             }

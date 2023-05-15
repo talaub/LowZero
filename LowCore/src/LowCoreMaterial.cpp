@@ -58,6 +58,10 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
+      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                    l_Handle.get_id());
+
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       for (auto it = Renderer::MaterialType::ms_LivingInstances.begin();
            it != Renderer::MaterialType::ms_LivingInstances.end(); ++it) {
@@ -82,6 +86,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       _unload();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+      Low::Util::remove_unique_id(get_unique_id());
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -183,8 +189,22 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MaterialData, unique_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, unique_id,
+                                            Low::Util::UniqueId);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -252,6 +272,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       get_material_type().serialize(p_Node["material_type"]);
+      p_Node["unique_id"] = get_unique_id();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -285,6 +306,13 @@ namespace Low {
     {
       Material l_Handle = Material::make(N(Material));
 
+      if (p_Node["unique_id"]) {
+        Low::Util::remove_unique_id(l_Handle.get_unique_id());
+        l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+      }
+
       if (p_Node["material_type"]) {
         l_Handle.set_material_type(
             Renderer::MaterialType::deserialize(p_Node["material_type"],
@@ -292,6 +320,9 @@ namespace Low {
                 .get_id());
       }
       if (p_Node["properties"]) {
+      }
+      if (p_Node["unique_id"]) {
+        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -382,6 +413,25 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
+    }
+
+    Low::Util::UniqueId Material::get_unique_id() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Material, unique_id, Low::Util::UniqueId);
+    }
+    void Material::set_unique_id(Low::Util::UniqueId p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
+
+      // Set new value
+      TYPE_SOA(Material, unique_id, Low::Util::UniqueId) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
     Low::Util::Name Material::get_name() const
@@ -585,6 +635,12 @@ namespace Low {
                          (l_Capacity + l_CapacityIncrease)],
             &ms_Buffer[offsetof(MaterialData, reference_count) * (l_Capacity)],
             l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MaterialData, unique_id) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MaterialData, unique_id) * (l_Capacity)],
+               l_Capacity * sizeof(Low::Util::UniqueId));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MaterialData, name) *

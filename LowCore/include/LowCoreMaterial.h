@@ -24,6 +24,7 @@ namespace Low {
       Renderer::Material renderer_material;
       Util::Map<Util::Name, Util::Variant> properties;
       uint32_t reference_count;
+      Low::Util::UniqueId unique_id;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -98,6 +99,8 @@ namespace Low {
 
       Renderer::Material get_renderer_material() const;
 
+      Low::Util::UniqueId get_unique_id() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -115,6 +118,7 @@ namespace Low {
       Util::Map<Util::Name, Util::Variant> &get_properties() const;
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
+      void set_unique_id(Low::Util::UniqueId p_Value);
       void _unload();
     };
   } // namespace Core

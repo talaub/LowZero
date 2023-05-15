@@ -3,6 +3,10 @@
 #include "LowUtilApi.h"
 #include "LowUtilContainers.h"
 
+#include <string>
+
+#define LOW_TO_STRING(x) Low::Util::String(std::to_string(x).c_str())
+
 namespace Low {
   namespace Util {
     namespace StringHelper {

@@ -21,6 +21,7 @@ namespace Low {
     {
       MeshResource lod0;
       uint32_t reference_count;
+      Low::Util::UniqueId unique_id;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -94,6 +95,8 @@ namespace Low {
       MeshResource get_lod0() const;
       void set_lod0(MeshResource p_Value);
 
+      Low::Util::UniqueId get_unique_id() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -107,6 +110,7 @@ namespace Low {
       static void increase_budget();
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
+      void set_unique_id(Low::Util::UniqueId p_Value);
       void _unload();
     };
   } // namespace Core

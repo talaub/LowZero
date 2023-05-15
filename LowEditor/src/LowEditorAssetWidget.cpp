@@ -12,6 +12,8 @@
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMaterial.h"
 
+#include "LowUtilString.h"
+
 namespace Low {
   namespace Editor {
     const Util::String g_CategoryLabels[] = {ICON_FA_CUBES " Meshes",
@@ -31,7 +33,7 @@ namespace Low {
         l_Asset.serialize(l_Node);
         Util::String l_Path = LOW_DATA_PATH;
         l_Path += "/assets/materials/" +
-                  Util::String(l_Asset.get_name().c_str()) + ".material.yaml";
+                  LOW_TO_STRING(l_Asset.get_unique_id()) + ".material.yaml";
         Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
         LOW_LOG_INFO << "Saved material '" << l_Asset.get_name() << "' to file."
@@ -49,7 +51,7 @@ namespace Low {
         Util::Yaml::Node l_Node;
         l_Asset.serialize(l_Node);
         Util::String l_Path = LOW_DATA_PATH;
-        l_Path += "/assets/meshes/" + Util::String(l_Asset.get_name().c_str()) +
+        l_Path += "/assets/meshes/" + LOW_TO_STRING(l_Asset.get_unique_id()) +
                   ".mesh.yaml";
         Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
