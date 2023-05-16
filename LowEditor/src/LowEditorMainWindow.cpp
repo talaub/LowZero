@@ -215,6 +215,9 @@ namespace Low {
       g_SphericalBillboardMaterials.camera =
           Core::DebugGeometry::create_spherical_billboard_material(
               l_DataPath + "/_internal/assets/editor_icons/ktx/camera.ktx");
+      g_SphericalBillboardMaterials.region =
+          Core::DebugGeometry::create_spherical_billboard_material(
+              l_DataPath + "/_internal/assets/editor_icons/ktx/region.ktx");
     }
 
     static void initialize_billboard_materials()

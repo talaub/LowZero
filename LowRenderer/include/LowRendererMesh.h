@@ -21,6 +21,10 @@ namespace Low {
       uint32_t vertex_count;
       uint32_t index_buffer_start;
       uint32_t index_count;
+      uint32_t bone_buffer_start;
+      uint32_t bone_count;
+      uint32_t vertexweight_buffer_start;
+      uint32_t vertexweight_count;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -101,6 +105,18 @@ namespace Low {
 
       uint32_t get_index_count() const;
       void set_index_count(uint32_t p_Value);
+
+      uint32_t get_bone_buffer_start() const;
+      void set_bone_buffer_start(uint32_t p_Value);
+
+      uint32_t get_bone_count() const;
+      void set_bone_count(uint32_t p_Value);
+
+      uint32_t get_vertexweight_buffer_start() const;
+      void set_vertexweight_buffer_start(uint32_t p_Value);
+
+      uint32_t get_vertexweight_count() const;
+      void set_vertexweight_count(uint32_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

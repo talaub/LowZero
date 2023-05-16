@@ -25,6 +25,7 @@ namespace Low {
         Renderer::Material sun;
         Renderer::Material bulb;
         Renderer::Material camera;
+        Renderer::Material region;
       };
 
       SphericalBillboardMaterials get_spherical_billboard_materials();

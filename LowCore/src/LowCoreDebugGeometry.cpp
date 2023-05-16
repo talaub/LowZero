@@ -16,6 +16,7 @@ namespace Low {
         MeshResource cone;
         MeshResource cylinder;
         MeshResource plane;
+        MeshResource sphere;
       } g_Meshes;
 
       struct
@@ -47,6 +48,8 @@ namespace Low {
         g_Meshes.cylinder.load();
         g_Meshes.plane = MeshResource::make(l_BasePath + "plane.glb");
         g_Meshes.plane.load();
+        g_Meshes.sphere = MeshResource::make(l_BasePath + "sphere.glb");
+        g_Meshes.sphere.load();
       }
 
       static void initialize_materials()
@@ -169,6 +172,18 @@ namespace Low {
             glm::scale(glm::mat4(1.0f), p_Box.halfExtents * 2.0f);
 
         render_mesh(g_Meshes.cube, p_Color, l_Transform, p_DepthTest,
+                    p_Wireframe);
+      }
+
+      void render_sphere(Math::Sphere p_Sphere, Math::Color p_Color,
+                         bool p_DepthTest, bool p_Wireframe)
+      {
+        Math::Matrix4x4 l_Transform =
+            glm::translate(glm::mat4(1.0f), p_Sphere.position) *
+            glm::toMat4(Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f)) *
+            glm::scale(glm::mat4(1.0f), Math::Vector3(p_Sphere.radius));
+
+        render_mesh(g_Meshes.sphere, p_Color, l_Transform, p_DepthTest,
                     p_Wireframe);
       }
 

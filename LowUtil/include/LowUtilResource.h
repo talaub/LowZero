@@ -24,10 +24,22 @@ namespace Low {
         Math::Vector3 bitangent;
       };
 
+      struct BoneVertexWeight
+      {
+        uint32_t vertexIndex;
+        float weight;
+      };
+
+      struct Bone
+      {
+        List<BoneVertexWeight> weights;
+      };
+
       struct MeshInfo
       {
         List<Vertex> vertices;
         List<uint32_t> indices;
+        List<Bone> bones;
       };
 
       struct Submesh

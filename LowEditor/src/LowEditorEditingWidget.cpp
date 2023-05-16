@@ -17,6 +17,8 @@
 #include "LowMathQuaternionUtil.h"
 #include <stdint.h>
 
+#define LOW_EDITOR_BILLBOARD_SIZE 0.5f
+
 namespace Low {
   namespace Editor {
     void render_billboards(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
@@ -25,8 +27,6 @@ namespace Low {
 
       Helper::SphericalBillboardMaterials l_Materials =
           Helper::get_spherical_billboard_materials();
-
-      float l_DrawSize = 0.5f;
 
       for (Core::Component::DirectionalLight i_Light :
            Core::Component::DirectionalLight::ms_LivingInstances) {
@@ -39,7 +39,8 @@ namespace Low {
 
         Core::DebugGeometry::render_spherical_billboard(
             i_Transform.get_world_position(),
-            l_DrawSize * l_ScreenSpaceAdjustment, l_Materials.sun);
+            LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
+            l_Materials.sun);
       }
 
       for (Core::Component::PointLight i_Light :
@@ -53,7 +54,39 @@ namespace Low {
 
         Core::DebugGeometry::render_spherical_billboard(
             i_Transform.get_world_position(),
-            l_DrawSize * l_ScreenSpaceAdjustment, l_Materials.bulb);
+            LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
+            l_Materials.bulb);
+      }
+    }
+
+    void render_region_gizmos(float p_Delta,
+                              RenderFlowWidget &p_RenderFlowWidget,
+                              Core::Region p_Region)
+    {
+      Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
+
+      if (p_Region.is_streaming_enabled()) {
+        float l_ScreenSpaceAdjustment =
+            Core::DebugGeometry::screen_space_multiplier(
+                l_RenderFlow, p_Region.get_streaming_position());
+
+        Helper::SphericalBillboardMaterials l_Materials =
+            Helper::get_spherical_billboard_materials();
+
+        Math::Cylinder l_StreamingCylinder;
+        l_StreamingCylinder.position = p_Region.get_streaming_position();
+        l_StreamingCylinder.radius = p_Region.get_streaming_radius();
+        l_StreamingCylinder.height = 75.0f;
+        l_StreamingCylinder.rotation = Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+
+        Core::DebugGeometry::render_cylinder(
+            l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 1.0f), true,
+            true);
+
+        Core::DebugGeometry::render_spherical_billboard(
+            p_Region.get_streaming_position(),
+            LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
+            l_Materials.region);
       }
     }
 
@@ -132,6 +165,11 @@ namespace Low {
           l_Transform.rotation(rotation);
           l_Transform.scale(scale);
         }
+      }
+
+      Core::Region l_Region = get_selected_handle().get_id();
+      if (l_Region.is_alive()) {
+        render_region_gizmos(p_Delta, p_RenderFlowWidget, l_Region);
       }
     }
 

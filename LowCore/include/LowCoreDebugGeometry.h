@@ -21,6 +21,9 @@ namespace Low {
       // Primitives
       LOW_CORE_API void render_box(Math::Box p_Box, Math::Color p_Color,
                                    bool p_DepthTest, bool p_Wireframe);
+      LOW_CORE_API void render_sphere(Math::Sphere p_Sphere,
+                                      Math::Color p_Color, bool p_DepthTest,
+                                      bool p_Wireframe);
       LOW_CORE_API void render_cylinder(Math::Cylinder p_Cylinder,
                                         Math::Color p_Color, bool p_DepthTest,
                                         bool p_Wireframe);

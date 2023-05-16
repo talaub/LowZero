@@ -28,9 +28,9 @@ namespace Low {
       static void execute_ticks(float p_Delta)
       {
         Renderer::tick(p_Delta);
-        System::Region::tick(p_Delta);
         System::Transform::tick(p_Delta);
         System::Light::tick(p_Delta);
+        System::Region::tick(p_Delta);
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {

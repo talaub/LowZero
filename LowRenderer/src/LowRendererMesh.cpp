@@ -169,6 +169,75 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(bone_buffer_start);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshData, bone_buffer_start);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, bone_buffer_start,
+                                            uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_bone_buffer_start(*(uint32_t *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(bone_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshData, bone_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, bone_count,
+                                            uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_bone_count(*(uint32_t *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(vertexweight_buffer_start);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshData, vertexweight_buffer_start);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Mesh, vertexweight_buffer_start, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_vertexweight_buffer_start(*(uint32_t *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(vertexweight_count);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshData, vertexweight_count);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertexweight_count,
+                                            uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_vertexweight_count(*(uint32_t *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, name);
@@ -241,6 +310,10 @@ namespace Low {
       p_Node["vertex_count"] = get_vertex_count();
       p_Node["index_buffer_start"] = get_index_buffer_start();
       p_Node["index_count"] = get_index_count();
+      p_Node["bone_buffer_start"] = get_bone_buffer_start();
+      p_Node["bone_count"] = get_bone_count();
+      p_Node["vertexweight_buffer_start"] = get_vertexweight_buffer_start();
+      p_Node["vertexweight_count"] = get_vertexweight_count();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -272,6 +345,21 @@ namespace Low {
       }
       if (p_Node["index_count"]) {
         l_Handle.set_index_count(p_Node["index_count"].as<uint32_t>());
+      }
+      if (p_Node["bone_buffer_start"]) {
+        l_Handle.set_bone_buffer_start(
+            p_Node["bone_buffer_start"].as<uint32_t>());
+      }
+      if (p_Node["bone_count"]) {
+        l_Handle.set_bone_count(p_Node["bone_count"].as<uint32_t>());
+      }
+      if (p_Node["vertexweight_buffer_start"]) {
+        l_Handle.set_vertexweight_buffer_start(
+            p_Node["vertexweight_buffer_start"].as<uint32_t>());
+      }
+      if (p_Node["vertexweight_count"]) {
+        l_Handle.set_vertexweight_count(
+            p_Node["vertexweight_count"].as<uint32_t>());
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -359,6 +447,82 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_count
     }
 
+    uint32_t Mesh::get_bone_buffer_start() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Mesh, bone_buffer_start, uint32_t);
+    }
+    void Mesh::set_bone_buffer_start(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_buffer_start
+
+      // Set new value
+      TYPE_SOA(Mesh, bone_buffer_start, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bone_buffer_start
+    }
+
+    uint32_t Mesh::get_bone_count() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Mesh, bone_count, uint32_t);
+    }
+    void Mesh::set_bone_count(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_count
+
+      // Set new value
+      TYPE_SOA(Mesh, bone_count, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bone_count
+    }
+
+    uint32_t Mesh::get_vertexweight_buffer_start() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t);
+    }
+    void Mesh::set_vertexweight_buffer_start(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertexweight_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertexweight_buffer_start
+
+      // Set new value
+      TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:SETTER_vertexweight_buffer_start
+    }
+
+    uint32_t Mesh::get_vertexweight_count() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(Mesh, vertexweight_count, uint32_t);
+    }
+    void Mesh::set_vertexweight_count(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertexweight_count
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertexweight_count
+
+      // Set new value
+      TYPE_SOA(Mesh, vertexweight_count, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_count
+      // LOW_CODEGEN::END::CUSTOM:SETTER_vertexweight_count
+    }
+
     Low::Util::Name Mesh::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -437,6 +601,32 @@ namespace Low {
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(MeshData, index_count) * (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshData, bone_buffer_start) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshData, bone_buffer_start) * (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshData, bone_count) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshData, bone_count) * (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshData, vertexweight_buffer_start) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshData, vertexweight_buffer_start) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(MeshData, vertexweight_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MeshData, vertexweight_count) * (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, name) *

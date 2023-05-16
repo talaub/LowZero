@@ -199,6 +199,14 @@ namespace Low {
 #define LOW_RENDERER_BUFFER_USAGE_VERTEX 4
 #define LOW_RENDERER_BUFFER_USAGE_INDEX 8
 
+      namespace BufferMemoryType {
+        enum Enum
+        {
+          DEFAULT,
+          HOST_VISIBLE
+        };
+      }
+
       namespace IndexBufferType {
         enum Enum
         {
@@ -214,6 +222,7 @@ namespace Low {
         uint32_t usageFlags;
         uint32_t bufferSize;
         void *data;
+        uint8_t memoryType = BufferMemoryType::DEFAULT;
       };
 
       struct Buffer

@@ -50,6 +50,7 @@ add_compile_definitions(
   LOW_EDITOR_BUILD
   LOW_DATA_PATH="./data"
   IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
+  LOW_RENDERER_VALIDATION_ENABLED
 )
 else()
 add_compile_definitions(

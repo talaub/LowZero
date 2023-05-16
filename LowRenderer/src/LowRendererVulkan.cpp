@@ -538,10 +538,10 @@ namespace Low {
           VkApplicationInfo l_AppInfo{};
           l_AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
           l_AppInfo.pApplicationName = "LoweR Test";
-          l_AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+          l_AppInfo.applicationVersion = VK_MAKE_VERSION(1, 2, 0);
           l_AppInfo.pEngineName = "Low";
-          l_AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-          l_AppInfo.apiVersion = VK_API_VERSION_1_0;
+          l_AppInfo.engineVersion = VK_MAKE_VERSION(1, 2, 0);
+          l_AppInfo.apiVersion = VK_API_VERSION_1_2;
 
           // Setup createinfo parameter struct
           VkInstanceCreateInfo l_CreateInfo{};
@@ -3607,9 +3607,20 @@ namespace Low {
                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
+        VkMemoryPropertyFlags l_MemoryFlags;
+        if (p_Params.memoryType == Backend::BufferMemoryType::DEFAULT) {
+          l_MemoryFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        } else if (p_Params.memoryType ==
+                   Backend::BufferMemoryType::HOST_VISIBLE) {
+          l_MemoryFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        } else {
+          LOW_ASSERT(false, "Unknown buffer memory property");
+        }
+
         Helper::create_buffer(*p_Params.context, l_BufferSize, l_UsageFlage,
-                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                              p_Buffer.vk.m_Buffer, p_Buffer.vk.m_Memory);
+                              l_MemoryFlags, p_Buffer.vk.m_Buffer,
+                              p_Buffer.vk.m_Memory);
 
         if (p_Params.data) {
           Helper::copy_buffer(*p_Params.context, l_StagingBuffer,

@@ -23,9 +23,13 @@ namespace Low {
               continue;
             }
 
+            Math::Vector3 i_DifferenceVector =
+                i_Region.get_streaming_position() - l_CameraPosition;
+
+            i_DifferenceVector.y = 0.0f;
+
             bool i_IsInRange =
-                Math::VectorUtil::magnitude_squared(
-                    i_Region.get_streaming_position() - l_CameraPosition) <
+                Math::VectorUtil::magnitude_squared(i_DifferenceVector) <
                 i_Region.get_streaming_radius() *
                     i_Region.get_streaming_radius();
 

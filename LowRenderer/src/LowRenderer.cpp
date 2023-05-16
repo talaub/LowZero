@@ -39,21 +39,28 @@
 namespace Low {
   namespace Renderer {
 
+    struct Bone
+    {
+      uint32_t vertexWeightStart;
+      uint32_t vertexWeightCount;
+    };
+
     struct MeshBufferFreeSlot
     {
       uint32_t start;
       uint32_t length;
     };
 
-    namespace MeshBufferType {
+    namespace DynamicBufferType {
       enum Enum
       {
         VERTEX,
-        INDEX
+        INDEX,
+        MISC
       };
     }
 
-    struct MeshBuffer
+    struct DynamicBuffer
     {
       void initialize(Util::Name p_Name, Interface::Context p_Context,
                       uint8_t p_Type, uint32_t p_ElementSize,
@@ -68,10 +75,12 @@ namespace Low {
         l_Params.context = &p_Context.get_context();
         l_Params.bufferSize = p_ElementSize * p_ElementCount;
         l_Params.data = nullptr;
-        if (p_Type == MeshBufferType::VERTEX) {
+        if (p_Type == DynamicBufferType::VERTEX) {
           l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_VERTEX;
-        } else if (p_Type == MeshBufferType::INDEX) {
+        } else if (p_Type == DynamicBufferType::INDEX) {
           l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDEX;
+        } else if (p_Type == DynamicBufferType::MISC) {
+          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
         } else {
           LOW_ASSERT(false, "Unknown mesh buffer type");
         }
@@ -167,19 +176,22 @@ namespace Low {
 
       void bind()
       {
-        if (m_Type == MeshBufferType::VERTEX) {
+        if (m_Type == DynamicBufferType::VERTEX) {
           m_Buffer.bind_vertex();
-        } else if (m_Type == MeshBufferType::INDEX) {
+        } else if (m_Type == DynamicBufferType::INDEX) {
           m_Buffer.bind_index(Backend::IndexBufferType::UINT32);
+        } else if (m_Type == DynamicBufferType::MISC) {
+          LOW_ASSERT(false, "Cannot implicitly bind misc dynamic buffer");
         } else {
-          LOW_ASSERT(false, "Unknown mesh buffer type");
+          LOW_ASSERT(false, "Unknown dynamic buffer type");
         }
       }
+
+      Resource::Buffer m_Buffer;
 
     private:
       uint32_t m_ElementSize;
       uint32_t m_ElementCount;
-      Resource::Buffer m_Buffer;
       Util::List<MeshBufferFreeSlot> m_FreeSlots;
       bool m_Initialized = false;
       uint8_t m_Type;
@@ -195,8 +207,11 @@ namespace Low {
 
     Util::List<RenderFlowUpdateData> g_PendingRenderFlowUpdates;
 
-    MeshBuffer g_VertexBuffer;
-    MeshBuffer g_IndexBuffer;
+    DynamicBuffer g_VertexBuffer;
+    DynamicBuffer g_IndexBuffer;
+
+    DynamicBuffer g_BoneBuffer;
+    DynamicBuffer g_VertexWeightBuffer;
 
     ResourceRegistry g_ResourceRegistry;
     Util::String g_ConfigPath;
@@ -234,6 +249,41 @@ namespace Low {
       l_Mesh.set_vertex_count(p_MeshInfo.vertices.size());
       l_Mesh.set_index_count(p_MeshInfo.indices.size());
 
+      l_Mesh.set_bone_buffer_start(0);
+      l_Mesh.set_bone_count(0);
+      l_Mesh.set_vertexweight_buffer_start(0);
+      l_Mesh.set_vertexweight_count(0);
+
+      if (!p_MeshInfo.bones.empty()) {
+        Util::List<Bone> l_Bones;
+        l_Bones.resize(p_MeshInfo.bones.size());
+
+        Util::List<Util::Resource::BoneVertexWeight> l_Weights;
+
+        for (uint32_t i = 0u; i < p_MeshInfo.bones.size(); ++i) {
+          l_Bones[i].vertexWeightStart = l_Weights.size();
+          l_Bones[i].vertexWeightCount = p_MeshInfo.bones[i].weights.size();
+          for (Util::Resource::BoneVertexWeight &i_Weight :
+               p_MeshInfo.bones[i].weights) {
+            l_Weights.push_back(i_Weight);
+          }
+        }
+
+        uint32_t l_WeightOffset =
+            g_VertexWeightBuffer.write(l_Weights.data(), l_Weights.size());
+
+        l_Mesh.set_vertexweight_buffer_start(l_WeightOffset);
+        l_Mesh.set_vertexweight_count(l_Weights.size());
+
+        for (Bone &i_Bone : l_Bones) {
+          i_Bone.vertexWeightStart += l_WeightOffset;
+        }
+
+        l_Mesh.set_bone_buffer_start(
+            g_BoneBuffer.write(l_Bones.data(), l_Bones.size()));
+        l_Mesh.set_bone_count(l_Bones.size());
+      }
+
       /*
       LOW_LOG_DEBUG << "UPLOADED: " << p_Name
                    << " VERTEX: " << l_Mesh.get_vertex_buffer_start() << " -> "
@@ -257,6 +307,15 @@ namespace Low {
                           p_Mesh.get_vertex_count());
       g_IndexBuffer.free(p_Mesh.get_index_buffer_start(),
                          p_Mesh.get_index_count());
+
+      if (p_Mesh.get_bone_count() > 0) {
+        g_BoneBuffer.free(p_Mesh.get_bone_buffer_start(),
+                          p_Mesh.get_bone_count());
+      }
+      if (p_Mesh.get_vertexweight_count() > 0) {
+        g_VertexWeightBuffer.free(p_Mesh.get_vertexweight_buffer_start(),
+                                  p_Mesh.get_vertexweight_count());
+      }
 
       p_Mesh.destroy();
     }
@@ -630,10 +689,17 @@ namespace Low {
 #endif
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
-                                MeshBufferType::VERTEX,
+                                DynamicBufferType::VERTEX,
                                 sizeof(Util::Resource::Vertex), 128000u);
-      g_IndexBuffer.initialize(N(IndexBuffer), g_Context, MeshBufferType::INDEX,
-                               sizeof(uint32_t), 256000u);
+      g_IndexBuffer.initialize(N(IndexBuffer), g_Context,
+                               DynamicBufferType::INDEX, sizeof(uint32_t),
+                               256000u);
+
+      g_BoneBuffer.initialize(N(BoneBuffer), g_Context, DynamicBufferType::MISC,
+                              sizeof(Bone), 2000u);
+      g_VertexWeightBuffer.initialize(
+          N(VertexWeightBuffer), g_Context, DynamicBufferType::MISC,
+          sizeof(Util::Resource::BoneVertexWeight), 20000u);
 
       initialize_global_resources();
 

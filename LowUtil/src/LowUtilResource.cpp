@@ -82,6 +82,22 @@ namespace Low {
             p_MeshInfo.indices.push_back(p_AiMesh->mFaces[i].mIndices[j]);
           }
         }
+
+        if (p_AiMesh->HasBones()) {
+          p_MeshInfo.bones.resize(p_AiMesh->mNumBones);
+
+          for (uint32_t i = 0u; i < p_AiMesh->mNumBones; ++i) {
+            p_MeshInfo.bones[i].weights.resize(
+                p_AiMesh->mBones[i]->mNumWeights);
+
+            for (uint32_t j = 0u; j < p_AiMesh->mBones[i]->mNumWeights; ++j) {
+              p_MeshInfo.bones[i].weights[j].vertexIndex =
+                  p_AiMesh->mBones[i]->mWeights[j].mVertexId;
+              p_MeshInfo.bones[i].weights[j].weight =
+                  p_AiMesh->mBones[i]->mWeights[j].mWeight;
+            }
+          }
+        }
       }
 
       static void parse_submesh(const aiScene *p_AiScene,
