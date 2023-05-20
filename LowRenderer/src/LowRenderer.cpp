@@ -39,7 +39,37 @@
 namespace Low {
   namespace Renderer {
 
-    struct Bone
+    struct SkeletalAnimationBufferInfo
+    {
+      uint32_t name;
+      uint32_t channelStart;
+      uint32_t channelCount;
+    };
+
+    struct SkeletalAnimationChannel
+    {
+      uint32_t name;
+      uint32_t positionStart;
+      uint32_t positionCount;
+      uint32_t rotationStart;
+      uint32_t rotationCount;
+      uint32_t scaleStart;
+      uint32_t scaleCount;
+    };
+
+    struct SkeletalAnimationVector3Key
+    {
+      float timestamp;
+      Math::Vector3 value;
+    };
+
+    struct SkeletalAnimationVector4Key
+    {
+      float timestamp;
+      Math::Vector4 value;
+    };
+
+    struct BoneInfluence
     {
       uint32_t vertexWeightStart;
       uint32_t vertexWeightCount;
@@ -174,6 +204,12 @@ namespace Low {
         }
       }
 
+      void clear()
+      {
+        m_FreeSlots.clear();
+        m_FreeSlots.push_back({0, m_ElementCount});
+      }
+
       void bind()
       {
         if (m_Type == DynamicBufferType::VERTEX) {
@@ -210,8 +246,14 @@ namespace Low {
     DynamicBuffer g_VertexBuffer;
     DynamicBuffer g_IndexBuffer;
 
-    DynamicBuffer g_BoneBuffer;
+    DynamicBuffer g_BoneInfluenceBuffer;
     DynamicBuffer g_VertexWeightBuffer;
+
+    DynamicBuffer g_SkeletalAnimationBuffer;
+    DynamicBuffer g_SkeletalAnimationChannelBuffer;
+    DynamicBuffer g_SkeletalAnimationPositionBuffer;
+    DynamicBuffer g_SkeletalAnimationRotationBuffer;
+    DynamicBuffer g_SkeletalAnimationScaleBuffer;
 
     ResourceRegistry g_ResourceRegistry;
     Util::String g_ConfigPath;
@@ -255,7 +297,7 @@ namespace Low {
       l_Mesh.set_vertexweight_count(0);
 
       if (!p_MeshInfo.bones.empty()) {
-        Util::List<Bone> l_Bones;
+        Util::List<BoneInfluence> l_Bones;
         l_Bones.resize(p_MeshInfo.bones.size());
 
         Util::List<Util::Resource::BoneVertexWeight> l_Weights;
@@ -275,12 +317,12 @@ namespace Low {
         l_Mesh.set_vertexweight_buffer_start(l_WeightOffset);
         l_Mesh.set_vertexweight_count(l_Weights.size());
 
-        for (Bone &i_Bone : l_Bones) {
+        for (BoneInfluence &i_Bone : l_Bones) {
           i_Bone.vertexWeightStart += l_WeightOffset;
         }
 
         l_Mesh.set_bone_buffer_start(
-            g_BoneBuffer.write(l_Bones.data(), l_Bones.size()));
+            g_BoneInfluenceBuffer.write(l_Bones.data(), l_Bones.size()));
         l_Mesh.set_bone_count(l_Bones.size());
       }
 
@@ -309,8 +351,8 @@ namespace Low {
                          p_Mesh.get_index_count());
 
       if (p_Mesh.get_bone_count() > 0) {
-        g_BoneBuffer.free(p_Mesh.get_bone_buffer_start(),
-                          p_Mesh.get_bone_count());
+        g_BoneInfluenceBuffer.free(p_Mesh.get_bone_buffer_start(),
+                                   p_Mesh.get_bone_count());
       }
       if (p_Mesh.get_vertexweight_count() > 0) {
         g_VertexWeightBuffer.free(p_Mesh.get_vertexweight_buffer_start(),
@@ -695,11 +737,28 @@ namespace Low {
                                DynamicBufferType::INDEX, sizeof(uint32_t),
                                256000u);
 
-      g_BoneBuffer.initialize(N(BoneBuffer), g_Context, DynamicBufferType::MISC,
-                              sizeof(Bone), 2000u);
+      g_BoneInfluenceBuffer.initialize(N(BoneBuffer), g_Context,
+                                       DynamicBufferType::MISC,
+                                       sizeof(BoneInfluence), 2000u);
       g_VertexWeightBuffer.initialize(
           N(VertexWeightBuffer), g_Context, DynamicBufferType::MISC,
           sizeof(Util::Resource::BoneVertexWeight), 20000u);
+
+      g_SkeletalAnimationBuffer.initialize(
+          N(SkeletalAnimationBuffer), g_Context, DynamicBufferType::MISC,
+          sizeof(SkeletalAnimationBufferInfo), 128u);
+      g_SkeletalAnimationChannelBuffer.initialize(
+          N(SkeletalAnimationChannelBuffer), g_Context, DynamicBufferType::MISC,
+          sizeof(SkeletalAnimationChannel), 1000u);
+      g_SkeletalAnimationPositionBuffer.initialize(
+          N(SkeletalAnimationPositionBuffer), g_Context,
+          DynamicBufferType::MISC, sizeof(SkeletalAnimationVector3Key), 5000u);
+      g_SkeletalAnimationRotationBuffer.initialize(
+          N(SkeletalAnimationRotationBuffer), g_Context,
+          DynamicBufferType::MISC, sizeof(SkeletalAnimationVector3Key), 5000u);
+      g_SkeletalAnimationScaleBuffer.initialize(
+          N(SkeletalAnimationScaleBuffer), g_Context, DynamicBufferType::MISC,
+          sizeof(SkeletalAnimationVector4Key), 5000u);
 
       initialize_global_resources();
 

@@ -3068,12 +3068,15 @@ namespace Low {
           return l_ContentBuffer;
         }
 
-        void
-        pipeline_layout_create(Backend::Context &p_Context,
-                               VkPipelineLayout *p_Layout,
-                               Backend::PipelineResourceSignature *p_Signatures,
-                               uint8_t p_SignatureCount)
+        void pipeline_layout_create(
+            Backend::Context &p_Context, Backend::Pipeline &p_Pipeline,
+            Backend::PipelineResourceSignature *p_Signatures,
+            uint8_t p_SignatureCount,
+            Backend::PipelineConstantCreateParams *p_PipelineConstants,
+            uint8_t p_PipelineConstantCount)
         {
+
+          Pipeline &l_Pipeline = p_Pipeline.vk;
 
           {
             Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
@@ -3098,9 +3101,53 @@ namespace Low {
             l_PipelineLayoutInfo.pushConstantRangeCount = 0;
             l_PipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-            LOW_ASSERT(vkCreatePipelineLayout(p_Context.vk.m_Device,
-                                              &l_PipelineLayoutInfo, nullptr,
-                                              p_Layout) == VK_SUCCESS,
+            l_Pipeline.m_PipelineConstants = nullptr;
+            l_Pipeline.m_PipelineConstantCount = 0;
+
+            Util::List<VkPushConstantRange> l_PushConstantRanges;
+
+            if (p_PipelineConstantCount > 0) {
+              l_PushConstantRanges.resize(p_PipelineConstantCount);
+
+              l_Pipeline.m_PipelineConstantCount = p_PipelineConstantCount;
+
+              l_Pipeline.m_PipelineConstants =
+                  (PipelineConstant *)Util::Memory::main_allocator()->allocate(
+                      p_PipelineConstantCount * sizeof(PipelineConstant));
+
+              uint32_t l_Offset = 0;
+              for (uint32_t i = 0; i < p_PipelineConstantCount; ++i) {
+                l_Pipeline.m_PipelineConstants[i].name =
+                    p_PipelineConstants[i].name;
+                l_Pipeline.m_PipelineConstants[i].size =
+                    p_PipelineConstants[i].size;
+                l_Pipeline.m_PipelineConstants[i].offset = l_Offset;
+
+                l_PushConstantRanges[i].size = p_PipelineConstants[i].size;
+                l_PushConstantRanges[i].offset = l_Offset;
+
+                if (p_Pipeline.type == Backend::PipelineType::COMPUTE) {
+                  l_PushConstantRanges[i].stageFlags =
+                      VK_SHADER_STAGE_COMPUTE_BIT;
+                } else if (p_Pipeline.type == Backend::PipelineType::GRAPHICS) {
+                  LOW_ASSERT(false, "Pipeline constants are not supported for "
+                                    "graphics pipelines");
+                } else {
+                  LOW_ASSERT(false, "Unknown pipeline type");
+                }
+
+                l_Offset += p_PipelineConstants[i].size;
+              }
+
+              l_PipelineLayoutInfo.pPushConstantRanges =
+                  l_PushConstantRanges.data();
+              l_PipelineLayoutInfo.pushConstantRangeCount =
+                  l_PushConstantRanges.size();
+            }
+
+            LOW_ASSERT(vkCreatePipelineLayout(
+                           p_Context.vk.m_Device, &l_PipelineLayoutInfo,
+                           nullptr, &l_Pipeline.m_PipelineLayout) == VK_SUCCESS,
                        "Failed to create pipeline layout");
           }
         }
@@ -3112,13 +3159,14 @@ namespace Low {
       {
         p_Pipeline.context = p_Params.context;
 
+        p_Pipeline.type = Backend::PipelineType::COMPUTE;
+
         PipelineHelper::pipeline_layout_create(
-            *p_Pipeline.context, &p_Pipeline.vk.m_PipelineLayout,
-            p_Params.signatures, p_Params.signatureCount);
+            *p_Pipeline.context, p_Pipeline, p_Params.signatures,
+            p_Params.signatureCount, p_Params.pipelineConstants,
+            p_Params.pipelineConstantCount);
 
         {
-          p_Pipeline.type = Backend::PipelineType::COMPUTE;
-
           VkShaderModule l_ShaderModule = PipelineHelper::create_shader_module(
               *p_Params.context,
               PipelineHelper::read_shader_file(p_Params.shaderPath));
@@ -3151,8 +3199,8 @@ namespace Low {
         p_Pipeline.type = Backend::PipelineType::GRAPHICS;
 
         PipelineHelper::pipeline_layout_create(
-            *p_Pipeline.context, &p_Pipeline.vk.m_PipelineLayout,
-            p_Params.signatures, p_Params.signatureCount);
+            *p_Pipeline.context, p_Pipeline, p_Params.signatures,
+            p_Params.signatureCount, nullptr, 0);
 
         auto l_VertexShaderCode =
             PipelineHelper::read_shader_file(p_Params.vertexShaderPath);
@@ -3446,6 +3494,11 @@ namespace Low {
                           p_Pipeline.vk.m_Pipeline, nullptr);
         vkDestroyPipelineLayout(p_Pipeline.context->vk.m_Device,
                                 p_Pipeline.vk.m_PipelineLayout, nullptr);
+
+        if (p_Pipeline.vk.m_PipelineConstantCount > 0) {
+          Util::Memory::main_allocator()->deallocate(
+              p_Pipeline.vk.m_PipelineConstants);
+        }
       }
 
       void vk_pipeline_bind(Backend::Pipeline &p_Pipeline)
@@ -3467,6 +3520,39 @@ namespace Low {
         } else {
           LOW_ASSERT(false, "Unknown pipeline type");
         }
+      }
+
+      void vk_pipeline_set_constant(Backend::Pipeline &p_Pipeline,
+                                    Util::Name p_ConstantName, void *p_Value)
+      {
+        PipelineConstant l_PipelineConstant;
+        bool l_Found = false;
+
+        for (uint32_t i = 0u; i < p_Pipeline.vk.m_PipelineConstantCount; ++i) {
+          if (p_Pipeline.vk.m_PipelineConstants[i].name == p_ConstantName) {
+            l_Found = true;
+            l_PipelineConstant = p_Pipeline.vk.m_PipelineConstants[i];
+          }
+        }
+
+        LOW_ASSERT(l_Found, "Could not find pipeline constant");
+
+        VkShaderStageFlags l_ShaderFlags = 0;
+
+        if (p_Pipeline.type == Backend::PipelineType::COMPUTE) {
+          l_ShaderFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        } else if (p_Pipeline.type == Backend::PipelineType::GRAPHICS) {
+          LOW_ASSERT(
+              false,
+              "Pipeline constants are not supported for graphics pipelines");
+        } else {
+          LOW_ASSERT(false, "Unknown pipeline type");
+        }
+
+        vkCmdPushConstants(
+            ContextHelper::get_current_commandbuffer(*p_Pipeline.context),
+            p_Pipeline.vk.m_PipelineLayout, l_ShaderFlags,
+            l_PipelineConstant.offset, l_PipelineConstant.size, p_Value);
       }
 
       static void vk_perform_barriers(Backend::Context &p_Context)
@@ -3928,6 +4014,7 @@ namespace Low {
         p_Callbacks.pipeline_graphics_create = &vk_pipeline_graphics_create;
         p_Callbacks.pipeline_cleanup = &vk_pipeline_cleanup;
         p_Callbacks.pipeline_bind = &vk_pipeline_bind;
+        p_Callbacks.pipeline_set_constant = &vk_pipeline_set_constant;
 
         p_Callbacks.compute_dispatch = &vk_compute_dispatch;
         p_Callbacks.draw = &vk_draw;

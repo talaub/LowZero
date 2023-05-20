@@ -148,16 +148,27 @@ namespace Low {
                 Util::String l_FileName = l_Path.substr(
                     l_Path.find_last_of('\\') + 1,
                     l_Path.find_last_of('.') - l_Path.find_last_of('\\') - 1);
-                ResourceProcessor::Mesh::process(l_Path.c_str(),
-                                                 Util::String(LOW_DATA_PATH) +
-                                                     "\\resources\\meshes\\" +
-                                                     l_FileName + ".glb");
+                bool l_HasAnimations = ResourceProcessor::Mesh::process(
+                    l_Path.c_str(), Util::String(LOW_DATA_PATH) +
+                                        "\\resources\\meshes\\" + l_FileName +
+                                        ".glb");
 
                 Core::MeshResource::make(Util::String(l_FileName + ".glb"));
 
                 LOW_LOG_INFO << "Mesh file '" << l_FileName
                              << "' has been successfully imported."
                              << LOW_LOG_END;
+
+                if (l_HasAnimations) {
+                  ResourceProcessor::Mesh::process_animations(
+                      l_Path.c_str(), Util::String(LOW_DATA_PATH) +
+                                          "\\resources\\skeletal_animations\\" +
+                                          l_FileName + ".glb");
+
+                  LOW_LOG_INFO << "Animations from file '" << l_FileName
+                               << "' have been successfully imported."
+                               << LOW_LOG_END;
+                }
               }
             }
           }

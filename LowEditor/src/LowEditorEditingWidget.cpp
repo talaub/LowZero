@@ -254,7 +254,7 @@ namespace Low {
         }
       }
 
-      float m_Sensitivity = 5000.0f;
+      float m_Sensitivity = 5000.0f * m_CameraSpeed;
 
       Math::Vector2 l_MousePositionDifference =
           m_LastMousePosition -

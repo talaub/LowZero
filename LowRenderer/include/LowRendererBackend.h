@@ -288,6 +288,12 @@ namespace Low {
         uint32_t wirteMask;
       };
 
+      struct PipelineConstantCreateParams
+      {
+        Util::Name name;
+        uint32_t size;
+      };
+
       namespace VertexAttributeType {
         enum Enum
         {
@@ -320,6 +326,8 @@ namespace Low {
         const char *shaderPath;
         PipelineResourceSignature *signatures;
         uint8_t signatureCount;
+        PipelineConstantCreateParams *pipelineConstants;
+        uint8_t pipelineConstantCount;
       };
 
       struct PipelineGraphicsCreateParams
@@ -425,6 +433,7 @@ namespace Low {
                                          PipelineGraphicsCreateParams &);
         void (*pipeline_cleanup)(Pipeline &);
         void (*pipeline_bind)(Pipeline &);
+        void (*pipeline_set_constant)(Pipeline &, Util::Name, void *);
 
         void (*compute_dispatch)(Context &, Math::UVector3);
         void (*draw)(DrawParams &);

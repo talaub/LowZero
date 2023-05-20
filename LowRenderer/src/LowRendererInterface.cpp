@@ -96,6 +96,9 @@ namespace Low {
           }
           l_BeParams.signatures = l_Signatures.data();
 
+          l_BeParams.pipelineConstantCount = l_Params.constants.size();
+          l_BeParams.pipelineConstants = l_Params.constants.data();
+
           Backend::callbacks().pipeline_compute_create(
               p_Pipeline.get_pipeline(), l_BeParams);
         }

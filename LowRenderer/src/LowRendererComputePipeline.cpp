@@ -269,6 +269,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind
       }
 
+      void ComputePipeline::set_constant(Util::Name p_Name, void *p_Value)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_constant
+        Backend::callbacks().pipeline_set_constant(get_pipeline(), p_Name,
+                                                   p_Value);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_constant
+      }
+
       uint32_t ComputePipeline::create_instance()
       {
         uint32_t l_Index = 0u;

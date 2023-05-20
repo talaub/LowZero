@@ -103,6 +103,7 @@ namespace Low {
         static ComputePipeline make(Util::Name p_Name,
                                     PipelineComputeCreateParams &p_Params);
         void bind();
+        void set_constant(Util::Name p_Name, void *p_Value);
 
       private:
         static uint32_t ms_Capacity;

@@ -9,6 +9,7 @@
 
 #include "LowMath.h"
 #include "LowUtilContainers.h"
+#include "LowUtilName.h"
 
 namespace Low {
   namespace Renderer {
@@ -112,10 +113,19 @@ namespace Low {
         uint32_t m_Index;
       };
 
+      struct PipelineConstant
+      {
+        Util::Name name;
+        uint32_t offset;
+        uint32_t size;
+      };
+
       struct Pipeline
       {
         VkPipeline m_Pipeline;
         VkPipelineLayout m_PipelineLayout;
+        PipelineConstant *m_PipelineConstants;
+        uint8_t m_PipelineConstantCount;
       };
 
       struct Buffer

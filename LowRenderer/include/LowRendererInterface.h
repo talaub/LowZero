@@ -25,6 +25,7 @@ namespace Low {
         Context context;
         Util::String shaderPath;
         Util::List<PipelineResourceSignature> signatures;
+        Util::List<Backend::PipelineConstantCreateParams> constants;
       };
 
       struct PipelineGraphicsCreateParams

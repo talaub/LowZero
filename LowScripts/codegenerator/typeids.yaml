@@ -16,6 +16,7 @@ LowRenderer:
   Mesh: 15
   MaterialType: 16
   Material: 17
+  SkeletalAnimation: 29
 LowCore:
   Entity: 18
   Region: 19

@@ -8,8 +8,10 @@ namespace Low {
   namespace Editor {
     namespace ResourceProcessor {
       namespace Mesh {
-        void process(Util::String p_FilePath, Util::String p_OutputPath);
-      }
-    } // namespace ResourceProcessor
-  }   // namespace Editor
+        bool process(Util::String p_FilePath, Util::String p_OutputPath);
+        void process_animations(Util::String p_FilePath,
+                                Util::String p_OutputPath);
+      } // namespace Mesh
+    }   // namespace ResourceProcessor
+  }     // namespace Editor
 } // namespace Low

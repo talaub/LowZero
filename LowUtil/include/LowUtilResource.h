@@ -3,6 +3,7 @@
 #include "LowUtilApi.h"
 
 #include "LowUtilContainers.h"
+#include "LowUtilName.h"
 
 #include "LowMath.h"
 
@@ -32,7 +33,35 @@ namespace Low {
 
       struct Bone
       {
+        Name name;
         List<BoneVertexWeight> weights;
+      };
+
+      struct AnimationVector3Key
+      {
+        float timestamp;
+        Math::Vector3 value;
+      };
+
+      struct AnimationVector4Key
+      {
+        float timestamp;
+        Math::Vector4 value;
+      };
+
+      struct AnimationChannel
+      {
+        Name boneName;
+        Util::List<AnimationVector3Key> positions;
+        Util::List<AnimationVector4Key> rotations;
+        Util::List<AnimationVector3Key> scales;
+      };
+
+      struct Animation
+      {
+        Name name;
+        float duration;
+        List<AnimationChannel> channels;
       };
 
       struct MeshInfo
@@ -51,6 +80,7 @@ namespace Low {
       struct Mesh
       {
         List<Submesh> submeshes;
+        List<Animation> animations;
       };
 
       LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image);
