@@ -25,6 +25,7 @@
 #include "LowRendererMaterial.h"
 #include "LowRendererMaterialType.h"
 #include "LowRendererImGuiImage.h"
+#include "LowRendererSkeleton.h"
 
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererFrontendConfig.h"
@@ -36,43 +37,22 @@
 #include <gli/texture2d.hpp>
 #include <gli/load_ktx.hpp>
 
+#define LOW_RENDERER_MAX_POSE_BONES 512
+
 namespace Low {
   namespace Renderer {
-
-    struct SkeletalAnimationBufferInfo
+    struct PoseBone
     {
       uint32_t name;
-      uint32_t channelStart;
-      uint32_t channelCount;
+      alignas(16) Math::Matrix4x4 transform;
     };
 
-    struct SkeletalAnimationChannel
+    struct PoseCalculation
     {
-      uint32_t name;
-      uint32_t positionStart;
-      uint32_t positionCount;
-      uint32_t rotationStart;
-      uint32_t rotationCount;
-      uint32_t scaleStart;
-      uint32_t scaleCount;
-    };
-
-    struct SkeletalAnimationVector3Key
-    {
+      Skeleton skeleton;
+      SkeletalAnimation animation;
       float timestamp;
-      Math::Vector3 value;
-    };
-
-    struct SkeletalAnimationVector4Key
-    {
-      float timestamp;
-      Math::Vector4 value;
-    };
-
-    struct BoneInfluence
-    {
-      uint32_t vertexWeightStart;
-      uint32_t vertexWeightCount;
+      uint32_t boneBufferStart;
     };
 
     struct MeshBufferFreeSlot
@@ -106,7 +86,8 @@ namespace Low {
         l_Params.bufferSize = p_ElementSize * p_ElementCount;
         l_Params.data = nullptr;
         if (p_Type == DynamicBufferType::VERTEX) {
-          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_VERTEX;
+          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_VERTEX |
+                                LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
         } else if (p_Type == DynamicBufferType::INDEX) {
           l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDEX;
         } else if (p_Type == DynamicBufferType::MISC) {
@@ -122,7 +103,7 @@ namespace Low {
         m_Initialized = true;
       }
 
-      uint32_t write(void *p_DataPtr, uint32_t p_ElementCount)
+      uint32_t reserve(uint32_t p_ElementCount)
       {
         LOW_ASSERT(m_Initialized, "Cannot write to uninitialized MeshBuffer");
         LOW_ASSERT(!m_FreeSlots.empty(), "No free space left in MeshBuffer");
@@ -139,6 +120,7 @@ namespace Low {
 
         LOW_ASSERT(l_FreeSlot.length >= p_ElementCount,
                    "Could not find free space in MeshBuffer to fit data");
+
         uint32_t l_SavePoint = l_FreeSlot.start;
         if (l_FreeSlot.length == p_ElementCount) {
           m_FreeSlots.erase(m_FreeSlots.begin() + i_SlotIndex);
@@ -147,10 +129,17 @@ namespace Low {
           m_FreeSlots[i_SlotIndex].start = l_SavePoint + p_ElementCount;
         }
 
-        m_Buffer.write(p_DataPtr, p_ElementCount * m_ElementSize,
-                       l_SavePoint * m_ElementSize);
-
         return l_SavePoint;
+      }
+
+      uint32_t write(void *p_DataPtr, uint32_t p_ElementCount)
+      {
+        uint32_t l_Offset = reserve(p_ElementCount);
+
+        m_Buffer.write(p_DataPtr, p_ElementCount * m_ElementSize,
+                       l_Offset * m_ElementSize);
+
+        return l_Offset;
       }
 
       void free(uint32_t p_Position, uint32_t p_ElementCount)
@@ -239,21 +228,49 @@ namespace Low {
       Math::UVector2 dimensions;
     };
 
+    struct SkinningOperation
+    {
+      Mesh mesh;
+      Skeleton skeleton;
+      uint32_t skinningBufferStart;
+      uint32_t poseBoneIndex;
+      Math::Matrix4x4 transformation;
+    };
+
+    struct SkinningCalculationInput
+    {
+      uint32_t vertexStart;
+      uint32_t vertexCount;
+      uint32_t poseBoneStart;
+      uint32_t postBoneCount;
+      uint32_t skinningBufferStart;
+      uint32_t vertexWeightBufferStart;
+      uint32_t vertexWeightCount;
+      uint32_t offset;
+      Math::Matrix4x4 transformation;
+    };
+
     Interface::Context g_Context;
+
+    Interface::ComputePipeline g_SkinningPipeline;
+    Interface::PipelineResourceSignature g_SkinningSignature;
+
+    PoseBone g_PoseBones[LOW_RENDERER_MAX_POSE_BONES];
+    uint32_t g_PoseBoneIndex = 0;
+
+    Util::List<PoseCalculation> g_PendingPoseCalculations;
+    Util::List<SkinningOperation> g_PendingSkinningOperations;
 
     Util::List<RenderFlowUpdateData> g_PendingRenderFlowUpdates;
 
     DynamicBuffer g_VertexBuffer;
     DynamicBuffer g_IndexBuffer;
 
-    DynamicBuffer g_BoneInfluenceBuffer;
+    DynamicBuffer g_SkinningBuffer;
+
     DynamicBuffer g_VertexWeightBuffer;
 
-    DynamicBuffer g_SkeletalAnimationBuffer;
-    DynamicBuffer g_SkeletalAnimationChannelBuffer;
-    DynamicBuffer g_SkeletalAnimationPositionBuffer;
-    DynamicBuffer g_SkeletalAnimationRotationBuffer;
-    DynamicBuffer g_SkeletalAnimationScaleBuffer;
+    Resource::Buffer g_PoseBuffer;
 
     ResourceRegistry g_ResourceRegistry;
     Util::String g_ConfigPath;
@@ -291,39 +308,16 @@ namespace Low {
       l_Mesh.set_vertex_count(p_MeshInfo.vertices.size());
       l_Mesh.set_index_count(p_MeshInfo.indices.size());
 
-      l_Mesh.set_bone_buffer_start(0);
-      l_Mesh.set_bone_count(0);
       l_Mesh.set_vertexweight_buffer_start(0);
       l_Mesh.set_vertexweight_count(0);
 
-      if (!p_MeshInfo.bones.empty()) {
-        Util::List<BoneInfluence> l_Bones;
-        l_Bones.resize(p_MeshInfo.bones.size());
+      if (!p_MeshInfo.boneInfluences.empty()) {
 
-        Util::List<Util::Resource::BoneVertexWeight> l_Weights;
-
-        for (uint32_t i = 0u; i < p_MeshInfo.bones.size(); ++i) {
-          l_Bones[i].vertexWeightStart = l_Weights.size();
-          l_Bones[i].vertexWeightCount = p_MeshInfo.bones[i].weights.size();
-          for (Util::Resource::BoneVertexWeight &i_Weight :
-               p_MeshInfo.bones[i].weights) {
-            l_Weights.push_back(i_Weight);
-          }
-        }
-
-        uint32_t l_WeightOffset =
-            g_VertexWeightBuffer.write(l_Weights.data(), l_Weights.size());
+        uint32_t l_WeightOffset = g_VertexWeightBuffer.write(
+            p_MeshInfo.boneInfluences.data(), p_MeshInfo.boneInfluences.size());
 
         l_Mesh.set_vertexweight_buffer_start(l_WeightOffset);
-        l_Mesh.set_vertexweight_count(l_Weights.size());
-
-        for (BoneInfluence &i_Bone : l_Bones) {
-          i_Bone.vertexWeightStart += l_WeightOffset;
-        }
-
-        l_Mesh.set_bone_buffer_start(
-            g_BoneInfluenceBuffer.write(l_Bones.data(), l_Bones.size()));
-        l_Mesh.set_bone_count(l_Bones.size());
+        l_Mesh.set_vertexweight_count(p_MeshInfo.boneInfluences.size());
       }
 
       /*
@@ -350,16 +344,72 @@ namespace Low {
       g_IndexBuffer.free(p_Mesh.get_index_buffer_start(),
                          p_Mesh.get_index_count());
 
-      if (p_Mesh.get_bone_count() > 0) {
-        g_BoneInfluenceBuffer.free(p_Mesh.get_bone_buffer_start(),
-                                   p_Mesh.get_bone_count());
-      }
       if (p_Mesh.get_vertexweight_count() > 0) {
         g_VertexWeightBuffer.free(p_Mesh.get_vertexweight_buffer_start(),
                                   p_Mesh.get_vertexweight_count());
       }
 
       p_Mesh.destroy();
+    }
+
+    static void parse_bone(Skeleton p_Skeleton, Util::Resource::Mesh &p_Mesh,
+                           Util::Resource::Node &p_Node, Bone &p_Bone)
+    {
+      Util::Resource::Submesh &l_Submesh = p_Mesh.submeshes[p_Node.index];
+      Util::Resource::Bone &l_Bone = p_Mesh.bones[l_Submesh.name];
+      p_Bone.name = l_Submesh.name;
+      p_Bone.index = l_Bone.index;
+      p_Bone.offset = l_Bone.offset;
+      p_Bone.parentTransformation = l_Submesh.parentTransform;
+      p_Bone.localTransformation = l_Submesh.localTransform;
+      p_Bone.children.resize(p_Node.children.size());
+
+      for (uint32_t i = 0u; i < p_Node.children.size(); ++i) {
+        parse_bone(p_Skeleton, p_Mesh, p_Node.children[i], p_Bone.children[i]);
+      }
+    }
+
+    Skeleton upload_skeleton(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
+    {
+      Skeleton l_Skeleton = Skeleton::make(p_Name);
+
+      parse_bone(l_Skeleton, p_Mesh, p_Mesh.rootNode,
+                 l_Skeleton.get_root_bone());
+
+      l_Skeleton.set_bone_count(p_Mesh.boneCount);
+
+      l_Skeleton.get_animations().resize(p_Mesh.animations.size());
+      for (uint32_t i = 0u; i < p_Mesh.animations.size(); ++i) {
+        l_Skeleton.get_animations()[i] =
+            SkeletalAnimation::make(p_Mesh.animations[i].name);
+
+        l_Skeleton.get_animations()[i].set_duration(
+            p_Mesh.animations[i].duration);
+
+        l_Skeleton.get_animations()[i].set_ticks_per_second(
+            p_Mesh.animations[i].ticksPerSecond);
+
+        l_Skeleton.get_animations()[i].get_channels().resize(
+            p_Mesh.animations[i].channels.size());
+
+        for (uint32_t j = 0u; j < p_Mesh.animations[i].channels.size(); ++j) {
+          l_Skeleton.get_animations()[i].get_channels()[j] =
+              p_Mesh.animations[i].channels[j];
+        }
+      }
+
+      return l_Skeleton;
+    }
+
+    void unload_skeleton(Skeleton p_Skeleton)
+    {
+      for (auto it = p_Skeleton.get_animations().begin();
+           it != p_Skeleton.get_animations().end();) {
+        SkeletalAnimation i_Animation = *it;
+        it = p_Skeleton.get_animations().erase(it);
+        i_Animation.destroy();
+      }
+      p_Skeleton.destroy();
     }
 
     Texture2D upload_texture(Util::Name p_Name,
@@ -379,6 +429,7 @@ namespace Low {
       Mesh::initialize();
       MaterialType::initialize();
       Material::initialize();
+      Skeleton::initialize();
     }
 
     static void initialize_resource_types()
@@ -701,6 +752,43 @@ namespace Low {
       }
     }
 
+    uint32_t calculate_skeleton_pose(Skeleton p_Skeleton,
+                                     SkeletalAnimation p_Animation,
+                                     float p_Timestamp)
+    {
+      uint32_t l_PoseIndex = g_PoseBoneIndex;
+      g_PoseBoneIndex += p_Skeleton.get_bone_count();
+
+      PoseCalculation l_Calculation;
+      l_Calculation.boneBufferStart = l_PoseIndex;
+      l_Calculation.animation = p_Animation;
+      l_Calculation.skeleton = p_Skeleton;
+      l_Calculation.timestamp = p_Timestamp;
+
+      g_PendingPoseCalculations.push_back(l_Calculation);
+
+      return l_PoseIndex;
+    }
+
+    uint32_t register_skinning_operation(Mesh p_Mesh, Skeleton p_Skeleton,
+                                         uint32_t p_PoseIndex,
+                                         Math::Matrix4x4 &p_Transformation)
+    {
+      SkinningOperation l_Operation;
+      l_Operation.mesh = p_Mesh;
+      l_Operation.skeleton = p_Skeleton;
+      l_Operation.poseBoneIndex = p_PoseIndex;
+      l_Operation.skinningBufferStart =
+          g_SkinningBuffer.reserve(p_Mesh.get_vertex_count());
+
+      LOW_ASSERT_WARN(p_Transformation == glm::mat4(1.0f), "REG");
+      l_Operation.transformation = p_Transformation;
+
+      g_PendingSkinningOperations.push_back(l_Operation);
+
+      return l_Operation.skinningBufferStart;
+    }
+
     void initialize()
     {
       g_ConfigPath = Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
@@ -737,28 +825,94 @@ namespace Low {
                                DynamicBufferType::INDEX, sizeof(uint32_t),
                                256000u);
 
-      g_BoneInfluenceBuffer.initialize(N(BoneBuffer), g_Context,
-                                       DynamicBufferType::MISC,
-                                       sizeof(BoneInfluence), 2000u);
+      g_SkinningBuffer.initialize(N(SkinningBuffer), g_Context,
+                                  DynamicBufferType::VERTEX,
+                                  sizeof(Util::Resource::Vertex), 20000u);
+
       g_VertexWeightBuffer.initialize(
           N(VertexWeightBuffer), g_Context, DynamicBufferType::MISC,
           sizeof(Util::Resource::BoneVertexWeight), 20000u);
 
-      g_SkeletalAnimationBuffer.initialize(
-          N(SkeletalAnimationBuffer), g_Context, DynamicBufferType::MISC,
-          sizeof(SkeletalAnimationBufferInfo), 128u);
-      g_SkeletalAnimationChannelBuffer.initialize(
-          N(SkeletalAnimationChannelBuffer), g_Context, DynamicBufferType::MISC,
-          sizeof(SkeletalAnimationChannel), 1000u);
-      g_SkeletalAnimationPositionBuffer.initialize(
-          N(SkeletalAnimationPositionBuffer), g_Context,
-          DynamicBufferType::MISC, sizeof(SkeletalAnimationVector3Key), 5000u);
-      g_SkeletalAnimationRotationBuffer.initialize(
-          N(SkeletalAnimationRotationBuffer), g_Context,
-          DynamicBufferType::MISC, sizeof(SkeletalAnimationVector3Key), 5000u);
-      g_SkeletalAnimationScaleBuffer.initialize(
-          N(SkeletalAnimationScaleBuffer), g_Context, DynamicBufferType::MISC,
-          sizeof(SkeletalAnimationVector4Key), 5000u);
+      {
+        Backend::BufferCreateParams l_Params;
+        l_Params.context = &g_Context.get_context();
+        l_Params.bufferSize = sizeof(PoseBone) * LOW_RENDERER_MAX_POSE_BONES;
+        l_Params.data = nullptr;
+        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+        g_PoseBuffer = Resource::Buffer::make(N(PoseBuffer), l_Params);
+      }
+
+      {
+        Interface::PipelineComputeCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.shaderPath = "skinning.comp";
+
+        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_VertexBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+
+          l_ResourceDescriptions.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_VertexWeightBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+
+          l_ResourceDescriptions.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_PoseBoneBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+
+          l_ResourceDescriptions.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_SkinningBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+
+          l_ResourceDescriptions.push_back(l_Resource);
+        }
+
+        Interface::PipelineResourceSignature l_Signature =
+            Interface::PipelineResourceSignature::make(
+                N(SkinningSignature), g_Context, 1, l_ResourceDescriptions);
+
+        l_Signature.set_buffer_resource(N(u_VertexBuffer), 0,
+                                        g_VertexBuffer.m_Buffer);
+        l_Signature.set_buffer_resource(N(u_VertexWeightBuffer), 0,
+                                        g_VertexWeightBuffer.m_Buffer);
+        l_Signature.set_buffer_resource(N(u_PoseBoneBuffer), 0, g_PoseBuffer);
+        l_Signature.set_buffer_resource(N(u_SkinningBuffer), 0,
+                                        g_SkinningBuffer.m_Buffer);
+
+        g_SkinningSignature = l_Signature;
+
+        l_Params.signatures = {g_Context.get_global_signature(), l_Signature};
+
+        {
+          Backend::PipelineConstantCreateParams l_Constant;
+          l_Constant.name = N(inputInfo);
+          // l_Constant.size = (sizeof(uint32_t) * 7) + (16 * 6);
+          l_Constant.size = sizeof(SkinningCalculationInput);
+          l_Params.constants.push_back(l_Constant);
+        }
+
+        g_SkinningPipeline =
+            Interface::ComputePipeline::make(N(SkinningPipeline), l_Params);
+      }
 
       initialize_global_resources();
 
@@ -823,6 +977,218 @@ namespace Low {
         g_Context.update_dimensions();
         return;
       }
+
+      g_PoseBoneIndex = 0;
+      g_SkinningBuffer.clear();
+      g_PendingPoseCalculations.clear();
+      g_PendingSkinningOperations.clear();
+    }
+
+    static float calculate_interpolation_scale_factor(float t0, float t1,
+                                                      float t)
+    {
+      float scaleFactor = 0.0f;
+      float midWayLength = t - t0;
+      float framesDiff = t1 - t0;
+      scaleFactor = midWayLength / framesDiff;
+      return scaleFactor;
+    }
+
+    static Math::Matrix4x4
+    interpolate_bone_position(PoseCalculation &p_Calculation,
+                              Util::Resource::AnimationChannel &p_Channel)
+    {
+      if (p_Channel.positions.size() == 1) {
+        return glm::translate(glm::mat4(1.0), p_Channel.positions[0].value);
+      }
+
+      uint32_t l_Index0 = 0;
+      uint32_t l_Index1 = 0;
+      bool l_Found = false;
+      for (; l_Index0 < p_Channel.positions.size() - 1; ++l_Index0) {
+        if (p_Calculation.timestamp <
+            p_Channel.positions[l_Index0 + 1].timestamp) {
+          l_Index1 = l_Index0 + 1;
+          l_Found = true;
+          break;
+        }
+      }
+
+      _LOW_ASSERT(l_Found);
+
+      float l_ScaleFactor = calculate_interpolation_scale_factor(
+          p_Channel.positions[l_Index0].timestamp,
+          p_Channel.positions[l_Index1].timestamp, p_Calculation.timestamp);
+
+      Math::Vector3 l_Position =
+          glm::mix(p_Channel.positions[l_Index0].value,
+                   p_Channel.positions[l_Index1].value, l_ScaleFactor);
+
+      return glm::translate(glm::mat4(1.0f), l_Position);
+    }
+
+    static Math::Matrix4x4
+    interpolate_bone_rotation(PoseCalculation &p_Calculation,
+                              Util::Resource::AnimationChannel &p_Channel)
+    {
+      if (p_Channel.rotations.size() == 1) {
+        glm::quat l_Quat0;
+        l_Quat0.x = p_Channel.rotations[0].value.x;
+        l_Quat0.y = p_Channel.rotations[0].value.y;
+        l_Quat0.z = p_Channel.rotations[0].value.z;
+        l_Quat0.w = p_Channel.rotations[0].value.w;
+        l_Quat0 = glm::normalize(l_Quat0);
+        return glm::toMat4(l_Quat0);
+      }
+
+      uint32_t l_Index0 = 0;
+      uint32_t l_Index1 = 0;
+      bool l_Found = false;
+      for (; l_Index0 < p_Channel.rotations.size() - 1; ++l_Index0) {
+        if (p_Calculation.timestamp <
+            p_Channel.rotations[l_Index0 + 1].timestamp) {
+          l_Index1 = l_Index0 + 1;
+          l_Found = true;
+          break;
+        }
+      }
+
+      _LOW_ASSERT(l_Found);
+
+      float l_ScaleFactor = calculate_interpolation_scale_factor(
+          p_Channel.rotations[l_Index0].timestamp,
+          p_Channel.rotations[l_Index1].timestamp, p_Calculation.timestamp);
+
+      glm::quat l_Quat0;
+      l_Quat0.x = p_Channel.rotations[l_Index0].value.x;
+      l_Quat0.y = p_Channel.rotations[l_Index0].value.y;
+      l_Quat0.z = p_Channel.rotations[l_Index0].value.z;
+      l_Quat0.w = p_Channel.rotations[l_Index0].value.w;
+      l_Quat0 = glm::normalize(l_Quat0);
+
+      glm::quat l_Quat1;
+      l_Quat1.x = p_Channel.rotations[l_Index1].value.x;
+      l_Quat1.y = p_Channel.rotations[l_Index1].value.y;
+      l_Quat1.z = p_Channel.rotations[l_Index1].value.z;
+      l_Quat1.w = p_Channel.rotations[l_Index1].value.w;
+      l_Quat1 = glm::normalize(l_Quat1);
+
+      glm::quat l_Rotation =
+          glm::normalize(glm::slerp(l_Quat0, l_Quat1, l_ScaleFactor));
+
+      return glm::toMat4(l_Rotation);
+    }
+
+    static Math::Matrix4x4
+    interpolate_bone_scale(PoseCalculation &p_Calculation,
+                           Util::Resource::AnimationChannel &p_Channel)
+    {
+      if (p_Channel.scales.size() == 1) {
+        return glm::scale(glm::mat4(1.0), p_Channel.scales[0].value);
+      }
+
+      uint32_t l_Index0 = 0;
+      uint32_t l_Index1 = 0;
+      bool l_Found = false;
+      for (; l_Index0 < p_Channel.scales.size() - 1; ++l_Index0) {
+        if (p_Calculation.timestamp <
+            p_Channel.scales[l_Index0 + 1].timestamp) {
+          l_Index1 = l_Index0 + 1;
+          l_Found = true;
+          break;
+        }
+      }
+
+      _LOW_ASSERT(l_Found);
+
+      float l_ScaleFactor = calculate_interpolation_scale_factor(
+          p_Channel.scales[l_Index0].timestamp,
+          p_Channel.scales[l_Index1].timestamp, p_Calculation.timestamp);
+
+      Math::Vector3 l_Scale =
+          glm::mix(p_Channel.scales[l_Index0].value,
+                   p_Channel.scales[l_Index1].value, l_ScaleFactor);
+
+      return glm::scale(glm::mat4(1.0f), l_Scale);
+    }
+
+    static void do_bone_calculation(PoseCalculation &p_Calculation,
+                                    Bone &p_Bone, Math::Matrix4x4 &p_Transform)
+    {
+      bool l_FoundChannel = false;
+      Math::Matrix4x4 l_GlobalTransform(1.0f);
+
+      // LOW_LOG_DEBUG << p_Bone.name << " - " << p_Bone.index << LOW_LOG_END;
+      for (Util::Resource::AnimationChannel &i_Channel :
+           p_Calculation.animation.get_channels()) {
+        if (i_Channel.boneName == p_Bone.name) {
+          g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].name =
+              p_Bone.name.m_Index;
+
+          Math::Matrix4x4 i_NodeTransform =
+              interpolate_bone_position(p_Calculation, i_Channel) *
+              interpolate_bone_rotation(p_Calculation, i_Channel) *
+              interpolate_bone_scale(p_Calculation, i_Channel);
+
+          l_GlobalTransform = p_Transform * i_NodeTransform;
+
+          g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].transform =
+              l_GlobalTransform * p_Bone.offset;
+
+          l_FoundChannel = true;
+          break;
+        }
+      }
+
+      if (!l_FoundChannel) {
+        g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].name =
+            p_Bone.name.m_Index;
+        l_GlobalTransform = p_Transform * p_Bone.localTransformation;
+        g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].transform =
+            l_GlobalTransform;
+      }
+
+      for (uint32_t i = 0u; i < p_Bone.children.size(); ++i) {
+        do_bone_calculation(p_Calculation, p_Bone.children[i],
+                            l_GlobalTransform);
+      }
+    }
+
+    static void calculate_bone_matrices(PoseCalculation &p_Calculation)
+    {
+      Math::Matrix4x4 l_Transformation(1.0f);
+      do_bone_calculation(p_Calculation, p_Calculation.skeleton.get_root_bone(),
+                          l_Transformation);
+      // LOW_ASSERT(false, "Test");
+    }
+
+    static void do_skinning()
+    {
+      static Util::Name l_ConstantName = N(inputInfo);
+
+      g_SkinningSignature.commit();
+
+      g_SkinningPipeline.bind();
+      for (uint32_t i = 0u; i < g_PendingSkinningOperations.size(); ++i) {
+        SkinningOperation &i_Operation = g_PendingSkinningOperations[i];
+
+        SkinningCalculationInput i_Input;
+        i_Input.skinningBufferStart = i_Operation.skinningBufferStart;
+        i_Input.poseBoneStart = i_Operation.poseBoneIndex;
+        i_Input.postBoneCount = i_Operation.skeleton.get_bone_count();
+        i_Input.vertexStart = i_Operation.mesh.get_vertex_buffer_start();
+        i_Input.vertexCount = i_Operation.mesh.get_vertex_count();
+        i_Input.vertexWeightBufferStart =
+            i_Operation.mesh.get_vertexweight_buffer_start();
+        i_Input.vertexWeightCount = i_Operation.mesh.get_vertexweight_count();
+        i_Input.transformation = i_Operation.transformation;
+
+        g_SkinningPipeline.set_constant(l_ConstantName, &i_Input);
+
+        Backend::callbacks().compute_dispatch(
+            g_Context.get_context(),
+            {(i_Operation.mesh.get_vertex_count() / 256) + 1, 1, 1});
+      }
     }
 
     void late_tick(float p_Delta)
@@ -833,10 +1199,29 @@ namespace Low {
         return;
       }
 
+      static int x = 0;
+      x += 1;
+
       g_VertexBuffer.bind();
       g_IndexBuffer.bind();
 
       g_Context.get_global_signature().commit();
+
+      for (uint32_t i = 0u; i < g_PendingPoseCalculations.size(); ++i) {
+        calculate_bone_matrices(g_PendingPoseCalculations[i]);
+      }
+
+      g_PoseBuffer.set(g_PoseBones);
+
+      /*
+      if (x == 100) {
+        LOW_LOG_INFO << "Skinning" << LOW_LOG_END;
+      }
+      if (x >= 100) {
+        do_skinning();
+      }
+      */
+      do_skinning();
 
       g_MainRenderFlow.execute();
 
@@ -896,6 +1281,7 @@ namespace Low {
       MaterialType::cleanup();
       Texture2D::cleanup();
       Mesh::cleanup();
+      Skeleton::cleanup();
     }
 
     static void cleanup_resource_types()
@@ -945,6 +1331,15 @@ namespace Low {
       l_Material.set_material_type(p_Type);
 
       return l_Material;
+    }
+
+    Resource::Buffer get_vertex_buffer()
+    {
+      return g_VertexBuffer.m_Buffer;
+    }
+    Resource::Buffer get_skinning_buffer()
+    {
+      return g_SkinningBuffer.m_Buffer;
     }
   } // namespace Renderer
 } // namespace Low

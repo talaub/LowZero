@@ -17,6 +17,7 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     struct Submesh
     {
+      Util::Name name;
       Math::Matrix4x4 transformation;
       Renderer::Mesh mesh;
     };
@@ -27,6 +28,7 @@ namespace Low {
       Util::String path;
       Util::List<Submesh> submeshes;
       uint32_t reference_count;
+      Renderer::Skeleton skeleton;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -104,6 +106,8 @@ namespace Low {
 
       Util::List<Submesh> &get_submeshes() const;
 
+      Renderer::Skeleton get_skeleton() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -119,6 +123,7 @@ namespace Low {
       void set_path(Util::String &p_Value);
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
+      void set_skeleton(Renderer::Skeleton p_Value);
       void _unload();
     };
   } // namespace Core

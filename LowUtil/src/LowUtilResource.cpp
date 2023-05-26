@@ -20,6 +20,14 @@
 namespace Low {
   namespace Util {
     namespace Resource {
+      inline static Math::Matrix4x4 Assimp2Glm(const aiMatrix4x4 &from)
+      {
+        return Math::Matrix4x4(
+            (double)from.a1, (double)from.b1, (double)from.c1, (double)from.d1,
+            (double)from.a2, (double)from.b2, (double)from.c2, (double)from.d2,
+            (double)from.a3, (double)from.b3, (double)from.c3, (double)from.d3,
+            (double)from.a4, (double)from.b4, (double)from.c4, (double)from.d4);
+      }
 
       void load_image2d(String p_FilePath, Image2D &p_Image)
       {
@@ -45,7 +53,8 @@ namespace Low {
         }
       }
 
-      static void parse_mesh(const aiMesh *p_AiMesh, MeshInfo &p_MeshInfo)
+      static void parse_mesh(const aiMesh *p_AiMesh, MeshInfo &p_MeshInfo,
+                             Mesh &p_Mesh)
       {
 
         LOW_ASSERT(p_AiMesh->HasPositions(),
@@ -84,19 +93,32 @@ namespace Low {
         }
 
         if (p_AiMesh->HasBones()) {
-          p_MeshInfo.bones.resize(p_AiMesh->mNumBones);
-
           for (uint32_t i = 0u; i < p_AiMesh->mNumBones; ++i) {
-            p_MeshInfo.bones[i].weights.resize(
-                p_AiMesh->mBones[i]->mNumWeights);
-            p_MeshInfo.bones[i].name =
-                LOW_NAME(p_AiMesh->mBones[i]->mName.C_Str());
+            uint32_t i_BoneIndex = 0;
 
-            for (uint32_t j = 0u; j < p_AiMesh->mBones[i]->mNumWeights; ++j) {
-              p_MeshInfo.bones[i].weights[j].vertexIndex =
-                  p_AiMesh->mBones[i]->mWeights[j].mVertexId;
-              p_MeshInfo.bones[i].weights[j].weight =
-                  p_AiMesh->mBones[i]->mWeights[j].mWeight;
+            Name i_BoneName = LOW_NAME(p_AiMesh->mBones[i]->mName.C_Str());
+
+            if (p_Mesh.bones.find(i_BoneName) == p_Mesh.bones.end()) {
+              Bone i_Bone;
+              i_Bone.index = p_Mesh.boneCount;
+              i_Bone.offset = Assimp2Glm(p_AiMesh->mBones[i]->mOffsetMatrix);
+              p_Mesh.bones[i_BoneName] = i_Bone;
+
+              p_Mesh.boneCount++;
+            }
+
+            i_BoneIndex = p_Mesh.bones[i_BoneName].index;
+
+            auto i_Weights = p_AiMesh->mBones[i]->mWeights;
+            uint32_t i_WeightCount = p_AiMesh->mBones[i]->mNumWeights;
+
+            for (uint32_t j = 0u; j < i_WeightCount; ++j) {
+              BoneVertexWeight i_Weight;
+              i_Weight.boneIndex = i_BoneIndex;
+              i_Weight.weight = i_Weights[j].mWeight;
+              i_Weight.vertexIndex = i_Weights[j].mVertexId;
+
+              p_MeshInfo.boneInfluences.push_back(i_Weight);
             }
           }
         }
@@ -104,28 +126,42 @@ namespace Low {
 
       static void parse_submesh(const aiScene *p_AiScene,
                                 const aiNode *p_AiNode, Mesh &p_Mesh,
-                                Math::Matrix4x4 &p_Transformation)
+                                Math::Matrix4x4 &p_Transformation, Node &p_Node)
       {
         aiMatrix4x4 l_TransformationMatrix = p_AiNode->mTransformation;
 
         Submesh l_Submesh;
+        l_Submesh.name = LOW_NAME(p_AiNode->mName.C_Str());
 
-        l_Submesh.transform = *(Math::Matrix4x4 *)&l_TransformationMatrix;
+        l_Submesh.parentTransform = p_Transformation;
+        l_Submesh.localTransform = Assimp2Glm(l_TransformationMatrix);
 
-        l_Submesh.transform = p_Transformation * l_Submesh.transform;
+        l_Submesh.transform = p_Transformation * l_Submesh.localTransform;
 
         l_Submesh.meshInfos.resize(p_AiNode->mNumMeshes);
 
         for (uint32_t i = 0; i < l_Submesh.meshInfos.size(); ++i) {
           parse_mesh(p_AiScene->mMeshes[p_AiNode->mMeshes[i]],
-                     l_Submesh.meshInfos[i]);
+                     l_Submesh.meshInfos[i], p_Mesh);
         }
 
+        if (p_Mesh.bones.find(l_Submesh.name) == p_Mesh.bones.end()) {
+          Bone i_Bone;
+          i_Bone.index = p_Mesh.boneCount;
+          i_Bone.offset = l_Submesh.localTransform;
+          p_Mesh.bones[l_Submesh.name] = i_Bone;
+
+          p_Mesh.boneCount++;
+        }
+
+        p_Node.index = p_Mesh.submeshes.size();
         p_Mesh.submeshes.push_back(l_Submesh);
+
+        p_Node.children.resize(p_AiNode->mNumChildren);
 
         for (uint32_t i = 0; i < p_AiNode->mNumChildren; ++i) {
           parse_submesh(p_AiScene, p_AiNode->mChildren[i], p_Mesh,
-                        l_Submesh.transform);
+                        l_Submesh.transform, p_Node.children[i]);
         }
       }
 
@@ -145,20 +181,35 @@ namespace Low {
 
         for (uint32_t i = 0u; i < l_LargestCount; ++i) {
           if (i < p_NodeAnim->mNumPositionKeys) {
-            p_Channel.positions[i].value =
-                *(Math::Vector3 *)&(p_NodeAnim->mPositionKeys[i].mValue);
+            p_Channel.positions[i].value.x =
+                p_NodeAnim->mPositionKeys[i].mValue.x;
+            p_Channel.positions[i].value.y =
+                p_NodeAnim->mPositionKeys[i].mValue.y;
+            p_Channel.positions[i].value.z =
+                p_NodeAnim->mPositionKeys[i].mValue.z;
+
             p_Channel.positions[i].timestamp =
                 p_NodeAnim->mPositionKeys[i].mTime;
           }
           if (i < p_NodeAnim->mNumRotationKeys) {
-            p_Channel.rotations[i].value =
-                *(Math::Vector4 *)&(p_NodeAnim->mRotationKeys[i].mValue);
+            p_Channel.rotations[i].value.x =
+                p_NodeAnim->mRotationKeys[i].mValue.x;
+            p_Channel.rotations[i].value.y =
+                p_NodeAnim->mRotationKeys[i].mValue.y;
+            p_Channel.rotations[i].value.z =
+                p_NodeAnim->mRotationKeys[i].mValue.z;
+            p_Channel.rotations[i].value.w =
+                p_NodeAnim->mRotationKeys[i].mValue.w;
+
             p_Channel.rotations[i].timestamp =
                 p_NodeAnim->mRotationKeys[i].mTime;
           }
           if (i < p_NodeAnim->mNumScalingKeys) {
-            p_Channel.scales[i].value =
-                *(Math::Vector3 *)&(p_NodeAnim->mScalingKeys[i].mValue);
+
+            p_Channel.scales[i].value.x = p_NodeAnim->mScalingKeys[i].mValue.x;
+            p_Channel.scales[i].value.y = p_NodeAnim->mScalingKeys[i].mValue.y;
+            p_Channel.scales[i].value.z = p_NodeAnim->mScalingKeys[i].mValue.z;
+
             p_Channel.scales[i].timestamp = p_NodeAnim->mScalingKeys[i].mTime;
           }
         }
@@ -169,9 +220,8 @@ namespace Low {
       {
         p_Animation.name = LOW_NAME(p_AiAnimation->mName.C_Str());
         p_Animation.duration = p_AiAnimation->mDuration;
+        p_Animation.ticksPerSecond = p_AiAnimation->mTicksPerSecond;
         p_Animation.channels.resize(p_AiAnimation->mNumChannels);
-
-        LOW_LOG_INFO << p_Animation.duration << LOW_LOG_END;
 
         for (uint32_t i = 0u; i < p_AiAnimation->mNumChannels; ++i) {
           parse_animation_channel(p_AiAnimation->mChannels[i],
@@ -201,9 +251,12 @@ namespace Low {
 
         const aiNode *l_RootNode = l_AiScene->mRootNode;
 
+        p_Mesh.boneCount = 0;
+
         Math::Matrix4x4 l_Transformation = Math::Matrix4x4(1.0);
 
-        parse_submesh(l_AiScene, l_RootNode, p_Mesh, l_Transformation);
+        parse_submesh(l_AiScene, l_RootNode, p_Mesh, l_Transformation,
+                      p_Mesh.rootNode);
 
         if (l_AiScene->HasAnimations()) {
           parse_animations(l_AiScene, p_Mesh);

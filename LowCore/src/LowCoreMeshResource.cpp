@@ -49,6 +49,8 @@ namespace Low {
           Util::String();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, submeshes,
                               Util::List<Submesh>)) Util::List<Submesh>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, skeleton,
+                              Renderer::Skeleton)) Renderer::Skeleton();
       ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -146,6 +148,21 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(skeleton);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshResourceData, skeleton);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Renderer::Skeleton::TYPE_ID;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, skeleton,
+                                            Renderer::Skeleton);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -288,6 +305,25 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
+    Renderer::Skeleton MeshResource::get_skeleton() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton);
+    }
+    void MeshResource::set_skeleton(Renderer::Skeleton p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skeleton
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skeleton
+
+      // Set new value
+      TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skeleton
+      // LOW_CODEGEN::END::CUSTOM:SETTER_skeleton
+    }
+
     Low::Util::Name MeshResource::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -356,12 +392,17 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Mesh.submeshes.size(); ++i) {
         for (uint32_t j = 0u; j < l_Mesh.submeshes[i].meshInfos.size(); ++j) {
           Submesh i_Submesh;
+          i_Submesh.name = l_Mesh.submeshes[i].name;
           i_Submesh.transformation = l_Mesh.submeshes[i].transform;
           i_Submesh.mesh = Renderer::upload_mesh(
               N(Submesh), l_Mesh.submeshes[i].meshInfos[j]);
 
           get_submeshes().push_back(i_Submesh);
         }
+      }
+
+      if (!l_Mesh.animations.empty()) {
+        set_skeleton(Renderer::upload_skeleton(N(Skeleton), l_Mesh));
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
     }
@@ -392,6 +433,10 @@ namespace Low {
       }
 
       get_submeshes().clear();
+
+      if (get_skeleton().is_alive()) {
+        Renderer::unload_skeleton(get_skeleton());
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 
@@ -452,6 +497,12 @@ namespace Low {
                &ms_Buffer[offsetof(MeshResourceData, reference_count) *
                           (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, skeleton) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, skeleton) * (l_Capacity)],
+               l_Capacity * sizeof(Renderer::Skeleton));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshResourceData, name) *

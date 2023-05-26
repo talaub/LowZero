@@ -10,15 +10,20 @@
 #include "LowCoreTaskScheduler.h"
 
 #include "LowRenderer.h"
+#include <cmath>
+#include <stdint.h>
 
 namespace Low {
   namespace Core {
     namespace System {
       namespace MeshRenderer {
+        float g_Progress = 0.0f;
         static void render_submesh(Submesh &p_Submesh,
                                    Math::Matrix4x4 &p_TransformMatrix,
                                    Renderer::Material p_Material,
-                                   uint32_t p_EntityIndex)
+                                   uint32_t p_EntityIndex,
+                                   bool p_UseSkinningBuffer,
+                                   uint32_t p_VertexBufferStartOverride)
         {
           Renderer::RenderObject i_RenderObject;
           i_RenderObject.entity_id = p_EntityIndex;
@@ -26,19 +31,51 @@ namespace Low {
           i_RenderObject.material = p_Material;
           i_RenderObject.transform =
               p_TransformMatrix * p_Submesh.transformation;
+          if (p_UseSkinningBuffer) {
+            i_RenderObject.transform = p_TransformMatrix;
+          }
+          i_RenderObject.useSkinningBuffer = p_UseSkinningBuffer;
+          i_RenderObject.vertexBufferStartOverride =
+              p_VertexBufferStartOverride;
 
           Renderer::get_main_renderflow().register_renderobject(i_RenderObject);
         }
 
-        static void render_mesh(MeshResource p_MeshResource,
+        static void render_mesh(float p_Delta, MeshResource p_MeshResource,
                                 Math::Matrix4x4 &p_TransformMatrix,
                                 Renderer::Material p_Material,
                                 uint32_t p_EntityIndex)
         {
+          bool l_UsesSkeletalAnimation = false;
+          uint32_t l_PoseIndex = 0;
+
+          Renderer::SkeletalAnimation l_Animation =
+              Renderer::SkeletalAnimation::find_by_name(N(04_Idle));
+
+          if (p_MeshResource.get_skeleton().is_alive()) {
+            g_Progress += l_Animation.get_ticks_per_second() * p_Delta;
+            g_Progress = fmod(g_Progress, l_Animation.get_duration());
+
+            // LOW_LOG_DEBUG << g_Progress << LOW_LOG_END;
+            l_UsesSkeletalAnimation = true;
+            l_PoseIndex = Renderer::calculate_skeleton_pose(
+                p_MeshResource.get_skeleton(), l_Animation, g_Progress);
+          }
+
           for (uint32_t i = 0u; i < p_MeshResource.get_submeshes().size();
                ++i) {
+            uint32_t i_VertexBufferStartOverride = 0;
+            if (l_UsesSkeletalAnimation) {
+              i_VertexBufferStartOverride =
+                  Renderer::register_skinning_operation(
+                      p_MeshResource.get_submeshes()[i].mesh,
+                      p_MeshResource.get_skeleton(), l_PoseIndex,
+                      p_MeshResource.get_submeshes()[i].transformation);
+            }
+
             render_submesh(p_MeshResource.get_submeshes()[i], p_TransformMatrix,
-                           p_Material, p_EntityIndex);
+                           p_Material, p_EntityIndex, l_UsesSkeletalAnimation,
+                           i_VertexBufferStartOverride);
           }
         }
 
@@ -70,9 +107,12 @@ namespace Low {
                 glm::toMat4(i_Transform.get_world_rotation()) *
                 glm::scale(glm::mat4(1.0f), i_Transform.get_world_scale());
 
-            render_mesh(i_MeshRenderer.get_mesh().get_lod0(), i_TransformMatrix,
+            render_mesh(p_Delta, i_MeshRenderer.get_mesh().get_lod0(),
+                        i_TransformMatrix,
                         i_MeshRenderer.get_material().get_renderer_material(),
                         i_MeshRenderer.get_entity().get_index());
+
+            // LOW_LOG_INFO << "------------" << LOW_LOG_END;
           }
         }
       } // namespace MeshRenderer

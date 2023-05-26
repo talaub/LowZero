@@ -8,6 +8,8 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowRenderer.h"
+
 namespace Low {
   namespace Renderer {
     const uint16_t GraphicsStep::TYPE_ID = 13;
@@ -770,6 +772,7 @@ namespace Low {
 
         for (auto it = p_Step.get_renderobjects()[pit->get_name()].begin();
              it != p_Step.get_renderobjects()[pit->get_name()].end(); ++it) {
+
           Backend::DrawIndexedParams i_Params;
           i_Params.context = &p_Step.get_context().get_context();
           i_Params.firstIndex = it->first.get_index_buffer_start();
@@ -777,6 +780,13 @@ namespace Low {
           i_Params.instanceCount = it->second.size();
           i_Params.vertexOffset = it->first.get_vertex_buffer_start();
           i_Params.firstInstance = l_InstanceId;
+
+          if (it->second[0].useSkinningBuffer) {
+            Renderer::get_skinning_buffer().bind_vertex();
+            i_Params.vertexOffset = it->second[0].vertexBufferStartOverride;
+          } else {
+            Renderer::get_vertex_buffer().bind_vertex();
+          }
 
           l_InstanceId += it->second.size();
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "LowRendererMesh.h"
+#include "LowRendererSkeleton.h"
+#include "LowRendererSkeletalAnimation.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererTexture2D.h"
 
@@ -18,6 +20,9 @@ namespace Low {
       Math::Color color;
 
       uint64_t entity_id;
+
+      bool useSkinningBuffer = false;
+      uint32_t vertexBufferStartOverride = 0;
     };
   } // namespace Renderer
 } // namespace Low

@@ -7,47 +7,56 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
+#include "LowMath.h"
+#include "LowRendererSkeletalAnimation.h"
+
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct Bone
+    {
+      Util::Name name;
+      uint32_t index;
+      Math::Matrix4x4 localTransformation;
+      Math::Matrix4x4 parentTransformation;
+      Math::Matrix4x4 offset;
+      Util::List<Bone> children;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER_API MeshData
+    struct LOW_RENDERER_API SkeletonData
     {
-      uint32_t vertex_buffer_start;
-      uint32_t vertex_count;
-      uint32_t index_buffer_start;
-      uint32_t index_count;
-      uint32_t vertexweight_buffer_start;
-      uint32_t vertexweight_count;
+      Bone root_bone;
+      uint32_t bone_count;
+      Util::List<SkeletalAnimation> animations;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(MeshData);
+        return sizeof(SkeletonData);
       }
     };
 
-    struct LOW_RENDERER_API Mesh : public Low::Util::Handle
+    struct LOW_RENDERER_API Skeleton : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Mesh> ms_LivingInstances;
+      static Low::Util::List<Skeleton> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Mesh();
-      Mesh(uint64_t p_Id);
-      Mesh(Mesh &p_Copy);
+      Skeleton();
+      Skeleton(uint64_t p_Id);
+      Skeleton(Skeleton &p_Copy);
 
-      static Mesh make(Low::Util::Name p_Name);
+      static Skeleton make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Mesh(const Mesh &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Skeleton(const Skeleton &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -60,12 +69,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Mesh *living_instances()
+      static Skeleton *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static Mesh find_by_index(uint32_t p_Index);
+      static Skeleton find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
 
@@ -73,7 +82,7 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      static Mesh find_by_name(Low::Util::Name p_Name);
+      static Skeleton find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
@@ -81,34 +90,24 @@ namespace Low {
                                            Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        return p_Handle.get_type() == Mesh::TYPE_ID &&
+        return p_Handle.get_type() == Skeleton::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Mesh l_Mesh = p_Handle.get_id();
-        l_Mesh.destroy();
+        Skeleton l_Skeleton = p_Handle.get_id();
+        l_Skeleton.destroy();
       }
 
-      uint32_t get_vertex_buffer_start() const;
-      void set_vertex_buffer_start(uint32_t p_Value);
+      Bone &get_root_bone() const;
+      void set_root_bone(Bone &p_Value);
 
-      uint32_t get_vertex_count() const;
-      void set_vertex_count(uint32_t p_Value);
+      uint32_t get_bone_count() const;
+      void set_bone_count(uint32_t p_Value);
 
-      uint32_t get_index_buffer_start() const;
-      void set_index_buffer_start(uint32_t p_Value);
-
-      uint32_t get_index_count() const;
-      void set_index_count(uint32_t p_Value);
-
-      uint32_t get_vertexweight_buffer_start() const;
-      void set_vertexweight_buffer_start(uint32_t p_Value);
-
-      uint32_t get_vertexweight_count() const;
-      void set_vertexweight_count(uint32_t p_Value);
+      Util::List<SkeletalAnimation> &get_animations() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

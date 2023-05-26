@@ -34,5 +34,20 @@ namespace Low {
 
     LOW_RENDERER_API Texture2D upload_texture(Util::Name p_Name,
                                               Util::Resource::Image2D &p_Image);
+
+    LOW_RENDERER_API Skeleton upload_skeleton(Util::Name p_Name,
+                                              Util::Resource::Mesh &p_Mesh);
+    LOW_RENDERER_API void unload_skeleton(Skeleton p_Skeleton);
+
+    LOW_RENDERER_API uint32_t register_skinning_operation(
+        Mesh p_Mesh, Skeleton p_Skeleton, uint32_t p_PoseIndex,
+        Math::Matrix4x4 &p_Transformation);
+
+    LOW_RENDERER_API uint32_t calculate_skeleton_pose(
+        Skeleton p_Skeleton, SkeletalAnimation p_Animation, float p_Timestamp);
+
+    Resource::Buffer get_vertex_buffer();
+    Resource::Buffer get_skinning_buffer();
+
   } // namespace Renderer
 } // namespace Low

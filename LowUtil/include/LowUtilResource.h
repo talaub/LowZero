@@ -25,18 +25,6 @@ namespace Low {
         Math::Vector3 bitangent;
       };
 
-      struct BoneVertexWeight
-      {
-        uint32_t vertexIndex;
-        float weight;
-      };
-
-      struct Bone
-      {
-        Name name;
-        List<BoneVertexWeight> weights;
-      };
-
       struct AnimationVector3Key
       {
         float timestamp;
@@ -49,6 +37,12 @@ namespace Low {
         Math::Vector4 value;
       };
 
+      struct Bone
+      {
+        uint32_t index;
+        Math::Matrix4x4 offset;
+      };
+
       struct AnimationChannel
       {
         Name boneName;
@@ -57,30 +51,50 @@ namespace Low {
         Util::List<AnimationVector3Key> scales;
       };
 
-      struct Animation
+      struct BoneVertexWeight
       {
-        Name name;
-        float duration;
-        List<AnimationChannel> channels;
+        uint32_t boneIndex;
+        uint32_t vertexIndex;
+        float weight;
       };
 
       struct MeshInfo
       {
         List<Vertex> vertices;
         List<uint32_t> indices;
-        List<Bone> bones;
+        List<BoneVertexWeight> boneInfluences;
       };
 
       struct Submesh
       {
         Math::Matrix4x4 transform;
+        Math::Matrix4x4 parentTransform;
+        Math::Matrix4x4 localTransform;
         List<MeshInfo> meshInfos;
+        Util::Name name;
+      };
+
+      struct Animation
+      {
+        Name name;
+        float duration;
+        float ticksPerSecond;
+        List<AnimationChannel> channels;
+      };
+
+      struct Node
+      {
+        uint32_t index;
+        List<Node> children;
       };
 
       struct Mesh
       {
         List<Submesh> submeshes;
+        Map<Name, Bone> bones;
+        uint32_t boneCount;
         List<Animation> animations;
+        Node rootNode;
       };
 
       LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image);

@@ -904,7 +904,7 @@ namespace Low {
           p_Context.vk.m_StagingBufferUsage = 0u;
           p_Context.vk.m_ReadStagingBufferUsage = 0u;
 
-          uint32_t l_StagingBufferSize = 1 * LOW_MEGABYTE_I;
+          uint32_t l_StagingBufferSize = 2 * LOW_MEGABYTE_I;
           uint32_t l_ReadStagingBufferSize = 1 * LOW_KILOBYTE_I;
 
           p_Context.vk.m_StagingBufferSize = l_StagingBufferSize;

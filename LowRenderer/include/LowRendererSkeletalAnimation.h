@@ -7,6 +7,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
+#include "LowUtilResource.h"
+
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -17,15 +19,9 @@ namespace Low {
 
     struct LOW_RENDERER_API SkeletalAnimationData
     {
-      uint32_t skeletal_animation_start;
-      uint32_t channel_start;
-      uint32_t channel_count;
-      uint32_t position_key_start;
-      uint32_t position_key_count;
-      uint32_t rotation_key_start;
-      uint32_t rotation_key_count;
-      uint32_t scale_key_start;
-      uint32_t scale_key_count;
+      float duration;
+      float ticks_per_second;
+      Util::List<Util::Resource::AnimationChannel> channels;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -96,32 +92,13 @@ namespace Low {
         l_SkeletalAnimation.destroy();
       }
 
-      uint32_t get_skeletal_animation_start() const;
-      void set_skeletal_animation_start(uint32_t p_Value);
+      float get_duration() const;
+      void set_duration(float p_Value);
 
-      uint32_t get_channel_start() const;
-      void set_channel_start(uint32_t p_Value);
+      float get_ticks_per_second() const;
+      void set_ticks_per_second(float p_Value);
 
-      uint32_t get_channel_count() const;
-      void set_channel_count(uint32_t p_Value);
-
-      uint32_t get_position_key_start() const;
-      void set_position_key_start(uint32_t p_Value);
-
-      uint32_t get_position_key_count() const;
-      void set_position_key_count(uint32_t p_Value);
-
-      uint32_t get_rotation_key_start() const;
-      void set_rotation_key_start(uint32_t p_Value);
-
-      uint32_t get_rotation_key_count() const;
-      void set_rotation_key_count(uint32_t p_Value);
-
-      uint32_t get_scale_key_start() const;
-      void set_scale_key_start(uint32_t p_Value);
-
-      uint32_t get_scale_key_count() const;
-      void set_scale_key_count(uint32_t p_Value);
+      Util::List<Util::Resource::AnimationChannel> &get_channels() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

@@ -43,6 +43,12 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = SkeletalAnimation::TYPE_ID;
 
+      ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, duration, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, ticks_per_second, float) =
+          0.0f;
+      new (&ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, channels,
+                              Util::List<Util::Resource::AnimationChannel>))
+          Util::List<Util::Resource::AnimationChannel>();
       ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -105,164 +111,52 @@ namespace Low {
       l_TypeInfo.component = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(skeletal_animation_start);
+        l_PropertyInfo.name = N(duration);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, skeletal_animation_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.dataOffset = offsetof(SkeletalAnimationData, duration);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            skeletal_animation_start, uint32_t);
+                                            duration, float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_skeletal_animation_start(*(uint32_t *)p_Data);
+          l_Handle.set_duration(*(float *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(channel_start);
+        l_PropertyInfo.name = N(ticks_per_second);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, channel_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+            offsetof(SkeletalAnimationData, ticks_per_second);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            channel_start, uint32_t);
+                                            ticks_per_second, float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_channel_start(*(uint32_t *)p_Data);
+          l_Handle.set_ticks_per_second(*(float *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(channel_count);
+        l_PropertyInfo.name = N(channels);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, channel_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.dataOffset = offsetof(SkeletalAnimationData, channels);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            channel_count, uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, SkeletalAnimation, channels,
+              Util::List<Util::Resource::AnimationChannel>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_channel_count(*(uint32_t *)p_Data);
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(position_key_start);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, position_key_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            position_key_start, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_position_key_start(*(uint32_t *)p_Data);
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(position_key_count);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, position_key_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            position_key_count, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_position_key_count(*(uint32_t *)p_Data);
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(rotation_key_start);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, rotation_key_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            rotation_key_start, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_rotation_key_start(*(uint32_t *)p_Data);
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(rotation_key_count);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, rotation_key_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            rotation_key_count, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_rotation_key_count(*(uint32_t *)p_Data);
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(scale_key_start);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, scale_key_start);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            scale_key_start, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_scale_key_start(*(uint32_t *)p_Data);
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-      }
-      {
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(scale_key_count);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, scale_key_count);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            scale_key_count, uint32_t);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          SkeletalAnimation l_Handle = p_Handle.get_id();
-          l_Handle.set_scale_key_count(*(uint32_t *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -335,15 +229,8 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["skeletal_animation_start"] = get_skeletal_animation_start();
-      p_Node["channel_start"] = get_channel_start();
-      p_Node["channel_count"] = get_channel_count();
-      p_Node["position_key_start"] = get_position_key_start();
-      p_Node["position_key_count"] = get_position_key_count();
-      p_Node["rotation_key_start"] = get_rotation_key_start();
-      p_Node["rotation_key_count"] = get_rotation_key_count();
-      p_Node["scale_key_start"] = get_scale_key_start();
-      p_Node["scale_key_count"] = get_scale_key_count();
+      p_Node["duration"] = get_duration();
+      p_Node["ticks_per_second"] = get_ticks_per_second();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -364,37 +251,13 @@ namespace Low {
       SkeletalAnimation l_Handle =
           SkeletalAnimation::make(N(SkeletalAnimation));
 
-      if (p_Node["skeletal_animation_start"]) {
-        l_Handle.set_skeletal_animation_start(
-            p_Node["skeletal_animation_start"].as<uint32_t>());
+      if (p_Node["duration"]) {
+        l_Handle.set_duration(p_Node["duration"].as<float>());
       }
-      if (p_Node["channel_start"]) {
-        l_Handle.set_channel_start(p_Node["channel_start"].as<uint32_t>());
+      if (p_Node["ticks_per_second"]) {
+        l_Handle.set_ticks_per_second(p_Node["ticks_per_second"].as<float>());
       }
-      if (p_Node["channel_count"]) {
-        l_Handle.set_channel_count(p_Node["channel_count"].as<uint32_t>());
-      }
-      if (p_Node["position_key_start"]) {
-        l_Handle.set_position_key_start(
-            p_Node["position_key_start"].as<uint32_t>());
-      }
-      if (p_Node["position_key_count"]) {
-        l_Handle.set_position_key_count(
-            p_Node["position_key_count"].as<uint32_t>());
-      }
-      if (p_Node["rotation_key_start"]) {
-        l_Handle.set_rotation_key_start(
-            p_Node["rotation_key_start"].as<uint32_t>());
-      }
-      if (p_Node["rotation_key_count"]) {
-        l_Handle.set_rotation_key_count(
-            p_Node["rotation_key_count"].as<uint32_t>());
-      }
-      if (p_Node["scale_key_start"]) {
-        l_Handle.set_scale_key_start(p_Node["scale_key_start"].as<uint32_t>());
-      }
-      if (p_Node["scale_key_count"]) {
-        l_Handle.set_scale_key_count(p_Node["scale_key_count"].as<uint32_t>());
+      if (p_Node["channels"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -406,175 +269,50 @@ namespace Low {
       return l_Handle;
     }
 
-    uint32_t SkeletalAnimation::get_skeletal_animation_start() const
+    float SkeletalAnimation::get_duration() const
     {
       _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, skeletal_animation_start, uint32_t);
+      return TYPE_SOA(SkeletalAnimation, duration, float);
     }
-    void SkeletalAnimation::set_skeletal_animation_start(uint32_t p_Value)
+    void SkeletalAnimation::set_duration(float p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skeletal_animation_start
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_skeletal_animation_start
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_duration
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_duration
 
       // Set new value
-      TYPE_SOA(SkeletalAnimation, skeletal_animation_start, uint32_t) = p_Value;
+      TYPE_SOA(SkeletalAnimation, duration, float) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skeletal_animation_start
-      // LOW_CODEGEN::END::CUSTOM:SETTER_skeletal_animation_start
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_duration
+      // LOW_CODEGEN::END::CUSTOM:SETTER_duration
     }
 
-    uint32_t SkeletalAnimation::get_channel_start() const
+    float SkeletalAnimation::get_ticks_per_second() const
     {
       _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, channel_start, uint32_t);
+      return TYPE_SOA(SkeletalAnimation, ticks_per_second, float);
     }
-    void SkeletalAnimation::set_channel_start(uint32_t p_Value)
+    void SkeletalAnimation::set_ticks_per_second(float p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_channel_start
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_channel_start
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ticks_per_second
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ticks_per_second
 
       // Set new value
-      TYPE_SOA(SkeletalAnimation, channel_start, uint32_t) = p_Value;
+      TYPE_SOA(SkeletalAnimation, ticks_per_second, float) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_channel_start
-      // LOW_CODEGEN::END::CUSTOM:SETTER_channel_start
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ticks_per_second
+      // LOW_CODEGEN::END::CUSTOM:SETTER_ticks_per_second
     }
 
-    uint32_t SkeletalAnimation::get_channel_count() const
+    Util::List<Util::Resource::AnimationChannel> &
+    SkeletalAnimation::get_channels() const
     {
       _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, channel_count, uint32_t);
-    }
-    void SkeletalAnimation::set_channel_count(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_channel_count
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_channel_count
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, channel_count, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_channel_count
-      // LOW_CODEGEN::END::CUSTOM:SETTER_channel_count
-    }
-
-    uint32_t SkeletalAnimation::get_position_key_start() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, position_key_start, uint32_t);
-    }
-    void SkeletalAnimation::set_position_key_start(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position_key_start
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_position_key_start
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, position_key_start, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position_key_start
-      // LOW_CODEGEN::END::CUSTOM:SETTER_position_key_start
-    }
-
-    uint32_t SkeletalAnimation::get_position_key_count() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, position_key_count, uint32_t);
-    }
-    void SkeletalAnimation::set_position_key_count(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position_key_count
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_position_key_count
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, position_key_count, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position_key_count
-      // LOW_CODEGEN::END::CUSTOM:SETTER_position_key_count
-    }
-
-    uint32_t SkeletalAnimation::get_rotation_key_start() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, rotation_key_start, uint32_t);
-    }
-    void SkeletalAnimation::set_rotation_key_start(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation_key_start
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation_key_start
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, rotation_key_start, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation_key_start
-      // LOW_CODEGEN::END::CUSTOM:SETTER_rotation_key_start
-    }
-
-    uint32_t SkeletalAnimation::get_rotation_key_count() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, rotation_key_count, uint32_t);
-    }
-    void SkeletalAnimation::set_rotation_key_count(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation_key_count
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation_key_count
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, rotation_key_count, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation_key_count
-      // LOW_CODEGEN::END::CUSTOM:SETTER_rotation_key_count
-    }
-
-    uint32_t SkeletalAnimation::get_scale_key_start() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, scale_key_start, uint32_t);
-    }
-    void SkeletalAnimation::set_scale_key_start(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale_key_start
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale_key_start
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, scale_key_start, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_key_start
-      // LOW_CODEGEN::END::CUSTOM:SETTER_scale_key_start
-    }
-
-    uint32_t SkeletalAnimation::get_scale_key_count() const
-    {
-      _LOW_ASSERT(is_alive());
-      return TYPE_SOA(SkeletalAnimation, scale_key_count, uint32_t);
-    }
-    void SkeletalAnimation::set_scale_key_count(uint32_t p_Value)
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale_key_count
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale_key_count
-
-      // Set new value
-      TYPE_SOA(SkeletalAnimation, scale_key_count, uint32_t) = p_Value;
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_key_count
-      // LOW_CODEGEN::END::CUSTOM:SETTER_scale_key_count
+      return TYPE_SOA(SkeletalAnimation, channels,
+                      Util::List<Util::Resource::AnimationChannel>);
     }
 
     Low::Util::Name SkeletalAnimation::get_name() const
@@ -631,73 +369,31 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData,
-                                     skeletal_animation_start) *
+        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, duration) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData,
-                                   skeletal_animation_start) *
+               &ms_Buffer[offsetof(SkeletalAnimationData, duration) *
                           (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+               l_Capacity * sizeof(float));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, channel_start) *
+        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, ticks_per_second) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData, channel_start) *
+               &ms_Buffer[offsetof(SkeletalAnimationData, ticks_per_second) *
                           (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+               l_Capacity * sizeof(float));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, channel_count) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData, channel_count) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(SkeletalAnimationData, position_key_start) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(SkeletalAnimationData, position_key_start) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(SkeletalAnimationData, position_key_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(SkeletalAnimationData, position_key_count) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(SkeletalAnimationData, rotation_key_start) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(SkeletalAnimationData, rotation_key_start) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(SkeletalAnimationData, rotation_key_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(SkeletalAnimationData, rotation_key_count) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, scale_key_start) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData, scale_key_start) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, scale_key_count) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData, scale_key_count) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(SkeletalAnimationData, channels) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(
+                                Util::List<Util::Resource::AnimationChannel>))])
+              Util::List<Util::Resource::AnimationChannel>();
+          *i_ValPtr = it->get_channels();
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, name) *
