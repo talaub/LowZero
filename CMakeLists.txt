@@ -48,6 +48,7 @@ SET(FOUND "")
 if (ENGINE_BUILD)
 add_compile_definitions(
   LOW_EDITOR_BUILD
+  IMGUI_DEFINE_MATH_OPERATORS
   LOW_DATA_PATH="./data"
   IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
   LOW_RENDERER_VALIDATION_ENABLED
@@ -55,6 +56,7 @@ add_compile_definitions(
 else()
 add_compile_definitions(
   LOW_EDITOR_BUILD
+  IMGUI_DEFINE_MATH_OPERATORS
   LOW_DATA_PATH="../../../misteda/data"
   IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
   LOW_RENDERER_COMPILE_SHADERS

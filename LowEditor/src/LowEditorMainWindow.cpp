@@ -12,6 +12,7 @@
 #include "LowEditorAssetWidget.h"
 #include "LowEditorSceneWidget.h"
 #include "LowEditorRegionWidget.h"
+#include "LowEditorStateGraphWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
@@ -251,6 +252,7 @@ namespace Low {
       register_editor_widget("Assets", new AssetWidget(), true);
       register_editor_widget("Scene", new SceneWidget(), true);
       register_editor_widget("Regions", new RegionWidget(), true);
+      register_editor_widget("StateGraph", new StateGraphWidget(), true);
     }
 
     void tick(float p_Delta)

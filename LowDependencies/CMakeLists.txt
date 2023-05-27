@@ -27,3 +27,4 @@ target_include_directories(nativefiledialog PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src"
 )
+

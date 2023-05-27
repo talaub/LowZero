@@ -41,3 +41,7 @@
 [submodule "LowDependencies/nativefiledialog"]
 	path = LowDependencies/nativefiledialog
 	url = https://github.com/mlabbe/nativefiledialog.git
+[submodule "LowDependencies/node-editor"]
+	path = LowDependencies/node-editor
+	url = https://github.com/thedmd/imgui-node-editor.git
+	branch = develop

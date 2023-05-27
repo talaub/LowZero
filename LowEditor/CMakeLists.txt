@@ -1,8 +1,17 @@
 project(LowEditor)
 
+set(NODEGRAPH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/node-editor")
+
+SET(NODEGRAPH_SOURCES
+  "${NODEGRAPH_PATH}/crude_json.cpp"
+  "${NODEGRAPH_PATH}/imgui_canvas.cpp"
+  "${NODEGRAPH_PATH}/imgui_node_editor.cpp"
+  "${NODEGRAPH_PATH}/imgui_node_editor_api.cpp"
+)
+
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(LowEditor ${SOURCES})
+add_executable(LowEditor ${NODEGRAPH_SOURCES} ${SOURCES})
 
 add_dependencies(LowEditor
   LowUtil
@@ -14,6 +23,7 @@ add_dependencies(LowEditor
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
+  "${NODEGRAPH_PATH}"
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
