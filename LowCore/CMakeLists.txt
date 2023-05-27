@@ -9,6 +9,7 @@ add_dependencies(LowCore
   LowUtil
   LowMath
   LowRenderer
+  Recast
 )
 
 set(LOWCORE_INCLUDE_DIRS
@@ -34,4 +35,5 @@ target_link_libraries(LowCore PRIVATE
   LowRenderer
   LowUtil
   LowMath
+  Recast
 )

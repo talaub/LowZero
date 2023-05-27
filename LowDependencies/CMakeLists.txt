@@ -28,3 +28,10 @@ target_include_directories(nativefiledialog PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src"
 )
 
+project(RecastNavigation)
+
+add_subdirectory(recastnavigation/DebugUtils)
+add_subdirectory(recastnavigation/Detour)
+add_subdirectory(recastnavigation/DetourCrowd)
+add_subdirectory(recastnavigation/DetourTileCache)
+add_subdirectory(recastnavigation/Recast)

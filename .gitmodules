@@ -45,3 +45,6 @@
 	path = LowDependencies/node-editor
 	url = https://github.com/thedmd/imgui-node-editor.git
 	branch = develop
+[submodule "LowDependencies/recastnavigation"]
+	path = LowDependencies/recastnavigation
+	url = https://github.com/recastnavigation/recastnavigation.git

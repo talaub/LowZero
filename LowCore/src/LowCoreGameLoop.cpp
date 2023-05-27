@@ -7,6 +7,7 @@
 #include "LowCoreMeshRendererSystem.h"
 #include "LowCoreTaskScheduler.h"
 #include "LowCoreTransform.h"
+#include "LowCoreNavmeshSystem.h"
 
 #include <chrono>
 #include <microprofile.h>
@@ -32,6 +33,7 @@ namespace Low {
         System::Transform::tick(p_Delta, get_engine_state());
         System::Light::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
+        System::Navmesh::tick(p_Delta, get_engine_state());
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {
