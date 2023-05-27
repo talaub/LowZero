@@ -61,6 +61,10 @@ namespace Low {
                                Util::Map<Mesh, Util::List<RenderObject>>>)))
           Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>();
       new (&ACCESSOR_TYPE_SOA(
+          l_Handle, GraphicsStep, skinned_renderobjects,
+          SINGLE_ARG(Util::Map<Util::Name, Util::List<RenderObject>>)))
+          Util::Map<Util::Name, Util::List<RenderObject>>();
+      new (&ACCESSOR_TYPE_SOA(
           l_Handle, GraphicsStep, renderpasses,
           SINGLE_ARG(Util::Map<RenderFlow, Interface::Renderpass>)))
           Util::Map<RenderFlow, Interface::Renderpass>();
@@ -188,6 +192,22 @@ namespace Low {
               p_Handle, GraphicsStep, renderobjects,
               SINGLE_ARG(Util::Map<Util::Name,
                                    Util::Map<Mesh, Util::List<RenderObject>>>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(skinned_renderobjects);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepData, skinned_renderobjects);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GraphicsStep, skinned_renderobjects,
+              SINGLE_ARG(Util::Map<Util::Name, Util::List<RenderObject>>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -340,6 +360,8 @@ namespace Low {
       }
       if (p_Node["renderobjects"]) {
       }
+      if (p_Node["skinned_renderobjects"]) {
+      }
       if (p_Node["renderpasses"]) {
       }
       if (p_Node["context"]) {
@@ -403,6 +425,15 @@ namespace Low {
           GraphicsStep, renderobjects,
           SINGLE_ARG(Util::Map<Util::Name,
                                Util::Map<Mesh, Util::List<RenderObject>>>));
+    }
+
+    Util::Map<Util::Name, Util::List<RenderObject>> &
+    GraphicsStep::get_skinned_renderobjects() const
+    {
+      _LOW_ASSERT(is_alive());
+      return TYPE_SOA(
+          GraphicsStep, skinned_renderobjects,
+          SINGLE_ARG(Util::Map<Util::Name, Util::List<RenderObject>>));
     }
 
     Util::Map<RenderFlow, Interface::Renderpass> &
@@ -507,6 +538,7 @@ namespace Low {
                                            p_ProjectionMatrix, p_ViewMatrix);
 
       get_renderobjects().clear();
+      get_skinned_renderobjects().clear();
 
       if (get_context().is_debug_enabled()) {
         LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
@@ -518,15 +550,25 @@ namespace Low {
     void GraphicsStep::register_renderobject(RenderObject &p_RenderObject)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
-
       MaterialType l_MaterialType = p_RenderObject.material.get_material_type();
 
-      for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
-        GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
-        if (i_Config.name == l_MaterialType.get_gbuffer_pipeline().name ||
-            i_Config.name == l_MaterialType.get_depth_pipeline().name) {
-          get_renderobjects()[i_Config.name][p_RenderObject.mesh].push_back(
-              p_RenderObject);
+      if (p_RenderObject.useSkinningBuffer) {
+        for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
+          GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
+          if (i_Config.name == l_MaterialType.get_gbuffer_pipeline().name ||
+              i_Config.name == l_MaterialType.get_depth_pipeline().name) {
+            get_skinned_renderobjects()[i_Config.name].push_back(
+                p_RenderObject);
+          }
+        }
+      } else {
+        for (uint32_t i = 0u; i < get_config().get_pipelines().size(); ++i) {
+          GraphicsPipelineConfig &i_Config = get_config().get_pipelines()[i];
+          if (i_Config.name == l_MaterialType.get_gbuffer_pipeline().name ||
+              i_Config.name == l_MaterialType.get_depth_pipeline().name) {
+            get_renderobjects()[i_Config.name][p_RenderObject.mesh].push_back(
+                p_RenderObject);
+          }
         }
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject
@@ -716,8 +758,29 @@ namespace Low {
 
       for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
            pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {
-        Interface::GraphicsPipeline i_Pipeline = *pit;
-        i_Pipeline.bind();
+
+        for (auto mit =
+                 p_Step.get_skinned_renderobjects()[pit->get_name()].begin();
+             mit != p_Step.get_skinned_renderobjects()[pit->get_name()].end();
+             ++mit) {
+          RenderObject &i_RenderObject = *mit;
+
+          Math::Matrix4x4 l_MVPMatrix =
+              p_ProjectionMatrix * p_ViewMatrix * i_RenderObject.transform;
+
+          l_Colors[l_ObjectIndex] = i_RenderObject.color;
+
+          l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
+          l_ObjectShaderInfos[l_ObjectIndex].model_matrix =
+              i_RenderObject.transform;
+
+          l_ObjectShaderInfos[l_ObjectIndex].material_index =
+              i_RenderObject.material.get_index();
+          l_ObjectShaderInfos[l_ObjectIndex].entity_id =
+              i_RenderObject.entity_id;
+
+          l_ObjectIndex++;
+        }
 
         for (auto mit = p_Step.get_renderobjects()[pit->get_name()].begin();
              mit != p_Step.get_renderobjects()[pit->get_name()].end(); ++mit) {
@@ -770,8 +833,37 @@ namespace Low {
         Interface::GraphicsPipeline i_Pipeline = *pit;
         i_Pipeline.bind();
 
+        bool i_SkinnedBound = false;
+        bool i_VertexBound = false;
+
+        for (auto it =
+                 p_Step.get_skinned_renderobjects()[pit->get_name()].begin();
+             it != p_Step.get_skinned_renderobjects()[pit->get_name()].end();
+             ++it) {
+          if (!i_SkinnedBound) {
+            get_skinning_buffer().bind_vertex();
+            i_SkinnedBound = true;
+          }
+
+          Backend::DrawIndexedParams i_Params;
+          i_Params.context = &p_Step.get_context().get_context();
+          i_Params.firstIndex = it->mesh.get_index_buffer_start();
+          i_Params.indexCount = it->mesh.get_index_count();
+          i_Params.instanceCount = 1;
+          i_Params.vertexOffset = it->vertexBufferStartOverride;
+          i_Params.firstInstance = l_InstanceId;
+
+          l_InstanceId++;
+
+          Backend::callbacks().draw_indexed(i_Params);
+        }
+
         for (auto it = p_Step.get_renderobjects()[pit->get_name()].begin();
              it != p_Step.get_renderobjects()[pit->get_name()].end(); ++it) {
+          if (!i_VertexBound) {
+            get_vertex_buffer().bind_vertex();
+            i_VertexBound = true;
+          }
 
           Backend::DrawIndexedParams i_Params;
           i_Params.context = &p_Step.get_context().get_context();
@@ -780,13 +872,6 @@ namespace Low {
           i_Params.instanceCount = it->second.size();
           i_Params.vertexOffset = it->first.get_vertex_buffer_start();
           i_Params.firstInstance = l_InstanceId;
-
-          if (it->second[0].useSkinningBuffer) {
-            Renderer::get_skinning_buffer().bind_vertex();
-            i_Params.vertexOffset = it->second[0].vertexBufferStartOverride;
-          } else {
-            Renderer::get_vertex_buffer().bind_vertex();
-          }
 
           l_InstanceId += it->second.size();
 
@@ -876,6 +961,19 @@ namespace Low {
               Util::Map<Util::Name,
                         Util::Map<Mesh, Util::List<RenderObject>>>();
           *i_ValPtr = it->get_renderobjects();
+        }
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepData, skinned_renderobjects) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<Util::Name,
+                                             Util::List<RenderObject>>))])
+              Util::Map<Util::Name, Util::List<RenderObject>>();
+          *i_ValPtr = it->get_skinned_renderobjects();
         }
       }
       {

@@ -38,6 +38,7 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> pipelines;
       Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
           renderobjects;
+      Util::Map<Util::Name, Util::List<RenderObject>> skinned_renderobjects;
       Util::Map<RenderFlow, Interface::Renderpass> renderpasses;
       Interface::Context context;
       Util::Map<RenderFlow, Interface::PipelineResourceSignature> signatures;
@@ -123,6 +124,9 @@ namespace Low {
 
       Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>> &
       get_renderobjects() const;
+
+      Util::Map<Util::Name, Util::List<RenderObject>> &
+      get_skinned_renderobjects() const;
 
       Util::Map<RenderFlow, Interface::Renderpass> &get_renderpasses() const;
 

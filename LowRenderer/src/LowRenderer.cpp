@@ -1118,7 +1118,6 @@ namespace Low {
       bool l_FoundChannel = false;
       Math::Matrix4x4 l_GlobalTransform(1.0f);
 
-      // LOW_LOG_DEBUG << p_Bone.name << " - " << p_Bone.index << LOW_LOG_END;
       for (Util::Resource::AnimationChannel &i_Channel :
            p_Calculation.animation.get_channels()) {
         if (i_Channel.boneName == p_Bone.name) {
@@ -1159,7 +1158,6 @@ namespace Low {
       Math::Matrix4x4 l_Transformation(1.0f);
       do_bone_calculation(p_Calculation, p_Calculation.skeleton.get_root_bone(),
                           l_Transformation);
-      // LOW_ASSERT(false, "Test");
     }
 
     static void do_skinning()

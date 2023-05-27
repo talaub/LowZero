@@ -202,8 +202,20 @@ namespace Low {
 
         for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
              pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {
-          Interface::GraphicsPipeline i_Pipeline = *pit;
-          i_Pipeline.bind();
+
+          for (auto mit =
+                   p_Step.get_skinned_renderobjects()[pit->get_name()].begin();
+               mit != p_Step.get_skinned_renderobjects()[pit->get_name()].end();
+               ++mit) {
+            RenderObject &i_RenderObject = *mit;
+
+            Math::Matrix4x4 l_MVPMatrix =
+                l_ProjectionMatrix * l_ViewMatrix * i_RenderObject.transform;
+
+            l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
+
+            l_ObjectIndex++;
+          }
 
           for (auto mit = p_Step.get_renderobjects()[pit->get_name()].begin();
                mit != p_Step.get_renderobjects()[pit->get_name()].end();
