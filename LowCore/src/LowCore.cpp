@@ -32,6 +32,8 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 namespace Low {
   namespace Core {
+    Util::EngineState g_CurrentEngineState;
+
     static void initialize_asset_types()
     {
       MeshAsset::initialize();
@@ -164,6 +166,8 @@ namespace Low {
 
     void initialize()
     {
+      g_CurrentEngineState = Util::EngineState::EDITING;
+
       initialize_types();
 
       DebugGeometry::initialize();
@@ -212,6 +216,21 @@ namespace Low {
     void cleanup()
     {
       cleanup_types();
+    }
+
+    Util::EngineState get_engine_state()
+    {
+      return g_CurrentEngineState;
+    }
+
+    void begin_playmode()
+    {
+      g_CurrentEngineState = Util::EngineState::PLAYING;
+    }
+
+    void exit_playmode()
+    {
+      g_CurrentEngineState = Util::EngineState::EDITING;
     }
   } // namespace Core
 } // namespace Low

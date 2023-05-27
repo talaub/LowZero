@@ -13,7 +13,7 @@ namespace Low {
   namespace Core {
     namespace System {
       namespace Region {
-        void tick(float p_Delta)
+        void tick(float p_Delta, Util::EngineState p_State)
         {
           Math::Vector3 l_CameraPosition =
               Renderer::get_main_renderflow().get_camera_position();

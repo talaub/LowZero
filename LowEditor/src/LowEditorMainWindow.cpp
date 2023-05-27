@@ -255,7 +255,7 @@ namespace Low {
       register_editor_widget("StateGraph", new StateGraphWidget(), true);
     }
 
-    void tick(float p_Delta)
+    void tick(float p_Delta, Util::EngineState p_State)
     {
       render_menu_bar(p_Delta);
 

@@ -41,7 +41,8 @@ namespace Low {
           Renderer::get_main_renderflow().register_renderobject(i_RenderObject);
         }
 
-        static void render_mesh(float p_Delta, MeshResource p_MeshResource,
+        static void render_mesh(float p_Delta, Util::EngineState p_State,
+                                MeshResource p_MeshResource,
                                 Math::Matrix4x4 &p_TransformMatrix,
                                 Renderer::Material p_Material,
                                 uint32_t p_EntityIndex)
@@ -53,10 +54,11 @@ namespace Low {
               Renderer::SkeletalAnimation::find_by_name(N(04_Idle));
 
           if (p_MeshResource.get_skeleton().is_alive()) {
-            g_Progress += l_Animation.get_ticks_per_second() * p_Delta;
-            g_Progress = fmod(g_Progress, l_Animation.get_duration());
+            if (p_State == Util::EngineState::PLAYING) {
+              g_Progress += l_Animation.get_ticks_per_second() * p_Delta;
+              g_Progress = fmod(g_Progress, l_Animation.get_duration());
+            }
 
-            // LOW_LOG_DEBUG << g_Progress << LOW_LOG_END;
             l_UsesSkeletalAnimation = true;
             l_PoseIndex = Renderer::calculate_skeleton_pose(
                 p_MeshResource.get_skeleton(), l_Animation, g_Progress);
@@ -79,7 +81,7 @@ namespace Low {
           }
         }
 
-        void tick(float p_Delta)
+        void tick(float p_Delta, Util::EngineState p_State)
         {
           Component::MeshRenderer *l_MeshRenderers =
               Component::MeshRenderer::living_instances();
@@ -107,7 +109,7 @@ namespace Low {
                 glm::toMat4(i_Transform.get_world_rotation()) *
                 glm::scale(glm::mat4(1.0f), i_Transform.get_world_scale());
 
-            render_mesh(p_Delta, i_MeshRenderer.get_mesh().get_lod0(),
+            render_mesh(p_Delta, p_State, i_MeshRenderer.get_mesh().get_lod0(),
                         i_TransformMatrix,
                         i_MeshRenderer.get_material().get_renderer_material(),
                         i_MeshRenderer.get_entity().get_index());

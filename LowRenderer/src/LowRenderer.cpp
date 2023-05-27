@@ -960,7 +960,7 @@ namespace Low {
           Math::VectorUtil::normalize(Math::Vector3(0.0f, 0.0f, -1.0f)));
     }
 
-    void tick(float p_Delta)
+    void tick(float p_Delta, Util::EngineState p_State)
     {
       g_Context.get_window().tick();
 
@@ -1189,7 +1189,7 @@ namespace Low {
       }
     }
 
-    void late_tick(float p_Delta)
+    void late_tick(float p_Delta, Util::EngineState p_State)
     {
       if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
         ImGui::EndFrame();

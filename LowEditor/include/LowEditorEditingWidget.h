@@ -20,6 +20,7 @@ namespace Low {
       bool camera_movement(float p_Delta);
       void set_camera_rotation(const float p_PitchRadians,
                                const float p_YawRadians);
+      void render_editing(float p_Delta);
     };
   } // namespace Editor
 } // namespace Low

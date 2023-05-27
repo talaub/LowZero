@@ -2,6 +2,8 @@
 
 #include "imgui.h"
 
+#include "LowUtilEnums.h"
+
 #include "LowCoreEntity.h"
 #include "LowRendererMaterial.h"
 
@@ -10,7 +12,7 @@ namespace Low {
     struct DetailsWidget;
 
     void initialize();
-    void tick(float p_Delta);
+    void tick(float p_Delta, Util::EngineState p_State);
 
     void set_selected_entity(Core::Entity p_Entity);
     Core::Entity get_selected_entity();

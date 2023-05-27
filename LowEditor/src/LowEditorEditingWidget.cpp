@@ -8,11 +8,14 @@
 #include "IconsFontAwesome5.h"
 #include "LowRenderer.h"
 
+#include "LowCore.h"
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
 #include "LowCoreDirectionalLight.h"
 #include "LowCorePointLight.h"
+
+#include "LowUtilEnums.h"
 
 #include "LowMathQuaternionUtil.h"
 #include <stdint.h>
@@ -92,11 +95,32 @@ namespace Low {
 
     void render_gizmos(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
     {
+      static bool l_ToolsWindowOpen = true;
+
+      ImGui::Begin("Controls", &l_ToolsWindowOpen,
+                   ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
+                       ImGuiWindowFlags_NoCollapse |
+                       ImGuiWindowFlags_NoDecoration |
+                       ImGuiWindowFlags_AlwaysAutoResize);
+      if (Core::get_engine_state() == Util::EngineState::EDITING) {
+        if (ImGui::Button(ICON_FA_PLAY)) {
+          set_selected_entity(0);
+          Core::begin_playmode();
+        }
+      } else if (Core::get_engine_state() == Util::EngineState::PLAYING) {
+        if (ImGui::Button(ICON_FA_STOP)) {
+          Core::exit_playmode();
+        }
+      }
+      ImGui::End();
+
+      if (Core::get_engine_state() != Util::EngineState::EDITING) {
+        return;
+      }
+
       render_billboards(p_Delta, p_RenderFlowWidget);
 
       Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
-
-      static bool l_ToolsWindowOpen = true;
 
       static ImGuizmo::OPERATION l_Operation = ImGuizmo::TRANSLATE;
 
@@ -278,11 +302,9 @@ namespace Low {
       return l_ReturnValue;
     }
 
-    void EditingWidget::render(float p_Delta)
+    void EditingWidget::render_editing(float p_Delta)
     {
       ImGuiIO &io = ImGui::GetIO();
-
-      m_RenderFlowWidget->render(p_Delta);
 
       bool l_AllowRendererBasedPicking = m_RenderFlowWidget->is_hovered();
 
@@ -300,45 +322,6 @@ namespace Low {
       m_CameraSpeed = Math::Util::clamp(m_CameraSpeed, 0.1f, 15.0f);
 
       m_LastMousePosition = m_RenderFlowWidget->get_relative_hover_position();
-
-      /*
-      Math::Box l_Box;
-      l_Box.position = {1.0f, 2.0f, -10.0f};
-      l_Box.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
-      l_Box.halfExtents = {0.5f, 0.5f, 0.5f};
-
-      Core::DebugGeometry::render_box(l_Box, {0.0f, 1.0f, 0.0f, 1.0f}, false,
-                                      true);
-
-      Math::Cylinder l_Cylinder;
-      l_Cylinder.position = {1.0f, 2.0f, 3.0f};
-      l_Cylinder.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
-      l_Cylinder.radius = 0.3f;
-      l_Cylinder.height = 8.0f;
-
-      Core::DebugGeometry::render_cylinder(l_Cylinder, {0.0f, 0.0f, 1.0f, 1.0f},
-                                           true, false);
-
-      Math::Cone l_Cone;
-      l_Cone.position = {4.0f, 2.0f, 3.0f};
-      l_Cone.rotation = {0.0f, 0.0f, 0.0f, 1.0f};
-      l_Cone.radius = 0.3f;
-      l_Cone.height = 0.8f;
-
-      Core::DebugGeometry::render_cone(l_Cone, {1.0f, 0.0f, 1.0f, 1.0f}, true,
-                                       true);
-
-      Math::Vector3 l_ArrowPosition = {-3.0f, 2.0f, 5.0f};
-      float l_ScreenSpaceMultiplier =
-          Core::DebugGeometry::screen_space_multiplier(
-              m_RenderFlowWidget->get_renderflow(), l_ArrowPosition);
-
-      Core::DebugGeometry::render_arrow(
-          l_ArrowPosition, {0.0f, 0.0f, 0.0f, 1.0f},
-          0.6f * l_ScreenSpaceMultiplier, 0.05f * l_ScreenSpaceMultiplier,
-          0.13f * l_ScreenSpaceMultiplier, 0.15f * l_ScreenSpaceMultiplier,
-          {1.0f, 0.0f, 0.0f, 1.0f}, true, false);
-      */
 
       if (ImGuizmo::IsOver()) {
         l_AllowRendererBasedPicking = false;
@@ -373,6 +356,15 @@ namespace Low {
           .get_resources()
           .get_buffer_resource(N(HoverCoordinatesBuffer))
           .set(&l_HoverCoordinates);
+    }
+
+    void EditingWidget::render(float p_Delta)
+    {
+      m_RenderFlowWidget->render(p_Delta);
+
+      if (Core::get_engine_state() == Util::EngineState::EDITING) {
+        render_editing(p_Delta);
+      }
     }
   } // namespace Editor
 } // namespace Low

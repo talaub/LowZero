@@ -11,7 +11,7 @@ namespace Low {
   namespace Core {
     namespace System {
       namespace Transform {
-        void tick(float p_Delta)
+        void tick(float p_Delta, Util::EngineState p_State)
         {
           Component::Transform *l_Transforms =
               Component::Transform::living_instances();
@@ -23,7 +23,7 @@ namespace Low {
           }
         }
 
-        void late_tick(float p_Delta)
+        void late_tick(float p_Delta, Util::EngineState p_State)
         {
           Component::Transform *l_Transforms =
               Component::Transform::living_instances();

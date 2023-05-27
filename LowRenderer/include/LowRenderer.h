@@ -5,6 +5,7 @@
 #include "LowRendererRenderFlow.h"
 #include "LowRendererWindow.h"
 
+#include "LowUtilEnums.h"
 #include "LowUtilResource.h"
 
 #include "LowMath.h"
@@ -14,8 +15,8 @@ namespace Low {
     struct RenderFlow;
 
     LOW_RENDERER_API void initialize();
-    LOW_RENDERER_API void tick(float p_Delta);
-    LOW_RENDERER_API void late_tick(float p_Delta);
+    LOW_RENDERER_API void tick(float p_Delta, Util::EngineState p_State);
+    LOW_RENDERER_API void late_tick(float p_Delta, Util::EngineState p_State);
     LOW_RENDERER_API bool window_is_open();
     LOW_RENDERER_API Window &get_window();
     LOW_RENDERER_API void cleanup();

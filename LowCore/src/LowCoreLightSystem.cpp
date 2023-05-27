@@ -15,7 +15,7 @@ namespace Low {
   namespace Core {
     namespace System {
       namespace Light {
-        void tick(float p_Delta)
+        void tick(float p_Delta, Util::EngineState p_State)
         {
           if (Component::DirectionalLight::living_count() > 0u) {
             Component::Transform l_Transform =

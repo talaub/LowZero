@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowUtilEnums.h"
+
 #define SYSTEM_ON_START(name)                                                  \
   {                                                                            \
     static bool _has_started = false;                                          \
@@ -12,7 +14,7 @@
 namespace Low {
   namespace Core {
     namespace System {
-      typedef void (*TickCallback)(float);
+      typedef void (*TickCallback)(float, Util::EngineState);
     } // namespace System
   }   // namespace Core
 } // namespace Low
