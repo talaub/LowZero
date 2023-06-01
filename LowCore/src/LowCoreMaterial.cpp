@@ -136,6 +136,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::MaterialType::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.get_material_type();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, material_type,
                                             Renderer::MaterialType);
         };
@@ -154,6 +156,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Material::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.get_renderer_material();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Material, renderer_material, Renderer::Material);
         };
@@ -194,6 +198,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, unique_id,
                                             Low::Util::UniqueId);
         };
@@ -208,6 +214,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, name,
                                             Low::Util::Name);
         };
@@ -353,6 +361,10 @@ namespace Low {
     Renderer::MaterialType Material::get_material_type() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_type
+      // LOW_CODEGEN::END::CUSTOM:GETTER_material_type
+
       return TYPE_SOA(Material, material_type, Renderer::MaterialType);
     }
     void Material::set_material_type(Renderer::MaterialType p_Value)
@@ -373,6 +385,10 @@ namespace Low {
     Renderer::Material Material::get_renderer_material() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_material
+      // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_material
+
       return TYPE_SOA(Material, renderer_material, Renderer::Material);
     }
     void Material::set_renderer_material(Renderer::Material p_Value)
@@ -392,6 +408,10 @@ namespace Low {
     Util::Map<Util::Name, Util::Variant> &Material::get_properties() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_properties
+      // LOW_CODEGEN::END::CUSTOM:GETTER_properties
+
       return TYPE_SOA(Material, properties,
                       SINGLE_ARG(Util::Map<Util::Name, Util::Variant>));
     }
@@ -399,6 +419,10 @@ namespace Low {
     uint32_t Material::get_reference_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
+
       return TYPE_SOA(Material, reference_count, uint32_t);
     }
     void Material::set_reference_count(uint32_t p_Value)
@@ -418,6 +442,10 @@ namespace Low {
     Low::Util::UniqueId Material::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
       return TYPE_SOA(Material, unique_id, Low::Util::UniqueId);
     }
     void Material::set_unique_id(Low::Util::UniqueId p_Value)
@@ -437,6 +465,10 @@ namespace Low {
     Low::Util::Name Material::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Material, name, Low::Util::Name);
     }
     void Material::set_name(Low::Util::Name p_Value)

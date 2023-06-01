@@ -134,6 +134,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, position);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.position();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, position,
                                               Math::Vector3);
           };
@@ -151,6 +153,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, rotation);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.rotation();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, rotation,
                                               Math::Quaternion);
           };
@@ -168,6 +172,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.scale();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, scale,
                                               Math::Vector3);
           };
@@ -185,6 +191,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, parent);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_parent();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, parent,
                                               uint64_t);
           };
@@ -202,6 +210,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_position);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_world_position();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_position, Math::Vector3);
           };
@@ -216,6 +226,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_rotation);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_world_rotation();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_rotation, Math::Quaternion);
           };
@@ -230,6 +242,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_world_scale();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_scale,
                                               Math::Vector3);
           };
@@ -245,6 +259,8 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, entity,
                                               Low::Core::Entity);
           };
@@ -262,6 +278,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, unique_id,
                                               Low::Util::UniqueId);
           };
@@ -276,6 +294,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.is_dirty();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, dirty, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -292,6 +312,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.is_world_dirty();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_dirty,
                                               bool);
           };
@@ -404,6 +426,10 @@ namespace Low {
       Math::Vector3 &Transform::position() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
+        // LOW_CODEGEN::END::CUSTOM:GETTER_position
+
         return TYPE_SOA(Transform, position, Math::Vector3);
       }
       void Transform::position(Math::Vector3 &p_Value)
@@ -422,6 +448,7 @@ namespace Low {
           TYPE_SOA(Transform, position, Math::Vector3) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
+          set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_position
         }
       }
@@ -429,6 +456,10 @@ namespace Low {
       Math::Quaternion &Transform::rotation() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
+        // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
+
         return TYPE_SOA(Transform, rotation, Math::Quaternion);
       }
       void Transform::rotation(Math::Quaternion &p_Value)
@@ -447,6 +478,7 @@ namespace Low {
           TYPE_SOA(Transform, rotation, Math::Quaternion) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+          set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
         }
       }
@@ -454,6 +486,10 @@ namespace Low {
       Math::Vector3 &Transform::scale() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale
+        // LOW_CODEGEN::END::CUSTOM:GETTER_scale
+
         return TYPE_SOA(Transform, scale, Math::Vector3);
       }
       void Transform::scale(Math::Vector3 &p_Value)
@@ -472,6 +508,7 @@ namespace Low {
           TYPE_SOA(Transform, scale, Math::Vector3) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale
+          set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_scale
         }
       }
@@ -479,6 +516,10 @@ namespace Low {
       uint64_t Transform::get_parent() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent
+        // LOW_CODEGEN::END::CUSTOM:GETTER_parent
+
         return TYPE_SOA(Transform, parent, uint64_t);
       }
       void Transform::set_parent(uint64_t p_Value)
@@ -501,9 +542,14 @@ namespace Low {
         }
       }
 
-      Math::Vector3 &Transform::get_world_position() const
+      Math::Vector3 &Transform::get_world_position()
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_position
+        recalculate_world_transform();
+        // LOW_CODEGEN::END::CUSTOM:GETTER_world_position
+
         return TYPE_SOA(Transform, world_position, Math::Vector3);
       }
       void Transform::set_world_position(Math::Vector3 &p_Value)
@@ -520,9 +566,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_position
       }
 
-      Math::Quaternion &Transform::get_world_rotation() const
+      Math::Quaternion &Transform::get_world_rotation()
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_rotation
+        recalculate_world_transform();
+        // LOW_CODEGEN::END::CUSTOM:GETTER_world_rotation
+
         return TYPE_SOA(Transform, world_rotation, Math::Quaternion);
       }
       void Transform::set_world_rotation(Math::Quaternion &p_Value)
@@ -539,9 +590,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_rotation
       }
 
-      Math::Vector3 &Transform::get_world_scale() const
+      Math::Vector3 &Transform::get_world_scale()
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_scale
+        recalculate_world_transform();
+        // LOW_CODEGEN::END::CUSTOM:GETTER_world_scale
+
         return TYPE_SOA(Transform, world_scale, Math::Vector3);
       }
       void Transform::set_world_scale(Math::Vector3 &p_Value)
@@ -561,6 +617,10 @@ namespace Low {
       Low::Core::Entity Transform::get_entity() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:GETTER_entity
+
         return TYPE_SOA(Transform, entity, Low::Core::Entity);
       }
       void Transform::set_entity(Low::Core::Entity p_Value)
@@ -580,6 +640,10 @@ namespace Low {
       Low::Util::UniqueId Transform::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
         return TYPE_SOA(Transform, unique_id, Low::Util::UniqueId);
       }
       void Transform::set_unique_id(Low::Util::UniqueId p_Value)
@@ -599,6 +663,10 @@ namespace Low {
       bool Transform::is_dirty() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+        // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
+
         return TYPE_SOA(Transform, dirty, bool);
       }
       void Transform::set_dirty(bool p_Value)
@@ -618,6 +686,18 @@ namespace Low {
       bool Transform::is_world_dirty() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
+        if (TYPE_SOA(Transform, world_dirty, bool)) {
+          return TYPE_SOA(Transform, world_dirty, bool);
+        }
+
+        Transform l_Parent = get_parent();
+        if (l_Parent.is_alive()) {
+          return l_Parent.is_world_dirty();
+        }
+        // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
+
         return TYPE_SOA(Transform, world_dirty, bool);
       }
       void Transform::set_world_dirty(bool p_Value)
@@ -639,6 +719,10 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
         LOW_ASSERT(is_alive(),
                    "Cannot calculate world position of dead transform");
+
+        if (!is_world_dirty()) {
+          return;
+        }
 
         Low::Math::Vector3 l_Position = position();
         Low::Math::Quaternion l_Rotation = rotation();

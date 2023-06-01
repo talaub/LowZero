@@ -123,6 +123,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.is_loaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, loaded, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -139,6 +141,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_enabled);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.is_streaming_enabled();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, streaming_enabled,
                                             bool);
         };
@@ -156,6 +160,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.get_streaming_position();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region,
                                             streaming_position, Math::Vector3);
         };
@@ -173,6 +179,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.get_streaming_radius();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, streaming_radius,
                                             float);
         };
@@ -203,6 +211,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, unique_id,
                                             Low::Util::UniqueId);
         };
@@ -217,6 +227,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, name,
                                             Low::Util::Name);
         };
@@ -337,6 +349,10 @@ namespace Low {
     bool Region::is_loaded() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded
+      // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
+
       return TYPE_SOA(Region, loaded, bool);
     }
     void Region::set_loaded(bool p_Value)
@@ -356,6 +372,10 @@ namespace Low {
     bool Region::is_streaming_enabled() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_streaming_enabled
+      // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_enabled
+
       return TYPE_SOA(Region, streaming_enabled, bool);
     }
     void Region::set_streaming_enabled(bool p_Value)
@@ -375,6 +395,10 @@ namespace Low {
     Math::Vector3 &Region::get_streaming_position() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_streaming_position
+      // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_position
+
       return TYPE_SOA(Region, streaming_position, Math::Vector3);
     }
     void Region::set_streaming_position(Math::Vector3 &p_Value)
@@ -394,6 +418,10 @@ namespace Low {
     float Region::get_streaming_radius() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_streaming_radius
+      // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_radius
+
       return TYPE_SOA(Region, streaming_radius, float);
     }
     void Region::set_streaming_radius(float p_Value)
@@ -413,12 +441,20 @@ namespace Low {
     Util::Set<Util::UniqueId> &Region::get_entities() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entities
+      // LOW_CODEGEN::END::CUSTOM:GETTER_entities
+
       return TYPE_SOA(Region, entities, Util::Set<Util::UniqueId>);
     }
 
     Low::Util::UniqueId Region::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
       return TYPE_SOA(Region, unique_id, Low::Util::UniqueId);
     }
     void Region::set_unique_id(Low::Util::UniqueId p_Value)
@@ -438,6 +474,10 @@ namespace Low {
     Low::Util::Name Region::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Region, name, Low::Util::Name);
     }
     void Region::set_name(Low::Util::Name p_Value)

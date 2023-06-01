@@ -120,6 +120,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, callbacks);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.get_callbacks();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
                                             callbacks, ComputeStepCallbacks);
         };
@@ -137,6 +139,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.get_resources();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
                                             resources,
                                             Util::List<ResourceConfig>);
@@ -152,6 +156,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.get_pipelines();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
                                             pipelines,
                                             Util::List<ComputePipelineConfig>);
@@ -167,6 +173,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStepConfig l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig, name,
                                             Low::Util::Name);
         };
@@ -269,6 +277,10 @@ namespace Low {
     ComputeStepCallbacks &ComputeStepConfig::get_callbacks() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_callbacks
+      // LOW_CODEGEN::END::CUSTOM:GETTER_callbacks
+
       return TYPE_SOA(ComputeStepConfig, callbacks, ComputeStepCallbacks);
     }
     void ComputeStepConfig::set_callbacks(ComputeStepCallbacks &p_Value)
@@ -288,12 +300,20 @@ namespace Low {
     Util::List<ResourceConfig> &ComputeStepConfig::get_resources() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resources
+
       return TYPE_SOA(ComputeStepConfig, resources, Util::List<ResourceConfig>);
     }
 
     Util::List<ComputePipelineConfig> &ComputeStepConfig::get_pipelines() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipelines
+      // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
+
       return TYPE_SOA(ComputeStepConfig, pipelines,
                       Util::List<ComputePipelineConfig>);
     }
@@ -301,6 +321,10 @@ namespace Low {
     Low::Util::Name ComputeStepConfig::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(ComputeStepConfig, name, Low::Util::Name);
     }
     void ComputeStepConfig::set_name(Low::Util::Name p_Value)

@@ -222,6 +222,11 @@ namespace Low {
 
         return rowMajorMatrix;
       }
+
+      Quaternion between(Vector3 p_From, Vector3 p_To)
+      {
+        return glm::rotation(p_From, p_To);
+      }
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

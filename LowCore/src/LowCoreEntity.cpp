@@ -139,6 +139,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(EntityData, components);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Entity l_Handle = p_Handle.get_id();
+          l_Handle.get_components();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Entity, components,
               SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
@@ -155,6 +157,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Region::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Entity l_Handle = p_Handle.get_id();
+          l_Handle.get_region();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, region, Region);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -171,6 +175,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(EntityData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Entity l_Handle = p_Handle.get_id();
+          l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, unique_id,
                                             Low::Util::UniqueId);
         };
@@ -185,6 +191,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(EntityData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Entity l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, name,
                                             Low::Util::Name);
         };
@@ -309,6 +317,10 @@ namespace Low {
     Util::Map<uint16_t, Util::Handle> &Entity::get_components() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_components
+      // LOW_CODEGEN::END::CUSTOM:GETTER_components
+
       return TYPE_SOA(Entity, components,
                       SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
     }
@@ -316,6 +328,10 @@ namespace Low {
     Region Entity::get_region() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_region
+      // LOW_CODEGEN::END::CUSTOM:GETTER_region
+
       return TYPE_SOA(Entity, region, Region);
     }
     void Entity::set_region(Region p_Value)
@@ -335,6 +351,10 @@ namespace Low {
     Low::Util::UniqueId Entity::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
       return TYPE_SOA(Entity, unique_id, Low::Util::UniqueId);
     }
     void Entity::set_unique_id(Low::Util::UniqueId p_Value)
@@ -354,6 +374,10 @@ namespace Low {
     Low::Util::Name Entity::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Entity, name, Low::Util::Name);
     }
     void Entity::set_name(Low::Util::Name p_Value)

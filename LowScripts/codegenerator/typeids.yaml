@@ -30,3 +30,4 @@ LowCore:
   MeshRenderer: 26
   DirectionalLight: 27
   PointLight: 28
+  Rigidbody: 31

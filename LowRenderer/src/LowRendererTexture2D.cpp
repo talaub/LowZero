@@ -126,6 +126,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.get_image();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image,
                                             Resource::Image);
         };
@@ -154,6 +156,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name,
                                             Low::Util::Name);
         };
@@ -260,6 +264,10 @@ namespace Low {
     Resource::Image Texture2D::get_image() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_image
+
       return TYPE_SOA(Texture2D, image, Resource::Image);
     }
     void Texture2D::set_image(Resource::Image p_Value)
@@ -279,6 +287,10 @@ namespace Low {
     Interface::Context Texture2D::get_context() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+      // LOW_CODEGEN::END::CUSTOM:GETTER_context
+
       return TYPE_SOA(Texture2D, context, Interface::Context);
     }
     void Texture2D::set_context(Interface::Context p_Value)
@@ -298,6 +310,10 @@ namespace Low {
     Low::Util::Name Texture2D::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
     }
     void Texture2D::set_name(Low::Util::Name p_Value)

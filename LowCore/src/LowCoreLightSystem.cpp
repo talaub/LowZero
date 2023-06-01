@@ -39,7 +39,7 @@ namespace Low {
             l_RendererDirectionalLight.color = Math::ColorRGB(0.0f);
 
             l_RendererDirectionalLight.rotation =
-                Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+                Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 
             Renderer::get_main_renderflow().set_directional_light(
                 l_RendererDirectionalLight);

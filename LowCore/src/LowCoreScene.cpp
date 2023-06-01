@@ -118,6 +118,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SceneData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Scene l_Handle = p_Handle.get_id();
+          l_Handle.is_loaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, loaded, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -134,6 +136,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SceneData, regions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Scene l_Handle = p_Handle.get_id();
+          l_Handle.get_regions();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, regions,
                                             Util::Set<Util::UniqueId>);
         };
@@ -148,6 +152,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SceneData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Scene l_Handle = p_Handle.get_id();
+          l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, unique_id,
                                             Low::Util::UniqueId);
         };
@@ -162,6 +168,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SceneData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Scene l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, name,
                                             Low::Util::Name);
         };
@@ -248,6 +256,10 @@ namespace Low {
     bool Scene::is_loaded() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded
+      // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
+
       return TYPE_SOA(Scene, loaded, bool);
     }
     void Scene::set_loaded(bool p_Value)
@@ -267,12 +279,20 @@ namespace Low {
     Util::Set<Util::UniqueId> &Scene::get_regions() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_regions
+      // LOW_CODEGEN::END::CUSTOM:GETTER_regions
+
       return TYPE_SOA(Scene, regions, Util::Set<Util::UniqueId>);
     }
 
     Low::Util::UniqueId Scene::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
       return TYPE_SOA(Scene, unique_id, Low::Util::UniqueId);
     }
     void Scene::set_unique_id(Low::Util::UniqueId p_Value)
@@ -292,6 +312,10 @@ namespace Low {
     Low::Util::Name Scene::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Scene, name, Low::Util::Name);
     }
     void Scene::set_name(Low::Util::Name p_Value)

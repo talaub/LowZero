@@ -24,6 +24,8 @@
 
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
+#include "LowCoreRigidbody.h"
+#include "LowCorePhysicsSystem.h"
 
 #include <functional>
 

@@ -115,6 +115,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, imgui_image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            ImGuiImage l_Handle = p_Handle.get_id();
+            l_Handle.get_imgui_image();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, imgui_image,
                                               Backend::ImGuiImage);
           };
@@ -130,6 +132,8 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            ImGuiImage l_Handle = p_Handle.get_id();
+            l_Handle.get_image();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, image,
                                               Resource::Image);
           };
@@ -144,6 +148,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            ImGuiImage l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, name,
                                               Low::Util::Name);
           };
@@ -246,12 +252,20 @@ namespace Low {
       Backend::ImGuiImage &ImGuiImage::get_imgui_image() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_image
+        // LOW_CODEGEN::END::CUSTOM:GETTER_imgui_image
+
         return TYPE_SOA(ImGuiImage, imgui_image, Backend::ImGuiImage);
       }
 
       Resource::Image ImGuiImage::get_image() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_image
+        // LOW_CODEGEN::END::CUSTOM:GETTER_image
+
         return TYPE_SOA(ImGuiImage, image, Resource::Image);
       }
       void ImGuiImage::set_image(Resource::Image p_Value)
@@ -271,6 +285,10 @@ namespace Low {
       Low::Util::Name ImGuiImage::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(ImGuiImage, name, Low::Util::Name);
       }
       void ImGuiImage::set_name(Low::Util::Name p_Value)
@@ -304,6 +322,9 @@ namespace Low {
       void ImGuiImage::render(Math::UVector2 &p_Dimensions)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render
+        if (!get_image().is_alive()) {
+          LOW_LOG_WARN << "DEAD" << LOW_LOG_END;
+        }
         Backend::callbacks().imgui_image_render(get_imgui_image(),
                                                 p_Dimensions);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_render

@@ -955,7 +955,7 @@ namespace Low {
             N(u_FinalImage), 0, Texture2D::ms_LivingInstances[0].get_image());
       }
 
-      g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 3.0f, 0.0f));
+      g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 0.0f, 5.0f));
       g_MainRenderFlow.set_camera_direction(
           Math::VectorUtil::normalize(Math::Vector3(0.0f, 0.0f, -1.0f)));
     }
@@ -973,15 +973,16 @@ namespace Low {
 
       g_Context.begin_imgui_frame();
 
-      if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
-        g_Context.update_dimensions();
-        return;
-      }
-
+      g_MainRenderFlow.clear_renderbojects();
       g_PoseBoneIndex = 0;
       g_SkinningBuffer.clear();
       g_PendingPoseCalculations.clear();
       g_PendingSkinningOperations.clear();
+
+      if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
+        g_Context.update_dimensions();
+        return;
+      }
     }
 
     static float calculate_interpolation_scale_factor(float t0, float t1,
@@ -1189,6 +1190,18 @@ namespace Low {
       }
     }
 
+    static void execute_pending_renderflow_dimension_updates()
+    {
+      if (!g_PendingRenderFlowUpdates.empty()) {
+        g_Context.wait_idle();
+        for (RenderFlowUpdateData &i_Update : g_PendingRenderFlowUpdates) {
+          i_Update.renderflow.update_dimensions(i_Update.dimensions);
+        }
+        g_PendingRenderFlowUpdates.clear();
+        return;
+      }
+    }
+
     void late_tick(float p_Delta, Util::EngineState p_State)
     {
       if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
@@ -1253,14 +1266,7 @@ namespace Low {
 
       g_Context.render_frame();
 
-      if (!g_PendingRenderFlowUpdates.empty()) {
-        g_Context.wait_idle();
-        for (RenderFlowUpdateData &i_Update : g_PendingRenderFlowUpdates) {
-          i_Update.renderflow.update_dimensions(i_Update.dimensions);
-        }
-        g_PendingRenderFlowUpdates.clear();
-        return;
-      }
+      execute_pending_renderflow_dimension_updates();
     }
 
     bool window_is_open()

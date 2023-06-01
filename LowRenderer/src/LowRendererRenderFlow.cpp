@@ -152,6 +152,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_dimensions();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, dimensions,
                                             Math::UVector2);
         };
@@ -167,6 +169,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_output_image();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, output_image,
                                             Resource::Image);
         };
@@ -184,6 +188,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, steps);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_steps();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, steps,
                                             Util::List<Util::Handle>);
         };
@@ -201,6 +207,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_resources();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, resources,
                                             ResourceRegistry);
         };
@@ -216,6 +224,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_frame_info_buffer();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderFlow, frame_info_buffer, Resource::Buffer);
         };
@@ -233,6 +243,8 @@ namespace Low {
         l_PropertyInfo.handleType =
             Interface::PipelineResourceSignature::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_resource_signature();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderFlow, resource_signature,
               Interface::PipelineResourceSignature);
@@ -248,6 +260,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_camera_position();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
                                             camera_position, Math::Vector3);
         };
@@ -265,6 +279,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_direction);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_camera_direction();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
                                             camera_direction, Math::Vector3);
         };
@@ -282,6 +298,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_fov);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_camera_fov();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_fov,
                                             float);
         };
@@ -299,6 +317,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_near_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_camera_near_plane();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
                                             camera_near_plane, float);
         };
@@ -316,6 +336,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_far_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_camera_far_plane();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
                                             camera_far_plane, float);
         };
@@ -333,6 +355,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, directional_light);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_directional_light();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderFlow, directional_light, DirectionalLight);
         };
@@ -350,6 +374,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, point_lights);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_point_lights();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, point_lights,
                                             Util::List<PointLight>);
         };
@@ -364,6 +390,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, name,
                                             Low::Util::Name);
         };
@@ -520,6 +548,10 @@ namespace Low {
     Interface::Context RenderFlow::get_context() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+      // LOW_CODEGEN::END::CUSTOM:GETTER_context
+
       return TYPE_SOA(RenderFlow, context, Interface::Context);
     }
     void RenderFlow::set_context(Interface::Context p_Value)
@@ -539,12 +571,20 @@ namespace Low {
     Math::UVector2 &RenderFlow::get_dimensions() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
+      // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
+
       return TYPE_SOA(RenderFlow, dimensions, Math::UVector2);
     }
 
     Resource::Image RenderFlow::get_output_image() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
+
       return TYPE_SOA(RenderFlow, output_image, Resource::Image);
     }
     void RenderFlow::set_output_image(Resource::Image p_Value)
@@ -564,6 +604,10 @@ namespace Low {
     Util::List<Util::Handle> &RenderFlow::get_steps() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_steps
+      // LOW_CODEGEN::END::CUSTOM:GETTER_steps
+
       return TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>);
     }
     void RenderFlow::set_steps(Util::List<Util::Handle> &p_Value)
@@ -583,12 +627,20 @@ namespace Low {
     ResourceRegistry &RenderFlow::get_resources() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resources
+
       return TYPE_SOA(RenderFlow, resources, ResourceRegistry);
     }
 
     Resource::Buffer RenderFlow::get_frame_info_buffer() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_info_buffer
+      // LOW_CODEGEN::END::CUSTOM:GETTER_frame_info_buffer
+
       return TYPE_SOA(RenderFlow, frame_info_buffer, Resource::Buffer);
     }
     void RenderFlow::set_frame_info_buffer(Resource::Buffer p_Value)
@@ -609,6 +661,10 @@ namespace Low {
     RenderFlow::get_resource_signature() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource_signature
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resource_signature
+
       return TYPE_SOA(RenderFlow, resource_signature,
                       Interface::PipelineResourceSignature);
     }
@@ -631,6 +687,10 @@ namespace Low {
     Math::Vector3 &RenderFlow::get_camera_position() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_position
+      // LOW_CODEGEN::END::CUSTOM:GETTER_camera_position
+
       return TYPE_SOA(RenderFlow, camera_position, Math::Vector3);
     }
     void RenderFlow::set_camera_position(Math::Vector3 &p_Value)
@@ -650,6 +710,10 @@ namespace Low {
     Math::Vector3 &RenderFlow::get_camera_direction() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_direction
+      // LOW_CODEGEN::END::CUSTOM:GETTER_camera_direction
+
       return TYPE_SOA(RenderFlow, camera_direction, Math::Vector3);
     }
     void RenderFlow::set_camera_direction(Math::Vector3 &p_Value)
@@ -669,6 +733,10 @@ namespace Low {
     float RenderFlow::get_camera_fov() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_fov
+      // LOW_CODEGEN::END::CUSTOM:GETTER_camera_fov
+
       return TYPE_SOA(RenderFlow, camera_fov, float);
     }
     void RenderFlow::set_camera_fov(float p_Value)
@@ -688,6 +756,10 @@ namespace Low {
     float RenderFlow::get_camera_near_plane() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_near_plane
+      // LOW_CODEGEN::END::CUSTOM:GETTER_camera_near_plane
+
       return TYPE_SOA(RenderFlow, camera_near_plane, float);
     }
     void RenderFlow::set_camera_near_plane(float p_Value)
@@ -707,6 +779,10 @@ namespace Low {
     float RenderFlow::get_camera_far_plane() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_far_plane
+      // LOW_CODEGEN::END::CUSTOM:GETTER_camera_far_plane
+
       return TYPE_SOA(RenderFlow, camera_far_plane, float);
     }
     void RenderFlow::set_camera_far_plane(float p_Value)
@@ -726,6 +802,10 @@ namespace Low {
     DirectionalLight &RenderFlow::get_directional_light() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light
+      // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light
+
       return TYPE_SOA(RenderFlow, directional_light, DirectionalLight);
     }
     void RenderFlow::set_directional_light(DirectionalLight &p_Value)
@@ -745,12 +825,20 @@ namespace Low {
     Util::List<PointLight> &RenderFlow::get_point_lights() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_lights
+      // LOW_CODEGEN::END::CUSTOM:GETTER_point_lights
+
       return TYPE_SOA(RenderFlow, point_lights, Util::List<PointLight>);
     }
 
     Low::Util::Name RenderFlow::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(RenderFlow, name, Low::Util::Name);
     }
     void RenderFlow::set_name(Low::Util::Name p_Value)
@@ -906,6 +994,18 @@ namespace Low {
 
       return l_RenderFlow;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void RenderFlow::clear_renderbojects()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_renderbojects
+      for (Util::Handle i_Step : get_steps()) {
+        if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
+          GraphicsStep i_GraphicsStep = i_Step.get_id();
+          i_GraphicsStep.clear_renderobjects();
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_renderbojects
     }
 
     void RenderFlow::execute()

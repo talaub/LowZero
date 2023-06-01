@@ -140,6 +140,7 @@ namespace Low {
 
       static GraphicsStep make(Util::Name p_Name, Interface::Context p_Context,
                                GraphicsStepConfig p_Config);
+      void clear_renderobjects();
       void prepare(RenderFlow p_RenderFlow);
       void execute(RenderFlow p_RenderFlow, Math::Matrix4x4 &p_ProjectionMatrix,
                    Math::Matrix4x4 &p_ViewMatrix);

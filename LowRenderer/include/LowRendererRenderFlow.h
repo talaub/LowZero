@@ -170,6 +170,7 @@ namespace Low {
 
       static RenderFlow make(Util::Name p_Name, Interface::Context p_Context,
                              Util::Yaml::Node &p_Config);
+      void clear_renderbojects();
       void execute();
       void update_dimensions(Math::UVector2 &p_Dimensions);
       void register_renderobject(RenderObject &p_RenderObject);

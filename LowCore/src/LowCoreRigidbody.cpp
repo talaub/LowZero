@@ -1,0 +1,703 @@
+#include "LowCoreRigidbody.h"
+
+#include <algorithm>
+
+#include "LowUtilAssert.h"
+#include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
+#include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
+
+#include "LowCorePhysicsSystem.h"
+#include "LowCoreTransform.h"
+
+namespace Low {
+  namespace Core {
+    namespace Component {
+      const uint16_t Rigidbody::TYPE_ID = 31;
+      uint32_t Rigidbody::ms_Capacity = 0u;
+      uint8_t *Rigidbody::ms_Buffer = 0;
+      Low::Util::Instances::Slot *Rigidbody::ms_Slots = 0;
+      Low::Util::List<Rigidbody> Rigidbody::ms_LivingInstances =
+          Low::Util::List<Rigidbody>();
+
+      Rigidbody::Rigidbody() : Low::Util::Handle(0ull)
+      {
+      }
+      Rigidbody::Rigidbody(uint64_t p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      Rigidbody::Rigidbody(Rigidbody &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      {
+      }
+
+      Low::Util::Handle Rigidbody::_make(Low::Util::Handle p_Entity)
+      {
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        LOW_ASSERT(l_Entity.is_alive(),
+                   "Cannot create component for dead entity");
+        return make(l_Entity).get_id();
+      }
+
+      Rigidbody Rigidbody::make(Low::Core::Entity p_Entity)
+      {
+        uint32_t l_Index = create_instance();
+
+        Rigidbody l_Handle;
+        l_Handle.m_Data.m_Index = l_Index;
+        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+
+        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, fixed, bool) = false;
+        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, gravity, bool) = false;
+        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, mass, float) = 0.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, initialized, bool) = false;
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, rigid_dynamic,
+                                PhysicsRigidDynamic)) PhysicsRigidDynamic();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, physics_shape,
+                                PhysicsShape)) PhysicsShape();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, shape, Math::Shape))
+            Math::Shape();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, entity, Low::Core::Entity))
+            Low::Core::Entity();
+
+        l_Handle.set_entity(p_Entity);
+        p_Entity.add_component(l_Handle);
+
+        ms_LivingInstances.push_back(l_Handle);
+
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+        Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                      l_Handle.get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        {
+          Math::Shape l_Shape;
+          l_Shape.type = Math::ShapeType::BOX;
+          l_Shape.box.halfExtents = Math::Vector3(0.5f);
+
+          l_Handle.set_shape(l_Shape);
+        }
+
+        l_Handle.set_gravity(false);
+        l_Handle.set_mass(1.0f);
+        l_Handle.set_fixed(true);
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
+        return l_Handle;
+      }
+
+      void Rigidbody::destroy()
+      {
+        LOW_ASSERT(is_alive(), "Cannot destroy dead object");
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        System::Physics::remove_rigid_dynamic(get_rigid_dynamic());
+        get_rigid_dynamic().destroy();
+        get_physics_shape().destroy();
+        set_initialized(false);
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+        Low::Util::remove_unique_id(get_unique_id());
+
+        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
+        ms_Slots[this->m_Data.m_Index].m_Generation++;
+
+        const Rigidbody *l_Instances = living_instances();
+        bool l_LivingInstanceFound = false;
+        for (uint32_t i = 0u; i < living_count(); ++i) {
+          if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
+            ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
+            l_LivingInstanceFound = true;
+            break;
+          }
+        }
+        _LOW_ASSERT(l_LivingInstanceFound);
+      }
+
+      void Rigidbody::initialize()
+      {
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Rigidbody));
+
+        initialize_buffer(&ms_Buffer, RigidbodyData::get_size(), get_capacity(),
+                          &ms_Slots);
+
+        LOW_PROFILE_ALLOC(type_buffer_Rigidbody);
+        LOW_PROFILE_ALLOC(type_slots_Rigidbody);
+
+        Low::Util::RTTI::TypeInfo l_TypeInfo;
+        l_TypeInfo.name = N(Rigidbody);
+        l_TypeInfo.get_capacity = &get_capacity;
+        l_TypeInfo.is_alive = &Rigidbody::is_alive;
+        l_TypeInfo.destroy = &Rigidbody::destroy;
+        l_TypeInfo.serialize = &Rigidbody::serialize;
+        l_TypeInfo.deserialize = &Rigidbody::deserialize;
+        l_TypeInfo.make_default = nullptr;
+        l_TypeInfo.make_component = &Rigidbody::_make;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &Rigidbody::living_instances);
+        l_TypeInfo.get_living_count = &Rigidbody::living_count;
+        l_TypeInfo.component = true;
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(fixed);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, fixed);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.is_fixed();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, fixed, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.set_fixed(*(bool *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(gravity);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, gravity);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.is_gravity();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, gravity,
+                                              bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.set_gravity(*(bool *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(mass);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, mass);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.get_mass();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, mass, float);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.set_mass(*(float *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(initialized);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, initialized);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.is_initialized();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, initialized,
+                                              bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(rigid_dynamic);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, rigid_dynamic);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.get_rigid_dynamic();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Rigidbody, rigid_dynamic, PhysicsRigidDynamic);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(physics_shape);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, physics_shape);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            return nullptr;
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(shape);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, shape);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::SHAPE;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.get_shape();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, shape,
+                                              Math::Shape);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.set_shape(*(Math::Shape *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(entity);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, entity);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.get_entity();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, entity,
+                                              Low::Core::Entity);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(unique_id);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, unique_id);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Rigidbody l_Handle = p_Handle.get_id();
+            l_Handle.get_unique_id();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, unique_id,
+                                              Low::Util::UniqueId);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      }
+
+      void Rigidbody::cleanup()
+      {
+        Low::Util::List<Rigidbody> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
+          l_Instances[i].destroy();
+        }
+        free(ms_Buffer);
+        free(ms_Slots);
+
+        LOW_PROFILE_FREE(type_buffer_Rigidbody);
+        LOW_PROFILE_FREE(type_slots_Rigidbody);
+      }
+
+      Rigidbody Rigidbody::find_by_index(uint32_t p_Index)
+      {
+        LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+        Rigidbody l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+        l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+
+        return l_Handle;
+      }
+
+      bool Rigidbody::is_alive() const
+      {
+        return m_Data.m_Type == Rigidbody::TYPE_ID &&
+               check_alive(ms_Slots, Rigidbody::get_capacity());
+      }
+
+      uint32_t Rigidbody::get_capacity()
+      {
+        return ms_Capacity;
+      }
+
+      void Rigidbody::serialize(Low::Util::Yaml::Node &p_Node) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        p_Node["fixed"] = is_fixed();
+        p_Node["gravity"] = is_gravity();
+        p_Node["mass"] = get_mass();
+        Low::Util::Serialization::serialize(p_Node["shape"], get_shape());
+        p_Node["unique_id"] = get_unique_id();
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void Rigidbody::serialize(Low::Util::Handle p_Handle,
+                                Low::Util::Yaml::Node &p_Node)
+      {
+        Rigidbody l_Rigidbody = p_Handle.get_id();
+        l_Rigidbody.serialize(p_Node);
+      }
+
+      Low::Util::Handle Rigidbody::deserialize(Low::Util::Yaml::Node &p_Node,
+                                               Low::Util::Handle p_Creator)
+      {
+        Rigidbody l_Handle = Rigidbody::make(p_Creator.get_id());
+
+        if (p_Node["unique_id"]) {
+          Low::Util::remove_unique_id(l_Handle.get_unique_id());
+          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+          Low::Util::register_unique_id(l_Handle.get_unique_id(),
+                                        l_Handle.get_id());
+        }
+
+        if (p_Node["fixed"]) {
+          l_Handle.set_fixed(p_Node["fixed"].as<bool>());
+        }
+        if (p_Node["gravity"]) {
+          l_Handle.set_gravity(p_Node["gravity"].as<bool>());
+        }
+        if (p_Node["mass"]) {
+          l_Handle.set_mass(p_Node["mass"].as<float>());
+        }
+        if (p_Node["shape"]) {
+          l_Handle.set_shape(
+              Low::Util::Serialization::deserialize_shape(p_Node["shape"]));
+        }
+        if (p_Node["unique_id"]) {
+          l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+        return l_Handle;
+      }
+
+      bool Rigidbody::is_fixed() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_fixed
+        // LOW_CODEGEN::END::CUSTOM:GETTER_fixed
+
+        return TYPE_SOA(Rigidbody, fixed, bool);
+      }
+      void Rigidbody::set_fixed(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_fixed
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_fixed
+
+        // Set new value
+        TYPE_SOA(Rigidbody, fixed, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_fixed
+        get_rigid_dynamic().set_fixed(p_Value);
+        // LOW_CODEGEN::END::CUSTOM:SETTER_fixed
+      }
+
+      bool Rigidbody::is_gravity() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gravity
+        // LOW_CODEGEN::END::CUSTOM:GETTER_gravity
+
+        return TYPE_SOA(Rigidbody, gravity, bool);
+      }
+      void Rigidbody::set_gravity(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gravity
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_gravity
+
+        // Set new value
+        TYPE_SOA(Rigidbody, gravity, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gravity
+        get_rigid_dynamic().set_gravity(p_Value);
+        // LOW_CODEGEN::END::CUSTOM:SETTER_gravity
+      }
+
+      float Rigidbody::get_mass() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mass
+        // LOW_CODEGEN::END::CUSTOM:GETTER_mass
+
+        return TYPE_SOA(Rigidbody, mass, float);
+      }
+      void Rigidbody::set_mass(float p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mass
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_mass
+
+        // Set new value
+        TYPE_SOA(Rigidbody, mass, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mass
+        get_rigid_dynamic().set_mass(p_Value);
+        // LOW_CODEGEN::END::CUSTOM:SETTER_mass
+      }
+
+      bool Rigidbody::is_initialized() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
+        // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
+
+        return TYPE_SOA(Rigidbody, initialized, bool);
+      }
+      void Rigidbody::set_initialized(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
+
+        // Set new value
+        TYPE_SOA(Rigidbody, initialized, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
+        // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
+      }
+
+      PhysicsRigidDynamic &Rigidbody::get_rigid_dynamic() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rigid_dynamic
+        // LOW_CODEGEN::END::CUSTOM:GETTER_rigid_dynamic
+
+        return TYPE_SOA(Rigidbody, rigid_dynamic, PhysicsRigidDynamic);
+      }
+
+      PhysicsShape &Rigidbody::get_physics_shape() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_physics_shape
+        // LOW_CODEGEN::END::CUSTOM:GETTER_physics_shape
+
+        return TYPE_SOA(Rigidbody, physics_shape, PhysicsShape);
+      }
+
+      Math::Shape &Rigidbody::get_shape() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shape
+        // LOW_CODEGEN::END::CUSTOM:GETTER_shape
+
+        return TYPE_SOA(Rigidbody, shape, Math::Shape);
+      }
+      void Rigidbody::set_shape(Math::Shape &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shape
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_shape
+
+        // Set new value
+        TYPE_SOA(Rigidbody, shape, Math::Shape) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shape
+        if (!is_initialized()) {
+          Component::Transform l_Transform = get_entity().get_transform();
+
+          PhysicsShape::create(get_physics_shape(), p_Value);
+
+          PhysicsRigidDynamic::create(get_rigid_dynamic(), get_physics_shape(),
+                                      l_Transform.get_world_position(),
+                                      l_Transform.get_world_rotation());
+
+          System::Physics::register_rigid_dynamic(get_rigid_dynamic());
+
+          set_initialized(true);
+        } else {
+          LOW_LOG_DEBUG << "Updating physx shape" << LOW_LOG_END;
+          get_physics_shape().update(p_Value);
+          get_rigid_dynamic().update_shape(get_physics_shape());
+        }
+
+        // LOW_CODEGEN::END::CUSTOM:SETTER_shape
+      }
+
+      Low::Core::Entity Rigidbody::get_entity() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:GETTER_entity
+
+        return TYPE_SOA(Rigidbody, entity, Low::Core::Entity);
+      }
+      void Rigidbody::set_entity(Low::Core::Entity p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
+
+        // Set new value
+        TYPE_SOA(Rigidbody, entity, Low::Core::Entity) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+      }
+
+      Low::Util::UniqueId Rigidbody::get_unique_id() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
+        return TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId);
+      }
+      void Rigidbody::set_unique_id(Low::Util::UniqueId p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
+
+        // Set new value
+        TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+      }
+
+      uint32_t Rigidbody::create_instance()
+      {
+        uint32_t l_Index = 0u;
+
+        for (; l_Index < get_capacity(); ++l_Index) {
+          if (!ms_Slots[l_Index].m_Occupied) {
+            break;
+          }
+        }
+        if (l_Index >= get_capacity()) {
+          increase_budget();
+        }
+        ms_Slots[l_Index].m_Occupied = true;
+        return l_Index;
+      }
+
+      void Rigidbody::increase_budget()
+      {
+        uint32_t l_Capacity = get_capacity();
+        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        l_CapacityIncrease =
+            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+
+        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+
+        uint8_t *l_NewBuffer = (uint8_t *)malloc(
+            (l_Capacity + l_CapacityIncrease) * sizeof(RigidbodyData));
+        Low::Util::Instances::Slot *l_NewSlots =
+            (Low::Util::Instances::Slot *)malloc(
+                (l_Capacity + l_CapacityIncrease) *
+                sizeof(Low::Util::Instances::Slot));
+
+        memcpy(l_NewSlots, ms_Slots,
+               l_Capacity * sizeof(Low::Util::Instances::Slot));
+        {
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, fixed) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, fixed) * (l_Capacity)],
+                 l_Capacity * sizeof(bool));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, gravity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, gravity) * (l_Capacity)],
+                 l_Capacity * sizeof(bool));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, mass) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, mass) * (l_Capacity)],
+                 l_Capacity * sizeof(float));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(RigidbodyData, initialized) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(RigidbodyData, initialized) * (l_Capacity)],
+              l_Capacity * sizeof(bool));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(RigidbodyData, rigid_dynamic) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(RigidbodyData, rigid_dynamic) * (l_Capacity)],
+              l_Capacity * sizeof(PhysicsRigidDynamic));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(RigidbodyData, physics_shape) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(RigidbodyData, physics_shape) * (l_Capacity)],
+              l_Capacity * sizeof(PhysicsShape));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, shape) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, shape) * (l_Capacity)],
+                 l_Capacity * sizeof(Math::Shape));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, entity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, entity) * (l_Capacity)],
+                 l_Capacity * sizeof(Low::Core::Entity));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, unique_id) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, unique_id) * (l_Capacity)],
+                 l_Capacity * sizeof(Low::Util::UniqueId));
+        }
+        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+             ++i) {
+          l_NewSlots[i].m_Occupied = false;
+          l_NewSlots[i].m_Generation = 0;
+        }
+        free(ms_Buffer);
+        free(ms_Slots);
+        ms_Buffer = l_NewBuffer;
+        ms_Slots = l_NewSlots;
+        ms_Capacity = l_Capacity + l_CapacityIncrease;
+
+        LOW_LOG_DEBUG << "Auto-increased budget for Rigidbody from "
+                      << l_Capacity << " to "
+                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+      }
+    } // namespace Component
+  }   // namespace Core
+} // namespace Low

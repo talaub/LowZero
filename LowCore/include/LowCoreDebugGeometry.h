@@ -30,6 +30,11 @@ namespace Low {
       LOW_CORE_API void render_cone(Math::Cone p_Cone, Math::Color p_Color,
                                     bool p_DepthTest, bool p_Wireframe);
 
+      LOW_CORE_API void render_line(Math::Vector3 p_Start, Math::Vector3 p_End,
+                                    Math::Color p_Color, bool p_DepthTest,
+                                    bool p_Wireframe,
+                                    float p_Thickness = 0.02f);
+
       // Complex predefined objects
       LOW_CORE_API void render_arrow(Math::Vector3 p_Position,
                                      Math::Quaternion p_Rotation,

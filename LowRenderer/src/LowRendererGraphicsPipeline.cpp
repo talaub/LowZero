@@ -117,6 +117,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(GraphicsPipelineData, pipeline);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            GraphicsPipeline l_Handle = p_Handle.get_id();
+            l_Handle.get_pipeline();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsPipeline,
                                               pipeline, Backend::Pipeline);
           };
@@ -131,6 +133,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(GraphicsPipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            GraphicsPipeline l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsPipeline, name,
                                               Low::Util::Name);
           };
@@ -228,12 +232,20 @@ namespace Low {
       Backend::Pipeline &GraphicsPipeline::get_pipeline() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipeline
+        // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline
+
         return TYPE_SOA(GraphicsPipeline, pipeline, Backend::Pipeline);
       }
 
       Low::Util::Name GraphicsPipeline::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(GraphicsPipeline, name, Low::Util::Name);
       }
       void GraphicsPipeline::set_name(Low::Util::Name p_Value)

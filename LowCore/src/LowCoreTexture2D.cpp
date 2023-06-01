@@ -114,6 +114,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.get_path();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, path,
                                             Util::String);
         };
@@ -129,6 +131,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Texture2D::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.get_renderer_texture();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Texture2D, renderer_texture, Renderer::Texture2D);
         };
@@ -156,6 +160,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name,
                                             Low::Util::Name);
         };
@@ -244,6 +250,10 @@ namespace Low {
     Util::String &Texture2D::get_path() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+      // LOW_CODEGEN::END::CUSTOM:GETTER_path
+
       return TYPE_SOA(Texture2D, path, Util::String);
     }
     void Texture2D::set_path(Util::String &p_Value)
@@ -263,6 +273,10 @@ namespace Low {
     Renderer::Texture2D Texture2D::get_renderer_texture() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_texture
+      // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_texture
+
       return TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D);
     }
     void Texture2D::set_renderer_texture(Renderer::Texture2D p_Value)
@@ -282,6 +296,10 @@ namespace Low {
     uint32_t Texture2D::get_reference_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
+
       return TYPE_SOA(Texture2D, reference_count, uint32_t);
     }
     void Texture2D::set_reference_count(uint32_t p_Value)
@@ -301,6 +319,10 @@ namespace Low {
     Low::Util::Name Texture2D::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
     }
     void Texture2D::set_name(Low::Util::Name p_Value)

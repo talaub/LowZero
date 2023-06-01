@@ -7,6 +7,7 @@
 #include "LowCoreMeshRendererSystem.h"
 #include "LowCoreTaskScheduler.h"
 #include "LowCoreTransform.h"
+#include "LowCorePhysicsSystem.h"
 #include "LowCoreNavmeshSystem.h"
 
 #include <chrono>
@@ -29,10 +30,14 @@ namespace Low {
 
       static void execute_ticks(float p_Delta)
       {
+        static bool l_FirstRun = true;
         Renderer::tick(p_Delta, get_engine_state());
         System::Transform::tick(p_Delta, get_engine_state());
         System::Light::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
+        if (!l_FirstRun) {
+          System::Physics::tick(p_Delta, get_engine_state());
+        }
         System::Navmesh::tick(p_Delta, get_engine_state());
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
@@ -41,13 +46,20 @@ namespace Low {
         }
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());
+
+        l_FirstRun = false;
       }
 
       static void execute_late_ticks(float p_Delta)
       {
+        static bool l_FirstRun = true;
+        if (!l_FirstRun) {
+          System::Physics::late_tick(p_Delta, get_engine_state());
+        }
         System::Transform::late_tick(p_Delta, get_engine_state());
 
         Renderer::late_tick(p_Delta, get_engine_state());
+        l_FirstRun = false;
       }
 
       static void run()
@@ -100,6 +112,7 @@ namespace Low {
 
       void initialize()
       {
+        System::Physics::initialize();
       }
 
       void start()

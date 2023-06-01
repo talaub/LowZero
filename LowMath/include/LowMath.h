@@ -94,6 +94,26 @@ namespace Low {
       float height;
     };
 
+    enum class ShapeType
+    {
+      SPHERE,
+      BOX,
+      CYLINDER,
+      CONE
+    };
+
+    struct Shape
+    {
+      ShapeType type;
+      union
+      {
+        Cylinder cylinder;
+        Box box;
+        Sphere sphere;
+        Cone cone;
+      };
+    };
+
     namespace Util {
       LOW_EXPORT float lerp(float p_Start, float p_End, float p_Delta);
       LOW_EXPORT float power2(float p_Power);

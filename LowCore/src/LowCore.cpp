@@ -6,12 +6,15 @@
 #include "LowCoreTransform.h"
 #include "LowCoreDirectionalLight.h"
 #include "LowCorePointLight.h"
+#include "LowCoreRigidbody.h"
 #include "LowCoreMeshRenderer.h"
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreTexture2D.h"
 #include "LowCoreMaterial.h"
+#include "LowCoreGameLoop.h"
+#include "LowCorePhysicsSystem.h"
 
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
@@ -52,6 +55,7 @@ namespace Low {
       Component::MeshRenderer::initialize();
       Component::DirectionalLight::initialize();
       Component::PointLight::initialize();
+      Component::Rigidbody::initialize();
     }
 
     static void initialize_base_types()
@@ -171,6 +175,7 @@ namespace Low {
       initialize_types();
 
       DebugGeometry::initialize();
+      GameLoop::initialize();
 
       load_resources();
       load_assets();
@@ -192,6 +197,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Component::Rigidbody::cleanup();
       Component::PointLight::cleanup();
       Component::DirectionalLight::cleanup();
       Component::Transform::cleanup();
@@ -215,6 +221,7 @@ namespace Low {
 
     void cleanup()
     {
+      GameLoop::cleanup();
       cleanup_types();
     }
 

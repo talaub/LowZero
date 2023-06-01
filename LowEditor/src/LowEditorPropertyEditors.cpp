@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <algorithm>
+#include <vcruntime_string.h>
 
 #define DISPLAY_LABEL(s) std::replace(s.begin(), s.end(), '_', ' ')
 
@@ -41,7 +42,7 @@ namespace Low {
         }
       }
 
-      void render_quaternion_editor(Util::String &p_Label,
+      bool render_quaternion_editor(Util::String p_Label,
                                     Math::Quaternion &p_Quaternion,
                                     bool p_RenderLabel)
       {
@@ -56,10 +57,12 @@ namespace Low {
 
         if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
           p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
+          return true;
         }
+        return false;
       }
 
-      void render_vector3_editor(Util::String &p_Label, Math::Vector3 &p_Vector,
+      bool render_vector3_editor(Util::String p_Label, Math::Vector3 &p_Vector,
                                  bool p_RenderLabel)
       {
         if (p_RenderLabel) {
@@ -73,7 +76,9 @@ namespace Low {
 
         if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
           p_Vector = l_Vector;
+          return true;
         }
+        return false;
       }
 
       void render_vector2_editor(Util::String &p_Label, Math::Vector2 &p_Vector,
@@ -219,8 +224,72 @@ namespace Low {
         }
       }
 
+      void render_shape_editor(Util::String &p_Label,
+                               Util::RTTI::PropertyInfo &p_PropertyInfo,
+                               Util::Handle p_Handle, Math::Shape *p_DataPtr,
+                               bool p_RenderLabel)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        int l_TypeCount = 4;
+        int l_CurrentType = 0;
+
+        bool l_Changed = false;
+
+        Util::String l_Names[] = {"Box", "Sphere", "Cone", "Cylinder"};
+        Math::ShapeType l_Types[] = {
+            Math::ShapeType::BOX, Math::ShapeType::SPHERE,
+            Math::ShapeType::CONE, Math::ShapeType::CYLINDER};
+
+        Math::Shape l_Shape = *p_DataPtr;
+
+        for (; l_CurrentType < l_TypeCount; ++l_CurrentType) {
+          if (l_Shape.type == l_Types[l_CurrentType]) {
+            break;
+          }
+        }
+
+        if (ImGui::BeginCombo("##shapetypeselector",
+                              l_Names[l_CurrentType].c_str(), 0)) {
+          for (int i = 0; i < l_TypeCount; ++i) {
+            if (ImGui::Selectable(l_Names[i].c_str(), i == l_CurrentType)) {
+              memset(&l_Shape, 0, sizeof(l_Shape));
+              l_Shape.type = l_Types[i];
+              l_Changed = true;
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        if (l_Shape.type == Math::ShapeType::BOX) {
+          if (render_vector3_editor("BoxPosition", l_Shape.box.position,
+                                    true)) {
+            l_Changed = true;
+          }
+          if (render_quaternion_editor("BoxRotation", l_Shape.box.rotation,
+                                       true)) {
+            l_Changed = true;
+          }
+          if (render_vector3_editor("BoxHalfExtents", l_Shape.box.halfExtents,
+                                    true)) {
+            l_Changed = true;
+          }
+        } else {
+          ImGui::Text("Shape type not editable");
+        }
+
+        if (l_Changed) {
+          p_PropertyInfo.set(p_Handle, &l_Shape);
+        }
+      }
+
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
-                         const void *p_DataPtr)
+                         Util::Handle p_Handle, const void *p_DataPtr)
       {
         if (p_PropertyInfo.type == Util::RTTI::PropertyType::NAME) {
           render_name_editor(Util::String(p_PropertyInfo.name.c_str()),
@@ -229,12 +298,16 @@ namespace Low {
           render_vector2_editor(Util::String(p_PropertyInfo.name.c_str()),
                                 *(Math::Vector2 *)p_DataPtr, true);
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::VECTOR3) {
+          Math::Vector3 l_Vec = *(Math::Vector3 *)p_DataPtr;
           render_vector3_editor(Util::String(p_PropertyInfo.name.c_str()),
-                                *(Math::Vector3 *)p_DataPtr, true);
+                                l_Vec, true);
+          p_PropertyInfo.set(p_Handle, &l_Vec);
         } else if (p_PropertyInfo.type ==
                    Util::RTTI::PropertyType::QUATERNION) {
+          Math::Quaternion l_Quat = *(Math::Quaternion *)p_DataPtr;
           render_quaternion_editor(Util::String(p_PropertyInfo.name.c_str()),
-                                   *(Math::Quaternion *)p_DataPtr, true);
+                                   l_Quat, true);
+          p_PropertyInfo.set(p_Handle, &l_Quat);
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::COLORRGB) {
           render_colorrgb_editor(Util::String(p_PropertyInfo.name.c_str()),
                                  *(Math::ColorRGB *)p_DataPtr, true);
@@ -244,6 +317,10 @@ namespace Low {
         } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::FLOAT) {
           render_float_editor(Util::String(p_PropertyInfo.name.c_str()),
                               *(float *)p_DataPtr, true);
+        } else if (p_PropertyInfo.type == Util::RTTI::PropertyType::SHAPE) {
+          render_shape_editor(Util::String(p_PropertyInfo.name.c_str()),
+                              p_PropertyInfo, p_Handle,
+                              (Math::Shape *)p_DataPtr, true);
         }
       }
     } // namespace PropertyEditors

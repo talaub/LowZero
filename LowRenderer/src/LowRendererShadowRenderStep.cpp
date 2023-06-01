@@ -75,7 +75,6 @@ namespace Low {
                              p_RenderFlow.get_camera_near_plane(), 15.0f);
 
         proj[1][1] *= -1.0f; // Convert from OpenGL y-axis
-        //    to Vulkan y-axis
 
         Math::Matrix4x4 viewMatrix =
             glm::lookAt(p_RenderFlow.get_camera_position(),
@@ -155,8 +154,6 @@ namespace Low {
         calculate_directional_light_matrices(p_RenderFlow, &l_ProjectionMatrix,
                                              &l_ViewMatrix);
 
-        // l_ProjectionMatrix[1][1] *= -1.0f; // Convert from OpenGL y-axis
-
         Math::Matrix4x4 l_LightSpace = l_ProjectionMatrix * l_ViewMatrix;
 
         DirectionalLightShaderInfo l_DirectionalLightShaderInfo;
@@ -197,7 +194,8 @@ namespace Low {
           p_RenderFlow.get_point_lights().clear();
         }
 
-        RenderObjectShaderInfo l_ObjectShaderInfos[32];
+        RenderObjectShaderInfo
+            l_ObjectShaderInfos[LOW_RENDERER_RENDEROBJECT_COUNT];
         uint32_t l_ObjectIndex = 0;
 
         for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();

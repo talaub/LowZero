@@ -120,6 +120,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MeshResource::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshAsset l_Handle = p_Handle.get_id();
+          l_Handle.get_lod0();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, lod0,
                                             MeshResource);
         };
@@ -150,6 +152,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshAsset l_Handle = p_Handle.get_id();
+          l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, unique_id,
                                             Low::Util::UniqueId);
         };
@@ -164,6 +168,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshAsset l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, name,
                                             Low::Util::Name);
         };
@@ -275,6 +281,10 @@ namespace Low {
     MeshResource MeshAsset::get_lod0() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod0
+      // LOW_CODEGEN::END::CUSTOM:GETTER_lod0
+
       return TYPE_SOA(MeshAsset, lod0, MeshResource);
     }
     void MeshAsset::set_lod0(MeshResource p_Value)
@@ -302,6 +312,10 @@ namespace Low {
     uint32_t MeshAsset::get_reference_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
+
       return TYPE_SOA(MeshAsset, reference_count, uint32_t);
     }
     void MeshAsset::set_reference_count(uint32_t p_Value)
@@ -321,6 +335,10 @@ namespace Low {
     Low::Util::UniqueId MeshAsset::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
       return TYPE_SOA(MeshAsset, unique_id, Low::Util::UniqueId);
     }
     void MeshAsset::set_unique_id(Low::Util::UniqueId p_Value)
@@ -340,6 +358,10 @@ namespace Low {
     Low::Util::Name MeshAsset::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(MeshAsset, name, Low::Util::Name);
     }
     void MeshAsset::set_name(Low::Util::Name p_Value)

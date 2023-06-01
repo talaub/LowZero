@@ -8,7 +8,7 @@ namespace Low {
   namespace Editor {
     namespace PropertyEditors {
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
-                         const void *p_DataPtr);
+                         Util::Handle p_Handle, const void *p_DataPtr);
 
       bool render_color_selector(Util::String p_Label, Math::Color *p_Color);
 

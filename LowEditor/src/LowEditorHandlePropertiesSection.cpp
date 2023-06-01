@@ -6,6 +6,7 @@
 #include "LowCoreMaterial.h"
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreRigidbody.h"
 
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorMainWindow.h"
@@ -166,7 +167,7 @@ namespace Low {
           if (pit->second.type == Util::RTTI::PropertyType::HANDLE) {
             PropertyEditors::render_handle_selector(pit->second, m_Handle);
           } else {
-            PropertyEditors::render_editor(pit->second,
+            PropertyEditors::render_editor(pit->second, m_Handle,
                                            pit->second.get(m_Handle));
           }
         }

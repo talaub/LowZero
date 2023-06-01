@@ -127,6 +127,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, context);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.get_context();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, context,
                                               Backend::Context);
           };
@@ -141,6 +143,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, renderpasses);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.get_renderpasses();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, renderpasses,
                                               Util::List<Renderpass>);
           };
@@ -156,6 +160,8 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = PipelineResourceSignature::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.get_global_signature();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, global_signature, PipelineResourceSignature);
           };
@@ -171,6 +177,8 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.get_frame_info_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, frame_info_buffer, Resource::Buffer);
           };
@@ -187,6 +195,8 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.get_material_data_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Context, material_data_buffer, Resource::Buffer);
           };
@@ -201,6 +211,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Context l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, name,
                                               Low::Util::Name);
           };
@@ -320,18 +332,30 @@ namespace Low {
       Backend::Context &Context::get_context() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+        // LOW_CODEGEN::END::CUSTOM:GETTER_context
+
         return TYPE_SOA(Context, context, Backend::Context);
       }
 
       Util::List<Renderpass> &Context::get_renderpasses() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpasses
+        // LOW_CODEGEN::END::CUSTOM:GETTER_renderpasses
+
         return TYPE_SOA(Context, renderpasses, Util::List<Renderpass>);
       }
 
       PipelineResourceSignature Context::get_global_signature() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_global_signature
+        // LOW_CODEGEN::END::CUSTOM:GETTER_global_signature
+
         return TYPE_SOA(Context, global_signature, PipelineResourceSignature);
       }
       void Context::set_global_signature(PipelineResourceSignature p_Value)
@@ -352,6 +376,10 @@ namespace Low {
       Resource::Buffer Context::get_frame_info_buffer() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_info_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_frame_info_buffer
+
         return TYPE_SOA(Context, frame_info_buffer, Resource::Buffer);
       }
       void Context::set_frame_info_buffer(Resource::Buffer p_Value)
@@ -371,6 +399,10 @@ namespace Low {
       Resource::Buffer Context::get_material_data_buffer() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_data_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_material_data_buffer
+
         return TYPE_SOA(Context, material_data_buffer, Resource::Buffer);
       }
       void Context::set_material_data_buffer(Resource::Buffer p_Value)
@@ -390,6 +422,10 @@ namespace Low {
       Low::Util::Name Context::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(Context, name, Low::Util::Name);
       }
       void Context::set_name(Low::Util::Name p_Value)
@@ -630,6 +666,7 @@ namespace Low {
       void Context::update_dimensions()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+        Backend::callbacks().context_wait_idle(get_context());
         Backend::callbacks().context_update_dimensions(get_context());
 
         get_renderpasses().resize(get_image_count());

@@ -121,6 +121,8 @@ namespace Low {
               offsetof(PipelineResourceSignatureData, signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            PipelineResourceSignature l_Handle = p_Handle.get_id();
+            l_Handle.get_signature();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PipelineResourceSignature, signature,
                 Backend::PipelineResourceSignature);
@@ -137,6 +139,8 @@ namespace Low {
               offsetof(PipelineResourceSignatureData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            PipelineResourceSignature l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PipelineResourceSignature, name, Low::Util::Name);
           };
@@ -241,6 +245,10 @@ namespace Low {
       PipelineResourceSignature::get_signature() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signature
+        // LOW_CODEGEN::END::CUSTOM:GETTER_signature
+
         return TYPE_SOA(PipelineResourceSignature, signature,
                         Backend::PipelineResourceSignature);
       }
@@ -248,6 +256,10 @@ namespace Low {
       Low::Util::Name PipelineResourceSignature::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(PipelineResourceSignature, name, Low::Util::Name);
       }
       void PipelineResourceSignature::set_name(Low::Util::Name p_Value)

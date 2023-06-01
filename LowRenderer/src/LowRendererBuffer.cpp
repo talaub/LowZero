@@ -112,6 +112,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(BufferData, buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Buffer l_Handle = p_Handle.get_id();
+            l_Handle.get_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, buffer,
                                               Backend::Buffer);
           };
@@ -129,6 +131,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(BufferData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Buffer l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, name,
                                               Low::Util::Name);
           };
@@ -225,6 +229,10 @@ namespace Low {
       Backend::Buffer &Buffer::get_buffer() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_buffer
+
         return TYPE_SOA(Buffer, buffer, Backend::Buffer);
       }
       void Buffer::set_buffer(Backend::Buffer &p_Value)
@@ -244,6 +252,10 @@ namespace Low {
       Low::Util::Name Buffer::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(Buffer, name, Low::Util::Name);
       }
       void Buffer::set_name(Low::Util::Name p_Value)

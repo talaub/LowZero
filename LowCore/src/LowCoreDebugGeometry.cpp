@@ -180,7 +180,7 @@ namespace Low {
       {
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Sphere.position) *
-            glm::toMat4(Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f)) *
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f)) *
             glm::scale(glm::mat4(1.0f), Math::Vector3(p_Sphere.radius));
 
         render_mesh(g_Meshes.sphere, p_Color, l_Transform, p_DepthTest,
@@ -246,7 +246,7 @@ namespace Low {
       {
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Position) *
-            glm::toMat4(Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f)) *
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f)) *
             glm::scale(glm::mat4(1.0f), Math::Vector3(p_Size));
 
         Math::Color l_Color(1.0f);
@@ -279,6 +279,58 @@ namespace Low {
             Renderer::upload_texture(N(BillboadTexture), l_Image);
 
         return create_spherical_billboard_material(l_Texture);
+      }
+
+      void render_line(Math::Vector3 p_Start, Math::Vector3 p_End,
+                       Math::Color p_Color, bool p_DepthTest, bool p_Wireframe,
+                       float p_Thickness)
+      {
+        {
+          float x = p_Start.x;
+          p_Start.x = p_Start.z * -1.0f;
+          p_Start.z = x;
+        }
+        {
+          float x = p_End.x;
+          p_End.x = p_End.z * -1.0f;
+          p_End.z = x;
+        }
+
+        Math::Cylinder l_Cylinder;
+
+        Math::Vector3 l_Diff = p_End - p_Start;
+        l_Diff = Math::VectorUtil::normalize(l_Diff);
+
+        float l_Distance = Math::VectorUtil::distance(p_Start, p_End);
+
+        Low::Math::Vector3 l_Up(0.0f, 1.0f, 0.0f);
+        l_Up = Math::VectorUtil::normalize(l_Up);
+
+        Math::Vector3 l_RotatedDiff = l_Diff;
+        {
+          float x = l_RotatedDiff.x;
+          l_RotatedDiff.x = l_RotatedDiff.z * -1.0f;
+          l_RotatedDiff.z = x * -2.0f;
+        }
+
+        l_Cylinder.position = p_Start + (l_RotatedDiff * (l_Distance * 0.5f));
+        l_Cylinder.height = l_Distance * 0.5f;
+        l_Cylinder.radius = p_Thickness;
+        l_Diff.y *= -1.0f;
+        l_Cylinder.rotation = Math::VectorUtil::between(l_Up, l_Diff);
+        // render_cylinder(l_Cylinder, p_Color, p_DepthTest, p_Wireframe);
+
+        Math::Cylinder p_Cylinder = l_Cylinder;
+
+        Math::Matrix4x4 l_Transform =
+            glm::translate(glm::mat4(1.0f), p_Cylinder.position) *
+            glm::toMat4(p_Cylinder.rotation) *
+            glm::scale(glm::mat4(1.0f),
+                       Math::Vector3(p_Cylinder.radius, p_Cylinder.height,
+                                     p_Cylinder.radius));
+
+        render_mesh(g_Meshes.cylinder, p_Color, l_Transform, p_DepthTest,
+                    p_Wireframe);
       }
     } // namespace DebugGeometry
   }   // namespace Core

@@ -118,6 +118,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(RenderpassData, renderpass);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Renderpass l_Handle = p_Handle.get_id();
+            l_Handle.get_renderpass();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass, renderpass,
                                               Backend::Renderpass);
           };
@@ -135,6 +137,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(RenderpassData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Renderpass l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass, name,
                                               Low::Util::Name);
           };
@@ -231,6 +235,10 @@ namespace Low {
       Backend::Renderpass &Renderpass::get_renderpass() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpass
+        // LOW_CODEGEN::END::CUSTOM:GETTER_renderpass
+
         return TYPE_SOA(Renderpass, renderpass, Backend::Renderpass);
       }
       void Renderpass::set_renderpass(Backend::Renderpass &p_Value)
@@ -250,6 +258,10 @@ namespace Low {
       Low::Util::Name Renderpass::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(Renderpass, name, Low::Util::Name);
       }
       void Renderpass::set_name(Low::Util::Name p_Value)

@@ -106,6 +106,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_vertex_buffer_start();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_buffer_start,
                                             uint32_t);
         };
@@ -123,6 +125,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_vertex_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count,
                                             uint32_t);
         };
@@ -140,6 +144,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_index_buffer_start();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_buffer_start,
                                             uint32_t);
         };
@@ -157,6 +163,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_index_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count,
                                             uint32_t);
         };
@@ -175,6 +183,8 @@ namespace Low {
             offsetof(MeshData, vertexweight_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_vertexweight_buffer_start();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Mesh, vertexweight_buffer_start, uint32_t);
         };
@@ -192,6 +202,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertexweight_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_vertexweight_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertexweight_count,
                                             uint32_t);
         };
@@ -209,6 +221,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, name,
                                             Low::Util::Name);
         };
@@ -331,6 +345,10 @@ namespace Low {
     uint32_t Mesh::get_vertex_buffer_start() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_buffer_start
+
       return TYPE_SOA(Mesh, vertex_buffer_start, uint32_t);
     }
     void Mesh::set_vertex_buffer_start(uint32_t p_Value)
@@ -350,6 +368,10 @@ namespace Low {
     uint32_t Mesh::get_vertex_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_count
+
       return TYPE_SOA(Mesh, vertex_count, uint32_t);
     }
     void Mesh::set_vertex_count(uint32_t p_Value)
@@ -369,6 +391,10 @@ namespace Low {
     uint32_t Mesh::get_index_buffer_start() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:GETTER_index_buffer_start
+
       return TYPE_SOA(Mesh, index_buffer_start, uint32_t);
     }
     void Mesh::set_index_buffer_start(uint32_t p_Value)
@@ -388,6 +414,10 @@ namespace Low {
     uint32_t Mesh::get_index_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_index_count
+
       return TYPE_SOA(Mesh, index_count, uint32_t);
     }
     void Mesh::set_index_count(uint32_t p_Value)
@@ -407,6 +437,10 @@ namespace Low {
     uint32_t Mesh::get_vertexweight_buffer_start() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertexweight_buffer_start
+      // LOW_CODEGEN::END::CUSTOM:GETTER_vertexweight_buffer_start
+
       return TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t);
     }
     void Mesh::set_vertexweight_buffer_start(uint32_t p_Value)
@@ -426,6 +460,10 @@ namespace Low {
     uint32_t Mesh::get_vertexweight_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertexweight_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_vertexweight_count
+
       return TYPE_SOA(Mesh, vertexweight_count, uint32_t);
     }
     void Mesh::set_vertexweight_count(uint32_t p_Value)
@@ -445,6 +483,10 @@ namespace Low {
     Low::Util::Name Mesh::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Mesh, name, Low::Util::Name);
     }
     void Mesh::set_name(Low::Util::Name p_Value)

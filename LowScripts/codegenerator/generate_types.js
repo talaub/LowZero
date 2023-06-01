@@ -59,7 +59,12 @@ function is_math_type(p_Type) {
 	'Vector4',
 	'Color',
 	'ColorRGB',
-	'Quaternion'
+	'Quaternion',
+	'Shape',
+	'Box',
+	'Sphere',
+	'Cylinder',
+	'Cone'
     ];
 
     const l_Prefixes = [
@@ -152,6 +157,9 @@ function is_container_type(p_Type) {
 function get_property_type(p_Type) {
     if (p_Type.endsWith('Math::ColorRGB')) {
 	return 'COLORRGB';
+    }
+    if (p_Type.endsWith('Math::Shape')) {
+	return 'SHAPE';
     }
     if (p_Type.endsWith('Math::Vector2')) {
 	return 'VECTOR2';
@@ -477,7 +485,7 @@ function generate_header(p_Type) {
 	    continue;
 	}
 	if (!i_Prop.no_getter) {
-	    const l = `${i_Prop.accessor_type}${i_Prop.getter_name}() const;`;
+	    const l = `${i_Prop.accessor_type}${i_Prop.getter_name}() ${i_Prop.getter_no_const?'':'const'};`;
 	    if (i_Prop.private_getter) {
 		privatelines.push(l);
 	    }
@@ -765,8 +773,12 @@ function generate_source(p_Type) {
 	}
 	t += line(`l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`);
 	if (!i_Prop.no_getter && !i_Prop.private_getter) {
+	    t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
+	    t += line(`l_Handle.${i_Prop.getter_name}();`);
 	    t += line(`return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ${p_Type.name}, ${i_PropName},
                                             ${i_Prop.soa_type});`);
+	    /*
+	    */
 
 	}
 	else {
@@ -967,9 +979,28 @@ function generate_source(p_Type) {
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	if (!i_Prop.no_getter) {
-	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() const`, n);
+	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() ${i_Prop.getter_no_const ? '':'const'}`, n);
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
+	    const l_MarkerName = `CUSTOM:GETTER_${i_PropName}`;
+
+	    const i_GetterBeginMarker = get_marker_begin(l_MarkerName);
+	    const i_GetterEndMarker = get_marker_end(l_MarkerName);
+
+	    const i_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	    let i_CustomCode = '';
+
+	    if (i_BeginMarkerIndex >= 0) {
+		const i_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+		
+		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
+	    }
+	    t += empty();
+	    t += line(i_GetterBeginMarker);
+	    t += i_CustomCode;
+	    t += line(i_GetterEndMarker);
+	    t += empty();
 	    t += line(`return TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type});`, n);
 	    t += line('}', --n);
 	}
@@ -1015,7 +1046,9 @@ function generate_source(p_Type) {
 
 	    }
 	    if (i_Prop.dirty_flag) {
+		if (!i_Prop.dirty_flag_no_check) {
 		t += line(`if (${i_Prop.getter_name}() != p_Value) {`);
+		}
 		t += line('// Set dirty flags');
 		for (var i_Flag of i_Prop.dirty_flag) {
 		    t += line(`TYPE_SOA(${p_Type.name}, ${i_Flag}, bool) = true;`, n);
@@ -1028,7 +1061,7 @@ function generate_source(p_Type) {
 	    t += line(i_SetterBeginMarker);
 	    t += i_CustomCode;
 	    t += line(i_SetterEndMarker);
-	    if (i_Prop.dirty_flag) {
+	    if (i_Prop.dirty_flag&& !i_Prop.dirty_flag_no_check) {
 		t += line('}');
 	    }
 	    t += line('}', --n);

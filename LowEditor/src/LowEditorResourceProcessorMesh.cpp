@@ -114,7 +114,7 @@ namespace Low {
           LOW_ASSERT(l_Channel, "Could not find channel");
 
           Math::Vector3 l_Position(0.0f);
-          Math::Quaternion l_Rotation(0.0f, 0.0f, 0.0f, 1.0f);
+          Math::Quaternion l_Rotation(1.0f, 0.0f, 0.0f, 0.0f);
           Math::Vector3 l_Scale(1.0f);
 
           int l_PositionIndex = -1;

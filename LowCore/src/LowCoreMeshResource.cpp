@@ -119,6 +119,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_path();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, path,
                                             Util::String);
         };
@@ -133,6 +135,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, submeshes);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_submeshes();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, submeshes,
                                             Util::List<Submesh>);
         };
@@ -161,6 +165,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Skeleton::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_skeleton();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, skeleton,
                                             Renderer::Skeleton);
         };
@@ -175,6 +181,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, name,
                                             Low::Util::Name);
         };
@@ -264,6 +272,10 @@ namespace Low {
     Util::String &MeshResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+      // LOW_CODEGEN::END::CUSTOM:GETTER_path
+
       return TYPE_SOA(MeshResource, path, Util::String);
     }
     void MeshResource::set_path(Util::String &p_Value)
@@ -283,12 +295,20 @@ namespace Low {
     Util::List<Submesh> &MeshResource::get_submeshes() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submeshes
+      // LOW_CODEGEN::END::CUSTOM:GETTER_submeshes
+
       return TYPE_SOA(MeshResource, submeshes, Util::List<Submesh>);
     }
 
     uint32_t MeshResource::get_reference_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
+
       return TYPE_SOA(MeshResource, reference_count, uint32_t);
     }
     void MeshResource::set_reference_count(uint32_t p_Value)
@@ -308,6 +328,10 @@ namespace Low {
     Renderer::Skeleton MeshResource::get_skeleton() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skeleton
+      // LOW_CODEGEN::END::CUSTOM:GETTER_skeleton
+
       return TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton);
     }
     void MeshResource::set_skeleton(Renderer::Skeleton p_Value)
@@ -327,6 +351,10 @@ namespace Low {
     Low::Util::Name MeshResource::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
     }
     void MeshResource::set_name(Low::Util::Name p_Value)

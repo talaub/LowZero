@@ -124,6 +124,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(PointLightData, color);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            PointLight l_Handle = p_Handle.get_id();
+            l_Handle.get_color();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight, color,
                                               Math::ColorRGB);
           };
@@ -141,6 +143,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(PointLightData, intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            PointLight l_Handle = p_Handle.get_id();
+            l_Handle.get_intensity();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight, intensity,
                                               float);
           };
@@ -159,6 +163,8 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            PointLight l_Handle = p_Handle.get_id();
+            l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight, entity,
                                               Low::Core::Entity);
           };
@@ -176,6 +182,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(PointLightData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            PointLight l_Handle = p_Handle.get_id();
+            l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight, unique_id,
                                               Low::Util::UniqueId);
           };
@@ -273,6 +281,10 @@ namespace Low {
       Math::ColorRGB &PointLight::get_color() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
+        // LOW_CODEGEN::END::CUSTOM:GETTER_color
+
         return TYPE_SOA(PointLight, color, Math::ColorRGB);
       }
       void PointLight::set_color(Math::ColorRGB &p_Value)
@@ -292,6 +304,10 @@ namespace Low {
       float PointLight::get_intensity() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_intensity
+        // LOW_CODEGEN::END::CUSTOM:GETTER_intensity
+
         return TYPE_SOA(PointLight, intensity, float);
       }
       void PointLight::set_intensity(float p_Value)
@@ -311,6 +327,10 @@ namespace Low {
       Low::Core::Entity PointLight::get_entity() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+        // LOW_CODEGEN::END::CUSTOM:GETTER_entity
+
         return TYPE_SOA(PointLight, entity, Low::Core::Entity);
       }
       void PointLight::set_entity(Low::Core::Entity p_Value)
@@ -330,6 +350,10 @@ namespace Low {
       Low::Util::UniqueId PointLight::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+        // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
+
         return TYPE_SOA(PointLight, unique_id, Low::Util::UniqueId);
       }
       void PointLight::set_unique_id(Low::Util::UniqueId p_Value)

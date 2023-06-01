@@ -112,6 +112,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, root_bone);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Skeleton l_Handle = p_Handle.get_id();
+          l_Handle.get_root_bone();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, root_bone,
                                             Bone);
         };
@@ -129,6 +131,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, bone_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Skeleton l_Handle = p_Handle.get_id();
+          l_Handle.get_bone_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, bone_count,
                                             uint32_t);
         };
@@ -146,6 +150,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, animations);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Skeleton l_Handle = p_Handle.get_id();
+          l_Handle.get_animations();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, animations,
                                             Util::List<SkeletalAnimation>);
         };
@@ -160,6 +166,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Skeleton l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, name,
                                             Low::Util::Name);
         };
@@ -262,6 +270,10 @@ namespace Low {
     Bone &Skeleton::get_root_bone() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_root_bone
+      // LOW_CODEGEN::END::CUSTOM:GETTER_root_bone
+
       return TYPE_SOA(Skeleton, root_bone, Bone);
     }
     void Skeleton::set_root_bone(Bone &p_Value)
@@ -281,6 +293,10 @@ namespace Low {
     uint32_t Skeleton::get_bone_count() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_count
+      // LOW_CODEGEN::END::CUSTOM:GETTER_bone_count
+
       return TYPE_SOA(Skeleton, bone_count, uint32_t);
     }
     void Skeleton::set_bone_count(uint32_t p_Value)
@@ -300,12 +316,20 @@ namespace Low {
     Util::List<SkeletalAnimation> &Skeleton::get_animations() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_animations
+      // LOW_CODEGEN::END::CUSTOM:GETTER_animations
+
       return TYPE_SOA(Skeleton, animations, Util::List<SkeletalAnimation>);
     }
 
     Low::Util::Name Skeleton::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(Skeleton, name, Low::Util::Name);
     }
     void Skeleton::set_name(Low::Util::Name p_Value)

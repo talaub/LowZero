@@ -38,6 +38,8 @@ namespace Low {
       LOW_EXPORT Quaternion from_euler(Math::Vector3 &p_EulerAngles);
 
       LOW_EXPORT Matrix4x4 to_row_major(const Matrix4x4 p_Matrix);
+
+      LOW_EXPORT Quaternion between(Vector3 p_From, Vector3 p_To);
     } // namespace VectorUtil
   }   // namespace Math
 } // namespace Low

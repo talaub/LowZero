@@ -118,6 +118,8 @@ namespace Low {
             offsetof(MaterialTypeData, gbuffer_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_gbuffer_pipeline();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MaterialType, gbuffer_pipeline, GraphicsPipelineConfig);
         };
@@ -135,6 +137,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, depth_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_depth_pipeline();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MaterialType, depth_pipeline, GraphicsPipelineConfig);
         };
@@ -152,6 +156,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, internal);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.is_internal();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, internal,
                                             bool);
         };
@@ -169,6 +175,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_properties();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, properties,
                                             Util::List<MaterialTypeProperty>);
         };
@@ -186,6 +194,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, name,
                                             Low::Util::Name);
         };
@@ -273,6 +283,10 @@ namespace Low {
     GraphicsPipelineConfig &MaterialType::get_gbuffer_pipeline() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_pipeline
+      // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_pipeline
+
       return TYPE_SOA(MaterialType, gbuffer_pipeline, GraphicsPipelineConfig);
     }
     void MaterialType::set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value)
@@ -293,6 +307,10 @@ namespace Low {
     GraphicsPipelineConfig &MaterialType::get_depth_pipeline() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline
+      // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline
+
       return TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig);
     }
     void MaterialType::set_depth_pipeline(GraphicsPipelineConfig &p_Value)
@@ -312,6 +330,10 @@ namespace Low {
     bool MaterialType::is_internal() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
+      // LOW_CODEGEN::END::CUSTOM:GETTER_internal
+
       return TYPE_SOA(MaterialType, internal, bool);
     }
     void MaterialType::set_internal(bool p_Value)
@@ -331,6 +353,10 @@ namespace Low {
     Util::List<MaterialTypeProperty> &MaterialType::get_properties() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_properties
+      // LOW_CODEGEN::END::CUSTOM:GETTER_properties
+
       return TYPE_SOA(MaterialType, properties,
                       Util::List<MaterialTypeProperty>);
     }
@@ -352,6 +378,10 @@ namespace Low {
     Low::Util::Name MaterialType::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(MaterialType, name, Low::Util::Name);
     }
     void MaterialType::set_name(Low::Util::Name p_Value)

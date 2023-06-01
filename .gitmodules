@@ -48,3 +48,6 @@
 [submodule "LowDependencies/recastnavigation"]
 	path = LowDependencies/recastnavigation
 	url = https://github.com/recastnavigation/recastnavigation.git
+[submodule "LowDependencies/nvidia-physx"]
+	path = LowDependencies/nvidia-physx
+	url = https://github.com/Zeblote/PhysX.git

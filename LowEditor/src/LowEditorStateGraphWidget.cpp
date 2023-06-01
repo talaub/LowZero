@@ -19,6 +19,7 @@ namespace Low {
 
     void StateGraphWidget::render(float p_Delta)
     {
+      return;
       ImGui::Begin(ICON_FA_PROJECT_DIAGRAM " StateGraph");
 
       auto &io = ImGui::GetIO();

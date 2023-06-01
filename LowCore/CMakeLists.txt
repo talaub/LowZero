@@ -9,6 +9,7 @@ add_dependencies(LowCore
   LowUtil
   LowMath
   LowRenderer
+  physx
   Recast
 )
 
@@ -35,5 +36,6 @@ target_link_libraries(LowCore PRIVATE
   LowRenderer
   LowUtil
   LowMath
+  physx
   Recast
 )

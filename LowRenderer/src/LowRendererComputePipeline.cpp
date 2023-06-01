@@ -116,6 +116,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ComputePipelineData, pipeline);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            ComputePipeline l_Handle = p_Handle.get_id();
+            l_Handle.get_pipeline();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline,
                                               pipeline, Backend::Pipeline);
           };
@@ -130,6 +132,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ComputePipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            ComputePipeline l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline, name,
                                               Low::Util::Name);
           };
@@ -227,12 +231,20 @@ namespace Low {
       Backend::Pipeline &ComputePipeline::get_pipeline() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipeline
+        // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline
+
         return TYPE_SOA(ComputePipeline, pipeline, Backend::Pipeline);
       }
 
       Low::Util::Name ComputePipeline::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(ComputePipeline, name, Low::Util::Name);
       }
       void ComputePipeline::set_name(Low::Util::Name p_Value)

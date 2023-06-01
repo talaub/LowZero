@@ -20,6 +20,7 @@ add_dependencies(LowEditor
   LowCore
   nativefiledialog
   assimp
+  physx
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
@@ -44,4 +45,5 @@ target_link_libraries(LowEditor PRIVATE
   LowMath
   nativefiledialog
   assimp
+  physx
 )

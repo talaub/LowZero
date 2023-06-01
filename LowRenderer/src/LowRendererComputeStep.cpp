@@ -129,6 +129,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStep l_Handle = p_Handle.get_id();
+          l_Handle.get_resources();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, resources,
               SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
@@ -145,6 +147,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = ComputeStepConfig::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStep l_Handle = p_Handle.get_id();
+          l_Handle.get_config();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep, config,
                                             ComputeStepConfig);
         };
@@ -159,6 +163,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStep l_Handle = p_Handle.get_id();
+          l_Handle.get_pipelines();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, pipelines,
               SINGLE_ARG(Util::Map<RenderFlow,
@@ -175,6 +181,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, signatures);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStep l_Handle = p_Handle.get_id();
+          l_Handle.get_signatures();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, signatures,
               SINGLE_ARG(
@@ -193,6 +201,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStep l_Handle = p_Handle.get_id();
+          l_Handle.get_context();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep, context,
                                             Interface::Context);
         };
@@ -207,6 +217,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          ComputeStep l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep, name,
                                             Low::Util::Name);
         };
@@ -319,6 +331,10 @@ namespace Low {
     Util::Map<RenderFlow, ResourceRegistry> &ComputeStep::get_resources() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resources
+
       return TYPE_SOA(ComputeStep, resources,
                       SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
     }
@@ -326,6 +342,10 @@ namespace Low {
     ComputeStepConfig ComputeStep::get_config() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_config
+      // LOW_CODEGEN::END::CUSTOM:GETTER_config
+
       return TYPE_SOA(ComputeStep, config, ComputeStepConfig);
     }
     void ComputeStep::set_config(ComputeStepConfig p_Value)
@@ -346,6 +366,10 @@ namespace Low {
     ComputeStep::get_pipelines() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipelines
+      // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
+
       return TYPE_SOA(
           ComputeStep, pipelines,
           SINGLE_ARG(
@@ -356,6 +380,10 @@ namespace Low {
     ComputeStep::get_signatures() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signatures
+      // LOW_CODEGEN::END::CUSTOM:GETTER_signatures
+
       return TYPE_SOA(
           ComputeStep, signatures,
           SINGLE_ARG(
@@ -366,6 +394,10 @@ namespace Low {
     Interface::Context ComputeStep::get_context() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+      // LOW_CODEGEN::END::CUSTOM:GETTER_context
+
       return TYPE_SOA(ComputeStep, context, Interface::Context);
     }
     void ComputeStep::set_context(Interface::Context p_Value)
@@ -385,6 +417,10 @@ namespace Low {
     Low::Util::Name ComputeStep::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(ComputeStep, name, Low::Util::Name);
     }
     void ComputeStep::set_name(Low::Util::Name p_Value)

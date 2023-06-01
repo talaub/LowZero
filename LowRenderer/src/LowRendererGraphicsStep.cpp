@@ -142,6 +142,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_resources();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GraphicsStep, resources,
               SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
@@ -158,6 +160,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = GraphicsStepConfig::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_config();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStep, config,
                                             GraphicsStepConfig);
         };
@@ -172,6 +176,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_pipelines();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GraphicsStep, pipelines,
               SINGLE_ARG(Util::Map<RenderFlow,
@@ -188,6 +194,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, renderobjects);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_renderobjects();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GraphicsStep, renderobjects,
               SINGLE_ARG(Util::Map<Util::Name,
@@ -205,6 +213,8 @@ namespace Low {
             offsetof(GraphicsStepData, skinned_renderobjects);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_skinned_renderobjects();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GraphicsStep, skinned_renderobjects,
               SINGLE_ARG(Util::Map<Util::Name, Util::List<RenderObject>>));
@@ -220,6 +230,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, renderpasses);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_renderpasses();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GraphicsStep, renderpasses,
               SINGLE_ARG(Util::Map<RenderFlow, Interface::Renderpass>));
@@ -236,6 +248,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_context();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStep, context,
                                             Interface::Context);
         };
@@ -250,6 +264,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, signatures);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_signatures();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GraphicsStep, signatures,
               SINGLE_ARG(
@@ -266,6 +282,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          GraphicsStep l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStep, name,
                                             Low::Util::Name);
         };
@@ -384,6 +402,10 @@ namespace Low {
     Util::Map<RenderFlow, ResourceRegistry> &GraphicsStep::get_resources() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resources
+
       return TYPE_SOA(GraphicsStep, resources,
                       SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
     }
@@ -391,6 +413,10 @@ namespace Low {
     GraphicsStepConfig GraphicsStep::get_config() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_config
+      // LOW_CODEGEN::END::CUSTOM:GETTER_config
+
       return TYPE_SOA(GraphicsStep, config, GraphicsStepConfig);
     }
     void GraphicsStep::set_config(GraphicsStepConfig p_Value)
@@ -411,6 +437,10 @@ namespace Low {
     GraphicsStep::get_pipelines() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipelines
+      // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
+
       return TYPE_SOA(
           GraphicsStep, pipelines,
           SINGLE_ARG(
@@ -421,6 +451,10 @@ namespace Low {
     GraphicsStep::get_renderobjects() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderobjects
+      // LOW_CODEGEN::END::CUSTOM:GETTER_renderobjects
+
       return TYPE_SOA(
           GraphicsStep, renderobjects,
           SINGLE_ARG(Util::Map<Util::Name,
@@ -431,6 +465,10 @@ namespace Low {
     GraphicsStep::get_skinned_renderobjects() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinned_renderobjects
+      // LOW_CODEGEN::END::CUSTOM:GETTER_skinned_renderobjects
+
       return TYPE_SOA(
           GraphicsStep, skinned_renderobjects,
           SINGLE_ARG(Util::Map<Util::Name, Util::List<RenderObject>>));
@@ -440,6 +478,10 @@ namespace Low {
     GraphicsStep::get_renderpasses() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpasses
+      // LOW_CODEGEN::END::CUSTOM:GETTER_renderpasses
+
       return TYPE_SOA(GraphicsStep, renderpasses,
                       SINGLE_ARG(Util::Map<RenderFlow, Interface::Renderpass>));
     }
@@ -447,6 +489,10 @@ namespace Low {
     Interface::Context GraphicsStep::get_context() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+      // LOW_CODEGEN::END::CUSTOM:GETTER_context
+
       return TYPE_SOA(GraphicsStep, context, Interface::Context);
     }
     void GraphicsStep::set_context(Interface::Context p_Value)
@@ -467,6 +513,10 @@ namespace Low {
     GraphicsStep::get_signatures() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signatures
+      // LOW_CODEGEN::END::CUSTOM:GETTER_signatures
+
       return TYPE_SOA(
           GraphicsStep, signatures,
           SINGLE_ARG(
@@ -476,6 +526,10 @@ namespace Low {
     Low::Util::Name GraphicsStep::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(GraphicsStep, name, Low::Util::Name);
     }
     void GraphicsStep::set_name(Low::Util::Name p_Value)
@@ -503,6 +557,15 @@ namespace Low {
 
       return l_Step;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void GraphicsStep::clear_renderobjects()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_renderobjects
+      get_renderobjects().clear();
+      get_skinned_renderobjects().clear();
+
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_renderobjects
     }
 
     void GraphicsStep::prepare(RenderFlow p_RenderFlow)
@@ -537,8 +600,7 @@ namespace Low {
       get_config().get_callbacks().execute(*this, p_RenderFlow,
                                            p_ProjectionMatrix, p_ViewMatrix);
 
-      get_renderobjects().clear();
-      get_skinned_renderobjects().clear();
+      clear_renderobjects();
 
       if (get_context().is_debug_enabled()) {
         LOW_RENDERER_END_RENDERDOC_SECTION(get_context().get_context());
@@ -752,16 +814,25 @@ namespace Low {
                                        Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
-      RenderObjectShaderInfo l_ObjectShaderInfos[32];
-      Math::Vector4 l_Colors[32];
+      RenderObjectShaderInfo
+          l_ObjectShaderInfos[LOW_RENDERER_RENDEROBJECT_COUNT];
+      Math::Vector4 l_Colors[LOW_RENDERER_RENDEROBJECT_COUNT];
       uint32_t l_ObjectIndex = 0;
 
       for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
            pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {
+        Interface::GraphicsPipeline i_GraphicsPipeline = *pit;
+        if (!i_GraphicsPipeline.is_alive()) {
+          continue;
+        }
 
         for (auto mit =
-                 p_Step.get_skinned_renderobjects()[pit->get_name()].begin();
-             mit != p_Step.get_skinned_renderobjects()[pit->get_name()].end();
+                 p_Step
+                     .get_skinned_renderobjects()[i_GraphicsPipeline.get_name()]
+                     .begin();
+             mit !=
+             p_Step.get_skinned_renderobjects()[i_GraphicsPipeline.get_name()]
+                 .end();
              ++mit) {
           RenderObject &i_RenderObject = *mit;
 
@@ -782,14 +853,17 @@ namespace Low {
           l_ObjectIndex++;
         }
 
-        for (auto mit = p_Step.get_renderobjects()[pit->get_name()].begin();
-             mit != p_Step.get_renderobjects()[pit->get_name()].end(); ++mit) {
+        for (auto mit =
+                 p_Step.get_renderobjects()[i_GraphicsPipeline.get_name()]
+                     .begin();
+             mit !=
+             p_Step.get_renderobjects()[i_GraphicsPipeline.get_name()].end();
+             ++mit) {
           for (auto it = mit->second.begin(); it != mit->second.end();) {
             RenderObject &i_RenderObject = *it;
 
             Math::Matrix4x4 l_MVPMatrix =
                 p_ProjectionMatrix * p_ViewMatrix * i_RenderObject.transform;
-
             l_Colors[l_ObjectIndex] = i_RenderObject.color;
 
             l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;

@@ -116,6 +116,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletalAnimationData, duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          l_Handle.get_duration();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
                                             duration, float);
         };
@@ -134,6 +136,8 @@ namespace Low {
             offsetof(SkeletalAnimationData, ticks_per_second);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          l_Handle.get_ticks_per_second();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
                                             ticks_per_second, float);
         };
@@ -151,6 +155,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletalAnimationData, channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          l_Handle.get_channels();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, SkeletalAnimation, channels,
               Util::List<Util::Resource::AnimationChannel>);
@@ -166,6 +172,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(SkeletalAnimationData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation, name,
                                             Low::Util::Name);
         };
@@ -272,6 +280,10 @@ namespace Low {
     float SkeletalAnimation::get_duration() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_duration
+      // LOW_CODEGEN::END::CUSTOM:GETTER_duration
+
       return TYPE_SOA(SkeletalAnimation, duration, float);
     }
     void SkeletalAnimation::set_duration(float p_Value)
@@ -291,6 +303,10 @@ namespace Low {
     float SkeletalAnimation::get_ticks_per_second() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ticks_per_second
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ticks_per_second
+
       return TYPE_SOA(SkeletalAnimation, ticks_per_second, float);
     }
     void SkeletalAnimation::set_ticks_per_second(float p_Value)
@@ -311,6 +327,10 @@ namespace Low {
     SkeletalAnimation::get_channels() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_channels
+      // LOW_CODEGEN::END::CUSTOM:GETTER_channels
+
       return TYPE_SOA(SkeletalAnimation, channels,
                       Util::List<Util::Resource::AnimationChannel>);
     }
@@ -318,6 +338,10 @@ namespace Low {
     Low::Util::Name SkeletalAnimation::get_name() const
     {
       _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
       return TYPE_SOA(SkeletalAnimation, name, Low::Util::Name);
     }
     void SkeletalAnimation::set_name(Low::Util::Name p_Value)

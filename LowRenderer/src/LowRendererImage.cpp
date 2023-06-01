@@ -111,6 +111,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImageData, image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Image l_Handle = p_Handle.get_id();
+            l_Handle.get_image();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, image,
                                               Backend::ImageResource);
           };
@@ -128,6 +130,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImageData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Image l_Handle = p_Handle.get_id();
+            l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, name,
                                               Low::Util::Name);
           };
@@ -224,6 +228,10 @@ namespace Low {
       Backend::ImageResource &Image::get_image() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_image
+        // LOW_CODEGEN::END::CUSTOM:GETTER_image
+
         return TYPE_SOA(Image, image, Backend::ImageResource);
       }
       void Image::set_image(Backend::ImageResource &p_Value)
@@ -243,6 +251,10 @@ namespace Low {
       Low::Util::Name Image::get_name() const
       {
         _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
         return TYPE_SOA(Image, name, Low::Util::Name);
       }
       void Image::set_name(Low::Util::Name p_Value)

@@ -57,7 +57,8 @@ namespace Low {
           UINT64,
           INT,
           BOOL,
-          HANDLE
+          HANDLE,
+          SHAPE
         };
       }
 
