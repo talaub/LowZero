@@ -21,6 +21,7 @@ add_dependencies(LowEditor
   nativefiledialog
   assimp
   physx
+  MistedaPlugin
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
@@ -46,4 +47,5 @@ target_link_libraries(LowEditor PRIVATE
   nativefiledialog
   assimp
   physx
+  MistedaPlugin
 )

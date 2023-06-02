@@ -395,6 +395,7 @@ namespace Low {
     {
       m_RenderFlowWidget->render(p_Delta);
 
+      /*
       float height = 0.0f;
       float len = 1.0f;
 
@@ -428,6 +429,7 @@ namespace Low {
         Core::DebugGeometry::render_line(l_RootBox, l_Box.position,
                                          l_DrawColorLine, true, false);
       }
+      */
 
       /*
       {

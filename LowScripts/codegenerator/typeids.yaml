@@ -31,3 +31,5 @@ LowCore:
   DirectionalLight: 27
   PointLight: 28
   Rigidbody: 31
+MistedaPlugin:
+  CameraController: 32

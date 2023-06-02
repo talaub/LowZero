@@ -51,6 +51,7 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Region, entities,
                               Util::Set<Util::UniqueId>))
           Util::Set<Util::UniqueId>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Region, scene, Scene)) Scene();
       ACCESSOR_TYPE_SOA(l_Handle, Region, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -202,6 +203,25 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(scene);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(RegionData, scene);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Scene::TYPE_ID;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.get_scene();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, scene, Scene);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Region l_Handle = p_Handle.get_id();
+          l_Handle.set_scene(*(Scene *)p_Data);
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -448,6 +468,30 @@ namespace Low {
       return TYPE_SOA(Region, entities, Util::Set<Util::UniqueId>);
     }
 
+    Scene Region::get_scene() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scene
+      // LOW_CODEGEN::END::CUSTOM:GETTER_scene
+
+      return TYPE_SOA(Region, scene, Scene);
+    }
+    void Region::set_scene(Scene p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scene
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_scene
+
+      // Set new value
+      TYPE_SOA(Region, scene, Scene) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scene
+      p_Value.get_regions().insert(get_unique_id());
+      // LOW_CODEGEN::END::CUSTOM:SETTER_scene
+    }
+
     Low::Util::UniqueId Region::get_unique_id() const
     {
       _LOW_ASSERT(is_alive());
@@ -639,6 +683,12 @@ namespace Low {
                   Util::Set<Util::UniqueId>();
           *i_ValPtr = it->get_entities();
         }
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RegionData, scene) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RegionData, scene) * (l_Capacity)],
+               l_Capacity * sizeof(Scene));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RegionData, unique_id) *

@@ -16,6 +16,7 @@
 #include "LowEditorGui.h"
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
+#include "LowEditorSaveHelper.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -119,8 +120,7 @@ namespace Low {
         }
         if (ImGui::BeginMenu("Scene")) {
           if (ImGui::MenuItem("Save", NULL, nullptr)) {
-            LOW_LOG_WARN << "Saving scenes is not yet implemented"
-                         << LOW_LOG_END;
+            SaveHelper::save_scene(Core::Scene::get_loaded_scene());
           }
 
           ImGui::EndMenu();

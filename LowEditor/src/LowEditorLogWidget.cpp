@@ -57,6 +57,9 @@ namespace Low {
       if (p_Entry.module == "lowed") {
         return "Editor";
       }
+      if (p_Entry.module == "misteda") {
+        return "Game";
+      }
 
       return "Low";
     }
@@ -88,6 +91,9 @@ namespace Low {
     static bool apply_filter(const Util::Log::LogEntry &p_Entry)
     {
       if (p_Entry.module == "lowed") {
+        return true;
+      }
+      if (p_Entry.module == "misteda") {
         return true;
       }
       if (p_Entry.module == "lowcore" &&

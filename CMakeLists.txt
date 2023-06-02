@@ -96,6 +96,7 @@ ENDFOREACH()
 # Adds the game subdirectory to the list of subprojects
 #LIST(APPEND SUBPROJECTS zero)
 #LIST(APPEND SUBPROJECTS gamestart)
+LIST(APPEND SUBPROJECTS MistedaPlugin)
 
 SET(LINK_DIRS "")
 SET(SUBPROJECTS_LOWERCASE "")

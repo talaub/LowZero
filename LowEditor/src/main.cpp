@@ -34,6 +34,8 @@
 
 #include "LowEditorMainWindow.h"
 
+#include "MtdPlugin.h"
+
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
 {
@@ -49,12 +51,8 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 
 static void setup_scene()
 {
-  Low::Core::Scene l_Scene = Low::Core::Scene::make(N(TestScene));
-
-  Low::Core::Region l_Region =
-      Low::Core::Region::find_by_name(N(GlobalTestRegion));
-
-  l_Region.load_entities();
+  Low::Core::Scene l_Scene = Low::Core::Scene::find_by_name(N(TestScene));
+  l_Scene.load();
 };
 
 int main()
@@ -71,7 +69,11 @@ int main()
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
+  Mtd::initialize();
+
   Low::Core::GameLoop::start();
+
+  Mtd::cleanup();
 
   Low::Core::cleanup();
 

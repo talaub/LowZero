@@ -156,6 +156,23 @@ namespace Low {
       }
     }
 
+    static void load_scenes()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\scenes";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".scene.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Scene::deserialize(i_Node, 0);
+        }
+      }
+    }
+
     static void load_resources()
     {
       load_mesh_resources();
@@ -181,6 +198,7 @@ namespace Low {
       load_assets();
 
       load_regions();
+      load_scenes();
     }
 
     static void cleanup_asset_types()

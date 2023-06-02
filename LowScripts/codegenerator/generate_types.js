@@ -320,7 +320,7 @@ function generate_header(p_Type) {
 
     t += line('#pragma once');
     t += empty();
-    t += include(`${p_Type.module}Api.h`);
+    t += include(`${p_Type.api_file}`);
     t += empty();
     t += include('LowUtilHandle.h');
     t += include('LowUtilName.h');
@@ -1196,6 +1196,11 @@ function process_file(p_FileName) {
     for (let [i_TypeName, i_Type] of Object.entries(l_Config.types)) {
 	i_Type.name = i_TypeName;
 	i_Type.module = l_Config.module;
+	i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module
+	i_Type.api_file = `${i_Type.prefix}Api.h`;
+	if (l_Config.api_file) {
+	    i_Type.api_file = l_Config.api_file;
+	}
 	i_Type.namespace = l_Config.namespace;
 	i_Type.typeId = 0;
 	if (g_TypeIdMap[l_Config.module][i_TypeName]) {
@@ -1321,9 +1326,9 @@ function process_file(p_FileName) {
 	}
 
 	i_Type.module_path = `${__dirname}\\..\\..\\${i_Type.module}`;
-	i_Type.header_file_name = `${i_Type.module}${i_Type.name}.h`
-	i_Type.header_file_path = `${i_Type.module_path}\\include\\${i_Type.module}${i_Type.name}.h`;
-	i_Type.source_file_path = `${i_Type.module_path}\\src\\${i_Type.module}${i_Type.name}.cpp`;
+	i_Type.header_file_name = `${i_Type.prefix}${i_Type.name}.h`
+	i_Type.header_file_path = `${i_Type.module_path}\\include\\${i_Type.prefix}${i_Type.name}.h`;
+	i_Type.source_file_path = `${i_Type.module_path}\\src\\${i_Type.prefix}${i_Type.name}.cpp`;
 	i_Type.dll_macro = l_Config.dll_macro;
 
 	const changed_header = generate_header(i_Type);

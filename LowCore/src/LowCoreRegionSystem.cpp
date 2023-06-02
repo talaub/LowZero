@@ -33,7 +33,8 @@ namespace Low {
                 i_Region.get_streaming_radius() *
                     i_Region.get_streaming_radius();
 
-            if (i_IsInRange && !i_Region.is_loaded()) {
+            if (i_IsInRange && !i_Region.is_loaded() &&
+                i_Region.get_scene().is_loaded()) {
               i_Region.load_entities();
             } else if (!i_IsInRange && i_Region.is_loaded()) {
               i_Region.unload_entities();
