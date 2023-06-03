@@ -16,6 +16,8 @@
 #include "LowCoreGameLoop.h"
 #include "LowCorePhysicsSystem.h"
 
+#include "LowRenderer.h"
+
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
 #include "LowUtilLogger.h"
@@ -248,14 +250,45 @@ namespace Low {
       return g_CurrentEngineState;
     }
 
+    struct PlaymodeStoredData
+    {
+      Scene scene;
+      Util::List<Util::Yaml::Node> regions;
+      Math::Vector3 cameraPosition;
+      Math::Vector3 cameraDirection;
+    };
+
+    PlaymodeStoredData g_StoredData;
+
     void begin_playmode()
     {
+      g_StoredData.scene = Scene::get_loaded_scene();
+
+      g_StoredData.regions.clear();
+      g_StoredData.regions.resize(g_StoredData.scene.get_regions().size());
+
+      for (auto it = g_StoredData.scene.get_regions().begin();
+           it != g_StoredData.scene.get_regions().end(); ++it) {
+      }
+
+      g_StoredData.cameraPosition =
+          Renderer::get_main_renderflow().get_camera_position();
+      g_StoredData.cameraDirection =
+          Renderer::get_main_renderflow().get_camera_direction();
+
       g_CurrentEngineState = Util::EngineState::PLAYING;
     }
 
     void exit_playmode()
     {
       g_CurrentEngineState = Util::EngineState::EDITING;
+
+      Renderer::get_main_renderflow().set_camera_position(
+          g_StoredData.cameraPosition);
+      Renderer::get_main_renderflow().set_camera_direction(
+          g_StoredData.cameraDirection);
+
+      g_StoredData.scene.load();
     }
   } // namespace Core
 } // namespace Low
