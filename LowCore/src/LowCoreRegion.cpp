@@ -9,6 +9,7 @@
 #include "LowUtilSerialization.h"
 
 #include "LowCoreEntity.h"
+#include "LowUtilFileIO.h"
 
 namespace Low {
   namespace Core {
@@ -583,6 +584,10 @@ namespace Low {
       Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\regions\\";
       l_Path += std::to_string(get_unique_id()).c_str();
       l_Path += ".entities.yaml";
+
+      if (!Util::FileIO::file_exists_sync(l_Path.c_str())) {
+        return;
+      }
 
       Util::Yaml::Node l_RootNode = Util::Yaml::load_file(l_Path.c_str());
       Util::Yaml::Node &l_EntitiesNode = l_RootNode["entities"];

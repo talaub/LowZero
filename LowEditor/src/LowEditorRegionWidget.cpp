@@ -39,6 +39,9 @@ namespace Low {
 
       for (auto it = Core::Region::ms_LivingInstances.begin();
            it != Core::Region::ms_LivingInstances.end(); ++it) {
+        if (!it->get_scene().is_loaded()) {
+          continue;
+        }
         bool i_Break = false;
 
         Util::String i_Label(it->is_loaded() ? ICON_FA_MAP_MARKER_ALT
@@ -72,6 +75,11 @@ namespace Low {
         if (ImGui::BeginPopupContextWindow()) {
           if (ImGui::MenuItem("New Region")) {
             Core::Region l_Region = Core::Region::make(N(NewRegion));
+            Core::Scene l_Scene = Core::Scene::get_loaded_scene();
+            LOW_LOG_DEBUG << "Creating region for scene " << l_Scene.get_name()
+                          << LOW_LOG_END;
+            l_Region.set_scene(l_Scene);
+
             l_Region.set_loaded(true);
 
             set_selected_handle(l_Region);

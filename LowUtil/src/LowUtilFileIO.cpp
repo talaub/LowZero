@@ -31,6 +31,12 @@ namespace Low {
       {
       }
 
+      bool file_exists_sync(const char *p_Path)
+      {
+        struct stat l_Result;
+        return stat(p_Path, &l_Result) == 0;
+      }
+
       uint64_t modified_sync(const char *p_Path)
       {
         struct stat l_Result;

@@ -108,6 +108,8 @@ namespace Low {
 
     static void render_menu_bar(float p_Delta)
     {
+      bool l_CreateScene = false;
+
       // Menu
       if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("View")) {
@@ -119,8 +121,20 @@ namespace Low {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Scene")) {
+          if (ImGui::MenuItem("New", NULL, nullptr)) {
+            l_CreateScene = true;
+          }
           if (ImGui::MenuItem("Save", NULL, nullptr)) {
             SaveHelper::save_scene(Core::Scene::get_loaded_scene());
+          }
+          ImGui::Separator();
+          for (auto it = Core::Scene::ms_LivingInstances.begin();
+               it != Core::Scene::ms_LivingInstances.end(); ++it) {
+            if (ImGui::MenuItem(it->get_name().c_str())) {
+              if (!it->is_loaded()) {
+                it->load();
+              }
+            }
           }
 
           ImGui::EndMenu();
@@ -179,6 +193,47 @@ namespace Low {
           ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
+      }
+
+      if (l_CreateScene) {
+        ImGui::OpenPopup("Create scene");
+      }
+
+      if (ImGui::BeginPopupModal("Create scene")) {
+        ImGui::Text(
+            "You are about to create a new scene. Please select a name.");
+        static char l_NameBuffer[255];
+        ImGui::InputText("##name", l_NameBuffer, 255);
+
+        ImGui::Separator();
+        if (ImGui::Button("Cancel")) {
+          ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Create")) {
+          Util::Name l_Name = LOW_NAME(l_NameBuffer);
+
+          bool l_Ok = true;
+
+          for (auto it = Core::Scene::ms_LivingInstances.begin();
+               it != Core::Scene::ms_LivingInstances.end(); ++it) {
+            if (l_Name == it->get_name()) {
+              LOW_LOG_ERROR << "Cannot create scene. The chosen name '"
+                            << l_Name << "' is already in use" << LOW_LOG_END;
+              l_Ok = false;
+              break;
+            }
+          }
+
+          if (l_Ok) {
+            Core::Scene l_Scene = Core::Scene::make(l_Name);
+            l_Scene.load();
+          }
+          ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::EndPopup();
       }
     }
 

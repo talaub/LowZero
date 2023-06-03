@@ -63,6 +63,9 @@ namespace Low {
           if (ImGui::BeginPopup(l_PopupName.c_str())) {
 
             for (Core::Region i_Region : Core::Region::ms_LivingInstances) {
+              if (!i_Region.get_scene().is_loaded()) {
+                continue;
+              }
               if (ImGui::Selectable(i_Region.get_name().c_str())) {
                 i_Region.add_entity(l_Entity);
               }

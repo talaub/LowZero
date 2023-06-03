@@ -79,10 +79,6 @@ namespace Low {
 
     void remove_unique_id(UniqueId p_UniqueId)
     {
-      LOW_ASSERT(g_UniqueIdRegistry.find(p_UniqueId) !=
-                     g_UniqueIdRegistry.end(),
-                 "Tried to remove unique id that wasn't registered");
-
       g_UniqueIdRegistry.erase(p_UniqueId);
     }
 

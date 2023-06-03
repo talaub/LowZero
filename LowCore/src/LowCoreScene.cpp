@@ -381,6 +381,7 @@ namespace Low {
           i_Region.load_entities();
         }
       }
+      LOW_LOG_DEBUG << "Scene '" << get_name() << "' loaded" << LOW_LOG_END;
       set_loaded(true);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
     }
@@ -390,7 +391,9 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_loaded_scene
       for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
            ++it) {
-        return *it;
+        if (it->is_loaded()) {
+          return *it;
+        }
       }
 
       return 0;

@@ -10,6 +10,30 @@
 
 namespace Low {
   namespace Editor {
+    static Core::Region get_region_for_new_entity()
+    {
+      Core::Region l_Result;
+      for (auto it = Core::Region::ms_LivingInstances.begin();
+           it != Core::Region::ms_LivingInstances.end(); ++it) {
+        if (!it->get_scene().is_loaded()) {
+          continue;
+        }
+        if (!it->is_streaming_enabled() && it->is_loaded()) {
+          return *it;
+        }
+        if (it->is_streaming_enabled()) {
+          if (!l_Result.is_alive()) {
+            l_Result = *it;
+          }
+          if (it->is_loaded() && !l_Result.is_loaded()) {
+            l_Result = *it;
+          }
+        }
+      }
+
+      return l_Result;
+    }
+
     void SceneWidget::render(float p_Delta)
     {
       ImGui::Begin(ICON_FA_LIST_UL " Scene");
@@ -41,11 +65,19 @@ namespace Low {
       if (!l_OpenedEntryPopup) {
         if (ImGui::BeginPopupContextWindow()) {
           if (ImGui::MenuItem("New entity")) {
-            Core::Entity l_Entity = Core::Entity::make(
-                N(NewEntity), Core::Region::ms_LivingInstances[0]);
-            Core::Component::Transform::make(l_Entity);
+            Core::Region l_Region = get_region_for_new_entity();
 
-            set_selected_entity(l_Entity);
+            if (l_Region.is_alive()) {
+              Core::Entity l_Entity =
+                  Core::Entity::make(N(NewEntity), l_Region);
+              Core::Component::Transform::make(l_Entity);
+
+              set_selected_entity(l_Entity);
+            } else {
+              LOW_LOG_ERROR << "Could not create new entity. There is no "
+                               "suitable region in this scene."
+                            << LOW_LOG_END;
+            }
           }
           ImGui::EndPopup();
         }
