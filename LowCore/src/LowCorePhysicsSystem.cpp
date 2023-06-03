@@ -10,6 +10,7 @@
 #include "LowCoreRigidbody.h"
 #include "LowCoreTransform.h"
 #include "LowCoreDebugGeometry.h"
+#include "LowCorePhysics.h"
 
 #define PHYSICS_VISUALIZATION false
 #define PHYSICS_GRAVITY 9.81f
@@ -289,5 +290,31 @@ namespace Low {
       m_RigidDynamic->attachShape(*p_PhysicsShape.m_Shape);
       m_CurrentShape = p_PhysicsShape.m_Shape;
     }
-  } // namespace Core
+
+    namespace Physics {
+      bool raycast(Math::Vector3 p_Origin, Math::Vector3 p_Direction,
+                   float p_MaxDistance, RaycastHit &p_Hit)
+      {
+        PxVec3 l_Origin;
+        l_Origin.x = p_Origin.x;
+        l_Origin.y = p_Origin.y;
+        l_Origin.z = p_Origin.z;
+        PxVec3 l_Direction;
+        l_Direction.x = p_Direction.x;
+        l_Direction.y = p_Direction.y;
+        l_Direction.z = p_Direction.z;
+        PxReal l_MaxDistance = p_MaxDistance;
+        PxRaycastBuffer l_Hit;
+
+        bool l_Status =
+            g_Scene->raycast(l_Origin, l_Direction, l_MaxDistance, l_Hit);
+
+        p_Hit.position.x = l_Hit.block.position.x;
+        p_Hit.position.y = l_Hit.block.position.y;
+        p_Hit.position.z = l_Hit.block.position.z;
+
+        return l_Status;
+      }
+    } // namespace Physics
+  }   // namespace Core
 } // namespace Low

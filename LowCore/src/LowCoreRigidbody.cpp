@@ -75,6 +75,8 @@ namespace Low {
         {
           Math::Shape l_Shape;
           l_Shape.type = Math::ShapeType::BOX;
+          l_Shape.box.position = Math::Vector3(0.0f);
+          l_Shape.box.rotation = Math::Quaternion();
           l_Shape.box.halfExtents = Math::Vector3(0.5f);
 
           l_Handle.set_shape(l_Shape);
