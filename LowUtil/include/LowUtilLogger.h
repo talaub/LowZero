@@ -51,15 +51,17 @@ namespace Low {
         int threadId;
         time_t time;
         String message;
+        bool terminate;
       };
 
       typedef void (*LogCallback)(const LogEntry &);
 
-      LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module);
+      LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module,
+                                      bool p_Terminate = false);
 
       struct LOW_EXPORT LogStream
       {
-        friend LogStream &begin_log(uint8_t, const char *);
+        friend LogStream &begin_log(uint8_t, const char *, bool);
 
         LogStream &operator<<(LogLineEnd p_End);
         LogStream &operator<<(String &p_Message);

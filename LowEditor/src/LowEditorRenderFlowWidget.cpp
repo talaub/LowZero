@@ -39,7 +39,16 @@ namespace Low {
             N(RenderFlowImGuiImage), m_RenderFlow.get_output_image());
       }
 
+      ImGuiViewport *l_Viewport = ImGui::GetWindowViewport();
+
       ImVec2 l_ImGuiCursorPosition = ImGui::GetCursorScreenPos();
+      if (ImGui::GetMainViewport() == l_Viewport) {
+        m_WidgetPosition.x = ImGui::GetWindowPos().x;
+        m_WidgetPosition.y = ImGui::GetWindowPos().y;
+      } else {
+        m_WidgetPosition.x = l_Viewport->Pos.x;
+        m_WidgetPosition.y = l_Viewport->Pos.y;
+      }
       Util::Globals::set(N(LOW_SCREEN_OFFSET), Util::Variant(Math::UVector2(
                                                    l_ImGuiCursorPosition.x,
                                                    l_ImGuiCursorPosition.y)));
@@ -100,6 +109,11 @@ namespace Low {
     Math::Vector2 RenderFlowWidget::get_relative_hover_position()
     {
       return m_HoveredRelativePosition;
+    }
+
+    Math::Vector2 RenderFlowWidget::get_widget_position()
+    {
+      return m_WidgetPosition;
     }
   } // namespace Editor
 } // namespace Low

@@ -126,13 +126,23 @@ namespace Low {
 
     void render_gizmos(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
     {
-      static bool l_ToolsWindowOpen = true;
+      const float l_TopPadding = 40.0f;
 
-      ImGui::Begin("Controls", &l_ToolsWindowOpen,
-                   ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
-                       ImGuiWindowFlags_NoCollapse |
-                       ImGuiWindowFlags_NoDecoration |
-                       ImGuiWindowFlags_AlwaysAutoResize);
+      ImVec2 l_WindowPos = ImGui::GetWindowPos();
+
+      ImGui::SetNextWindowPos(
+          {p_RenderFlowWidget.get_widget_position().x +
+               (p_RenderFlowWidget.get_renderflow().get_dimensions().x / 2.0f) +
+               10.0f,
+           p_RenderFlowWidget.get_widget_position().y + l_TopPadding});
+
+      ImGui::BeginChild(
+          "Controls", ImVec2(30, 30), false,
+          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
+              ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
+              ImGuiWindowFlags_NoScrollWithMouse |
+              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
+              ImGuiWindowFlags_AlwaysAutoResize);
       if (Core::get_engine_state() == Util::EngineState::EDITING) {
         if (ImGui::Button(ICON_FA_PLAY)) {
           set_selected_entity(0);
@@ -143,7 +153,7 @@ namespace Low {
           Core::exit_playmode();
         }
       }
-      ImGui::End();
+      ImGui::EndChild();
 
       if (Core::get_engine_state() != Util::EngineState::EDITING) {
         return;
@@ -157,23 +167,29 @@ namespace Low {
 
       static ImGuizmo::OPERATION l_Operation = ImGuizmo::TRANSLATE;
 
-      ImGui::Begin("Tools", &l_ToolsWindowOpen,
-                   ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
-                       ImGuiWindowFlags_NoCollapse |
-                       ImGuiWindowFlags_NoDecoration |
-                       ImGuiWindowFlags_AlwaysAutoResize);
+      ImGui::SetNextWindowPos(
+          {p_RenderFlowWidget.get_widget_position().x + 20.0f,
+           p_RenderFlowWidget.get_widget_position().y + l_TopPadding});
+
+      ImGui::BeginChild(
+          "Tools", ImVec2(30, 200), false,
+          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
+              ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
+              ImGuiWindowFlags_NoScrollWithMouse |
+              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
+              ImGuiWindowFlags_AlwaysAutoResize);
       if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
         l_Operation = ImGuizmo::TRANSLATE;
       }
-      ImGui::SameLine();
+      // ImGui::SameLine();
       if (ImGui::Button(ICON_FA_SYNC)) {
         l_Operation = ImGuizmo::ROTATE;
       }
-      ImGui::SameLine();
+      // ImGui::SameLine();
       if (ImGui::Button(ICON_FA_ARROWS_ALT_H)) {
         l_Operation = ImGuizmo::SCALE;
       }
-      ImGui::End();
+      ImGui::EndChild();
 
       ImGuizmo::SetDrawlist();
       ImGuizmo::SetOrthographic(false);

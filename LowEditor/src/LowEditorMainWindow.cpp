@@ -192,6 +192,26 @@ namespace Low {
 
           ImGui::EndMenu();
         }
+
+        ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
+        ImVec2 l_Cursor = ImGui::GetCursorPos();
+        float l_PointToAchieve = l_Viewport->WorkSize.x - 115.0f;
+        float l_CurrentMargin = l_Cursor.x;
+        float l_Spacing = l_PointToAchieve - l_CurrentMargin;
+
+        ImGui::Dummy({l_Spacing, 0.0f});
+        int l_GreyVal = 120;
+
+        ImGui::PushStyleColor(ImGuiCol_Text,
+                              IM_COL32(l_GreyVal, l_GreyVal, l_GreyVal, 255));
+        Util::String l_VersionString = "Low ";
+        l_VersionString += LOW_VERSION_YEAR;
+        l_VersionString += ".";
+        l_VersionString += LOW_VERSION_MAJOR;
+        l_VersionString += ".";
+        l_VersionString += LOW_VERSION_MINOR;
+        ImGui::Text(l_VersionString.c_str());
+        ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();
       }
 
@@ -317,6 +337,8 @@ namespace Low {
       render_menu_bar(p_Delta);
 
       render_central_docking_space(p_Delta);
+
+      static bool l_DisplayVersion = true;
 
       for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
         if (it->open) {

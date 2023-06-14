@@ -4,6 +4,10 @@ set(ENGINE_BUILD OFF)
 
 cmake_minimum_required(VERSION 3.10)
 
+set(LOW_YEAR_VERSION "2023")
+set(LOW_MAJOR_VERSION "1")
+set(LOW_MINOR_VERSION "0")
+
 if (ENGINE_BUILD)
   set(CMAKE_BUILD_TYPE Release)
 ELSE()
@@ -72,6 +76,12 @@ add_compile_definitions(
   LOW_RENDERER_RENDEROBJECT_COUNT=256
 )
 endif()
+
+add_compile_definitions(
+  LOW_VERSION_YEAR="${LOW_YEAR_VERSION}"
+  LOW_VERSION_MAJOR="${LOW_MAJOR_VERSION}"
+  LOW_VERSION_MINOR="${LOW_MINOR_VERSION}"
+)
 
 # Excluded directories
 # These directorories are not part of the build tree

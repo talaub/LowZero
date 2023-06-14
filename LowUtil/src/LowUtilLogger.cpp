@@ -37,13 +37,24 @@ namespace Low {
         // Clear log file
         FileIO::File l_LogFile =
             FileIO::open(g_LogFilePath.c_str(), FileIO::FileMode::WRITE);
-        FileIO::write_sync(l_LogFile, "");
+
+        String l_HeaderString = "LowEngine log output\nEngine version: ";
+        l_HeaderString += LOW_VERSION_YEAR;
+        l_HeaderString += ".";
+        l_HeaderString += LOW_VERSION_MAJOR;
+        l_HeaderString += ".";
+        l_HeaderString += LOW_VERSION_MINOR;
+        l_HeaderString += "\n----------------------\n";
+
+        FileIO::write_sync(l_LogFile, l_HeaderString);
         FileIO::close(l_LogFile);
       }
 
       void cleanup()
       {
-        delete g_ThreadPool;
+        if (g_ThreadPool) {
+          delete g_ThreadPool;
+        }
       }
 
       void register_log_callback(LogCallback p_Callback)
@@ -128,10 +139,12 @@ namespace Low {
 #endif
       }
 
-      LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module)
+      LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module,
+                           bool p_Terminate)
       {
         g_LogStream.m_Entry = LogEntry();
 
+        g_LogStream.m_Entry.terminate = p_Terminate;
         g_LogStream.m_Entry.level = p_LogLevel;
         g_LogStream.m_Entry.module = p_Module;
         time(&g_LogStream.m_Entry.time);
@@ -213,6 +226,11 @@ namespace Low {
 
         LogEntry l_Entry = m_Entry;
         g_ThreadPool->enqueue([l_Entry] { log_to_file(l_Entry); });
+
+        if (m_Entry.terminate) {
+          delete g_ThreadPool;
+          g_ThreadPool = nullptr;
+        }
 
         return *this;
       }

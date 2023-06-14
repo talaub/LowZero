@@ -25,6 +25,7 @@ namespace Low {
 
       bool is_hovered();
       Math::Vector2 get_relative_hover_position();
+      Math::Vector2 get_widget_position();
 
     private:
       Util::String m_Title;
@@ -35,6 +36,7 @@ namespace Low {
       Math::UVector2 m_LastSavedDimensions = {800, 600};
       float m_SaveDimensionTicker = 0.0f;
       Math::Vector2 m_HoveredRelativePosition;
+      Math::Vector2 m_WidgetPosition;
 
       RenderFlowWidgetCallback m_Callback;
     };
