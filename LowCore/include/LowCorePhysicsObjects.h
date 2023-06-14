@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowCoreApi.h"
+
 #include "physx/include/PxPhysics.h"
 #include "physx/include/PxPhysicsAPI.h"
 
@@ -17,7 +19,7 @@ namespace Low {
       } // namespace Physics
     }   // namespace System
 
-    struct PhysicsRigidDynamic
+    struct LOW_CORE_API PhysicsRigidDynamic
     {
       friend void
       System::Physics::register_rigid_dynamic(PhysicsRigidDynamic &);

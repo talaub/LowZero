@@ -29,6 +29,8 @@ set(LOWEDITOR_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
+set_property(TARGET LowEditor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${APP_OUTPUT_DIR}")
+
 target_compile_definitions(LowEditor PRIVATE
   LOW_MODULE_NAME="lowed"
 )

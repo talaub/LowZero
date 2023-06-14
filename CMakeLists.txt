@@ -77,6 +77,7 @@ endif()
 # These directorories are not part of the build tree
 SET(SUB_EXCEPTIONS
   LowScripts
+  LowScriptingApi
 )
 
 # Adds all subfolders that start with the prefix "Low" and are not

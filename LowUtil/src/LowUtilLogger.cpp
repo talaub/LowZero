@@ -5,11 +5,14 @@
 #include <chrono>
 #include <ctime>
 #include <string.h>
+#include <string>
 #include <time.h>
 #include <thread>
 #include <sstream>
 
 #include "LowUtilHandle.h"
+#include "LowUtilJobManager.h"
+#include "LowUtilFileIO.h"
 
 #include <microprofile.h>
 
@@ -19,6 +22,29 @@ namespace Low {
       LogStream g_LogStream;
 
       List<LogCallback> g_Callbacks;
+
+      JobManager::ThreadPool *g_ThreadPool;
+
+      String g_LogFilePath;
+
+      void initialize()
+      {
+        g_ThreadPool = new JobManager::ThreadPool(1);
+
+        g_LogFilePath = LOW_DATA_PATH;
+        g_LogFilePath += "/../low.log";
+
+        // Clear log file
+        FileIO::File l_LogFile =
+            FileIO::open(g_LogFilePath.c_str(), FileIO::FileMode::WRITE);
+        FileIO::write_sync(l_LogFile, "");
+        FileIO::close(l_LogFile);
+      }
+
+      void cleanup()
+      {
+        delete g_ThreadPool;
+      }
 
       void register_log_callback(LogCallback p_Callback)
       {
@@ -117,6 +143,62 @@ namespace Low {
         return g_LogStream;
       }
 
+      static void log_to_file(LogEntry p_Entry)
+      {
+        FileIO::File l_LogFile =
+            FileIO::open(g_LogFilePath.c_str(), FileIO::FileMode::APPEND);
+
+        struct tm *timeinfo;
+        char buffer[80];
+        timeinfo = localtime(&p_Entry.time);
+
+        strftime(buffer, 80, "%F %X", timeinfo);
+
+        String l_Content = "";
+        l_Content += buffer;
+        l_Content += "\t";
+        l_Content += std::to_string(p_Entry.threadId).c_str();
+        l_Content += "\t";
+
+        if (p_Entry.level == LogLevel::DEBUG) {
+          l_Content += "DEBUG\t";
+        } else if (p_Entry.level == LogLevel::INFO) {
+          l_Content += "INFO \t";
+        } else if (p_Entry.level == LogLevel::WARN) {
+          l_Content += "WARN \t";
+        } else if (p_Entry.level == LogLevel::ERROR) {
+          l_Content += "ERROR \t";
+        } else if (p_Entry.level == LogLevel::PROFILE) {
+          l_Content += "PRFLR\t";
+        }
+
+        char l_ModBuffer[13];
+        for (uint32_t i = 0u; i < 13; ++i) {
+          l_ModBuffer[i] = '\0';
+          if (i < 12) {
+            l_ModBuffer[i] = ' ';
+          }
+        }
+
+        for (uint32_t i = 0u; i < p_Entry.module.size(); ++i) {
+          if (i == 12) {
+            break;
+          }
+          l_ModBuffer[i] = p_Entry.module[i];
+        }
+
+        l_Content += "[";
+        l_Content += l_ModBuffer;
+        l_Content += "] - ";
+        l_Content += p_Entry.message;
+
+        l_Content += "\n";
+
+        FileIO::write_sync(l_LogFile, l_Content);
+
+        FileIO::close(l_LogFile);
+      }
+
       LogStream &LogStream::operator<<(LogLineEnd p_LineEnd)
       {
         print_time(m_Entry);
@@ -128,6 +210,9 @@ namespace Low {
         for (uint32_t i = 0u; i < g_Callbacks.size(); ++i) {
           g_Callbacks[i](m_Entry);
         }
+
+        LogEntry l_Entry = m_Entry;
+        g_ThreadPool->enqueue([l_Entry] { log_to_file(l_Entry); });
 
         return *this;
       }

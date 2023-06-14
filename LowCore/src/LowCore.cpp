@@ -15,12 +15,21 @@
 #include "LowCoreMaterial.h"
 #include "LowCoreGameLoop.h"
 #include "LowCorePhysicsSystem.h"
+#include "LowCoreScriptingEngine.h"
+#include "LowCoreMonoUtils.h"
 
 #include "LowRenderer.h"
 
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
 #include "LowUtilLogger.h"
+#include "LowUtilGlobals.h"
+
+#include <fstream>
+#include <stdlib.h>
+
+#include <mono/jit/jit.h>
+#include <mono/metadata/assembly.h>
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -186,12 +195,54 @@ namespace Low {
       load_mesh_assets();
       load_materials();
     }
+    MonoClass *GetClassInAssembly(MonoAssembly *assembly,
+                                  const char *namespaceName,
+                                  const char *className)
+    {
+      MonoImage *image = mono_assembly_get_image(assembly);
+      MonoClass *klass = mono_class_from_name(image, namespaceName, className);
+
+      if (klass == nullptr) {
+        // Log error here
+        return nullptr;
+      }
+
+      return klass;
+    }
+
+    void test_mono()
+    {
+      MonoClass *testingClass = GetClassInAssembly(
+          Mono::get_context().game_assembly, "MtdScripts", "MonoTest");
+
+      MonoMethod *method =
+          mono_class_get_method_from_name(testingClass, "Tick", 0);
+
+      MonoObject *exception = nullptr;
+      mono_runtime_invoke(method, nullptr, nullptr, &exception);
+
+      if (exception) {
+        mono_print_unhandled_exception(exception);
+      }
+
+      //_LOW_ASSERT(false);
+    }
+
+    static void initialize_globals()
+    {
+      Util::Globals::set(N(LOW_SCREEN_OFFSET),
+                         Util::Variant(Math::UVector2(0, 0)));
+    }
 
     void initialize()
     {
       g_CurrentEngineState = Util::EngineState::EDITING;
 
+      initialize_globals();
+
       initialize_types();
+
+      ScriptingEngine::initialize();
 
       DebugGeometry::initialize();
       GameLoop::initialize();
@@ -242,6 +293,7 @@ namespace Low {
     void cleanup()
     {
       GameLoop::cleanup();
+      ScriptingEngine::cleanup();
       cleanup_types();
     }
 

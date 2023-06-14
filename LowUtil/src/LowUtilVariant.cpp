@@ -27,6 +27,10 @@ namespace Low {
     {
       m_Uint64 = p_Value;
     }
+    Variant::Variant(Math::UVector2 p_Value) : m_Type(VariantType::UVector2)
+    {
+      m_UVector2 = p_Value;
+    }
     Variant::Variant(Math::Vector2 p_Value) : m_Type(VariantType::Vector2)
     {
       m_Vector2 = p_Value;
@@ -80,6 +84,13 @@ namespace Low {
     {
       m_Type = VariantType::UInt64;
       m_Uint64 = p_Value;
+
+      return *this;
+    }
+    Variant &Variant::operator=(Math::UVector2 p_Value)
+    {
+      m_Type = VariantType::UVector2;
+      m_UVector2 = p_Value;
 
       return *this;
     }
@@ -145,6 +156,10 @@ namespace Low {
     Variant::operator uint64_t() const
     {
       return m_Uint64;
+    }
+    Variant::operator Math::UVector2() const
+    {
+      return m_UVector2;
     }
     Variant::operator Math::Vector2() const
     {

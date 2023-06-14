@@ -60,6 +60,9 @@ namespace Low {
       if (p_Entry.module == "misteda") {
         return "Game";
       }
+      if (p_Entry.module == "scripting") {
+        return "Script";
+      }
 
       return "Low";
     }
@@ -94,6 +97,9 @@ namespace Low {
         return true;
       }
       if (p_Entry.module == "misteda") {
+        return true;
+      }
+      if (p_Entry.module == "scripting") {
         return true;
       }
       if (p_Entry.module == "lowcore" &&

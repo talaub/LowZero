@@ -29,6 +29,7 @@ namespace Low {
         Math::Vector3 world_position;
         Math::Quaternion world_rotation;
         Math::Vector3 world_scale;
+        Math::Matrix4x4 world_matrix;
         Low::Core::Entity entity;
         Low::Util::UniqueId unique_id;
         bool dirty;
@@ -118,6 +119,8 @@ namespace Low {
 
         Math::Vector3 &get_world_scale();
 
+        Math::Matrix4x4 &get_world_matrix();
+
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);
 
@@ -138,6 +141,7 @@ namespace Low {
         void set_world_position(Math::Vector3 &p_Value);
         void set_world_rotation(Math::Quaternion &p_Value);
         void set_world_scale(Math::Vector3 &p_Value);
+        void set_world_matrix(Math::Matrix4x4 &p_Value);
         void set_unique_id(Low::Util::UniqueId p_Value);
       };
     } // namespace Component

@@ -117,8 +117,8 @@ namespace Low {
 
       if (l_Rigidbody.get_shape().type == Math::ShapeType::BOX) {
         Math::Box l_Box = l_Rigidbody.get_shape().box;
-        l_Box.position = l_Transform.get_world_position();
-        l_Box.rotation = l_Transform.get_world_rotation();
+        l_Box.position = l_Rigidbody.get_rigid_dynamic().get_position();
+        l_Box.rotation = l_Rigidbody.get_rigid_dynamic().get_rotation();
 
         Core::DebugGeometry::render_box(l_Box, l_DrawColor, false, true);
       }
@@ -394,65 +394,6 @@ namespace Low {
     void EditingWidget::render(float p_Delta)
     {
       m_RenderFlowWidget->render(p_Delta);
-
-      /*
-      float height = 0.0f;
-      float len = 1.0f;
-
-      static float x = 2.0f;
-
-      Math::Vector3 l_RootBox(x, height, 0.0f);
-      // x += 0.001f;
-
-      {
-        Math::Color l_DrawColor(1.0f, 0.0f, 1.0f, 1.0f);
-
-        Math::Box l_Box;
-        l_Box.position = l_RootBox;
-        l_Box.rotation = Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
-        l_Box.halfExtents = Math::Vector3(0.01f);
-
-        Core::DebugGeometry::render_box(l_Box, l_DrawColor, true, false);
-      }
-
-      {
-        Math::Color l_DrawColor(1.0f, 0.0f, 0.0f, 1.0f);
-        Math::Color l_DrawColorLine(0.0f, 0.0f, 1.0f, 1.0f);
-
-        Math::Box l_Box;
-        l_Box.position = Math::Vector3(x + 2.0f, 2.0f, -5.0f);
-        l_Box.rotation = Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
-        l_Box.halfExtents = Math::Vector3(0.1f);
-
-        Core::DebugGeometry::render_box(l_Box, l_DrawColor, true, false);
-
-        Core::DebugGeometry::render_line(l_RootBox, l_Box.position,
-                                         l_DrawColorLine, true, false);
-      }
-      */
-
-      /*
-      {
-        Math::Color l_DrawColor(1.0f, 0.0f, 0.0f, 1.0f);
-        Core::DebugGeometry::render_line(Math::Vector3(0.0f, height, 0.0f),
-                                         Math::Vector3(len, height, 0.0f),
-                                         l_DrawColor, false, false);
-      }
-
-      {
-        Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
-        Core::DebugGeometry::render_line(
-            Math::Vector3(0.0f, height, 0.0f),
-            Math::Vector3(0.0f, height + len, 0.0f), l_DrawColor, false, false);
-      }
-
-      {
-        Math::Color l_DrawColor(0.0f, 0.0f, 1.0f, 1.0f);
-        Core::DebugGeometry::render_line(Math::Vector3(0.0f, height, 0.0f),
-                                         Math::Vector3(0.0f, height, len),
-                                         l_DrawColor, false, false);
-      }
-      */
 
       if (Core::get_engine_state() == Util::EngineState::EDITING) {
         render_editing(p_Delta);

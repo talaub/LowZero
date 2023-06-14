@@ -3,6 +3,7 @@
 #include "LowRenderer.h"
 
 #include "LowUtilLogger.h"
+#include "LowUtilGlobals.h"
 
 #include "imgui.h"
 #include "ImGuizmo.h"
@@ -38,6 +39,11 @@ namespace Low {
             N(RenderFlowImGuiImage), m_RenderFlow.get_output_image());
       }
 
+      ImVec2 l_ImGuiCursorPosition = ImGui::GetCursorScreenPos();
+      Util::Globals::set(N(LOW_SCREEN_OFFSET), Util::Variant(Math::UVector2(
+                                                   l_ImGuiCursorPosition.x,
+                                                   l_ImGuiCursorPosition.y)));
+
       if (m_LastFrameDimensions == l_ViewportDimensions &&
           l_ViewportDimensions != m_LastSavedDimensions) {
 
@@ -50,7 +56,6 @@ namespace Low {
       } else if (m_ImGuiImage.is_alive()) {
         if (l_ViewportDimensions.x > 0u && l_ViewportDimensions.y > 0u) {
           ImVec2 l_ImGuiMousePosition = ImGui::GetMousePos();
-          ImVec2 l_ImGuiCursorPosition = ImGui::GetCursorScreenPos();
           ImVec2 l_WindowMousePos = {
               l_ImGuiMousePosition.x - l_ImGuiCursorPosition.x,
               l_ImGuiMousePosition.y - l_ImGuiCursorPosition.y};

@@ -18,6 +18,7 @@ namespace Low {
         UInt32,
         UInt64,
         Float,
+        UVector2,
         Vector2,
         Vector3,
         Vector4,
@@ -36,6 +37,7 @@ namespace Low {
         int32_t m_Int32;
         uint32_t m_Uint32;
         uint64_t m_Uint64;
+        Math::UVector2 m_UVector2;
         Math::Vector2 m_Vector2;
         Math::Vector3 m_Vector3;
         Math::Vector4 m_Vector4;
@@ -48,6 +50,7 @@ namespace Low {
       Variant(int32_t p_Value);
       Variant(uint32_t p_Value);
       Variant(uint64_t p_Value);
+      Variant(Math::UVector2 p_Value);
       Variant(Math::Vector2 p_Value);
       Variant(Math::Vector3 p_Value);
       Variant(Math::Vector4 p_Value);
@@ -59,6 +62,7 @@ namespace Low {
       Variant &Variant::operator=(int32_t p_Value);
       Variant &Variant::operator=(uint32_t p_Value);
       Variant &Variant::operator=(uint64_t p_Value);
+      Variant &Variant::operator=(Math::UVector2 p_Value);
       Variant &Variant::operator=(Math::Vector2 p_Value);
       Variant &Variant::operator=(Math::Vector3 p_Value);
       Variant &Variant::operator=(Math::Vector4 p_Value);
@@ -74,6 +78,7 @@ namespace Low {
       operator int32_t() const;
       operator uint32_t() const;
       operator uint64_t() const;
+      operator Math::UVector2() const;
       operator Math::Vector2() const;
       operator Math::Vector3() const;
       operator Math::Vector4() const;

@@ -9,6 +9,7 @@ add_dependencies(MistedaPlugin
   LowUtil
   LowMath
   LowCore
+  LowRenderer
 )
 
 set(MISTEDA_INCLUDE_DIRS
@@ -34,4 +35,5 @@ target_link_libraries(MistedaPlugin PRIVATE
   LowUtil
   LowMath
   LowCore
+  LowRenderer
 )

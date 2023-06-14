@@ -15,6 +15,7 @@
 
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
+#include "LowUtilJobManager.h"
 
 #include "LowRenderer.h"
 
@@ -25,6 +26,8 @@ namespace Low {
 
       bool g_Running = false;
       uint32_t g_LastFps = 0u;
+
+      uint64_t g_Frames = 0ull;
 
       Util::List<System::TickCallback> g_TickCallbacks;
 
@@ -44,6 +47,8 @@ namespace Low {
              ++it) {
           (*it)(p_Delta, get_engine_state());
         }
+
+        test_mono();
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());
 
@@ -89,6 +94,7 @@ namespace Low {
           float l_DeltaTime =
               duration_cast<duration<float>>(l_Accumulator).count();
 
+          g_Frames++;
           execute_ticks(l_DeltaTime);
 
           if (l_SecondAccumulator > 1'000'000'000ns) {

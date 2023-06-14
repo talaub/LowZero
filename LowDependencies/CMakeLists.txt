@@ -92,16 +92,3 @@ target_include_directories(physx PRIVATE
   ${PHYSX_INCLUDE_DIRS}
   ${PHYSX_SOURCE_DIRS}
 )
-
-#target_include_directories(physx PRIVATE
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/common/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/fastxml/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/filebuf/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/geomutils/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/lowlevelaabb/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/lowleveldynamics/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/physxgpu/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/pvd/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/scenequery/include"
-#  "${CMAKE_CURRENT_SOURCE_DIR}/PhysX/physics/source/simulationcontroller/include"
-#)

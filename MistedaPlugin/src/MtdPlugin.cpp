@@ -1,6 +1,7 @@
 #include "MtdPlugin.h"
 
 #include "MtdCameraController.h"
+#include "MtdTestSystem.h"
 
 #include "LowCoreGameLoop.h"
 
@@ -22,6 +23,7 @@ void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
 namespace Mtd {
   static void tick(float p_Delta, Low::Util::EngineState p_State)
   {
+    System::Test::tick(p_Delta, p_State);
   }
 
   static void initialize_component_types()

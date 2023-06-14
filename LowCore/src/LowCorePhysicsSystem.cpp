@@ -104,9 +104,25 @@ namespace Low {
                it != Component::Rigidbody::ms_LivingInstances.end(); ++it) {
             Component::Transform i_Transform = it->get_entity().get_transform();
 
-            it->get_rigid_dynamic().update_transform(
-                i_Transform.get_world_position(),
-                i_Transform.get_world_rotation());
+            Math::Matrix4x4 i_LocalMatrix(1.0f);
+            i_LocalMatrix =
+                glm::translate(i_LocalMatrix, it->get_shape().box.position);
+            i_LocalMatrix *= glm::toMat4(it->get_shape().box.rotation);
+
+            Math::Matrix4x4 i_WorldMatrix =
+                i_Transform.get_world_matrix() * i_LocalMatrix;
+
+            Math::Vector3 i_WorldScale;
+            Math::Quaternion i_WorldRotation;
+            Math::Vector3 i_WorldPosition;
+            Math::Vector3 i_WorldSkew;
+            Math::Vector4 i_WorldPerspective;
+
+            glm::decompose(i_WorldMatrix, i_WorldScale, i_WorldRotation,
+                           i_WorldPosition, i_WorldSkew, i_WorldPerspective);
+
+            it->get_rigid_dynamic().update_transform(i_WorldPosition,
+                                                     i_WorldRotation);
           }
         }
 
@@ -132,17 +148,22 @@ namespace Low {
             }
           }
 
-          for (auto it = Component::Rigidbody::ms_LivingInstances.begin();
-               it != Component::Rigidbody::ms_LivingInstances.end(); ++it) {
-            if (it->is_fixed()) {
-              // continue;
-            }
+          // Writeback disabled for now because we just don't need it
+          /*
+                for (auto it = Component::Rigidbody::ms_LivingInstances.begin();
+                     it != Component::Rigidbody::ms_LivingInstances.end(); ++it)
+             { if (it->is_fixed()) {
+                    // continue;
+                  }
 
-            Component::Transform i_Transform = it->get_entity().get_transform();
-            // TODO: Hack for top level - does not work for transform hierarchy
-            i_Transform.position(it->get_rigid_dynamic().get_position());
-            i_Transform.rotation(it->get_rigid_dynamic().get_rotation());
-          }
+                  Component::Transform i_Transform =
+             it->get_entity().get_transform();
+                  // TODO: Hack for top level - does not work for transform
+             hierarchy
+                  i_Transform.position(it->get_rigid_dynamic().get_position());
+                  i_Transform.rotation(it->get_rigid_dynamic().get_rotation());
+                }
+          */
         }
 
         void register_rigid_dynamic(PhysicsRigidDynamic &p_RigidDynamic)

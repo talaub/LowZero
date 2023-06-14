@@ -56,6 +56,8 @@ namespace Low {
       float camera_fov;
       float camera_near_plane;
       float camera_far_plane;
+      Math::Matrix4x4 projection_matrix;
+      Math::Matrix4x4 view_matrix;
       DirectionalLight directional_light;
       Util::List<PointLight> point_lights;
       Low::Util::Name name;
@@ -160,6 +162,10 @@ namespace Low {
       float get_camera_far_plane() const;
       void set_camera_far_plane(float p_Value);
 
+      Math::Matrix4x4 &get_projection_matrix() const;
+
+      Math::Matrix4x4 &get_view_matrix() const;
+
       DirectionalLight &get_directional_light() const;
       void set_directional_light(DirectionalLight &p_Value);
 
@@ -183,6 +189,8 @@ namespace Low {
       void set_context(Interface::Context p_Value);
       void set_frame_info_buffer(Resource::Buffer p_Value);
       void set_resource_signature(Interface::PipelineResourceSignature p_Value);
+      void set_projection_matrix(Math::Matrix4x4 &p_Value);
+      void set_view_matrix(Math::Matrix4x4 &p_Value);
     };
   } // namespace Renderer
 } // namespace Low

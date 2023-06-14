@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "crc-32": "^1.2.2",
     "yaml": "^2.2.1"
   }
 }

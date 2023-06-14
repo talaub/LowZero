@@ -22,6 +22,10 @@ namespace Low {
         switch (p_Mode) {
         case FileMode::READ_BYTES:
           return "rb";
+        case FileMode::APPEND:
+          return "a";
+        case FileMode::WRITE:
+          return "w";
         default:
           LOW_ASSERT(false, "Unknown file mode");
         }
@@ -29,6 +33,16 @@ namespace Low {
 
       File::File(FILE *p_FilePointer) : m_FilePointer(p_FilePointer)
       {
+      }
+
+      File::File() : m_FilePointer(nullptr)
+      {
+      }
+
+      void File::open(const char *p_Path, uint8_t p_Mode)
+      {
+        LOW_ASSERT(!m_FilePointer, "Cannot open file that is already opened");
+        m_FilePointer = FileIO::open(p_Path, p_Mode).m_FilePointer;
       }
 
       bool file_exists_sync(const char *p_Path)
@@ -59,6 +73,21 @@ namespace Low {
         p_Buffer[l_Result] = '\0';
 
         return 0;
+      }
+
+      void write_sync(FILE *p_File, const char *p_Content, uint32_t p_Length)
+      {
+        std::fwrite(p_Content, 1, p_Length, p_File);
+      }
+
+      void write_sync(File &p_File, const char *p_Content, uint32_t p_Length)
+      {
+        write_sync(p_File.m_FilePointer, p_Content, p_Length);
+      }
+
+      void write_sync(File &p_File, String p_Content)
+      {
+        write_sync(p_File.m_FilePointer, p_Content.c_str(), p_Content.size());
       }
 
       uint32_t size_sync(File &p_File)

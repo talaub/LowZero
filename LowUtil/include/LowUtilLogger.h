@@ -88,6 +88,9 @@ namespace Low {
 
       LOW_EXPORT void register_log_callback(LogCallback p_Callback);
 
+      void initialize();
+      void cleanup();
+
     } // namespace Log
   }   // namespace Util
 } // namespace Low

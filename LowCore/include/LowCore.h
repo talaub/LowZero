@@ -17,5 +17,7 @@ namespace Low {
 
     LOW_CORE_API Scene get_loaded_scene();
     LOW_CORE_API void load_scene(Scene p_Scene);
+
+    void test_mono();
   } // namespace Core
 } // namespace Low

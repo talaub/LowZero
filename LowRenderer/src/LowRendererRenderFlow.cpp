@@ -67,6 +67,10 @@ namespace Low {
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_fov, float) = 0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_near_plane, float) = 0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_far_plane, float) = 0.0f;
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, projection_matrix,
+                              Math::Matrix4x4)) Math::Matrix4x4();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, view_matrix,
+                              Math::Matrix4x4)) Math::Matrix4x4();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, directional_light,
                               DirectionalLight)) DirectionalLight();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, point_lights,
@@ -350,6 +354,38 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(projection_matrix);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, projection_matrix);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_projection_matrix();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
+                                            projection_matrix, Math::Matrix4x4);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(view_matrix);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, view_matrix);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          RenderFlow l_Handle = p_Handle.get_id();
+          l_Handle.get_view_matrix();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, view_matrix,
+                                            Math::Matrix4x4);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(directional_light);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, directional_light);
@@ -530,6 +566,10 @@ namespace Low {
       }
       if (p_Node["camera_far_plane"]) {
         l_Handle.set_camera_far_plane(p_Node["camera_far_plane"].as<float>());
+      }
+      if (p_Node["projection_matrix"]) {
+      }
+      if (p_Node["view_matrix"]) {
       }
       if (p_Node["directional_light"]) {
       }
@@ -799,6 +839,52 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_far_plane
     }
 
+    Math::Matrix4x4 &RenderFlow::get_projection_matrix() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_projection_matrix
+      // LOW_CODEGEN::END::CUSTOM:GETTER_projection_matrix
+
+      return TYPE_SOA(RenderFlow, projection_matrix, Math::Matrix4x4);
+    }
+    void RenderFlow::set_projection_matrix(Math::Matrix4x4 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_projection_matrix
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_projection_matrix
+
+      // Set new value
+      TYPE_SOA(RenderFlow, projection_matrix, Math::Matrix4x4) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_projection_matrix
+      // LOW_CODEGEN::END::CUSTOM:SETTER_projection_matrix
+    }
+
+    Math::Matrix4x4 &RenderFlow::get_view_matrix() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_matrix
+      // LOW_CODEGEN::END::CUSTOM:GETTER_view_matrix
+
+      return TYPE_SOA(RenderFlow, view_matrix, Math::Matrix4x4);
+    }
+    void RenderFlow::set_view_matrix(Math::Matrix4x4 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_matrix
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_matrix
+
+      // Set new value
+      TYPE_SOA(RenderFlow, view_matrix, Math::Matrix4x4) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_matrix
+      // LOW_CODEGEN::END::CUSTOM:SETTER_view_matrix
+    }
+
     DirectionalLight &RenderFlow::get_directional_light() const
     {
       _LOW_ASSERT(is_alive());
@@ -1031,6 +1117,9 @@ namespace Low {
           get_camera_position(), get_camera_position() + get_camera_direction(),
           LOW_VECTOR3_UP);
 
+      set_projection_matrix(l_ProjectionMatrix);
+      set_view_matrix(l_ViewMatrix);
+
       {
         Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
                                              1.0f /
@@ -1216,6 +1305,19 @@ namespace Low {
                &ms_Buffer[offsetof(RenderFlowData, camera_far_plane) *
                           (l_Capacity)],
                l_Capacity * sizeof(float));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, projection_matrix) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, projection_matrix) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Math::Matrix4x4));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, view_matrix) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, view_matrix) * (l_Capacity)],
+               l_Capacity * sizeof(Math::Matrix4x4));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, directional_light) *

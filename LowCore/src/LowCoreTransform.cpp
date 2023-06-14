@@ -57,6 +57,8 @@ namespace Low {
                                 Math::Quaternion)) Math::Quaternion();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_scale,
                                 Math::Vector3)) Math::Vector3();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_matrix,
+                                Math::Matrix4x4)) Math::Matrix4x4();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, entity, Low::Core::Entity))
             Low::Core::Entity();
         ACCESSOR_TYPE_SOA(l_Handle, Transform, dirty, bool) = false;
@@ -246,6 +248,22 @@ namespace Low {
             l_Handle.get_world_scale();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_scale,
                                               Math::Vector3);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(world_matrix);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(TransformData, world_matrix);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_world_matrix();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_matrix,
+                                              Math::Matrix4x4);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -614,6 +632,30 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_scale
       }
 
+      Math::Matrix4x4 &Transform::get_world_matrix()
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_matrix
+        recalculate_world_transform();
+        // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
+
+        return TYPE_SOA(Transform, world_matrix, Math::Matrix4x4);
+      }
+      void Transform::set_world_matrix(Math::Matrix4x4 &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_matrix
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
+
+        // Set new value
+        TYPE_SOA(Transform, world_matrix, Math::Matrix4x4) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
+        // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
+      }
+
       Low::Core::Entity Transform::get_entity() const
       {
         _LOW_ASSERT(is_alive());
@@ -737,8 +779,13 @@ namespace Low {
 
         Transform l_Parent = get_parent();
 
+        Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+        l_LocalMatrix = glm::translate(l_LocalMatrix, l_Position);
+        l_LocalMatrix *= glm::toMat4(l_Rotation);
+        l_LocalMatrix = glm::scale(l_LocalMatrix, l_Scale);
+
         if (l_Parent.is_alive()) {
-          LOW_LOG_ERROR << "Parent alive" << LOW_LOG_END;
           if (l_Parent.is_world_dirty()) {
             l_Parent.recalculate_world_transform();
           }
@@ -754,12 +801,6 @@ namespace Low {
           l_ParentMatrix *= glm::toMat4(l_ParentRotation);
           l_ParentMatrix = glm::scale(l_ParentMatrix, l_ParentScale);
 
-          Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
-
-          l_LocalMatrix = glm::translate(l_LocalMatrix, l_Position);
-          l_LocalMatrix *= glm::toMat4(l_Rotation);
-          l_LocalMatrix = glm::scale(l_LocalMatrix, l_Scale);
-
           Low::Math::Matrix4x4 l_WorldMatrix = l_ParentMatrix * l_LocalMatrix;
 
           Low::Math::Vector3 l_WorldScale;
@@ -768,12 +809,16 @@ namespace Low {
           Low::Math::Vector3 l_WorldSkew;
           Low::Math::Vector4 l_WorldPerspective;
 
+          set_world_matrix(l_WorldMatrix);
+
           glm::decompose(l_WorldMatrix, l_WorldScale, l_WorldRotation,
                          l_WorldPosition, l_WorldSkew, l_WorldPerspective);
 
           l_Position = l_WorldPosition;
           l_Rotation = l_WorldRotation;
           l_Scale = l_WorldScale;
+        } else {
+          set_world_matrix(l_LocalMatrix);
         }
 
         set_world_position(l_Position);
@@ -862,6 +907,13 @@ namespace Low {
                            (l_Capacity + l_CapacityIncrease)],
               &ms_Buffer[offsetof(TransformData, world_scale) * (l_Capacity)],
               l_Capacity * sizeof(Math::Vector3));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(TransformData, world_matrix) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(TransformData, world_matrix) * (l_Capacity)],
+              l_Capacity * sizeof(Math::Matrix4x4));
         }
         {
           memcpy(&l_NewBuffer[offsetof(TransformData, entity) *
