@@ -16,14 +16,22 @@ namespace Low {
       public:
         ThreadPool(int p_NumThreads);
 
-        template <class F> void enqueue(F &&f)
+        template <class F> auto enqueue(F &&f) -> Future<decltype(f())>
         {
+          using ReturnType = decltype(f());
+
+          auto task = std::make_shared<std::packaged_task<ReturnType()>>(
+              std::forward<F>(f));
+          std::future<ReturnType> result = task->get_future();
+
           {
             std::unique_lock<std::mutex> lock(m_QueueMutex);
-            m_JobQueue.emplace(std::forward<F>(f));
+            m_JobQueue.emplace([task]() { (*task)(); });
           }
 
           m_Condition.notify_one();
+
+          return result;
         }
 
         ~ThreadPool();

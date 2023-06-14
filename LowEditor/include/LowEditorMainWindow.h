@@ -19,6 +19,9 @@ namespace Low {
     Util::Handle get_selected_handle();
     void set_selected_handle(Util::Handle p_Handle);
 
+    void register_editor_job(Util::String p_Title,
+                             std::function<void()> p_Func);
+
     DetailsWidget *get_details_widget();
 
     namespace Helper {

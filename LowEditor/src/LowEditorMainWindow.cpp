@@ -1,6 +1,7 @@
 #include "LowEditorMainWindow.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 #include "IconsFontAwesome5.h"
 
@@ -20,6 +21,7 @@
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
+#include "LowUtilJobManager.h"
 
 #include "LowRendererTexture2D.h"
 
@@ -28,7 +30,9 @@
 #include "LowCoreRigidbody.h"
 #include "LowCorePhysicsSystem.h"
 
+#include <chrono>
 #include <functional>
+#include <future>
 
 namespace Low {
   namespace Editor {
@@ -48,6 +52,32 @@ namespace Low {
     DetailsWidget *g_DetailsWidget;
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
+
+    struct EditorJob
+    {
+      Util::String title;
+      Util::Future<void> future;
+      bool submitted;
+      std::function<void()> func;
+
+      bool is_ready()
+      {
+        return future.wait_for(std::chrono::seconds(0)) ==
+               std::future_status::ready;
+      }
+
+      EditorJob(Util::String p_String, std::function<void()> p_Func)
+          : title(p_String), submitted(false), func(p_Func)
+      {
+      }
+    };
+
+    Util::Queue<EditorJob> g_EditorJobQueue;
+
+    void register_editor_job(Util::String p_Title, std::function<void()> p_Func)
+    {
+      g_EditorJobQueue.emplace(p_Title, p_Func);
+    }
 
     static void register_editor_widget(const char *p_Name, Widget *p_Widget,
                                        bool p_DefaultOpen = false)
@@ -106,6 +136,66 @@ namespace Low {
       return g_SelectedHandle;
     }
 
+    static void schedule_save_scene(Core::Scene p_Scene)
+    {
+
+      uint64_t l_SceneId = p_Scene.get_id();
+
+      Util::String l_JobTitle = "Saving scene ";
+      l_JobTitle += p_Scene.get_name().c_str();
+
+      register_editor_job(l_JobTitle,
+                          [l_SceneId] { SaveHelper::save_scene(l_SceneId); });
+    }
+
+    static void schedule_import_image(Util::String p_Path)
+    {
+      Util::String l_JobTitle = "Importing image resource";
+
+      register_editor_job(l_JobTitle, [p_Path] {
+        ResourceProcessor::Image::Image2D l_Image;
+        ResourceProcessor::Image::load_png(p_Path, l_Image);
+        Util::String l_FileName = p_Path.substr(
+            p_Path.find_last_of('\\') + 1,
+            p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
+        ResourceProcessor::Image::process(
+            Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" + l_FileName,
+            l_Image);
+
+        LOW_LOG_INFO << "Image file '" << l_FileName
+                     << "' has been successfully imported." << LOW_LOG_END;
+      });
+    }
+
+    static void schedule_import_mesh(Util::String p_Path)
+    {
+      Util::String l_JobTitle = "Importing mesh resource";
+
+      register_editor_job(l_JobTitle, [p_Path] {
+        Util::String l_FileName = p_Path.substr(
+            p_Path.find_last_of('\\') + 1,
+            p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
+        bool l_HasAnimations = ResourceProcessor::Mesh::process(
+            p_Path.c_str(), Util::String(LOW_DATA_PATH) +
+                                "\\resources\\meshes\\" + l_FileName + ".glb");
+
+        Core::MeshResource::make(Util::String(l_FileName + ".glb"));
+
+        LOW_LOG_INFO << "Mesh file '" << l_FileName
+                     << "' has been successfully imported." << LOW_LOG_END;
+
+        if (l_HasAnimations) {
+          ResourceProcessor::Mesh::process_animations(
+              p_Path.c_str(), Util::String(LOW_DATA_PATH) +
+                                  "\\resources\\skeletal_animations\\" +
+                                  l_FileName + ".glb");
+
+          LOW_LOG_INFO << "Animations from file '" << l_FileName
+                       << "' have been successfully imported." << LOW_LOG_END;
+        }
+      });
+    }
+
     static void render_menu_bar(float p_Delta)
     {
       bool l_CreateScene = false;
@@ -125,7 +215,7 @@ namespace Low {
             l_CreateScene = true;
           }
           if (ImGui::MenuItem("Save", NULL, nullptr)) {
-            SaveHelper::save_scene(Core::Scene::get_loaded_scene());
+            schedule_save_scene(Core::Scene::get_loaded_scene());
           }
           ImGui::Separator();
           for (auto it = Core::Scene::ms_LivingInstances.begin();
@@ -145,47 +235,12 @@ namespace Low {
 
             if (!l_Path.empty()) {
               if (Util::StringHelper::ends_with(l_Path, Util::String(".png"))) {
-                ResourceProcessor::Image::Image2D l_Image;
-                ResourceProcessor::Image::load_png(l_Path, l_Image);
-                Util::String l_FileName = l_Path.substr(
-                    l_Path.find_last_of('\\') + 1,
-                    l_Path.find_last_of('.') - l_Path.find_last_of('\\') - 1);
-                ResourceProcessor::Image::process(Util::String(LOW_DATA_PATH) +
-                                                      "\\resources\\img2d\\" +
-                                                      l_FileName,
-                                                  l_Image);
-
-                LOW_LOG_INFO << "Image file '" << l_FileName
-                             << "' has been successfully imported."
-                             << LOW_LOG_END;
+                schedule_import_image(l_Path);
               } else if (Util::StringHelper::ends_with(l_Path,
                                                        Util::String(".obj")) ||
                          Util::StringHelper::ends_with(l_Path,
                                                        Util::String(".glb"))) {
-                Util::String l_FileName = l_Path.substr(
-                    l_Path.find_last_of('\\') + 1,
-                    l_Path.find_last_of('.') - l_Path.find_last_of('\\') - 1);
-                bool l_HasAnimations = ResourceProcessor::Mesh::process(
-                    l_Path.c_str(), Util::String(LOW_DATA_PATH) +
-                                        "\\resources\\meshes\\" + l_FileName +
-                                        ".glb");
-
-                Core::MeshResource::make(Util::String(l_FileName + ".glb"));
-
-                LOW_LOG_INFO << "Mesh file '" << l_FileName
-                             << "' has been successfully imported."
-                             << LOW_LOG_END;
-
-                if (l_HasAnimations) {
-                  ResourceProcessor::Mesh::process_animations(
-                      l_Path.c_str(), Util::String(LOW_DATA_PATH) +
-                                          "\\resources\\skeletal_animations\\" +
-                                          l_FileName + ".glb");
-
-                  LOW_LOG_INFO << "Animations from file '" << l_FileName
-                               << "' have been successfully imported."
-                               << LOW_LOG_END;
-                }
+                schedule_import_mesh(l_Path);
               }
             }
           }
@@ -257,6 +312,27 @@ namespace Low {
       }
     }
 
+    static inline void render_status_bar(float p_Delta)
+    {
+      float height = ImGui::GetFrameHeight();
+
+      ImGui::BeginViewportSideBar(
+          "Statusbar", ImGui::GetMainViewport(), ImGuiDir_Down, height,
+          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+              ImGuiWindowFlags_MenuBar);
+      if (ImGui::BeginMenuBar()) {
+        if (!g_EditorJobQueue.empty() && g_EditorJobQueue.front().submitted) {
+          Gui::spinner("Loading", 6.0f, 2.0f,
+                       Math::Color(0.0f, 0.7f, 0.73f, 1.0f));
+          ImGui::SameLine();
+          ImGui::Text(g_EditorJobQueue.front().title.c_str());
+        }
+        ImGui::EndMenuBar();
+      }
+
+      ImGui::End();
+    }
+
     static void render_central_docking_space(float p_Delta)
     {
       // We are using the ImGuiWindowFlags_NoDocking flag to make the parent
@@ -314,6 +390,29 @@ namespace Low {
       initialize_spherical_billboard_materials();
     }
 
+    static void tick_editor_jobs(float p_Delta)
+    {
+      if (g_EditorJobQueue.empty()) {
+        return;
+      }
+
+      if (g_EditorJobQueue.front().submitted) {
+        if (!g_EditorJobQueue.front().is_ready()) {
+          return;
+        }
+
+        g_EditorJobQueue.pop();
+        return;
+      }
+
+      if (!g_EditorJobQueue.front().submitted) {
+        g_EditorJobQueue.front().submitted = true;
+        g_EditorJobQueue.front().future =
+            std::move(Util::JobManager::default_pool().enqueue(
+                g_EditorJobQueue.front().func));
+      }
+    }
+
     void initialize()
     {
       initialize_billboard_materials();
@@ -336,7 +435,11 @@ namespace Low {
     {
       render_menu_bar(p_Delta);
 
+      render_status_bar(p_Delta);
+
       render_central_docking_space(p_Delta);
+
+      tick_editor_jobs(p_Delta);
 
       static bool l_DisplayVersion = true;
 

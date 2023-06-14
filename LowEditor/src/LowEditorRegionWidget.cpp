@@ -19,7 +19,11 @@ namespace Low {
 
       if (l_Asset.is_loaded()) {
         if (ImGui::Button("Save")) {
-          SaveHelper::save_region(l_Asset);
+          Util::String l_JobTitle = "Saving region ";
+          l_JobTitle += l_Asset.get_name().c_str();
+          register_editor_job(l_JobTitle, [l_Asset] {
+            SaveHelper::save_region(l_Asset.get_id());
+          });
         }
         if (ImGui::Button("Unload")) {
           l_Asset.unload_entities();

@@ -85,9 +85,6 @@ namespace Low {
 
             Util::Name i_AnimationName = LOW_NAME(i_Animation->mName.C_Str());
 
-            LOW_LOG_INFO << i_AnimationName << ": "
-                         << (float)i_Animation->mDuration << LOW_LOG_END;
-
             if (i_AnimationName == l_AnimationName) {
               l_Animation = i_Animation;
               break;
