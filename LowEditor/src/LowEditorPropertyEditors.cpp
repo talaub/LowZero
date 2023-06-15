@@ -191,7 +191,6 @@ namespace Low {
           }
           l_HasNameProperty = true;
         }
-        // ImGui::Text(l_DisplayName);
         int l_NameLength = strlen(l_DisplayName);
 
         ImGui::RenderTextEllipsis(
@@ -206,15 +205,27 @@ namespace Low {
         }
 
         if (ImGui::BeginPopup(l_PopupName.c_str())) {
+#define SEARCH_BUFFER_SIZE 255
+          static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
+          ImGui::InputText("##search", l_SearchBuffer, SEARCH_BUFFER_SIZE);
+
+#undef SEARCH_BUFFER_SIZE;
+
           Util::Handle *l_Handles = p_TypeInfo.get_living_instances();
 
           for (uint32_t i = 0u; i < p_TypeInfo.get_living_count(); ++i) {
             char *i_DisplayName = "Object";
             if (l_HasNameProperty) {
-              l_DisplayName =
+              i_DisplayName =
                   ((Util::Name *)l_NameProperty.get(l_Handles[i]))->c_str();
             }
-            if (ImGui::Selectable(l_DisplayName)) {
+
+            if (strlen(l_SearchBuffer) > 0 &&
+                !strstr(i_DisplayName, l_SearchBuffer)) {
+              continue;
+            }
+            if (ImGui::Selectable(i_DisplayName)) {
+              l_SearchBuffer[0] = '\0';
               *p_HandleId = l_Handles[i].get_id();
               l_Changed = true;
             }

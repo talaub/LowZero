@@ -430,7 +430,6 @@ namespace Low {
     static void parse_type_metadata(TypeMetadata &p_Metadata,
                                     Util::Yaml::Node &p_Node)
     {
-      LOW_LOG_DEBUG << "TypeID: " << p_Metadata.typeId << LOW_LOG_END;
       p_Metadata.typeInfo = Util::Handle::get_type_info(p_Metadata.typeId);
 
       const char *l_PropertiesName = "properties";
@@ -530,7 +529,7 @@ namespace Low {
           it->widget->render(p_Delta);
         }
       }
-      // ImGui::ShowDemoWindow();
+      ImGui::ShowDemoWindow();
     }
 
     DetailsWidget *get_details_widget()
