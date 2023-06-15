@@ -27,6 +27,17 @@ namespace Low {
         ImGuiIO &io = ImGui::GetIO();
 
         {
+          float l_FontSize = 12.0f;
+
+          ImFontConfig l_Config;
+          l_Config.OversampleH = 2;
+          l_Config.OversampleV = 1;
+          l_Config.GlyphExtraSpacing.x = 0.7f;
+
+          g_Fonts.common_300 = io.Fonts->AddFontFromFileTTF(
+              l_CommonFontPath.c_str(), l_FontSize, &l_Config);
+        }
+        {
           float l_FontSize = 19.0f;
 
           ImFontConfig l_Config;

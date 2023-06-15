@@ -9,6 +9,7 @@ namespace Low {
     namespace ImGuiHelper {
       struct Fonts
       {
+        ImFont *common_300;
         ImFont *common_500;
         ImFont *common_800;
         ImFont *icon_800;

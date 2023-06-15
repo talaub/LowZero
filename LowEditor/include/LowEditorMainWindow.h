@@ -10,6 +10,7 @@
 namespace Low {
   namespace Editor {
     struct DetailsWidget;
+    struct TypeMetadata;
 
     void initialize();
     void tick(float p_Delta, Util::EngineState p_State);
@@ -23,6 +24,8 @@ namespace Low {
                              std::function<void()> p_Func);
 
     DetailsWidget *get_details_widget();
+
+    TypeMetadata &get_type_metadata(uint16_t p_TypeId);
 
     namespace Helper {
       struct SphericalBillboardMaterials

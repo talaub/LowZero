@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LowEditorWidget.h"
+#include "LowEditorMetadata.h"
 
 #include "LowUtilHandle.h"
 
@@ -16,7 +17,7 @@ namespace Low {
 
     private:
       const Util::Handle m_Handle;
-      Util::RTTI::TypeInfo m_TypeInfo;
+      TypeMetadata m_Metadata;
       bool m_DefaultOpen;
 
       bool render_default(float p_Delta);

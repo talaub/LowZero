@@ -430,6 +430,7 @@ namespace Low {
       MaterialType::initialize();
       Material::initialize();
       Skeleton::initialize();
+      SkeletalAnimation::initialize();
     }
 
     static void initialize_resource_types()
@@ -1285,6 +1286,7 @@ namespace Low {
       MaterialType::cleanup();
       Texture2D::cleanup();
       Mesh::cleanup();
+      SkeletalAnimation::cleanup();
       Skeleton::cleanup();
     }
 

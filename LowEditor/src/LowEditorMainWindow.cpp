@@ -18,12 +18,15 @@
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
 #include "LowEditorSaveHelper.h"
+#include "LowEditorMetadata.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 #include "LowUtilJobManager.h"
+#include "LowUtilFileIO.h"
 
 #include "LowRendererTexture2D.h"
+#include "LowRendererImGuiHelper.h"
 
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
@@ -38,6 +41,8 @@ namespace Low {
   namespace Editor {
     const int g_DockSpaceId = 4785;
     bool g_CentralDockOpen = true;
+
+    Util::Map<uint16_t, TypeMetadata> g_TypeMetadata;
 
     struct EditorWidget
     {
@@ -248,9 +253,20 @@ namespace Low {
           ImGui::EndMenu();
         }
 
+        Util::String l_VersionString = "";
+        l_VersionString += LOW_VERSION_YEAR;
+        l_VersionString += ".";
+        l_VersionString += LOW_VERSION_MAJOR;
+        l_VersionString += ".";
+        l_VersionString += LOW_VERSION_MINOR;
+
         ImGuiViewport *l_Viewport = ImGui::GetMainViewport();
         ImVec2 l_Cursor = ImGui::GetCursorPos();
-        float l_PointToAchieve = l_Viewport->WorkSize.x - 115.0f;
+        float l_Margin = 73.0f;
+        if (Util::StringHelper::ends_with(l_VersionString, "DEV")) {
+          l_Margin = 87.0f;
+        }
+        float l_PointToAchieve = l_Viewport->WorkSize.x - l_Margin;
         float l_CurrentMargin = l_Cursor.x;
         float l_Spacing = l_PointToAchieve - l_CurrentMargin;
 
@@ -259,13 +275,11 @@ namespace Low {
 
         ImGui::PushStyleColor(ImGuiCol_Text,
                               IM_COL32(l_GreyVal, l_GreyVal, l_GreyVal, 255));
-        Util::String l_VersionString = "Low ";
-        l_VersionString += LOW_VERSION_YEAR;
-        l_VersionString += ".";
-        l_VersionString += LOW_VERSION_MAJOR;
-        l_VersionString += ".";
-        l_VersionString += LOW_VERSION_MINOR;
+        ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_300);
+        ImVec2 cursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
         ImGui::Text(l_VersionString.c_str());
+        ImGui::PopFont();
         ImGui::PopStyleColor();
         ImGui::EndMainMenuBar();
       }
@@ -413,8 +427,76 @@ namespace Low {
       }
     }
 
+    static void parse_type_metadata(TypeMetadata &p_Metadata,
+                                    Util::Yaml::Node &p_Node)
+    {
+      LOW_LOG_DEBUG << "TypeID: " << p_Metadata.typeId << LOW_LOG_END;
+      p_Metadata.typeInfo = Util::Handle::get_type_info(p_Metadata.typeId);
+
+      const char *l_PropertiesName = "properties";
+
+      if (p_Node[l_PropertiesName]) {
+        for (auto it = p_Node[l_PropertiesName].begin();
+             it != p_Node[l_PropertiesName].end(); ++it) {
+          PropertyMetadata i_Metadata;
+          i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+          i_Metadata.editor = false;
+          if (it->second["editor_editable"]) {
+            i_Metadata.editor = it->second["editor_editable"].as<bool>();
+          }
+          i_Metadata.propInfo = p_Metadata.typeInfo.properties[i_Metadata.name];
+
+          p_Metadata.properties.push_back(i_Metadata);
+        }
+      }
+    }
+
+    static inline void parse_metadata(Util::Yaml::Node &p_Node,
+                                      Util::Yaml::Node &p_TypeIdsNode)
+    {
+      Util::String l_ModuleString = LOW_YAML_AS_STRING(p_Node["module"]);
+
+      for (auto it = p_Node["types"].begin(); it != p_Node["types"].end();
+           ++it) {
+        Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
+        TypeMetadata i_Metadata;
+        i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+        i_Metadata.module = l_ModuleString;
+        i_Metadata.typeId =
+            p_TypeIdsNode[l_ModuleString.c_str()][i_TypeName.c_str()]
+                .as<uint16_t>();
+
+        parse_type_metadata(i_Metadata, it->second);
+
+        g_TypeMetadata[i_Metadata.typeId] = i_Metadata;
+      }
+    }
+
+    static inline void load_metadata()
+    {
+      Util::String l_TypeConfigPath = LOW_DATA_PATH;
+      l_TypeConfigPath += "/_internal/type_configs";
+
+      Util::Yaml::Node l_TypeIdsNode =
+          Util::Yaml::load_file((l_TypeConfigPath + "/typeids.yaml").c_str());
+
+      Util::List<Util::String> l_FilePaths;
+      Util::FileIO::list_directory(l_TypeConfigPath.c_str(), l_FilePaths);
+
+      for (auto it = l_FilePaths.begin(); it != l_FilePaths.end(); ++it) {
+        if (!Util::StringHelper::ends_with(*it, ".types.yaml")) {
+          continue;
+        }
+
+        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
+        parse_metadata(i_Node, l_TypeIdsNode);
+      }
+    }
+
     void initialize()
     {
+      load_metadata();
+
       initialize_billboard_materials();
 
       LogWidget::initialize();
@@ -454,6 +536,13 @@ namespace Low {
     DetailsWidget *get_details_widget()
     {
       return g_DetailsWidget;
+    }
+
+    TypeMetadata &get_type_metadata(uint16_t p_TypeId)
+    {
+      LOW_ASSERT(g_TypeMetadata.find(p_TypeId) != g_TypeMetadata.end(),
+                 "Could not find type metadata");
+      return g_TypeMetadata[p_TypeId];
     }
 
     namespace Helper {

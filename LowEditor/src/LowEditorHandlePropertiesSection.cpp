@@ -161,17 +161,19 @@ namespace Low {
     bool HandlePropertiesSection::render_default(float p_Delta)
     {
       uint32_t l_Id = 0;
-      for (auto pit = m_TypeInfo.properties.begin();
-           pit != m_TypeInfo.properties.end(); ++pit) {
 
+      for (auto it = m_Metadata.properties.begin();
+           it != m_Metadata.properties.end(); ++it) {
         ImGui::PushID(l_Id++);
 
-        if (pit->second.editorProperty) {
-          if (pit->second.type == Util::RTTI::PropertyType::HANDLE) {
-            PropertyEditors::render_handle_selector(pit->second, m_Handle);
+        Util::RTTI::PropertyInfo &i_PropInfo = it->propInfo;
+
+        if (i_PropInfo.editorProperty) {
+          if (i_PropInfo.type == Util::RTTI::PropertyType::HANDLE) {
+            PropertyEditors::render_handle_selector(i_PropInfo, m_Handle);
           } else {
-            PropertyEditors::render_editor(pit->second, m_Handle,
-                                           pit->second.get(m_Handle));
+            PropertyEditors::render_editor(i_PropInfo, m_Handle,
+                                           i_PropInfo.get(m_Handle));
           }
         }
         ImGui::PopID();
@@ -182,11 +184,11 @@ namespace Low {
 
     void HandlePropertiesSection::render(float p_Delta)
     {
-      if (!m_TypeInfo.is_alive(m_Handle)) {
+      if (!m_Metadata.typeInfo.is_alive(m_Handle)) {
         return;
       }
 
-      if (ImGui::CollapsingHeader(m_TypeInfo.name.c_str(),
+      if (ImGui::CollapsingHeader(m_Metadata.name.c_str(),
                                   m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen
                                                 : 0)) {
         bool l_SkipFooter = false;
@@ -200,7 +202,7 @@ namespace Low {
           l_SkipFooter = l_SkipFooter || render_default(p_Delta);
         }
         if (!l_SkipFooter && render_footer != nullptr) {
-          render_footer(m_Handle, m_TypeInfo);
+          render_footer(m_Handle, m_Metadata.typeInfo);
         }
         ImGui::PopID();
       }
@@ -210,7 +212,7 @@ namespace Low {
         const Util::Handle p_Handle, bool p_DefaultOpen)
         : m_Handle(p_Handle), m_DefaultOpen(p_DefaultOpen)
     {
-      m_TypeInfo = Util::Handle::get_type_info(p_Handle.get_type());
+      m_Metadata = get_type_metadata(p_Handle.get_type());
     }
   } // namespace Editor
 } // namespace Low

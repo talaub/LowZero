@@ -55,7 +55,7 @@ static void setup_scene()
   l_Scene.load();
 };
 
-int main()
+int run_low()
 {
   Low::Util::initialize();
 
@@ -65,11 +65,11 @@ int main()
 
   setup_scene();
 
-  Low::Editor::initialize();
-
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
   Mtd::initialize();
+
+  Low::Editor::initialize();
 
   Low::Core::GameLoop::start();
 
@@ -82,4 +82,9 @@ int main()
   Low::Util::cleanup();
 
   return 0;
+}
+
+int main()
+{
+  return run_low();
 }

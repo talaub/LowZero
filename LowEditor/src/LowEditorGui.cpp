@@ -21,23 +21,111 @@ namespace Low {
         ImDrawList *l_DrawList = GetWindowDrawList();
         ImVec2 l_Pos = GetCursorScreenPos();
 
-        l_DrawList->AddCircleFilled({l_Pos.x + l_CircleSize / 2.0f,
-                                     l_Pos.y + (l_CircleSize / 2.0f) + 5.0f},
-                                    l_CircleSize, p_Color);
+        /*
+              l_DrawList->AddCircleFilled({l_Pos.x + l_CircleSize / 2.0f,
+                                           l_Pos.y + (l_CircleSize / 2.0f)
+           + 5.0f}, l_CircleSize, p_Color);
+        */
 
-        SetCursorScreenPos({l_Pos.x, l_Pos.y + 1.0f});
+        l_DrawList->AddRectFilled(l_Pos, l_Pos + ImVec2(16, 23), p_Color);
+
+        SetCursorScreenPos({l_Pos.x + 3.0f, l_Pos.y + 2.0f});
         Text(p_Label.c_str());
+        SetCursorScreenPos({l_Pos.x + 15, l_Pos.y});
+      }
+
+      static bool draw_single_coefficient_editor(Util::String p_Label,
+                                                 ImColor p_Color,
+                                                 float *p_Value, float p_Width,
+                                                 float p_Margin, bool p_Break)
+      {
+        using namespace ImGui;
+
+        ImVec2 l_Pos = GetCursorScreenPos();
+        draw_single_letter_label(p_Label, p_Color);
+
+        bool l_Changed = false;
+
+        Util::String l_Label = "##" + p_Label;
+        PushItemWidth(p_Width - 16.0f);
+        if (DragFloat(l_Label.c_str(), p_Value)) {
+          l_Changed = true;
+        }
+        PopItemWidth();
+
+        if (!p_Break) {
+          SetCursorScreenPos({l_Pos.x + p_Width + p_Margin, l_Pos.y});
+        }
+
+        return l_Changed;
+      }
+
+      static bool draw_single_coefficient_editor(Util::String p_Label,
+                                                 ImColor p_Color,
+                                                 float *p_Value, float p_Width,
+                                                 bool p_Break)
+      {
+        return draw_single_coefficient_editor(p_Label, p_Color, p_Value,
+                                              p_Width, 0.0f, p_Break);
+      }
+
+      static bool draw_single_coefficient_editor(Util::String p_Label,
+                                                 ImColor p_Color,
+                                                 float *p_Value, float p_Width,
+                                                 float p_Margin)
+      {
+        return draw_single_coefficient_editor(p_Label, p_Color, p_Value,
+                                              p_Width, p_Margin, false);
+      }
+
+      static bool draw_single_coefficient_editor(Util::String p_Label,
+                                                 ImColor p_Color,
+                                                 float *p_Value, float p_Width)
+      {
+        return draw_single_coefficient_editor(p_Label, p_Color, p_Value,
+                                              p_Width, true);
       }
 
       bool Vector3Edit(Math::Vector3 &p_Vector)
       {
-        using namespace ImGui;
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_Spacing = LOW_EDITOR_SPACING;
+        float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 3.0f;
+        bool l_Changed = false;
 
-        draw_single_letter_label("X", IM_COL32(190, 0, 0, 255));
-        SameLine();
-        DragFloat("##x", &p_Vector.x);
+        if (draw_single_coefficient_editor("X", IM_COL32(204, 42, 54, 255),
+                                           &p_Vector.x, l_Width, l_Spacing)) {
+          l_Changed = true;
+        }
+        if (draw_single_coefficient_editor("Y", IM_COL32(42, 204, 54, 255),
+                                           &p_Vector.y, l_Width, l_Spacing)) {
+          l_Changed = true;
+        }
+        if (draw_single_coefficient_editor("Z", IM_COL32(0, 160, 176, 255),
+                                           &p_Vector.z, l_Width)) {
+          l_Changed = true;
+        }
 
-        return true;
+        return l_Changed;
+      }
+
+      bool Vector2Edit(Math::Vector2 &p_Vector)
+      {
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_Spacing = LOW_EDITOR_SPACING;
+        float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 2.0f;
+        bool l_Changed = false;
+
+        if (draw_single_coefficient_editor("X", IM_COL32(204, 42, 54, 255),
+                                           &p_Vector.x, l_Width, l_Spacing)) {
+          l_Changed = true;
+        }
+        if (draw_single_coefficient_editor("Y", IM_COL32(42, 204, 54, 255),
+                                           &p_Vector.y, l_Width)) {
+          l_Changed = true;
+        }
+
+        return l_Changed;
       }
 
       Util::String FileExplorer()

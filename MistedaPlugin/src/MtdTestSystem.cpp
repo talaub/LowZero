@@ -76,7 +76,7 @@ namespace Mtd {
                                         l_Hit)) {
           Low::Math::Sphere l_Sphere;
           l_Sphere.position = l_Hit.position;
-          l_Sphere.radius = 0.5f;
+          l_Sphere.radius = 0.2f;
 
           Low::Core::DebugGeometry::render_sphere(
               l_Sphere, Low::Math::Color(1.0f, 0.0f, 0.0f, 1.0f), true, false);

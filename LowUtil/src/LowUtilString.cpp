@@ -3,7 +3,7 @@
 namespace Low {
   namespace Util {
     namespace StringHelper {
-      bool ends_with(String &p_Full, String &p_Test)
+      bool ends_with(String &p_Full, String p_Test)
       {
         if (p_Full.length() >= p_Test.length()) {
           return (0 == p_Full.compare(p_Full.length() - p_Test.length(),
@@ -12,7 +12,7 @@ namespace Low {
         return false;
       }
 
-      bool begins_with(String &p_Full, String &p_Test)
+      bool begins_with(String &p_Full, String p_Test)
       {
         if (p_Full.length() >= p_Test.length()) {
           return (0 == p_Full.compare(0, p_Test.length(), p_Test));

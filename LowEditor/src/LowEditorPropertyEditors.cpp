@@ -1,6 +1,9 @@
 #include "LowEditorPropertyEditors.h"
 
+#include "LowEditorGui.h"
+
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
 #include <string.h>
 
@@ -15,10 +18,29 @@ namespace Low {
 
       static void render_label(Util::String &p_Label)
       {
+        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_LabelWidth = l_FullWidth * LOW_EDITOR_LABEL_WIDTH_REL;
+        float l_LabelHeight = 20.0f;
+
         Util::String l_DisplayLabel = p_Label;
         DISPLAY_LABEL(l_DisplayLabel);
-        ImGui::Text(l_DisplayLabel.c_str());
-        ImGui::SameLine();
+        ImGui::RenderTextEllipsis(
+            ImGui::GetWindowDrawList(), l_Pos,
+            l_Pos + ImVec2(l_LabelWidth, l_LabelHeight),
+            l_Pos.x + l_LabelWidth - LOW_EDITOR_SPACING, l_Pos.x + l_LabelWidth,
+            l_DisplayLabel.c_str(),
+            l_DisplayLabel.c_str() + l_DisplayLabel.size(), nullptr);
+        ImGui::SetCursorScreenPos(l_Pos);
+        Util::String l_InvisLabel = "##";
+        l_InvisLabel += "INVIS" + p_Label;
+        ImGui::InvisibleButton(l_InvisLabel.c_str(),
+                               ImVec2(l_LabelWidth, l_LabelHeight));
+        if (ImGui::IsItemHovered()) {
+          ImGui::SetTooltip(l_DisplayLabel.c_str());
+        }
+        ImGui::SetCursorScreenPos(
+            {l_Pos.x + l_LabelWidth + LOW_EDITOR_SPACING, l_Pos.y});
       }
 
       void render_name_editor(Util::String &p_Label, Util::Name &p_Name,
@@ -55,10 +77,11 @@ namespace Low {
 
         Math::Vector3 l_Vector = Math::VectorUtil::to_euler(p_Quaternion);
 
-        if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
+        if (Gui::Vector3Edit(l_Vector)) {
           p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
           return true;
         }
+
         return false;
       }
 
@@ -74,10 +97,16 @@ namespace Low {
 
         Math::Vector3 l_Vector = p_Vector;
 
-        if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f)) {
+        if (Gui::Vector3Edit(l_Vector)) {
           p_Vector = l_Vector;
           return true;
         }
+
+        /*
+              if (ImGui::DragFloat3(l_Label.c_str(), (float *)&l_Vector, 0.2f))
+           { p_Vector = l_Vector; return true;
+              }
+        */
         return false;
       }
 
@@ -134,6 +163,11 @@ namespace Low {
         ImGui::BeginGroup();
         render_label(p_Label);
 
+        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_ButtonWidth = 80.0f;
+        float l_NameWidth = l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
+
         bool l_Changed = false;
 
         Util::Handle l_CurrentHandle = *p_HandleId;
@@ -157,8 +191,16 @@ namespace Low {
           }
           l_HasNameProperty = true;
         }
-        ImGui::Text(l_DisplayName);
-        ImGui::SameLine();
+        // ImGui::Text(l_DisplayName);
+        int l_NameLength = strlen(l_DisplayName);
+
+        ImGui::RenderTextEllipsis(
+            ImGui::GetWindowDrawList(), l_Pos,
+            l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
+            l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING, l_Pos.x + l_NameWidth,
+            l_DisplayName, l_DisplayName + l_NameLength, nullptr);
+        ImGui::SetCursorScreenPos(
+            l_Pos + ImVec2(l_NameWidth + LOW_EDITOR_SPACING, 0.0f));
         if (ImGui::Button("Choose...")) {
           ImGui::OpenPopup(l_PopupName.c_str());
         }
@@ -205,6 +247,10 @@ namespace Low {
 
         return ImGui::ColorEdit4((Util::String("##") + p_Label).c_str(),
                                  (float *)p_Color);
+        /*
+              return ImGui::ColorPicker4((Util::String("##") + p_Label).c_str(),
+                                         (float *)p_Color);
+        */
       }
 
       void render_colorrgb_editor(Util::String &p_Label,
@@ -291,6 +337,7 @@ namespace Low {
       void render_editor(Util::RTTI::PropertyInfo &p_PropertyInfo,
                          Util::Handle p_Handle, const void *p_DataPtr)
       {
+        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         if (p_PropertyInfo.type == Util::RTTI::PropertyType::NAME) {
           render_name_editor(Util::String(p_PropertyInfo.name.c_str()),
                              *(Util::Name *)p_DataPtr, true);
@@ -322,6 +369,9 @@ namespace Low {
                               p_PropertyInfo, p_Handle,
                               (Math::Shape *)p_DataPtr, true);
         }
+
+        ImGui::SetCursorScreenPos(
+            l_Pos + ImVec2(0.0f, LOW_EDITOR_LABEL_HEIGHT_ABS + 12.0f));
       }
     } // namespace PropertyEditors
   }   // namespace Editor
