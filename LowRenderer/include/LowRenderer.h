@@ -49,6 +49,8 @@ namespace Low {
 
     Resource::Buffer get_vertex_buffer();
     Resource::Buffer get_skinning_buffer();
+    Resource::Buffer get_particle_emitter_buffer();
+    Resource::Buffer get_particle_buffer();
 
   } // namespace Renderer
 } // namespace Low

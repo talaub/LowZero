@@ -8,6 +8,8 @@
 
 #include "LowMath.h"
 
+#define LOW_RENDERER_MAX_PARTICLES 512
+
 namespace Low {
   namespace Renderer {
     struct RenderObject
@@ -23,6 +25,26 @@ namespace Low {
 
       bool useSkinningBuffer = false;
       uint32_t vertexBufferStartOverride = 0;
+    };
+
+    struct ParticleEmitter
+    {
+      alignas(16) Math::Vector3 position;
+      alignas(16) Math::Vector3 positionOffset;
+      float minLifetime;
+      float maxLifetime;
+      uint32_t maxParticles;
+      uint32_t particleStart;
+      uint32_t vertexStart;
+      uint32_t indexStart;
+      uint32_t indexCount;
+    };
+
+    struct Particle
+    {
+      alignas(16) Math::Vector3 position;
+      uint32_t emitterIndex;
+      float lifetime;
     };
   } // namespace Renderer
 } // namespace Low

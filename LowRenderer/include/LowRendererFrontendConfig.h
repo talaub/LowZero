@@ -24,6 +24,7 @@ namespace Low {
     struct BufferResourceConfig
     {
       uint32_t size;
+      uint8_t usageFlags;
     };
 
     namespace ImageResourceDimensionType {

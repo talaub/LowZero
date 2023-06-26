@@ -529,7 +529,7 @@ namespace Low {
           it->widget->render(p_Delta);
         }
       }
-      ImGui::ShowDemoWindow();
+      // ImGui::ShowDemoWindow();
     }
 
     DetailsWidget *get_details_widget()

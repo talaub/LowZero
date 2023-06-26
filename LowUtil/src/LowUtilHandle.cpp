@@ -84,6 +84,9 @@ namespace Low {
 
     Handle find_handle_by_unique_id(UniqueId p_UniqueId)
     {
+      if (g_UniqueIdRegistry.find(p_UniqueId) == g_UniqueIdRegistry.end()) {
+        return 0;
+      }
       return g_UniqueIdRegistry[p_UniqueId];
     }
 

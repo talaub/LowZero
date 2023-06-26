@@ -207,6 +207,22 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(parent_uid);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(TransformData, parent_uid);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_parent_uid();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, parent_uid,
+                                              uint64_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_position);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_position);
@@ -388,15 +404,10 @@ namespace Low {
         Low::Util::Serialization::serialize(p_Node["position"], position());
         Low::Util::Serialization::serialize(p_Node["rotation"], rotation());
         Low::Util::Serialization::serialize(p_Node["scale"], scale());
+        p_Node["parent_uid"] = get_parent_uid();
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-        Transform l_TransformParent = get_parent();
-        if (l_TransformParent.is_alive()) {
-          p_Node["parent"] = l_TransformParent.get_unique_id();
-        } else {
-          p_Node["parent"] = 0;
-        }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -430,6 +441,9 @@ namespace Low {
         if (p_Node["scale"]) {
           l_Handle.scale(
               Low::Util::Serialization::deserialize_vector3(p_Node["scale"]));
+        }
+        if (p_Node["parent_uid"]) {
+          l_Handle.set_parent_uid(p_Node["parent_uid"].as<uint64_t>());
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
@@ -556,7 +570,40 @@ namespace Low {
           TYPE_SOA(Transform, parent, uint64_t) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
+          Transform l_Parent(p_Value);
+          if (l_Parent.is_alive()) {
+            set_parent_uid(l_Parent.get_unique_id());
+          }
           // LOW_CODEGEN::END::CUSTOM:SETTER_parent
+        }
+      }
+
+      uint64_t Transform::get_parent_uid() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_uid
+        // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
+
+        return TYPE_SOA(Transform, parent_uid, uint64_t);
+      }
+      void Transform::set_parent_uid(uint64_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_uid
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_uid
+
+        if (get_parent_uid() != p_Value) {
+          // Set dirty flags
+          TYPE_SOA(Transform, dirty, bool) = true;
+          TYPE_SOA(Transform, world_dirty, bool) = true;
+
+          // Set new value
+          TYPE_SOA(Transform, parent_uid, uint64_t) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
+          // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
         }
       }
 
@@ -766,6 +813,10 @@ namespace Low {
           return;
         }
 
+        if (!Transform(get_parent()).is_alive() && get_parent_uid() != 0) {
+          set_parent(Util::find_handle_by_unique_id(get_parent_uid()).get_id());
+        }
+
         Low::Math::Vector3 l_Position = position();
         Low::Math::Quaternion l_Rotation = rotation();
         Low::Math::Vector3 l_Scale = scale();
@@ -885,6 +936,12 @@ namespace Low {
           memcpy(&l_NewBuffer[offsetof(TransformData, parent) *
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(TransformData, parent) * (l_Capacity)],
+                 l_Capacity * sizeof(uint64_t));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(TransformData, parent_uid) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(TransformData, parent_uid) * (l_Capacity)],
                  l_Capacity * sizeof(uint64_t));
         }
         {

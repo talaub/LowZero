@@ -989,6 +989,36 @@ namespace Low {
             16 + (sizeof(PointLightShaderInfo) * LOW_RENDERER_POINTLIGHT_COUNT);
         l_ResourceConfigs.push_back(l_ResourceConfig);
       }
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.name = N(_particle_draw_info);
+        l_ResourceConfig.buffer.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDIRECT;
+        l_ResourceConfig.buffer.size =
+            Backend::callbacks().get_draw_indexed_indirect_info_size() *
+            LOW_RENDERER_MAX_PARTICLES;
+        l_ResourceConfigs.push_back(l_ResourceConfig);
+      }
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.name = N(_particle_render_info);
+        l_ResourceConfig.buffer.size =
+            Backend::callbacks().get_draw_indexed_indirect_info_size() *
+            LOW_RENDERER_MAX_PARTICLES; // TODO: Change size
+        l_ResourceConfigs.push_back(l_ResourceConfig);
+      }
+      {
+        ResourceConfig l_ResourceConfig;
+        l_ResourceConfig.arraySize = 1;
+        l_ResourceConfig.type = ResourceType::BUFFER;
+        l_ResourceConfig.name = N(_particle_draw_count);
+        l_ResourceConfig.buffer.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDIRECT;
+        l_ResourceConfig.buffer.size = sizeof(uint32_t);
+        l_ResourceConfigs.push_back(l_ResourceConfig);
+      }
 
       l_RenderFlow.get_resources().initialize(l_ResourceConfigs, p_Context,
                                               l_RenderFlow);
@@ -1020,6 +1050,30 @@ namespace Low {
           l_Resource.arraySize = 1;
           l_Resources.push_back(l_Resource);
         }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_ParticleDrawBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+          l_Resources.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_ParticleRenderBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+          l_Resources.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_ParticleDrawCountBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::ALL;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+          l_Resources.push_back(l_Resource);
+        }
 
         l_RenderFlow.set_resource_signature(
             Interface::PipelineResourceSignature::make(
@@ -1035,6 +1089,19 @@ namespace Low {
             N(u_PointLightInfo), 0,
             l_RenderFlow.get_resources().get_buffer_resource(
                 N(_point_light_info)));
+
+        l_RenderFlow.get_resource_signature().set_buffer_resource(
+            N(u_ParticleDrawBuffer), 0,
+            l_RenderFlow.get_resources().get_buffer_resource(
+                N(_particle_draw_info)));
+        l_RenderFlow.get_resource_signature().set_buffer_resource(
+            N(u_ParticleRenderBuffer), 0,
+            l_RenderFlow.get_resources().get_buffer_resource(
+                N(_particle_render_info)));
+        l_RenderFlow.get_resource_signature().set_buffer_resource(
+            N(u_ParticleDrawCountBuffer), 0,
+            l_RenderFlow.get_resources().get_buffer_resource(
+                N(_particle_draw_count)));
       }
 
       for (auto it = p_Config["steps"].begin(); it != p_Config["steps"].end();

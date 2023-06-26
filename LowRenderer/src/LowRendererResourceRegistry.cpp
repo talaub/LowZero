@@ -22,7 +22,8 @@ namespace Low {
       l_Params.bufferSize = p_Config.buffer.size;
 
       l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER |
-                            LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
+                            LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT |
+                            p_Config.buffer.usageFlags;
 
       Resource::Buffer l_Resource = Resource::Buffer::make(p_Name, l_Params);
 

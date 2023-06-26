@@ -430,7 +430,8 @@ namespace Low {
             "VK_LAYER_KHRONOS_validation"};
 
         Util::List<const char *> g_DeviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME};
 
         static bool check_validation_layer_support()
         {
@@ -644,9 +645,29 @@ namespace Low {
           VkPhysicalDeviceFeatures l_DeviceFeatures;
 
           vkGetPhysicalDeviceProperties(p_Device, &l_DeviceProperties);
-          vkGetPhysicalDeviceFeatures(p_Device, &l_DeviceFeatures);
 
           int l_Score = 0;
+
+          if (l_DeviceProperties.apiVersion < VK_API_VERSION_1_2) {
+            return 0;
+          }
+
+          VkPhysicalDeviceVulkan12Features vulkan12Features;
+          vulkan12Features.sType =
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+          vulkan12Features.pNext = nullptr;
+
+          VkPhysicalDeviceFeatures2 features2;
+          features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+          features2.pNext = &vulkan12Features;
+
+          vkGetPhysicalDeviceFeatures2(p_Device, &features2);
+
+          if (!vulkan12Features.drawIndirectCount) {
+            return 0;
+          }
+
+          vkGetPhysicalDeviceFeatures(p_Device, &l_DeviceFeatures);
 
           // Dedicated gpus have way better perfomance
           if (l_DeviceProperties.deviceType ==
@@ -734,6 +755,7 @@ namespace Low {
           l_DeviceFeatures.samplerAnisotropy = VK_TRUE;
           l_DeviceFeatures.independentBlend = VK_TRUE;
           l_DeviceFeatures.fillModeNonSolid = VK_TRUE;
+          l_DeviceFeatures.multiDrawIndirect = VK_TRUE;
           l_DeviceFeatures.wideLines = VK_TRUE;
           VkDeviceCreateInfo l_CreateInfo{};
           l_CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -3632,6 +3654,23 @@ namespace Low {
                       p_Dimensions.x, p_Dimensions.y, p_Dimensions.z);
       }
 
+      uint32_t vk_get_draw_indexed_indirect_info_size()
+      {
+        return sizeof(DrawIndexedIndirectInfo);
+      }
+
+      void vk_draw_indexed_indirect_info_fill(
+          Backend::DrawIndexedIndirectInfo &p_Info, uint32_t p_IndexCount,
+          uint32_t p_FirstIndex, int32_t p_VertexBufferOffset,
+          uint32_t p_InstanceCount, uint32_t p_FirstInstance)
+      {
+        p_Info.vk.indexCount = p_IndexCount;
+        p_Info.vk.firstIndex = p_FirstIndex;
+        p_Info.vk.vertexOffset = p_VertexBufferOffset;
+        p_Info.vk.instanceCount = p_InstanceCount;
+        p_Info.vk.firstInstance = p_FirstInstance;
+      }
+
       void vk_draw(Backend::DrawParams &p_Params)
       {
         vkCmdDraw(ContextHelper::get_current_commandbuffer(*p_Params.context),
@@ -3644,6 +3683,21 @@ namespace Low {
             ContextHelper::get_current_commandbuffer(*p_Params.context),
             p_Params.indexCount, p_Params.instanceCount, p_Params.firstIndex,
             p_Params.vertexOffset, p_Params.firstInstance);
+      }
+
+      void vk_draw_indexed_indirect_count(Backend::Context &p_Context,
+                                          Backend::Buffer &p_DrawBuffer,
+                                          uint32_t p_DrawBufferOffset,
+                                          Backend::Buffer &p_CountBuffer,
+                                          uint32_t p_CountBufferOffset,
+                                          uint32_t p_MaxDrawCount,
+                                          uint32_t p_Stride)
+      {
+        vkCmdDrawIndexedIndirectCount(
+            ContextHelper::get_current_commandbuffer(p_Context),
+            p_DrawBuffer.vk.m_Buffer, p_DrawBufferOffset,
+            p_CountBuffer.vk.m_Buffer, p_CountBufferOffset, p_MaxDrawCount,
+            p_Stride);
       }
 
       void vk_buffer_create(Backend::Buffer &p_Buffer,
@@ -3691,6 +3745,10 @@ namespace Low {
             LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER) {
           l_UsageFlage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        }
+        if ((p_Params.usageFlags & LOW_RENDERER_BUFFER_USAGE_INDIRECT) ==
+            LOW_RENDERER_BUFFER_USAGE_INDIRECT) {
+          l_UsageFlage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
         }
 
         VkMemoryPropertyFlags l_MemoryFlags;
@@ -4019,6 +4077,12 @@ namespace Low {
         p_Callbacks.compute_dispatch = &vk_compute_dispatch;
         p_Callbacks.draw = &vk_draw;
         p_Callbacks.draw_indexed = &vk_draw_indexed;
+        p_Callbacks.get_draw_indexed_indirect_info_size =
+            &vk_get_draw_indexed_indirect_info_size;
+        p_Callbacks.draw_indexed_indirect_info_fill =
+            &vk_draw_indexed_indirect_info_fill;
+        p_Callbacks.draw_indexed_indirect_count =
+            &vk_draw_indexed_indirect_count;
 
         p_Callbacks.imageresource_create = &vk_imageresource_create;
         p_Callbacks.imageresource_cleanup = &vk_imageresource_cleanup;

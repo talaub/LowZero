@@ -26,6 +26,7 @@ namespace Low {
         Math::Quaternion rotation;
         Math::Vector3 scale;
         uint64_t parent;
+        uint64_t parent_uid;
         Math::Vector3 world_position;
         Math::Quaternion world_rotation;
         Math::Vector3 world_scale;
@@ -113,6 +114,8 @@ namespace Low {
         uint64_t get_parent() const;
         void set_parent(uint64_t p_Value);
 
+        uint64_t get_parent_uid() const;
+
         Math::Vector3 &get_world_position();
 
         Math::Quaternion &get_world_rotation();
@@ -138,6 +141,7 @@ namespace Low {
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
+        void set_parent_uid(uint64_t p_Value);
         void set_world_position(Math::Vector3 &p_Value);
         void set_world_rotation(Math::Quaternion &p_Value);
         void set_world_scale(Math::Vector3 &p_Value);

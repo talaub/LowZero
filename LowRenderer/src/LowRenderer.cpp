@@ -61,6 +61,12 @@ namespace Low {
       uint32_t length;
     };
 
+    struct ParticleUpdateInfo
+    {
+      float seed;
+      float delta;
+    };
+
     namespace DynamicBufferType {
       enum Enum
       {
@@ -252,8 +258,13 @@ namespace Low {
 
     Interface::Context g_Context;
 
+    Mesh g_PlaneMesh;
+
     Interface::ComputePipeline g_SkinningPipeline;
     Interface::PipelineResourceSignature g_SkinningSignature;
+
+    Interface::ComputePipeline g_ParticlePipeline;
+    Interface::PipelineResourceSignature g_ParticleSignature;
 
     PoseBone g_PoseBones[LOW_RENDERER_MAX_POSE_BONES];
     uint32_t g_PoseBoneIndex = 0;
@@ -269,8 +280,10 @@ namespace Low {
     DynamicBuffer g_SkinningBuffer;
 
     DynamicBuffer g_VertexWeightBuffer;
-
     Resource::Buffer g_PoseBuffer;
+
+    DynamicBuffer g_ParticleEmitterBuffer;
+    Resource::Buffer g_ParticleBuffer;
 
     ResourceRegistry g_ResourceRegistry;
     Util::String g_ConfigPath;
@@ -285,6 +298,8 @@ namespace Low {
     {
       ShadowStep::setup_config();
       SsaoStep::setup_config();
+      ParticlePrepareStep::setup_config();
+      ParticleRenderStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
@@ -843,6 +858,19 @@ namespace Low {
         g_PoseBuffer = Resource::Buffer::make(N(PoseBuffer), l_Params);
       }
 
+      g_ParticleEmitterBuffer.initialize(N(ParticleEmitterBuffer), g_Context,
+                                         DynamicBufferType::MISC,
+                                         sizeof(ParticleEmitter), 32u);
+
+      {
+        Backend::BufferCreateParams l_Params;
+        l_Params.context = &g_Context.get_context();
+        l_Params.bufferSize = sizeof(Particle) * LOW_RENDERER_MAX_PARTICLES;
+        l_Params.data = nullptr;
+        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+        g_ParticleBuffer = Resource::Buffer::make(N(ParticleBuffer), l_Params);
+      }
+
       {
         Interface::PipelineComputeCreateParams l_Params;
         l_Params.context = g_Context;
@@ -915,6 +943,57 @@ namespace Low {
             Interface::ComputePipeline::make(N(SkinningPipeline), l_Params);
       }
 
+      {
+        Interface::PipelineComputeCreateParams l_Params;
+        l_Params.context = g_Context;
+        l_Params.shaderPath = "particle_update.comp";
+
+        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_ParticleEmitterBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+
+          l_ResourceDescriptions.push_back(l_Resource);
+        }
+        {
+          Backend::PipelineResourceDescription l_Resource;
+          l_Resource.name = N(u_ParticleBuffer);
+          l_Resource.step = Backend::ResourcePipelineStep::COMPUTE;
+          l_Resource.type = Backend::ResourceType::BUFFER;
+          l_Resource.arraySize = 1;
+
+          l_ResourceDescriptions.push_back(l_Resource);
+        }
+
+        Interface::PipelineResourceSignature l_Signature =
+            Interface::PipelineResourceSignature::make(
+                N(ParticleUpdateSignature), g_Context, 1,
+                l_ResourceDescriptions);
+
+        l_Signature.set_buffer_resource(N(u_ParticleEmitterBuffer), 0,
+                                        g_ParticleEmitterBuffer.m_Buffer);
+        l_Signature.set_buffer_resource(N(u_ParticleBuffer), 0,
+                                        g_ParticleBuffer);
+
+        g_ParticleSignature = l_Signature;
+
+        l_Params.signatures = {g_Context.get_global_signature(), l_Signature};
+
+        {
+          Backend::PipelineConstantCreateParams l_Constant;
+          l_Constant.name = N(inputInfo);
+          l_Constant.size = sizeof(ParticleUpdateInfo);
+          l_Params.constants.push_back(l_Constant);
+        }
+
+        g_ParticlePipeline =
+            Interface::ComputePipeline::make(N(ParticlesPipeline), l_Params);
+      }
+
       initialize_global_resources();
 
       load_material_types();
@@ -959,6 +1038,30 @@ namespace Low {
       g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 0.0f, 5.0f));
       g_MainRenderFlow.set_camera_direction(
           Math::VectorUtil::normalize(Math::Vector3(0.0f, 0.0f, -1.0f)));
+
+      {
+        Util::String l_BasePath = LOW_DATA_PATH;
+        l_BasePath += "/_internal/assets/meshes/";
+        {
+          Util::Resource::Mesh l_Mesh;
+          Util::Resource::load_mesh(l_BasePath + "plane.glb", l_Mesh);
+          g_PlaneMesh = upload_mesh(N(Plane), l_Mesh.submeshes[0].meshInfos[0]);
+        }
+      }
+
+      {
+        ParticleEmitter l_Emitter;
+        l_Emitter.position = {2.225f, 2.096f, -5.154f};
+        l_Emitter.positionOffset = {0.9f, 0.0f, 0.9f};
+        l_Emitter.minLifetime = 1.0f;
+        l_Emitter.maxLifetime = 3.0f;
+        l_Emitter.maxParticles = 500;
+        l_Emitter.particleStart = 0; // TODO: harcoded
+        l_Emitter.vertexStart = g_PlaneMesh.get_vertex_buffer_start();
+        l_Emitter.indexStart = g_PlaneMesh.get_index_buffer_start();
+        l_Emitter.indexCount = g_PlaneMesh.get_index_count();
+        g_ParticleEmitterBuffer.write(&l_Emitter, 1);
+      }
     }
 
     void tick(float p_Delta, Util::EngineState p_State)
@@ -1166,6 +1269,12 @@ namespace Low {
     {
       static Util::Name l_ConstantName = N(inputInfo);
 
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            g_Context.get_context(), "Skinning",
+            Math::Color(0.1578f, 0.5478f, 0.2947f, 1.0f));
+      }
+
       g_SkinningSignature.commit();
 
       g_SkinningPipeline.bind();
@@ -1189,6 +1298,10 @@ namespace Low {
             g_Context.get_context(),
             {(i_Operation.mesh.get_vertex_count() / 256) + 1, 1, 1});
       }
+
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
+      }
     }
 
     static void execute_pending_renderflow_dimension_updates()
@@ -1200,6 +1313,35 @@ namespace Low {
         }
         g_PendingRenderFlowUpdates.clear();
         return;
+      }
+    }
+
+    static void do_particle_updates(float p_Delta)
+    {
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            g_Context.get_context(), "Update particles",
+            Math::Color(0.5478f, 0.2947f, 0.1578f, 1.0f));
+      }
+
+      static Util::Name l_ConstantName = N(inputInfo);
+
+      ParticleUpdateInfo l_Input;
+      l_Input.delta = p_Delta;
+      l_Input.seed = static_cast<float>(rand());
+
+      g_ParticlePipeline.set_constant(l_ConstantName, &l_Input);
+
+      g_ParticleSignature.commit();
+
+      g_ParticlePipeline.bind();
+
+      Backend::callbacks().compute_dispatch(
+          g_Context.get_context(),
+          {(LOW_RENDERER_MAX_PARTICLES / 256) + 1, 1, 1});
+
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
       }
     }
 
@@ -1225,15 +1367,9 @@ namespace Low {
 
       g_PoseBuffer.set(g_PoseBones);
 
-      /*
-      if (x == 100) {
-        LOW_LOG_INFO << "Skinning" << LOW_LOG_END;
-      }
-      if (x >= 100) {
-        do_skinning();
-      }
-      */
       do_skinning();
+
+      do_particle_updates(p_Delta);
 
       g_MainRenderFlow.execute();
 
@@ -1346,6 +1482,15 @@ namespace Low {
     Resource::Buffer get_skinning_buffer()
     {
       return g_SkinningBuffer.m_Buffer;
+    }
+
+    Resource::Buffer get_particle_emitter_buffer()
+    {
+      return g_ParticleEmitterBuffer.m_Buffer;
+    }
+    Resource::Buffer get_particle_buffer()
+    {
+      return g_ParticleBuffer;
     }
   } // namespace Renderer
 } // namespace Low

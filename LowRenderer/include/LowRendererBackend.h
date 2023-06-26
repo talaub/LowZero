@@ -198,6 +198,7 @@ namespace Low {
 #define LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER 2
 #define LOW_RENDERER_BUFFER_USAGE_VERTEX 4
 #define LOW_RENDERER_BUFFER_USAGE_INDEX 8
+#define LOW_RENDERER_BUFFER_USAGE_INDIRECT 16
 
       namespace BufferMemoryType {
         enum Enum
@@ -378,6 +379,14 @@ namespace Low {
         uint32_t firstInstance;
       };
 
+      struct DrawIndexedIndirectInfo
+      {
+        union
+        {
+          Vulkan::DrawIndexedIndirectInfo vk;
+        };
+      };
+
       struct DrawIndexedBatchParams
       {};
 
@@ -438,6 +447,17 @@ namespace Low {
         void (*compute_dispatch)(Context &, Math::UVector3);
         void (*draw)(DrawParams &);
         void (*draw_indexed)(DrawIndexedParams &);
+        uint32_t (*get_draw_indexed_indirect_info_size)();
+        void (*draw_indexed_indirect_info_fill)(DrawIndexedIndirectInfo &,
+                                                uint32_t, uint32_t, int32_t,
+                                                uint32_t, uint32_t);
+        void (*draw_indexed_indirect_count)(Context &p_Context,
+                                            Buffer &p_DrawBuffer,
+                                            uint32_t p_DrawBufferOffset,
+                                            Buffer &p_CountBuffer,
+                                            uint32_t p_CountBufferOffset,
+                                            uint32_t p_MaxDrawCount,
+                                            uint32_t p_Stride);
 
         void (*imageresource_create)(ImageResource &,
                                      ImageResourceCreateParams &);
