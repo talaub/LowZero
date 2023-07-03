@@ -203,6 +203,9 @@ function process_file(p_FileName) {
 		i_Prop.soa_type = `SINGLE_ARG(${i_Prop.soa_type})`;
 	    }
 	    i_Prop.accessor_type = get_accessor_type(i_Prop.type, i_Prop.handle);
+	    if (i_Prop.no_ref) {
+		i_Prop.accessor_type = i_Prop.plain_type;
+	    }
 	}
 
 	if (i_Type.functions) {

@@ -51,6 +51,8 @@ namespace Low {
                               Util::List<Submesh>)) Util::List<Submesh>();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, skeleton,
                               Renderer::Skeleton)) Renderer::Skeleton();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, state, ResourceState))
+          ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -84,7 +86,6 @@ namespace Low {
           break;
         }
       }
-      _LOW_ASSERT(l_LivingInstanceFound);
     }
 
     void MeshResource::initialize()
@@ -172,6 +173,25 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(state);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshResourceData, state);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_state();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, state,
+                                            ResourceState);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.set_state(*(ResourceState *)p_Data);
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -348,6 +368,29 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_skeleton
     }
 
+    ResourceState MeshResource::get_state() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+      // LOW_CODEGEN::END::CUSTOM:GETTER_state
+
+      return TYPE_SOA(MeshResource, state, ResourceState);
+    }
+    void MeshResource::set_state(ResourceState p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
+
+      // Set new value
+      TYPE_SOA(MeshResource, state, ResourceState) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+      // LOW_CODEGEN::END::CUSTOM:SETTER_state
+    }
+
     Low::Util::Name MeshResource::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -392,7 +435,7 @@ namespace Low {
     bool MeshResource::is_loaded()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
-      return !get_submeshes().empty();
+      return get_state() == ResourceState::LOADED;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
     }
 
@@ -432,6 +475,8 @@ namespace Low {
       if (!l_Mesh.animations.empty()) {
         set_skeleton(Renderer::upload_skeleton(N(Skeleton), l_Mesh));
       }
+
+      set_state(ResourceState::LOADED);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
     }
 
@@ -465,6 +510,7 @@ namespace Low {
       if (get_skeleton().is_alive()) {
         Renderer::unload_skeleton(get_skeleton());
       }
+      set_state(ResourceState::UNLOADED);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
     }
 
@@ -531,6 +577,12 @@ namespace Low {
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(MeshResourceData, skeleton) * (l_Capacity)],
                l_Capacity * sizeof(Renderer::Skeleton));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, state) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, state) * (l_Capacity)],
+               l_Capacity * sizeof(ResourceState));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshResourceData, name) *

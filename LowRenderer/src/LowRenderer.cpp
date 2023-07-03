@@ -258,6 +258,8 @@ namespace Low {
 
     Interface::Context g_Context;
 
+    Material g_DefaultMaterial;
+
     Mesh g_PlaneMesh;
 
     Interface::ComputePipeline g_SkinningPipeline;
@@ -1002,6 +1004,12 @@ namespace Low {
 
       load_renderflows();
 
+      g_DefaultMaterial = create_material(
+          N(DefaultMaterial), MaterialType::find_by_name(N(solid_base)));
+
+      g_DefaultMaterial.set_property(
+          N(albedo_color), Util::Variant(Math::Color(0.9f, 0.9f, 0.9f, 1.0f)));
+
       {
         RenderFlow *l_RenderFlows = RenderFlow::living_instances();
         for (uint32_t i = 0; i < RenderFlow::living_count(); ++i) {
@@ -1060,7 +1068,7 @@ namespace Low {
         l_Emitter.vertexStart = g_PlaneMesh.get_vertex_buffer_start();
         l_Emitter.indexStart = g_PlaneMesh.get_index_buffer_start();
         l_Emitter.indexCount = g_PlaneMesh.get_index_count();
-        g_ParticleEmitterBuffer.write(&l_Emitter, 1);
+        // g_ParticleEmitterBuffer.write(&l_Emitter, 1);
       }
     }
 
@@ -1491,6 +1499,11 @@ namespace Low {
     Resource::Buffer get_particle_buffer()
     {
       return g_ParticleBuffer;
+    }
+
+    Material get_default_material()
+    {
+      return g_DefaultMaterial;
     }
   } // namespace Renderer
 } // namespace Low

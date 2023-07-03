@@ -85,7 +85,6 @@ namespace Mtd {
           break;
         }
       }
-      _LOW_ASSERT(l_LivingInstanceFound);
     }
 
     void CameraController::initialize()

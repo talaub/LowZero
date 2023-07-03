@@ -80,7 +80,6 @@ namespace Low {
           break;
         }
       }
-      _LOW_ASSERT(l_LivingInstanceFound);
     }
 
     void Texture2D::initialize()

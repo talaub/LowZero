@@ -215,8 +215,12 @@ namespace Low {
       MonoClass *testingClass = GetClassInAssembly(
           Mono::get_context().game_assembly, "MtdScripts", "MonoTest");
 
+      LOW_ASSERT(testingClass, "Class not found");
+
       MonoMethod *method =
           mono_class_get_method_from_name(testingClass, "Tick", 0);
+
+      LOW_ASSERT(method, "Method not found");
 
       MonoObject *exception = nullptr;
       mono_runtime_invoke(method, nullptr, nullptr, &exception);

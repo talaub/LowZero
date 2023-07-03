@@ -27,10 +27,12 @@ namespace Low {
         Math::Vector3 scale;
         uint64_t parent;
         uint64_t parent_uid;
+        Util::List<uint64_t> children;
         Math::Vector3 world_position;
         Math::Quaternion world_rotation;
         Math::Vector3 world_scale;
         Math::Matrix4x4 world_matrix;
+        bool world_updated;
         Low::Core::Entity entity;
         Low::Util::UniqueId unique_id;
         bool dirty;
@@ -116,6 +118,8 @@ namespace Low {
 
         uint64_t get_parent_uid() const;
 
+        Util::List<uint64_t> &get_children() const;
+
         Math::Vector3 &get_world_position();
 
         Math::Quaternion &get_world_rotation();
@@ -123,6 +127,9 @@ namespace Low {
         Math::Vector3 &get_world_scale();
 
         Math::Matrix4x4 &get_world_matrix();
+
+        bool is_world_updated() const;
+        void set_world_updated(bool p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);

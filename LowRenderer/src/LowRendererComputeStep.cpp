@@ -94,7 +94,6 @@ namespace Low {
           break;
         }
       }
-      _LOW_ASSERT(l_LivingInstanceFound);
     }
 
     void ComputeStep::initialize()

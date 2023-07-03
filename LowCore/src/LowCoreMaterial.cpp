@@ -101,7 +101,6 @@ namespace Low {
           break;
         }
       }
-      _LOW_ASSERT(l_LivingInstanceFound);
     }
 
     void Material::initialize()

@@ -364,7 +364,7 @@ function generate_header(p_Type) {
 	    continue;
 	}
 	if (!i_Prop.no_getter) {
-	    const l = `${i_Prop.accessor_type}${i_Prop.getter_name}() ${i_Prop.getter_no_const?'':'const'};`;
+	    const l = `${i_Prop.accessor_type} ${i_Prop.getter_name}() ${i_Prop.getter_no_const?'':'const'};`;
 	    if (i_Prop.private_getter) {
 		privatelines.push(l);
 	    }
@@ -373,7 +373,7 @@ function generate_header(p_Type) {
 	    }
 	}
 	if (!i_Prop.no_setter) {
-	    const l = `void ${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value);`;
+	    const l = `void ${i_Prop.setter_name}(${i_Prop.accessor_type} p_Value);`;
 
 	    if (i_Prop.private_setter) {
 		privatelines.push(l);
@@ -391,14 +391,14 @@ function generate_header(p_Type) {
 	    if (i_Func.static) {
 		func_line += write('static ');
 	    }
-	    func_line += write(`${i_Func.accessor_type}${i_Func.name}(`);
+	    func_line += write(`${i_Func.accessor_type} ${i_Func.name}(`);
 	    if (i_Func.parameters) {
 		for (let i = 0; i < i_Func.parameters.length; ++i) {
 		    if (i > 0) {
 			func_line += write(', ');
 		    }
 		    const i_Param = i_Func.parameters[i];
-		    func_line += write(`${i_Param.accessor_type}${i_Param.name}`);
+		    func_line += write(`${i_Param.accessor_type} ${i_Param.name}`);
 		}
 	    }
 	    func_line += write(')');
@@ -604,7 +604,7 @@ function generate_source(p_Type) {
     t += line(`break;`);
     t += line('}');
     t += line('}');
-    t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
+    //t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
     t += line('}');
     t += empty();
     t += line(`void ${p_Type.name}::initialize() {`);
@@ -858,7 +858,7 @@ function generate_source(p_Type) {
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	if (!i_Prop.no_getter) {
-	    t += line(`${i_Prop.accessor_type}${p_Type.name}::${i_Prop.getter_name}() ${i_Prop.getter_no_const ? '':'const'}`, n);
+	    t += line(`${i_Prop.accessor_type} ${p_Type.name}::${i_Prop.getter_name}() ${i_Prop.getter_no_const ? '':'const'}`, n);
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
 	    const l_MarkerName = `CUSTOM:GETTER_${i_PropName}`;
@@ -899,7 +899,7 @@ function generate_source(p_Type) {
 		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
 	    }
 	    
-	    t += line(`void ${p_Type.name}::${i_Prop.setter_name}(${i_Prop.accessor_type}p_Value)`, n);
+	    t += line(`void ${p_Type.name}::${i_Prop.setter_name}(${i_Prop.accessor_type} p_Value)`, n);
 	    t += line('{', n++);
 	    t += line('_LOW_ASSERT(is_alive());');
 	    t += empty();
@@ -964,14 +964,14 @@ function generate_source(p_Type) {
 		
 		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
 	    }
-	    t += write(`${i_Func.accessor_type}${p_Type.name}::${i_Func.name}(`);
+	    t += write(`${i_Func.accessor_type} ${p_Type.name}::${i_Func.name}(`);
 	    if (i_Func.parameters) {
 		for (let i = 0; i < i_Func.parameters.length; ++i) {
 		    if (i > 0) {
 			t += write(', ');
 		    }
 		    const i_Param = i_Func.parameters[i];
-		    t += write(`${i_Param.accessor_type}${i_Param.name}`);
+		    t += write(`${i_Param.accessor_type} ${i_Param.name}`);
 		}
 	    }
 	    t += write(')');

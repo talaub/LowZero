@@ -51,6 +51,8 @@ namespace Low {
                                 Math::Quaternion)) Math::Quaternion();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, scale, Math::Vector3))
             Math::Vector3();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, children,
+                                Util::List<uint64_t>)) Util::List<uint64_t>();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_position,
                                 Math::Vector3)) Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_rotation,
@@ -59,6 +61,7 @@ namespace Low {
                                 Math::Vector3)) Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_matrix,
                                 Math::Matrix4x4)) Math::Matrix4x4();
+        ACCESSOR_TYPE_SOA(l_Handle, Transform, world_updated, bool) = false;
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, entity, Low::Core::Entity))
             Low::Core::Entity();
         ACCESSOR_TYPE_SOA(l_Handle, Transform, dirty, bool) = false;
@@ -86,6 +89,8 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        // Doing this to remove the transform from the list of children
+        set_parent(0);
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         Low::Util::remove_unique_id(get_unique_id());
@@ -102,7 +107,6 @@ namespace Low {
             break;
           }
         }
-        _LOW_ASSERT(l_LivingInstanceFound);
       }
 
       void Transform::initialize()
@@ -223,6 +227,22 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(children);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(TransformData, children);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.get_children();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, children,
+                                              Util::List<uint64_t>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_position);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_position);
@@ -283,6 +303,25 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(world_updated);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(TransformData, world_updated);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.is_world_updated();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
+                                              world_updated, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Transform l_Handle = p_Handle.get_id();
+            l_Handle.set_world_updated(*(bool *)p_Data);
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -559,6 +598,17 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
+        Transform l_Parent = get_parent();
+        if (l_Parent.is_alive()) {
+          for (auto it = l_Parent.get_children().begin();
+               it != l_Parent.get_children().end();) {
+            if (*it == get_id()) {
+              it = l_Parent.get_children().erase(it);
+            } else {
+              ++it;
+            }
+          }
+        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent
 
         if (get_parent() != p_Value) {
@@ -573,6 +623,9 @@ namespace Low {
           Transform l_Parent(p_Value);
           if (l_Parent.is_alive()) {
             set_parent_uid(l_Parent.get_unique_id());
+            l_Parent.get_children().push_back(get_id());
+          } else {
+            set_parent_uid(0);
           }
           // LOW_CODEGEN::END::CUSTOM:SETTER_parent
         }
@@ -605,6 +658,16 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
           // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
         }
+      }
+
+      Util::List<uint64_t> &Transform::get_children() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
+        // LOW_CODEGEN::END::CUSTOM:GETTER_children
+
+        return TYPE_SOA(Transform, children, Util::List<uint64_t>);
       }
 
       Math::Vector3 &Transform::get_world_position()
@@ -703,6 +766,29 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
       }
 
+      bool Transform::is_world_updated() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_updated
+        // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
+
+        return TYPE_SOA(Transform, world_updated, bool);
+      }
+      void Transform::set_world_updated(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_updated
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
+
+        // Set new value
+        TYPE_SOA(Transform, world_updated, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
+        // LOW_CODEGEN::END::CUSTOM:SETTER_world_updated
+      }
+
       Low::Core::Entity Transform::get_entity() const
       {
         _LOW_ASSERT(is_alive());
@@ -782,8 +868,9 @@ namespace Low {
         }
 
         Transform l_Parent = get_parent();
+
         if (l_Parent.is_alive()) {
-          return l_Parent.is_world_dirty();
+          return l_Parent.is_world_dirty() || l_Parent.is_world_updated();
         }
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
@@ -877,6 +964,7 @@ namespace Low {
         set_world_scale(l_Scale);
 
         set_world_dirty(false);
+        set_world_updated(true);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_recalculate_world_transform
       }
 
@@ -945,6 +1033,17 @@ namespace Low {
                  l_Capacity * sizeof(uint64_t));
         }
         {
+          for (auto it = ms_LivingInstances.begin();
+               it != ms_LivingInstances.end(); ++it) {
+            auto *i_ValPtr = new (
+                &l_NewBuffer[offsetof(TransformData, children) *
+                                 (l_Capacity + l_CapacityIncrease) +
+                             (it->get_index() * sizeof(Util::List<uint64_t>))])
+                Util::List<uint64_t>();
+            *i_ValPtr = it->get_children();
+          }
+        }
+        {
           memcpy(&l_NewBuffer[offsetof(TransformData, world_position) *
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(TransformData, world_position) *
@@ -971,6 +1070,13 @@ namespace Low {
                            (l_Capacity + l_CapacityIncrease)],
               &ms_Buffer[offsetof(TransformData, world_matrix) * (l_Capacity)],
               l_Capacity * sizeof(Math::Matrix4x4));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(TransformData, world_updated) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(TransformData, world_updated) * (l_Capacity)],
+              l_Capacity * sizeof(bool));
         }
         {
           memcpy(&l_NewBuffer[offsetof(TransformData, entity) *

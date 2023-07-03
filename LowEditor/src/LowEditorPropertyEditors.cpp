@@ -198,10 +198,25 @@ namespace Low {
             l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
             l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING, l_Pos.x + l_NameWidth,
             l_DisplayName, l_DisplayName + l_NameLength, nullptr);
+
         ImGui::SetCursorScreenPos(
             l_Pos + ImVec2(l_NameWidth + LOW_EDITOR_SPACING, 0.0f));
+
         if (ImGui::Button("Choose...")) {
           ImGui::OpenPopup(l_PopupName.c_str());
+        }
+
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *l_Payload =
+                  ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+            Util::Handle l_PayloadHandle = *(uint64_t *)l_Payload->Data;
+
+            if (p_TypeInfo.is_alive(l_PayloadHandle)) {
+              l_Changed = true;
+              *p_HandleId = l_PayloadHandle.get_id();
+            }
+          }
+          ImGui::EndDragDropTarget();
         }
 
         if (ImGui::BeginPopup(l_PopupName.c_str())) {
@@ -324,18 +339,24 @@ namespace Low {
         }
 
         if (l_Shape.type == Math::ShapeType::BOX) {
+          ImGui::PushID("BOXPOS");
           if (render_vector3_editor("BoxPosition", l_Shape.box.position,
                                     true)) {
             l_Changed = true;
           }
+          ImGui::PopID();
+          ImGui::PushID("BOXROT");
           if (render_quaternion_editor("BoxRotation", l_Shape.box.rotation,
                                        true)) {
             l_Changed = true;
           }
+          ImGui::PopID();
+          ImGui::PushID("BOXSCL");
           if (render_vector3_editor("BoxHalfExtents", l_Shape.box.halfExtents,
                                     true)) {
             l_Changed = true;
           }
+          ImGui::PopID();
         } else {
           ImGui::Text("Shape type not editable");
         }

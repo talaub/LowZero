@@ -65,7 +65,8 @@ namespace Low {
     }
 
     static bool render_element(uint32_t p_Id, Util::String p_Icon,
-                               Util::String p_Label)
+                               Util::String p_Label, bool p_Draggable,
+                               Util::Handle p_Handle)
     {
       bool l_Result = false;
 
@@ -77,6 +78,9 @@ namespace Low {
       ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
       l_Result =
           ImGui::Button(p_Icon.c_str(), ImVec2(g_ElementSize, g_ElementSize));
+      if (p_Draggable) {
+        Gui::drag_handle(p_Handle);
+      }
       ImGui::PopFont();
       ImGui::TextWrapped(p_Label.c_str());
 
@@ -133,7 +137,7 @@ namespace Low {
       int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset")) {
+      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset", false, 0)) {
         ImGui::OpenPopup("Create mesh asset");
       }
 
@@ -177,7 +181,8 @@ namespace Low {
 
       for (auto it = Core::MeshAsset::ms_LivingInstances.begin();
            it != Core::MeshAsset::ms_LivingInstances.end(); ++it) {
-        if (render_element(l_Id++, ICON_FA_CUBE, it->get_name().c_str())) {
+        if (render_element(l_Id++, ICON_FA_CUBE, it->get_name().c_str(), true,
+                           *it)) {
           set_selected_handle(*it);
           HandlePropertiesSection i_Section(*it, true);
           i_Section.render_footer = &render_mesh_asset_details_footer;
@@ -198,7 +203,7 @@ namespace Low {
       int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create material")) {
+      if (render_element(l_Id++, ICON_FA_PLUS, "Create material", false, 0)) {
         ImGui::OpenPopup("Create material");
       }
 
@@ -242,7 +247,8 @@ namespace Low {
 
       for (auto it = Core::Material::ms_LivingInstances.begin();
            it != Core::Material::ms_LivingInstances.end(); ++it) {
-        if (render_element(l_Id++, ICON_FA_SPRAY_CAN, it->get_name().c_str())) {
+        if (render_element(l_Id++, ICON_FA_SPRAY_CAN, it->get_name().c_str(),
+                           true, *it)) {
           set_selected_handle(*it);
           HandlePropertiesSection i_Section(*it, true);
           i_Section.render_footer = &render_material_details_footer;

@@ -48,7 +48,7 @@ namespace Low {
           (*it)(p_Delta, get_engine_state());
         }
 
-        test_mono();
+        // test_mono();
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());
 

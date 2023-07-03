@@ -12,6 +12,9 @@ namespace Low {
     namespace StringHelper {
       LOW_EXPORT bool ends_with(String &p_Full, String p_Test);
       LOW_EXPORT bool begins_with(String &p_Full, String p_Test);
+
+      LOW_EXPORT void split(String p_String, char p_Delimiter,
+                            List<String> &p_Parts);
     } // namespace StringHelper
   }   // namespace Util
 } // namespace Low

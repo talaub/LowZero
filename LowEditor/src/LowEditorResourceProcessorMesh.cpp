@@ -1,6 +1,8 @@
 #include "LowEditorResourceProcessorMesh.h"
 
 #include "LowUtilLogger.h"
+#include "LowUtilFileIO.h"
+#include "LowUtilString.h"
 #include <iostream>
 
 #include <gli/gli.hpp>
@@ -43,7 +45,26 @@ namespace Low {
         {
           Assimp::Importer l_Importer;
 
-          const aiScene *l_AiScene = l_Importer.ReadFile(p_FilePath.c_str(), 0);
+          Util::FileIO::File l_File = Util::FileIO::open(
+              p_FilePath.c_str(), Util::FileIO::FileMode::READ_BYTES);
+          uint32_t l_FileSize = Util::FileIO::size_sync(l_File);
+          Util::List<char> l_FileContent;
+          l_FileContent.resize(l_FileSize + 1);
+          Util::FileIO::read_sync(l_File, l_FileContent.data());
+
+          Util::String l_Content = l_FileContent.data();
+          Util::List<Util::String> l_Lines;
+          Util::StringHelper::split(l_Content, '\n', l_Lines);
+
+          l_Content = "";
+          for (uint32_t i = 0; i < l_Lines.size(); ++i) {
+            if (!Util::StringHelper::begins_with(l_Lines[i], "l")) {
+              l_Content += l_Lines[i] + "\n";
+            }
+          }
+
+          const aiScene *l_AiScene = l_Importer.ReadFileFromMemory(
+              l_Content.c_str(), l_Content.size(), 0);
           LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
 
           bool l_OriginalSceneHasAnimation = l_AiScene->HasAnimations();
@@ -69,6 +90,7 @@ namespace Low {
                                 Util::String p_OutputPath)
         {
           Assimp::Importer l_Importer;
+
           const aiScene *l_AiScene = l_Importer.ReadFile(p_FilePath.c_str(), 0);
           LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
           LOW_ASSERT(l_AiScene->HasAnimations(),

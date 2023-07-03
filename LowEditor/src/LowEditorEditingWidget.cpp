@@ -216,15 +216,21 @@ namespace Low {
       if (l_Entity.is_alive()) {
         Core::Component::Transform l_Transform = l_Entity.get_transform();
 
-        Math::Matrix4x4 l_TransformMatrix =
-            glm::translate(glm::mat4(1.0f), l_Transform.get_world_position()) *
-            glm::toMat4(l_Transform.get_world_rotation()) *
-            glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
+        Math::Matrix4x4 l_TransformMatrix = l_Transform.get_world_matrix();
+        // glm::translate(glm::mat4(1.0f), l_Transform.get_world_position()) *
+        // glm::toMat4(l_Transform.get_world_rotation()) *
+        // glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
 
         if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
                                  (float *)&l_ProjectionMatrix, l_Operation,
                                  ImGuizmo::LOCAL, (float *)&l_TransformMatrix,
                                  NULL, NULL, NULL, NULL)) {
+
+          Core::Component::Transform l_Parent = l_Transform.get_parent();
+          if (l_Parent.is_alive()) {
+            l_TransformMatrix =
+                glm::inverse(l_Parent.get_world_matrix()) * l_TransformMatrix;
+          }
 
           glm::vec3 scale;
           glm::quat rotation;
@@ -285,6 +291,10 @@ namespace Low {
     bool EditingWidget::camera_movement(float p_Delta)
     {
       bool l_ReturnValue = false;
+
+      if (ImGui::GetIO().KeyCtrl) {
+        return false;
+      }
 
       Math::Vector3 l_CameraPosition =
           m_RenderFlowWidget->get_renderflow().get_camera_position();

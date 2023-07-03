@@ -1,5 +1,9 @@
 #include "LowEditorGui.h"
 
+#include "LowUtilHandle.h"
+
+#include "LowCoreEntity.h"
+
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
@@ -190,6 +194,30 @@ namespace Low {
         window->DrawList->PathStroke(IM_COL32(p_Color.x * 255, p_Color.y * 255,
                                               p_Color.z * 255, p_Color.a * 255),
                                      false, thickness);
+      }
+
+      void drag_handle(Util::Handle p_Handle)
+      {
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+          uint64_t l_Id = p_Handle.get_id();
+          ImGui::SetDragDropPayload("DG_HANDLE", &l_Id, sizeof(l_Id));
+          Util::Name l_Name;
+          Util::RTTI::TypeInfo &l_TypeInfo =
+              Util::Handle::get_type_info(p_Handle.get_type());
+
+          if (l_TypeInfo.component) {
+            Core::Entity l_Entity =
+                *(uint64_t *)l_TypeInfo.properties[N(entity)].get(p_Handle);
+            l_Name = l_Entity.get_name();
+          } else {
+            l_Name =
+                *(Util::Name *)l_TypeInfo.properties[N(name)].get(p_Handle);
+          }
+
+          ImGui::Text(l_Name.c_str());
+
+          ImGui::EndDragDropSource();
+        }
       }
     } // namespace Gui
   }   // namespace Editor

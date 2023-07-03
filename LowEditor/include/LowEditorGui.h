@@ -14,6 +14,8 @@ namespace Low {
 
       bool spinner(const char *label, float radius, int thickness,
                    Math::Color p_Color);
+
+      void drag_handle(Util::Handle p_Handle);
     } // namespace Gui
   }   // namespace Editor
 } // namespace Low

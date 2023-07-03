@@ -1,12 +1,17 @@
 #include "LowEditorSceneWidget.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
 
 #include "LowEditorMainWindow.h"
+#include "LowEditorGui.h"
 
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+
+#include "LowMathQuaternionUtil.h"
+#include <glm/gtc/matrix_transform.hpp>
 
 namespace Low {
   namespace Editor {
@@ -34,30 +39,138 @@ namespace Low {
       return l_Result;
     }
 
+    static bool render_entity(Core::Entity p_Entity, bool *p_OpenedEntryPopup,
+                              float p_Delta)
+    {
+      bool l_Break = false;
+
+      if (ImGui::Selectable(p_Entity.get_name().c_str(),
+                            p_Entity.get_id() ==
+                                get_selected_entity().get_id())) {
+        set_selected_entity(p_Entity);
+      }
+      if (ImGui::BeginPopupContextItem()) {
+        *p_OpenedEntryPopup = true;
+        set_selected_entity(p_Entity);
+        if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
+          duplicate({p_Entity});
+          l_Break = true;
+        }
+        if (ImGui::MenuItem("Delete")) {
+          Core::Entity::destroy(p_Entity);
+          l_Break = true;
+        }
+        ImGui::EndPopup();
+      }
+      Gui::drag_handle(p_Entity);
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *l_Payload =
+                ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+          Core::Entity l_Entity = *(uint64_t *)l_Payload->Data;
+          if (l_Entity.is_alive()) {
+
+            Math::Matrix4x4 l_InverseParentMatrix =
+                glm::inverse(p_Entity.get_transform().get_world_matrix());
+
+            Math::Matrix4x4 l_LocalMatrix =
+                l_InverseParentMatrix *
+                l_Entity.get_transform().get_world_matrix();
+
+            glm::vec3 scale;
+            glm::quat rotation;
+            glm::vec3 translation;
+
+            glm::vec3 skew;
+            glm::vec4 perspective;
+            glm::decompose(l_LocalMatrix, scale, rotation, translation, skew,
+                           perspective);
+
+            l_Entity.get_transform().position(translation);
+            l_Entity.get_transform().rotation(rotation);
+            l_Entity.get_transform().scale(scale);
+
+            l_Entity.get_transform().set_parent(
+                p_Entity.get_transform().get_id());
+          }
+        }
+
+        ImGui::EndDragDropTarget();
+      }
+      return l_Break;
+    }
+
+    static bool render_entity_hierarchy(Core::Entity p_Entity,
+                                        bool *p_OpenedEntryPopup, float p_Delta)
+    {
+      bool l_Break = false;
+      if (!p_Entity.get_transform().get_children().empty()) {
+        Util::String l_IdString = "##";
+        l_IdString += p_Entity.get_id();
+        bool l_Open = ImGui::TreeNode(l_IdString.c_str());
+        ImGui::SameLine();
+        l_Break = render_entity(p_Entity, p_OpenedEntryPopup, p_Delta);
+
+        if (l_Open) {
+          for (auto it = p_Entity.get_transform().get_children().begin();
+               it != p_Entity.get_transform().get_children().end(); ++it) {
+            Core::Component::Transform i_Transform = *it;
+            if (!i_Transform.is_alive()) {
+              continue;
+            }
+
+            bool i_Break = render_entity_hierarchy(i_Transform.get_entity(),
+                                                   p_OpenedEntryPopup, p_Delta);
+            if (!l_Break) {
+              l_Break = i_Break;
+            }
+          }
+          ImGui::TreePop();
+        }
+      } else {
+        l_Break = render_entity(p_Entity, p_OpenedEntryPopup, p_Delta);
+      }
+
+      return l_Break;
+    }
+
     void SceneWidget::render(float p_Delta)
     {
       ImGui::Begin(ICON_FA_LIST_UL " Scene");
+
+      ImVec2 l_Cursor = ImGui::GetCursorScreenPos();
+      ImRect l_Rect(l_Cursor, {l_Cursor.x + ImGui::GetWindowWidth(),
+                               l_Cursor.y + ImGui::GetWindowHeight()});
+
+      if (ImGui::BeginDragDropTargetCustom(l_Rect, 89023)) {
+        if (const ImGuiPayload *l_Payload =
+                ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+          Core::Entity l_Entity = *(uint64_t *)l_Payload->Data;
+          if (l_Entity.is_alive()) {
+            l_Entity.get_transform().position(
+                l_Entity.get_transform().get_world_position());
+            l_Entity.get_transform().rotation(
+                l_Entity.get_transform().get_world_rotation());
+            l_Entity.get_transform().scale(
+                l_Entity.get_transform().get_world_scale());
+            l_Entity.get_transform().set_parent(0);
+          }
+        }
+        ImGui::EndDragDropTarget();
+      }
+
+      if (ImGui::IsWindowFocused()) {
+        set_focused_widget(this);
+      }
 
       bool l_OpenedEntryPopup = false;
 
       for (auto it = Core::Entity::ms_LivingInstances.begin();
            it != Core::Entity::ms_LivingInstances.end(); ++it) {
-        bool i_Break = false;
-        if (ImGui::Selectable(it->get_name().c_str(),
-                              it->get_id() == get_selected_entity().get_id())) {
-          set_selected_entity(*it);
+        if (Core::Component::Transform(it->get_transform().get_parent())
+                .is_alive()) {
+          continue;
         }
-        if (ImGui::BeginPopupContextItem()) {
-          l_OpenedEntryPopup = true;
-          set_selected_entity(*it);
-          if (ImGui::MenuItem("Delete")) {
-            Core::Entity::destroy(*it);
-            i_Break = true;
-          }
-          ImGui::EndPopup();
-        }
-
-        if (i_Break) {
+        if (render_entity_hierarchy(*it, &l_OpenedEntryPopup, p_Delta)) {
           break;
         }
       }
@@ -84,6 +197,15 @@ namespace Low {
       }
 
       ImGui::End();
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *l_Payload =
+                ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+          Core::Entity l_Entity = *(uint64_t *)l_Payload->Data;
+          if (l_Entity.is_alive()) {
+            l_Entity.get_transform().set_parent(0);
+          }
+        }
+      }
     }
   } // namespace Editor
 } // namespace Low

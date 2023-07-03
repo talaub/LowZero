@@ -53,6 +53,8 @@ namespace Low {
 
     Util::List<EditorWidget> g_Widgets;
 
+    Widget *g_FocusedWidget;
+
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
 
@@ -512,6 +514,55 @@ namespace Low {
       register_editor_widget("StateGraph", new StateGraphWidget(), true);
     }
 
+    static Core::Entity duplicate_entity(Core::Entity p_Entity)
+    {
+      Util::Yaml::Node l_Node;
+      get_selected_entity().serialize(l_Node);
+      l_Node.remove("unique_id");
+      Util::String l_NameString = LOW_YAML_AS_STRING(l_Node["name"]);
+      l_NameString += " Clone";
+      l_Node["name"] = l_NameString.c_str();
+
+      Util::Yaml::Node &l_ComponentsNode = l_Node["components"];
+      for (auto it = l_ComponentsNode.begin(); it != l_ComponentsNode.end();
+           ++it) {
+        Util::Yaml::Node &i_ComponentNode = *it;
+        i_ComponentNode["properties"].remove("unique_id");
+      }
+
+      return Core::Entity::deserialize(l_Node,
+                                       get_selected_entity().get_region())
+          .get_id();
+    }
+
+    static Util::Handle duplicate_handle(Util::Handle p_Handle)
+    {
+      if (p_Handle.get_type() == Core::Entity::TYPE_ID) {
+        return duplicate_entity(p_Handle.get_id());
+      }
+    }
+
+    void duplicate(Util::List<Util::Handle> p_Handles)
+    {
+      Util::List<Util::Handle> l_NewHandles;
+      for (Util::Handle i_Handle : p_Handles) {
+        l_NewHandles.push_back(duplicate_handle(i_Handle));
+      }
+
+      if (l_NewHandles.size() == 1) {
+        set_selected_handle(l_NewHandles[0]);
+      }
+    }
+
+    static void handle_shortcuts(float p_Delta)
+    {
+      if (ImGui::GetIO().KeyCtrl) {
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D))) {
+          duplicate({get_selected_handle()});
+        }
+      }
+    }
+
     void tick(float p_Delta, Util::EngineState p_State)
     {
       render_menu_bar(p_Delta);
@@ -529,6 +580,10 @@ namespace Low {
           it->widget->render(p_Delta);
         }
       }
+
+      if (!g_FocusedWidget || !g_FocusedWidget->handle_shortcuts(p_Delta)) {
+        handle_shortcuts(p_Delta);
+      }
       // ImGui::ShowDemoWindow();
     }
 
@@ -542,6 +597,11 @@ namespace Low {
       LOW_ASSERT(g_TypeMetadata.find(p_TypeId) != g_TypeMetadata.end(),
                  "Could not find type metadata");
       return g_TypeMetadata[p_TypeId];
+    }
+
+    void set_focused_widget(Widget *p_Widget)
+    {
+      g_FocusedWidget = p_Widget;
     }
 
     namespace Helper {

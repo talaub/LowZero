@@ -47,6 +47,8 @@ namespace Low {
     LOW_RENDERER_API uint32_t calculate_skeleton_pose(
         Skeleton p_Skeleton, SkeletalAnimation p_Animation, float p_Timestamp);
 
+    LOW_RENDERER_API Material get_default_material();
+
     Resource::Buffer get_vertex_buffer();
     Resource::Buffer get_skinning_buffer();
     Resource::Buffer get_particle_emitter_buffer();

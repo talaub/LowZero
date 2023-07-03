@@ -56,12 +56,13 @@ namespace Low {
       static void parse_mesh(const aiMesh *p_AiMesh, MeshInfo &p_MeshInfo,
                              Mesh &p_Mesh)
       {
-
         LOW_ASSERT(p_AiMesh->HasPositions(),
                    "Mesh has no position information");
         LOW_ASSERT(p_AiMesh->HasNormals(), "Mesh has no normal information");
+        LOW_ASSERT(p_AiMesh->HasTextureCoords(0),
+                   "Mesh has no texture coordinates");
         LOW_ASSERT(p_AiMesh->HasTangentsAndBitangents(),
-                   "Mesh has no tanged/bitangent information");
+                   "Mesh has no tangent/bitangent information");
 
         p_MeshInfo.vertices.resize(p_AiMesh->mNumVertices);
         for (uint32_t i = 0u; i < p_AiMesh->mNumVertices; ++i) {

@@ -105,7 +105,6 @@ namespace Low {
           break;
         }
       }
-      _LOW_ASSERT(l_LivingInstanceFound);
     }
 
     void Entity::initialize()
@@ -293,9 +292,11 @@ namespace Low {
 
       // Parse the old unique id and assign it again (need to remove the auto
       // generated uid first
-      Util::remove_unique_id(l_Entity.get_unique_id());
-      l_Entity.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-      Util::register_unique_id(l_Entity.get_unique_id(), l_Entity);
+      if (p_Node["unique_id"]) {
+        Util::remove_unique_id(l_Entity.get_unique_id());
+        l_Entity.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+        Util::register_unique_id(l_Entity.get_unique_id(), l_Entity);
+      }
 
       l_Region.add_entity(l_Entity);
 
