@@ -11,6 +11,9 @@
 namespace Low {
   namespace Core {
     namespace Component {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t Transform::TYPE_ID = 25;
       uint32_t Transform::ms_Capacity = 0u;
       uint8_t *Transform::ms_Buffer = 0;

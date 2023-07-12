@@ -6,6 +6,7 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
 #include "LowUtilVariant.h"
+#include "LowUtilGlobals.h"
 
 #include "imgui.h"
 
@@ -812,6 +813,9 @@ namespace Low {
       g_ConfigPath = Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
       g_MainRenderFlowName = N(test);
 
+      Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
+      Util::Globals::set(N(LOW_RENDERER_COMPUTEDISPATCH), (int)0);
+
       Backend::initialize();
 
       load_graphics_pipeline_configs(g_ConfigPath);
@@ -1360,6 +1364,9 @@ namespace Low {
         ImGui::UpdatePlatformWindows();
         return;
       }
+
+      Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
+      Util::Globals::set(N(LOW_RENDERER_COMPUTEDISPATCH), (int)0);
 
       static int x = 0;
       x += 1;

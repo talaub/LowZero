@@ -437,6 +437,18 @@ namespace Low {
       const char *l_PropertiesName = "properties";
 
       if (p_Node[l_PropertiesName]) {
+        if (!p_Node["component"]) {
+          PropertyMetadata l_Metadata;
+          l_Metadata.name = N(name);
+          l_Metadata.editor = false;
+          if (p_Node["name_editable"]) {
+            l_Metadata.editor = true;
+          }
+          l_Metadata.propInfo = p_Metadata.typeInfo.properties[l_Metadata.name];
+
+          p_Metadata.properties.push_back(l_Metadata);
+        }
+
         for (auto it = p_Node[l_PropertiesName].begin();
              it != p_Node[l_PropertiesName].end(); ++it) {
           PropertyMetadata i_Metadata;

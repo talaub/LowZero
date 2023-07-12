@@ -12,6 +12,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t ComputeStepConfig::TYPE_ID = 11;
     uint32_t ComputeStepConfig::ms_Capacity = 0u;
     uint8_t *ComputeStepConfig::ms_Buffer = 0;

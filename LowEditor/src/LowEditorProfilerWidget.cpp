@@ -6,6 +6,8 @@
 
 #include "LowCoreGameLoop.h"
 
+#include "LowUtilGlobals.h"
+
 #define BUFFER_SIZE 256
 
 namespace Low {
@@ -30,6 +32,19 @@ namespace Low {
 
       ImGui::PlotLines("", g_FpsBuffer, BUFFER_SIZE, 0, NULL, 0.0f, 160.0f,
                        ImVec2(0.0f, 40.0f));
+
+      int l_DrawCalls = (int)Util::Globals::get(N(LOW_RENDERER_DRAWCALLS));
+
+      int l_ComputeDispatches =
+          (int)Util::Globals::get(N(LOW_RENDERER_COMPUTEDISPATCH));
+
+      ImGui::Text("Drawcalls: ");
+      ImGui::SameLine();
+      ImGui::Text(std::to_string(l_DrawCalls).c_str());
+
+      ImGui::Text("Compute: ");
+      ImGui::SameLine();
+      ImGui::Text(std::to_string(l_ComputeDispatches).c_str());
 
       ImGui::End();
     }

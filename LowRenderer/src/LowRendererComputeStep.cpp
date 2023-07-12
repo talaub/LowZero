@@ -10,6 +10,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t ComputeStep::TYPE_ID = 10;
     uint32_t ComputeStep::ms_Capacity = 0u;
     uint8_t *ComputeStep::ms_Buffer = 0;
@@ -281,8 +284,12 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      get_config().serialize(p_Node["config"]);
-      get_context().serialize(p_Node["context"]);
+      if (get_config().is_alive()) {
+        get_config().serialize(p_Node["config"]);
+      }
+      if (get_context().is_alive()) {
+        get_context().serialize(p_Node["context"]);
+      }
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER

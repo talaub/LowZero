@@ -14,6 +14,9 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t Renderpass::TYPE_ID = 2;
       uint32_t Renderpass::ms_Capacity = 0u;
       uint8_t *Renderpass::ms_Buffer = 0;

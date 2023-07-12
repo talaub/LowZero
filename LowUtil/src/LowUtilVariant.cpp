@@ -51,6 +51,10 @@ namespace Low {
     {
       m_Uint64 = p_Value.get_id();
     }
+    Variant::Variant(Name p_Value) : m_Type(VariantType::Name)
+    {
+      m_Uint32 = p_Value.m_Index;
+    }
 
     Variant &Variant::operator=(bool p_Value)
     {
@@ -122,6 +126,13 @@ namespace Low {
 
       return *this;
     }
+    Variant &Variant::operator=(Name p_Value)
+    {
+      m_Type = VariantType::Name;
+      m_Uint32 = p_Value.m_Index;
+
+      return *this;
+    }
 
     void Variant::set_handle(Handle p_Value)
     {
@@ -176,6 +187,10 @@ namespace Low {
     Variant::operator Math::Quaternion() const
     {
       return m_Quaternion;
+    }
+    Variant::operator Name() const
+    {
+      return Name(m_Uint32);
     }
     Variant::operator Handle() const
     {

@@ -13,6 +13,9 @@
 
 namespace Low {
   namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Texture2D::TYPE_ID = 22;
     uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;

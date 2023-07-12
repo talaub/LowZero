@@ -11,6 +11,9 @@
 namespace Low {
   namespace Core {
     namespace Component {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t DirectionalLight::TYPE_ID = 27;
       uint32_t DirectionalLight::ms_Capacity = 0u;
       uint8_t *DirectionalLight::ms_Buffer = 0;

@@ -13,6 +13,9 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t GraphicsPipeline::TYPE_ID = 5;
       uint32_t GraphicsPipeline::ms_Capacity = 0u;
       uint8_t *GraphicsPipeline::ms_Buffer = 0;

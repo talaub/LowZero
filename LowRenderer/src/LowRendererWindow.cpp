@@ -3,6 +3,10 @@
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include "../../LowDependencies/stb/stb_image.h"
+
 namespace Low {
   namespace Renderer {
     static void glfw_window_initialize(Window &p_Window, WindowInit &p_Init)
@@ -12,9 +16,19 @@ namespace Low {
       glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
       glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
+      Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/_internal/assets/editor_icons/raw/logo.png";
+
+      GLFWimage images[1];
+      images[0].pixels = stbi_load(l_Path.c_str(), &images[0].width,
+                                   &images[0].height, 0, 4); // rgba channels
+
       p_Window.m_Glfw =
           glfwCreateWindow(p_Init.dimensions.x, p_Init.dimensions.y,
                            p_Init.title, nullptr, nullptr);
+
+      glfwSetWindowIcon(p_Window.m_Glfw, 1, images);
+      stbi_image_free(images[0].pixels);
     }
 
     void window_initialize(Window &p_Window, WindowInit &p_Init)

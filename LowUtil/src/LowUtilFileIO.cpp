@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <cstdio>
+
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -90,6 +92,11 @@ namespace Low {
         write_sync(p_File.m_FilePointer, p_Content.c_str(), p_Content.size());
       }
 
+      void delete_sync(const char *p_Path)
+      {
+        std::remove(p_Path);
+      }
+
       uint32_t size_sync(File &p_File)
       {
         uint32_t l_Size;
@@ -119,6 +126,16 @@ namespace Low {
              std::filesystem::directory_iterator(p_Path)) {
           p_ContentPaths.push_back(String(i_Entry.path().string().c_str()));
         }
+      }
+
+      bool is_directory(const char *p_Path)
+      {
+        return std::filesystem::is_directory(p_Path);
+      }
+
+      void move_sync(const char *p_Source, const char *p_Target)
+      {
+        std::filesystem::rename(p_Source, p_Target);
       }
     } // namespace FileIO
   }   // namespace Util

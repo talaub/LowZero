@@ -23,6 +23,7 @@
 
 namespace Low {
   namespace Util {
+    struct Variant;
     typedef uint64_t UniqueId;
     namespace Instances {
       struct LOW_EXPORT Slot
@@ -64,7 +65,7 @@ namespace Low {
 
       typedef Util::Handle *(*LivingInstancesGetter)();
 
-      struct PropertyInfo
+      struct LOW_EXPORT PropertyInfo
       {
         Util::Name name;
         uint32_t dataOffset;
@@ -73,6 +74,8 @@ namespace Low {
         bool editorProperty;
         void const *(*get)(Handle);
         void (*set)(Handle, const void *);
+
+        Variant get_variant(Handle);
       };
 
       struct TypeInfo

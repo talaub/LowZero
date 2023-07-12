@@ -11,6 +11,9 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t ImGuiImage::TYPE_ID = 6;
       uint32_t ImGuiImage::ms_Capacity = 0u;
       uint8_t *ImGuiImage::ms_Buffer = 0;
@@ -212,7 +215,9 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        get_image().serialize(p_Node["image"]);
+        if (get_image().is_alive()) {
+          get_image().serialize(p_Node["image"]);
+        }
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER

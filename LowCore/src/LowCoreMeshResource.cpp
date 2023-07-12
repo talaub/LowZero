@@ -13,6 +13,9 @@
 
 namespace Low {
   namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t MeshResource::TYPE_ID = 21;
     uint32_t MeshResource::ms_Capacity = 0u;
     uint8_t *MeshResource::ms_Buffer = 0;

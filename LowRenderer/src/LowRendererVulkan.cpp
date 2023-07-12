@@ -20,6 +20,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilContainers.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilGlobals.h"
 
 #include "LowMath.h"
 
@@ -3652,6 +3653,10 @@ namespace Low {
         vk_bind_resources(p_Context, VK_PIPELINE_BIND_POINT_COMPUTE);
         vkCmdDispatch(ContextHelper::get_current_commandbuffer(p_Context),
                       p_Dimensions.x, p_Dimensions.y, p_Dimensions.z);
+
+        Util::Name l_GlobalName = N(LOW_RENDERER_COMPUTEDISPATCH);
+        Util::Globals::set(l_GlobalName,
+                           ((int)Util::Globals::get(l_GlobalName)) + 1);
       }
 
       uint32_t vk_get_draw_indexed_indirect_info_size()
@@ -3675,6 +3680,10 @@ namespace Low {
       {
         vkCmdDraw(ContextHelper::get_current_commandbuffer(*p_Params.context),
                   p_Params.vertexCount, 1, p_Params.firstVertex, 0);
+
+        Util::Name l_GlobalName = N(LOW_RENDERER_DRAWCALLS);
+        Util::Globals::set(l_GlobalName,
+                           ((int)Util::Globals::get(l_GlobalName)) + 1);
       }
 
       void vk_draw_indexed(Backend::DrawIndexedParams &p_Params)
@@ -3683,6 +3692,10 @@ namespace Low {
             ContextHelper::get_current_commandbuffer(*p_Params.context),
             p_Params.indexCount, p_Params.instanceCount, p_Params.firstIndex,
             p_Params.vertexOffset, p_Params.firstInstance);
+
+        Util::Name l_GlobalName = N(LOW_RENDERER_DRAWCALLS);
+        Util::Globals::set(l_GlobalName,
+                           ((int)Util::Globals::get(l_GlobalName)) + 1);
       }
 
       void vk_draw_indexed_indirect_count(Backend::Context &p_Context,
@@ -3698,6 +3711,10 @@ namespace Low {
             p_DrawBuffer.vk.m_Buffer, p_DrawBufferOffset,
             p_CountBuffer.vk.m_Buffer, p_CountBufferOffset, p_MaxDrawCount,
             p_Stride);
+
+        Util::Name l_GlobalName = N(LOW_RENDERER_DRAWCALLS);
+        Util::Globals::set(l_GlobalName,
+                           ((int)Util::Globals::get(l_GlobalName)) + 1);
       }
 
       void vk_buffer_create(Backend::Buffer &p_Buffer,

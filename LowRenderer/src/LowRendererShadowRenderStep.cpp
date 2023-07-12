@@ -290,7 +290,8 @@ namespace Low {
           l_ResourceConfig.arraySize = 1;
           l_ResourceConfig.name = N(_renderobject_buffer);
           l_ResourceConfig.type = ResourceType::BUFFER;
-          l_ResourceConfig.buffer.size = sizeof(RenderObjectShaderInfo) * 32u;
+          l_ResourceConfig.buffer.size =
+              sizeof(RenderObjectShaderInfo) * LOW_RENDERER_RENDEROBJECT_COUNT;
           l_Config.get_resources().push_back(l_ResourceConfig);
         }
       }

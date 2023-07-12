@@ -10,6 +10,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Mesh::TYPE_ID = 15;
     uint32_t Mesh::ms_Capacity = 0u;
     uint8_t *Mesh::ms_Buffer = 0;

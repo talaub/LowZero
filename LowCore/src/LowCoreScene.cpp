@@ -12,6 +12,9 @@
 
 namespace Low {
   namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Scene::TYPE_ID = 20;
     uint32_t Scene::ms_Capacity = 0u;
     uint8_t *Scene::ms_Buffer = 0;

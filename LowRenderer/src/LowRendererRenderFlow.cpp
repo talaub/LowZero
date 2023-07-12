@@ -13,6 +13,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t RenderFlow::TYPE_ID = 9;
     uint32_t RenderFlow::ms_Capacity = 0u;
     uint8_t *RenderFlow::ms_Buffer = 0;
@@ -490,10 +493,18 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      get_context().serialize(p_Node["context"]);
-      get_output_image().serialize(p_Node["output_image"]);
-      get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
-      get_resource_signature().serialize(p_Node["resource_signature"]);
+      if (get_context().is_alive()) {
+        get_context().serialize(p_Node["context"]);
+      }
+      if (get_output_image().is_alive()) {
+        get_output_image().serialize(p_Node["output_image"]);
+      }
+      if (get_frame_info_buffer().is_alive()) {
+        get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
+      }
+      if (get_resource_signature().is_alive()) {
+        get_resource_signature().serialize(p_Node["resource_signature"]);
+      }
       Low::Util::Serialization::serialize(p_Node["camera_position"],
                                           get_camera_position());
       Low::Util::Serialization::serialize(p_Node["camera_direction"],

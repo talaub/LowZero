@@ -12,6 +12,9 @@
 
 namespace Low {
   namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t MeshAsset::TYPE_ID = 23;
     uint32_t MeshAsset::ms_Capacity = 0u;
     uint8_t *MeshAsset::ms_Buffer = 0;
@@ -232,7 +235,9 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      get_lod0().serialize(p_Node["lod0"]);
+      if (get_lod0().is_alive()) {
+        get_lod0().serialize(p_Node["lod0"]);
+      }
       p_Node["unique_id"] = get_unique_id();
       p_Node["name"] = get_name().c_str();
 

@@ -10,6 +10,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t MaterialType::TYPE_ID = 16;
     uint32_t MaterialType::ms_Capacity = 0u;
     uint8_t *MaterialType::ms_Buffer = 0;

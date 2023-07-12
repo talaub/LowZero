@@ -420,7 +420,7 @@ function collect_types() {
 	l_Types.push(...process_file(i_FileName));
     }
 
-    fs.writeFileSync("codegenerator/typeids.yaml", YAML.stringify(g_TypeIdMap));
+    fs.writeFileSync(`${g_Directory}/typeids.yaml`, YAML.stringify(g_TypeIdMap));
 
     return l_Types;
 }

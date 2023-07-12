@@ -11,6 +11,9 @@
 namespace Low {
   namespace Renderer {
     namespace Resource {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t Image::TYPE_ID = 7;
       uint32_t Image::ms_Capacity = 0u;
       uint8_t *Image::ms_Buffer = 0;

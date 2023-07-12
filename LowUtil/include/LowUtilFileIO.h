@@ -30,6 +30,10 @@ namespace Low {
                                  uint32_t p_Length);
       LOW_EXPORT void write_sync(File &p_File, String p_Content);
 
+      LOW_EXPORT void move_sync(const char *p_Source, const char *p_Target);
+
+      LOW_EXPORT void delete_sync(const char *p_Path);
+
       struct LOW_EXPORT File
       {
         friend void close(File &);
@@ -50,6 +54,8 @@ namespace Low {
 
       LOW_EXPORT void list_directory(const char *p_Path,
                                      List<String> &p_ContentPaths);
+
+      LOW_EXPORT bool is_directory(const char *p_Path);
 
     } // namespace FileIO
   }   // namespace Util

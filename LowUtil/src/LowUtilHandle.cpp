@@ -3,6 +3,7 @@
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
 #include "LowUtilLogger.h"
+#include "LowUtilVariant.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -168,6 +169,43 @@ namespace Low {
     List<uint16_t> &Handle::get_component_types()
     {
       return g_ComponentTypes;
+    }
+
+    Variant RTTI::PropertyInfo::get_variant(Handle p_Handle)
+    {
+      if (type == Util::RTTI::PropertyType::BOOL) {
+        return Variant(*(bool *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::FLOAT) {
+        return Variant(*(float *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::INT) {
+        return Variant(*(int *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::UINT32) {
+        return Variant(*(uint32_t *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::UINT64) {
+        return Variant(*(uint64_t *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::VECTOR2) {
+        return Variant(*(Math::Vector2 *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::COLORRGB) {
+        return Variant(*(Math::Vector3 *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::VECTOR3) {
+        return Variant(*(Math::Vector3 *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::QUATERNION) {
+        return Variant(*(Math::Quaternion *)get(p_Handle));
+      }
+      if (type == Util::RTTI::PropertyType::HANDLE) {
+        return Variant::from_handle(*(uint64_t *)get(p_Handle));
+      }
+
+      LOW_ASSERT(false, "Getting property value as variant not supported for "
+                        "this property type");
     }
 
     namespace Instances {

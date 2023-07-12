@@ -13,6 +13,9 @@
 
 namespace Low {
   namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Region::TYPE_ID = 19;
     uint32_t Region::ms_Capacity = 0u;
     uint8_t *Region::ms_Buffer = 0;

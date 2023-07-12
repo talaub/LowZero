@@ -12,6 +12,9 @@
 
 namespace Low {
   namespace Core {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Entity::TYPE_ID = 18;
     uint32_t Entity::ms_Capacity = 0u;
     uint8_t *Entity::ms_Buffer = 0;
@@ -467,6 +470,7 @@ namespace Low {
     Component::Transform Entity::get_transform()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
+      _LOW_ASSERT(is_alive());
       return get_component(Component::Transform::TYPE_ID);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
     }

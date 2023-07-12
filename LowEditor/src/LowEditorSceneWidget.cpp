@@ -8,6 +8,7 @@
 #include "LowEditorGui.h"
 
 #include "LowCoreEntity.h"
+#include "LowCorePrefab.h"
 #include "LowCoreTransform.h"
 
 #include "LowMathQuaternionUtil.h"
@@ -145,6 +146,7 @@ namespace Low {
         if (const ImGuiPayload *l_Payload =
                 ImGui::AcceptDragDropPayload("DG_HANDLE")) {
           Core::Entity l_Entity = *(uint64_t *)l_Payload->Data;
+          Core::Prefab l_Prefab = *(uint64_t *)l_Payload->Data;
           if (l_Entity.is_alive()) {
             l_Entity.get_transform().position(
                 l_Entity.get_transform().get_world_position());
@@ -153,6 +155,13 @@ namespace Low {
             l_Entity.get_transform().scale(
                 l_Entity.get_transform().get_world_scale());
             l_Entity.get_transform().set_parent(0);
+          } else if (l_Prefab.is_alive()) {
+            Core::Region l_Region = get_region_for_new_entity();
+            Core::Entity l_Instance = l_Prefab.spawn(l_Region);
+            l_Instance.get_transform().position(Math::Vector3(0.0f));
+            l_Instance.get_transform().rotation(Math::Quaternion());
+
+            set_selected_entity(l_Instance);
           }
         }
         ImGui::EndDragDropTarget();

@@ -13,6 +13,7 @@
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreTexture2D.h"
 #include "LowCoreMaterial.h"
+#include "LowCorePrefab.h"
 #include "LowCoreGameLoop.h"
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreScriptingEngine.h"
@@ -52,6 +53,7 @@ namespace Low {
     {
       MeshAsset::initialize();
       Material::initialize();
+      Prefab::initialize();
     }
 
     static void initialize_resource_types()
@@ -116,21 +118,45 @@ namespace Low {
       }
     }
 
-    static void load_mesh_assets()
+    static void load_mesh_assets_from_directory(Util::String p_Path)
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
-
       Util::List<Util::String> l_FilePaths;
 
-      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::FileIO::list_directory(p_Path.c_str(), l_FilePaths);
       Util::String l_Ending = ".mesh.yaml";
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
           Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
           MeshAsset::deserialize(i_Node, 0);
+        } else if (Util::FileIO::is_directory(i_Path.c_str())) {
+          load_mesh_assets_from_directory(i_Path);
         }
       }
+    }
+
+    static void load_prefabs_from_directory(Util::String p_Path)
+    {
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(p_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".prefab.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Prefab::deserialize(i_Node, 0);
+        } else if (Util::FileIO::is_directory(i_Path.c_str())) {
+          load_prefabs_from_directory(i_Path);
+        }
+      }
+    }
+
+    static void load_mesh_assets()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
+
+      load_mesh_assets_from_directory(l_Path);
     }
 
     static void load_materials()
@@ -148,6 +174,13 @@ namespace Low {
           Material::deserialize(i_Node, 0);
         }
       }
+    }
+
+    static void load_prefabs()
+    {
+      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\prefabs";
+
+      load_prefabs_from_directory(l_Path);
     }
 
     static void load_regions()
@@ -194,6 +227,7 @@ namespace Low {
     {
       load_mesh_assets();
       load_materials();
+      load_prefabs();
     }
     MonoClass *GetClassInAssembly(MonoAssembly *assembly,
                                   const char *namespaceName,
@@ -260,6 +294,7 @@ namespace Low {
 
     static void cleanup_asset_types()
     {
+      Prefab::cleanup();
       MeshAsset::cleanup();
       Material::cleanup();
     }

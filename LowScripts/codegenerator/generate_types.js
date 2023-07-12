@@ -473,6 +473,27 @@ function generate_source(p_Type) {
 	t += line(`namespace ${i_Namespace} {`, n++);
     }
 
+    if (true) {
+	const l_MarkerName = `CUSTOM:NAMESPACE_CODE`;
+
+	const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+	const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+	const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	let l_CustomCode = '';
+
+	if (l_BeginMarkerIndex >= 0) {
+	    const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+	    l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+	}
+	t += line(l_CustomBeginMarker);
+	t += l_CustomCode;
+	t += line(l_CustomEndMarker);
+	t += empty();
+    }
+
     t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${p_Type.typeId};`, n);
     t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
     t += line(`uint8_t *${p_Type.name}::ms_Buffer = 0;`, n);
@@ -766,7 +787,9 @@ function generate_source(p_Type) {
 		t += line(`Low::Util::Serialization::serialize(p_Node["${i_PropName}"], ${i_Prop.getter_name}());`);
 	    }
 	    else if (i_Prop.handle) {
+		t += line(`if (${i_Prop.getter_name}().is_alive()) {`);
 		t += line(`${i_Prop.getter_name}().serialize(p_Node["${i_PropName}"]);`);
+		t += line(`}`);
 	    }
 	}
     }

@@ -10,6 +10,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t SkeletalAnimation::TYPE_ID = 29;
     uint32_t SkeletalAnimation::ms_Capacity = 0u;
     uint8_t *SkeletalAnimation::ms_Buffer = 0;

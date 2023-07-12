@@ -16,6 +16,9 @@
 namespace Low {
   namespace Renderer {
     namespace Interface {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t Context::TYPE_ID = 1;
       uint32_t Context::ms_Capacity = 0u;
       uint8_t *Context::ms_Buffer = 0;
@@ -275,9 +278,15 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        get_global_signature().serialize(p_Node["global_signature"]);
-        get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
-        get_material_data_buffer().serialize(p_Node["material_data_buffer"]);
+        if (get_global_signature().is_alive()) {
+          get_global_signature().serialize(p_Node["global_signature"]);
+        }
+        if (get_frame_info_buffer().is_alive()) {
+          get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
+        }
+        if (get_material_data_buffer().is_alive()) {
+          get_material_data_buffer().serialize(p_Node["material_data_buffer"]);
+        }
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER

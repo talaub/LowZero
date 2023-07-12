@@ -12,6 +12,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Material::TYPE_ID = 17;
     uint32_t Material::ms_Capacity = 0u;
     uint8_t *Material::ms_Buffer = 0;
@@ -212,8 +215,12 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      get_material_type().serialize(p_Node["material_type"]);
-      get_context().serialize(p_Node["context"]);
+      if (get_material_type().is_alive()) {
+        get_material_type().serialize(p_Node["material_type"]);
+      }
+      if (get_context().is_alive()) {
+        get_context().serialize(p_Node["context"]);
+      }
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER

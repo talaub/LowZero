@@ -23,6 +23,7 @@ namespace Low {
         Vector3,
         Vector4,
         Quaternion,
+        Name,
         Handle
       };
     }
@@ -56,6 +57,7 @@ namespace Low {
       Variant(Math::Vector4 p_Value);
       Variant(Math::Quaternion p_Value);
       Variant(Handle p_Value);
+      Variant(Name p_Value);
 
       Variant &Variant::operator=(bool p_Value);
       Variant &Variant::operator=(float p_Value);
@@ -67,6 +69,7 @@ namespace Low {
       Variant &Variant::operator=(Math::Vector3 p_Value);
       Variant &Variant::operator=(Math::Vector4 p_Value);
       Variant &Variant::operator=(Math::Quaternion p_Value);
+      Variant &Variant::operator=(Name p_Value);
       Variant &Variant::operator=(Handle p_Value);
 
       void set_handle(Handle p_Value);
@@ -84,6 +87,7 @@ namespace Low {
       operator Math::Vector4() const;
       operator Math::Quaternion() const;
       operator Handle() const;
+      operator Name() const;
     };
   } // namespace Util
 } // namespace Low

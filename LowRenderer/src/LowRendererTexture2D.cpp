@@ -12,6 +12,9 @@
 
 namespace Low {
   namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
     const uint16_t Texture2D::TYPE_ID = 14;
     uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;
@@ -220,8 +223,12 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      get_image().serialize(p_Node["image"]);
-      get_context().serialize(p_Node["context"]);
+      if (get_image().is_alive()) {
+        get_image().serialize(p_Node["image"]);
+      }
+      if (get_context().is_alive()) {
+        get_context().serialize(p_Node["context"]);
+      }
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER

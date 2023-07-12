@@ -11,6 +11,9 @@
 namespace Low {
   namespace Core {
     namespace Component {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
       const uint16_t PointLight::TYPE_ID = 28;
       uint32_t PointLight::ms_Capacity = 0u;
       uint8_t *PointLight::ms_Buffer = 0;
