@@ -8,6 +8,7 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCorePrefabInstance.h"
 namespace Low {
   namespace Core {
     namespace Component {
@@ -298,6 +299,20 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(PointLight, color, Math::ColorRGB) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(TYPE_ID, N(color),
+                                  !l_Prefab.compare_property(*this, N(color)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
@@ -321,6 +336,21 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(PointLight, intensity, float) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(
+                  TYPE_ID, N(intensity),
+                  !l_Prefab.compare_property(*this, N(intensity)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_intensity
         // LOW_CODEGEN::END::CUSTOM:SETTER_intensity

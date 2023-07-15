@@ -55,7 +55,7 @@ namespace Low {
                    << LOW_LOG_END;
     }
 
-    static void save_prefab_asset(Util::Handle p_Handle)
+    void AssetWidget::save_prefab_asset(Util::Handle p_Handle)
     {
       Core::Prefab l_Asset = p_Handle.get_id();
 
@@ -150,7 +150,7 @@ namespace Low {
       Core::Prefab l_Asset = p_Handle.get_id();
 
       if (ImGui::Button("Save")) {
-        save_prefab_asset(p_Handle);
+        AssetWidget::save_prefab_asset(p_Handle);
       }
     }
 
@@ -517,7 +517,7 @@ namespace Low {
             g_Paths[l_Prefab] = p_Config.currentPath + "/" +
                                 LOW_TO_STRING(l_Prefab.get_unique_id()) +
                                 p_Config.suffix;
-            save_prefab_asset(l_Prefab);
+            AssetWidget::save_prefab_asset(l_Prefab);
             p_Config.update = true;
           }
         }

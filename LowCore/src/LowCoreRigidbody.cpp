@@ -8,6 +8,7 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCorePrefabInstance.h"
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreTransform.h"
 
@@ -412,6 +413,20 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(Rigidbody, fixed, bool) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(TYPE_ID, N(fixed),
+                                  !l_Prefab.compare_property(*this, N(fixed)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_fixed
         get_rigid_dynamic().set_fixed(p_Value);
@@ -436,6 +451,21 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(Rigidbody, gravity, bool) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(
+                  TYPE_ID, N(gravity),
+                  !l_Prefab.compare_property(*this, N(gravity)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gravity
         get_rigid_dynamic().set_gravity(p_Value);
@@ -460,6 +490,20 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(Rigidbody, mass, float) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(TYPE_ID, N(mass),
+                                  !l_Prefab.compare_property(*this, N(mass)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mass
         get_rigid_dynamic().set_mass(p_Value);
@@ -527,6 +571,20 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(Rigidbody, shape, Math::Shape) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(TYPE_ID, N(shape),
+                                  !l_Prefab.compare_property(*this, N(shape)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shape
         if (!is_initialized()) {

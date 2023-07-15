@@ -9,6 +9,7 @@
 #include "LowUtilSerialization.h"
 
 #include "LowCoreTransform.h"
+#include "LowCorePrefabInstance.h"
 
 namespace Low {
   namespace Core {
@@ -312,6 +313,13 @@ namespace Low {
             Util::Handle::get_type_info(i_ComponentNode["type"].as<uint16_t>());
 
         i_TypeInfo.deserialize(i_ComponentNode["properties"], l_Entity);
+      }
+
+      if (l_Entity.has_component(Component::PrefabInstance::TYPE_ID)) {
+        Component::PrefabInstance l_PrefabInstance =
+            l_Entity.get_component(Component::PrefabInstance::TYPE_ID);
+
+        l_PrefabInstance.update_from_prefab();
       }
 
       return l_Entity;

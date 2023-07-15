@@ -2376,9 +2376,9 @@ namespace Low {
           l_SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
           l_SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
 
-          l_SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-          l_SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-          l_SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          // l_SamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          // l_SamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+          // l_SamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
           l_SamplerInfo.anisotropyEnable = VK_TRUE;
 
           VkPhysicalDeviceProperties l_Properties{};
@@ -2387,7 +2387,7 @@ namespace Low {
 
           l_SamplerInfo.maxAnisotropy =
               l_Properties.limits.maxSamplerAnisotropy;
-          l_SamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+          l_SamplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
           l_SamplerInfo.unnormalizedCoordinates = VK_FALSE;
           l_SamplerInfo.compareEnable = VK_TRUE;
           l_SamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;

@@ -8,6 +8,7 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCorePrefabInstance.h"
 namespace Mtd {
   namespace Component {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE

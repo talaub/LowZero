@@ -8,6 +8,7 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCorePrefabInstance.h"
 namespace Low {
   namespace Core {
     namespace Component {
@@ -520,6 +521,21 @@ namespace Low {
 
           // Set new value
           TYPE_SOA(Transform, position, Math::Vector3) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID)) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::TYPE_ID);
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    TYPE_ID, N(position),
+                    !l_Prefab.compare_property(*this, N(position)));
+              }
+            }
+          }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
           set_world_dirty(true);
@@ -550,6 +566,21 @@ namespace Low {
 
           // Set new value
           TYPE_SOA(Transform, rotation, Math::Quaternion) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID)) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::TYPE_ID);
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    TYPE_ID, N(rotation),
+                    !l_Prefab.compare_property(*this, N(rotation)));
+              }
+            }
+          }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
           set_world_dirty(true);
@@ -580,6 +611,21 @@ namespace Low {
 
           // Set new value
           TYPE_SOA(Transform, scale, Math::Vector3) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID)) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::TYPE_ID);
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    TYPE_ID, N(scale),
+                    !l_Prefab.compare_property(*this, N(scale)));
+              }
+            }
+          }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale
           set_world_dirty(true);

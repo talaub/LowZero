@@ -18,6 +18,7 @@
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreScriptingEngine.h"
 #include "LowCoreMonoUtils.h"
+#include "LowCorePrefabInstance.h"
 
 #include "LowRenderer.h"
 
@@ -69,6 +70,7 @@ namespace Low {
       Component::DirectionalLight::initialize();
       Component::PointLight::initialize();
       Component::Rigidbody::initialize();
+      Component::PrefabInstance::initialize();
     }
 
     static void initialize_base_types()
@@ -307,6 +309,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Component::PrefabInstance::cleanup();
       Component::Rigidbody::cleanup();
       Component::PointLight::cleanup();
       Component::DirectionalLight::cleanup();

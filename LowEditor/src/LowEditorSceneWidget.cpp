@@ -11,6 +11,8 @@
 #include "LowCorePrefab.h"
 #include "LowCoreTransform.h"
 
+#include "LowUtilString.h"
+
 #include "LowMathQuaternionUtil.h"
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -50,7 +52,8 @@ namespace Low {
                                 get_selected_entity().get_id())) {
         set_selected_entity(p_Entity);
       }
-      if (ImGui::BeginPopupContextItem()) {
+      if (ImGui::BeginPopupContextItem(
+              LOW_TO_STRING(p_Entity.get_id()).c_str())) {
         *p_OpenedEntryPopup = true;
         set_selected_entity(p_Entity);
         if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
@@ -185,7 +188,7 @@ namespace Low {
       }
 
       if (!l_OpenedEntryPopup) {
-        if (ImGui::BeginPopupContextWindow()) {
+        if (ImGui::BeginPopupContextWindow("WINDOWCONTEXT")) {
           if (ImGui::MenuItem("New entity")) {
             Core::Region l_Region = get_region_for_new_entity();
 
@@ -206,15 +209,6 @@ namespace Low {
       }
 
       ImGui::End();
-      if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload *l_Payload =
-                ImGui::AcceptDragDropPayload("DG_HANDLE")) {
-          Core::Entity l_Entity = *(uint64_t *)l_Payload->Data;
-          if (l_Entity.is_alive()) {
-            l_Entity.get_transform().set_parent(0);
-          }
-        }
-      }
     }
   } // namespace Editor
 } // namespace Low

@@ -196,5 +196,57 @@ namespace Low {
     {
       return m_Uint64;
     }
+
+    bool Variant::operator!=(const Variant &p_Other) const
+    {
+      return !(*this == p_Other);
+    }
+
+    bool Variant::operator==(const Variant &p_Other) const
+    {
+      if (p_Other.m_Type != m_Type) {
+        return false;
+      }
+
+      if (m_Type == VariantType::Bool) {
+        return m_Bool == p_Other.m_Bool;
+      }
+      if (m_Type == VariantType::Int32) {
+        return m_Int32 == p_Other.m_Int32;
+      }
+      if (m_Type == VariantType::UInt32) {
+        return m_Uint32 == p_Other.m_Uint32;
+      }
+      if (m_Type == VariantType::UInt64) {
+        return m_Uint64 == p_Other.m_Uint64;
+      }
+      if (m_Type == VariantType::Float) {
+        return m_Float == p_Other.m_Float;
+      }
+      if (m_Type == VariantType::UVector2) {
+        return m_UVector2 == p_Other.m_UVector2;
+      }
+      if (m_Type == VariantType::Vector2) {
+        return m_Vector2 == p_Other.m_Vector2;
+      }
+      if (m_Type == VariantType::Vector3) {
+        return m_Vector3 == p_Other.m_Vector3;
+      }
+      if (m_Type == VariantType::Vector4) {
+        return m_Vector4 == p_Other.m_Vector4;
+      }
+      if (m_Type == VariantType::Quaternion) {
+        return m_Quaternion == p_Other.m_Quaternion;
+      }
+      if (m_Type == VariantType::Name) {
+        return m_Uint32 == p_Other.m_Uint32;
+      }
+      if (m_Type == VariantType::Handle) {
+        return m_Uint64 == p_Other.m_Uint64;
+      }
+
+      LOW_ASSERT(false, "Unknown variant type on == comparison");
+      return false;
+    }
   } // namespace Util
 } // namespace Low

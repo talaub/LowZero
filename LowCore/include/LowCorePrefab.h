@@ -112,6 +112,9 @@ namespace Low {
 
       static Prefab make(Entity &p_Entity);
       Entity spawn(Region p_Region);
+      bool compare_property(Util::Handle p_Component,
+                            Util::Name p_PropertyName);
+      void apply(Util::Handle p_Component, Util::Name p_PropertyName);
 
     private:
       static uint32_t ms_Capacity;

@@ -462,6 +462,9 @@ function generate_source(p_Type) {
     t += include("LowUtilConfig.h", n);
     t += include("LowUtilSerialization.h", n);
     t += empty();
+    if (p_Type.component) {
+	t += include(`LowCorePrefabInstance.h`);
+    }
     if (p_Type.source_imports) {
 	for (const i_Include of p_Type.source_imports) {
 	    t += include(i_Include);
@@ -957,8 +960,24 @@ function generate_source(p_Type) {
 		}
 		t += empty();
 	    }
+
 	    t += line('// Set new value');
 	    t += line(`TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`, n);
+	    if (i_Prop.editor_editable) {
+		if (p_Type.component && p_Type.name !== 'PrefabInstance') {
+		    t += line('{');
+		    t += line(`Low::Core::Entity l_Entity = get_entity();`);
+		    t += line(`if (l_Entity.has_component(Low::Core::Component::PrefabInstance::TYPE_ID)) {`);
+		    t += line(`Low::Core::Component::PrefabInstance l_Instance = l_Entity.get_component(Low::Core::Component::PrefabInstance::TYPE_ID);`);
+		    t += line(`Low::Core::Prefab l_Prefab = l_Instance.get_prefab();`);
+		    t += line(`if (l_Prefab.is_alive()) {`);
+		    t += line(`l_Instance.override(TYPE_ID, N(${i_Prop.name}), !l_Prefab.compare_property(*this, N(${i_Prop.name}))); `);
+		    t += line('}');
+		    t += line('}');
+		    t += line('}');
+		}
+	    }
+
 	    t += empty();
 	    t += line(i_SetterBeginMarker);
 	    t += i_CustomCode;

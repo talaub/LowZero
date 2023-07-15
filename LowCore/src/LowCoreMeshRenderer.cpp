@@ -8,6 +8,7 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCorePrefabInstance.h"
 namespace Low {
   namespace Core {
     namespace Component {
@@ -310,6 +311,20 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(MeshRenderer, mesh, MeshAsset) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(TYPE_ID, N(mesh),
+                                  !l_Prefab.compare_property(*this, N(mesh)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
         if (p_Value.is_alive()) {
@@ -339,6 +354,21 @@ namespace Low {
 
         // Set new value
         TYPE_SOA(MeshRenderer, material, Material) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(
+                  TYPE_ID, N(material),
+                  !l_Prefab.compare_property(*this, N(material)));
+            }
+          }
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
         if (p_Value.is_alive()) {

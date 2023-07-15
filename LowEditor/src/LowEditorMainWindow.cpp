@@ -31,6 +31,7 @@
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreRigidbody.h"
+#include "LowCorePrefabInstance.h"
 #include "LowCorePhysicsSystem.h"
 
 #include <chrono>
@@ -124,6 +125,9 @@ namespace Low {
 
       for (auto it = l_Entity.get_components().begin();
            it != l_Entity.get_components().end(); ++it) {
+        if (it->first == Core::Component::PrefabInstance::TYPE_ID) {
+          continue;
+        }
         g_DetailsWidget->add_section(it->second);
       }
     }

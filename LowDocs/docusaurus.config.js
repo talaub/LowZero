@@ -44,7 +44,7 @@ const config = {
             ({
                 docs: {
                     sidebarPath: require.resolve('./sidebars.js'),
-                    includeCurrentVersion: true,
+                    includeCurrentVersion: false,
                 },
                 theme: {
                     customCss: require.resolve('./src/css/custom.css'),

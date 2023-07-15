@@ -72,6 +72,9 @@ namespace Low {
       Variant &Variant::operator=(Name p_Value);
       Variant &Variant::operator=(Handle p_Value);
 
+      bool operator==(const Variant &p_Other) const;
+      bool operator!=(const Variant &p_Other) const;
+
       void set_handle(Handle p_Value);
 
       static Variant from_handle(Handle p_Value);

@@ -10,14 +10,15 @@
 
 #include "LowCoreRegion.h"
 #include "LowCoreTransform.h"
+#include "LowCorePrefabInstance.h"
 #include "LowUtilString.h"
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    static void
-    read_component_property(Prefab p_Prefab, Util::Handle p_Handle,
-                            Util::RTTI::PropertyInfo &p_PropertyInfo)
+    static void fill_variants(Util::Handle p_Handle,
+                              Util::RTTI::PropertyInfo &p_PropertyInfo,
+                              Util::Map<Util::Name, Util::Variant> &p_Variants)
     {
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::UNKNOWN) {
         return;
@@ -28,16 +29,13 @@ namespace Low {
         l_BaseString += "__";
 
         if (l_Shape.type == Math::ShapeType::BOX) {
-          p_Prefab.get_components()[p_Handle.get_type()]
-                                   [LOW_NAME((l_BaseString + "type").c_str())] =
-              N(BOX);
+          p_Variants[LOW_NAME((l_BaseString + "type").c_str())] = N(BOX);
 
-          p_Prefab.get_components()[p_Handle.get_type()][LOW_NAME(
-              (l_BaseString + "box_position").c_str())] = l_Shape.box.position;
-          p_Prefab.get_components()[p_Handle.get_type()][LOW_NAME(
-              (l_BaseString + "box_rotation").c_str())] = l_Shape.box.rotation;
-          p_Prefab.get_components()[p_Handle.get_type()][LOW_NAME(
-              (l_BaseString + "box_halfextents").c_str())] =
+          p_Variants[LOW_NAME((l_BaseString + "box_position").c_str())] =
+              l_Shape.box.position;
+          p_Variants[LOW_NAME((l_BaseString + "box_rotation").c_str())] =
+              l_Shape.box.rotation;
+          p_Variants[LOW_NAME((l_BaseString + "box_halfextents").c_str())] =
               l_Shape.box.halfExtents;
         } else {
           LOW_ASSERT(false, "Reading component property while populating "
@@ -47,8 +45,15 @@ namespace Low {
         return;
       }
 
-      p_Prefab.get_components()[p_Handle.get_type()][p_PropertyInfo.name] =
-          p_PropertyInfo.get_variant(p_Handle);
+      p_Variants[p_PropertyInfo.name] = p_PropertyInfo.get_variant(p_Handle);
+    }
+
+    static void
+    read_component_property(Prefab p_Prefab, Util::Handle p_Handle,
+                            Util::RTTI::PropertyInfo &p_PropertyInfo)
+    {
+      fill_variants(p_Handle, p_PropertyInfo,
+                    p_Prefab.get_components()[p_Handle.get_type()]);
     }
 
     static void populate_component(Prefab p_Prefab, Util::Handle p_Handle)
@@ -351,6 +356,15 @@ namespace Low {
               pit->second);
         }
       }
+
+      for (auto cit = get_children().begin(); cit != get_children().end();
+           ++cit) {
+        Prefab i_Prefab(cit->get_id());
+        LOW_ASSERT(i_Prefab.is_alive(), "Cannot serialize dead prefab (child)");
+        Util::Yaml::Node i_Node;
+        i_Prefab.serialize(i_Node);
+        p_Node["children"].push_back(i_Node);
+      }
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -387,6 +401,12 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      Prefab l_Parent(p_Creator.get_id());
+      if (l_Parent.is_alive()) {
+        l_Handle.set_parent(p_Creator.get_id());
+        l_Parent.get_children().push_back(l_Handle);
+      }
+
       if (p_Node["components"]) {
         for (auto cit = p_Node["components"].begin();
              cit != p_Node["components"].end(); ++cit) {
@@ -396,6 +416,12 @@ namespace Low {
             l_Handle.get_components()[i_TypeId][LOW_YAML_AS_NAME(pit->first)] =
                 Util::Serialization::deserialize_variant(pit->second);
           }
+        }
+      }
+      if (p_Node["children"]) {
+        for (auto cit = p_Node["children"].begin();
+             cit != p_Node["children"].end(); ++cit) {
+          Prefab::deserialize(*cit, l_Handle);
         }
       }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -532,6 +558,25 @@ namespace Low {
       Prefab l_Prefab = Prefab::make(p_Entity.get_name());
       populate_prefab(l_Prefab, p_Entity);
 
+      for (auto it = p_Entity.get_transform().get_children().begin();
+           it != p_Entity.get_transform().get_children().end(); ++it) {
+        Component::Transform i_Transform(*it);
+        LOW_ASSERT(i_Transform.is_alive(),
+                   "Cannot create prefab from dead entity child");
+        Entity i_Entity = i_Transform.get_entity();
+        Prefab i_Prefab = Prefab::make(i_Entity);
+        i_Prefab.set_parent(l_Prefab);
+        l_Prefab.get_children().push_back(i_Prefab);
+      }
+
+      if (!p_Entity.has_component(Component::PrefabInstance::TYPE_ID)) {
+        Component::PrefabInstance::make(p_Entity);
+      }
+
+      Component::PrefabInstance l_PrefabInstance =
+          p_Entity.get_component(Component::PrefabInstance::TYPE_ID);
+      l_PrefabInstance.set_prefab(l_Prefab);
+
       return l_Prefab;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
@@ -591,8 +636,72 @@ namespace Low {
         }
       }
 
+      Component::PrefabInstance l_PrefabInstance =
+          Component::PrefabInstance::make(l_Entity);
+      l_PrefabInstance.set_prefab(*this);
+
+      for (auto cit = get_children().begin(); cit != get_children().end();
+           ++cit) {
+        Prefab i_Prefab = cit->get_id();
+        Entity i_Entity = i_Prefab.spawn(p_Region);
+        i_Entity.get_transform().set_parent(l_Entity.get_transform().get_id());
+      }
+
       return l_Entity;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn
+    }
+
+    bool Prefab::compare_property(Util::Handle p_Component,
+                                  Util::Name p_PropertyName)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_compare_property
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Component.get_type());
+
+      Util::RTTI::PropertyInfo &l_PropertyInfo =
+          l_TypeInfo.properties[p_PropertyName];
+
+      Util::Map<Util::Name, Util::Variant> l_Values;
+      fill_variants(p_Component, l_PropertyInfo, l_Values);
+
+      for (auto it = l_Values.begin(); it != l_Values.end(); ++it) {
+        if (it->second != get_components()[p_Component.get_type()][it->first]) {
+          return false;
+        }
+      }
+      return true;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_compare_property
+    }
+
+    void Prefab::apply(Util::Handle p_Component, Util::Name p_PropertyName)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_apply
+      Util::RTTI::TypeInfo &l_TypeInfo =
+          Util::Handle::get_type_info(p_Component.get_type());
+      Util::RTTI::PropertyInfo &l_PropertyInfo =
+          l_TypeInfo.properties[p_PropertyName];
+
+      Util::Map<Util::Name, Util::Variant> l_Values;
+      fill_variants(p_Component, l_PropertyInfo, l_Values);
+
+      for (auto it = l_Values.begin(); it != l_Values.end(); ++it) {
+        get_components()[p_Component.get_type()][it->first] = it->second;
+      }
+
+      for (auto it = Component::PrefabInstance::ms_LivingInstances.begin();
+           it != Component::PrefabInstance::ms_LivingInstances.end(); ++it) {
+        if (it->get_prefab() == *this) {
+          it->update_from_prefab();
+        }
+      }
+
+      Entity l_Entity =
+          *(Entity *)l_TypeInfo.properties[N(entity)].get(p_Component);
+      Component::PrefabInstance l_PrefabInstance =
+          l_Entity.get_component(Component::PrefabInstance::TYPE_ID);
+
+      l_PrefabInstance.override(p_Component.get_type(), p_PropertyName, false);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_apply
     }
 
     uint32_t Prefab::create_instance()

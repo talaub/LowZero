@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.10)
 
 set(LOW_YEAR_VERSION 2023)
 set(LOW_MAJOR_VERSION 7)
-set(LOW_MINOR_VERSION 4)
+set(LOW_MINOR_VERSION 6)
 
 if (ENGINE_BUILD)
   set(CMAKE_BUILD_TYPE Release)
