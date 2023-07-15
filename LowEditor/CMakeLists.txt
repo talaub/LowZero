@@ -11,7 +11,7 @@ SET(NODEGRAPH_SOURCES
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(LowEditor ${NODEGRAPH_SOURCES} ${SOURCES})
+add_executable(LowEditor ${NODEGRAPH_SOURCES} ${SOURCES} app.o)
 
 add_dependencies(LowEditor
   LowUtil

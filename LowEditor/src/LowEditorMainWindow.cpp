@@ -147,6 +147,25 @@ namespace Low {
       return g_SelectedHandle;
     }
 
+    static void save_user_settings()
+    {
+      Util::Yaml::Node l_Config;
+      l_Config["loaded_scene"] =
+          Core::Scene::get_loaded_scene().get_name().c_str();
+
+      for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+        Util::Yaml::Node i_Widget;
+        i_Widget["name"] = it->name;
+        i_Widget["open"] = it->open;
+
+        l_Config["widgets"].push_back(i_Widget);
+      }
+
+      Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/../user.yaml";
+      Util::Yaml::write_file(l_Path.c_str(), l_Config);
+    }
+
     static void schedule_save_scene(Core::Scene p_Scene)
     {
 
@@ -217,6 +236,7 @@ namespace Low {
           for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
             if (ImGui::MenuItem(it->name, nullptr, it->open)) {
               it->open = !it->open;
+              save_user_settings();
             }
           }
           ImGui::EndMenu();
@@ -234,6 +254,7 @@ namespace Low {
             if (ImGui::MenuItem(it->get_name().c_str())) {
               if (!it->is_loaded()) {
                 it->load();
+                save_user_settings();
               }
             }
           }
@@ -324,6 +345,7 @@ namespace Low {
           if (l_Ok) {
             Core::Scene l_Scene = Core::Scene::make(l_Name);
             l_Scene.load();
+            save_user_settings();
           }
           ImGui::CloseCurrentPopup();
         }
@@ -510,6 +532,40 @@ namespace Low {
       }
     }
 
+    static inline void load_user_settings()
+    {
+      Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/../user.yaml";
+
+      if (!Util::FileIO::file_exists_sync(l_Path.c_str())) {
+        return;
+      }
+
+      Util::Yaml::Node l_Root = Util::Yaml::load_file(l_Path.c_str());
+
+      Low::Core::Scene l_Scene = Low::Core::Scene::find_by_name(N(TestScene));
+      if (l_Root["loaded_scene"]) {
+        Core::Scene l_LocalScene =
+            Core::Scene::find_by_name(LOW_YAML_AS_NAME(l_Root["loaded_scene"]));
+        if (l_LocalScene.is_alive()) {
+          l_Scene = l_LocalScene;
+        }
+      }
+
+      l_Scene.load();
+
+      if (l_Root["widgets"]) {
+        for (uint32_t i = 0; i < l_Root["widgets"].size(); ++i) {
+          for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+            if (LOW_YAML_AS_STRING(l_Root["widgets"][i]["name"]) == it->name) {
+              it->open = l_Root["widgets"][i]["open"].as<bool>();
+              break;
+            }
+          }
+        }
+      }
+    }
+
     void initialize()
     {
       load_metadata();
@@ -528,6 +584,8 @@ namespace Low {
       register_editor_widget("Scene", new SceneWidget(), true);
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("StateGraph", new StateGraphWidget(), true);
+
+      load_user_settings();
     }
 
     static Core::Entity duplicate_entity(Core::Entity p_Entity)

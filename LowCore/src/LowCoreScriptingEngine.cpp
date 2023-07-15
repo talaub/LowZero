@@ -189,7 +189,7 @@ namespace Low {
         MonoAssembly *l_LowAssembly = 0;
         {
           Util::String l_DllPath = LOW_DATA_PATH;
-          l_DllPath += "/../bin/lowscriptingapi.dll";
+          l_DllPath += "/../lowscriptingapi.dll";
           Util::String l_DllPathString = l_DllPath.c_str();
           // LOW_LOG_DEBUG << l_DllPath << LOW_LOG_END;
           l_LowAssembly = Mono::load_assembly(l_DllPathString);
