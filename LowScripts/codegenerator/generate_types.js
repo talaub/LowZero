@@ -632,6 +632,26 @@ function generate_source(p_Type) {
     t += line('}');
     t += empty();
     t += line(`void ${p_Type.name}::initialize() {`);
+    if (true) {
+	const l_MarkerName = `CUSTOM:PREINITIALIZE`;
+
+	const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+	const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+	const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+	let l_CustomCode = '';
+
+	if (l_BeginMarkerIndex >= 0) {
+	    const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+	    l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+	}
+	t += line(l_CustomBeginMarker);
+	t += l_CustomCode;
+	t += line(l_CustomEndMarker);
+	t += empty();
+    }
     t += line(`ms_Capacity = Low::Util::Config::get_capacity(N(${p_Type.module}), N(${p_Type.name}));`);
     t += empty();
     t += line(`initialize_buffer(`);

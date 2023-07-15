@@ -101,6 +101,9 @@ namespace Low {
 
     void ComputeStep::initialize()
     {
+      // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowRenderer), N(ComputeStep));
 

@@ -145,6 +145,11 @@ namespace Low {
           parse_mesh(p_AiScene->mMeshes[p_AiNode->mMeshes[i]],
                      l_Submesh.meshInfos[i], p_Mesh);
         }
+        // printf("SIZE: %s = %d\n", l_Submesh.name.c_str(),
+        // p_Mesh.bones.size());
+        for (auto it = p_Mesh.bones.begin(); it != p_Mesh.bones.end(); ++it) {
+          // printf("B: %s\n", it->first.c_str());
+        }
 
         if (p_Mesh.bones.find(l_Submesh.name) == p_Mesh.bones.end()) {
           Bone i_Bone;
@@ -243,6 +248,11 @@ namespace Low {
 
       void load_mesh(String p_FilePath, Mesh &p_Mesh)
       {
+        p_Mesh.submeshes.clear();
+        p_Mesh.bones.clear();
+        p_Mesh.animations.clear();
+        p_Mesh.boneCount = 0;
+
         Assimp::Importer l_Importer;
 
         const aiScene *l_AiScene =

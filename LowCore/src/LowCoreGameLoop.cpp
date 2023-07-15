@@ -10,6 +10,8 @@
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreNavmeshSystem.h"
 
+#include "LowCoreMeshResource.h"
+
 #include <chrono>
 #include <microprofile.h>
 
@@ -42,6 +44,8 @@ namespace Low {
           System::Physics::tick(p_Delta, get_engine_state());
         }
         System::Navmesh::tick(p_Delta, get_engine_state());
+
+        MeshResource::update();
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {

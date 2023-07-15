@@ -123,6 +123,9 @@ namespace Low {
 
       void Rigidbody::initialize()
       {
+        // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
         ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Rigidbody));
 
         initialize_buffer(&ms_Buffer, RigidbodyData::get_size(), get_capacity(),

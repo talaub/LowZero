@@ -98,6 +98,9 @@ namespace Low {
 
     void Region::initialize()
     {
+      // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
       ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Region));
 
       initialize_buffer(&ms_Buffer, RegionData::get_size(), get_capacity(),

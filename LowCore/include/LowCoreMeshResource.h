@@ -119,7 +119,9 @@ namespace Low {
       static MeshResource make(Util::String &p_Path);
       bool is_loaded();
       void load();
+      void _load(uint32_t p_MeshIndex);
       void unload();
+      static void update();
 
     private:
       static uint32_t ms_Capacity;

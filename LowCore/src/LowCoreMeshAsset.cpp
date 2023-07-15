@@ -92,6 +92,9 @@ namespace Low {
 
     void MeshAsset::initialize()
     {
+      // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
       ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(MeshAsset));
 
       initialize_buffer(&ms_Buffer, MeshAssetData::get_size(), get_capacity(),

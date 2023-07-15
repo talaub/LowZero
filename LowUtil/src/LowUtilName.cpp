@@ -7,6 +7,7 @@
 #include "LowUtilMemory.h"
 
 #include <stdlib.h>
+#include <mutex>
 
 // TODO TL: Define kilobyte macro
 #define MAX_BUFFER_SIZE (50 * 1024)
@@ -15,8 +16,14 @@ namespace Low {
   namespace Util {
     char *g_StringBuffer;
     char *g_StringPointer;
+    std::mutex g_Mutex;
 
     Map<uint32_t, char *> g_NameMap;
+
+    static bool buffer_contains_name(const uint32_t p_Index)
+    {
+      return g_NameMap.find(p_Index) != g_NameMap.end();
+    }
 
     bool Name::operator==(const Name &p_Other) const
     {
@@ -47,11 +54,9 @@ namespace Low {
 
     char *Name::c_str() const
     {
-      auto l_NamePos = g_NameMap.find(m_Index);
+      LOW_ASSERT(buffer_contains_name(m_Index), "Name not found");
 
-      LOW_ASSERT(l_NamePos != g_NameMap.end(), "Name not found");
-
-      return l_NamePos->second;
+      return g_NameMap[m_Index];
     }
 
     void Name::initialize()
@@ -91,16 +96,12 @@ namespace Low {
       return ~crc;
     }
 
-    static bool buffer_contains_name(const uint32_t p_Index)
-    {
-      return g_NameMap.find(p_Index) != g_NameMap.end();
-    }
-
     static void add_name_to_buffer(const uint32_t p_Index, const char *p_String)
     {
       if (buffer_contains_name(p_Index)) {
         return;
       }
+      g_Mutex.lock();
 
       uint32_t l_Length = static_cast<uint32_t>(strlen(p_String));
 
@@ -113,6 +114,8 @@ namespace Low {
 
       g_NameMap[p_Index] = (char *)l_Pointer;
       g_StringPointer = &g_StringPointer[l_Length + 1];
+
+      g_Mutex.unlock();
     }
 
     Name::Name() : m_Index(0u)

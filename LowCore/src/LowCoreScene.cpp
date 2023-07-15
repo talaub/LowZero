@@ -91,6 +91,9 @@ namespace Low {
 
     void Scene::initialize()
     {
+      // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
       ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Scene));
 
       initialize_buffer(&ms_Buffer, SceneData::get_size(), get_capacity(),

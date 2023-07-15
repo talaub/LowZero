@@ -16,20 +16,16 @@
 
 namespace Low {
   namespace Util {
-    template <typename T>
-    using List = eastl::vector<T, Memory::MallocAllocatorProxy<T>>;
+    template <typename T> using List = eastl::vector<T>;
 
     template <typename T, int S> using Array = eastl::array<T, S>;
 
     template <typename K, typename V>
-    using Map =
-        eastl::map<K, V, eastl::less<K>, Memory::MallocAllocatorProxy<V>>;
+    using Map = eastl::map<K, V, eastl::less<K>>;
     template <typename K, typename V>
-    using MultiMap =
-        eastl::multimap<K, V, eastl::less<K>, Memory::MallocAllocatorProxy<V>>;
+    using MultiMap = eastl::multimap<K, V, eastl::less<K>>;
 
-    template <typename T>
-    using Set = eastl::set<T, eastl::less<T>, Memory::MallocAllocatorProxy<T>>;
+    template <typename T> using Set = eastl::set<T, eastl::less<T>>;
 
     template <typename T> using Stack = eastl::stack<T>;
     template <typename T> using Queue = eastl::queue<T>;

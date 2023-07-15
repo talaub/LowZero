@@ -9,11 +9,29 @@
 #include "LowUtilSerialization.h"
 
 #include "LowUtilResource.h"
+#include "LowUtilJobManager.h"
 #include "LowRenderer.h"
 
 namespace Low {
   namespace Core {
-    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+#define MESH_COUNT 50
+    Util::List<bool> g_Slots;
+    Util::List<Util::Resource::Mesh> g_Meshes;
+
+    struct LoadSchedule
+    {
+      uint32_t meshIndex;
+      Util::Future<void> future;
+      MeshResource meshResource;
+
+      LoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
+          : meshIndex(p_Id), future(std::move(p_Future))
+      {
+      }
+    };
+
+    Util::List<LoadSchedule> g_LoadSchedules;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MeshResource::TYPE_ID = 21;
@@ -93,6 +111,14 @@ namespace Low {
 
     void MeshResource::initialize()
     {
+      // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      g_Meshes.resize(MESH_COUNT);
+      g_Slots.resize(MESH_COUNT);
+      for (uint32_t i = 0; i < MESH_COUNT; ++i) {
+        g_Slots[i] = false;
+      }
+      // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowCore), N(MeshResource));
 
@@ -453,15 +479,52 @@ namespace Low {
                  "Increased MeshResource reference count, but its not over 0. "
                  "Something went wrong.");
 
-      if (is_loaded()) {
+      if (get_state() != ResourceState::UNLOADED) {
         return;
       }
 
-      Util::String l_FullPath =
-          Util::String(LOW_DATA_PATH) + "\\resources\\meshes\\" + get_path();
+      set_state(ResourceState::STREAMING);
 
-      Util::Resource::Mesh l_Mesh;
-      Util::Resource::load_mesh(l_FullPath, l_Mesh);
+      Util::String l_P = get_path();
+      uint32_t l_MeshIndex = 0;
+      bool l_FoundIndex = false;
+
+      do {
+        for (uint32_t i = 0u; i < MESH_COUNT; ++i) {
+          if (!g_Slots[i]) {
+            l_MeshIndex = i;
+            l_FoundIndex = true;
+            g_Slots[i] = true;
+            break;
+          }
+        }
+      } while (!l_FoundIndex);
+
+      std::string l_FullPath =
+          std::string(LOW_DATA_PATH) + "\\resources\\meshes\\";
+      l_FullPath += get_path().c_str();
+
+      LoadSchedule &l_LoadSchedule = g_LoadSchedules.emplace_back(
+          l_MeshIndex,
+          Util::JobManager::default_pool().enqueue([l_FullPath, l_MeshIndex]() {
+            for (auto it = g_LoadSchedules.begin(); it != g_LoadSchedules.end();
+                 ++it) {
+              if (it->meshIndex == l_MeshIndex) {
+                Util::Resource::load_mesh(Util::String(l_FullPath.c_str()),
+                                          g_Meshes[l_MeshIndex]);
+                break;
+              }
+            }
+          }));
+      l_LoadSchedule.meshResource = *this;
+
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+    }
+
+    void MeshResource::_load(uint32_t p_MeshIndex)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
+      Util::Resource::Mesh &l_Mesh = g_Meshes[p_MeshIndex];
 
       for (uint32_t i = 0u; i < l_Mesh.submeshes.size(); ++i) {
         for (uint32_t j = 0u; j < l_Mesh.submeshes[i].meshInfos.size(); ++j) {
@@ -480,7 +543,7 @@ namespace Low {
       }
 
       set_state(ResourceState::LOADED);
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
     }
 
     void MeshResource::unload()
@@ -515,6 +578,23 @@ namespace Low {
       }
       set_state(ResourceState::UNLOADED);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
+    }
+
+    void MeshResource::update()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
+      for (auto it = g_LoadSchedules.begin(); it != g_LoadSchedules.end();) {
+        if (it->future.wait_for(std::chrono::seconds(0)) ==
+            std::future_status::ready) {
+          it->meshResource._load(it->meshIndex);
+          g_Slots[it->meshIndex] = false;
+
+          it = g_LoadSchedules.erase(it);
+        } else {
+          ++it;
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update
     }
 
     uint32_t MeshResource::create_instance()
