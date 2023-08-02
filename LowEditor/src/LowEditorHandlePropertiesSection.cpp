@@ -13,11 +13,13 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
 #include "LowEditorAssetWidget.h"
+#include "LowEditorChangeList.h"
 
 #include "LowRendererExposedObjects.h"
 #include "LowRendererImGuiHelper.h"
 
 #include "LowUtilString.h"
+#include "LowUtilDiffUtil.h"
 
 #include <algorithm>
 #include <stdio.h>
@@ -274,6 +276,10 @@ namespace Low {
       if (ImGui::CollapsingHeader(m_Metadata.name.c_str(),
                                   m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen
                                                 : 0)) {
+
+        Util::StoredHandle l_StoredHandle;
+        Util::DiffUtil::store_handle(l_StoredHandle, m_Handle);
+
         bool l_SkipFooter = false;
 
         ImGui::PushID(m_Handle.get_id());
@@ -288,6 +294,14 @@ namespace Low {
           render_footer(m_Handle, m_Metadata.typeInfo);
         }
         ImGui::PopID();
+
+        Util::StoredHandle l_AfterChange;
+        Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
+
+        Transaction l_Transaction =
+            Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
+
+        get_global_changelist().add_entry(l_Transaction);
       }
     }
 

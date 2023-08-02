@@ -1,6 +1,7 @@
 #include "LowEditorEditingWidget.h"
 
 #include "LowEditorMainWindow.h"
+#include "LowEditorCommonOperations.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -167,6 +168,18 @@ namespace Low {
 
       static ImGuizmo::OPERATION l_Operation = ImGuizmo::TRANSLATE;
 
+      if (p_RenderFlowWidget.is_hovered()) {
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_1))) {
+          l_Operation = ImGuizmo::TRANSLATE;
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_2))) {
+          l_Operation = ImGuizmo::ROTATE;
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_3))) {
+          l_Operation = ImGuizmo::SCALE;
+        }
+      }
+
       ImGui::SetNextWindowPos(
           {p_RenderFlowWidget.get_widget_position().x + 20.0f,
            p_RenderFlowWidget.get_widget_position().y + l_TopPadding});
@@ -226,6 +239,11 @@ namespace Low {
                                  ImGuizmo::LOCAL, (float *)&l_TransformMatrix,
                                  NULL, NULL, NULL, NULL)) {
 
+          bool l_IsFirst = false;
+          if (!get_gizmos_dragged()) {
+            l_IsFirst = true;
+          }
+
           Core::Component::Transform l_Parent = l_Transform.get_parent();
           if (l_Parent.is_alive()) {
             l_TransformMatrix =
@@ -240,9 +258,54 @@ namespace Low {
           glm::decompose(l_TransformMatrix, scale, rotation, translation, skew,
                          perspective);
 
+          Util::StoredHandle l_Before;
+          Util::StoredHandle l_After;
+
+          Util::DiffUtil::store_handle(l_Before, l_Transform);
+
           l_Transform.position(translation);
           l_Transform.rotation(rotation);
           l_Transform.scale(scale);
+
+          Util::DiffUtil::store_handle(l_After, l_Transform);
+
+          Transaction l_Transaction =
+              Transaction::from_diff(l_Transform, l_Before, l_After);
+
+          if (!l_Transaction.empty()) {
+            set_gizmos_dragged(true);
+          }
+
+          if (!l_IsFirst && !l_Transaction.empty()) {
+            Transaction l_OldTransaction = get_global_changelist().peek();
+
+            for (uint32_t i = 0; i < l_Transaction.get_operations().size();
+                 ++i) {
+              CommonOperations::PropertyEditOperation *i_Operation =
+                  (CommonOperations::PropertyEditOperation *)
+                      l_Transaction.get_operations()[i];
+              for (uint32_t j = 0; j < l_OldTransaction.get_operations().size();
+                   ++j) {
+                CommonOperations::PropertyEditOperation *i_OldOperation =
+                    (CommonOperations::PropertyEditOperation *)
+                        l_OldTransaction.get_operations()[j];
+
+                if (i_OldOperation->m_Handle == i_Operation->m_Handle &&
+                    i_OldOperation->m_PropertyName ==
+                        i_Operation->m_PropertyName) {
+                  i_Operation->m_OldValue = i_OldOperation->m_OldValue;
+                }
+              }
+            }
+            Transaction l_Old = get_global_changelist().pop();
+            l_Old.cleanup();
+          }
+          get_global_changelist().add_entry(l_Transaction);
+
+        } else {
+          if (!ImGui::IsAnyItemActive()) {
+            set_gizmos_dragged(false);
+          }
         }
       }
 

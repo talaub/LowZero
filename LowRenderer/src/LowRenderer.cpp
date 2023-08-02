@@ -38,6 +38,8 @@
 #include <gli/texture2d.hpp>
 #include <gli/load_ktx.hpp>
 
+#include "microprofile.h"
+
 #define LOW_RENDERER_MAX_POSE_BONES 512
 
 namespace Low {
@@ -842,10 +844,10 @@ namespace Low {
 
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 DynamicBufferType::VERTEX,
-                                sizeof(Util::Resource::Vertex), 128000u);
+                                sizeof(Util::Resource::Vertex), 256000u);
       g_IndexBuffer.initialize(N(IndexBuffer), g_Context,
                                DynamicBufferType::INDEX, sizeof(uint32_t),
-                               256000u);
+                               512000u);
 
       g_SkinningBuffer.initialize(N(SkinningBuffer), g_Context,
                                   DynamicBufferType::VERTEX,
@@ -1078,6 +1080,7 @@ namespace Low {
 
     void tick(float p_Delta, Util::EngineState p_State)
     {
+      LOW_PROFILE_CPU("Renderer", "TICK");
       g_Context.get_window().tick();
 
       Interface::PipelineManager::tick(p_Delta);
@@ -1330,6 +1333,7 @@ namespace Low {
 
     static void do_particle_updates(float p_Delta)
     {
+      LOW_PROFILE_CPU("Renderer", "Particle updates");
       if (g_Context.is_debug_enabled()) {
         LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
             g_Context.get_context(), "Update particles",
@@ -1359,6 +1363,7 @@ namespace Low {
 
     void late_tick(float p_Delta, Util::EngineState p_State)
     {
+      MICROPROFILE_SCOPEI("Renderer", "LATETICK", MP_GREEN);
       if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
         ImGui::EndFrame();
         ImGui::UpdatePlatformWindows();
@@ -1376,8 +1381,11 @@ namespace Low {
 
       g_Context.get_global_signature().commit();
 
-      for (uint32_t i = 0u; i < g_PendingPoseCalculations.size(); ++i) {
-        calculate_bone_matrices(g_PendingPoseCalculations[i]);
+      {
+        LOW_PROFILE_CPU("Renderer", "Calculate bones");
+        for (uint32_t i = 0u; i < g_PendingPoseCalculations.size(); ++i) {
+          calculate_bone_matrices(g_PendingPoseCalculations[i]);
+        }
       }
 
       g_PoseBuffer.set(g_PoseBones);

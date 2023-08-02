@@ -1835,9 +1835,12 @@ namespace Low {
         VkFence l_Fences[] = {
             p_Context.vk.m_InFlightFences[p_Context.currentFrameIndex],
             p_Context.vk.m_StagingBufferFence};
+        {
+          LOW_PROFILE_CPU("Renderer", "Wait fences");
 
-        vkWaitForFences(p_Context.vk.m_Device, 2, l_Fences, VK_TRUE,
-                        UINT64_MAX);
+          vkWaitForFences(p_Context.vk.m_Device, 2, l_Fences, VK_TRUE,
+                          UINT64_MAX);
+        }
 
         p_Context.vk.m_StagingBufferUsage = 0u;
         p_Context.vk.m_ReadStagingBufferUsage = 0u;

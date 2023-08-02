@@ -8,6 +8,7 @@
 #include "LowMathVectorUtil.h"
 
 #include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
 
 namespace Low {
   namespace Core {
@@ -15,6 +16,7 @@ namespace Low {
       namespace Region {
         void tick(float p_Delta, Util::EngineState p_State)
         {
+          LOW_PROFILE_CPU("Core", "RegionSystem tick");
           Math::Vector3 l_CameraPosition =
               Renderer::get_main_renderflow().get_camera_position();
 

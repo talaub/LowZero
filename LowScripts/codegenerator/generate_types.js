@@ -1026,7 +1026,7 @@ function generate_source(p_Type) {
 		
 		i_CustomCode = l_OldCode.substring(i_BeginMarkerIndex, i_EndMarkerIndex);
 	    }
-	    t += write(`${i_Func.accessor_type} ${p_Type.name}::${i_Func.name}(`);
+	    t += write(`${i_Func.accessor_type} ${p_Type.name}::${i_Func.name} (`);
 	    if (i_Func.parameters) {
 		for (let i = 0; i < i_Func.parameters.length; ++i) {
 		    if (i > 0) {

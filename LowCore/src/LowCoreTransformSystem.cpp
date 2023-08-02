@@ -7,12 +7,16 @@
 
 #include "LowCoreTransform.h"
 
+#include "LowUtilProfiler.h"
+
 namespace Low {
   namespace Core {
     namespace System {
       namespace Transform {
         void tick(float p_Delta, Util::EngineState p_State)
         {
+          LOW_PROFILE_CPU("Core", "TransformSystem::TICK");
+
           Component::Transform *l_Transforms =
               Component::Transform::living_instances();
 

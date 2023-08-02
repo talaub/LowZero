@@ -10,6 +10,7 @@
 #include "LowMathVectorUtil.h"
 
 #include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
 
 namespace Low {
   namespace Core {
@@ -17,6 +18,7 @@ namespace Low {
       namespace Light {
         void tick(float p_Delta, Util::EngineState p_State)
         {
+          LOW_PROFILE_CPU("Core", "LightSystem tick");
           if (Component::DirectionalLight::living_count() > 0u) {
             Component::Transform l_Transform =
                 Component::DirectionalLight::living_instances()[0]

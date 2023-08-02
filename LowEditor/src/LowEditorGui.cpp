@@ -52,7 +52,7 @@ namespace Low {
 
         Util::String l_Label = "##" + p_Label;
         PushItemWidth(p_Width - 16.0f);
-        if (DragFloat(l_Label.c_str(), p_Value)) {
+        if (DragFloat(l_Label.c_str(), p_Value, 0.2f, 0.0f, 0.0f, "%.2f")) {
           l_Changed = true;
         }
         PopItemWidth();

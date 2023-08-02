@@ -16,44 +16,13 @@
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    static void fill_variants(Util::Handle p_Handle,
-                              Util::RTTI::PropertyInfo &p_PropertyInfo,
-                              Util::Map<Util::Name, Util::Variant> &p_Variants)
-    {
-      if (p_PropertyInfo.type == Util::RTTI::PropertyType::UNKNOWN) {
-        return;
-      }
-      if (p_PropertyInfo.type == Util::RTTI::PropertyType::SHAPE) {
-        Math::Shape l_Shape = *(Math::Shape *)p_PropertyInfo.get(p_Handle);
-        Util::String l_BaseString = p_PropertyInfo.name.c_str();
-        l_BaseString += "__";
-
-        if (l_Shape.type == Math::ShapeType::BOX) {
-          p_Variants[LOW_NAME((l_BaseString + "type").c_str())] = N(BOX);
-
-          p_Variants[LOW_NAME((l_BaseString + "box_position").c_str())] =
-              l_Shape.box.position;
-          p_Variants[LOW_NAME((l_BaseString + "box_rotation").c_str())] =
-              l_Shape.box.rotation;
-          p_Variants[LOW_NAME((l_BaseString + "box_halfextents").c_str())] =
-              l_Shape.box.halfExtents;
-        } else {
-          LOW_ASSERT(false, "Reading component property while populating "
-                            "prefab failed. Unsupported shape type");
-        }
-
-        return;
-      }
-
-      p_Variants[p_PropertyInfo.name] = p_PropertyInfo.get_variant(p_Handle);
-    }
-
     static void
     read_component_property(Prefab p_Prefab, Util::Handle p_Handle,
                             Util::RTTI::PropertyInfo &p_PropertyInfo)
     {
-      fill_variants(p_Handle, p_PropertyInfo,
-                    p_Prefab.get_components()[p_Handle.get_type()]);
+      Util::Handle::fill_variants(
+          p_Handle, p_PropertyInfo,
+          p_Prefab.get_components()[p_Handle.get_type()]);
     }
 
     static void populate_component(Prefab p_Prefab, Util::Handle p_Handle)

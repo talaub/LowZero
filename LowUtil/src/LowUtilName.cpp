@@ -101,7 +101,7 @@ namespace Low {
       if (buffer_contains_name(p_Index)) {
         return;
       }
-      g_Mutex.lock();
+      // g_Mutex.lock();
 
       uint32_t l_Length = static_cast<uint32_t>(strlen(p_String));
 
@@ -115,7 +115,7 @@ namespace Low {
       g_NameMap[p_Index] = (char *)l_Pointer;
       g_StringPointer = &g_StringPointer[l_Length + 1];
 
-      g_Mutex.unlock();
+      // g_Mutex.unlock();
     }
 
     Name::Name() : m_Index(0u)

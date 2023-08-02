@@ -1183,6 +1183,7 @@ namespace Low {
         LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
             get_context().get_context(), l_RenderDocLabel,
             Math::Color(0.341f, 0.4249f, 0.2341f, 1.0f));
+        MICROPROFILE_SCOPEI("Renderer", l_RenderDocLabel.c_str(), MP_GREEN);
       }
 
       Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(

@@ -7,9 +7,12 @@
 #include "LowCoreEntity.h"
 #include "LowRendererMaterial.h"
 
+#include "LowEditorChangeList.h"
+
 namespace Low {
   namespace Editor {
     struct DetailsWidget;
+    struct EditingWidget;
     struct TypeMetadata;
     struct Widget;
 
@@ -27,10 +30,16 @@ namespace Low {
                              std::function<void()> p_Func);
 
     DetailsWidget *get_details_widget();
+    EditingWidget *get_editing_widget();
 
     TypeMetadata &get_type_metadata(uint16_t p_TypeId);
 
     void duplicate(Util::List<Util::Handle> p_Handles);
+
+    ChangeList &get_global_changelist();
+
+    bool get_gizmos_dragged();
+    void set_gizmos_dragged(bool p_Dragged);
 
     namespace Helper {
       struct SphericalBillboardMaterials
@@ -42,6 +51,9 @@ namespace Low {
       };
 
       SphericalBillboardMaterials get_spherical_billboard_materials();
+
+      Transaction create_handle_transaction(Util::Handle p_Handle);
+      Transaction destroy_handle_transaction(Util::Handle p_Handle);
     } // namespace Helper
   }   // namespace Editor
 } // namespace Low

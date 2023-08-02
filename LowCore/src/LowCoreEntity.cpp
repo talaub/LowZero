@@ -193,7 +193,7 @@ namespace Low {
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
-        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(EntityData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
@@ -263,21 +263,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-      p_Node["name"] = get_name().c_str();
-      p_Node["unique_id"] = get_unique_id();
-
-      for (auto it = get_components().begin(); it != get_components().end();
-           ++it) {
-        Util::Yaml::Node i_Node;
-        i_Node["type"] = it->first;
-
-        Util::RTTI::TypeInfo &i_TypeInfo =
-            Util::Handle::get_type_info(it->first);
-        Util::Yaml::Node i_PropertiesNode;
-        i_TypeInfo.serialize(it->second, i_PropertiesNode);
-        i_Node["properties"] = i_PropertiesNode;
-        p_Node["components"].push_back(i_Node);
-      }
+      serialize(p_Node, false);
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -295,7 +281,17 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       Region l_Region = p_Creator.get_id();
 
+      if (!l_Region.is_alive()) {
+        if (p_Node["region"]) {
+          l_Region =
+              Util::find_handle_by_unique_id(p_Node["region"].as<uint64_t>())
+                  .get_id();
+        }
+      }
+
       Entity l_Entity = Entity::make(LOW_YAML_AS_NAME(p_Node["name"]));
+
+      p_Node["_handle"] = l_Entity.get_id();
 
       // Parse the old unique id and assign it again (need to remove the auto
       // generated uid first
@@ -315,7 +311,9 @@ namespace Low {
         Util::RTTI::TypeInfo &i_TypeInfo =
             Util::Handle::get_type_info(i_ComponentNode["type"].as<uint16_t>());
 
-        i_TypeInfo.deserialize(i_ComponentNode["properties"], l_Entity);
+        i_ComponentNode["_handle"] =
+            i_TypeInfo.deserialize(i_ComponentNode["properties"], l_Entity)
+                .get_id();
       }
 
       if (l_Entity.has_component(Component::PrefabInstance::TYPE_ID)) {
@@ -420,7 +418,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
-    uint64_t Entity::get_component(uint16_t p_TypeId)
+    uint64_t Entity::get_component(uint16_t p_TypeId) const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_component
       if (get_components().find(p_TypeId) == get_components().end()) {
@@ -478,12 +476,81 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_component
     }
 
-    Component::Transform Entity::get_transform()
+    Component::Transform Entity::get_transform() const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
       _LOW_ASSERT(is_alive());
       return get_component(Component::Transform::TYPE_ID);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
+    }
+
+    void Entity::serialize(Util::Yaml::Node &p_Node, bool p_AddHandles) const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize
+      _LOW_ASSERT(is_alive());
+
+      p_Node["name"] = get_name().c_str();
+      p_Node["unique_id"] = get_unique_id();
+      if (p_AddHandles) {
+        p_Node["handle"] = get_id();
+      }
+      p_Node["region"] = 0;
+      if (get_region().is_alive()) {
+        p_Node["region"] = get_region().get_unique_id();
+      }
+
+      for (auto it = get_components().begin(); it != get_components().end();
+           ++it) {
+        Util::Yaml::Node i_Node;
+        i_Node["type"] = it->first;
+        if (p_AddHandles) {
+          i_Node["handle"] = it->second.get_id();
+        }
+
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(it->first);
+        Util::Yaml::Node i_PropertiesNode;
+        i_TypeInfo.serialize(it->second, i_PropertiesNode);
+        i_Node["properties"] = i_PropertiesNode;
+        p_Node["components"].push_back(i_Node);
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
+    }
+
+    void Entity::serialize_hierarchy(Util::Yaml::Node &p_Node,
+                                     bool p_AddHandles) const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_hierarchy
+      serialize(p_Node, p_AddHandles);
+
+      Component::Transform l_Transform = get_transform();
+
+      for (auto it = l_Transform.get_children().begin();
+           it != l_Transform.get_children().end(); ++it) {
+        Component::Transform i_Child = *it;
+
+        Util::Yaml::Node i_Node;
+        i_Child.get_entity().serialize_hierarchy(i_Node, p_AddHandles);
+
+        p_Node["children"].push_back(i_Node);
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_hierarchy
+    }
+
+    Entity &Entity::deserialize_hierarchy(Util::Yaml::Node &p_Node,
+                                          Util::Handle p_Creator)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy
+      Entity l_Entity = (Entity)deserialize(p_Node, p_Creator).get_id();
+
+      if (p_Node["children"]) {
+        for (uint32_t i = 0; i < p_Node["children"].size(); ++i) {
+          Entity::deserialize_hierarchy(p_Node["children"][i], p_Creator);
+        }
+      }
+
+      return l_Entity;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_deserialize_hierarchy
     }
 
     uint32_t Entity::create_instance()

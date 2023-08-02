@@ -1,5 +1,8 @@
 
 #include "LowUtilVariant.h"
+#include <vcruntime_string.h>
+
+#define VARIANT_DATA_SIZE sizeof(Math::Vector4)
 
 namespace Low {
   namespace Util {
@@ -56,80 +59,87 @@ namespace Low {
       m_Uint32 = p_Value.m_Index;
     }
 
-    Variant &Variant::operator=(bool p_Value)
+    Variant &Variant::operator=(const bool p_Value)
     {
       m_Type = VariantType::Bool;
       m_Bool = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(float p_Value)
+    Variant &Variant::operator=(const float p_Value)
     {
       m_Type = VariantType::Float;
       m_Float = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(int32_t p_Value)
+    Variant &Variant::operator=(const int32_t p_Value)
     {
       m_Type = VariantType::Int32;
       m_Int32 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(uint32_t p_Value)
+    Variant &Variant::operator=(const uint32_t p_Value)
     {
       m_Type = VariantType::UInt32;
       m_Uint32 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(uint64_t p_Value)
+    Variant &Variant::operator=(const uint64_t p_Value)
     {
       m_Type = VariantType::UInt64;
       m_Uint64 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(Math::UVector2 p_Value)
+    Variant &Variant::operator=(const Math::UVector2 p_Value)
     {
       m_Type = VariantType::UVector2;
       m_UVector2 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(Math::Vector2 p_Value)
+    Variant &Variant::operator=(const Math::Vector2 p_Value)
     {
       m_Type = VariantType::Vector2;
       m_Vector2 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(Math::Vector3 p_Value)
+    Variant &Variant::operator=(const Math::Vector3 p_Value)
     {
       m_Type = VariantType::Vector3;
       m_Vector3 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(Math::Vector4 p_Value)
+    Variant &Variant::operator=(const Math::Vector4 p_Value)
     {
       m_Type = VariantType::Vector4;
       m_Vector4 = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(Math::Quaternion p_Value)
+    Variant &Variant::operator=(const Math::Quaternion p_Value)
     {
       m_Type = VariantType::Quaternion;
       m_Quaternion = p_Value;
 
       return *this;
     }
-    Variant &Variant::operator=(Name p_Value)
+    Variant &Variant::operator=(const Name p_Value)
     {
       m_Type = VariantType::Name;
       m_Uint32 = p_Value.m_Index;
+
+      return *this;
+    }
+    Variant &Variant::operator=(const Variant &p_Value)
+    {
+      m_Type = p_Value.m_Type;
+      memcpy(&m_Bool, &p_Value.m_Bool, VARIANT_DATA_SIZE);
 
       return *this;
     }

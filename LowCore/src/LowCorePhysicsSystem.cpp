@@ -100,6 +100,7 @@ namespace Low {
 
         void tick(float p_Delta, Util::EngineState p_State)
         {
+          LOW_PROFILE_CPU("Core", "PhysicsSystem::TICK");
           for (auto it = Component::Rigidbody::ms_LivingInstances.begin();
                it != Component::Rigidbody::ms_LivingInstances.end(); ++it) {
             Component::Transform i_Transform = it->get_entity().get_transform();
@@ -131,6 +132,7 @@ namespace Low {
           if (p_State != Util::EngineState::PLAYING) {
             return;
           }
+          LOW_PROFILE_CPU("Core", "PhysicsSystem::LATETICK");
           g_Scene->simulate(p_Delta);
           g_Scene->fetchResults(true);
 

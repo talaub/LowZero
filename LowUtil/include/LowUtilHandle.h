@@ -116,6 +116,8 @@ namespace Low {
       bool operator!=(const Handle &p_Other) const;
       bool operator<(const Handle &p_Other) const;
 
+      operator uint64_t() const;
+
       uint64_t get_id() const;
 
       uint32_t get_index() const;
@@ -126,6 +128,11 @@ namespace Low {
 
       static RTTI::TypeInfo &get_type_info(uint16_t p_TypeId);
       static List<uint16_t> &get_component_types();
+
+      static void
+      fill_variants(Util::Handle p_Handle,
+                    Util::RTTI::PropertyInfo &p_PropertyInfo,
+                    Util::Map<Util::Name, Util::Variant> &p_Variants);
 
     protected:
       static void register_type_info(uint16_t p_TypeId,

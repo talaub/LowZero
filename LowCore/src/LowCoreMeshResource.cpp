@@ -583,6 +583,7 @@ namespace Low {
     void MeshResource::update()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
+      LOW_PROFILE_CPU("Core", "Update MeshResource");
       for (auto it = g_LoadSchedules.begin(); it != g_LoadSchedules.end();) {
         if (it->future.wait_for(std::chrono::seconds(0)) ==
             std::future_status::ready) {

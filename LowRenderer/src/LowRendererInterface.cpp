@@ -1,6 +1,7 @@
 #include "LowRendererInterface.h"
 
 #include "LowUtilFileIO.h"
+#include "LowUtilProfiler.h"
 
 namespace Low {
   namespace Renderer {
@@ -236,6 +237,7 @@ namespace Low {
 
         void tick(float p_Delta)
         {
+          LOW_PROFILE_CPU("Renderer", "Pipeline manager");
 #if LOW_RENDERER_COMPILE_SHADERS
           do_tick(p_Delta);
 #endif

@@ -6,6 +6,7 @@
 
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
+#include "LowEditorCommonOperations.h"
 
 #include "LowCoreEntity.h"
 #include "LowCorePrefab.h"
@@ -61,6 +62,8 @@ namespace Low {
           l_Break = true;
         }
         if (ImGui::MenuItem("Delete")) {
+          get_global_changelist().add_entry(
+              Helper::destroy_handle_transaction(p_Entity));
           Core::Entity::destroy(p_Entity);
           l_Break = true;
         }
@@ -88,6 +91,28 @@ namespace Low {
             glm::vec4 perspective;
             glm::decompose(l_LocalMatrix, scale, rotation, translation, skew,
                            perspective);
+
+            Transaction l_Transaction("Parent entity");
+            l_Transaction.add_operation(
+                new CommonOperations::PropertyEditOperation(
+                    l_Entity.get_transform(), N(position),
+                    l_Entity.get_transform().position(), translation));
+            l_Transaction.add_operation(
+                new CommonOperations::PropertyEditOperation(
+                    l_Entity.get_transform(), N(rotation),
+                    l_Entity.get_transform().rotation(), rotation));
+            l_Transaction.add_operation(
+                new CommonOperations::PropertyEditOperation(
+                    l_Entity.get_transform(), N(scale),
+                    l_Entity.get_transform().scale(), scale));
+            l_Transaction.add_operation(
+                new CommonOperations::PropertyEditOperation(
+                    l_Entity.get_transform(), N(parent),
+                    Util::Variant::from_handle(
+                        l_Entity.get_transform().get_parent()),
+                    Util::Variant::from_handle(p_Entity.get_transform())));
+
+            get_global_changelist().add_entry(l_Transaction);
 
             l_Entity.get_transform().position(translation);
             l_Entity.get_transform().rotation(rotation);
@@ -196,6 +221,9 @@ namespace Low {
               Core::Entity l_Entity =
                   Core::Entity::make(N(NewEntity), l_Region);
               Core::Component::Transform::make(l_Entity);
+
+              get_global_changelist().add_entry(
+                  Helper::create_handle_transaction(l_Entity));
 
               set_selected_entity(l_Entity);
             } else {

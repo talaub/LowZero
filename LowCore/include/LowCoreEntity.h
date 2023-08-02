@@ -105,11 +105,16 @@ namespace Low {
       void set_name(Low::Util::Name p_Value);
 
       static Entity make(Util::Name p_Name, Region p_Region);
-      uint64_t get_component(uint16_t p_TypeId);
+      uint64_t get_component(uint16_t p_TypeId) const;
       void add_component(Util::Handle &p_Component);
       void remove_component(uint16_t p_ComponentType);
       bool has_component(uint16_t p_ComponentType);
-      Component::Transform get_transform();
+      Component::Transform get_transform() const;
+      void serialize(Util::Yaml::Node &p_Node, bool p_AddHandles) const;
+      void serialize_hierarchy(Util::Yaml::Node &p_Node,
+                               bool p_AddHandles) const;
+      static Entity &deserialize_hierarchy(Util::Yaml::Node &p_Node,
+                                           Util::Handle p_Creator);
 
     private:
       static uint32_t ms_Capacity;

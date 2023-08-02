@@ -12,6 +12,7 @@
 #include "LowEditorEditingWidget.h"
 #include "LowEditorAssetWidget.h"
 #include "LowEditorSceneWidget.h"
+#include "LowEditorChangeWidget.h"
 #include "LowEditorRegionWidget.h"
 #include "LowEditorStateGraphWidget.h"
 #include "LowEditorGui.h"
@@ -19,11 +20,13 @@
 #include "LowEditorResourceProcessorMesh.h"
 #include "LowEditorSaveHelper.h"
 #include "LowEditorMetadata.h"
+#include "LowEditorCommonOperations.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilProfiler.h"
 
 #include "LowRendererTexture2D.h"
 #include "LowRendererImGuiHelper.h"
@@ -35,6 +38,7 @@
 #include "LowCorePhysicsSystem.h"
 
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <future>
 
@@ -42,6 +46,10 @@ namespace Low {
   namespace Editor {
     const int g_DockSpaceId = 4785;
     bool g_CentralDockOpen = true;
+
+    bool g_GizmosDragged = false;
+
+    ChangeList g_ChangeList;
 
     Util::Map<uint16_t, TypeMetadata> g_TypeMetadata;
 
@@ -232,6 +240,15 @@ namespace Low {
 
       // Menu
       if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Edit")) {
+          if (ImGui::MenuItem("Undo", "Ctrl+Z", nullptr)) {
+            g_ChangeList.undo();
+          }
+          if (ImGui::MenuItem("Redo", "Ctrl+Y", nullptr)) {
+            g_ChangeList.redo();
+          }
+          ImGui::EndMenu();
+        }
         if (ImGui::BeginMenu("View")) {
           for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
             if (ImGui::MenuItem(it->name, nullptr, it->open)) {
@@ -583,6 +600,7 @@ namespace Low {
       register_editor_widget("Assets", new AssetWidget(), true);
       register_editor_widget("Scene", new SceneWidget(), true);
       register_editor_widget("Regions", new RegionWidget(), true);
+      register_editor_widget("History", new ChangeWidget());
       register_editor_widget("StateGraph", new StateGraphWidget(), true);
 
       load_user_settings();
@@ -611,21 +629,37 @@ namespace Low {
 
     static Util::Handle duplicate_handle(Util::Handle p_Handle)
     {
+      Util::Handle l_Handle = 0;
+
       if (p_Handle.get_type() == Core::Entity::TYPE_ID) {
-        return duplicate_entity(p_Handle.get_id());
+        l_Handle = duplicate_entity(p_Handle.get_id());
       }
+
+      return l_Handle;
     }
 
     void duplicate(Util::List<Util::Handle> p_Handles)
     {
+      Transaction l_Transaction("Duplicate objects");
+
       Util::List<Util::Handle> l_NewHandles;
       for (Util::Handle i_Handle : p_Handles) {
-        l_NewHandles.push_back(duplicate_handle(i_Handle));
+        Util::Handle i_NewHandle = duplicate_handle(i_Handle);
+        l_Transaction.add_operation(
+            new CommonOperations::HandleCreateOperation(i_NewHandle));
+        l_NewHandles.push_back(i_NewHandle);
       }
 
       if (l_NewHandles.size() == 1) {
         set_selected_handle(l_NewHandles[0]);
       }
+
+      get_global_changelist().add_entry(l_Transaction);
+    }
+
+    ChangeList &get_global_changelist()
+    {
+      return g_ChangeList;
     }
 
     static void handle_shortcuts(float p_Delta)
@@ -634,11 +668,22 @@ namespace Low {
         if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D))) {
           duplicate({get_selected_handle()});
         }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S))) {
+          schedule_save_scene(Core::Scene::get_loaded_scene());
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z))) {
+          g_ChangeList.undo();
+        }
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Y))) {
+          g_ChangeList.redo();
+        }
       }
     }
 
     void tick(float p_Delta, Util::EngineState p_State)
     {
+      LOW_PROFILE_CPU("Editor", "TICK");
+
       render_menu_bar(p_Delta);
 
       render_status_bar(p_Delta);
@@ -666,6 +711,11 @@ namespace Low {
       return g_DetailsWidget;
     }
 
+    EditingWidget *get_editing_widget()
+    {
+      return g_MainViewportWidget;
+    }
+
     TypeMetadata &get_type_metadata(uint16_t p_TypeId)
     {
       LOW_ASSERT(g_TypeMetadata.find(p_TypeId) != g_TypeMetadata.end(),
@@ -678,10 +728,40 @@ namespace Low {
       g_FocusedWidget = p_Widget;
     }
 
+    bool get_gizmos_dragged()
+    {
+      return g_GizmosDragged;
+    }
+
+    void set_gizmos_dragged(bool p_Dragged)
+    {
+      g_GizmosDragged = p_Dragged;
+    }
+
     namespace Helper {
       SphericalBillboardMaterials get_spherical_billboard_materials()
       {
         return g_SphericalBillboardMaterials;
+      }
+
+      Transaction create_handle_transaction(Util::Handle p_Handle)
+      {
+        Transaction l_Transaction("Create objects");
+
+        l_Transaction.add_operation(
+            new CommonOperations::HandleCreateOperation(p_Handle));
+
+        return l_Transaction;
+      }
+
+      Transaction destroy_handle_transaction(Util::Handle p_Handle)
+      {
+        Transaction l_Transaction("Delete objects");
+
+        l_Transaction.add_operation(
+            new CommonOperations::HandleDestroyOperation(p_Handle));
+
+        return l_Transaction;
       }
     } // namespace Helper
   }   // namespace Editor

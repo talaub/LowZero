@@ -134,6 +134,11 @@ namespace Low {
       return m_Data.m_Type;
     }
 
+    Handle::operator uint64_t() const
+    {
+      return get_id();
+    }
+
     bool Handle::check_alive(Instances::Slot *p_Slots,
                              uint32_t p_Capacity) const
     {
@@ -171,37 +176,78 @@ namespace Low {
       return g_ComponentTypes;
     }
 
+    void Handle::fill_variants(Util::Handle p_Handle,
+                               Util::RTTI::PropertyInfo &p_PropertyInfo,
+                               Util::Map<Util::Name, Util::Variant> &p_Variants)
+    {
+      if (p_PropertyInfo.type == Util::RTTI::PropertyType::UNKNOWN) {
+        return;
+      }
+      if (p_PropertyInfo.type == Util::RTTI::PropertyType::SHAPE) {
+        Math::Shape l_Shape = *(Math::Shape *)p_PropertyInfo.get(p_Handle);
+        Util::String l_BaseString = p_PropertyInfo.name.c_str();
+        l_BaseString += "__";
+
+        if (l_Shape.type == Math::ShapeType::BOX) {
+          p_Variants[LOW_NAME((l_BaseString + "type").c_str())] = N(BOX);
+
+          p_Variants[LOW_NAME((l_BaseString + "box_position").c_str())] =
+              l_Shape.box.position;
+          p_Variants[LOW_NAME((l_BaseString + "box_rotation").c_str())] =
+              l_Shape.box.rotation;
+          p_Variants[LOW_NAME((l_BaseString + "box_halfextents").c_str())] =
+              l_Shape.box.halfExtents;
+        } else {
+          LOW_ASSERT(false, "Reading component property while populating "
+                            "prefab failed. Unsupported shape type");
+        }
+
+        return;
+      }
+
+      p_Variants[p_PropertyInfo.name] = p_PropertyInfo.get_variant(p_Handle);
+    }
+
     Variant RTTI::PropertyInfo::get_variant(Handle p_Handle)
     {
+      void const *l_Ptr = get(p_Handle);
+
+      if (!l_Ptr) {
+        return Variant(0);
+      }
+
       if (type == Util::RTTI::PropertyType::BOOL) {
-        return Variant(*(bool *)get(p_Handle));
+        return Variant(*(bool *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::FLOAT) {
-        return Variant(*(float *)get(p_Handle));
+        return Variant(*(float *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::INT) {
-        return Variant(*(int *)get(p_Handle));
+        return Variant(*(int *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::UINT32) {
-        return Variant(*(uint32_t *)get(p_Handle));
+        return Variant(*(uint32_t *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::UINT64) {
-        return Variant(*(uint64_t *)get(p_Handle));
+        return Variant(*(uint64_t *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::VECTOR2) {
-        return Variant(*(Math::Vector2 *)get(p_Handle));
+        return Variant(*(Math::Vector2 *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::COLORRGB) {
-        return Variant(*(Math::Vector3 *)get(p_Handle));
+        return Variant(*(Math::Vector3 *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::VECTOR3) {
-        return Variant(*(Math::Vector3 *)get(p_Handle));
+        return Variant(*(Math::Vector3 *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::QUATERNION) {
-        return Variant(*(Math::Quaternion *)get(p_Handle));
+        return Variant(*(Math::Quaternion *)l_Ptr);
+      }
+      if (type == Util::RTTI::PropertyType::NAME) {
+        return Variant(*(Name *)l_Ptr);
       }
       if (type == Util::RTTI::PropertyType::HANDLE) {
-        return Variant::from_handle(*(uint64_t *)get(p_Handle));
+        return Variant::from_handle(*(uint64_t *)l_Ptr);
       }
 
       LOW_ASSERT(false, "Getting property value as variant not supported for "

@@ -649,6 +649,7 @@ namespace Low {
       uint8_t Context::prepare_frame()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_frame
+        LOW_PROFILE_CPU("Renderer", "Prepare frame");
         return Backend::callbacks().frame_prepare(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare_frame
       }
@@ -656,6 +657,7 @@ namespace Low {
       void Context::render_frame()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_frame
+        LOW_PROFILE_CPU("Renderer", "Render frame");
         Backend::callbacks().frame_render(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_render_frame
       }

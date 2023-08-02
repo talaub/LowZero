@@ -11,6 +11,7 @@
 
 #include "LowRenderer.h"
 #include <cmath>
+#include "microprofile.h"
 #include <stdint.h>
 
 namespace Low {
@@ -83,6 +84,7 @@ namespace Low {
 
         void tick(float p_Delta, Util::EngineState p_State)
         {
+          MICROPROFILE_SCOPEI("Core", "MeshRendererSystem::TICK", MP_RED);
           Component::MeshRenderer *l_MeshRenderers =
               Component::MeshRenderer::living_instances();
 

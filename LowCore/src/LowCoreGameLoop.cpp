@@ -19,6 +19,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
 
+#include "LowUtilProfiler.h"
+
 #include "LowRenderer.h"
 
 namespace Low {
@@ -82,41 +84,44 @@ namespace Low {
         int l_Fps = 0;
 
         while (g_Running) {
-          auto i_Now = steady_clock::now();
-          l_Accumulator += i_Now - l_LastTime;
-          l_LastTime = i_Now;
+          {
+            LOW_PROFILE_CPU("Core", "Tick");
+            auto i_Now = steady_clock::now();
+            l_Accumulator += i_Now - l_LastTime;
+            l_LastTime = i_Now;
 
-          if (l_Accumulator < l_TimeStep) {
-            TaskScheduler::tick();
-            continue;
+            if (l_Accumulator < l_TimeStep) {
+              TaskScheduler::tick();
+              continue;
+            }
+
+            l_SecondAccumulator += l_Accumulator;
+
+            l_Fps++;
+
+            float l_DeltaTime =
+                duration_cast<duration<float>>(l_Accumulator).count();
+
+            g_Frames++;
+            execute_ticks(l_DeltaTime);
+
+            if (l_SecondAccumulator > 1'000'000'000ns) {
+              l_SecondAccumulator = 0ns;
+              g_LastFps = l_Fps;
+              l_Fps = 0;
+            }
+
+            l_Accumulator = 0ns;
+
+            if (!Renderer::window_is_open()) {
+              stop();
+              continue;
+            }
+
+            execute_late_ticks(l_DeltaTime);
           }
 
-          l_SecondAccumulator += l_Accumulator;
-
-          l_Fps++;
-
-          float l_DeltaTime =
-              duration_cast<duration<float>>(l_Accumulator).count();
-
-          g_Frames++;
-          execute_ticks(l_DeltaTime);
-
-          if (l_SecondAccumulator > 1'000'000'000ns) {
-            l_SecondAccumulator = 0ns;
-            g_LastFps = l_Fps;
-            l_Fps = 0;
-          }
-
-          l_Accumulator = 0ns;
-
-          if (!Renderer::window_is_open()) {
-            stop();
-            continue;
-          }
-
-          execute_late_ticks(l_DeltaTime);
-
-          MicroProfileFlip(nullptr);
+          Util::Profiler::flip();
         }
       }
 
