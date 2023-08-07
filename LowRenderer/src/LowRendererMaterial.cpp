@@ -377,9 +377,10 @@ namespace Low {
             uint32_t i_Offset = i_MaterialTypeProperty.offset;
 
             Util::Handle i_DataHandle = p_Value;
-            LOW_ASSERT(i_DataHandle.get_type() == Texture2D::TYPE_ID,
-                       "Material Texture2D property has incorrect handle type");
-            uint32_t i_TextureIndex = i_DataHandle.get_index();
+            uint32_t i_TextureIndex = 0;
+            if (Texture2D::is_alive(i_DataHandle)) {
+              i_TextureIndex = i_DataHandle.get_index();
+            }
             float i_TextureIndexFloat = i_TextureIndex;
 
             get_context().get_material_data_buffer().write(

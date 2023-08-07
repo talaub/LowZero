@@ -14,6 +14,8 @@
 #include "LowEditorGui.h"
 #include "LowEditorAssetWidget.h"
 #include "LowEditorChangeList.h"
+#include "LowEditorCommonOperations.h"
+#include "LowEditorAssetOperations.h"
 
 #include "LowRendererExposedObjects.h"
 #include "LowRendererImGuiHelper.h"
@@ -134,6 +136,14 @@ namespace Low {
     {
       Core::Material l_Material = m_Handle.get_id();
 
+      Util::StoredHandle l_StoredHandle;
+      Util::DiffUtil::store_handle(l_StoredHandle, m_Handle);
+
+      Util::Map<Util::Name, Util::Variant> l_StoredProperties =
+          l_Material.get_properties();
+
+      Util::List<Util::Name> l_ChangedProperties;
+
       ImGui::Text("Type");
       ImGui::SameLine();
 
@@ -159,6 +169,8 @@ namespace Low {
 
       Renderer::MaterialType l_MaterialType = l_Material.get_material_type();
 
+      bool l_FirstEdit = true;
+
       uint32_t l_Id = 0;
       for (auto pit = l_MaterialType.get_properties().begin();
            pit != l_MaterialType.get_properties().end(); ++pit) {
@@ -172,18 +184,69 @@ namespace Low {
                   pit->name.c_str(), Core::Texture2D::TYPE_ID, &i_TextureId)) {
             l_Material.set_property(pit->name,
                                     Util::Variant::from_handle(i_TextureId));
+
+            l_ChangedProperties.push_back(pit->name);
+          } else if (m_CurrentlyEditing == pit->name.c_str()) {
+            m_CurrentlyEditing = "";
           }
-        } else if (pit->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+        }
+        if (pit->type == Renderer::MaterialTypePropertyType::VECTOR4) {
           Math::Vector4 l_Color = l_Material.get_property(pit->name);
 
           if (PropertyEditors::render_color_selector(pit->name.c_str(),
                                                      &l_Color)) {
+            l_FirstEdit = m_CurrentlyEditing != pit->name.c_str();
+            m_CurrentlyEditing = pit->name.c_str();
             l_Color.a = 1.0f;
             l_Material.set_property(pit->name, Util::Variant(l_Color));
+            l_ChangedProperties.push_back(pit->name);
+          } else if (m_CurrentlyEditing == pit->name.c_str()) {
+            m_CurrentlyEditing = "";
           }
         }
         ImGui::PopID();
       }
+
+      Util::StoredHandle l_AfterChange;
+      Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
+
+      Transaction l_Transaction =
+          Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
+
+      for (auto it = l_ChangedProperties.begin();
+           it != l_ChangedProperties.end(); ++it) {
+        l_Transaction.add_operation(
+            new AssetOperations::MaterialPropertyEditOperation(
+                m_Handle, *it, l_StoredProperties[*it],
+                l_Material.get_property(*it)));
+      }
+
+      l_Transaction.m_Title = "Edit material";
+
+      if (!l_FirstEdit) {
+        Transaction l_OldTransaction = get_global_changelist().peek();
+
+        for (uint32_t i = 0; i < l_Transaction.get_operations().size(); ++i) {
+          AssetOperations::MaterialPropertyEditOperation *i_Operation =
+              (AssetOperations::MaterialPropertyEditOperation *)
+                  l_Transaction.get_operations()[i];
+          for (uint32_t j = 0; j < l_OldTransaction.get_operations().size();
+               ++j) {
+            AssetOperations::MaterialPropertyEditOperation *i_OldOperation =
+                (AssetOperations::MaterialPropertyEditOperation *)
+                    l_OldTransaction.get_operations()[j];
+
+            if (i_OldOperation->m_Handle == i_Operation->m_Handle &&
+                i_OldOperation->m_PropertyName == i_Operation->m_PropertyName) {
+              i_Operation->m_OldValue = i_OldOperation->m_OldValue;
+            }
+          }
+        }
+        Transaction l_Old = get_global_changelist().pop();
+        l_Old.cleanup();
+      }
+
+      get_global_changelist().add_entry(l_Transaction);
 
       return false;
     }
@@ -298,10 +361,12 @@ namespace Low {
         Util::StoredHandle l_AfterChange;
         Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
 
-        Transaction l_Transaction =
-            Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
+        if (!Core::Material::is_alive(m_Handle)) {
+          Transaction l_Transaction =
+              Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
 
-        get_global_changelist().add_entry(l_Transaction);
+          get_global_changelist().add_entry(l_Transaction);
+        }
       }
     }
 

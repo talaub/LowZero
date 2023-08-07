@@ -19,6 +19,7 @@ namespace Low {
       const Util::Handle m_Handle;
       TypeMetadata m_Metadata;
       bool m_DefaultOpen;
+      Util::String m_CurrentlyEditing = "";
 
       bool render_default(float p_Delta);
       bool render_material(float p_Delta);

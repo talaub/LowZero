@@ -177,7 +177,11 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
-          return nullptr;
+          Material l_Handle = p_Handle.get_id();
+          l_Handle.get_properties();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Material, properties,
+              SINGLE_ARG(Util::Map<Util::Name, Util::Variant>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -514,12 +518,17 @@ namespace Low {
             l_OldTexture.unload();
           }
           Texture2D l_Texture = p_Value.m_Uint64;
-          if (!l_Texture.is_loaded()) {
+          if (l_Texture.is_alive()) {
             l_Texture.load();
           }
-          get_renderer_material().set_property(
-              p_Name, Util::Variant::from_handle(
-                          l_Texture.get_renderer_texture().get_id()));
+          if (l_Texture.is_alive()) {
+            get_renderer_material().set_property(
+                p_Name, Util::Variant::from_handle(
+                            l_Texture.get_renderer_texture().get_id()));
+          } else {
+            get_renderer_material().set_property(p_Name,
+                                                 Util::Variant::from_handle(0));
+          }
         } else {
           get_renderer_material().set_property(p_Name, p_Value);
         }

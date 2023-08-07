@@ -78,8 +78,7 @@ namespace Low {
           l_Exporter.Export(l_AiScene, "glb2", p_OutputPath.c_str(),
                             aiProcess_Triangulate | aiProcess_GenNormals |
                                 aiProcess_FixInfacingNormals |
-                                aiProcess_JoinIdenticalVertices |
-                                aiProcess_ConvertToLeftHanded);
+                                aiProcess_JoinIdenticalVertices);
 
           l_Importer.FreeScene();
 

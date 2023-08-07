@@ -35,6 +35,7 @@ namespace Low {
       void render(float p_Delta) override;
 
       static void save_prefab_asset(Util::Handle p_Handle);
+      static void save_material_asset(Util::Handle p_Handle);
 
     protected:
       int m_SelectedCategory;

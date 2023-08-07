@@ -99,6 +99,8 @@ namespace Low {
 
       Renderer::Material get_renderer_material() const;
 
+      Util::Map<Util::Name, Util::Variant> &get_properties() const;
+
       Low::Util::UniqueId get_unique_id() const;
 
       Low::Util::Name get_name() const;
@@ -115,7 +117,6 @@ namespace Low {
       static uint32_t create_instance();
       static void increase_budget();
       void set_renderer_material(Renderer::Material p_Value);
-      Util::Map<Util::Name, Util::Variant> &get_properties() const;
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
       void set_unique_id(Low::Util::UniqueId p_Value);

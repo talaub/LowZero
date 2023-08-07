@@ -16,6 +16,8 @@
 
 #include "LowUtilString.h"
 #include "LowUtilFileIO.h"
+#include <algorithm>
+#include <cstring>
 #include <string>
 
 #define UPDATE_INTERVAL 3.0f
@@ -75,6 +77,20 @@ namespace Low {
                    << LOW_LOG_END;
     }
 
+    void AssetWidget::save_material_asset(Util::Handle p_Handle)
+    {
+      Core::Material l_Asset = p_Handle.get_id();
+      Util::Yaml::Node l_Node;
+      l_Asset.serialize(l_Node);
+      Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/assets/materials/" + LOW_TO_STRING(l_Asset.get_unique_id()) +
+                ".material.yaml";
+      Util::Yaml::write_file(l_Path.c_str(), l_Node);
+
+      LOW_LOG_INFO << "Saved material '" << l_Asset.get_name() << "' to file."
+                   << LOW_LOG_END;
+    }
+
     static void update_directory_list(AssetTypeConfig &p_Config)
     {
       p_Config.elements.clear();
@@ -112,6 +128,22 @@ namespace Low {
           p_Config.elements.push_back(i_Element);
         }
       }
+
+      std::sort(
+          p_Config.elements.begin(), p_Config.elements.end(),
+          [](const FileElement &a, const FileElement &b) {
+            Util::String aName = a.name;
+            Util::String bName = b.name;
+
+            std::transform(aName.begin(), aName.end(), aName.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+
+            std::transform(bName.begin(), bName.end(), bName.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+
+            return aName < bName;
+          });
+
       p_Config.update = false;
     }
 
@@ -121,16 +153,7 @@ namespace Low {
       Core::Material l_Asset = p_Handle.get_id();
 
       if (ImGui::Button("Save")) {
-
-        Util::Yaml::Node l_Node;
-        l_Asset.serialize(l_Node);
-        Util::String l_Path = LOW_DATA_PATH;
-        l_Path += "/assets/materials/" +
-                  LOW_TO_STRING(l_Asset.get_unique_id()) + ".material.yaml";
-        Util::Yaml::write_file(l_Path.c_str(), l_Node);
-
-        LOW_LOG_INFO << "Saved material '" << l_Asset.get_name() << "' to file."
-                     << LOW_LOG_END;
+        AssetWidget::save_material_asset(p_Handle);
       }
     }
 
@@ -353,7 +376,11 @@ namespace Low {
         }
 
         ImGui::SameLine();
-        if (ImGui::Button("Create")) {
+
+        bool l_IsEnter =
+            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
+
+        if (ImGui::Button("Create") || l_IsEnter) {
           Util::Name l_Name = LOW_NAME(l_NameBuffer);
 
           bool l_Ok = true;
@@ -376,6 +403,7 @@ namespace Low {
                                LOW_TO_STRING(l_Asset.get_unique_id()) +
                                p_Config.suffix;
             save_mesh_asset(l_Asset);
+            set_selected_handle(l_Asset);
           }
           ImGui::CloseCurrentPopup();
         }
@@ -461,8 +489,10 @@ namespace Low {
           ImGui::CloseCurrentPopup();
         }
 
+        bool l_IsEnter =
+            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
         ImGui::SameLine();
-        if (ImGui::Button("Create")) {
+        if (ImGui::Button("Create") || l_IsEnter) {
           Util::Name l_Name = LOW_NAME(l_NameBuffer);
 
           bool l_Ok = true;
@@ -478,7 +508,10 @@ namespace Low {
           }
 
           if (l_Ok) {
-            Core::Material::make(l_Name);
+            Core::Material l_NewMaterial = Core::Material::make(l_Name);
+            AssetWidget::save_material_asset(l_NewMaterial.get_id());
+            p_Config.update = true;
+            set_selected_handle(l_NewMaterial);
           }
           ImGui::CloseCurrentPopup();
         }
@@ -488,16 +521,53 @@ namespace Low {
 
       ImGui::NextColumn();
 
-      for (auto it = Core::Material::ms_LivingInstances.begin();
-           it != Core::Material::ms_LivingInstances.end(); ++it) {
-        if (render_element(l_Id++, ICON_FA_SPRAY_CAN, it->get_name().c_str(),
-                           true, *it)) {
-          set_selected_handle(*it);
-          HandlePropertiesSection i_Section(*it, true);
-          i_Section.render_footer = &render_material_details_footer;
-          get_details_widget()->add_section(i_Section);
+      if (p_Config.subfolder) {
+        Util::List<Util::String> l_Parts;
+        Util::StringHelper::split(p_Config.currentPath, '/', l_Parts);
+
+        Util::String l_Path = "";
+        for (int i = 0; i < l_Parts.size(); ++i) {
+          if (i) {
+            l_Path += "/";
+          }
+          l_Path += l_Parts[i];
+        }
+
+        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false, l_Path,
+                             p_Config)) {
+          p_Config.currentPath = l_Path;
+          p_Config.subfolder = p_Config.currentPath != p_Config.rootPath;
+          p_Config.update = true;
         }
         ImGui::NextColumn();
+      }
+
+      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
+           ++it) {
+        if (it->directory) {
+          if (render_directory(l_Id++, ICON_FA_FOLDER, it->name, true,
+                               p_Config.currentPath + "/" + it->name,
+                               p_Config)) {
+            p_Config.subfolder = true;
+            p_Config.currentPath += "/" + it->name;
+            p_Config.update = true;
+          }
+          ImGui::NextColumn();
+        }
+      }
+
+      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
+           ++it) {
+        if (!it->directory) {
+          if (render_element(l_Id++, ICON_FA_SPRAY_CAN, it->name, true,
+                             it->handle)) {
+            set_selected_handle(it->handle);
+            HandlePropertiesSection i_Section(it->handle, true);
+            i_Section.render_footer = &render_mesh_asset_details_footer;
+            get_details_widget()->add_section(i_Section);
+          }
+          ImGui::NextColumn();
+        }
       }
 
       ImGui::Columns(1);

@@ -4,6 +4,8 @@
 
 #include "LowUtilLogger.h"
 
+#define CHANGELIST_MAX_SIZE 15
+
 namespace Low {
   namespace Editor {
     Transaction::Transaction(Util::String p_Title) : m_Title(p_Title)
@@ -123,6 +125,12 @@ namespace Low {
           m_Changelist.pop_back();
           l_DeletePointer = m_Changelist.size() - 1;
         }
+      } else if (m_Changelist.size() == CHANGELIST_MAX_SIZE) {
+        Util::List<Transaction> l_NewChangelist;
+        for (int i = 1; i < m_Changelist.size(); ++i) {
+          l_NewChangelist.push_back(m_Changelist[i]);
+        }
+        m_Changelist = l_NewChangelist;
       }
 
       // Push the new entry to the changelist and adjust the changepointer to
@@ -209,3 +217,5 @@ namespace Low {
     }
   } // namespace Editor
 } // namespace Low
+
+#undef CHANGELIST_MAX_SIZE

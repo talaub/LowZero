@@ -1,6 +1,6 @@
 project(LowEngineZero)
 
-set(ENGINE_BUILD OFF)
+set(ENGINE_BUILD ON)
 
 cmake_minimum_required(VERSION 3.10)
 
