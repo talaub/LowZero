@@ -21,6 +21,7 @@
 #include "LowEditorSaveHelper.h"
 #include "LowEditorMetadata.h"
 #include "LowEditorCommonOperations.h"
+#include "LowEditorFileSystem.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -603,6 +604,9 @@ namespace Low {
       register_editor_widget("History", new ChangeWidget());
       register_editor_widget("StateGraph", new StateGraphWidget(), true);
 
+      Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/assets/meshes";
+
       load_user_settings();
     }
 
@@ -691,6 +695,8 @@ namespace Low {
       render_central_docking_space(p_Delta);
 
       tick_editor_jobs(p_Delta);
+
+      FileSystem::tick(p_Delta);
 
       static bool l_DisplayVersion = true;
 

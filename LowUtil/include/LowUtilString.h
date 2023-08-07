@@ -15,6 +15,9 @@ namespace Low {
 
       LOW_EXPORT void split(String p_String, char p_Delimiter,
                             List<String> &p_Parts);
+
+      LOW_EXPORT String replace(String p_String, char p_Replacee,
+                                char p_Replacer);
     } // namespace StringHelper
   }   // namespace Util
 } // namespace Low

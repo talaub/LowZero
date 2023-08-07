@@ -1,5 +1,7 @@
 #include "LowUtilString.h"
 
+#include "LowUtilLogger.h"
+
 namespace Low {
   namespace Util {
     namespace StringHelper {
@@ -31,6 +33,18 @@ namespace Low {
             l_Current += p_String[i];
           }
         }
+        if (!l_Current.empty()) {
+          p_Parts.push_back(l_Current);
+        }
+      }
+
+      String replace(String p_String, char p_Replacee, char p_Replacer)
+      {
+        std::string l_String = p_String.c_str();
+        std::replace(l_String.begin(), l_String.end(), p_Replacee, p_Replacer);
+        String l_Output = l_String.c_str();
+
+        return l_Output;
       }
     } // namespace StringHelper
   }   // namespace Util
