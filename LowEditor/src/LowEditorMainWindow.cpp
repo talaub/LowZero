@@ -21,7 +21,6 @@
 #include "LowEditorSaveHelper.h"
 #include "LowEditorMetadata.h"
 #include "LowEditorCommonOperations.h"
-#include "LowEditorFileSystem.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -695,8 +694,6 @@ namespace Low {
       render_central_docking_space(p_Delta);
 
       tick_editor_jobs(p_Delta);
-
-      FileSystem::tick(p_Delta);
 
       static bool l_DisplayVersion = true;
 

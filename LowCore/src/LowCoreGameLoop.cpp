@@ -18,8 +18,8 @@
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
-
 #include "LowUtilProfiler.h"
+#include "LowUtil.h"
 
 #include "LowRenderer.h"
 
@@ -38,6 +38,8 @@ namespace Low {
       static void execute_ticks(float p_Delta)
       {
         static bool l_FirstRun = true;
+        Util::tick(p_Delta);
+
         Renderer::tick(p_Delta, get_engine_state());
         System::Transform::tick(p_Delta, get_engine_state());
         System::Light::tick(p_Delta, get_engine_state());

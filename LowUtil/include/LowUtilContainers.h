@@ -11,6 +11,7 @@
 #include <EASTL/string.h>
 
 #include <future>
+#include <functional>
 
 #include "LowUtilMemory.h"
 
@@ -36,6 +37,7 @@ namespace Low {
     typedef eastl::string String;
 
     template <typename T> using Future = std::future<T>;
+    template <typename T> using Function = std::function<T>;
 
   } // namespace Util
 } // namespace Low

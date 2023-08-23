@@ -2,6 +2,8 @@
 
 #include "LowEditorGui.h"
 
+#include "LowCore.h"
+
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
@@ -15,6 +17,9 @@
 namespace Low {
   namespace Editor {
     namespace PropertyEditors {
+
+      Util::Map<uint16_t, Util::FileSystem::WatchHandle>
+          g_SelectedDirectoryPerType;
 
       static void render_label(Util::String &p_Label)
       {
@@ -252,6 +257,193 @@ namespace Low {
         return l_Changed;
       }
 
+      bool render_fs_handle_selector_directory_entry(
+          Util::FileSystem::DirectoryWatcher &p_DirectoryWatcher,
+          Util::FileSystem::WatchHandle p_WatchHandle, uint16_t p_TypeId)
+      {
+        auto l_Pos = g_SelectedDirectoryPerType.find(p_TypeId);
+
+        if (ImGui::Selectable(p_DirectoryWatcher.name.c_str(),
+                              p_WatchHandle == l_Pos->second)) {
+          l_Pos->second = p_WatchHandle;
+          return true;
+        }
+        return false;
+      }
+
+      bool render_fs_handle_selector_directory_structure(
+          Util::FileSystem::WatchHandle p_WatchHandle, uint16_t p_TypeId)
+      {
+        Util::FileSystem::DirectoryWatcher &l_DirectoryWatcher =
+            Util::FileSystem::get_directory_watcher(p_WatchHandle);
+
+        bool l_Break = false;
+
+        if (l_DirectoryWatcher.subdirectories.empty()) {
+          l_Break = render_fs_handle_selector_directory_entry(
+              l_DirectoryWatcher, p_WatchHandle, p_TypeId);
+        } else {
+          Util::String l_IdString = "##";
+          l_IdString += p_WatchHandle;
+          bool l_Open = ImGui::TreeNode(l_IdString.c_str());
+          ImGui::SameLine();
+          l_Break = render_fs_handle_selector_directory_entry(
+              l_DirectoryWatcher, p_WatchHandle, p_TypeId);
+
+          if (l_Open) {
+            for (auto it = l_DirectoryWatcher.subdirectories.begin();
+                 it != l_DirectoryWatcher.subdirectories.end(); ++it) {
+              l_Break =
+                  render_fs_handle_selector_directory_structure(*it, p_TypeId);
+            }
+            ImGui::TreePop();
+          }
+        }
+
+        return l_Break;
+      }
+
+      bool render_fs_handle_selector(Util::String p_Label,
+                                     Util::RTTI::TypeInfo &p_TypeInfo,
+                                     uint64_t *p_HandleId)
+      {
+        Util::FileSystem::WatchHandle l_RootDirectoryWatchHandle =
+            Core::get_filesystem_watcher(p_TypeInfo.typeId);
+
+        {
+          auto l_Pos = g_SelectedDirectoryPerType.find(p_TypeInfo.typeId);
+
+          if (l_Pos == g_SelectedDirectoryPerType.end()) {
+            g_SelectedDirectoryPerType[p_TypeInfo.typeId] =
+                l_RootDirectoryWatchHandle;
+          }
+        }
+
+        ImGui::BeginGroup();
+        render_label(p_Label);
+
+        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_ButtonWidth = 80.0f;
+        float l_NameWidth = l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
+
+        bool l_Changed = false;
+
+        Util::Handle l_CurrentHandle = *p_HandleId;
+
+        Util::String l_PopupName = Util::String("_choose_element_") + p_Label;
+
+        const char *l_DisplayName = "None";
+
+        Util::RTTI::PropertyInfo l_NameProperty;
+        bool l_HasNameProperty = false;
+
+        if (p_TypeInfo.properties.find(N(name)) !=
+            p_TypeInfo.properties.end()) {
+
+          l_NameProperty = p_TypeInfo.properties[N(name)];
+
+          if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+            l_DisplayName = ((Util::Name *)p_TypeInfo.properties[N(name)].get(
+                                 l_CurrentHandle))
+                                ->c_str();
+          }
+          l_HasNameProperty = true;
+        }
+        int l_NameLength = strlen(l_DisplayName);
+
+        ImGui::RenderTextEllipsis(
+            ImGui::GetWindowDrawList(), l_Pos,
+            l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
+            l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING, l_Pos.x + l_NameWidth,
+            l_DisplayName, l_DisplayName + l_NameLength, nullptr);
+
+        ImGui::SetCursorScreenPos(
+            l_Pos + ImVec2(l_NameWidth + LOW_EDITOR_SPACING, 0.0f));
+
+        if (ImGui::Button("Choose...")) {
+          ImGui::OpenPopup(l_PopupName.c_str());
+        }
+
+        if (ImGui::BeginDragDropTarget()) {
+          if (const ImGuiPayload *l_Payload =
+                  ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+            Util::Handle l_PayloadHandle = *(uint64_t *)l_Payload->Data;
+
+            if (p_TypeInfo.is_alive(l_PayloadHandle)) {
+              l_Changed = true;
+              *p_HandleId = l_PayloadHandle.get_id();
+            }
+          }
+          ImGui::EndDragDropTarget();
+        }
+
+        int l_PopupHeight = 200;
+        int l_PopupSelectorWidth = 300;
+
+        if (ImGui::BeginPopup(l_PopupName.c_str())) {
+          ImGui::BeginChild("Categories", ImVec2(150, l_PopupHeight), true, 0);
+          render_fs_handle_selector_directory_structure(
+              l_RootDirectoryWatchHandle, p_TypeInfo.typeId);
+
+          ImGui::EndChild();
+
+          ImGui::SameLine();
+
+          ImVec2 l_Cursor = ImGui::GetCursorScreenPos();
+          ImRect l_Rect(l_Cursor, {l_Cursor.x + l_PopupSelectorWidth,
+                                   l_Cursor.y + l_PopupHeight});
+
+          Util::RTTI::PropertyInfo l_NameProperty;
+          bool l_HasNameProperty = false;
+
+          if (p_TypeInfo.properties.find(N(name)) !=
+              p_TypeInfo.properties.end()) {
+
+            l_NameProperty = p_TypeInfo.properties[N(name)];
+
+            if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+              l_DisplayName = ((Util::Name *)p_TypeInfo.properties[N(name)].get(
+                                   l_CurrentHandle))
+                                  ->c_str();
+            }
+            l_HasNameProperty = true;
+          }
+
+          Util::FileSystem::DirectoryWatcher &l_CurrentDirectoryWatcher =
+              Util::FileSystem::get_directory_watcher(
+                  g_SelectedDirectoryPerType[p_TypeInfo.typeId]);
+
+          ImGui::BeginChild("Content",
+                            ImVec2(l_PopupSelectorWidth, l_PopupHeight), true);
+
+          for (auto it = l_CurrentDirectoryWatcher.files.begin();
+               it != l_CurrentDirectoryWatcher.files.end(); ++it) {
+            Util::FileSystem::FileWatcher &i_FileWatcher =
+                Util::FileSystem::get_file_watcher(*it);
+
+            Util::Name i_Name =
+                *(Util::Name *)l_NameProperty.get(i_FileWatcher.handle);
+
+            if (ImGui::Selectable(i_Name.c_str(), false)) {
+            }
+          }
+          ImGui::EndChild();
+
+          ImGui::EndPopup();
+        }
+
+        ImGui::EndGroup();
+        return l_Changed;
+      }
+
+      bool render_fs_handle_selector(Util::String p_Label, uint16_t p_TypeId,
+                                     uint64_t *p_HandleId)
+      {
+        return render_fs_handle_selector(
+            p_Label, Util::Handle::get_type_info(p_TypeId), p_HandleId);
+      }
+
       void render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
                                   Util::Handle p_Handle)
       {
@@ -262,8 +454,19 @@ namespace Low {
 
         uint64_t l_CurrentValue = *(uint64_t *)p_PropertyInfo.get(p_Handle);
 
-        if (render_handle_selector(l_Label, l_PropTypeInfo, &l_CurrentValue)) {
-          p_PropertyInfo.set(p_Handle, &l_CurrentValue);
+        Util::FileSystem::WatchHandle l_WatchHandle =
+            Core::get_filesystem_watcher(p_PropertyInfo.handleType);
+
+        if (l_WatchHandle) {
+          if (render_fs_handle_selector(l_Label, l_PropTypeInfo,
+                                        &l_CurrentValue)) {
+            p_PropertyInfo.set(p_Handle, &l_CurrentValue);
+          }
+        } else {
+          if (render_handle_selector(l_Label, l_PropTypeInfo,
+                                     &l_CurrentValue)) {
+            p_PropertyInfo.set(p_Handle, &l_CurrentValue);
+          }
         }
       }
 

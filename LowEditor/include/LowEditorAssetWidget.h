@@ -3,6 +3,7 @@
 #include "LowEditorWidget.h"
 
 #include "LowUtilHandle.h"
+#include "LowUtilFileSystem.h"
 
 struct ImRect;
 
@@ -19,12 +20,8 @@ namespace Low {
     struct AssetTypeConfig
     {
       uint16_t typeId;
-      Util::List<FileElement> elements;
-      Util::String rootPath;
-      Util::String currentPath;
-      bool subfolder;
-      Util::String suffix;
-      bool update;
+      Util::FileSystem::WatchHandle rootDirectoryWatchHandle;
+      Util::FileSystem::WatchHandle currentDirectoryWatchHandle;
       void (*render)(AssetTypeConfig &, ImRect);
     };
 

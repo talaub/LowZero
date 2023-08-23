@@ -248,6 +248,7 @@ namespace Low {
 
       void load_mesh(String p_FilePath, Mesh &p_Mesh)
       {
+
         p_Mesh.submeshes.clear();
         p_Mesh.bones.clear();
         p_Mesh.animations.clear();

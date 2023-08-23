@@ -10,12 +10,14 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"
 
+#include "LowCore.h"
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMaterial.h"
 #include "LowCorePrefab.h"
 
 #include "LowUtilString.h"
 #include "LowUtilFileIO.h"
+
 #include <algorithm>
 #include <cstring>
 #include <string>
@@ -91,62 +93,6 @@ namespace Low {
                    << LOW_LOG_END;
     }
 
-    static void update_directory_list(AssetTypeConfig &p_Config)
-    {
-      p_Config.elements.clear();
-      Util::List<Util::String> l_FilePaths;
-
-      Util::FileIO::list_directory(p_Config.currentPath.c_str(), l_FilePaths);
-
-      Util::String l_Ending = p_Config.suffix;
-
-      for (Util::String &i_Path : l_FilePaths) {
-        FileElement i_Element;
-        i_Element.directory = Util::FileIO::is_directory(i_Path.c_str());
-
-        Util::String i_Filename =
-            i_Path.substr(p_Config.currentPath.length() + 1, i_Path.length());
-
-        if (i_Element.directory) {
-          i_Element.handle = 0;
-          i_Element.name = i_Filename;
-          p_Config.elements.push_back(i_Element);
-        } else if (Util::StringHelper::ends_with(i_Path, p_Config.suffix)) {
-          Util::String i_Name =
-              i_Filename.substr(0, i_Filename.length() - l_Ending.length());
-
-          i_Element.handle =
-              Util::find_handle_by_unique_id(std::stoull(i_Name.c_str()));
-
-          Util::RTTI::TypeInfo &i_TypeInfo =
-              Util::Handle::get_type_info(i_Element.handle.get_type());
-          i_Element.name = ((Util::Name *)i_TypeInfo.properties[N(name)].get(
-                                i_Element.handle))
-                               ->c_str();
-
-          g_Paths[i_Element.handle] = i_Path;
-          p_Config.elements.push_back(i_Element);
-        }
-      }
-
-      std::sort(
-          p_Config.elements.begin(), p_Config.elements.end(),
-          [](const FileElement &a, const FileElement &b) {
-            Util::String aName = a.name;
-            Util::String bName = b.name;
-
-            std::transform(aName.begin(), aName.end(), aName.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-
-            std::transform(bName.begin(), bName.end(), bName.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
-
-            return aName < bName;
-          });
-
-      p_Config.update = false;
-    }
-
     void render_material_details_footer(Util::Handle p_Handle,
                                         Util::RTTI::TypeInfo &p_TypeInfo)
     {
@@ -180,39 +126,37 @@ namespace Low {
     AssetWidget::AssetWidget()
         : m_SelectedCategory(0), m_UpdateCounter(UPDATE_INTERVAL)
     {
-      Util::String l_DataPath = LOW_DATA_PATH;
-      l_DataPath += "/assets/";
 
       {
         AssetTypeConfig l_Config;
         l_Config.typeId = Core::MeshAsset::TYPE_ID;
-        l_Config.subfolder = false;
-        l_Config.rootPath = l_DataPath + "meshes";
-        l_Config.currentPath = l_Config.rootPath;
         l_Config.render = &render_meshes;
-        l_Config.suffix = ".mesh.yaml";
+        l_Config.rootDirectoryWatchHandle =
+            Core::get_filesystem_watchers().meshAssetDirectory;
+        l_Config.currentDirectoryWatchHandle =
+            l_Config.rootDirectoryWatchHandle;
 
         m_TypeConfigs.push_back(l_Config);
       }
       {
         AssetTypeConfig l_Config;
         l_Config.typeId = Core::Material::TYPE_ID;
-        l_Config.subfolder = false;
-        l_Config.rootPath = l_DataPath + "materials";
-        l_Config.currentPath = l_Config.rootPath;
+        l_Config.rootDirectoryWatchHandle =
+            Core::get_filesystem_watchers().materialAssetDirectory;
+        l_Config.currentDirectoryWatchHandle =
+            l_Config.rootDirectoryWatchHandle;
         l_Config.render = &render_materials;
-        l_Config.suffix = ".material.yaml";
 
         m_TypeConfigs.push_back(l_Config);
       }
       {
         AssetTypeConfig l_Config;
         l_Config.typeId = Core::Prefab::TYPE_ID;
-        l_Config.subfolder = false;
-        l_Config.rootPath = l_DataPath + "prefabs";
-        l_Config.currentPath = l_Config.rootPath;
+        l_Config.rootDirectoryWatchHandle =
+            Core::get_filesystem_watchers().prefabAssetDirectory;
+        l_Config.currentDirectoryWatchHandle =
+            l_Config.rootDirectoryWatchHandle;
         l_Config.render = &render_prefabs;
-        l_Config.suffix = ".prefab.yaml";
 
         m_TypeConfigs.push_back(l_Config);
       }
@@ -220,7 +164,8 @@ namespace Low {
 
     static bool render_directory(uint32_t p_Id, Util::String p_Icon,
                                  Util::String p_Label, bool p_Draggable,
-                                 Util::String p_Path, AssetTypeConfig &p_Config)
+                                 Util::FileSystem::WatchHandle p_WatchHandle,
+                                 AssetTypeConfig &p_Config)
     {
       bool l_Result = false;
 
@@ -232,28 +177,8 @@ namespace Low {
       ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
       l_Result =
           ImGui::Button(p_Icon.c_str(), ImVec2(g_ElementSize, g_ElementSize));
-      if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload *l_Payload =
-                ImGui::AcceptDragDropPayload("DG_HANDLE")) {
-          Util::Handle l_PayloadHandle = *(uint64_t *)l_Payload->Data;
-
-          if (g_Paths.find(l_PayloadHandle) != g_Paths.end()) {
-            Util::RTTI::TypeInfo &l_TypeInfo =
-                Util::Handle::get_type_info(p_Config.typeId);
-            if (l_TypeInfo.is_alive(l_PayloadHandle)) {
-              Util::String l_Destination =
-                  p_Path + "/" +
-                  LOW_TO_STRING(
-                      *(uint64_t *)l_TypeInfo.properties[N(unique_id)].get(
-                          l_PayloadHandle)) +
-                  p_Config.suffix;
-              Util::FileIO::move_sync(g_Paths[l_PayloadHandle].c_str(),
-                                      l_Destination.c_str());
-              p_Config.update = true;
-            }
-          }
-        }
-        ImGui::EndDragDropTarget();
+      if (l_Result) {
+        p_Config.currentDirectoryWatchHandle = p_WatchHandle;
       }
       ImGui::PopFont();
       ImGui::TextWrapped(p_Label.c_str());
@@ -310,14 +235,6 @@ namespace Low {
     {
       ImGui::Begin(ICON_FA_FILE " Assets");
 
-      m_UpdateCounter += p_Delta;
-      if (m_UpdateCounter > UPDATE_INTERVAL ||
-          m_TypeConfigs[m_SelectedCategory].update) {
-        m_UpdateCounter = 0.0f;
-        AssetTypeConfig &l_CurrentConfig = m_TypeConfigs[m_SelectedCategory];
-        update_directory_list(m_TypeConfigs[m_SelectedCategory]);
-      }
-
       ImGui::BeginChild("Categories",
                         ImVec2(200, ImGui::GetContentRegionAvail().y), true, 0);
       for (uint32_t i = 0; i < g_CategoryCount; ++i) {
@@ -356,6 +273,10 @@ namespace Low {
       uint32_t l_Id = 0;
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
+
+      Util::FileSystem::DirectoryWatcher &l_DirectoryWatcher =
+          Util::FileSystem::get_directory_watcher(
+              p_Config.currentDirectoryWatchHandle);
 
       int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
@@ -397,11 +318,8 @@ namespace Low {
 
           if (l_Ok) {
             Core::MeshAsset l_Asset = Core::MeshAsset::make(l_Name);
-            p_Config.update = true;
+            l_DirectoryWatcher.update = true;
 
-            g_Paths[l_Asset] = p_Config.currentPath + "/" +
-                               LOW_TO_STRING(l_Asset.get_unique_id()) +
-                               p_Config.suffix;
             save_mesh_asset(l_Asset);
             set_selected_handle(l_Asset);
           }
@@ -413,53 +331,43 @@ namespace Low {
 
       ImGui::NextColumn();
 
-      if (p_Config.subfolder) {
-        Util::List<Util::String> l_Parts;
-        Util::StringHelper::split(p_Config.currentPath, '/', l_Parts);
+      if (p_Config.currentDirectoryWatchHandle !=
+          p_Config.rootDirectoryWatchHandle) {
 
-        Util::String l_Path = "";
-        for (int i = 0; i < l_Parts.size(); ++i) {
-          if (i) {
-            l_Path += "/";
-          }
-          l_Path += l_Parts[i];
-        }
-
-        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false, l_Path,
-                             p_Config)) {
-          p_Config.currentPath = l_Path;
-          p_Config.subfolder = p_Config.currentPath != p_Config.rootPath;
-          p_Config.update = true;
+        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                             l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              l_DirectoryWatcher.parentWatchHandle;
         }
         ImGui::NextColumn();
       }
 
-      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
-           ++it) {
-        if (it->directory) {
-          if (render_directory(l_Id++, ICON_FA_FOLDER, it->name, true,
-                               p_Config.currentPath + "/" + it->name,
-                               p_Config)) {
-            p_Config.subfolder = true;
-            p_Config.currentPath += "/" + it->name;
-            p_Config.update = true;
-          }
-          ImGui::NextColumn();
+      for (auto it = l_DirectoryWatcher.subdirectories.begin();
+           it != l_DirectoryWatcher.subdirectories.end(); ++it) {
+        Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
+            Util::FileSystem::get_directory_watcher(*it);
+
+        if (render_directory(l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name,
+                             true, i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle = i_DirectoryWatcher.watchHandle;
         }
+        ImGui::NextColumn();
       }
 
-      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
-           ++it) {
-        if (!it->directory) {
-          if (render_element(l_Id++, ICON_FA_CUBE, it->name, true,
-                             it->handle)) {
-            set_selected_handle(it->handle);
-            HandlePropertiesSection i_Section(it->handle, true);
-            i_Section.render_footer = &render_mesh_asset_details_footer;
-            get_details_widget()->add_section(i_Section);
-          }
-          ImGui::NextColumn();
+      for (auto it = l_DirectoryWatcher.files.begin();
+           it != l_DirectoryWatcher.files.end(); ++it) {
+        Util::FileSystem::FileWatcher &i_FileWatcher =
+            Util::FileSystem::get_file_watcher(*it);
+        Core::MeshAsset i_MeshAsset = i_FileWatcher.handle.get_id();
+
+        if (render_element(l_Id++, ICON_FA_CUBE, i_MeshAsset.get_name().c_str(),
+                           true, i_MeshAsset)) {
+          set_selected_handle(i_MeshAsset);
+          HandlePropertiesSection i_Section(i_MeshAsset, true);
+          i_Section.render_footer = &render_mesh_asset_details_footer;
+          get_details_widget()->add_section(i_Section);
         }
+        ImGui::NextColumn();
       }
 
       ImGui::Columns(1);
@@ -468,6 +376,10 @@ namespace Low {
     static void render_materials(AssetTypeConfig &p_Config, ImRect p_Bounds)
     {
       uint32_t l_Id = 0;
+
+      Util::FileSystem::DirectoryWatcher &l_DirectoryWatcher =
+          Util::FileSystem::get_directory_watcher(
+              p_Config.currentDirectoryWatchHandle);
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
 
@@ -510,7 +422,7 @@ namespace Low {
           if (l_Ok) {
             Core::Material l_NewMaterial = Core::Material::make(l_Name);
             AssetWidget::save_material_asset(l_NewMaterial.get_id());
-            p_Config.update = true;
+            l_DirectoryWatcher.update = true;
             set_selected_handle(l_NewMaterial);
           }
           ImGui::CloseCurrentPopup();
@@ -521,53 +433,42 @@ namespace Low {
 
       ImGui::NextColumn();
 
-      if (p_Config.subfolder) {
-        Util::List<Util::String> l_Parts;
-        Util::StringHelper::split(p_Config.currentPath, '/', l_Parts);
+      if (p_Config.rootDirectoryWatchHandle !=
+          p_Config.currentDirectoryWatchHandle) {
 
-        Util::String l_Path = "";
-        for (int i = 0; i < l_Parts.size(); ++i) {
-          if (i) {
-            l_Path += "/";
-          }
-          l_Path += l_Parts[i];
-        }
-
-        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false, l_Path,
-                             p_Config)) {
-          p_Config.currentPath = l_Path;
-          p_Config.subfolder = p_Config.currentPath != p_Config.rootPath;
-          p_Config.update = true;
+        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                             l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              l_DirectoryWatcher.parentWatchHandle;
         }
         ImGui::NextColumn();
       }
 
-      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
-           ++it) {
-        if (it->directory) {
-          if (render_directory(l_Id++, ICON_FA_FOLDER, it->name, true,
-                               p_Config.currentPath + "/" + it->name,
-                               p_Config)) {
-            p_Config.subfolder = true;
-            p_Config.currentPath += "/" + it->name;
-            p_Config.update = true;
-          }
-          ImGui::NextColumn();
+      for (auto it = l_DirectoryWatcher.subdirectories.begin();
+           it != l_DirectoryWatcher.subdirectories.end(); ++it) {
+        Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
+            Util::FileSystem::get_directory_watcher(*it);
+        if (render_directory(l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name,
+                             true, i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle = i_DirectoryWatcher.watchHandle;
         }
+        ImGui::NextColumn();
       }
 
-      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
-           ++it) {
-        if (!it->directory) {
-          if (render_element(l_Id++, ICON_FA_SPRAY_CAN, it->name, true,
-                             it->handle)) {
-            set_selected_handle(it->handle);
-            HandlePropertiesSection i_Section(it->handle, true);
-            i_Section.render_footer = &render_mesh_asset_details_footer;
-            get_details_widget()->add_section(i_Section);
-          }
-          ImGui::NextColumn();
+      for (auto it = l_DirectoryWatcher.files.begin();
+           it != l_DirectoryWatcher.files.end(); ++it) {
+        Util::FileSystem::FileWatcher &i_FileWatcher =
+            Util::FileSystem::get_file_watcher(*it);
+        Core::Material i_Material = i_FileWatcher.handle.get_id();
+        if (render_element(l_Id++, ICON_FA_SPRAY_CAN,
+                           i_Material.get_name().c_str(), true,
+                           i_FileWatcher.handle)) {
+          set_selected_handle(i_FileWatcher.handle);
+          HandlePropertiesSection i_Section(i_FileWatcher.handle, true);
+          i_Section.render_footer = &render_material_details_footer;
+          get_details_widget()->add_section(i_Section);
         }
+        ImGui::NextColumn();
       }
 
       ImGui::Columns(1);
@@ -577,6 +478,10 @@ namespace Low {
     {
       uint32_t l_Id = 0;
 
+      Util::FileSystem::DirectoryWatcher &l_DirectoryWatcher =
+          Util::FileSystem::get_directory_watcher(
+              p_Config.currentDirectoryWatchHandle);
+
       if (ImGui::BeginDragDropTargetCustom(p_Bounds, 34839)) {
         if (const ImGuiPayload *l_Payload =
                 ImGui::AcceptDragDropPayload("DG_HANDLE")) {
@@ -584,11 +489,8 @@ namespace Low {
           if (l_Entity.is_alive()) {
             Core::Prefab l_Prefab = Core::Prefab::make(l_Entity);
 
-            g_Paths[l_Prefab] = p_Config.currentPath + "/" +
-                                LOW_TO_STRING(l_Prefab.get_unique_id()) +
-                                p_Config.suffix;
             AssetWidget::save_prefab_asset(l_Prefab);
-            p_Config.update = true;
+            l_DirectoryWatcher.update = true;
           }
         }
         ImGui::EndDragDropTarget();
@@ -599,50 +501,41 @@ namespace Low {
       int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (p_Config.subfolder) {
-        Util::List<Util::String> l_Parts;
-        Util::StringHelper::split(p_Config.currentPath, '/', l_Parts);
-
-        Util::String l_Path = "";
-        for (int i = 0; i < l_Parts.size(); ++i) {
-          if (i) {
-            l_Path += "/";
-          }
-          l_Path += l_Parts[i];
-        }
-
-        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false, l_Path,
-                             p_Config)) {
-          p_Config.currentPath = l_Path;
-          p_Config.subfolder = p_Config.currentPath != p_Config.rootPath;
-          p_Config.update = true;
+      if (p_Config.rootDirectoryWatchHandle !=
+          p_Config.currentDirectoryWatchHandle) {
+        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                             l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              l_DirectoryWatcher.parentWatchHandle;
         }
         ImGui::NextColumn();
       }
 
-      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
-           ++it) {
-        if (it->directory) {
-          if (render_directory(l_Id++, ICON_FA_FOLDER, it->name, true,
-                               p_Config.currentPath + "/" + it->name,
-                               p_Config)) {
-            p_Config.subfolder = true;
-            p_Config.currentPath += "/" + it->name;
-            p_Config.update = true;
-          }
-          ImGui::NextColumn();
+      for (auto it = l_DirectoryWatcher.subdirectories.begin();
+           it != l_DirectoryWatcher.subdirectories.end(); ++it) {
+        Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
+            Util::FileSystem::get_directory_watcher(*it);
+        if (render_directory(l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name,
+                             true, i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle = i_DirectoryWatcher.watchHandle;
         }
+        ImGui::NextColumn();
       }
 
-      for (auto it = p_Config.elements.begin(); it != p_Config.elements.end();
-           ++it) {
-        Core::Prefab i_Prefab = it->handle.get_id();
-        if (!it->directory &&
-            !Core::Prefab(i_Prefab.get_parent().get_id()).is_alive()) {
-          if (render_element(l_Id++, ICON_FA_BOX_OPEN, it->name, true,
-                             it->handle)) {
-            set_selected_handle(it->handle);
-            HandlePropertiesSection i_Section(it->handle, true);
+      for (auto it = l_DirectoryWatcher.files.begin();
+           it != l_DirectoryWatcher.files.end(); ++it) {
+        Util::FileSystem::FileWatcher &i_FileWatcher =
+            Util::FileSystem::get_file_watcher(*it);
+        Core::Prefab i_Prefab = i_FileWatcher.handle.get_id();
+        if (!i_Prefab.is_alive()) {
+          continue;
+        }
+        if (!Core::Prefab(i_Prefab.get_parent().get_id()).is_alive()) {
+          if (render_element(l_Id++, ICON_FA_BOX_OPEN,
+                             i_Prefab.get_name().c_str(), true,
+                             i_FileWatcher.handle)) {
+            set_selected_handle(i_FileWatcher.handle);
+            HandlePropertiesSection i_Section(i_FileWatcher.handle, true);
             i_Section.render_footer = &render_prefab_details_footer;
             get_details_widget()->add_section(i_Section);
           }

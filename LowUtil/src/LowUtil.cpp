@@ -6,6 +6,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilMemory.h"
 #include "LowUtilJobManager.h"
+#include "LowUtilFileSystem.h"
 
 namespace Low {
   namespace Util {
@@ -19,6 +20,11 @@ namespace Low {
 
       LOW_LOG_INFO << "Util initialized" << LOW_LOG_END;
     }
+
+    void tick(float p_Delta)
+    {
+      FileSystem::tick(p_Delta);
+    };
 
     void cleanup()
     {

@@ -5,6 +5,7 @@
 #include "LowCoreScene.h"
 
 #include "LowUtilEnums.h"
+#include "LowUtilFileSystem.h"
 
 namespace Low {
   namespace Core {
@@ -19,5 +20,18 @@ namespace Low {
     LOW_CORE_API void load_scene(Scene p_Scene);
 
     void test_mono();
+
+    struct FileSystemWatchers
+    {
+      Util::FileSystem::WatchHandle meshAssetDirectory;
+      Util::FileSystem::WatchHandle materialAssetDirectory;
+      Util::FileSystem::WatchHandle prefabAssetDirectory;
+
+      Util::FileSystem::WatchHandle meshResourceDirectory;
+    };
+
+    LOW_CORE_API FileSystemWatchers &get_filesystem_watchers();
+    LOW_CORE_API Util::FileSystem::WatchHandle
+    get_filesystem_watcher(uint16_t p_Type);
   } // namespace Core
 } // namespace Low

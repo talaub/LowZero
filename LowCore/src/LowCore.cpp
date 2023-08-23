@@ -50,6 +50,84 @@ namespace Low {
   namespace Core {
     Util::EngineState g_CurrentEngineState;
 
+    FileSystemWatchers g_FilesystemWatchers;
+    Util::Map<uint16_t, Util::FileSystem::WatchHandle> g_WatchHandles;
+
+    static void initialize_filesystem_watchers()
+    {
+      float l_UpdateTime = 8.0f;
+      Util::String l_DataPath = LOW_DATA_PATH;
+
+      g_FilesystemWatchers.meshAssetDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/assets/meshes",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
+                                                   ".mesh.yaml")) {
+                  return (Util::Handle)0;
+                }
+                Util::List<Util::String> l_Parts;
+                Util::StringHelper::split(p_FileWatcher.name, '.', l_Parts);
+                uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
+
+                return Util::find_handle_by_unique_id(l_UniqueId);
+              },
+              l_UpdateTime);
+      g_WatchHandles[MeshAsset::TYPE_ID] =
+          g_FilesystemWatchers.meshAssetDirectory;
+
+      g_FilesystemWatchers.materialAssetDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/assets/materials",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
+                                                   ".material.yaml")) {
+                  return (Util::Handle)0;
+                }
+                Util::List<Util::String> l_Parts;
+                Util::StringHelper::split(p_FileWatcher.name, '.', l_Parts);
+                uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
+
+                return Util::find_handle_by_unique_id(l_UniqueId);
+              },
+              l_UpdateTime);
+      g_WatchHandles[Material::TYPE_ID] =
+          g_FilesystemWatchers.materialAssetDirectory;
+
+      g_FilesystemWatchers.prefabAssetDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/assets/prefabs",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
+                                                   ".prefab.yaml")) {
+                  return (Util::Handle)0;
+                }
+                Util::List<Util::String> l_Parts;
+                Util::StringHelper::split(p_FileWatcher.name, '.', l_Parts);
+                uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
+
+                return Util::find_handle_by_unique_id(l_UniqueId);
+              },
+              l_UpdateTime);
+      g_WatchHandles[Prefab::TYPE_ID] =
+          g_FilesystemWatchers.prefabAssetDirectory;
+
+      g_FilesystemWatchers.meshResourceDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/resources/meshes",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
+                                                   ".glb")) {
+                  return (Util::Handle)0;
+                }
+                return (Util::Handle)MeshResource::make(p_FileWatcher.name)
+                    .get_id();
+              },
+              l_UpdateTime);
+      g_WatchHandles[MeshResource::TYPE_ID] =
+          g_FilesystemWatchers.meshResourceDirectory;
+    }
+
     static void initialize_asset_types()
     {
       MeshAsset::initialize();
@@ -280,6 +358,8 @@ namespace Low {
 
       initialize_globals();
 
+      initialize_filesystem_watchers();
+
       initialize_types();
 
       ScriptingEngine::initialize();
@@ -383,6 +463,22 @@ namespace Low {
           g_StoredData.cameraDirection);
 
       g_StoredData.scene.load();
+    }
+
+    FileSystemWatchers &get_filesystem_watchers()
+    {
+      return g_FilesystemWatchers;
+    }
+
+    Util::FileSystem::WatchHandle get_filesystem_watcher(uint16_t p_Type)
+    {
+      auto l_Pos = g_WatchHandles.find(p_Type);
+
+      if (l_Pos != g_WatchHandles.end()) {
+        return l_Pos->second;
+      }
+
+      return 0;
     }
   } // namespace Core
 } // namespace Low

@@ -111,6 +111,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(PointLight);
+        l_TypeInfo.typeId = TYPE_ID;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &PointLight::is_alive;
         l_TypeInfo.destroy = &PointLight::destroy;

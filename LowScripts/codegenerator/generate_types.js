@@ -663,6 +663,7 @@ function generate_source(p_Type) {
     t += empty();
     t += line(`Low::Util::RTTI::TypeInfo l_TypeInfo;`);
     t += line(`l_TypeInfo.name = N(${p_Type.name});`);
+    t += line(`l_TypeInfo.typeId = TYPE_ID;`);
     t += line(`l_TypeInfo.get_capacity = &get_capacity;`);
     t += line(`l_TypeInfo.is_alive = &${p_Type.name}::is_alive;`);
     t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);

@@ -92,6 +92,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Mesh);
+      l_TypeInfo.typeId = TYPE_ID;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Mesh::is_alive;
       l_TypeInfo.destroy = &Mesh::destroy;

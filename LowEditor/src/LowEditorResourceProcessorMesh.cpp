@@ -41,6 +41,26 @@ namespace Low {
           }
         };
 
+        struct AdjustTextureCoordinatesPostProcessing
+            : public Assimp::BaseProcess
+        {
+          bool IsActive(unsigned int p_Flags) const override
+          {
+            return true;
+          }
+
+          void Execute(aiScene *p_Scene) override
+          {
+            for (uint32_t i = 0u; i < p_Scene->mNumMeshes; ++i) {
+              aiMesh *i_Mesh = p_Scene->mMeshes[i];
+              for (uint32_t j = 0u; j < i_Mesh->mNumVertices; ++j) {
+                i_Mesh->mTextureCoords[0][j].y =
+                    1.0f - i_Mesh->mTextureCoords[0][j].y;
+              }
+            }
+          }
+        };
+
         bool process(Util::String p_FilePath, Util::String p_OutputPath)
         {
           Assimp::Importer l_Importer;
@@ -71,8 +91,12 @@ namespace Low {
 
           RemoveAnimationPostProcessing *l_PP =
               new RemoveAnimationPostProcessing();
+          AdjustTextureCoordinatesPostProcessing *l_TexPP =
+              new AdjustTextureCoordinatesPostProcessing();
           l_AiScene = l_Importer.ApplyCustomizedPostProcessing(l_PP, false);
+          l_AiScene = l_Importer.ApplyCustomizedPostProcessing(l_TexPP, false);
           delete l_PP;
+          delete l_TexPP;
 
           Assimp::Exporter l_Exporter;
           l_Exporter.Export(l_AiScene, "glb2", p_OutputPath.c_str(),

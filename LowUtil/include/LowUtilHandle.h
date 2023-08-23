@@ -81,6 +81,7 @@ namespace Low {
       struct TypeInfo
       {
         Name name;
+        uint16_t typeId;
         bool component;
         Map<Name, PropertyInfo> properties;
         uint32_t (*get_capacity)();

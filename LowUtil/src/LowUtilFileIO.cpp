@@ -1,6 +1,7 @@
 #include "LowUtilFileIO.h"
 
 #include "LowUtilAssert.h"
+#include "LowUtilLogger.h"
 
 #include <filesystem>
 #include <stdint.h>

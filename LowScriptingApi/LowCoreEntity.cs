@@ -57,7 +57,6 @@ namespace Low
         public
         T GetComponent<T>() where T : Internal.Handle, new()
         {
-            Log.Debug("GetComponent");
             System.Reflection.FieldInfo fieldInfo =
                 typeof(T).GetField("type", System.Reflection.BindingFlags.Public |
                                                    System.Reflection.BindingFlags.Static);
