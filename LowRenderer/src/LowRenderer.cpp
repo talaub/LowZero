@@ -435,7 +435,21 @@ namespace Low {
     Texture2D upload_texture(Util::Name p_Name,
                              Util::Resource::Image2D &p_Image)
     {
-      return Texture2D::make(p_Name, g_Context, p_Image);
+      Texture2D l_Texture = reserve_texture(p_Name);
+
+      upload_texture(l_Texture, p_Image);
+
+      return l_Texture;
+    }
+
+    void upload_texture(Texture2D p_Texture, Util::Resource::Image2D &p_Image)
+    {
+      p_Texture.assign_image(g_Context, p_Image);
+    }
+
+    Texture2D reserve_texture(Util::Name p_Name)
+    {
+      return Texture2D::make(p_Name);
     }
 
     static void initialize_frontend_types()

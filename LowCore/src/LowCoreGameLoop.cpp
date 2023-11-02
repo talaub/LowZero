@@ -11,6 +11,7 @@
 #include "LowCoreNavmeshSystem.h"
 
 #include "LowCoreMeshResource.h"
+#include "LowCoreTexture2D.h"
 
 #include <chrono>
 #include <microprofile.h>
@@ -50,6 +51,7 @@ namespace Low {
         System::Navmesh::tick(p_Delta, get_engine_state());
 
         MeshResource::update();
+        Texture2D::update();
 
         for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
              ++it) {

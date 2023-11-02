@@ -184,14 +184,27 @@ namespace Low {
       struct ImageResourceCreateParams
       {
         Context *context;
-        Math::UVector2 dimensions;
         uint8_t format;
         uint8_t sampleFilter;
         bool writable;
         bool depth;
         bool createImage;
-        void *imageData;
-        size_t imageDataSize;
+
+        void *mip0Data;
+        Math::UVector2 mip0Dimensions;
+        size_t mip0Size;
+        void *mip1Data;
+        Math::UVector2 mip1Dimensions;
+        size_t mip1Size;
+        void *mip2Data;
+        Math::UVector2 mip2Dimensions;
+        size_t mip2Size;
+        void *mip3Data;
+        Math::UVector2 mip3Dimensions;
+        size_t mip3Size;
+        void *mip4Data;
+        Math::UVector2 mip4Dimensions;
+        size_t mip4Size;
       };
 
 #define LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT 1

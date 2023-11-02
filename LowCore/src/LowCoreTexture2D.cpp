@@ -9,11 +9,29 @@
 #include "LowUtilSerialization.h"
 
 #include "LowUtilResource.h"
+#include "LowUtilJobManager.h"
 #include "LowRenderer.h"
 
 namespace Low {
   namespace Core {
-    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+#define TEXTURE_COUNT 50
+    Util::List<bool> g_TextureSlots;
+    Util::List<Util::Resource::Image2D> g_Image2Ds;
+
+    struct TextureLoadSchedule
+    {
+      uint32_t textureIndex;
+      Util::Future<void> future;
+      Texture2D textureResource;
+
+      TextureLoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
+          : textureIndex(p_Id), future(std::move(p_Future))
+      {
+      }
+    };
+
+    Util::List<TextureLoadSchedule> g_TextureLoadSchedules;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Texture2D::TYPE_ID = 22;
@@ -51,6 +69,8 @@ namespace Low {
           Util::String();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, renderer_texture,
                               Renderer::Texture2D)) Renderer::Texture2D();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, state, ResourceState))
+          ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -88,6 +108,11 @@ namespace Low {
     void Texture2D::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      g_Image2Ds.resize(TEXTURE_COUNT);
+      g_TextureSlots.resize(TEXTURE_COUNT);
+      for (uint32_t i = 0; i < TEXTURE_COUNT; ++i) {
+        g_TextureSlots[i] = false;
+      }
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Texture2D));
@@ -157,6 +182,25 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(state);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Texture2DData, state);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.get_state();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, state,
+                                            ResourceState);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Texture2D l_Handle = p_Handle.get_id();
+          l_Handle.set_state(*(ResourceState *)p_Data);
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
       {
@@ -322,6 +366,29 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
+    ResourceState Texture2D::get_state() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+      // LOW_CODEGEN::END::CUSTOM:GETTER_state
+
+      return TYPE_SOA(Texture2D, state, ResourceState);
+    }
+    void Texture2D::set_state(ResourceState p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
+
+      // Set new value
+      TYPE_SOA(Texture2D, state, ResourceState) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+      // LOW_CODEGEN::END::CUSTOM:SETTER_state
+    }
+
     Low::Util::Name Texture2D::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -368,7 +435,7 @@ namespace Low {
     bool Texture2D::is_loaded()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
-      return get_renderer_texture().is_alive();
+      return get_state() == ResourceState::LOADED;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
     }
 
@@ -383,20 +450,46 @@ namespace Low {
                  "Increased Texture2D reference count, but its not over 0. "
                  "Something went wrong.");
 
-      if (is_loaded()) {
+      if (get_state() != ResourceState::UNLOADED) {
         return;
       }
+
+      set_state(ResourceState::STREAMING);
+
+      Util::String l_P = get_path();
+      uint32_t l_TextureIndex = 0;
+      bool l_FoundIndex = false;
+
+      do {
+        for (uint32_t i = 0u; i < TEXTURE_COUNT; ++i) {
+          if (!g_TextureSlots[i]) {
+            l_TextureIndex = i;
+            l_FoundIndex = true;
+            g_TextureSlots[i] = true;
+            break;
+          }
+        }
+      } while (!l_FoundIndex);
 
       Util::String l_FullPath =
           Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" + get_path();
 
-      Util::Resource::Image2D l_Image;
-      Util::Resource::load_image2d(l_FullPath, l_Image);
+      set_renderer_texture(Renderer::reserve_texture(get_name()));
 
-      Renderer::Texture2D l_RendererTexture =
-          Renderer::upload_texture(N(Texture2D), l_Image);
-
-      set_renderer_texture(l_RendererTexture);
+      TextureLoadSchedule &l_LoadSchedule = g_TextureLoadSchedules.emplace_back(
+          l_TextureIndex,
+          Util::JobManager::default_pool().enqueue([l_FullPath,
+                                                    l_TextureIndex]() {
+            for (auto it = g_TextureLoadSchedules.begin();
+                 it != g_TextureLoadSchedules.end(); ++it) {
+              if (it->textureIndex == l_TextureIndex) {
+                Util::Resource::load_image2d(Util::String(l_FullPath.c_str()),
+                                             g_Image2Ds[l_TextureIndex]);
+                break;
+              }
+            }
+          }));
+      l_LoadSchedule.textureResource = *this;
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
     }
@@ -418,8 +511,35 @@ namespace Low {
     void Texture2D::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+      if (!is_loaded()) {
+        return;
+      }
+
       get_renderer_texture().destroy();
+
+      set_state(ResourceState::UNLOADED);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__unload
+    }
+
+    void Texture2D::update()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
+      LOW_PROFILE_CPU("Core", "Update Texture2D");
+      for (auto it = g_TextureLoadSchedules.begin();
+           it != g_TextureLoadSchedules.end();) {
+        if (it->future.wait_for(std::chrono::seconds(0)) ==
+            std::future_status::ready) {
+          Renderer::upload_texture(it->textureResource.get_renderer_texture(),
+                                   g_Image2Ds[it->textureIndex]);
+
+          g_TextureSlots[it->textureIndex] = false;
+
+          it = g_TextureLoadSchedules.erase(it);
+        } else {
+          ++it;
+        }
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update
     }
 
     uint32_t Texture2D::create_instance()
@@ -475,6 +595,12 @@ namespace Low {
                          (l_Capacity + l_CapacityIncrease)],
             &ms_Buffer[offsetof(Texture2DData, reference_count) * (l_Capacity)],
             l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(Texture2DData, state) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(Texture2DData, state) * (l_Capacity)],
+               l_Capacity * sizeof(ResourceState));
       }
       {
         memcpy(&l_NewBuffer[offsetof(Texture2DData, name) *

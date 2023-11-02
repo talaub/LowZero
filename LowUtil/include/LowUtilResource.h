@@ -12,8 +12,9 @@ namespace Low {
     namespace Resource {
       struct Image2D
       {
-        List<List<uint8_t>> data;
-        List<Math::UVector2> dimensions;
+        List<uint8_t> data;
+        Math::UVector2 dimensions;
+        uint8_t miplevel;
       };
 
       struct Vertex
@@ -97,7 +98,8 @@ namespace Low {
         Node rootNode;
       };
 
-      LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image);
+      LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image,
+                                   uint8_t p_MipLevel = 0);
 
       LOW_EXPORT void load_mesh(String p_FilePath, Mesh &p_Mesh);
     } // namespace Resource

@@ -8,6 +8,7 @@
 #include "LowUtilYaml.h"
 
 #include "LowRendererExposedObjects.h"
+#include "LowCoreResource.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -22,6 +23,7 @@ namespace Low {
       Util::String path;
       Renderer::Texture2D renderer_texture;
       uint32_t reference_count;
+      ResourceState state;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -99,6 +101,9 @@ namespace Low {
 
       Renderer::Texture2D get_renderer_texture() const;
 
+      ResourceState get_state() const;
+      void set_state(ResourceState p_Value);
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -106,6 +111,7 @@ namespace Low {
       bool is_loaded();
       void load();
       void unload();
+      static void update();
 
     private:
       static uint32_t ms_Capacity;

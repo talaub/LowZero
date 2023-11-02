@@ -308,7 +308,7 @@ namespace Low {
         ImVec2 l_Cursor = ImGui::GetCursorPos();
         float l_Margin = 73.0f;
         if (Util::StringHelper::ends_with(l_VersionString, "DEV")) {
-          l_Margin = 87.0f;
+          l_Margin = 89.0f;
         }
         float l_PointToAchieve = l_Viewport->WorkSize.x - l_Margin;
         float l_CurrentMargin = l_Cursor.x;

@@ -345,7 +345,18 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       Texture2D l_Texture2D = Texture2D::make(p_Name);
-      l_Texture2D.set_context(p_Context);
+
+      l_Texture2D.assign_image(p_Context, p_Image2d);
+
+      return l_Texture2D;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    void Texture2D::assign_image(Interface::Context p_Context,
+                                 Util::Resource::Image2D &p_Image2d)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_assign_image
+      set_context(p_Context);
 
       Backend::ImageResourceCreateParams l_Params;
       l_Params.context = &p_Context.get_context();
@@ -353,24 +364,16 @@ namespace Low {
       l_Params.depth = false;
       l_Params.format = Backend::ImageFormat::RGBA8_UNORM;
       l_Params.writable = false;
-      l_Params.imageDataSize = p_Image2d.data[0].size();
-      l_Params.imageData = p_Image2d.data[0].data();
-      l_Params.dimensions = p_Image2d.dimensions[0];
+      l_Params.mip0Size = p_Image2d.data.size();
+      l_Params.mip0Data = p_Image2d.data.data();
+      l_Params.mip0Dimensions = p_Image2d.dimensions;
       l_Params.sampleFilter = Backend::ImageSampleFilter::LINEAR;
 
-      l_Texture2D.set_image(Resource::Image::make(p_Name, l_Params));
+      set_image(Resource::Image::make(get_name(), l_Params));
 
       p_Context.get_global_signature().set_sampler_resource(
-          N(g_Texture2Ds), l_Texture2D.get_index(), l_Texture2D.get_image());
-
-      return l_Texture2D;
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
-    }
-
-    void Texture2D::tick(float p_Delta)
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_tick
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_tick
+          N(g_Texture2Ds), get_index(), get_image());
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_assign_image
     }
 
     uint32_t Texture2D::create_instance()

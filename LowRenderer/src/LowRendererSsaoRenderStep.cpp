@@ -81,19 +81,17 @@ namespace Low {
         std::default_random_engine generator;
 
         Util::Resource::Image2D l_Image;
-        l_Image.dimensions.resize(1);
-        l_Image.dimensions[0].x = 4;
-        l_Image.dimensions[0].y = 4;
-        l_Image.data.resize(1);
+        l_Image.dimensions.x = 4;
+        l_Image.dimensions.y = 4;
         std::vector<glm::vec4> ssaoNoise;
         for (unsigned int i = 0; i < 16; i++) {
           glm::vec4 noise(randomFloats(generator), randomFloats(generator),
                           0.0f,
                           1.0f); // rotate around z-axis (in tangent space)
-          l_Image.data[0].push_back(noise.x * 255.0f);
-          l_Image.data[0].push_back(noise.y * 255.0f);
-          l_Image.data[0].push_back(0);
-          l_Image.data[0].push_back(255);
+          l_Image.data.push_back(noise.x * 255.0f);
+          l_Image.data.push_back(noise.y * 255.0f);
+          l_Image.data.push_back(0);
+          l_Image.data.push_back(255);
         }
         g_NoiseTexture = upload_texture(N(BasicNoise), l_Image);
 

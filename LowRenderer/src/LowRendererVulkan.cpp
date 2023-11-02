@@ -840,10 +840,10 @@ namespace Low {
           l_Params.context = &p_Context;
           l_Params.depth = false;
           l_Params.writable = false;
-          l_Params.dimensions.x = l_Dimensions.x;
-          l_Params.dimensions.y = l_Dimensions.y;
-          l_Params.imageDataSize = 0;
-          l_Params.imageData = nullptr;
+          l_Params.mip0Dimensions.x = l_Dimensions.x;
+          l_Params.mip0Dimensions.y = l_Dimensions.y;
+          l_Params.mip0Size = 0;
+          l_Params.mip0Data = nullptr;
           l_Params.format = p_Context.imageFormat;
           l_Params.createImage = false;
           l_Params.sampleFilter = Backend::ImageSampleFilter::LINEAR;
@@ -2529,7 +2529,7 @@ namespace Low {
         p_Image.context = p_Params.context;
         p_Image.format = p_Params.format;
         p_Image.sampleFilter = p_Params.sampleFilter;
-        p_Image.dimensions = p_Params.dimensions;
+        p_Image.dimensions = p_Params.mip0Dimensions;
         p_Image.depth = false;
         p_Image.vk.m_State = ImageState::UNDEFINED;
 
@@ -2553,12 +2553,13 @@ namespace Low {
         }
 
         if (p_Params.createImage) {
+          // MARK
           ImageHelper::create_image(
-              p_Image, p_Params.dimensions.x, p_Params.dimensions.y,
+              p_Image, p_Params.mip0Dimensions.x, p_Params.mip0Dimensions.y,
               Helper::imageformat_to_vkformat(p_Params.format),
               VK_IMAGE_TILING_OPTIMAL, l_UsageFlags,
-              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, p_Params.imageData,
-              p_Params.imageDataSize);
+              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, p_Params.mip0Data,
+              p_Params.mip0Size);
         }
 
         ImageHelper::create_image_view(*p_Params.context, p_Image,

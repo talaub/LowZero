@@ -29,8 +29,10 @@ namespace Low {
             (double)from.a4, (double)from.b4, (double)from.c4, (double)from.d4);
       }
 
-      void load_image2d(String p_FilePath, Image2D &p_Image)
+      void load_image2d(String p_FilePath, Image2D &p_Image, uint8_t p_MipLevel)
       {
+        LOW_ASSERT(p_MipLevel < 4, "Requested miplevel out of range");
+
         const uint32_t l_Channels = 4u;
 
         gli::texture2d l_Texture(gli::load(p_FilePath.c_str()));
@@ -39,18 +41,15 @@ namespace Low {
         LOW_ASSERT(l_Texture.target() == gli::TARGET_2D,
                    "Expected Image2D data file");
 
-        p_Image.dimensions.resize(l_Texture.levels());
         p_Image.data.resize(l_Texture.levels());
 
-        for (uint32_t i = 0u; i < p_Image.dimensions.size(); ++i) {
-          p_Image.dimensions[i].x = l_Texture.extent(i).x;
-          p_Image.dimensions[i].y = l_Texture.extent(i).y;
+        p_Image.dimensions.x = l_Texture.extent(p_MipLevel).x;
+        p_Image.dimensions.y = l_Texture.extent(p_MipLevel).y;
 
-          p_Image.data[i].resize(p_Image.dimensions[i].x *
-                                 p_Image.dimensions[i].y * l_Channels);
-          memcpy(p_Image.data[i].data(), l_Texture.data(0, 0, i),
-                 p_Image.data[i].size());
-        }
+        p_Image.data.resize(p_Image.dimensions.x * p_Image.dimensions.y *
+                            l_Channels);
+        memcpy(p_Image.data.data(), l_Texture.data(0, 0, p_MipLevel),
+               p_Image.data.size());
       }
 
       static void parse_mesh(const aiMesh *p_AiMesh, MeshInfo &p_MeshInfo,

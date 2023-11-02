@@ -16,22 +16,22 @@ namespace Low {
   namespace Core {
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 #define MESH_COUNT 50
-    Util::List<bool> g_Slots;
+    Util::List<bool> g_MeshSlots;
     Util::List<Util::Resource::Mesh> g_Meshes;
 
-    struct LoadSchedule
+    struct MeshLoadSchedule
     {
       uint32_t meshIndex;
       Util::Future<void> future;
       MeshResource meshResource;
 
-      LoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
+      MeshLoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
           : meshIndex(p_Id), future(std::move(p_Future))
       {
       }
     };
 
-    Util::List<LoadSchedule> g_LoadSchedules;
+    Util::List<MeshLoadSchedule> g_MeshLoadSchedules;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MeshResource::TYPE_ID = 21;
@@ -113,9 +113,9 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       g_Meshes.resize(MESH_COUNT);
-      g_Slots.resize(MESH_COUNT);
+      g_MeshSlots.resize(MESH_COUNT);
       for (uint32_t i = 0; i < MESH_COUNT; ++i) {
-        g_Slots[i] = false;
+        g_MeshSlots[i] = false;
       }
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
@@ -492,10 +492,10 @@ namespace Low {
 
       do {
         for (uint32_t i = 0u; i < MESH_COUNT; ++i) {
-          if (!g_Slots[i]) {
+          if (!g_MeshSlots[i]) {
             l_MeshIndex = i;
             l_FoundIndex = true;
-            g_Slots[i] = true;
+            g_MeshSlots[i] = true;
             break;
           }
         }
@@ -505,11 +505,11 @@ namespace Low {
           std::string(LOW_DATA_PATH) + "\\resources\\meshes\\";
       l_FullPath += get_path().c_str();
 
-      LoadSchedule &l_LoadSchedule = g_LoadSchedules.emplace_back(
+      MeshLoadSchedule &l_LoadSchedule = g_MeshLoadSchedules.emplace_back(
           l_MeshIndex,
           Util::JobManager::default_pool().enqueue([l_FullPath, l_MeshIndex]() {
-            for (auto it = g_LoadSchedules.begin(); it != g_LoadSchedules.end();
-                 ++it) {
+            for (auto it = g_MeshLoadSchedules.begin();
+                 it != g_MeshLoadSchedules.end(); ++it) {
               if (it->meshIndex == l_MeshIndex) {
                 Util::Resource::load_mesh(Util::String(l_FullPath.c_str()),
                                           g_Meshes[l_MeshIndex]);
@@ -585,13 +585,14 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
       LOW_PROFILE_CPU("Core", "Update MeshResource");
-      for (auto it = g_LoadSchedules.begin(); it != g_LoadSchedules.end();) {
+      for (auto it = g_MeshLoadSchedules.begin();
+           it != g_MeshLoadSchedules.end();) {
         if (it->future.wait_for(std::chrono::seconds(0)) ==
             std::future_status::ready) {
           it->meshResource._load(it->meshIndex);
-          g_Slots[it->meshIndex] = false;
+          g_MeshSlots[it->meshIndex] = false;
 
-          it = g_LoadSchedules.erase(it);
+          it = g_MeshLoadSchedules.erase(it);
         } else {
           ++it;
         }

@@ -426,6 +426,8 @@ namespace Low {
                 *(Util::Name *)l_NameProperty.get(i_FileWatcher.handle);
 
             if (ImGui::Selectable(i_Name.c_str(), false)) {
+              *p_HandleId = i_FileWatcher.handle.get_id();
+              l_Changed = true;
             }
           }
           ImGui::EndChild();

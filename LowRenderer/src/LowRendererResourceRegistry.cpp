@@ -36,8 +36,8 @@ namespace Low {
     {
       p_Params.context = &p_Context.get_context();
       p_Params.createImage = true;
-      p_Params.imageData = 0;
-      p_Params.imageDataSize = 0;
+      p_Params.mip0Data = 0;
+      p_Params.mip0Size = 0;
       p_Params.depth = p_Config.image.depth;
       p_Params.format = p_Config.image.format;
       p_Params.sampleFilter = p_Config.image.sampleFilter;
@@ -45,22 +45,22 @@ namespace Low {
 
       if (p_Config.image.dimensions.type ==
           ImageResourceDimensionType::ABSOLUTE) {
-        p_Params.dimensions = p_Config.image.dimensions.absolute;
+        p_Params.mip0Dimensions = p_Config.image.dimensions.absolute;
       } else if (p_Config.image.dimensions.type ==
                  ImageResourceDimensionType::RELATIVE) {
         if (p_Config.image.dimensions.relative.target ==
             ImageResourceDimensionRelativeOptions::CONTEXT) {
-          p_Params.dimensions = p_Context.get_dimensions();
+          p_Params.mip0Dimensions = p_Context.get_dimensions();
         } else if (p_Config.image.dimensions.relative.target ==
                    ImageResourceDimensionRelativeOptions::RENDERFLOW) {
-          p_Params.dimensions = p_RenderFlow.get_dimensions();
+          p_Params.mip0Dimensions = p_RenderFlow.get_dimensions();
         } else {
           LOW_ASSERT(false, "Unknown relative dimension option");
         }
 
-        Math::Vector2 l_Dimensions = p_Params.dimensions;
+        Math::Vector2 l_Dimensions = p_Params.mip0Dimensions;
         l_Dimensions *= p_Config.image.dimensions.relative.multiplier;
-        p_Params.dimensions = l_Dimensions;
+        p_Params.mip0Dimensions = l_Dimensions;
       } else {
         LOW_ASSERT(false, "Unknown dimension type");
       }
@@ -81,7 +81,6 @@ namespace Low {
                                     RenderFlow p_RenderFlow,
                                     ResourceConfig &p_Config, Util::Name p_Name)
     {
-      LOW_LOG_DEBUG << "Creating resource " << p_Name << LOW_LOG_END;
       if (p_Config.type == ResourceType::BUFFER) {
         return create_buffer_resource(p_Context, p_RenderFlow, p_Config,
                                       p_Name);

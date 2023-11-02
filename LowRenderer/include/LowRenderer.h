@@ -33,8 +33,11 @@ namespace Low {
     LOW_RENDERER_API Material create_material(Util::Name p_Name,
                                               MaterialType p_Type);
 
+    LOW_RENDERER_API Texture2D reserve_texture(Util::Name p_Name);
     LOW_RENDERER_API Texture2D upload_texture(Util::Name p_Name,
                                               Util::Resource::Image2D &p_Image);
+    LOW_RENDERER_API void upload_texture(Texture2D p_Texture,
+                                         Util::Resource::Image2D &p_Image);
 
     LOW_RENDERER_API Skeleton upload_skeleton(Util::Name p_Name,
                                               Util::Resource::Mesh &p_Mesh);

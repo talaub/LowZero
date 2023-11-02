@@ -51,11 +51,8 @@ namespace Low {
       Texture2D(uint64_t p_Id);
       Texture2D(Texture2D &p_Copy);
 
-    private:
       static Texture2D make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-    public:
       explicit Texture2D(const Texture2D &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -109,7 +106,8 @@ namespace Low {
 
       static Texture2D make(Util::Name p_Name, Interface::Context p_Context,
                             Util::Resource::Image2D &p_Image2d);
-      static void tick(float p_Delta);
+      void assign_image(Interface::Context p_Context,
+                        Util::Resource::Image2D &p_Image2d);
 
     private:
       static uint32_t ms_Capacity;
