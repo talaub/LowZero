@@ -16,8 +16,6 @@
 #include "LowCorePrefab.h"
 #include "LowCoreGameLoop.h"
 #include "LowCorePhysicsSystem.h"
-#include "LowCoreScriptingEngine.h"
-#include "LowCoreMonoUtils.h"
 #include "LowCorePrefabInstance.h"
 
 #include "LowRenderer.h"
@@ -29,9 +27,6 @@
 
 #include <fstream>
 #include <stdlib.h>
-
-#include <mono/jit/jit.h>
-#include <mono/metadata/assembly.h>
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -309,42 +304,6 @@ namespace Low {
       load_materials();
       load_prefabs();
     }
-    MonoClass *GetClassInAssembly(MonoAssembly *assembly,
-                                  const char *namespaceName,
-                                  const char *className)
-    {
-      MonoImage *image = mono_assembly_get_image(assembly);
-      MonoClass *klass = mono_class_from_name(image, namespaceName, className);
-
-      if (klass == nullptr) {
-        // Log error here
-        return nullptr;
-      }
-
-      return klass;
-    }
-
-    void test_mono()
-    {
-      MonoClass *testingClass = GetClassInAssembly(
-          Mono::get_context().game_assembly, "MtdScripts", "MonoTest");
-
-      LOW_ASSERT(testingClass, "Class not found");
-
-      MonoMethod *method =
-          mono_class_get_method_from_name(testingClass, "Tick", 0);
-
-      LOW_ASSERT(method, "Method not found");
-
-      MonoObject *exception = nullptr;
-      mono_runtime_invoke(method, nullptr, nullptr, &exception);
-
-      if (exception) {
-        mono_print_unhandled_exception(exception);
-      }
-
-      //_LOW_ASSERT(false);
-    }
 
     static void initialize_globals()
     {
@@ -361,8 +320,6 @@ namespace Low {
       initialize_filesystem_watchers();
 
       initialize_types();
-
-      ScriptingEngine::initialize();
 
       DebugGeometry::initialize();
       GameLoop::initialize();
@@ -415,7 +372,6 @@ namespace Low {
     void cleanup()
     {
       GameLoop::cleanup();
-      ScriptingEngine::cleanup();
       cleanup_types();
     }
 

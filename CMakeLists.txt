@@ -87,7 +87,6 @@ add_compile_definitions(
 # These directorories are not part of the build tree
 SET(SUB_EXCEPTIONS
   LowScripts
-  LowScriptingApi
   LowDocs
 )
 
