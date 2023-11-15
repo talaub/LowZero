@@ -50,6 +50,7 @@ namespace Low {
 
     static void initialize_filesystem_watchers()
     {
+
       float l_UpdateTime = 8.0f;
       Util::String l_DataPath = LOW_DATA_PATH;
 

@@ -3,7 +3,12 @@ project(LowCore)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_library(LowCore SHARED ${SOURCES})
+add_library(LowCore SHARED
+  ${SOURCES}
+  ${INCLUDES}
+)
+
+source_group("Header Files" FILES ${INCLUDES})
 
 add_dependencies(LowCore
   LowUtil
@@ -11,6 +16,7 @@ add_dependencies(LowCore
   LowRenderer
   physx
   Recast
+  cflat
 )
 
 set(LOWCORE_INCLUDE_DIRS
@@ -40,4 +46,5 @@ target_link_libraries(LowCore PRIVATE
   LowMath
   physx
   Recast
+  cflat
 )

@@ -54,3 +54,6 @@
 [submodule "LowDependencies/mono"]
 	path = LowDependencies/mono
 	url = https://github.com/mono/mono
+[submodule "LowDependencies/Cflat"]
+	path = LowDependencies/Cflat
+	url = https://github.com/arturocepeda/Cflat.git

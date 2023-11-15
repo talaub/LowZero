@@ -35,6 +35,16 @@ add_subdirectory(recastnavigation/DetourCrowd)
 add_subdirectory(recastnavigation/DetourTileCache)
 add_subdirectory(recastnavigation/Recast)
 
+project(cflat)
+
+add_library(cflat STATIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/Cflat/Cflat.cpp"
+)
+
+target_include_directories(cflat PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/Cflat"
+)
+
 project(physx)
 
 set(PHYSX_NAME "nvidia-physx")

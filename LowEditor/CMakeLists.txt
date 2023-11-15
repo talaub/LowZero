@@ -10,8 +10,11 @@ SET(NODEGRAPH_SOURCES
 )
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_executable(LowEditor ${NODEGRAPH_SOURCES} ${SOURCES} app.o)
+add_executable(LowEditor ${NODEGRAPH_SOURCES} ${SOURCES} ${INCLUDES} app.o)
+
+source_group("Header Files" FILES ${INCLUDES})
 
 add_dependencies(LowEditor
   LowUtil

@@ -3,7 +3,12 @@ project(LowMath)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_library(LowMath SHARED ${SOURCES})
+add_library(LowMath SHARED
+  ${SOURCES}
+  ${INCLUDES}
+)
+
+source_group("Header Files" FILES ${INCLUDES})
 
 set(LOWMATH_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"

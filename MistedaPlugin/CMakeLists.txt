@@ -3,7 +3,12 @@ project(MistedaPlugin)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_library(MistedaPlugin SHARED ${SOURCES})
+add_library(MistedaPlugin SHARED
+  ${SOURCES}
+  ${INCLUDES}
+)
+
+source_group("Header Files" FILES ${INCLUDES})
 
 add_dependencies(MistedaPlugin
   LowUtil

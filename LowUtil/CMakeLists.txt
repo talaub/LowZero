@@ -6,6 +6,7 @@ file(GLOB_RECURSE INCLUDES "include/*.h")
 add_library(LowUtil SHARED
   "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/microprofile/microprofile.cpp"
   ${SOURCES}
+  ${INCLUDES}
 )
 
 set(LOWUTIL_INCLUDE_DIRS
@@ -35,6 +36,8 @@ generate_export_header(${PROJECT_NAME}
 )
 
 set_target_properties(LowUtil PROPERTIES OUTPUT_NAME "lowutil")
+
+source_group("Header Files" FILES ${INCLUDES})
 
 target_include_directories(LowUtil PUBLIC
   ${LOWUTIL_INCLUDE_DIRS}

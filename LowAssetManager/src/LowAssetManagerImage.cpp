@@ -18,7 +18,6 @@ namespace Low {
     namespace Image {
       void load_png(Util::String p_FilePath, Image2D &p_Image)
       {
-        LOW_PROFILE_START(Load png);
 
         int l_Width, l_Height, l_Channels;
 
@@ -43,8 +42,6 @@ namespace Low {
             }
           }
         }
-
-        LOW_PROFILE_END();
       }
 
       void process(Util::String p_OutputPath, Image2D &p_Image)
@@ -56,8 +53,6 @@ namespace Low {
           uint8_t b;
           uint8_t a;
         };
-
-        LOW_PROFILE_START(Process Image);
 
         gli::format f = gli::FORMAT_RGBA8_UNORM_PACK8;
 
@@ -84,8 +79,6 @@ namespace Low {
             gli::generate_mipmaps(l_Texture, gli::FILTER_LINEAR);
 
         gli::save_ktx(l_TextureMipmaps, (p_OutputPath + ".ktx").c_str());
-
-        LOW_PROFILE_END();
       }
     } // namespace Image
   }   // namespace AssetManager

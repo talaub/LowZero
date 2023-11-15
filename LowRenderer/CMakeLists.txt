@@ -1,6 +1,7 @@
 project(LowRenderer)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE INCLUDES "include/*.h")
 
 set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui")
 set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders")
@@ -29,7 +30,10 @@ add_library(LowRenderer SHARED
   ${IMGUI_SOURCES}
   ${IMGUIZMO_SOURCES}
   ${SOURCES}
+  ${INCLUDES}
 )
+
+source_group("Header Files" FILES "${INCLUDES}")
 
 add_dependencies(LowRenderer LowUtil LowMath glfw)
 
