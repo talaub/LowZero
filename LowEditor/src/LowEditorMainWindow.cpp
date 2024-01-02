@@ -21,6 +21,7 @@
 #include "LowEditorSaveHelper.h"
 #include "LowEditorMetadata.h"
 #include "LowEditorCommonOperations.h"
+#include "LowEditorResourceWidget.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -601,6 +602,7 @@ namespace Low {
       register_editor_widget("Scene", new SceneWidget(), true);
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
+      register_editor_widget("Resources", new ResourceWidget());
       register_editor_widget("StateGraph", new StateGraphWidget(), true);
 
       Util::String l_Path = LOW_DATA_PATH;

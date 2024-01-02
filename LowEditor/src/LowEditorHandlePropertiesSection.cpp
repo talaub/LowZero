@@ -358,14 +358,16 @@ namespace Low {
         }
         ImGui::PopID();
 
-        Util::StoredHandle l_AfterChange;
-        Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
+        if (!l_SkipFooter) {
+          Util::StoredHandle l_AfterChange;
+          Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
 
-        if (!Core::Material::is_alive(m_Handle)) {
-          Transaction l_Transaction =
-              Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
+          if (!Core::Material::is_alive(m_Handle)) {
+            Transaction l_Transaction =
+                Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
 
-          get_global_changelist().add_entry(l_Transaction);
+            get_global_changelist().add_entry(l_Transaction);
+          }
         }
       }
     }

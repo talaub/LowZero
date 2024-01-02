@@ -491,4 +491,5 @@ module.exports = {
     find_begin_marker_end,
     find_end_marker_start,
     find_end_marker_end,
+    g_Directory
 };

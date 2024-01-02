@@ -17,6 +17,7 @@
 #include "LowCoreGameLoop.h"
 #include "LowCorePhysicsSystem.h"
 #include "LowCorePrefabInstance.h"
+#include "LowCoreCflatScripting.h"
 
 #include "LowRenderer.h"
 
@@ -53,6 +54,13 @@ namespace Low {
 
       float l_UpdateTime = 8.0f;
       Util::String l_DataPath = LOW_DATA_PATH;
+
+      g_FilesystemWatchers.scriptDirectory = Util::FileSystem::watch_directory(
+          l_DataPath + "/scripts",
+          [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+            return (Util::Handle)0;
+          },
+          0.5f);
 
       g_FilesystemWatchers.meshAssetDirectory =
           Util::FileSystem::watch_directory(
@@ -324,6 +332,7 @@ namespace Low {
 
       DebugGeometry::initialize();
       GameLoop::initialize();
+      Scripting::initialize();
 
       load_resources();
       load_assets();
@@ -372,6 +381,7 @@ namespace Low {
 
     void cleanup()
     {
+      Scripting::cleanup();
       GameLoop::cleanup();
       cleanup_types();
     }

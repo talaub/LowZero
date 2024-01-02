@@ -5,7 +5,7 @@ set(ENGINE_BUILD OFF)
 cmake_minimum_required(VERSION 3.10)
 
 set(LOW_YEAR_VERSION 2023)
-set(LOW_MAJOR_VERSION 11)
+set(LOW_MAJOR_VERSION 12)
 set(LOW_MINOR_VERSION 1)
 
 if (ENGINE_BUILD)
@@ -60,6 +60,8 @@ add_compile_definitions(
   DISABLE_CUDA_PHYSX
   PX_COOKING
   LOW_RENDERER_RENDEROBJECT_COUNT=256
+  LOW_SCRIPTS_PATH=./data/scripts
+  CFLAT_ENABLED=1
 )
 else()
 add_compile_definitions(
@@ -74,6 +76,7 @@ add_compile_definitions(
   DISABLE_CUDA_PHYSX
   PX_COOKING
   LOW_RENDERER_RENDEROBJECT_COUNT=256
+  CFLAT_ENABLED=1
 )
 endif()
 

@@ -9,6 +9,7 @@
 #include "LowCoreTransform.h"
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreNavmeshSystem.h"
+#include "LowCoreCflatScripting.h"
 
 #include "LowCoreMeshResource.h"
 #include "LowCoreTexture2D.h"
@@ -58,6 +59,9 @@ namespace Low {
           (*it)(p_Delta, get_engine_state());
         }
 
+        Scripting::tick(p_Delta, get_engine_state());
+        CflatVoidCall(testfunc);
+
         System::MeshRenderer::tick(p_Delta, get_engine_state());
 
         l_FirstRun = false;
@@ -84,6 +88,10 @@ namespace Low {
         auto l_LastTime = steady_clock::now();
 
         int l_Fps = 0;
+
+        Util::String l_Path =
+            Util::String(LOW_DATA_PATH) + "\\scripts\\testscript.cpp";
+        Scripting::get_environment()->load(l_Path.c_str());
 
         while (g_Running) {
           {

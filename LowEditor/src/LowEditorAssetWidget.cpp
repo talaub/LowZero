@@ -190,7 +190,7 @@ namespace Low {
 
     static bool render_element(uint32_t p_Id, Util::String p_Icon,
                                Util::String p_Label, bool p_Draggable,
-                               Util::Handle p_Handle)
+                               Util::Handle p_Handle, bool *p_RequireUpdate)
     {
       bool l_Result = false;
 
@@ -204,19 +204,32 @@ namespace Low {
           ImGui::Button(p_Icon.c_str(), ImVec2(g_ElementSize, g_ElementSize));
       if (p_Draggable && p_Handle.get_id() > 0) {
         if (ImGui::BeginPopupContextItem()) {
+          ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
+
           set_selected_handle(p_Handle);
           if (ImGui::MenuItem("Delete")) {
             Util::RTTI::TypeInfo &l_TypeInfo =
                 Util::Handle::get_type_info(p_Handle.get_type());
-            l_TypeInfo.destroy(p_Handle);
+
+            if (p_RequireUpdate) {
+              *p_RequireUpdate = true;
+            }
+
+            LOW_LOG_WARN << "Deleting..." << LOW_LOG_END;
 
             if (g_Paths.find(p_Handle) != g_Paths.end()) {
               Util::String l_Path = g_Paths[p_Handle];
+              LOW_LOG_WARN << "CHECKING file" << LOW_LOG_END;
               if (Util::FileIO::file_exists_sync(l_Path.c_str())) {
+                LOW_LOG_WARN << "Delete file" << LOW_LOG_END;
                 Util::FileIO::delete_sync(l_Path.c_str());
               }
             }
+
+            l_TypeInfo.destroy(p_Handle);
           }
+
+          ImGui::PopFont();
           ImGui::EndPopup();
         }
       }
@@ -281,7 +294,8 @@ namespace Low {
       int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset", false, 0)) {
+      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset", false, 0,
+                         0)) {
         ImGui::OpenPopup("Create mesh asset");
       }
 
@@ -360,8 +374,14 @@ namespace Low {
             Util::FileSystem::get_file_watcher(*it);
         Core::MeshAsset i_MeshAsset = i_FileWatcher.handle.get_id();
 
+        if (!i_MeshAsset.is_alive()) {
+          continue;
+        }
+
+        g_Paths[i_MeshAsset.get_id()] = i_FileWatcher.path;
+
         if (render_element(l_Id++, ICON_FA_CUBE, i_MeshAsset.get_name().c_str(),
-                           true, i_MeshAsset)) {
+                           true, i_MeshAsset, &l_DirectoryWatcher.update)) {
           set_selected_handle(i_MeshAsset);
           HandlePropertiesSection i_Section(i_MeshAsset, true);
           i_Section.render_footer = &render_mesh_asset_details_footer;
@@ -386,7 +406,8 @@ namespace Low {
       int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create material", false, 0)) {
+      if (render_element(l_Id++, ICON_FA_PLUS, "Create material", false, 0,
+                         0)) {
         ImGui::OpenPopup("Create material");
       }
 
@@ -460,9 +481,20 @@ namespace Low {
         Util::FileSystem::FileWatcher &i_FileWatcher =
             Util::FileSystem::get_file_watcher(*it);
         Core::Material i_Material = i_FileWatcher.handle.get_id();
+        bool i_ShouldUpdate = l_DirectoryWatcher.update;
+
+        if (!i_Material.is_alive()) {
+          continue;
+        }
+
+        g_Paths[i_Material.get_id()] = i_FileWatcher.path;
+
         if (render_element(l_Id++, ICON_FA_SPRAY_CAN,
                            i_Material.get_name().c_str(), true,
-                           i_FileWatcher.handle)) {
+                           i_FileWatcher.handle, &l_DirectoryWatcher.update)) {
+          if (!i_ShouldUpdate && l_DirectoryWatcher.update) {
+            break;
+          }
           set_selected_handle(i_FileWatcher.handle);
           HandlePropertiesSection i_Section(i_FileWatcher.handle, true);
           i_Section.render_footer = &render_material_details_footer;
@@ -531,9 +563,11 @@ namespace Low {
           continue;
         }
         if (!Core::Prefab(i_Prefab.get_parent().get_id()).is_alive()) {
-          if (render_element(l_Id++, ICON_FA_BOX_OPEN,
-                             i_Prefab.get_name().c_str(), true,
-                             i_FileWatcher.handle)) {
+
+          g_Paths[i_Prefab.get_id()] = i_FileWatcher.path;
+          if (render_element(
+                  l_Id++, ICON_FA_BOX_OPEN, i_Prefab.get_name().c_str(), true,
+                  i_FileWatcher.handle, &l_DirectoryWatcher.update)) {
             set_selected_handle(i_FileWatcher.handle);
             HandlePropertiesSection i_Section(i_FileWatcher.handle, true);
             i_Section.render_footer = &render_prefab_details_footer;

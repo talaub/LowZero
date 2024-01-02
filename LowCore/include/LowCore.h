@@ -23,6 +23,8 @@ namespace Low {
 
     struct FileSystemWatchers
     {
+      Util::FileSystem::WatchHandle scriptDirectory;
+
       Util::FileSystem::WatchHandle meshAssetDirectory;
       Util::FileSystem::WatchHandle materialAssetDirectory;
       Util::FileSystem::WatchHandle prefabAssetDirectory;

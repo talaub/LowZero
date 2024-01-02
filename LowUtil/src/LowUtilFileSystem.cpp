@@ -159,6 +159,8 @@ namespace Low {
         // Resetting update timers
         l_FileWatcher.update = false;
         l_FileWatcher.currentUpdateTimer = l_FileWatcher.updateTimer;
+        l_FileWatcher.modifiedTimestamp =
+            Util::FileIO::modified_sync(l_FileWatcher.path.c_str());
 
         l_FileWatcher.handle = l_FileWatcher.handleCallback(l_FileWatcher);
       }

@@ -17,6 +17,7 @@ namespace Low {
         bool update;
         float currentUpdateTimer;
         float updateTimer;
+        uint64_t modifiedTimestamp;
         Util::Function<Handle(FileWatcher &)> handleCallback;
         Util::Handle handle;
       };

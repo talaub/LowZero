@@ -18,6 +18,7 @@ const {
     get_marker_begin,
     get_marker_end,
     find_end_marker_end,
+    g_Directory,
 } = require('./lib.js')
 
 function hash_name(p_String) {
@@ -99,113 +100,86 @@ function internal_set(p_Prop) {
 function generate_scripting_api(p_Type) {
     let t = '';
 
-    let l_OldCode = '';
-    if (fs.existsSync(p_Type.scripting_api_file_path)) {
-	l_OldCode = read_file(p_Type.scripting_api_file_path);
+    const l_TypeString = `${p_Type.namespace_string}::${p_Type.name}`
+
+    t += line(`#include "${p_Type.header_file_name}"`)
+
+    t += line(`static void register_${p_Type.module.toLowerCase()}_${p_Type.name.toLowerCase()}(){`)
+    t += line(`using namespace Low;`)
+    t += line(`using namespace Low::Core;`)
+    if (!['Low::Core'].includes(p_Type.namespace_string)) {
+	t += line(`using namespace ${p_Type.namespace_string};`)
     }
+    t += empty()
 
-    t += line('using System.Runtime.CompilerServices;');
-    t += line('using System.Runtime.InteropServices;');
-    t += empty();
+    t += line(`Cflat::Namespace *l_Namespace = Scripting::get_environment()->requestNamespace("${p_Type.namespace_string}");`)
+    t += empty()
 
-    t += line(`namespace ${p_Type.scripting_namespace_string} {`);
+    
+    t += line(`CflatRegisterStruct(l_Namespace, ${p_Type.name});`)
+    t += line(`CflatStructAddBaseType(Scripting::get_environment(), ${l_TypeString}, Low::Util::Handle);`)
 
-    t += line(`public unsafe partial class ${p_Type.name}: Low.Internal.Handle {`);
-    t += empty();
+    t += line(`CflatStructAddMethodReturn(l_Namespace, ${p_Type.name}, bool, is_alive);`)
 
-    t += line(`public ${p_Type.name}(): this(0) {`);
-    t += line(`}`);
-    t += empty();
-    t += line(`public ${p_Type.name}(ulong p_Id): base(p_Id) {`);
-    t += line(`}`);
-    t += empty();
-
-    t += line(`public static ushort type;`);
-    t += empty();
-
-    t += line(`public static uint livingInstancesCount {`);
-    t += line('get {');
-    t += line('return Low.Internal.HandleHelper.GetLivingInstancesCount(type);');
-    t += line(`}`);
-    t += line(`}`);
-    t += empty();
-    t += line(`public static ${p_Type.name} GetByIndex(uint p_Index) {`);
-    t += line(`ulong id = Low.Internal.HandleHelper.GetLivingInstance(type, p_Index);`);
-    t += line(`return new ${p_Type.name}(id);`);
-    t += line(`}`);
+    t += line(`CflatStructAddStaticMethodReturn(l_Namespace, ${p_Type.name}, uint32_t, get_capacity);`)
+    t += line(`CflatStructAddStaticMethodReturnParams1(l_Namespace, ${p_Type.name}, ${l_TypeString}, find_by_index, uint32_t);`)
+    if (!p_Type.component) {
+	t += line(`CflatStructAddStaticMethodReturnParams1(l_Namespace, ${p_Type.name}, ${l_TypeString}, find_by_name, Low::Util::Name);`)
+    }
+    t += empty()
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-	if (!i_Prop.expose_scripting) {
-	    continue;
-	}
-	if ((i_Prop.private_getter && i_Prop.private_setter)
-	    || (i_Prop.no_getter && i_Prop.no_setter)) {
-	    continue;
-	}
+	if (!i_Prop.static) {
+	    if (!i_Prop.no_getter && !i_Prop.private_getter) {
+		t += line(`CflatStructAddMethodReturn(l_Namespace, ${p_Type.name}, ${i_Prop.accessor_type}, ${i_Prop.getter_name});`);
+	    }
 
-	t += line(`public ${i_Prop.cs_type} ${i_Prop.cs_name} {`);
-	if (!i_Prop.private_getter && !i_Prop.no_getter && !i_Prop.scripting_hide_getter) {
-	    t += line(`get {`);
-	    t += line(`return ${internal_get(i_Prop)}(id, ${hash_name(i_PropName)});`);
-	    t += line('}');
+	    if (!i_Prop.no_setter && !i_Prop.private_setter) {
+		t += line(`CflatStructAddMethodVoidParams1(l_Namespace, ${p_Type.name}, void, ${i_Prop.setter_name}, ${i_Prop.accessor_type});`);
+	    }
 	}
-	if (!i_Prop.private_setter && !i_Prop.no_setter && !i_Prop.scripting_hide_setter) {
-	    t += line(`set {`);
-	    t += line(`${internal_set(i_Prop)}(id, ${hash_name(i_PropName)}, value);`);
-	    t += line('}');
-	}
-	t += line('}');
+	t += empty()
     }
 
-    if (true) {
-	t += empty();
-	const l_MarkerName = `CUSTOM:TYPE_CODE`;
+    t += line(`}`)
+    t += empty()
 
-	const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
-	const l_CustomEndMarker = get_marker_end(l_MarkerName);
-
-	const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
-
-	let l_CustomCode = '';
-
-	if (l_BeginMarkerIndex >= 0) {
-	    const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
-
-	    l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
-	}
-	t += line(l_CustomBeginMarker);
-	t += l_CustomCode;
-	t += line(l_CustomEndMarker);
-	t += empty();
-    }
-
-    t += line(`}`);
-
-    t += line('}');
-
-    const l_Formatted = format(`${p_Type.name}.cs`, t);
-
-    /*
-    console.log(`Type: ${p_Type.name}`);
-    console.log(l_Formatted);
-    console.log('-----------------------');
-    */
-
-    if (l_Formatted !== l_OldCode) {
-	save_file(p_Type.scripting_api_file_path, l_Formatted);
-	return true
-    }
-    return false
+    return t
 }
 
 function main() {
     const l_Types = collect_types();
 
+    const l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`
+
+    const l_OriginalContent = read_file(l_FilePath);
+
+    const l_IndexStart = l_OriginalContent.indexOf(`// REGISTER_CFLAT_BEGIN`);
+    const l_IndexEnd = l_OriginalContent.indexOf(`// REGISTER_CFLAT_END`);
+
+    const l_PreContent = l_OriginalContent.substring(0, l_IndexStart);
+    const l_PostContent = l_OriginalContent.substring(l_IndexEnd + `// REGISTER_CFLAT_END`.length);
+
+    let l_RegisterCode = '';
+    let l_EntryMethodCode = line(`static void register_types() {`)
+
     for (const i_Type of l_Types) {
 	if (i_Type.scripting_expose) {
-	    generate_scripting_api(i_Type);
+	    l_RegisterCode += generate_scripting_api(i_Type);
+	    l_EntryMethodCode += line(`register_${i_Type.module.toLowerCase()}_${i_Type.name.toLowerCase()}();`)
 	}
     }
+
+    l_EntryMethodCode += line('}');
+
+    let l_FinalContent = l_PreContent + `// REGISTER_CFLAT_BEGIN\n`
+    l_FinalContent += l_RegisterCode
+    l_FinalContent += l_EntryMethodCode
+    l_FinalContent += `// REGISTER_CFLAT_END` + l_PostContent
+
+    const l_Formatted = format(l_FilePath, l_FinalContent)
+    save_file(l_FilePath, l_Formatted)
+
 }
 
 main();
