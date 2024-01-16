@@ -596,9 +596,13 @@ namespace Low {
 
           PhysicsShape::create(get_physics_shape(), p_Value);
 
+          void *l_UserData =
+              (void *)TYPE_SOA_PTR(Rigidbody, unique_id, Util::UniqueId);
+
           PhysicsRigidDynamic::create(get_rigid_dynamic(), get_physics_shape(),
                                       l_Transform.get_world_position(),
-                                      l_Transform.get_world_rotation());
+                                      l_Transform.get_world_rotation(),
+                                      l_UserData);
 
           System::Physics::register_rigid_dynamic(get_rigid_dynamic());
 

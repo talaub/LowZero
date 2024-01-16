@@ -35,13 +35,18 @@ namespace Low {
                                     bool p_Wireframe,
                                     float p_Thickness = 0.02f);
 
+      LOW_CORE_API void render_triangle(Math::Vector3 p_Vertex0,
+                                        Math::Vector3 p_Vertex1,
+                                        Math::Vector3 p_Vertex2,
+                                        Math::Color p_Color, bool p_DepthTest,
+                                        bool p_Wireframe);
+
       // Complex predefined objects
-      LOW_CORE_API void render_arrow(Math::Vector3 p_Position,
-                                     Math::Quaternion p_Rotation,
-                                     float p_Length, float p_Thickness,
-                                     float p_HeadRadius, float p_HeadLength,
-                                     Math::Color p_Color, bool p_DepthTest,
-                                     bool p_Wireframe);
+      LOW_CORE_API
+      void render_arrow(Math::Vector3 p_Position, Math::Quaternion p_Rotation,
+                        float p_Length, float p_Thickness, float p_HeadRadius,
+                        float p_HeadLength, Math::Color p_Color,
+                        bool p_DepthTest, bool p_Wireframe);
 
       // Billboards
       LOW_CORE_API void

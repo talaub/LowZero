@@ -24,6 +24,9 @@ add_dependencies(LowCore
   LowRenderer
   physx
   Recast
+  RecastDemo
+  Detour
+  DetourCrowd
 )
 
 set(LOWCORE_INCLUDE_DIRS
@@ -54,4 +57,7 @@ target_link_libraries(LowCore PRIVATE
   LowMath
   physx
   Recast
+  RecastDemo
+  Detour
+  DetourCrowd
 )

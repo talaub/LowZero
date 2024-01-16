@@ -4,6 +4,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilMemory.h"
 
 #include "LowCoreSystem.h"
 #include "LowCorePhysicsObjects.h"
@@ -12,8 +13,13 @@
 #include "LowCoreDebugGeometry.h"
 #include "LowCorePhysics.h"
 
+#include "physx/include/extensions/PxTriangleMeshExt.h"
+
 #define PHYSICS_VISUALIZATION false
 #define PHYSICS_GRAVITY 9.81f
+
+#define EPSILON 0.000f
+#define RESULT_BUFFER_SIZE 128u
 
 using namespace physx;
 
@@ -228,7 +234,8 @@ namespace Low {
     void PhysicsRigidDynamic::create(PhysicsRigidDynamic &p_RigidDynamic,
                                      PhysicsShape &p_Shape,
                                      Math::Vector3 p_Position,
-                                     Math::Quaternion p_Rotation)
+                                     Math::Quaternion p_Rotation,
+                                     void *p_UserData)
     {
       PxQuat l_Quat;
       l_Quat.x = p_Rotation.x;
@@ -245,6 +252,8 @@ namespace Low {
                                                   PHYSICS_VISUALIZATION);
 
       p_RigidDynamic.m_CurrentShape = p_Shape.m_Shape;
+
+      p_RigidDynamic.m_RigidDynamic->userData = p_UserData;
     }
 
     void PhysicsRigidDynamic::set_mass(float p_Mass)
@@ -315,6 +324,48 @@ namespace Low {
     }
 
     namespace Physics {
+      namespace Helper {
+        using namespace physx;
+        inline PxVec3 convert(const Math::Vector3 &p_Vector)
+        {
+          return PxVec3(p_Vector.x, p_Vector.y, p_Vector.z);
+        }
+        inline Math::Vector3 convert(const PxVec3 &p_Vec)
+        {
+          return Math::Vector3(p_Vec.x, p_Vec.y, p_Vec.z);
+        }
+        inline Math::Vector3 convert(const PxExtendedVec3 &p_Vec)
+        {
+          return Math::Vector3(p_Vec.x, p_Vec.y,
+                               p_Vec.z); // WARNING: Loss of precision
+        }
+        inline PxVec4 convert(const Math::Vector4 &p_Vector)
+        {
+          return PxVec4(p_Vector.x, p_Vector.y, p_Vector.z, p_Vector.w);
+        }
+        inline Math::Vector4 convert(const PxVec4 &p_Vec)
+        {
+          return Math::Vector4(p_Vec.x, p_Vec.y, p_Vec.z, p_Vec.w);
+        }
+        inline PxQuat convert(const Math::Quaternion &p_Quat)
+        {
+          PxQuat quat(p_Quat.x, p_Quat.y, p_Quat.z, p_Quat.w);
+          quat.normalize();
+          return quat;
+        }
+        inline Math::Quaternion convert(const PxQuat &p_Quat)
+        {
+          return Math::Quaternion(p_Quat.w, p_Quat.x, p_Quat.y, p_Quat.z);
+        }
+        inline void get_hit_info(const PxOverlapHit &p_Hit,
+                                 OverlapResult &p_Result)
+        {
+          p_Result.shape = p_Hit.shape;
+          p_Result.actor = p_Hit.actor;
+        }
+
+      } // namespace Helper
+
       bool raycast(Math::Vector3 p_Origin, Math::Vector3 p_Direction,
                    float p_MaxDistance, RaycastHit &p_Hit)
       {
@@ -337,6 +388,206 @@ namespace Low {
         p_Hit.position.z = l_Hit.block.position.z;
 
         return l_Status;
+      }
+
+      inline bool get_overlapping_tringle_mesh(
+          const PxGeometry &p_ShapeGeometry, const PxTransform &p_ShapePose,
+          const PxTriangleMeshGeometry &p_MeshGeometry,
+          const PxTransform &p_MeshPose, Util::List<Math::Vector3> &p_Vertices,
+          uint16_t p_MaxTriangleVertices)
+      {
+        PxMeshOverlapUtil l_OverlapUtil;
+        const uint32_t l_TriangleCount = l_OverlapUtil.findOverlap(
+            p_ShapeGeometry, p_ShapePose, p_MeshGeometry, p_MeshPose);
+
+        const uint32_t *__restrict l_Indices = l_OverlapUtil.getResults();
+
+        p_Vertices.reserve(p_Vertices.size() + l_TriangleCount * 3);
+        for (uint32_t i = 0; i < l_TriangleCount; ++i) {
+          uint32_t i_TriangleId = l_Indices[i];
+
+          LOW_ASSERT(i_TriangleId <
+                         p_MeshGeometry.triangleMesh->getNbTriangles(),
+                     "Invalid triangle ID");
+
+          PxTriangle i_Triangle;
+          PxMeshQuery::getTriangle(p_MeshGeometry, p_MeshPose, i_TriangleId,
+                                   i_Triangle);
+
+          for (uint8_t j = 0; j < 3u; ++j) {
+            p_Vertices.push_back(Helper::convert(i_Triangle.verts[j]));
+          }
+        }
+
+        return false;
+      }
+
+      inline void get_overlapping_heightfield(
+          const PxGeometry &p_ShapeGeometry, const PxTransform &p_ShapePose,
+          const PxHeightFieldGeometry &p_HeightFieldGeometry,
+          const PxTransform &p_MeshPose, Util::List<Math::Vector3> &p_Vertices,
+          uint16_t p_MaxTriangleVertices)
+      {
+        PxMeshOverlapUtil l_OverlapUtil;
+        const uint32_t l_TriangleCount = l_OverlapUtil.findOverlap(
+            p_ShapeGeometry, p_ShapePose, p_HeightFieldGeometry, p_MeshPose);
+
+        const uint32_t *__restrict l_Indices = l_OverlapUtil.getResults();
+
+        p_Vertices.reserve(p_Vertices.size() + l_TriangleCount * 3);
+        for (uint32_t i = 0; i < l_TriangleCount; ++i) {
+          uint32_t i_TriangleId = l_Indices[i];
+
+          LOW_ASSERT(i_TriangleId <
+                         p_HeightFieldGeometry.heightField->getNbRows() *
+                             p_HeightFieldGeometry.heightField->getNbColumns() *
+                             2u,
+                     "Invalid triangle ID");
+
+          PxTriangle i_Triangle;
+          PxMeshQuery::getTriangle(p_HeightFieldGeometry, p_MeshPose,
+                                   i_TriangleId, i_Triangle);
+
+          for (uint8_t j = 0; j < 3u; ++j) {
+            p_Vertices.push_back(Helper::convert(i_Triangle.verts[j]));
+          }
+        }
+      }
+
+      bool overlap_box(
+          physx::PxScene *p_Scene, const Math::Vector3 &p_HalfExtents,
+          const Math::Vector3 &p_Position,
+          const Math::Quaternion &p_Orientation,
+          Util::List<OverlapResult> &p_Touches, uint32_t p_CollisionMask,
+          uint32_t p_SceneQueryFlags /*= SceneQueryFlags::Default*/,
+          uint8_t p_MaxResults /*= 4u*/, bool p_IgnoreTriggers /*= true*/)
+      {
+        LOW_ASSERT(p_MaxResults <= RESULT_BUFFER_SIZE,
+                   "Max results exceeds static buffer size");
+
+        if (p_HalfExtents.x < EPSILON || p_HalfExtents.y < EPSILON ||
+            p_HalfExtents.z < EPSILON) {
+          LOW_LOG_WARN << "Half extents must be positive" << LOW_LOG_END;
+        }
+
+        bool l_Hit = false;
+        PxScene *l_Scene = g_Scene;
+        // SceneReadLock l_Lock(l_Scene);
+
+        PxQueryFlags l_Flags;
+        // l_Flags |= PxQueryFlag::eSTATIC;
+        l_Flags |= PxQueryFlag::eDYNAMIC;
+
+        // l_Flags |= PxQueryFlag::eANY_HIT;
+        if (p_IgnoreTriggers) {
+          // l_Flags |= PxQueryFlag::ePREFILTER;
+        }
+        l_Flags |= PxQueryFlag::eNO_BLOCK;
+
+        PxQueryFilterData l_FilterData(l_Flags);
+
+        PxQueryFilterCallback *l_FilterCallback = nullptr;
+
+        uint32_t l_MemSize = sizeof(PxOverlapHit) * RESULT_BUFFER_SIZE;
+
+        // TODO: Replace with scratch allocator!!
+        void *l_Memory = Util::Memory::main_allocator()->allocate(l_MemSize);
+        PxOverlapHit *l_Buffer = static_cast<PxOverlapHit *>(l_Memory);
+
+        PxOverlapBuffer l_HitBuffer;
+        l_HitBuffer = PxOverlapBuffer(l_Buffer, p_MaxResults);
+
+        PxBoxGeometry l_BoxGeom(Helper::convert(p_HalfExtents));
+        PxTransform l_BoxTrans(Helper::convert(p_Position));
+
+        PxQueryFilterCallback *l_Callback(nullptr);
+
+        l_Hit = l_Scene->overlap(PxBoxGeometry(Helper::convert(p_HalfExtents)),
+                                 PxTransform(Helper::convert(p_Position),
+                                             Helper::convert(p_Orientation)),
+                                 l_HitBuffer, l_FilterData, l_FilterCallback);
+
+        if (l_Hit && l_HitBuffer.hasAnyHits()) {
+          const uint32_t l_TouchCount = l_HitBuffer.getNbTouches();
+          p_Touches.resize(l_TouchCount);
+          for (uint32_t i = 0; i < l_TouchCount; ++i) {
+            Helper::get_hit_info(l_HitBuffer.getTouch(i), p_Touches[i]);
+          }
+        }
+
+        // TODO: Remove when replaced with scrap allocator
+        Util::Memory::main_allocator()->deallocate(l_Memory);
+
+        return l_Hit;
+      }
+
+      void get_overlapping_mesh_with_box(
+          PxScene *p_Scene, const Math::Vector3 &p_HalfExtents,
+          const Math::Vector3 &p_Position,
+          const Math::Quaternion &p_Orientation, uint32_t p_CollisionMask,
+          Util::List<Math::Vector3> &p_Vertices,
+          uint32_t p_SceneQueryFlags /*= SceneQueryFlags::Static*/,
+          uint8_t p_MaxMeshOverlaps /*= 4u*/,
+          uint16_t p_MaxTriangleVertices /*= 1023u*/,
+          bool p_IgnoreTriggers /*= true*/)
+      {
+        _LOW_ASSERT(p_MaxTriangleVertices % 3 == 0);
+
+        PxScene *l_Scene = g_Scene;
+
+        Util::List<OverlapResult> l_OverlappingActors;
+        overlap_box(l_Scene, p_HalfExtents, p_Position, p_Orientation,
+                    l_OverlappingActors, p_CollisionMask, p_SceneQueryFlags,
+                    p_MaxMeshOverlaps, p_IgnoreTriggers);
+
+        for (const auto &i_Overlap : l_OverlappingActors) {
+          if (p_Vertices.size() < p_MaxTriangleVertices && i_Overlap.shape &&
+              i_Overlap.shape->getConcreteType() == PxConcreteType::eSHAPE &&
+              i_Overlap.actor &&
+              (i_Overlap.actor->getConcreteType() ==
+                   PxConcreteType::eRIGID_STATIC ||
+               i_Overlap.actor->getConcreteType() ==
+                   PxConcreteType::eRIGID_DYNAMIC)) {
+            if (i_Overlap.shape->getGeometryType() ==
+                PxGeometryType::eTRIANGLEMESH) {
+              PxTriangleMeshGeometry triangleMesh;
+              i_Overlap.shape->getTriangleMeshGeometry(triangleMesh);
+
+              get_overlapping_tringle_mesh(
+                  PxBoxGeometry(Helper::convert(p_HalfExtents)),
+                  PxTransform(Helper::convert(p_Position),
+                              Helper::convert(p_Orientation)),
+                  triangleMesh, i_Overlap.actor->getGlobalPose(), p_Vertices,
+                  p_MaxTriangleVertices - p_Vertices.size());
+            } else if (i_Overlap.shape->getGeometryType() ==
+                       PxGeometryType::eHEIGHTFIELD) {
+              PxHeightFieldGeometry i_HeightField;
+              i_Overlap.shape->getHeightFieldGeometry(i_HeightField);
+
+              get_overlapping_heightfield(
+                  PxBoxGeometry(Helper::convert(p_HalfExtents)),
+                  PxTransform(Helper::convert(p_Position),
+                              Helper::convert(p_Orientation)),
+                  i_HeightField, i_Overlap.actor->getGlobalPose(), p_Vertices,
+                  p_MaxTriangleVertices - p_Vertices.size());
+            } else {
+              // Not a triangle mesh or heightfield, continue...
+              continue;
+            }
+          }
+
+          if (p_Vertices.size() == p_MaxTriangleVertices) {
+            LOW_LOG_WARN << "Maximum number of triangles retrieved with an "
+                            "overlap query ("
+                         << p_MaxTriangleVertices
+                         << "). Some might have been skipped." << LOW_LOG_END;
+          }
+        }
+      }
+
+      physx::PxScene *get_scene()
+      {
+        return g_Scene;
       }
     } // namespace Physics
   }   // namespace Core

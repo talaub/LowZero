@@ -7,6 +7,8 @@
 
 #include "LowMath.h"
 
+#define LOW_PHYSICS_MAX_RESULT_BUFFER_SIZE 1023
+
 namespace Low {
   namespace Core {
     struct PhysicsShape;
@@ -27,7 +29,7 @@ namespace Low {
 
       static void create(PhysicsRigidDynamic &p_RigidDynamic,
                          PhysicsShape &p_Shape, Math::Vector3 p_Position,
-                         Math::Quaternion p_Rotation);
+                         Math::Quaternion p_Rotation, void *p_UserData);
 
       void set_mass(float p_Mass);
       void set_gravity(bool p_Gravity);
@@ -59,6 +61,14 @@ namespace Low {
     private:
       physx::PxShape *m_Shape;
     };
+
+    namespace Physics {
+      struct OverlapResult
+      {
+        physx::PxShape *shape;
+        physx::PxRigidActor *actor;
+      };
+    } // namespace Physics
 
   } // namespace Core
 } // namespace Low

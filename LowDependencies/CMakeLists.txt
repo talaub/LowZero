@@ -35,6 +35,17 @@ add_subdirectory(recastnavigation/DetourCrowd)
 add_subdirectory(recastnavigation/DetourTileCache)
 add_subdirectory(recastnavigation/Recast)
 
+project(RecastDemo)
+
+add_library(RecastDemo STATIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Include/ChunkyTriMesh.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Source/ChunkyTriMesh.cpp"
+)
+
+target_include_directories(RecastDemo PUBLIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Include"
+)
+
 project(cflat)
 
 add_library(cflat STATIC

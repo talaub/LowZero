@@ -17,6 +17,7 @@ namespace Low {
         MeshResource cylinder;
         MeshResource plane;
         MeshResource sphere;
+        MeshResource triangle;
       } g_Meshes;
 
       struct
@@ -50,6 +51,8 @@ namespace Low {
         g_Meshes.plane.load();
         g_Meshes.sphere = MeshResource::make(l_BasePath + "sphere.glb");
         g_Meshes.sphere.load();
+        g_Meshes.triangle = MeshResource::make(l_BasePath + "triangle.glb");
+        g_Meshes.triangle.load();
       }
 
       static void initialize_materials()
@@ -330,6 +333,55 @@ namespace Low {
                                      p_Cylinder.radius));
 
         render_mesh(g_Meshes.cylinder, p_Color, l_Transform, p_DepthTest,
+                    p_Wireframe);
+      }
+
+      glm::mat4 generateModelMatrix(const glm::vec3 &v0, const glm::vec3 &v1,
+                                    const glm::vec3 &v2)
+      {
+        glm::vec3 translation = (v0 + v1 + v2) / 3.0f;
+
+        // Calculate the vectors along two edges of the triangle
+        glm::vec3 edge1 = v1 - v0;
+        glm::vec3 edge2 = v2 - v0;
+
+        // Calculate the normal vector of the triangle
+        glm::vec3 normal = glm::cross(edge1, edge2);
+        normal = glm::normalize(normal);
+
+        // Calculate scaling factors based on the lengths of the edges
+        float scaleX = glm::length(edge1);
+        float scaleY = glm::length(v2 - v1) * -1.0f; // or any other edge
+        float scaleZ = glm::length(v2 - v0);         // or any other edge
+
+        // Create a rotation matrix to align the triangle with the x-z plane
+        glm::mat4 rotationMatrix = glm::mat4(1.0f);
+        rotationMatrix =
+            glm::rotate(rotationMatrix, glm::atan(normal.z, normal.x),
+                        glm::vec3(0.0f, 1.0f, 0.0f));
+        rotationMatrix = glm::rotate(rotationMatrix, -glm::asin(normal.y),
+                                     glm::vec3(1.0f, 0.0f, 0.0f));
+
+        // Create the scaling matrix
+        glm::mat4 scalingMatrix =
+            glm::scale(glm::mat4(1.0f), glm::vec3(scaleX, scaleY, scaleZ));
+
+        // Create the final model matrix by combining translation, rotation, and
+        // scaling
+        glm::mat4 modelMatrix = glm::translate(glm::mat4(1.0f), translation) *
+                                rotationMatrix * scalingMatrix;
+
+        return modelMatrix;
+      }
+
+      void render_triangle(Math::Vector3 p_Vertex0, Math::Vector3 p_Vertex1,
+                           Math::Vector3 p_Vertex2, Math::Color p_Color,
+                           bool p_DepthTest, bool p_Wireframe)
+      {
+        Math::Matrix4x4 l_Transformation =
+            generateModelMatrix(p_Vertex0, p_Vertex2, p_Vertex1);
+
+        render_mesh(g_Meshes.triangle, p_Color, l_Transformation, p_DepthTest,
                     p_Wireframe);
       }
     } // namespace DebugGeometry

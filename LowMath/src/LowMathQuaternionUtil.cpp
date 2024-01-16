@@ -33,6 +33,12 @@ namespace Low {
         p_Quaternion = VectorUtil::from_euler(
             glm::degrees(Math::Vector3(l_Pitch, l_Yaw, p_RollRadians)));
       }
+
+      Quaternion get_identity()
+      {
+        static Quaternion q(1.f, 0.f, 0.f, 0.f);
+        return q;
+      }
     } // namespace QuaternionUtil
   }   // namespace Math
 } // namespace Low

@@ -48,8 +48,8 @@ namespace Low {
         System::Region::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
           System::Physics::tick(p_Delta, get_engine_state());
+          System::Navmesh::tick(p_Delta, get_engine_state());
         }
-        System::Navmesh::tick(p_Delta, get_engine_state());
 
         MeshResource::update();
         Texture2D::update();

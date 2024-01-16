@@ -11,6 +11,11 @@
 
 #define SINGLE_ARG(...) __VA_ARGS__
 
+#define TYPE_SOA_PTR(type, member, membertype)                                 \
+  ((membertype *)&(                                                            \
+      ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \
+                (m_Data.m_Index * sizeof(membertype))]))
+
 #define TYPE_SOA(type, member, membertype)                                     \
   *((membertype *)&(                                                           \
       ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \

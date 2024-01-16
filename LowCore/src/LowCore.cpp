@@ -18,6 +18,7 @@
 #include "LowCorePhysicsSystem.h"
 #include "LowCorePrefabInstance.h"
 #include "LowCoreCflatScripting.h"
+#include "LowCoreNavmeshAgent.h"
 
 #include "LowRenderer.h"
 
@@ -153,6 +154,7 @@ namespace Low {
       Component::PointLight::initialize();
       Component::Rigidbody::initialize();
       Component::PrefabInstance::initialize();
+      Component::NavmeshAgent::initialize();
     }
 
     static void initialize_base_types()
@@ -356,6 +358,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Component::NavmeshAgent::cleanup();
       Component::PrefabInstance::cleanup();
       Component::Rigidbody::cleanup();
       Component::PointLight::cleanup();
