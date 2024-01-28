@@ -14,5 +14,8 @@ namespace Low {
     namespace ParticleRenderStep {
       void setup_config();
     }
+    namespace DebugTriangleStep {
+      void setup_config();
+    }
   } // namespace Renderer
 } // namespace Low

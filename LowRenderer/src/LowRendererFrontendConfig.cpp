@@ -276,6 +276,8 @@ namespace Low {
           p_Config.cullMode = Backend::PipelineRasterizerCullMode::BACK;
         } else if (l_EnumString == "front") {
           p_Config.cullMode = Backend::PipelineRasterizerCullMode::FRONT;
+        } else if (l_EnumString == "none") {
+          p_Config.cullMode = Backend::PipelineRasterizerCullMode::NONE;
         } else {
           LOW_ASSERT(false, "Unknown pipeline cull mode");
         }

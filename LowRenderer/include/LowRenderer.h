@@ -4,6 +4,7 @@
 #include "LowRendererExposedObjects.h"
 #include "LowRendererRenderFlow.h"
 #include "LowRendererWindow.h"
+#include "LowRendererDynamicBuffer.h"
 
 #include "LowUtilEnums.h"
 #include "LowUtilResource.h"
@@ -52,10 +53,16 @@ namespace Low {
 
     LOW_RENDERER_API Material get_default_material();
 
+    LOW_RENDERER_API void render_debug_triangle(Math::Color p_Color,
+                                                Math::Vector3 p_Vertex0,
+                                                Math::Vector3 p_Vertex1,
+                                                Math::Vector3 p_Vertex2);
+
     Resource::Buffer get_vertex_buffer();
     Resource::Buffer get_skinning_buffer();
     Resource::Buffer get_particle_emitter_buffer();
     Resource::Buffer get_particle_buffer();
+    DynamicBuffer &get_debug_geometry_triangle_vertex_buffer();
 
   } // namespace Renderer
 } // namespace Low

@@ -27,6 +27,7 @@
 #include "LowRendererMaterialType.h"
 #include "LowRendererImGuiImage.h"
 #include "LowRendererSkeleton.h"
+#include "LowRendererDynamicBuffer.h"
 
 #include "LowRendererResourceRegistry.h"
 #include "LowRendererFrontendConfig.h"
@@ -58,177 +59,10 @@ namespace Low {
       uint32_t boneBufferStart;
     };
 
-    struct MeshBufferFreeSlot
-    {
-      uint32_t start;
-      uint32_t length;
-    };
-
     struct ParticleUpdateInfo
     {
       float seed;
       float delta;
-    };
-
-    namespace DynamicBufferType {
-      enum Enum
-      {
-        VERTEX,
-        INDEX,
-        MISC
-      };
-    }
-
-    struct DynamicBuffer
-    {
-      void initialize(Util::Name p_Name, Interface::Context p_Context,
-                      uint8_t p_Type, uint32_t p_ElementSize,
-                      uint32_t p_ElementCount)
-      {
-        LOW_ASSERT(!m_Initialized, "MeshBuffer already initialized");
-
-        m_ElementSize = p_ElementSize;
-        m_ElementCount = p_ElementCount;
-
-        Backend::BufferCreateParams l_Params;
-        l_Params.context = &p_Context.get_context();
-        l_Params.bufferSize = p_ElementSize * p_ElementCount;
-        l_Params.data = nullptr;
-        if (p_Type == DynamicBufferType::VERTEX) {
-          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_VERTEX |
-                                LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
-        } else if (p_Type == DynamicBufferType::INDEX) {
-          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDEX;
-        } else if (p_Type == DynamicBufferType::MISC) {
-          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
-        } else {
-          LOW_ASSERT(false, "Unknown mesh buffer type");
-        }
-        m_Buffer = Resource::Buffer::make(p_Name, l_Params);
-        m_FreeSlots.push_back({0, p_ElementCount});
-
-        m_Type = p_Type;
-
-        m_Initialized = true;
-      }
-
-      uint32_t reserve(uint32_t p_ElementCount)
-      {
-        LOW_ASSERT(m_Initialized, "Cannot write to uninitialized MeshBuffer");
-        LOW_ASSERT(!m_FreeSlots.empty(), "No free space left in MeshBuffer");
-
-        MeshBufferFreeSlot l_FreeSlot{0, 0};
-        uint32_t i_SlotIndex = 0;
-
-        for (; i_SlotIndex < m_FreeSlots.size(); ++i_SlotIndex) {
-          if (m_FreeSlots[i_SlotIndex].length >= p_ElementCount) {
-            l_FreeSlot = m_FreeSlots[i_SlotIndex];
-            break;
-          }
-        }
-
-        LOW_ASSERT(l_FreeSlot.length >= p_ElementCount,
-                   "Could not find free space in MeshBuffer to fit data");
-
-        uint32_t l_SavePoint = l_FreeSlot.start;
-        if (l_FreeSlot.length == p_ElementCount) {
-          m_FreeSlots.erase(m_FreeSlots.begin() + i_SlotIndex);
-        } else {
-          m_FreeSlots[i_SlotIndex].length = l_FreeSlot.length - p_ElementCount;
-          m_FreeSlots[i_SlotIndex].start = l_SavePoint + p_ElementCount;
-        }
-
-        return l_SavePoint;
-      }
-
-      uint32_t write(void *p_DataPtr, uint32_t p_ElementCount)
-      {
-        uint32_t l_Offset = reserve(p_ElementCount);
-
-        m_Buffer.write(p_DataPtr, p_ElementCount * m_ElementSize,
-                       l_Offset * m_ElementSize);
-
-        return l_Offset;
-      }
-
-      void free(uint32_t p_Position, uint32_t p_ElementCount)
-      {
-        LOW_ASSERT(m_Initialized, "Cannot free from uninitialized MeshBuffer");
-
-        uint32_t l_ClosestUnder = ~0u;
-        uint32_t l_ClosestOver = ~0u;
-        uint32_t l_UnderDiff = ~0u;
-        uint32_t l_OverDiff = ~0u;
-
-        for (uint32_t i = 0u; i < m_FreeSlots.size(); ++i) {
-          MeshBufferFreeSlot &i_Slot = m_FreeSlots[i];
-
-          if (i_Slot.start < p_Position) {
-            LOW_ASSERT((i_Slot.start + i_Slot.length) <= p_Position,
-                       "Tried to double free from mesh buffer");
-
-            uint32_t i_Diff = p_Position - (i_Slot.start + i_Slot.length);
-            if (i_Diff < l_UnderDiff) {
-              l_UnderDiff = i_Diff;
-              l_ClosestUnder = i;
-            }
-          } else {
-            LOW_ASSERT((p_Position + p_ElementCount) <= i_Slot.start,
-                       "Tried to double free from mesh buffer");
-
-            uint32_t i_Diff = i_Slot.start - (p_Position + p_ElementCount);
-            if (i_Diff < l_OverDiff) {
-              l_OverDiff = i_Diff;
-              l_ClosestOver = i;
-            }
-          }
-        }
-
-        if (l_UnderDiff == 0 && l_OverDiff == 0) {
-          m_FreeSlots[l_ClosestUnder].length =
-              m_FreeSlots[l_ClosestUnder].length + p_ElementCount +
-              m_FreeSlots[l_ClosestOver].length;
-
-          m_FreeSlots.erase(m_FreeSlots.begin() + l_ClosestOver);
-        } else if (l_UnderDiff == 0) {
-          m_FreeSlots[l_ClosestUnder].length =
-              m_FreeSlots[l_ClosestUnder].length + p_ElementCount;
-        } else if (l_OverDiff == 0) {
-          m_FreeSlots[l_ClosestOver].start = p_Position;
-          m_FreeSlots[l_ClosestOver].length =
-              m_FreeSlots[l_ClosestOver].length + p_ElementCount;
-        } else {
-          m_FreeSlots.push_back({p_Position, p_ElementCount});
-        }
-      }
-
-      void clear()
-      {
-        m_FreeSlots.clear();
-        m_FreeSlots.push_back({0, m_ElementCount});
-      }
-
-      void bind()
-      {
-        if (m_Type == DynamicBufferType::VERTEX) {
-          m_Buffer.bind_vertex();
-        } else if (m_Type == DynamicBufferType::INDEX) {
-          m_Buffer.bind_index(Backend::IndexBufferType::UINT32);
-        } else if (m_Type == DynamicBufferType::MISC) {
-          LOW_ASSERT(false, "Cannot implicitly bind misc dynamic buffer");
-        } else {
-          LOW_ASSERT(false, "Unknown dynamic buffer type");
-        }
-      }
-
-      Resource::Buffer m_Buffer;
-
-    private:
-      uint32_t m_ElementSize;
-      uint32_t m_ElementCount;
-      Util::List<MeshBufferFreeSlot> m_FreeSlots;
-      bool m_Initialized = false;
-      uint8_t m_Type;
     };
 
     struct RenderFlowUpdateData
@@ -279,6 +113,8 @@ namespace Low {
 
     Util::List<RenderFlowUpdateData> g_PendingRenderFlowUpdates;
 
+    DynamicBuffer g_DebugGeometryTriangleVertexBuffer;
+
     DynamicBuffer g_VertexBuffer;
     DynamicBuffer g_IndexBuffer;
 
@@ -305,6 +141,7 @@ namespace Low {
       SsaoStep::setup_config();
       ParticlePrepareStep::setup_config();
       ParticleRenderStep::setup_config();
+      DebugTriangleStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,
@@ -856,6 +693,10 @@ namespace Low {
           Interface::Context::make(N(DefaultContext), &l_Window, 2, false);
 #endif
 
+      g_DebugGeometryTriangleVertexBuffer.initialize(
+          N(DebugGeometryTriangleVertexBuffer), g_Context,
+          DynamicBufferType::VERTEX, sizeof(Util::Resource::Vertex), 1200u);
+
       g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
                                 DynamicBufferType::VERTEX,
                                 sizeof(Util::Resource::Vertex), 256000u);
@@ -1111,6 +952,7 @@ namespace Low {
       g_SkinningBuffer.clear();
       g_PendingPoseCalculations.clear();
       g_PendingSkinningOperations.clear();
+      g_DebugGeometryTriangleVertexBuffer.clear();
 
       if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
         g_Context.update_dimensions();
@@ -1512,6 +1354,11 @@ namespace Low {
       return l_Material;
     }
 
+    DynamicBuffer &get_debug_geometry_triangle_vertex_buffer()
+    {
+      return g_DebugGeometryTriangleVertexBuffer;
+    }
+
     Resource::Buffer get_vertex_buffer()
     {
       return g_VertexBuffer.m_Buffer;
@@ -1533,6 +1380,17 @@ namespace Low {
     Material get_default_material()
     {
       return g_DefaultMaterial;
+    }
+
+    void render_debug_triangle(Math::Color p_Color, Math::Vector3 p_Vertex0,
+                               Math::Vector3 p_Vertex1, Math::Vector3 p_Vertex2)
+    {
+      Low::Util::Array<Util::Resource::Vertex, 3> l_Vertices;
+      l_Vertices[0].position = p_Vertex0;
+      l_Vertices[1].position = p_Vertex1;
+      l_Vertices[2].position = p_Vertex2;
+
+      g_DebugGeometryTriangleVertexBuffer.write(l_Vertices.data(), 3);
     }
   } // namespace Renderer
 } // namespace Low

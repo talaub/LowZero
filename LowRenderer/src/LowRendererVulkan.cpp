@@ -3368,6 +3368,9 @@ namespace Low {
         } else if (p_Params.cullMode ==
                    Backend::PipelineRasterizerCullMode::BACK) {
           l_Rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        } else if (p_Params.cullMode ==
+                   Backend::PipelineRasterizerCullMode::NONE) {
+          l_Rasterizer.cullMode = VK_CULL_MODE_NONE;
         } else {
           LOW_ASSERT(false, "Unknown pipeline rasterizer cull mode");
         }

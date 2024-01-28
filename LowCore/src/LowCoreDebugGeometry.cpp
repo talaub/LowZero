@@ -381,8 +381,13 @@ namespace Low {
         Math::Matrix4x4 l_Transformation =
             generateModelMatrix(p_Vertex0, p_Vertex2, p_Vertex1);
 
-        render_mesh(g_Meshes.triangle, p_Color, l_Transformation, p_DepthTest,
-                    p_Wireframe);
+        /*
+              render_mesh(g_Meshes.triangle, p_Color, l_Transformation,
+           p_DepthTest, p_Wireframe);
+        */
+
+        Renderer::render_debug_triangle(p_Color, p_Vertex0, p_Vertex1,
+                                        p_Vertex2);
       }
     } // namespace DebugGeometry
   }   // namespace Core

@@ -8,6 +8,8 @@
 
 #include "LowMathQuaternionUtil.h"
 
+#include "LowRenderer.h"
+
 #include "LowCoreSystem.h"
 #include "LowCorePhysicsSystem.h"
 #include "LowCorePhysicsObjects.h"
@@ -459,7 +461,6 @@ namespace Low {
 
         void tick(float p_Delta, Util::EngineState p_State)
         {
-
           return;
           Math::Box l_Box;
           l_Box.halfExtents = g_HalfExtents;

@@ -263,7 +263,8 @@ namespace Low {
         enum Enum
         {
           BACK,
-          FRONT
+          FRONT,
+          NONE
         };
       }
 
