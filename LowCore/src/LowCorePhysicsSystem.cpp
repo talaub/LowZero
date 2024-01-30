@@ -283,6 +283,16 @@ namespace Low {
       m_RigidDynamic->wakeUp();
     }
 
+    physx::PxTransform PhysicsRigidDynamic::get_physx_transform() const
+    {
+      return m_RigidDynamic->getGlobalPose();
+    }
+
+    const physx::PxShape *PhysicsRigidDynamic::get_physx_shape() const
+    {
+      return m_CurrentShape;
+    }
+
     Math::Vector3 PhysicsRigidDynamic::get_position() const
     {
       physx::PxTransform l_Transform = m_RigidDynamic->getGlobalPose();

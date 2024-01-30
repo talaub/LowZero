@@ -18,11 +18,13 @@ namespace Mtd {
     namespace Test {
       void tick(float p_Delta, Low::Util::EngineState p_State)
       {
+        /*
         Low::Core::DebugGeometry::render_triangle(
             Low::Math::Vector3(-6.2f, 1.0f, -0.09f),
             Low::Math::Vector3(7.65f, 1.0f, -0.09f),
             Low::Math::Vector3(0.76f, 1.0f, -7.14f),
             Low::Math::Color(1.0f, 0.0f, 0.0f, 1.0f), true, false);
+            */
 
         if (p_State != Low::Util::EngineState::PLAYING) {
           return;

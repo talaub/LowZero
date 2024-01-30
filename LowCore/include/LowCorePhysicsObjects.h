@@ -44,6 +44,9 @@ namespace Low {
       void update_shape(PhysicsShape &p_PhysicsShape);
       void destroy();
 
+      const physx::PxShape *get_physx_shape() const;
+      physx::PxTransform get_physx_transform() const;
+
     private:
       physx::PxRigidDynamic *m_RigidDynamic;
       physx::PxShape *m_CurrentShape;

@@ -196,9 +196,9 @@ namespace Low {
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Cylinder.position) *
             glm::toMat4(p_Cylinder.rotation) *
-            glm::scale(glm::mat4(1.0f),
-                       Math::Vector3(p_Cylinder.radius, p_Cylinder.height,
-                                     p_Cylinder.radius));
+            glm::scale(glm::mat4(1.0f), Math::Vector3(p_Cylinder.radius,
+                                                      p_Cylinder.height / 2.0f,
+                                                      p_Cylinder.radius));
 
         render_mesh(g_Meshes.cylinder, p_Color, l_Transform, p_DepthTest,
                     p_Wireframe);

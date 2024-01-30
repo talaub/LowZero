@@ -23,6 +23,9 @@ namespace Low {
       struct LOW_CORE_API NavmeshAgentData
       {
         float speed;
+        float height;
+        float radius;
+        Math::Vector3 offset;
         int agent_index;
         Low::Core::Entity entity;
         Low::Util::UniqueId unique_id;
@@ -95,6 +98,15 @@ namespace Low {
 
         float get_speed() const;
         void set_speed(float p_Value);
+
+        float get_height() const;
+        void set_height(float p_Value);
+
+        float get_radius() const;
+        void set_radius(float p_Value);
+
+        Math::Vector3 &get_offset() const;
+        void set_offset(Math::Vector3 &p_Value);
 
         int get_agent_index() const;
         void set_agent_index(int p_Value);

@@ -83,7 +83,10 @@ namespace Low {
               get_graphics_pipeline_config(N(debuggeometry_triangles));
 
           if (l_PipelineConfig.cullMode ==
-              Backend::PipelineRasterizerCullMode::BACK) {
+              Backend::PipelineRasterizerCullMode::NONE) {
+            // Don't do anything
+          } else if (l_PipelineConfig.cullMode ==
+                     Backend::PipelineRasterizerCullMode::BACK) {
             l_PipelineConfig.cullMode =
                 Backend::PipelineRasterizerCullMode::FRONT;
           } else {

@@ -16,6 +16,7 @@
 #include "LowCoreDirectionalLight.h"
 #include "LowCorePointLight.h"
 #include "LowCoreRigidbody.h"
+#include "LowCoreNavmeshAgent.h"
 
 #include "LowUtilEnums.h"
 
@@ -125,6 +126,39 @@ namespace Low {
       }
     }
 
+    static void
+    render_navmeshagent_debug_geometry(float p_Delta,
+                                       RenderFlowWidget &p_RenderFlowWidget)
+    {
+      if (!get_selected_entity().is_alive()) {
+        return;
+      }
+
+      if (!get_selected_entity().has_component(
+              Core::Component::NavmeshAgent::TYPE_ID)) {
+        return;
+      }
+
+      Core::Component::Transform l_Transform =
+          get_selected_entity().get_transform();
+      Core::Component::NavmeshAgent l_NavmeshAgent =
+          get_selected_entity().get_component(
+              Core::Component::NavmeshAgent::TYPE_ID);
+
+      Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
+
+      Math::Cylinder l_Cylinder;
+      l_Cylinder.height = l_NavmeshAgent.get_height();
+      l_Cylinder.radius = l_NavmeshAgent.get_radius();
+      l_Cylinder.position = l_Transform.get_world_position();
+      l_Cylinder.position += l_NavmeshAgent.get_offset();
+      l_Cylinder.position.y += l_Cylinder.height / 2.0f;
+      l_Cylinder.rotation = Math::QuaternionUtil::get_identity();
+
+      Core::DebugGeometry::render_cylinder(
+          l_Cylinder, Math::Color(1.0f, 0.0f, 1.0f, 1.0f), false, true);
+    }
+
     void render_gizmos(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
     {
       const float l_TopPadding = 40.0f;
@@ -161,6 +195,7 @@ namespace Low {
       }
 
       render_rigidbody_debug_geometry(p_Delta, p_RenderFlowWidget);
+      render_navmeshagent_debug_geometry(p_Delta, p_RenderFlowWidget);
 
       render_billboards(p_Delta, p_RenderFlowWidget);
 

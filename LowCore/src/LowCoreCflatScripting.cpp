@@ -117,6 +117,19 @@ static void register_math()
       Scripting::get_environment()->requestNamespace("Low::Math");
 
   {
+    CflatRegisterStruct(l_Namespace, Vector4);
+    CflatStructAddMember(l_Namespace, Vector4, float, x);
+    CflatStructAddMember(l_Namespace, Vector4, float, y);
+    CflatStructAddMember(l_Namespace, Vector4, float, z);
+    CflatStructAddMember(l_Namespace, Vector4, float, w);
+    CflatStructAddConstructorParams4(l_Namespace, Vector4, float, float, float,
+                                     float);
+    CflatStructAddCopyConstructor(l_Namespace, Vector4);
+
+    CflatRegisterFunctionReturnParams2(l_Namespace, Vector4, operator*,
+                                       const Vector4 &, const Vector4 &);
+  }
+  {
     CflatRegisterStruct(l_Namespace, Vector3);
     CflatStructAddMember(l_Namespace, Vector3, float, x);
     CflatStructAddMember(l_Namespace, Vector3, float, y);
