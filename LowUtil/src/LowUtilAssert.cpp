@@ -8,7 +8,7 @@ namespace Low {
   namespace Util {
     namespace Assertion {
       void print_assert(uint8_t p_LogLevel, const char *p_Module,
-                        char *p_Message, const char *p_File, int p_Line,
+                        const char *p_Message, const char *p_File, int p_Line,
                         const char *p_Function, bool p_Terminate)
       {
         std::string l_Message = "";

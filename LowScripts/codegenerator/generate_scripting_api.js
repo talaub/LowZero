@@ -102,8 +102,6 @@ function generate_scripting_api(p_Type) {
 
     const l_TypeString = `${p_Type.namespace_string}::${p_Type.name}`
 
-    t += line(`#include "${p_Type.header_file_name}"`)
-
     t += line(`static void register_${p_Type.module.toLowerCase()}_${p_Type.name.toLowerCase()}(){`)
     t += line(`using namespace Low;`)
     t += line(`using namespace Low::Core;`)
@@ -116,8 +114,20 @@ function generate_scripting_api(p_Type) {
     t += empty()
 
     
+    /*
     t += line(`CflatRegisterStruct(l_Namespace, ${p_Type.name});`)
     t += line(`CflatStructAddBaseType(Scripting::get_environment(), ${l_TypeString}, Low::Util::Handle);`)
+    */
+    t += line(`Cflat::Struct *type = Low::Core::Scripting::g_CflatStructs["${l_TypeString}"];`);
+    t += empty()
+
+    t += line('{');
+    t += line(`Cflat::Namespace *l_UtilNamespace = Scripting::get_environment()->requestNamespace("Low::Util");`)
+    t += empty()
+    t += line(`CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List, ${l_TypeString});`)
+    t += line('}');
+    t += empty()
+
 
     t += line(`CflatStructAddMethodReturn(l_Namespace, ${p_Type.name}, bool, is_alive);`)
 
@@ -129,6 +139,9 @@ function generate_scripting_api(p_Type) {
     t += empty()
 
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+	if (!i_Prop.expose_scripting) {
+	    continue;
+	}
 	if (!i_Prop.static) {
 	    if (!i_Prop.no_getter && !i_Prop.private_getter) {
 		t += line(`CflatStructAddMethodReturn(l_Namespace, ${p_Type.name}, ${i_Prop.accessor_type}, ${i_Prop.getter_name});`);
@@ -139,6 +152,34 @@ function generate_scripting_api(p_Type) {
 	    }
 	}
 	t += empty()
+    }
+
+    if (p_Type.functions) {
+	for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
+	    if (!i_Func.expose_scripting) {
+		continue;
+	    }
+	    if (i_Func.parameters && i_Func.parameters.length > 5) {
+		continue;
+	    }
+	    
+	    if (i_Func.static) {
+	    }
+	    else {
+		t += write(`CflatStructAddMethod${i_Func.return_type == 'void' ? 'Void' : 'Return'}`);
+		if (i_Func.parameters) {
+		    t += write(`Params${i_Func.parameters.length}`);
+		}
+		t += write('(');
+		t += write(`l_Namespace, ${p_Type.name}, ${i_Func.return_type}, ${i_FuncName}`);
+		if (i_Func.parameters) {
+		    for (let i_Param of i_Func.parameters) {
+			t += write(`, ${i_Param.type}`);
+		    }
+		}
+		t += write(');\n');
+	    }
+	}
     }
 
     t += line(`}`)
@@ -160,20 +201,44 @@ function main() {
     const l_PreContent = l_OriginalContent.substring(0, l_IndexStart);
     const l_PostContent = l_OriginalContent.substring(l_IndexEnd + `// REGISTER_CFLAT_END`.length);
 
+    let l_IncludeCode = '';
     let l_RegisterCode = '';
     let l_EntryMethodCode = line(`static void register_types() {`)
+    l_EntryMethodCode += line(`preregister_types();`)
+    l_EntryMethodCode += empty()
+
+    let l_PreRegisterCode = line(`static void preregister_types() {`)
+    l_PreRegisterCode += line(`using namespace Low::Core;`)
+    l_PreRegisterCode += empty()
 
     for (const i_Type of l_Types) {
 	if (i_Type.scripting_expose) {
+	    l_IncludeCode += line(`#include "${i_Type.header_file_name}"`);
+
 	    l_RegisterCode += generate_scripting_api(i_Type);
 	    l_EntryMethodCode += line(`register_${i_Type.module.toLowerCase()}_${i_Type.name.toLowerCase()}();`)
+	    l_PreRegisterCode += line(`{`);
+	    l_PreRegisterCode += line(`using namespace ${i_Type.namespace_string};`);
+	    l_PreRegisterCode += line(`Cflat::Namespace* l_Namespace = Scripting::get_environment()->requestNamespace("${i_Type.namespace_string}");`);
+	    l_PreRegisterCode += empty();
+	    l_PreRegisterCode += line(`CflatRegisterStruct(l_Namespace, ${i_Type.name});`);
+	    l_PreRegisterCode += line(`CflatStructAddBaseType(Scripting::get_environment(), ${i_Type.namespace_string}::${i_Type.name}, Low::Util::Handle);`);
+	    l_PreRegisterCode += empty();
+	    l_PreRegisterCode += line(`Scripting::g_CflatStructs["${i_Type.namespace_string}::${i_Type.name}"] = type;`);
+	    l_PreRegisterCode += line(`}`);
+	    l_PreRegisterCode += empty();
+
 	}
     }
 
     l_EntryMethodCode += line('}');
+    l_PreRegisterCode += line('}');
 
     let l_FinalContent = l_PreContent + `// REGISTER_CFLAT_BEGIN\n`
+    l_FinalContent += l_IncludeCode
+    l_FinalContent += empty()
     l_FinalContent += l_RegisterCode
+    l_FinalContent += l_PreRegisterCode
     l_FinalContent += l_EntryMethodCode
     l_FinalContent += `// REGISTER_CFLAT_END` + l_PostContent
 

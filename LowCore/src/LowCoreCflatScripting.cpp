@@ -7,12 +7,16 @@
 #include "LowUtilFileSystem.h"
 #include "LowUtilProfiler.h"
 
+#include "CflatHelper.h"
+
 void setup_environment();
 
 namespace Low {
   namespace Core {
     namespace Scripting {
       Util::Map<Util::String, uint64_t> g_SourceTimes;
+
+      Util::Map<Util::String, Cflat::Struct *> g_CflatStructs;
 
       static void
       initial_load_directory(Util::FileSystem::WatchHandle p_WatchHandle)
@@ -26,7 +30,12 @@ namespace Low {
               Util::FileSystem::get_file_watcher(i_WatchHandle);
           g_SourceTimes[i_FileWatcher.path] = i_FileWatcher.modifiedTimestamp;
 
-          get_environment()->load(i_FileWatcher.path.c_str());
+          if (!get_environment()->load(i_FileWatcher.path.c_str())) {
+            LOW_LOG_ERROR << "Failed Cflat compilation of file "
+                          << i_FileWatcher.path << LOW_LOG_END;
+
+            LOW_ASSERT(false, get_environment()->getErrorMessage());
+          }
         }
 
         for (Util::FileSystem::WatchHandle i_WatchHandle :
@@ -65,6 +74,13 @@ namespace Low {
           if (i_Pos == g_SourceTimes.end() ||
               i_Pos->second != i_FileWatcher.modifiedTimestamp) {
             get_environment()->load(i_FileWatcher.path.c_str());
+
+            if (!get_environment()->load(i_FileWatcher.path.c_str())) {
+              LOW_LOG_ERROR << "Failed Cflat compilation of file "
+                            << i_FileWatcher.path << LOW_LOG_END;
+
+              LOW_ASSERT(false, get_environment()->getErrorMessage());
+            }
             g_SourceTimes[i_FileWatcher.path] = i_FileWatcher.modifiedTimestamp;
           }
         }
@@ -159,6 +175,20 @@ static void register_math()
                                        const Vector2 &, float);
   }
   {
+    CflatRegisterStruct(l_Namespace, UVector2);
+    CflatStructAddMember(l_Namespace, UVector2, uint32_t, x);
+    CflatStructAddMember(l_Namespace, UVector2, uint32_t, y);
+    CflatStructAddConstructorParams2(l_Namespace, UVector2, uint32_t, uint32_t);
+    CflatStructAddCopyConstructor(l_Namespace, UVector2);
+
+    CflatRegisterFunctionReturnParams2(l_Namespace, UVector2, operator+,
+                                       const UVector2 &, const UVector2 &);
+    CflatRegisterFunctionReturnParams2(l_Namespace, UVector2, operator-,
+                                       const UVector2 &, const UVector2 &);
+    CflatRegisterFunctionReturnParams2(l_Namespace, UVector2, operator*,
+                                       const UVector2 &, uint32_t);
+  }
+  {
     CflatRegisterStruct(l_Namespace, Quaternion);
     CflatStructAddMember(l_Namespace, Quaternion, float, x);
     CflatStructAddMember(l_Namespace, Quaternion, float, y);
@@ -204,6 +234,36 @@ static void register_lowutil_name()
                                     const Name &);
   CflatStructAddMethodReturnParams1(l_Namespace, Name, Name &, operator=,
                                     const Name);
+
+  Scripting::get_environment()->defineMacro("N(x)", "Low::Util::Name(#x)");
+}
+
+#include "LowUtilContainers.h"
+static void register_lowutil_containers()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace Low::Util;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace("Low::Util");
+
+  CflatRegisterSTLVectorCustom(l_Namespace, List, bool);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, int);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, float);
+
+  CflatRegisterSTLVectorCustom(l_Namespace, List, uint64_t);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, uint32_t);
+
+  // CflatRegisterSTLVectorCustom(l_Namespace, List, String);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, Name);
+
+  CflatRegisterSTLVectorCustom(l_Namespace, List, Math::Vector3);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, Math::Vector2);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, Math::Vector4);
+  CflatRegisterSTLVectorCustom(l_Namespace, List, Math::UVector2);
+
+  CflatRegisterSTLVectorCustom(l_Namespace, List, Handle);
 }
 
 #include "LowUtilHandle.h"
@@ -234,16 +294,27 @@ static void register_lowutil_handle()
 
 // REGISTER_CFLAT_BEGIN
 #include "LowCoreEntity.h"
+#include "LowCoreTransform.h"
+
 static void register_lowcore_entity()
 {
+  using namespace Low;
   using namespace Low::Core;
 
   Cflat::Namespace *l_Namespace =
       Scripting::get_environment()->requestNamespace("Low::Core");
 
-  CflatRegisterStruct(l_Namespace, Entity);
-  CflatStructAddBaseType(Scripting::get_environment(), Low::Core::Entity,
-                         Low::Util::Handle);
+  Cflat::Struct *type =
+      Low::Core::Scripting::g_CflatStructs["Low::Core::Entity"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Scripting::get_environment()->requestNamespace("Low::Util");
+
+    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
+                                 Low::Core::Entity);
+  }
+
   CflatStructAddMethodReturn(l_Namespace, Entity, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Entity, uint32_t, get_capacity);
   CflatStructAddStaticMethodReturnParams1(
@@ -251,25 +322,22 @@ static void register_lowcore_entity()
   CflatStructAddStaticMethodReturnParams1(
       l_Namespace, Entity, Low::Core::Entity, find_by_name, Low::Util::Name);
 
-  /*
-  CflatStructAddMethodReturn(
-      l_Namespace, Entity, Util::Map<uint16_t, Util::Handle> &, get_components);
-
-  CflatStructAddMethodReturn(l_Namespace, Entity, Region, get_region);
-  CflatStructAddMethodVoidParams1(l_Namespace, Entity, set_region, Region);
-  */
-
-  /*
-  CflatStructAddMethodReturn(l_Namespace, Entity, Low::Util::UniqueId,
-                             get_unique_id);
-                             */
-
   CflatStructAddMethodReturn(l_Namespace, Entity, Low::Util::Name, get_name);
   CflatStructAddMethodVoidParams1(l_Namespace, Entity, void, set_name,
                                   Low::Util::Name);
+
+  CflatStructAddMethodReturnParams1(l_Namespace, Entity, uint64_t,
+                                    get_component, uint16_t);
+  CflatStructAddMethodVoidParams1(l_Namespace, Entity, void, add_component,
+                                  Util::Handle);
+  CflatStructAddMethodVoidParams1(l_Namespace, Entity, void, remove_component,
+                                  uint16_t);
+  CflatStructAddMethodReturnParams1(l_Namespace, Entity, bool, has_component,
+                                    uint16_t);
+  CflatStructAddMethodReturn(l_Namespace, Entity, Component::Transform,
+                             get_transform);
 }
 
-#include "LowCoreTransform.h"
 static void register_lowcore_transform()
 {
   using namespace Low;
@@ -279,9 +347,17 @@ static void register_lowcore_transform()
   Cflat::Namespace *l_Namespace =
       Scripting::get_environment()->requestNamespace("Low::Core::Component");
 
-  CflatRegisterStruct(l_Namespace, Transform);
-  CflatStructAddBaseType(Scripting::get_environment(),
-                         Low::Core::Component::Transform, Low::Util::Handle);
+  Cflat::Struct *type =
+      Low::Core::Scripting::g_CflatStructs["Low::Core::Component::Transform"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Scripting::get_environment()->requestNamespace("Low::Util");
+
+    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
+                                 Low::Core::Component::Transform);
+  }
+
   CflatStructAddMethodReturn(l_Namespace, Transform, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Transform, uint32_t,
                                    get_capacity);
@@ -306,12 +382,8 @@ static void register_lowcore_transform()
   CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, set_parent,
                                   uint64_t);
 
-  CflatStructAddMethodReturn(l_Namespace, Transform, uint64_t, get_parent_uid);
-
-  /*
   CflatStructAddMethodReturn(l_Namespace, Transform, Util::List<uint64_t> &,
                              get_children);
-                             */
 
   CflatStructAddMethodReturn(l_Namespace, Transform, Math::Vector3 &,
                              get_world_position);
@@ -322,36 +394,44 @@ static void register_lowcore_transform()
   CflatStructAddMethodReturn(l_Namespace, Transform, Math::Vector3 &,
                              get_world_scale);
 
-  /*
-  CflatStructAddMethodReturn(l_Namespace, Transform, Math::Matrix4x4 &,
-                             get_world_matrix);
-                             */
-
-  CflatStructAddMethodReturn(l_Namespace, Transform, bool, is_world_updated);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void,
-                                  set_world_updated, bool);
-
   CflatStructAddMethodReturn(l_Namespace, Transform, Low::Core::Entity,
                              get_entity);
   CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, set_entity,
                                   Low::Core::Entity);
-
-  /*
-  CflatStructAddMethodReturn(l_Namespace, Transform, Low::Util::UniqueId,
-                             get_unique_id);
-                             */
-
-  CflatStructAddMethodReturn(l_Namespace, Transform, bool, is_dirty);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, set_dirty,
-                                  bool);
-
-  CflatStructAddMethodReturn(l_Namespace, Transform, bool, is_world_dirty);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, set_world_dirty,
-                                  bool);
 }
 
+static void preregister_types()
+{
+  using namespace Low::Core;
+
+  {
+    using namespace Low::Core;
+    Cflat::Namespace *l_Namespace =
+        Scripting::get_environment()->requestNamespace("Low::Core");
+
+    CflatRegisterStruct(l_Namespace, Entity);
+    CflatStructAddBaseType(Scripting::get_environment(), Low::Core::Entity,
+                           Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::Entity"] = type;
+  }
+
+  {
+    using namespace Low::Core::Component;
+    Cflat::Namespace *l_Namespace =
+        Scripting::get_environment()->requestNamespace("Low::Core::Component");
+
+    CflatRegisterStruct(l_Namespace, Transform);
+    CflatStructAddBaseType(Scripting::get_environment(),
+                           Low::Core::Component::Transform, Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::Component::Transform"] = type;
+  }
+}
 static void register_types()
 {
+  preregister_types();
+
   register_lowcore_entity();
   register_lowcore_transform();
 }
@@ -362,6 +442,7 @@ static void setup_environment()
   register_math();
   register_lowutil_name();
   register_lowutil_handle();
+  register_lowutil_containers();
   register_types();
 }
 #endif
