@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "imgui.h"
 
 #include "LowMath.h"
@@ -35,6 +33,20 @@
 #include "LowEditorMainWindow.h"
 
 #include "MtdPlugin.h"
+
+#if defined(LOW_USE_CRASHREPORTER)
+#if defined(_WINDOWS)
+#include <windows.h>
+#include <errhandlingapi.h>
+#include <excpt.h>
+#include <iostream>
+#include <cstdlib>
+#include <exception>
+#include <dbghelp.h>
+#include <winternl.h>
+#pragma comment(lib, "dbghelp.lib")
+#endif
+#endif
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -84,7 +96,44 @@ int run_low()
   return 0;
 }
 
+#if defined(LOW_USE_CRASHREPORTER)
+void generate_minidump(EXCEPTION_POINTERS *pExceptionPointers)
+{
+  HANDLE hDumpFile = CreateFile("minidump.dmp", GENERIC_WRITE, 0, NULL,
+                                CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (hDumpFile != INVALID_HANDLE_VALUE) {
+    MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+    exceptionInfo.ThreadId = GetCurrentThreadId();
+    exceptionInfo.ExceptionPointers = pExceptionPointers;
+    exceptionInfo.ClientPointers = FALSE;
+
+    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile,
+                      MiniDumpNormal, &exceptionInfo, NULL, NULL);
+
+    CloseHandle(hDumpFile);
+  }
+}
+
+LONG WINAPI on_crash(EXCEPTION_POINTERS *p_ExceptInfo)
+{
+  generate_minidump(p_ExceptInfo);
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void setup_crash_reporter()
+{
+  SetUnhandledExceptionFilter(on_crash);
+}
+#endif
+
 int main()
 {
+
+#if defined(LOW_USE_CRASHREPORTER)
+  setup_crash_reporter();
+#endif
+
   return run_low();
 }

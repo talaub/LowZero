@@ -52,6 +52,7 @@ namespace Low {
         Math::Vector3 g_Origin(0.0f, 1.0f, -7.0f);
         Math::Vector3 g_HalfExtents(4.0f, 1.0f, 4.0f);
 
+        // Collection of several debug rendering utilities.
         namespace Debug {
           static void draw_triangle(Math::Vector3 p_V0, Math::Vector3 p_V1,
                                     Math::Vector3 p_V2)
@@ -60,6 +61,9 @@ namespace Low {
                                            true, false);
           }
 
+          // This functions is very expensive right now since it draws the box
+          // using several triangles and debug triangle rendering is not very
+          // optimized
           static void draw_box(float p_MinX, float p_MinY, float p_MinZ,
                                float p_MaxX, float p_MaxY, float p_MaxZ,
                                Math::Color p_Color)
@@ -115,7 +119,6 @@ namespace Low {
 
           void draw_heightfield_walkable(const rcHeightfield &p_Heightfield)
           {
-
             const float *l_Origin = p_Heightfield.bmin;
             const float l_CellSize = p_Heightfield.cs;
             const float l_CellHeight = p_Heightfield.ch;
@@ -154,12 +157,9 @@ namespace Low {
                                         const dtMeshTile *p_Tile,
                                         unsigned char p_Flags)
           {
-            dtPolyRef l_Base = p_Navmesh.getPolyRefBase(p_Tile);
-
             Util::List<Math::Vector3> l_Vertices;
 
-            int l_TileNum = p_Navmesh.decodePolyIdTile(l_Base);
-
+            // Collects the triangles of the tile to draw
             for (int i = 0; i < p_Tile->header->polyCount; ++i) {
               const dtPoly *i_Poly = &p_Tile->polys[i];
               if (i_Poly->getType() ==
@@ -186,11 +186,13 @@ namespace Low {
               }
             }
 
+            // Draws the actual triangles
             for (int i = 0; i < l_Vertices.size(); i += 3) {
               draw_triangle(l_Vertices[i], l_Vertices[i + 1],
                             l_Vertices[i + 2]);
             }
 
+            // Draws the vertices as points
             for (int i = 0; i < p_Tile->header->vertCount; ++i) {
               const float *i_Vertex = &p_Tile->verts[i * 3];
               draw_point({i_Vertex[0], i_Vertex[1], i_Vertex[2]},
@@ -200,7 +202,7 @@ namespace Low {
 
           void draw_navmesh(const dtNavMesh &p_Navmesh)
           {
-
+            // Draws all tiles in the navmesh
             for (int i = 0; i < p_Navmesh.getMaxTiles(); ++i) {
               const dtMeshTile *i_Tile = p_Navmesh.getTile(i);
               if (!i_Tile->header)
@@ -240,7 +242,6 @@ namespace Low {
 
             for (int i = 0; i < p_PolyMesh.npolys; ++i) {
               const unsigned short *i_Poly = &p_PolyMesh.polys[i * l_Nvp * 2];
-              const unsigned char i_Area = p_PolyMesh.areas[i];
 
               unsigned short i_Vi[3];
               for (int j = 2; j < l_Nvp; ++j) {
@@ -321,44 +322,6 @@ namespace Low {
               continue;
             }
 
-            Entity i_Entity = i_Rigidbody.get_entity();
-            Component::Transform i_Transform = i_Entity.get_transform();
-
-            Math::Vector3 i_Position = i_Transform.get_world_position();
-            Math::Quaternion i_Rotation = i_Transform.get_world_rotation();
-            Math::Vector3 i_Scale = i_Transform.get_world_scale();
-            Math::Vector3 i_HalfExtents =
-                i_Rigidbody.get_shape().box.halfExtents;
-
-            float i_OffsetY = i_HalfExtents.y * i_Scale.y;
-            float i_OffsetX = i_HalfExtents.x * i_Scale.x;
-            float i_OffsetZ = i_HalfExtents.z * i_Scale.z;
-
-            Math::Vector3 i_BottomXZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, -i_OffsetY, i_OffsetZ));
-            Math::Vector3 i_BottomMinXZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(-i_OffsetX, -i_OffsetY, i_OffsetZ));
-            Math::Vector3 i_BottomXMinZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, -i_OffsetY, -i_OffsetZ));
-            Math::Vector3 i_BottomMinXMinZ =
-                i_Position + (i_Rotation * Math::Vector3(-i_OffsetX, -i_OffsetY,
-                                                         -i_OffsetZ));
-            Math::Vector3 i_TopXZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, i_OffsetY, i_OffsetZ));
-            Math::Vector3 i_TopMinXZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(-i_OffsetX, i_OffsetY, i_OffsetZ));
-            Math::Vector3 i_TopXMinZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, i_OffsetY, -i_OffsetZ));
-            Math::Vector3 i_TopMinXMinZ =
-                i_Position +
-                (i_Rotation * Math::Vector3(-i_OffsetX, i_OffsetY, -i_OffsetZ));
-
             {
               using namespace physx;
 
@@ -425,8 +388,6 @@ namespace Low {
               }
             }
           }
-
-          const size_t i_VerticesCountBefore = p_Geometry.size();
 
           for (auto &i_Vertex : l_Vertices) {
             p_Geometry.push_back(i_Vertex.x);
@@ -713,8 +674,6 @@ namespace Low {
 
           g_RecastConfig.tileSize = 32;
 
-          // Other parameters you may want to customize based on your specific
-          // needs
           g_RecastConfig.detailSampleDist = 1.0f;
           g_RecastConfig.detailSampleMaxError = 0.1f;
 
@@ -745,7 +704,7 @@ namespace Low {
 
           int a = g_NavMesh->getMaxTiles();
 
-          Debug::draw_navmesh(*g_NavMesh);
+          // Debug::draw_navmesh(*g_NavMesh);
 
           if (p_State != Util::EngineState::PLAYING) {
             return;
@@ -767,7 +726,8 @@ namespace Low {
 
             // If agent has not been initialized
             if (i_Agent.get_agent_index() < 0) {
-              // TODO: read values from transform or component
+              // Initializes the new agent using the values read from the
+              // component.
 
               dtPolyRef i_ClosestPoly = 0;
               Math::Vector3 i_NearestNavmeshPoint;
@@ -776,6 +736,8 @@ namespace Low {
                   i_Transform.get_world_position() + i_Agent.get_offset();
 
               {
+                // Adjusts the agent's position to the nearest point on the
+                // navmesh just to avoid having an invalid position
                 dtStatus i_Status = g_NavQuery->findNearestPoly(
                     (float *)&i_AgentWorldPos, l_HalfExtents, l_Filter,
                     &i_ClosestPoly, (float *)&i_NearestNavmeshPoint);
@@ -802,6 +764,8 @@ namespace Low {
             const dtCrowdAgent *i_NavAgent =
                 g_Crowd->getAgent(i_Agent.get_agent_index());
 
+            // Update the transform position of the object based on the navmesh
+            // agent.
             Math::Vector3 i_TargetPos = *(Math::Vector3 *)i_NavAgent->targetPos;
             Math::Vector3 i_WorldPosition = *(Math::Vector3 *)i_NavAgent->npos;
             i_WorldPosition -= i_Agent.get_offset();
@@ -810,6 +774,9 @@ namespace Low {
             Component::Transform i_Parent = i_Transform.get_parent();
 
             if (i_Parent.is_alive()) {
+              // If the transform has a parent we need to calculate the local
+              // transformation (relative to the parent) by using the inverse of
+              // the parents world transform
               i_LocalPosition =
                   glm::inverse(i_Parent.get_world_matrix()) *
                   Math::Vector4(i_LocalPosition.x, i_LocalPosition.y,

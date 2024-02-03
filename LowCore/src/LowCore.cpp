@@ -52,9 +52,10 @@ namespace Low {
 
     static void initialize_filesystem_watchers()
     {
-
       float l_UpdateTime = 8.0f;
       Util::String l_DataPath = LOW_DATA_PATH;
+
+      Util::String test = "hi";
 
       g_FilesystemWatchers.scriptDirectory = Util::FileSystem::watch_directory(
           l_DataPath + "/scripts",

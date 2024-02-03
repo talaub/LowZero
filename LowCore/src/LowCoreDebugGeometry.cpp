@@ -163,6 +163,7 @@ namespace Low {
                       p_Color,
                       p_Transformation *
                           p_MeshResource.get_submeshes()[i].transformation);
+
         }
       }
 
