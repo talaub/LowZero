@@ -51,3 +51,6 @@
 [submodule "LowDependencies/nvidia-physx"]
 	path = LowDependencies/nvidia-physx
 	url = https://github.com/Zeblote/PhysX.git
+[submodule "LowDependencies/freetype"]
+	path = LowDependencies/freetype
+	url = https://github.com/freetype/freetype.git

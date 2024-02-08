@@ -22,53 +22,6 @@ namespace Low {
         Log::begin_log(p_LogLevel, p_Module, p_Terminate)
             << l_Message << LOW_LOG_END;
       }
-
-      bool assert_that(bool p_Condition, const char *p_Module, char *p_Message,
-                       const char *p_File, int p_Line, const char *p_Function)
-      {
-        if (!p_Condition) {
-          print_assert(Log::LogLevel::ERROR, p_Module, p_Message, p_File,
-                       p_Line, p_Function, true);
-          __debugbreak();
-        }
-
-        return p_Condition;
-      }
-
-      bool assert_ignore(bool p_Condition, const char *p_Module,
-                         char *p_Message, const char *p_File, int p_Line,
-                         const char *p_Function)
-      {
-        if (!p_Condition) {
-          print_assert(Log::LogLevel::WARN, p_Module, p_Message, p_File, p_Line,
-                       p_Function, false);
-        }
-
-        return p_Condition;
-      }
-
-      bool assert_that(bool p_Condition, const char *p_Module,
-                       const char *p_File, int p_Line, const char *p_Function)
-      {
-        if (!p_Condition) {
-          print_assert(Log::LogLevel::ERROR, p_Module, nullptr, p_File, p_Line,
-                       p_Function, true);
-          __debugbreak();
-        }
-
-        return p_Condition;
-      }
-
-      bool assert_ignore(bool p_Condition, const char *p_Module,
-                         const char *p_File, int p_Line, const char *p_Function)
-      {
-        if (!p_Condition) {
-          print_assert(Log::LogLevel::WARN, p_Module, nullptr, p_File, p_Line,
-                       p_Function, false);
-        }
-
-        return p_Condition;
-      }
     } // namespace Assertion
   }   // namespace Util
 } // namespace Low

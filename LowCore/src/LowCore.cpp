@@ -19,6 +19,7 @@
 #include "LowCorePrefabInstance.h"
 #include "LowCoreCflatScripting.h"
 #include "LowCoreNavmeshAgent.h"
+#include "LowCoreFont.h"
 
 #include "LowRenderer.h"
 
@@ -144,6 +145,7 @@ namespace Low {
     {
       MeshResource::initialize();
       Texture2D::initialize();
+      Font::initialize();
     }
 
     static void initialize_component_types()
@@ -354,6 +356,7 @@ namespace Low {
     {
       MeshResource::cleanup();
       Texture2D::cleanup();
+      Font::cleanup();
     }
 
     static void cleanup_component_types()

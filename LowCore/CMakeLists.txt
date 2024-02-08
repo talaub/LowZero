@@ -27,6 +27,7 @@ add_dependencies(LowCore
   RecastDemo
   Detour
   DetourCrowd
+  freetype
 )
 
 set(LOWCORE_INCLUDE_DIRS
@@ -60,4 +61,5 @@ target_link_libraries(LowCore PRIVATE
   RecastDemo
   Detour
   DetourCrowd
+  freetype
 )
