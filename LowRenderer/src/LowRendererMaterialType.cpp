@@ -46,9 +46,11 @@ namespace Low {
       l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, gbuffer_pipeline,
-                              GraphicsPipelineConfig)) GraphicsPipelineConfig();
+                              GraphicsPipelineConfig))
+          GraphicsPipelineConfig();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, depth_pipeline,
-                              GraphicsPipelineConfig)) GraphicsPipelineConfig();
+                              GraphicsPipelineConfig))
+          GraphicsPipelineConfig();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, internal, bool) = false;
       new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, properties,
                               Util::List<MaterialTypeProperty>))
@@ -123,11 +125,13 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialTypeData, gbuffer_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_gbuffer_pipeline();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, MaterialType, gbuffer_pipeline, GraphicsPipelineConfig);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
+                                            gbuffer_pipeline,
+                                            GraphicsPipelineConfig);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -140,13 +144,16 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_pipeline);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, depth_pipeline);
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialTypeData, depth_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_depth_pipeline();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, MaterialType, depth_pipeline, GraphicsPipelineConfig);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
+                                            depth_pipeline,
+                                            GraphicsPipelineConfig);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -161,11 +168,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, internal);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.is_internal();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, internal,
-                                            bool);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
+                                            internal, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -180,16 +188,19 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_properties();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, properties,
-                                            Util::List<MaterialTypeProperty>);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, properties,
+              Util::List<MaterialTypeProperty>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           MaterialType l_Handle = p_Handle.get_id();
-          l_Handle.set_properties(*(Util::List<MaterialTypeProperty> *)p_Data);
+          l_Handle.set_properties(
+              *(Util::List<MaterialTypeProperty> *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -199,7 +210,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType, name,
@@ -253,8 +265,8 @@ namespace Low {
 
     MaterialType MaterialType::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -277,8 +289,9 @@ namespace Low {
       l_MaterialType.serialize(p_Node);
     }
 
-    Low::Util::Handle MaterialType::deserialize(Low::Util::Yaml::Node &p_Node,
-                                                Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    MaterialType::deserialize(Low::Util::Yaml::Node &p_Node,
+                              Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -293,9 +306,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_pipeline
       // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_pipeline
 
-      return TYPE_SOA(MaterialType, gbuffer_pipeline, GraphicsPipelineConfig);
+      return TYPE_SOA(MaterialType, gbuffer_pipeline,
+                      GraphicsPipelineConfig);
     }
-    void MaterialType::set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value)
+    void
+    MaterialType::set_gbuffer_pipeline(GraphicsPipelineConfig &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -317,7 +332,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline
 
-      return TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig);
+      return TYPE_SOA(MaterialType, depth_pipeline,
+                      GraphicsPipelineConfig);
     }
     void MaterialType::set_depth_pipeline(GraphicsPipelineConfig &p_Value)
     {
@@ -327,7 +343,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_pipeline
 
       // Set new value
-      TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig) = p_Value;
+      TYPE_SOA(MaterialType, depth_pipeline, GraphicsPipelineConfig) =
+          p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_pipeline
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline
@@ -366,7 +383,8 @@ namespace Low {
       return TYPE_SOA(MaterialType, properties,
                       Util::List<MaterialTypeProperty>);
     }
-    void MaterialType::set_properties(Util::List<MaterialTypeProperty> &p_Value)
+    void
+    MaterialType::set_properties(Util::List<MaterialTypeProperty> &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -374,8 +392,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_properties
 
       // Set new value
-      TYPE_SOA(MaterialType, properties, Util::List<MaterialTypeProperty>) =
-          p_Value;
+      TYPE_SOA(MaterialType, properties,
+               Util::List<MaterialTypeProperty>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_properties
       // LOW_CODEGEN::END::CUSTOM:SETTER_properties
@@ -423,7 +441,8 @@ namespace Low {
     void MaterialType::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -455,18 +474,19 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(MaterialTypeData, internal) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData, internal) * (l_Capacity)],
+               &ms_Buffer[offsetof(MaterialTypeData, internal) *
+                          (l_Capacity)],
                l_Capacity * sizeof(bool));
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(MaterialTypeData, properties) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::List<MaterialTypeProperty>))])
-                  Util::List<MaterialTypeProperty>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(MaterialTypeData, properties) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::List<MaterialTypeProperty>))])
+              Util::List<MaterialTypeProperty>();
           *i_ValPtr = it->get_properties();
         }
       }
@@ -476,7 +496,8 @@ namespace Low {
                &ms_Buffer[offsetof(MaterialTypeData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -487,8 +508,8 @@ namespace Low {
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
       LOW_LOG_DEBUG << "Auto-increased budget for MaterialType from "
-                    << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Renderer
 } // namespace Low

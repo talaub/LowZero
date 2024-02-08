@@ -174,12 +174,14 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static RenderFlow make(Util::Name p_Name, Interface::Context p_Context,
+      static RenderFlow make(Util::Name p_Name,
+                             Interface::Context p_Context,
                              Util::Yaml::Node &p_Config);
       void clear_renderbojects();
       void execute();
       void update_dimensions(Math::UVector2 &p_Dimensions);
       void register_renderobject(RenderObject &p_RenderObject);
+      Resource::Image get_previous_output_image(Util::Handle p_Step);
 
     private:
       static uint32_t ms_Capacity;
@@ -188,7 +190,8 @@ namespace Low {
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
       void set_frame_info_buffer(Resource::Buffer p_Value);
-      void set_resource_signature(Interface::PipelineResourceSignature p_Value);
+      void
+      set_resource_signature(Interface::PipelineResourceSignature p_Value);
       void set_projection_matrix(Math::Matrix4x4 &p_Value);
       void set_view_matrix(Math::Matrix4x4 &p_Value);
     };

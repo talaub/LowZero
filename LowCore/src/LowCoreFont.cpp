@@ -21,7 +21,8 @@ namespace Low {
     uint32_t Font::ms_Capacity = 0u;
     uint8_t *Font::ms_Buffer = 0;
     Low::Util::Instances::Slot *Font::ms_Slots = 0;
-    Low::Util::List<Font> Font::ms_LivingInstances = Low::Util::List<Font>();
+    Low::Util::List<Font> Font::ms_LivingInstances =
+        Low::Util::List<Font>();
 
     Font::Font() : Low::Util::Handle(0ull)
     {
@@ -124,10 +125,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FontData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
           l_Handle.get_path();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, path, Util::String);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, path,
+                                            Util::String);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -139,11 +142,13 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FontData, glyphs);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
           l_Handle.get_glyphs();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, Font, glyphs, SINGLE_ARG(Util::Map<char, FontGlyph>));
+              p_Handle, Font, glyphs,
+              SINGLE_ARG(Util::Map<char, FontGlyph>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -155,7 +160,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FontData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -168,7 +174,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FontData, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, state,
@@ -187,7 +194,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FontData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, name,
@@ -241,8 +249,8 @@ namespace Low {
 
     Font Font::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -305,7 +313,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_glyphs
       // LOW_CODEGEN::END::CUSTOM:GETTER_glyphs
 
-      return TYPE_SOA(Font, glyphs, SINGLE_ARG(Util::Map<char, FontGlyph>));
+      return TYPE_SOA(Font, glyphs,
+                      SINGLE_ARG(Util::Map<char, FontGlyph>));
     }
     void Font::set_glyphs(Util::Map<char, FontGlyph> &p_Value)
     {
@@ -315,7 +324,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_glyphs
 
       // Set new value
-      TYPE_SOA(Font, glyphs, SINGLE_ARG(Util::Map<char, FontGlyph>)) = p_Value;
+      TYPE_SOA(Font, glyphs, SINGLE_ARG(Util::Map<char, FontGlyph>)) =
+          p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_glyphs
       // LOW_CODEGEN::END::CUSTOM:SETTER_glyphs
@@ -393,14 +403,15 @@ namespace Low {
     Font Font::make(Util::String &p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
           return *it;
         }
       }
 
-      Util::String l_FileName = p_Path.substr(p_Path.find_last_of("/\\") + 1);
+      Util::String l_FileName =
+          p_Path.substr(p_Path.find_last_of("/\\") + 1);
       Font l_Font = Font::make(LOW_NAME(l_FileName.c_str()));
       l_Font.set_path(p_Path);
 
@@ -493,7 +504,8 @@ namespace Low {
     void Font::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -527,10 +539,11 @@ namespace Low {
         }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(FontData, reference_count) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(FontData, reference_count) * (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+        memcpy(
+            &l_NewBuffer[offsetof(FontData, reference_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(FontData, reference_count) * (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(FontData, state) *
@@ -544,7 +557,8 @@ namespace Low {
                &ms_Buffer[offsetof(FontData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }

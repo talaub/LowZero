@@ -63,7 +63,8 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      l_Handle.set_unique_id(
+          Low::Util::generate_unique_id(l_Handle.get_id()));
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -130,10 +131,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.is_loaded();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, loaded, bool);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, loaded,
+                                            bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -146,13 +149,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(streaming_enabled);
         l_PropertyInfo.editorProperty = true;
-        l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_enabled);
+        l_PropertyInfo.dataOffset =
+            offsetof(RegionData, streaming_enabled);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.is_streaming_enabled();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, streaming_enabled,
-                                            bool);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region,
+                                            streaming_enabled, bool);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -165,13 +170,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(streaming_position);
         l_PropertyInfo.editorProperty = true;
-        l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_position);
+        l_PropertyInfo.dataOffset =
+            offsetof(RegionData, streaming_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_streaming_position();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region,
-                                            streaming_position, Math::Vector3);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Region, streaming_position, Math::Vector3);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -186,11 +193,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_streaming_radius();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, streaming_radius,
-                                            float);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region,
+                                            streaming_radius, float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -205,7 +213,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, entities);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -219,10 +228,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RegionData, scene);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Scene::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_scene();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, scene, Scene);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, scene,
+                                            Scene);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -237,7 +248,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, unique_id,
@@ -253,7 +265,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(RegionData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, name,
@@ -307,8 +320,8 @@ namespace Low {
 
     Region Region::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -350,7 +363,8 @@ namespace Low {
       }
 
       if (p_Node["streaming_enabled"]) {
-        l_Handle.set_streaming_enabled(p_Node["streaming_enabled"].as<bool>());
+        l_Handle.set_streaming_enabled(
+            p_Node["streaming_enabled"].as<bool>());
       }
       if (p_Node["streaming_position"]) {
         l_Handle.set_streaming_position(
@@ -358,10 +372,12 @@ namespace Low {
                 p_Node["streaming_position"]));
       }
       if (p_Node["streaming_radius"]) {
-        l_Handle.set_streaming_radius(p_Node["streaming_radius"].as<float>());
+        l_Handle.set_streaming_radius(
+            p_Node["streaming_radius"].as<float>());
       }
       if (p_Node["unique_id"]) {
-        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        l_Handle.set_unique_id(
+            p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -548,8 +564,10 @@ namespace Low {
     void Region::serialize_entities(Util::Yaml::Node &p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_entities
-      for (auto it = get_entities().begin(); it != get_entities().end(); ++it) {
-        Core::Entity i_Entity = Util::find_handle_by_unique_id(*it).get_id();
+      for (auto it = get_entities().begin(); it != get_entities().end();
+           ++it) {
+        Core::Entity i_Entity =
+            Util::find_handle_by_unique_id(*it).get_id();
         if (i_Entity.is_alive()) {
           Util::Yaml::Node i_Node;
           i_Entity.serialize(i_Node);
@@ -587,7 +605,8 @@ namespace Low {
 
       set_loaded(true);
 
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\regions\\";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\regions\\";
       l_Path += std::to_string(get_unique_id()).c_str();
       l_Path += ".entities.yaml";
 
@@ -598,7 +617,8 @@ namespace Low {
       Util::Yaml::Node l_RootNode = Util::Yaml::load_file(l_Path.c_str());
       Util::Yaml::Node &l_EntitiesNode = l_RootNode["entities"];
 
-      for (auto it = l_EntitiesNode.begin(); it != l_EntitiesNode.end(); ++it) {
+      for (auto it = l_EntitiesNode.begin(); it != l_EntitiesNode.end();
+           ++it) {
         Util::Yaml::Node &i_EntityNode = *it;
         Entity::deserialize(i_EntityNode, *this);
       }
@@ -616,7 +636,8 @@ namespace Low {
 
       while (!get_entities().empty()) {
         Entity i_Entity =
-            Util::find_handle_by_unique_id(*get_entities().begin()).get_id();
+            Util::find_handle_by_unique_id(*get_entities().begin())
+                .get_id();
         i_Entity.destroy();
       }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload_entities
@@ -641,7 +662,8 @@ namespace Low {
     void Region::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -663,25 +685,25 @@ namespace Low {
                l_Capacity * sizeof(bool));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(RegionData, streaming_enabled) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(RegionData, streaming_enabled) * (l_Capacity)],
-            l_Capacity * sizeof(bool));
+        memcpy(&l_NewBuffer[offsetof(RegionData, streaming_enabled) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RegionData, streaming_enabled) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(RegionData, streaming_position) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(RegionData, streaming_position) * (l_Capacity)],
-            l_Capacity * sizeof(Math::Vector3));
+        memcpy(&l_NewBuffer[offsetof(RegionData, streaming_position) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RegionData, streaming_position) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Math::Vector3));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(RegionData, streaming_radius) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(RegionData, streaming_radius) * (l_Capacity)],
-            l_Capacity * sizeof(float));
+        memcpy(&l_NewBuffer[offsetof(RegionData, streaming_radius) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RegionData, streaming_radius) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(float));
       }
       {
         for (auto it = ms_LivingInstances.begin();
@@ -713,7 +735,8 @@ namespace Low {
                &ms_Buffer[offsetof(RegionData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -723,9 +746,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Region from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for Region from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

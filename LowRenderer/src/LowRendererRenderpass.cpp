@@ -50,7 +50,8 @@ namespace Low {
         l_Handle.m_Data.m_Type = Renderpass::TYPE_ID;
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, Renderpass, renderpass,
-                                Backend::Renderpass)) Backend::Renderpass();
+                                Backend::Renderpass))
+            Backend::Renderpass();
         ACCESSOR_TYPE_SOA(l_Handle, Renderpass, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -123,11 +124,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(RenderpassData, renderpass);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.get_renderpass();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass, renderpass,
-                                              Backend::Renderpass);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Renderpass, renderpass, Backend::Renderpass);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -142,7 +144,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(RenderpassData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass, name,
@@ -221,8 +224,9 @@ namespace Low {
         l_Renderpass.serialize(p_Node);
       }
 
-      Low::Util::Handle Renderpass::deserialize(Low::Util::Yaml::Node &p_Node,
-                                                Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      Renderpass::deserialize(Low::Util::Yaml::Node &p_Node,
+                              Low::Util::Handle p_Creator)
       {
         Renderpass l_Handle = Renderpass::make(N(Renderpass));
 
@@ -289,7 +293,8 @@ namespace Low {
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 
-        LOW_ASSERT(p_Params.clearColors.size() == p_Params.renderTargets.size(),
+        LOW_ASSERT(p_Params.clearColors.size() ==
+                       p_Params.renderTargets.size(),
                    "You have to submit the same amount of "
                    "clearcolors as rendertargets");
 
@@ -300,7 +305,8 @@ namespace Low {
         l_Params.clearDepthColor = p_Params.clearDepthColor;
         l_Params.useDepth = p_Params.useDepth;
         if (p_Params.useDepth) {
-          l_Params.depthRenderTarget = &p_Params.depthRenderTarget.get_image();
+          l_Params.depthRenderTarget =
+              &p_Params.depthRenderTarget.get_image();
         }
         l_Params.dimensions = p_Params.dimensions;
         l_Params.clearTargetColor = p_Params.clearColors.data();
@@ -309,12 +315,13 @@ namespace Low {
 
         Util::List<Backend::ImageResource> l_TargetResources;
         for (uint8_t i = 0u; i < l_Params.renderTargetCount; ++i) {
-          l_TargetResources.push_back(p_Params.renderTargets[i].get_image());
+          l_TargetResources.push_back(
+              p_Params.renderTargets[i].get_image());
         }
         l_Params.renderTargets = l_TargetResources.data();
 
-        Backend::callbacks().renderpass_create(l_Renderpass.get_renderpass(),
-                                               l_Params);
+        Backend::callbacks().renderpass_create(
+            l_Renderpass.get_renderpass(), l_Params);
 
         return l_Renderpass;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
@@ -360,7 +367,8 @@ namespace Low {
       void Renderpass::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -376,11 +384,11 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(
-              &l_NewBuffer[offsetof(RenderpassData, renderpass) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(RenderpassData, renderpass) * (l_Capacity)],
-              l_Capacity * sizeof(Backend::Renderpass));
+          memcpy(&l_NewBuffer[offsetof(RenderpassData, renderpass) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RenderpassData, renderpass) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Backend::Renderpass));
         }
         {
           memcpy(&l_NewBuffer[offsetof(RenderpassData, name) *

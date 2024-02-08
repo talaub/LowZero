@@ -46,10 +46,10 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Material::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, material_type, MaterialType))
-          MaterialType();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, context, Interface::Context))
-          Interface::Context();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, material_type,
+                              MaterialType)) MaterialType();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, context,
+                              Interface::Context)) Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Material, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -92,8 +92,8 @@ namespace Low {
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowRenderer), N(Material));
 
-      initialize_buffer(&ms_Buffer, MaterialData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, MaterialData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Material);
       LOW_PROFILE_ALLOC(type_slots_Material);
@@ -120,11 +120,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MaterialType::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_material_type();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, material_type,
-                                            MaterialType);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material,
+                                            material_type, MaterialType);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -140,7 +141,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -153,7 +155,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, name,
@@ -207,8 +210,8 @@ namespace Low {
 
     Material Material::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -250,8 +253,8 @@ namespace Low {
                 .get_id());
       }
       if (p_Node["context"]) {
-        l_Handle.set_context(Interface::Context::deserialize(p_Node["context"],
-                                                             l_Handle.get_id())
+        l_Handle.set_context(Interface::Context::deserialize(
+                                 p_Node["context"], l_Handle.get_id())
                                  .get_id());
       }
       if (p_Node["name"]) {
@@ -333,7 +336,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
-    Material Material::make(Util::Name p_Name, Interface::Context p_Context)
+    Material Material::make(Util::Name p_Name,
+                            Interface::Context p_Context)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       Material l_Material = Material::make(p_Name);
@@ -369,8 +373,9 @@ namespace Low {
 
             get_context().get_material_data_buffer().write(
                 &i_Data, i_Size,
-                i_Offset + (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
-                                           sizeof(Math::Vector4))));
+                i_Offset +
+                    (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                                    sizeof(Math::Vector4))));
 
           } else if (i_MaterialTypeProperty.type ==
                      MaterialTypePropertyType::TEXTURE2D) {
@@ -386,8 +391,9 @@ namespace Low {
 
             get_context().get_material_data_buffer().write(
                 &i_TextureIndexFloat, i_Size,
-                i_Offset + (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
-                                           sizeof(Math::Vector4))));
+                i_Offset +
+                    (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                                    sizeof(Math::Vector4))));
           } else {
             LOW_ASSERT(false, "Unknown material property type");
           }
@@ -409,7 +415,8 @@ namespace Low {
           break;
         }
       }
-      LOW_ASSERT(l_Index < get_capacity(), "Budget blown for type Material");
+      LOW_ASSERT(l_Index < get_capacity(),
+                 "Budget blown for type Material");
       ms_Slots[l_Index].m_Occupied = true;
       return l_Index;
     }

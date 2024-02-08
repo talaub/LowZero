@@ -29,7 +29,8 @@ namespace Low {
     RenderFlow::RenderFlow(uint64_t p_Id) : Low::Util::Handle(p_Id)
     {
     }
-    RenderFlow::RenderFlow(RenderFlow &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+    RenderFlow::RenderFlow(RenderFlow &p_Copy)
+        : Low::Util::Handle(p_Copy.m_Id)
     {
     }
 
@@ -49,8 +50,8 @@ namespace Low {
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, context,
                               Interface::Context)) Interface::Context();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, dimensions, Math::UVector2))
-          Math::UVector2();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, dimensions,
+                              Math::UVector2)) Math::UVector2();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, output_image,
                               Resource::Image)) Resource::Image();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, steps,
@@ -68,8 +69,10 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_direction,
                               Math::Vector3)) Math::Vector3();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_fov, float) = 0.0f;
-      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_near_plane, float) = 0.0f;
-      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_far_plane, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_near_plane, float) =
+          0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_far_plane, float) =
+          0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, projection_matrix,
                               Math::Matrix4x4)) Math::Matrix4x4();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, view_matrix,
@@ -77,7 +80,8 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, directional_light,
                               DirectionalLight)) DirectionalLight();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, point_lights,
-                              Util::List<PointLight>)) Util::List<PointLight>();
+                              Util::List<PointLight>))
+          Util::List<PointLight>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -120,8 +124,8 @@ namespace Low {
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowRenderer), N(RenderFlow));
 
-      initialize_buffer(&ms_Buffer, RenderFlowData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, RenderFlowData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_RenderFlow);
       LOW_PROFILE_ALLOC(type_slots_RenderFlow);
@@ -148,7 +152,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -161,11 +166,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_dimensions();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, dimensions,
-                                            Math::UVector2);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
+                                            dimensions, Math::UVector2);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -178,11 +184,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_output_image();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, output_image,
-                                            Resource::Image);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
+                                            output_image, Resource::Image);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -197,7 +204,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, steps);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_steps();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, steps,
@@ -216,11 +224,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_resources();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, resources,
-                                            ResourceRegistry);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
+                                            resources, ResourceRegistry);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -230,10 +239,12 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(frame_info_buffer);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, frame_info_buffer);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, frame_info_buffer);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_frame_info_buffer();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -252,7 +263,8 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
             Interface::PipelineResourceSignature::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_resource_signature();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -267,13 +279,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_position);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_position);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, camera_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_camera_position();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
-                                            camera_position, Math::Vector3);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderFlow, camera_position, Math::Vector3);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -286,13 +300,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_direction);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_direction);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, camera_direction);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_camera_direction();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
-                                            camera_direction, Math::Vector3);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderFlow, camera_direction, Math::Vector3);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -307,11 +323,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_fov);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_camera_fov();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, camera_fov,
-                                            float);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
+                                            camera_fov, float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -324,9 +341,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_near_plane);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_near_plane);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, camera_near_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_camera_near_plane();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
@@ -343,9 +362,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_far_plane);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, camera_far_plane);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, camera_far_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_camera_far_plane();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
@@ -362,13 +383,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(projection_matrix);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, projection_matrix);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, projection_matrix);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_projection_matrix();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
-                                            projection_matrix, Math::Matrix4x4);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderFlow, projection_matrix, Math::Matrix4x4);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -380,11 +403,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, view_matrix);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_view_matrix();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, view_matrix,
-                                            Math::Matrix4x4);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow,
+                                            view_matrix, Math::Matrix4x4);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -394,9 +418,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(directional_light);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderFlowData, directional_light);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderFlowData, directional_light);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_directional_light();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -415,11 +441,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, point_lights);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_point_lights();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, point_lights,
-                                            Util::List<PointLight>);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderFlow, point_lights, Util::List<PointLight>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -431,7 +458,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderFlow, name,
@@ -485,8 +513,8 @@ namespace Low {
 
     RenderFlow RenderFlow::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -529,22 +557,24 @@ namespace Low {
       l_RenderFlow.serialize(p_Node);
     }
 
-    Low::Util::Handle RenderFlow::deserialize(Low::Util::Yaml::Node &p_Node,
-                                              Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    RenderFlow::deserialize(Low::Util::Yaml::Node &p_Node,
+                            Low::Util::Handle p_Creator)
     {
       RenderFlow l_Handle = RenderFlow::make(N(RenderFlow));
 
       if (p_Node["context"]) {
-        l_Handle.set_context(Interface::Context::deserialize(p_Node["context"],
-                                                             l_Handle.get_id())
+        l_Handle.set_context(Interface::Context::deserialize(
+                                 p_Node["context"], l_Handle.get_id())
                                  .get_id());
       }
       if (p_Node["dimensions"]) {
       }
       if (p_Node["output_image"]) {
-        l_Handle.set_output_image(Resource::Image::deserialize(
-                                      p_Node["output_image"], l_Handle.get_id())
-                                      .get_id());
+        l_Handle.set_output_image(
+            Resource::Image::deserialize(p_Node["output_image"],
+                                         l_Handle.get_id())
+                .get_id());
       }
       if (p_Node["steps"]) {
       }
@@ -576,10 +606,12 @@ namespace Low {
         l_Handle.set_camera_fov(p_Node["camera_fov"].as<float>());
       }
       if (p_Node["camera_near_plane"]) {
-        l_Handle.set_camera_near_plane(p_Node["camera_near_plane"].as<float>());
+        l_Handle.set_camera_near_plane(
+            p_Node["camera_near_plane"].as<float>());
       }
       if (p_Node["camera_far_plane"]) {
-        l_Handle.set_camera_far_plane(p_Node["camera_far_plane"].as<float>());
+        l_Handle.set_camera_far_plane(
+            p_Node["camera_far_plane"].as<float>());
       }
       if (p_Node["projection_matrix"]) {
       }
@@ -955,7 +987,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
-    RenderFlow RenderFlow::make(Util::Name p_Name, Interface::Context p_Context,
+    RenderFlow RenderFlow::make(Util::Name p_Name,
+                                Interface::Context p_Context,
                                 Util::Yaml::Node &p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
@@ -978,8 +1011,8 @@ namespace Low {
         l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
         l_Params.data = nullptr;
 
-        l_RenderFlow.set_frame_info_buffer(
-            Resource::Buffer::make(N(RenderFlowFrameInfoBuffer), l_Params));
+        l_RenderFlow.set_frame_info_buffer(Resource::Buffer::make(
+            N(RenderFlowFrameInfoBuffer), l_Params));
       }
 
       Util::List<ResourceConfig> l_ResourceConfigs;
@@ -1000,7 +1033,8 @@ namespace Low {
         l_ResourceConfig.type = ResourceType::BUFFER;
         l_ResourceConfig.name = N(_point_light_info);
         l_ResourceConfig.buffer.size =
-            16 + (sizeof(PointLightShaderInfo) * LOW_RENDERER_POINTLIGHT_COUNT);
+            16 +
+            (sizeof(PointLightShaderInfo) * LOW_RENDERER_POINTLIGHT_COUNT);
         l_ResourceConfigs.push_back(l_ResourceConfig);
       }
       {
@@ -1008,7 +1042,8 @@ namespace Low {
         l_ResourceConfig.arraySize = 1;
         l_ResourceConfig.type = ResourceType::BUFFER;
         l_ResourceConfig.name = N(_particle_draw_info);
-        l_ResourceConfig.buffer.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDIRECT;
+        l_ResourceConfig.buffer.usageFlags =
+            LOW_RENDERER_BUFFER_USAGE_INDIRECT;
         l_ResourceConfig.buffer.size =
             Backend::callbacks().get_draw_indexed_indirect_info_size() *
             LOW_RENDERER_MAX_PARTICLES;
@@ -1029,7 +1064,8 @@ namespace Low {
         l_ResourceConfig.arraySize = 1;
         l_ResourceConfig.type = ResourceType::BUFFER;
         l_ResourceConfig.name = N(_particle_draw_count);
-        l_ResourceConfig.buffer.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDIRECT;
+        l_ResourceConfig.buffer.usageFlags =
+            LOW_RENDERER_BUFFER_USAGE_INDIRECT;
         l_ResourceConfig.buffer.size = sizeof(uint32_t);
         l_ResourceConfigs.push_back(l_ResourceConfig);
       }
@@ -1094,7 +1130,8 @@ namespace Low {
                 N(RenderFlowSignature), p_Context, 1, l_Resources));
 
         l_RenderFlow.get_resource_signature().set_constant_buffer_resource(
-            N(u_RenderFlowFrameInfo), 0, l_RenderFlow.get_frame_info_buffer());
+            N(u_RenderFlowFrameInfo), 0,
+            l_RenderFlow.get_frame_info_buffer());
         l_RenderFlow.get_resource_signature().set_constant_buffer_resource(
             N(u_DirectionalLightInfo), 0,
             l_RenderFlow.get_resources().get_buffer_resource(
@@ -1118,8 +1155,8 @@ namespace Low {
                 N(_particle_draw_count)));
       }
 
-      for (auto it = p_Config["steps"].begin(); it != p_Config["steps"].end();
-           ++it) {
+      for (auto it = p_Config["steps"].begin();
+           it != p_Config["steps"].end(); ++it) {
         Util::Yaml::Node i_StepEntry = *it;
         Util::Name i_StepName = LOW_YAML_AS_NAME(i_StepEntry["name"]);
 
@@ -1128,8 +1165,8 @@ namespace Low {
              ComputeStepConfig::ms_LivingInstances) {
           if (i_Config.get_name() == i_StepName) {
             i_Found = true;
-            ComputeStep i_Step =
-                ComputeStep::make(i_Config.get_name(), p_Context, i_Config);
+            ComputeStep i_Step = ComputeStep::make(i_Config.get_name(),
+                                                   p_Context, i_Config);
             i_Step.prepare(l_RenderFlow);
 
             l_RenderFlow.get_steps().push_back(i_Step);
@@ -1142,8 +1179,8 @@ namespace Low {
                GraphicsStepConfig ::ms_LivingInstances) {
             if (i_Config.get_name() == i_StepName) {
               i_Found = true;
-              GraphicsStep i_Step =
-                  GraphicsStep::make(i_Config.get_name(), p_Context, i_Config);
+              GraphicsStep i_Step = GraphicsStep::make(
+                  i_Config.get_name(), p_Context, i_Config);
               i_Step.prepare(l_RenderFlow);
 
               l_RenderFlow.get_steps().push_back(i_Step);
@@ -1184,7 +1221,8 @@ namespace Low {
         LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
             get_context().get_context(), l_RenderDocLabel,
             Math::Color(0.341f, 0.4249f, 0.2341f, 1.0f));
-        MICROPROFILE_SCOPEI("Renderer", l_RenderDocLabel.c_str(), MP_GREEN);
+        MICROPROFILE_SCOPEI("Renderer", l_RenderDocLabel.c_str(),
+                            MP_GREEN);
       }
 
       Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(
@@ -1196,16 +1234,16 @@ namespace Low {
                                          // Vulkan y-axis
 
       Math::Matrix4x4 l_ViewMatrix = glm::lookAt(
-          get_camera_position(), get_camera_position() + get_camera_direction(),
-          LOW_VECTOR3_UP);
+          get_camera_position(),
+          get_camera_position() + get_camera_direction(), LOW_VECTOR3_UP);
 
       set_projection_matrix(l_ProjectionMatrix);
       set_view_matrix(l_ViewMatrix);
 
       {
-        Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
-                                             1.0f /
-                                                 ((float)get_dimensions().y)};
+        Math::Vector2 l_InverseDimensions = {
+            1.0f / ((float)get_dimensions().x),
+            1.0f / ((float)get_dimensions().y)};
 
         RenderFlowFrameInfo l_FrameInfo;
         l_FrameInfo.cameraPosition = get_camera_position();
@@ -1269,6 +1307,43 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_register_renderobject
     }
 
+    Resource::Image
+    RenderFlow::get_previous_output_image(Util::Handle p_Step)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_previous_output_image
+      for (uint32_t i = 0u; i < get_steps().size(); ++i) {
+        if (p_Step.get_id() == get_steps()[i].get_id()) {
+          if (i == 0u) {
+            return 0ull;
+          }
+          Util::Handle i_Step = get_steps()[i - 1];
+          if (i_Step.get_type() == ComputeStep::TYPE_ID) {
+            ComputeStep i_ComputeStep = i_Step.get_id();
+            return i_ComputeStep.get_output_image();
+          } else if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
+            // TODO: Fix for graphics steps
+            return 0;
+          }
+          LOW_ASSERT(false, "Unknown renderstep type");
+        }
+      }
+
+      // If the current renderstep could not be found just return the last
+      // output image
+      if (!get_steps().empty()) {
+        Util::Handle l_Step = get_steps().back();
+        if (l_Step.get_type() == ComputeStep::TYPE_ID) {
+          ComputeStep l_ComputeStep = l_Step.get_id();
+          return l_ComputeStep.get_output_image();
+        } else if (l_Step.get_type() == GraphicsStep::TYPE_ID) {
+          // TODO: Fix for graphics steps
+          return 0;
+        }
+      }
+      return 0;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_previous_output_image
+    }
+
     uint32_t RenderFlow::create_instance()
     {
       uint32_t l_Index = 0u;
@@ -1288,7 +1363,8 @@ namespace Low {
     void RenderFlow::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -1304,23 +1380,25 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(RenderFlowData, context) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, context) * (l_Capacity)],
-               l_Capacity * sizeof(Interface::Context));
+        memcpy(
+            &l_NewBuffer[offsetof(RenderFlowData, context) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(RenderFlowData, context) * (l_Capacity)],
+            l_Capacity * sizeof(Interface::Context));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, dimensions) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, dimensions) * (l_Capacity)],
+               &ms_Buffer[offsetof(RenderFlowData, dimensions) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Math::UVector2));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(RenderFlowData, output_image) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(RenderFlowData, output_image) * (l_Capacity)],
-            l_Capacity * sizeof(Resource::Image));
+        memcpy(&l_NewBuffer[offsetof(RenderFlowData, output_image) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderFlowData, output_image) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Resource::Image));
       }
       {
         for (auto it = ms_LivingInstances.begin();
@@ -1335,10 +1413,11 @@ namespace Low {
         }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(RenderFlowData, resources) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, resources) * (l_Capacity)],
-               l_Capacity * sizeof(ResourceRegistry));
+        memcpy(
+            &l_NewBuffer[offsetof(RenderFlowData, resources) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(RenderFlowData, resources) * (l_Capacity)],
+            l_Capacity * sizeof(ResourceRegistry));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, frame_info_buffer) *
@@ -1371,7 +1450,8 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, camera_fov) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, camera_fov) * (l_Capacity)],
+               &ms_Buffer[offsetof(RenderFlowData, camera_fov) *
+                          (l_Capacity)],
                l_Capacity * sizeof(float));
       }
       {
@@ -1398,7 +1478,8 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(RenderFlowData, view_matrix) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderFlowData, view_matrix) * (l_Capacity)],
+               &ms_Buffer[offsetof(RenderFlowData, view_matrix) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Math::Matrix4x4));
       }
       {
@@ -1411,11 +1492,12 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(RenderFlowData, point_lights) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() * sizeof(Util::List<PointLight>))])
-              Util::List<PointLight>();
+          auto *i_ValPtr =
+              new (&l_NewBuffer[offsetof(RenderFlowData, point_lights) *
+                                    (l_Capacity + l_CapacityIncrease) +
+                                (it->get_index() *
+                                 sizeof(Util::List<PointLight>))])
+                  Util::List<PointLight>();
           *i_ValPtr = it->get_point_lights();
         }
       }
@@ -1425,7 +1507,8 @@ namespace Low {
                &ms_Buffer[offsetof(RenderFlowData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -1436,8 +1519,8 @@ namespace Low {
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
       LOW_LOG_DEBUG << "Auto-increased budget for RenderFlow from "
-                    << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Renderer
 } // namespace Low

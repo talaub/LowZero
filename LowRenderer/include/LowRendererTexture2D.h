@@ -104,7 +104,8 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static Texture2D make(Util::Name p_Name, Interface::Context p_Context,
+      static Texture2D make(Util::Name p_Name,
+                            Interface::Context p_Context,
                             Util::Resource::Image2D &p_Image2d);
       void assign_image(Interface::Context p_Context,
                         Util::Resource::Image2D &p_Image2d);

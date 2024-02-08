@@ -35,13 +35,16 @@ namespace Low {
     {
       Util::Map<RenderFlow, ResourceRegistry> resources;
       GraphicsStepConfig config;
-      Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> pipelines;
+      Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>>
+          pipelines;
       Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
           renderobjects;
-      Util::Map<Util::Name, Util::List<RenderObject>> skinned_renderobjects;
+      Util::Map<Util::Name, Util::List<RenderObject>>
+          skinned_renderobjects;
       Util::Map<RenderFlow, Interface::Renderpass> renderpasses;
       Interface::Context context;
-      Util::Map<RenderFlow, Interface::PipelineResourceSignature> signatures;
+      Util::Map<RenderFlow, Interface::PipelineResourceSignature>
+          signatures;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -128,7 +131,8 @@ namespace Low {
       Util::Map<Util::Name, Util::List<RenderObject>> &
       get_skinned_renderobjects() const;
 
-      Util::Map<RenderFlow, Interface::Renderpass> &get_renderpasses() const;
+      Util::Map<RenderFlow, Interface::Renderpass> &
+      get_renderpasses() const;
 
       Interface::Context get_context() const;
 
@@ -138,11 +142,13 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static GraphicsStep make(Util::Name p_Name, Interface::Context p_Context,
+      static GraphicsStep make(Util::Name p_Name,
+                               Interface::Context p_Context,
                                GraphicsStepConfig p_Config);
       void clear_renderobjects();
       void prepare(RenderFlow p_RenderFlow);
-      void execute(RenderFlow p_RenderFlow, Math::Matrix4x4 &p_ProjectionMatrix,
+      void execute(RenderFlow p_RenderFlow,
+                   Math::Matrix4x4 &p_ProjectionMatrix,
                    Math::Matrix4x4 &p_ViewMatrix);
       void register_renderobject(RenderObject &p_RenderObject);
       void update_dimensions(RenderFlow p_RenderFlow);
@@ -150,9 +156,11 @@ namespace Low {
                                    RenderFlow p_RenderFlow);
       static void create_renderpass(GraphicsStep p_Step,
                                     RenderFlow p_RenderFlow);
-      static void create_pipelines(GraphicsStep p_Step, RenderFlow p_RenderFlow,
+      static void create_pipelines(GraphicsStep p_Step,
+                                   RenderFlow p_RenderFlow,
                                    bool p_UpdateExisting);
-      static void default_execute(GraphicsStep p_Step, RenderFlow p_RenderFlow,
+      static void default_execute(GraphicsStep p_Step,
+                                  RenderFlow p_RenderFlow,
                                   Math::Matrix4x4 &p_ProjectionMatrix,
                                   Math::Matrix4x4 &p_ViewMatrix);
       static void draw_renderobjects(GraphicsStep p_Step,

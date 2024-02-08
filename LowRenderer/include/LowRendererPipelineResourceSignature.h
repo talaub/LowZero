@@ -39,7 +39,8 @@ namespace Low {
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<PipelineResourceSignature> ms_LivingInstances;
+        static Low::Util::List<PipelineResourceSignature>
+            ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
@@ -80,7 +81,8 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-        static PipelineResourceSignature find_by_name(Low::Util::Name p_Name);
+        static PipelineResourceSignature
+        find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
@@ -88,7 +90,8 @@ namespace Low {
                                              Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          return p_Handle.get_type() == PipelineResourceSignature::TYPE_ID &&
+          return p_Handle.get_type() ==
+                     PipelineResourceSignature::TYPE_ID &&
                  p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
@@ -117,7 +120,8 @@ namespace Low {
         void set_unbound_sampler_resource(Util::Name p_Name,
                                           uint32_t p_ArrayIndex,
                                           Resource::Image p_Value);
-        void set_texture2d_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
+        void set_texture2d_resource(Util::Name p_Name,
+                                    uint32_t p_ArrayIndex,
                                     Resource::Image p_Value);
         void set_constant_buffer_resource(Util::Name p_Name,
                                           uint32_t p_ArrayIndex,

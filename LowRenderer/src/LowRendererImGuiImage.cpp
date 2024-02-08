@@ -47,9 +47,10 @@ namespace Low {
         l_Handle.m_Data.m_Type = ImGuiImage::TYPE_ID;
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, imgui_image,
-                                Backend::ImGuiImage)) Backend::ImGuiImage();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, image, Resource::Image))
-            Resource::Image();
+                                Backend::ImGuiImage))
+            Backend::ImGuiImage();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, image,
+                                Resource::Image)) Resource::Image();
         ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -118,13 +119,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(imgui_image);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, imgui_image);
+          l_PropertyInfo.dataOffset =
+              offsetof(ImGuiImageData, imgui_image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();
             l_Handle.get_imgui_image();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, imgui_image,
-                                              Backend::ImGuiImage);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ImGuiImage, imgui_image, Backend::ImGuiImage);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -137,7 +140,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();
             l_Handle.get_image();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, image,
@@ -153,7 +157,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ImGuiImageData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, name,
@@ -235,17 +240,18 @@ namespace Low {
         l_ImGuiImage.serialize(p_Node);
       }
 
-      Low::Util::Handle ImGuiImage::deserialize(Low::Util::Yaml::Node &p_Node,
-                                                Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      ImGuiImage::deserialize(Low::Util::Yaml::Node &p_Node,
+                              Low::Util::Handle p_Creator)
       {
         ImGuiImage l_Handle = ImGuiImage::make(N(ImGuiImage));
 
         if (p_Node["imgui_image"]) {
         }
         if (p_Node["image"]) {
-          l_Handle.set_image(
-              Resource::Image::deserialize(p_Node["image"], l_Handle.get_id())
-                  .get_id());
+          l_Handle.set_image(Resource::Image::deserialize(
+                                 p_Node["image"], l_Handle.get_id())
+                                 .get_id());
         }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -313,15 +319,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
-      ImGuiImage ImGuiImage::make(Util::Name p_Name, Resource::Image p_Image)
+      ImGuiImage ImGuiImage::make(Util::Name p_Name,
+                                  Resource::Image p_Image)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         ImGuiImage l_ImGuiImage = ImGuiImage::make(p_Name);
 
         l_ImGuiImage.set_image(p_Image);
 
-        Backend::callbacks().imgui_image_create(l_ImGuiImage.get_imgui_image(),
-                                                p_Image.get_image());
+        Backend::callbacks().imgui_image_create(
+            l_ImGuiImage.get_imgui_image(), p_Image.get_image());
 
         return l_ImGuiImage;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
@@ -357,7 +364,8 @@ namespace Low {
       void ImGuiImage::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -373,17 +381,18 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(
-              &l_NewBuffer[offsetof(ImGuiImageData, imgui_image) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ImGuiImageData, imgui_image) * (l_Capacity)],
-              l_Capacity * sizeof(Backend::ImGuiImage));
+          memcpy(&l_NewBuffer[offsetof(ImGuiImageData, imgui_image) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ImGuiImageData, imgui_image) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Backend::ImGuiImage));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(ImGuiImageData, image) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ImGuiImageData, image) * (l_Capacity)],
-                 l_Capacity * sizeof(Resource::Image));
+          memcpy(
+              &l_NewBuffer[offsetof(ImGuiImageData, image) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ImGuiImageData, image) * (l_Capacity)],
+              l_Capacity * sizeof(Resource::Image));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ImGuiImageData, name) *

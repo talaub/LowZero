@@ -123,9 +123,13 @@ namespace Low {
       }
     }
 
+    bool ResourceRegistry::has_resource(Util::Name p_Name) const {
+      return m_Resources.find(p_Name) != m_Resources.end();
+    }
+
     Util::Handle ResourceRegistry::get_resource(Util::Name p_Name)
     {
-      LOW_ASSERT(m_Resources.find(p_Name) != m_Resources.end(),
+      LOW_ASSERT(has_resource(p_Name),
                  "Could not find resource in registry");
 
       return m_Resources[p_Name].handleId;

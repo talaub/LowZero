@@ -52,9 +52,13 @@ namespace Low {
       return *this;
     }
 
+    bool Name::is_valid() const {
+      return buffer_contains_name(m_Index);
+    }
+
     char *Name::c_str() const
     {
-      LOW_ASSERT(buffer_contains_name(m_Index), "Name not found");
+      LOW_ASSERT(is_valid(), "Name not found");
 
       return g_NameMap[m_Index];
     }

@@ -28,7 +28,8 @@ namespace Low {
     Texture2D::Texture2D(uint64_t p_Id) : Low::Util::Handle(p_Id)
     {
     }
-    Texture2D::Texture2D(Texture2D &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+    Texture2D::Texture2D(Texture2D &p_Copy)
+        : Low::Util::Handle(p_Copy.m_Id)
     {
     }
 
@@ -48,8 +49,8 @@ namespace Low {
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, image, Resource::Image))
           Resource::Image();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, context, Interface::Context))
-          Interface::Context();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, context,
+                              Interface::Context)) Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -76,7 +77,8 @@ namespace Low {
         if (ms_LivingInstances.size() > 0 &&
             ms_LivingInstances[0].get_image().is_alive()) {
           get_context().get_global_signature().set_sampler_resource(
-              N(g_Texture2Ds), get_index(), ms_LivingInstances[0].get_image());
+              N(g_Texture2Ds), get_index(),
+              ms_LivingInstances[0].get_image());
         }
       }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -103,8 +105,8 @@ namespace Low {
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowRenderer), N(Texture2D));
 
-      initialize_buffer(&ms_Buffer, Texture2DData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, Texture2DData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Texture2D);
       LOW_PROFILE_ALLOC(type_slots_Texture2D);
@@ -131,7 +133,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_image();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image,
@@ -148,7 +151,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -161,7 +165,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name,
@@ -215,8 +220,8 @@ namespace Low {
 
     Texture2D Texture2D::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -252,13 +257,13 @@ namespace Low {
       Texture2D l_Handle = Texture2D::make(N(Texture2D));
 
       if (p_Node["image"]) {
-        l_Handle.set_image(
-            Resource::Image::deserialize(p_Node["image"], l_Handle.get_id())
-                .get_id());
+        l_Handle.set_image(Resource::Image::deserialize(p_Node["image"],
+                                                        l_Handle.get_id())
+                               .get_id());
       }
       if (p_Node["context"]) {
-        l_Handle.set_context(Interface::Context::deserialize(p_Node["context"],
-                                                             l_Handle.get_id())
+        l_Handle.set_context(Interface::Context::deserialize(
+                                 p_Node["context"], l_Handle.get_id())
                                  .get_id());
       }
       if (p_Node["name"]) {
@@ -340,7 +345,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
-    Texture2D Texture2D::make(Util::Name p_Name, Interface::Context p_Context,
+    Texture2D Texture2D::make(Util::Name p_Name,
+                              Interface::Context p_Context,
                               Util::Resource::Image2D &p_Image2d)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
@@ -385,7 +391,8 @@ namespace Low {
           break;
         }
       }
-      LOW_ASSERT(l_Index < get_capacity(), "Budget blown for type Texture2D");
+      LOW_ASSERT(l_Index < get_capacity(),
+                 "Budget blown for type Texture2D");
       ms_Slots[l_Index].m_Occupied = true;
       return l_Index;
     }

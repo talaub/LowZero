@@ -26,10 +26,13 @@ namespace Low {
     {
       Util::Map<RenderFlow, ResourceRegistry> resources;
       ComputeStepConfig config;
-      Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> pipelines;
-      Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>>
+      Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>>
+          pipelines;
+      Util::Map<RenderFlow,
+                Util::List<Interface::PipelineResourceSignature>>
           signatures;
       Interface::Context context;
+      Resource::Image output_image;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -110,25 +113,32 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> &
       get_pipelines() const;
 
-      Util::Map<RenderFlow, Util::List<Interface::PipelineResourceSignature>> &
+      Util::Map<RenderFlow,
+                Util::List<Interface::PipelineResourceSignature>> &
       get_signatures() const;
 
       Interface::Context get_context() const;
 
+      Resource::Image get_output_image() const;
+      void set_output_image(Resource::Image p_Value);
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static ComputeStep make(Util::Name p_Name, Interface::Context p_Context,
+      static ComputeStep make(Util::Name p_Name,
+                              Interface::Context p_Context,
                               ComputeStepConfig p_Config);
       void prepare(RenderFlow p_RenderFlow);
       void execute(RenderFlow p_RenderFlow);
       void update_dimensions(RenderFlow p_RenderFlow);
-      static void create_pipelines(ComputeStep p_Step, RenderFlow p_RenderFlow);
+      static void create_pipelines(ComputeStep p_Step,
+                                   RenderFlow p_RenderFlow);
       static void create_signatures(ComputeStep p_Step,
                                     RenderFlow p_RenderFlow);
       static void prepare_signatures(ComputeStep p_Step,
                                      RenderFlow p_RenderFlow);
-      static void default_execute(ComputeStep p_Step, RenderFlow p_RenderFlow);
+      static void default_execute(ComputeStep p_Step,
+                                  RenderFlow p_RenderFlow);
 
     private:
       static uint32_t ms_Capacity;

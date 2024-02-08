@@ -48,11 +48,13 @@ namespace Low {
       l_Handle.m_Data.m_Type = Material::TYPE_ID;
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, Material, material_type,
-                              Renderer::MaterialType)) Renderer::MaterialType();
+                              Renderer::MaterialType))
+          Renderer::MaterialType();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Material, renderer_material,
                               Renderer::Material)) Renderer::Material();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Material, properties,
-                              SINGLE_ARG(Util::Map<Util::Name, Util::Variant>)))
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, Material, properties,
+          SINGLE_ARG(Util::Map<Util::Name, Util::Variant>)))
           Util::Map<Util::Name, Util::Variant>();
       ACCESSOR_TYPE_SOA(l_Handle, Material, name, Low::Util::Name) =
           Low::Util::Name(0u);
@@ -61,7 +63,8 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      l_Handle.set_unique_id(
+          Low::Util::generate_unique_id(l_Handle.get_id()));
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -111,10 +114,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Material));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowCore), N(Material));
 
-      initialize_buffer(&ms_Buffer, MaterialData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, MaterialData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Material);
       LOW_PROFILE_ALLOC(type_slots_Material);
@@ -141,11 +145,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MaterialData, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::MaterialType::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_material_type();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, material_type,
-                                            Renderer::MaterialType);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Material, material_type, Renderer::MaterialType);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -158,10 +163,12 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(renderer_material);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MaterialData, renderer_material);
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialData, renderer_material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Material::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_renderer_material();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -177,7 +184,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_properties();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -192,9 +200,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(reference_count);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MaterialData, reference_count);
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -207,7 +217,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, unique_id,
@@ -223,7 +234,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(MaterialData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material, name,
@@ -277,8 +289,8 @@ namespace Low {
 
     Material Material::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -305,9 +317,11 @@ namespace Low {
           if (i_Texture.is_alive()) {
             i_Texture.serialize(l_Properties[i_PropName]);
           }
-        } else if (it->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+        } else if (it->type ==
+                   Renderer::MaterialTypePropertyType::VECTOR4) {
           Math::Vector4 i_Value = get_properties()[it->name];
-          Util::Serialization::serialize(l_Properties[i_PropName], i_Value);
+          Util::Serialization::serialize(l_Properties[i_PropName],
+                                         i_Value);
         }
       }
       p_Node["properties"] = l_Properties;
@@ -342,7 +356,8 @@ namespace Low {
       if (p_Node["properties"]) {
       }
       if (p_Node["unique_id"]) {
-        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        l_Handle.set_unique_id(
+            p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -350,16 +365,19 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       for (auto it = l_Handle.get_material_type().get_properties().begin();
-           it != l_Handle.get_material_type().get_properties().end(); ++it) {
+           it != l_Handle.get_material_type().get_properties().end();
+           ++it) {
         const char *i_PropName = it->name.c_str();
         if (!p_Node["properties"][i_PropName]) {
           continue;
         }
         if (it->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
           l_Handle.get_properties()[it->name] =
-              Texture2D::deserialize(p_Node["properties"][i_PropName], l_Handle)
+              Texture2D::deserialize(p_Node["properties"][i_PropName],
+                                     l_Handle)
                   .get_id();
-        } else if (it->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+        } else if (it->type ==
+                   Renderer::MaterialTypePropertyType::VECTOR4) {
           l_Handle.get_properties()[it->name] =
               Util::Serialization::deserialize_vector4(
                   p_Node["properties"][i_PropName]);
@@ -501,7 +519,8 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property
       if (is_loaded()) {
-        uint8_t l_PropertyType = Renderer::MaterialTypePropertyType::VECTOR3;
+        uint8_t l_PropertyType =
+            Renderer::MaterialTypePropertyType::VECTOR3;
         bool l_FoundProperty = false;
         for (auto it = get_material_type().get_properties().begin();
              it != get_material_type().get_properties().end(); ++it) {
@@ -511,9 +530,11 @@ namespace Low {
             break;
           }
         }
-        LOW_ASSERT(l_FoundProperty, "Could not find property in material type");
+        LOW_ASSERT(l_FoundProperty,
+                   "Could not find property in material type");
 
-        if (l_PropertyType == Renderer::MaterialTypePropertyType::TEXTURE2D) {
+        if (l_PropertyType ==
+            Renderer::MaterialTypePropertyType::TEXTURE2D) {
           Texture2D l_OldTexture = get_property(p_Name).m_Uint64;
           if (l_OldTexture.is_alive() && l_OldTexture.is_loaded()) {
             l_OldTexture.unload();
@@ -527,8 +548,8 @@ namespace Low {
                 p_Name, Util::Variant::from_handle(
                             l_Texture.get_renderer_texture().get_id()));
           } else {
-            get_renderer_material().set_property(p_Name,
-                                                 Util::Variant::from_handle(0));
+            get_renderer_material().set_property(
+                p_Name, Util::Variant::from_handle(0));
           }
         } else {
           get_renderer_material().set_property(p_Name, p_Value);
@@ -557,9 +578,10 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(get_reference_count() > 0,
-                 "Increased Texture2D reference count, but its not over 0. "
-                 "Something went wrong.");
+      LOW_ASSERT(
+          get_reference_count() > 0,
+          "Increased Texture2D reference count, but its not over 0. "
+          "Something went wrong.");
 
       if (is_loaded()) {
         return;
@@ -575,8 +597,8 @@ namespace Low {
             l_Texture.load();
 
             get_renderer_material().set_property(
-                it->name,
-                Util::Variant::from_handle(l_Texture.get_renderer_texture()));
+                it->name, Util::Variant::from_handle(
+                              l_Texture.get_renderer_texture()));
           }
         } else {
           get_renderer_material().set_property(it->name,
@@ -638,7 +660,8 @@ namespace Low {
     void Material::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -656,7 +679,8 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(MaterialData, material_type) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialData, material_type) * (l_Capacity)],
+               &ms_Buffer[offsetof(MaterialData, material_type) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Renderer::MaterialType));
       }
       {
@@ -669,27 +693,28 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(MaterialData, properties) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::Map<Util::Name, Util::Variant>))])
-                  Util::Map<Util::Name, Util::Variant>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(MaterialData, properties) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<Util::Name, Util::Variant>))])
+              Util::Map<Util::Name, Util::Variant>();
           *i_ValPtr = it->get_properties();
         }
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MaterialData, reference_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MaterialData, reference_count) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(MaterialData, reference_count) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MaterialData, reference_count) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(MaterialData, unique_id) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialData, unique_id) * (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::UniqueId));
+        memcpy(
+            &l_NewBuffer[offsetof(MaterialData, unique_id) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MaterialData, unique_id) * (l_Capacity)],
+            l_Capacity * sizeof(Low::Util::UniqueId));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MaterialData, name) *
@@ -697,7 +722,8 @@ namespace Low {
                &ms_Buffer[offsetof(MaterialData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -707,9 +733,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Material from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for Material from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

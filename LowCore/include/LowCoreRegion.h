@@ -52,7 +52,8 @@ namespace Low {
 
       static Region make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Region(const Region &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Region(const Region &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 

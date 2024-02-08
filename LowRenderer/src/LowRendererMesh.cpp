@@ -17,7 +17,8 @@ namespace Low {
     uint32_t Mesh::ms_Capacity = 0u;
     uint8_t *Mesh::ms_Buffer = 0;
     Low::Util::Instances::Slot *Mesh::ms_Slots = 0;
-    Low::Util::List<Mesh> Mesh::ms_LivingInstances = Low::Util::List<Mesh>();
+    Low::Util::List<Mesh> Mesh::ms_LivingInstances =
+        Low::Util::List<Mesh>();
 
     Mesh::Mesh() : Low::Util::Handle(0ull)
     {
@@ -82,7 +83,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer), N(Mesh));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowRenderer), N(Mesh));
 
       initialize_buffer(&ms_Buffer, MeshData::get_size(), get_capacity(),
                         &ms_Slots);
@@ -109,13 +111,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_buffer_start);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_buffer_start);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshData, vertex_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertex_buffer_start();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_buffer_start,
-                                            uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
+                                            vertex_buffer_start, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -130,7 +134,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertex_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count,
@@ -149,11 +154,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_index_buffer_start();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_buffer_start,
-                                            uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
+                                            index_buffer_start, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -168,7 +174,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_index_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count,
@@ -188,7 +195,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MeshData, vertexweight_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertexweight_buffer_start();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -207,11 +215,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertexweight_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertexweight_count();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertexweight_count,
-                                            uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
+                                            vertexweight_count, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -226,7 +235,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, name,
@@ -280,8 +290,8 @@ namespace Low {
 
     Mesh Mesh::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -296,7 +306,8 @@ namespace Low {
       p_Node["vertex_count"] = get_vertex_count();
       p_Node["index_buffer_start"] = get_index_buffer_start();
       p_Node["index_count"] = get_index_count();
-      p_Node["vertexweight_buffer_start"] = get_vertexweight_buffer_start();
+      p_Node["vertexweight_buffer_start"] =
+          get_vertexweight_buffer_start();
       p_Node["vertexweight_count"] = get_vertexweight_count();
       p_Node["name"] = get_name().c_str();
 
@@ -528,7 +539,8 @@ namespace Low {
     void Mesh::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -544,11 +556,11 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MeshData, vertex_buffer_start) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MeshData, vertex_buffer_start) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(MeshData, vertex_buffer_start) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshData, vertex_buffer_start) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, vertex_count) *
@@ -557,11 +569,11 @@ namespace Low {
                l_Capacity * sizeof(uint32_t));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MeshData, index_buffer_start) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MeshData, index_buffer_start) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(MeshData, index_buffer_start) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshData, index_buffer_start) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, index_count) *
@@ -577,11 +589,11 @@ namespace Low {
                l_Capacity * sizeof(uint32_t));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MeshData, vertexweight_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MeshData, vertexweight_count) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(MeshData, vertexweight_count) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshData, vertexweight_count) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, name) *
@@ -589,7 +601,8 @@ namespace Low {
                &ms_Buffer[offsetof(MeshData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }

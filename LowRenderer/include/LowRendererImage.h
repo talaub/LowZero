@@ -48,7 +48,8 @@ namespace Low {
         static Low::Util::Handle _make(Low::Util::Name p_Name);
 
       public:
-        explicit Image(const Image &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+        explicit Image(const Image &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
         {
         }
 

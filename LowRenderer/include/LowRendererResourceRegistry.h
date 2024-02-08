@@ -29,6 +29,8 @@ namespace Low {
       Resource::Buffer get_buffer_resource(Util::Name p_Name);
       Resource::Image get_image_resource(Util::Name p_Name);
 
+      bool has_resource(Util::Name p_Name) const;
+
       void register_buffer_resource(Util::Name p_Name,
                                     Resource::Buffer p_Buffer);
 

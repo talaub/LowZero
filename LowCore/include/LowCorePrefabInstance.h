@@ -97,8 +97,8 @@ namespace Low {
         void set_prefab(Prefab p_Value);
 
         Util::Map<uint16_t, Util::List<Util::Name>> &get_overrides() const;
-        void
-        set_overrides(Util::Map<uint16_t, Util::List<Util::Name>> &p_Value);
+        void set_overrides(
+            Util::Map<uint16_t, Util::List<Util::Name>> &p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);

@@ -56,7 +56,8 @@ namespace Low {
 
       static Skeleton make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Skeleton(const Skeleton &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Skeleton(const Skeleton &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 

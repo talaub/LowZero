@@ -28,7 +28,8 @@ namespace Low {
       Transform::Transform(uint64_t p_Id) : Low::Util::Handle(p_Id)
       {
       }
-      Transform::Transform(Transform &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      Transform::Transform(Transform &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -49,14 +50,15 @@ namespace Low {
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Transform::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, position, Math::Vector3))
-            Math::Vector3();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, position,
+                                Math::Vector3)) Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, rotation,
                                 Math::Quaternion)) Math::Quaternion();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, scale, Math::Vector3))
             Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, children,
-                                Util::List<uint64_t>)) Util::List<uint64_t>();
+                                Util::List<uint64_t>))
+            Util::List<uint64_t>();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_position,
                                 Math::Vector3)) Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_rotation,
@@ -65,9 +67,10 @@ namespace Low {
                                 Math::Vector3)) Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_matrix,
                                 Math::Matrix4x4)) Math::Matrix4x4();
-        ACCESSOR_TYPE_SOA(l_Handle, Transform, world_updated, bool) = false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, entity, Low::Core::Entity))
-            Low::Core::Entity();
+        ACCESSOR_TYPE_SOA(l_Handle, Transform, world_updated, bool) =
+            false;
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, entity,
+                                Low::Core::Entity)) Low::Core::Entity();
         ACCESSOR_TYPE_SOA(l_Handle, Transform, dirty, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Transform, world_dirty, bool) = false;
 
@@ -118,10 +121,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Transform));
+        ms_Capacity =
+            Low::Util::Config::get_capacity(N(LowCore), N(Transform));
 
-        initialize_buffer(&ms_Buffer, TransformData::get_size(), get_capacity(),
-                          &ms_Slots);
+        initialize_buffer(&ms_Buffer, TransformData::get_size(),
+                          get_capacity(), &ms_Slots);
 
         LOW_PROFILE_ALLOC(type_buffer_Transform);
         LOW_PROFILE_ALLOC(type_slots_Transform);
@@ -147,11 +151,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, position);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.position();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, position,
-                                              Math::Vector3);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
+                                              position, Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -166,11 +171,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, rotation);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::QUATERNION;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.rotation();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, rotation,
-                                              Math::Quaternion);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
+                                              rotation, Math::Quaternion);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -185,7 +191,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.scale();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, scale,
@@ -204,7 +211,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, parent);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_parent();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, parent,
@@ -223,11 +231,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, parent_uid);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_parent_uid();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, parent_uid,
-                                              uint64_t);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
+                                              parent_uid, uint64_t);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -239,11 +248,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, children);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_children();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, children,
-                                              Util::List<uint64_t>);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Transform, children, Util::List<uint64_t>);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -253,13 +263,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_position);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, world_position);
+          l_PropertyInfo.dataOffset =
+              offsetof(TransformData, world_position);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_position();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
-                                              world_position, Math::Vector3);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Transform, world_position, Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -269,13 +281,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_rotation);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, world_rotation);
+          l_PropertyInfo.dataOffset =
+              offsetof(TransformData, world_rotation);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::QUATERNION;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_rotation();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
-                                              world_rotation, Math::Quaternion);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Transform, world_rotation, Math::Quaternion);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -287,11 +301,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_scale);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_scale();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_scale,
-                                              Math::Vector3);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
+                                              world_scale, Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -301,13 +316,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_matrix);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, world_matrix);
+          l_PropertyInfo.dataOffset =
+              offsetof(TransformData, world_matrix);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_matrix();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_matrix,
-                                              Math::Matrix4x4);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Transform, world_matrix, Math::Matrix4x4);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -317,9 +334,11 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_updated);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, world_updated);
+          l_PropertyInfo.dataOffset =
+              offsetof(TransformData, world_updated);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.is_world_updated();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
@@ -339,7 +358,8 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, entity,
@@ -358,11 +378,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, unique_id,
-                                              Low::Util::UniqueId);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Transform, unique_id, Low::Util::UniqueId);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -374,10 +395,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.is_dirty();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, dirty, bool);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, dirty,
+                                              bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -392,11 +415,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.is_world_dirty();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform, world_dirty,
-                                              bool);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
+                                              world_dirty, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -448,8 +472,10 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        Low::Util::Serialization::serialize(p_Node["position"], position());
-        Low::Util::Serialization::serialize(p_Node["rotation"], rotation());
+        Low::Util::Serialization::serialize(p_Node["position"],
+                                            position());
+        Low::Util::Serialization::serialize(p_Node["rotation"],
+                                            rotation());
         Low::Util::Serialization::serialize(p_Node["scale"], scale());
         p_Node["parent_uid"] = get_parent_uid();
         p_Node["unique_id"] = get_unique_id();
@@ -465,8 +491,9 @@ namespace Low {
         l_Transform.serialize(p_Node);
       }
 
-      Low::Util::Handle Transform::deserialize(Low::Util::Yaml::Node &p_Node,
-                                               Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      Transform::deserialize(Low::Util::Yaml::Node &p_Node,
+                             Low::Util::Handle p_Creator)
       {
         Transform l_Handle = Transform::make(p_Creator.get_id());
 
@@ -482,18 +509,20 @@ namespace Low {
               p_Node["position"]));
         }
         if (p_Node["rotation"]) {
-          l_Handle.rotation(Low::Util::Serialization::deserialize_quaternion(
-              p_Node["rotation"]));
+          l_Handle.rotation(
+              Low::Util::Serialization::deserialize_quaternion(
+                  p_Node["rotation"]));
         }
         if (p_Node["scale"]) {
-          l_Handle.scale(
-              Low::Util::Serialization::deserialize_vector3(p_Node["scale"]));
+          l_Handle.scale(Low::Util::Serialization::deserialize_vector3(
+              p_Node["scale"]));
         }
         if (p_Node["parent_uid"]) {
           l_Handle.set_parent_uid(p_Node["parent_uid"].as<uint64_t>());
         }
         if (p_Node["unique_id"]) {
-          l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+          l_Handle.set_unique_id(
+              p_Node["unique_id"].as<Low::Util::UniqueId>());
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -954,7 +983,8 @@ namespace Low {
         }
 
         if (!Transform(get_parent()).is_alive() && get_parent_uid() != 0) {
-          set_parent(Util::find_handle_by_unique_id(get_parent_uid()).get_id());
+          set_parent(
+              Util::find_handle_by_unique_id(get_parent_uid()).get_id());
         }
 
         Low::Math::Vector3 l_Position = position();
@@ -962,8 +992,8 @@ namespace Low {
         Low::Math::Vector3 l_Scale = scale();
 
         /*
-              LOW_LOG_DEBUG << "-----------TRANSFORM---------" << LOW_LOG_END;
-              LOW_LOG_DEBUG << l_Position << LOW_LOG_END;
+              LOW_LOG_DEBUG << "-----------TRANSFORM---------" <<
+           LOW_LOG_END; LOW_LOG_DEBUG << l_Position << LOW_LOG_END;
               LOW_LOG_DEBUG << l_Rotation << LOW_LOG_END;
               LOW_LOG_DEBUG << l_Scale << LOW_LOG_END;
         */
@@ -981,18 +1011,21 @@ namespace Low {
             l_Parent.recalculate_world_transform();
           }
 
-          Low::Math::Vector3 l_ParentPosition = l_Parent.get_world_position();
+          Low::Math::Vector3 l_ParentPosition =
+              l_Parent.get_world_position();
           Low::Math::Quaternion l_ParentRotation =
               l_Parent.get_world_rotation();
           Low::Math::Vector3 l_ParentScale = l_Parent.get_world_scale();
 
           Low::Math::Matrix4x4 l_ParentMatrix(1.0f);
 
-          l_ParentMatrix = glm::translate(l_ParentMatrix, l_ParentPosition);
+          l_ParentMatrix =
+              glm::translate(l_ParentMatrix, l_ParentPosition);
           l_ParentMatrix *= glm::toMat4(l_ParentRotation);
           l_ParentMatrix = glm::scale(l_ParentMatrix, l_ParentScale);
 
-          Low::Math::Matrix4x4 l_WorldMatrix = l_ParentMatrix * l_LocalMatrix;
+          Low::Math::Matrix4x4 l_WorldMatrix =
+              l_ParentMatrix * l_LocalMatrix;
 
           Low::Math::Vector3 l_WorldScale;
           Low::Math::Quaternion l_WorldRotation;
@@ -1040,7 +1073,8 @@ namespace Low {
       void Transform::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -1056,16 +1090,18 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(&l_NewBuffer[offsetof(TransformData, position) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, position) * (l_Capacity)],
-                 l_Capacity * sizeof(Math::Vector3));
+          memcpy(
+              &l_NewBuffer[offsetof(TransformData, position) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(TransformData, position) * (l_Capacity)],
+              l_Capacity * sizeof(Math::Vector3));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(TransformData, rotation) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, rotation) * (l_Capacity)],
-                 l_Capacity * sizeof(Math::Quaternion));
+          memcpy(
+              &l_NewBuffer[offsetof(TransformData, rotation) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(TransformData, rotation) * (l_Capacity)],
+              l_Capacity * sizeof(Math::Quaternion));
         }
         {
           memcpy(&l_NewBuffer[offsetof(TransformData, scale) *
@@ -1074,25 +1110,28 @@ namespace Low {
                  l_Capacity * sizeof(Math::Vector3));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(TransformData, parent) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, parent) * (l_Capacity)],
-                 l_Capacity * sizeof(uint64_t));
+          memcpy(
+              &l_NewBuffer[offsetof(TransformData, parent) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(TransformData, parent) * (l_Capacity)],
+              l_Capacity * sizeof(uint64_t));
         }
         {
           memcpy(&l_NewBuffer[offsetof(TransformData, parent_uid) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, parent_uid) * (l_Capacity)],
+                 &ms_Buffer[offsetof(TransformData, parent_uid) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(uint64_t));
         }
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
-            auto *i_ValPtr = new (
-                &l_NewBuffer[offsetof(TransformData, children) *
-                                 (l_Capacity + l_CapacityIncrease) +
-                             (it->get_index() * sizeof(Util::List<uint64_t>))])
-                Util::List<uint64_t>();
+            auto *i_ValPtr =
+                new (&l_NewBuffer[offsetof(TransformData, children) *
+                                      (l_Capacity + l_CapacityIncrease) +
+                                  (it->get_index() *
+                                   sizeof(Util::List<uint64_t>))])
+                    Util::List<uint64_t>();
             *i_ValPtr = it->get_children();
           }
         }
@@ -1111,36 +1150,38 @@ namespace Low {
                  l_Capacity * sizeof(Math::Quaternion));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(TransformData, world_scale) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TransformData, world_scale) * (l_Capacity)],
-              l_Capacity * sizeof(Math::Vector3));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(TransformData, world_matrix) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TransformData, world_matrix) * (l_Capacity)],
-              l_Capacity * sizeof(Math::Matrix4x4));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(TransformData, world_updated) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TransformData, world_updated) * (l_Capacity)],
-              l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, entity) *
+          memcpy(&l_NewBuffer[offsetof(TransformData, world_scale) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, entity) * (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::Entity));
+                 &ms_Buffer[offsetof(TransformData, world_scale) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Math::Vector3));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(TransformData, world_matrix) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(TransformData, world_matrix) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Math::Matrix4x4));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(TransformData, world_updated) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(TransformData, world_updated) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(bool));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(TransformData, entity) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(TransformData, entity) * (l_Capacity)],
+              l_Capacity * sizeof(Low::Core::Entity));
         }
         {
           memcpy(&l_NewBuffer[offsetof(TransformData, unique_id) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, unique_id) * (l_Capacity)],
+                 &ms_Buffer[offsetof(TransformData, unique_id) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::UniqueId));
         }
         {
@@ -1150,11 +1191,11 @@ namespace Low {
                  l_Capacity * sizeof(bool));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(TransformData, world_dirty) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TransformData, world_dirty) * (l_Capacity)],
-              l_Capacity * sizeof(bool));
+          memcpy(&l_NewBuffer[offsetof(TransformData, world_dirty) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(TransformData, world_dirty) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(bool));
         }
         for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
              ++i) {

@@ -50,8 +50,8 @@ namespace Low {
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Context::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, context, Backend::Context))
-            Backend::Context();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, context,
+                                Backend::Context)) Backend::Context();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Context, renderpasses,
                                 Util::List<Renderpass>))
             Util::List<Renderpass>();
@@ -105,8 +105,8 @@ namespace Low {
         ms_Capacity =
             Low::Util::Config::get_capacity(N(LowRenderer), N(Context));
 
-        initialize_buffer(&ms_Buffer, ContextData::get_size(), get_capacity(),
-                          &ms_Slots);
+        initialize_buffer(&ms_Buffer, ContextData::get_size(),
+                          get_capacity(), &ms_Slots);
 
         LOW_PROFILE_ALLOC(type_buffer_Context);
         LOW_PROFILE_ALLOC(type_slots_Context);
@@ -132,7 +132,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, context);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_context();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, context,
@@ -148,11 +149,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, renderpasses);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_renderpasses();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, renderpasses,
-                                              Util::List<Renderpass>);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Context, renderpasses, Util::List<Renderpass>);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -162,14 +164,17 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(global_signature);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ContextData, global_signature);
+          l_PropertyInfo.dataOffset =
+              offsetof(ContextData, global_signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = PipelineResourceSignature::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_global_signature();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Context, global_signature, PipelineResourceSignature);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
+                                              global_signature,
+                                              PipelineResourceSignature);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -179,10 +184,12 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(frame_info_buffer);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ContextData, frame_info_buffer);
+          l_PropertyInfo.dataOffset =
+              offsetof(ContextData, frame_info_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_frame_info_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(
@@ -200,7 +207,8 @@ namespace Low {
               offsetof(ContextData, material_data_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_material_data_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(
@@ -216,7 +224,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, name,
@@ -289,7 +298,8 @@ namespace Low {
           get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
         }
         if (get_material_data_buffer().is_alive()) {
-          get_material_data_buffer().serialize(p_Node["material_data_buffer"]);
+          get_material_data_buffer().serialize(
+              p_Node["material_data_buffer"]);
         }
         p_Node["name"] = get_name().c_str();
 
@@ -315,8 +325,8 @@ namespace Low {
         }
         if (p_Node["global_signature"]) {
           l_Handle.set_global_signature(
-              PipelineResourceSignature::deserialize(p_Node["global_signature"],
-                                                     l_Handle.get_id())
+              PipelineResourceSignature::deserialize(
+                  p_Node["global_signature"], l_Handle.get_id())
                   .get_id());
         }
         if (p_Node["frame_info_buffer"]) {
@@ -368,7 +378,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_global_signature
         // LOW_CODEGEN::END::CUSTOM:GETTER_global_signature
 
-        return TYPE_SOA(Context, global_signature, PipelineResourceSignature);
+        return TYPE_SOA(Context, global_signature,
+                        PipelineResourceSignature);
       }
       void Context::set_global_signature(PipelineResourceSignature p_Value)
       {
@@ -425,7 +436,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_data_buffer
 
         // Set new value
-        TYPE_SOA(Context, material_data_buffer, Resource::Buffer) = p_Value;
+        TYPE_SOA(Context, material_data_buffer, Resource::Buffer) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_data_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_material_data_buffer
@@ -455,7 +467,8 @@ namespace Low {
       }
 
       Context Context::make(Util::Name p_Name, Window *p_Window,
-                            uint8_t p_FramesInFlight, bool p_ValidationEnabled)
+                            uint8_t p_FramesInFlight,
+                            bool p_ValidationEnabled)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         Backend::ContextCreateParams l_Params;
@@ -464,10 +477,12 @@ namespace Low {
         l_Params.framesInFlight = p_FramesInFlight;
 
         Context l_Context = Context::make(p_Name);
-        Backend::callbacks().context_create(l_Context.get_context(), l_Params);
+        Backend::callbacks().context_create(l_Context.get_context(),
+                                            l_Params);
 
         l_Context.get_renderpasses().resize(l_Context.get_image_count());
-        for (uint8_t i = 0u; i < l_Context.get_renderpasses().size(); ++i) {
+        for (uint8_t i = 0u; i < l_Context.get_renderpasses().size();
+             ++i) {
           l_Context.get_renderpasses()[i] = Renderpass::make(p_Name);
           l_Context.get_renderpasses()[i].set_renderpass(
               l_Context.get_context().renderpasses[i]);
@@ -477,7 +492,8 @@ namespace Low {
           Backend::BufferCreateParams l_Params;
           l_Params.bufferSize = sizeof(Math::Vector2);
           l_Params.context = &l_Context.get_context();
-          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
+          l_Params.usageFlags =
+              LOW_RENDERER_BUFFER_USAGE_RESOURCE_CONSTANT;
 
           Math::UVector2 l_ContextDimensions = {1, 1};
           if (l_Context.get_dimensions().x > 0) {
@@ -506,8 +522,8 @@ namespace Low {
           l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
           l_Params.data = nullptr;
 
-          l_Context.set_material_data_buffer(
-              Resource::Buffer::make(N(ContextMaterialDataBuffer), l_Params));
+          l_Context.set_material_data_buffer(Resource::Buffer::make(
+              N(ContextMaterialDataBuffer), l_Params));
         }
 
         {
@@ -685,12 +701,13 @@ namespace Low {
 
         get_renderpasses().resize(get_image_count());
         for (uint8_t i = 0u; i < get_renderpasses().size(); ++i) {
-          get_renderpasses()[i].set_renderpass(get_context().renderpasses[i]);
+          get_renderpasses()[i].set_renderpass(
+              get_context().renderpasses[i]);
         }
 
-        Math::Vector2 l_InverseDimensions = {1.0f / ((float)get_dimensions().x),
-                                             1.0f /
-                                                 ((float)get_dimensions().y)};
+        Math::Vector2 l_InverseDimensions = {
+            1.0f / ((float)get_dimensions().x),
+            1.0f / ((float)get_dimensions().y)};
 
         get_frame_info_buffer().set(&l_InverseDimensions);
 
@@ -724,7 +741,8 @@ namespace Low {
       void Context::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -795,9 +813,9 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG << "Auto-increased budget for Context from " << l_Capacity
-                      << " to " << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        LOW_LOG_DEBUG << "Auto-increased budget for Context from "
+                      << l_Capacity << " to "
+                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
     } // namespace Interface
   }   // namespace Renderer

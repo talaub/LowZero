@@ -19,7 +19,8 @@ namespace Low {
     uint32_t Scene::ms_Capacity = 0u;
     uint8_t *Scene::ms_Buffer = 0;
     Low::Util::Instances::Slot *Scene::ms_Slots = 0;
-    Low::Util::List<Scene> Scene::ms_LivingInstances = Low::Util::List<Scene>();
+    Low::Util::List<Scene> Scene::ms_LivingInstances =
+        Low::Util::List<Scene>();
 
     Scene::Scene() : Low::Util::Handle(0ull)
     {
@@ -56,7 +57,8 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      l_Handle.set_unique_id(
+          Low::Util::generate_unique_id(l_Handle.get_id()));
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -123,7 +125,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, regions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_regions();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, regions,
@@ -139,7 +142,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.is_loaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, loaded, bool);
@@ -154,7 +158,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, unique_id,
@@ -170,7 +175,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene, name,
@@ -224,8 +230,8 @@ namespace Low {
 
     Scene Scene::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -240,7 +246,8 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
       p_Node["unique_id"] = get_unique_id();
 
-      for (auto it = get_regions().begin(); it != get_regions().end(); ++it) {
+      for (auto it = get_regions().begin(); it != get_regions().end();
+           ++it) {
         p_Node["regions"].push_back(*it);
       }
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
@@ -261,10 +268,11 @@ namespace Low {
       Scene l_Scene = Scene::make(LOW_YAML_AS_NAME(p_Node["name"]));
       l_Scene.set_unique_id(p_Node["unique_id"].as<Util::UniqueId>());
 
-      for (auto it = p_Node["regions"].begin(); it != p_Node["regions"].end();
-           ++it) {
+      for (auto it = p_Node["regions"].begin();
+           it != p_Node["regions"].end(); ++it) {
         Region i_Region =
-            Util::find_handle_by_unique_id(it->as<Util::UniqueId>()).get_id();
+            Util::find_handle_by_unique_id(it->as<Util::UniqueId>())
+                .get_id();
 
         i_Region.set_scene(l_Scene);
       }
@@ -355,8 +363,8 @@ namespace Low {
     void Scene::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         it->unload();
       }
 
@@ -369,7 +377,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
       set_loaded(false);
 
-      for (auto it = get_regions().begin(); it != get_regions().end(); ++it) {
+      for (auto it = get_regions().begin(); it != get_regions().end();
+           ++it) {
         Region i_Region = Util::find_handle_by_unique_id(*it).get_id();
         if (i_Region.is_loaded()) {
           i_Region.unload_entities();
@@ -381,13 +390,15 @@ namespace Low {
     void Scene::_load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
-      for (auto it = get_regions().begin(); it != get_regions().end(); ++it) {
+      for (auto it = get_regions().begin(); it != get_regions().end();
+           ++it) {
         Region i_Region = Util::find_handle_by_unique_id(*it).get_id();
         if (!i_Region.is_streaming_enabled()) {
           i_Region.load_entities();
         }
       }
-      LOW_LOG_DEBUG << "Scene '" << get_name() << "' loaded" << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Scene '" << get_name() << "' loaded"
+                    << LOW_LOG_END;
       set_loaded(true);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
     }
@@ -395,8 +406,8 @@ namespace Low {
     Scene Scene::get_loaded_scene()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_loaded_scene
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->is_loaded()) {
           return *it;
         }
@@ -425,7 +436,8 @@ namespace Low {
     void Scene::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -470,7 +482,8 @@ namespace Low {
                &ms_Buffer[offsetof(SceneData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -480,9 +493,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Scene from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for Scene from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

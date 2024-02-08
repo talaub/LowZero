@@ -28,7 +28,8 @@ namespace Low {
     MeshAsset::MeshAsset(uint64_t p_Id) : Low::Util::Handle(p_Id)
     {
     }
-    MeshAsset::MeshAsset(MeshAsset &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+    MeshAsset::MeshAsset(MeshAsset &p_Copy)
+        : Low::Util::Handle(p_Copy.m_Id)
     {
     }
 
@@ -55,7 +56,8 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      l_Handle.set_unique_id(
+          Low::Util::generate_unique_id(l_Handle.get_id()));
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -95,10 +97,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(MeshAsset));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowCore), N(MeshAsset));
 
-      initialize_buffer(&ms_Buffer, MeshAssetData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, MeshAssetData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_MeshAsset);
       LOW_PROFILE_ALLOC(type_slots_MeshAsset);
@@ -125,7 +128,8 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, lod0);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MeshResource::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MeshAsset l_Handle = p_Handle.get_id();
           l_Handle.get_lod0();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, lod0,
@@ -142,9 +146,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(reference_count);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshAssetData, reference_count);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshAssetData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -157,7 +163,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MeshAsset l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, unique_id,
@@ -173,7 +180,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(MeshAssetData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           MeshAsset l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshAsset, name,
@@ -227,8 +235,8 @@ namespace Low {
 
     MeshAsset MeshAsset::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -274,7 +282,8 @@ namespace Low {
                 .get_id());
       }
       if (p_Node["unique_id"]) {
-        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        l_Handle.set_unique_id(
+            p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -310,8 +319,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod0
       if (is_loaded()) {
-        // If this asset is already loaded we need to increase the reference
-        // count of the resource
+        // If this asset is already loaded we need to increase the
+        // reference count of the resource
         p_Value.load();
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod0
@@ -402,9 +411,10 @@ namespace Low {
 
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(get_reference_count() > 0,
-                 "Increased MeshAsset reference count, but its not over 0. "
-                 "Something went wrong.");
+      LOW_ASSERT(
+          get_reference_count() > 0,
+          "Increased MeshAsset reference count, but its not over 0. "
+          "Something went wrong.");
 
       if (l_HasBeenLoaded) {
         return;
@@ -464,7 +474,8 @@ namespace Low {
     void MeshAsset::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -486,17 +497,18 @@ namespace Low {
                l_Capacity * sizeof(MeshResource));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MeshAssetData, reference_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MeshAssetData, reference_count) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(MeshAssetData, reference_count) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshAssetData, reference_count) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(MeshAssetData, unique_id) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshAssetData, unique_id) * (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::UniqueId));
+        memcpy(
+            &l_NewBuffer[offsetof(MeshAssetData, unique_id) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MeshAssetData, unique_id) * (l_Capacity)],
+            l_Capacity * sizeof(Low::Util::UniqueId));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshAssetData, name) *
@@ -504,7 +516,8 @@ namespace Low {
                &ms_Buffer[offsetof(MeshAssetData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -514,9 +527,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for MeshAsset from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for MeshAsset from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

@@ -49,7 +49,8 @@ namespace Low {
 
       static Material make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Material(const Material &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Material(const Material &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 

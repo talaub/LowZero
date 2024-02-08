@@ -45,7 +45,8 @@ namespace Low {
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Image::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Image, image, Backend::ImageResource))
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Image, image,
+                                Backend::ImageResource))
             Backend::ImageResource();
         ACCESSOR_TYPE_SOA(l_Handle, Image, name, Low::Util::Name) =
             Low::Util::Name(0u);
@@ -87,10 +88,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer), N(Image));
+        ms_Capacity =
+            Low::Util::Config::get_capacity(N(LowRenderer), N(Image));
 
-        initialize_buffer(&ms_Buffer, ImageData::get_size(), get_capacity(),
-                          &ms_Slots);
+        initialize_buffer(&ms_Buffer, ImageData::get_size(),
+                          get_capacity(), &ms_Slots);
 
         LOW_PROFILE_ALLOC(type_buffer_Image);
         LOW_PROFILE_ALLOC(type_slots_Image);
@@ -116,7 +118,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ImageData, image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Image l_Handle = p_Handle.get_id();
             l_Handle.get_image();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, image,
@@ -135,7 +138,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ImageData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Image l_Handle = p_Handle.get_id();
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, name,
@@ -292,7 +296,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
-      void Image::reinitialize(Backend::ImageResourceCreateParams &p_Params)
+      void
+      Image::reinitialize(Backend::ImageResourceCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_reinitialize
         Backend::callbacks().imageresource_cleanup(get_image());
@@ -323,7 +328,8 @@ namespace Low {
       void Image::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -361,9 +367,9 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG << "Auto-increased budget for Image from " << l_Capacity
-                      << " to " << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        LOW_LOG_DEBUG << "Auto-increased budget for Image from "
+                      << l_Capacity << " to "
+                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
     } // namespace Resource
   }   // namespace Renderer

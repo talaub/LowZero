@@ -56,7 +56,8 @@ namespace Low {
         static Low::Util::Handle _make(Low::Util::Name p_Name);
 
       public:
-        explicit Context(const Context &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+        explicit Context(const Context &p_Copy)
+            : Low::Util::Handle(p_Copy.m_Id)
         {
         }
 
@@ -115,7 +116,8 @@ namespace Low {
         void set_name(Low::Util::Name p_Value);
 
         static Context make(Util::Name p_Name, Window *p_Window,
-                            uint8_t p_FramesInFlight, bool p_ValidationEnabled);
+                            uint8_t p_FramesInFlight,
+                            bool p_ValidationEnabled);
         uint8_t get_frames_in_flight();
         uint8_t get_image_count();
         uint8_t get_current_frame_index();

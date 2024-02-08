@@ -90,8 +90,8 @@ namespace Low {
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowRenderer), N(Skeleton));
 
-      initialize_buffer(&ms_Buffer, SkeletonData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, SkeletonData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Skeleton);
       LOW_PROFILE_ALLOC(type_slots_Skeleton);
@@ -117,7 +117,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, root_bone);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_root_bone();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, root_bone,
@@ -136,7 +137,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, bone_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_bone_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, bone_count,
@@ -155,7 +157,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, animations);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_animations();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, animations,
@@ -171,7 +174,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Skeleton, name,
@@ -225,8 +229,8 @@ namespace Low {
 
     Skeleton Skeleton::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -371,7 +375,8 @@ namespace Low {
     void Skeleton::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -387,16 +392,18 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(SkeletonData, root_bone) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletonData, root_bone) * (l_Capacity)],
-               l_Capacity * sizeof(Bone));
+        memcpy(
+            &l_NewBuffer[offsetof(SkeletonData, root_bone) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(SkeletonData, root_bone) * (l_Capacity)],
+            l_Capacity * sizeof(Bone));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(SkeletonData, bone_count) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletonData, bone_count) * (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+        memcpy(
+            &l_NewBuffer[offsetof(SkeletonData, bone_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(SkeletonData, bone_count) * (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         for (auto it = ms_LivingInstances.begin();
@@ -416,7 +423,8 @@ namespace Low {
                &ms_Buffer[offsetof(SkeletonData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -426,9 +434,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Skeleton from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for Skeleton from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Renderer
 } // namespace Low

@@ -47,7 +47,8 @@ namespace Low {
     Texture2D::Texture2D(uint64_t p_Id) : Low::Util::Handle(p_Id)
     {
     }
-    Texture2D::Texture2D(Texture2D &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+    Texture2D::Texture2D(Texture2D &p_Copy)
+        : Low::Util::Handle(p_Copy.m_Id)
     {
     }
 
@@ -115,10 +116,11 @@ namespace Low {
       }
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Texture2D));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowCore), N(Texture2D));
 
-      initialize_buffer(&ms_Buffer, Texture2DData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, Texture2DData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Texture2D);
       LOW_PROFILE_ALLOC(type_slots_Texture2D);
@@ -144,7 +146,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_path();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, path,
@@ -158,10 +161,12 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(renderer_texture);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(Texture2DData, renderer_texture);
+        l_PropertyInfo.dataOffset =
+            offsetof(Texture2DData, renderer_texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Texture2D::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_renderer_texture();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -175,9 +180,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(reference_count);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(Texture2DData, reference_count);
+        l_PropertyInfo.dataOffset =
+            offsetof(Texture2DData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
@@ -190,7 +197,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, state,
@@ -209,7 +217,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name,
@@ -263,8 +272,8 @@ namespace Low {
 
     Texture2D Texture2D::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -415,14 +424,15 @@ namespace Low {
     Texture2D Texture2D::make(Util::String &p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
           return *it;
         }
       }
 
-      Util::String l_FileName = p_Path.substr(p_Path.find_last_of("/\\") + 1);
+      Util::String l_FileName =
+          p_Path.substr(p_Path.find_last_of("/\\") + 1);
       Texture2D l_Texture = Texture2D::make(LOW_NAME(l_FileName.c_str()));
       l_Texture.set_path(p_Path);
 
@@ -446,9 +456,10 @@ namespace Low {
 
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(get_reference_count() > 0,
-                 "Increased Texture2D reference count, but its not over 0. "
-                 "Something went wrong.");
+      LOW_ASSERT(
+          get_reference_count() > 0,
+          "Increased Texture2D reference count, but its not over 0. "
+          "Something went wrong.");
 
       if (get_state() != ResourceState::UNLOADED) {
         return;
@@ -471,24 +482,26 @@ namespace Low {
         }
       } while (!l_FoundIndex);
 
-      Util::String l_FullPath =
-          Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" + get_path();
+      Util::String l_FullPath = Util::String(LOW_DATA_PATH) +
+                                "\\resources\\img2d\\" + get_path();
 
       set_renderer_texture(Renderer::reserve_texture(get_name()));
 
-      TextureLoadSchedule &l_LoadSchedule = g_TextureLoadSchedules.emplace_back(
-          l_TextureIndex,
-          Util::JobManager::default_pool().enqueue([l_FullPath,
-                                                    l_TextureIndex]() {
-            for (auto it = g_TextureLoadSchedules.begin();
-                 it != g_TextureLoadSchedules.end(); ++it) {
-              if (it->textureIndex == l_TextureIndex) {
-                Util::Resource::load_image2d(Util::String(l_FullPath.c_str()),
-                                             g_Image2Ds[l_TextureIndex]);
-                break;
-              }
-            }
-          }));
+      TextureLoadSchedule &l_LoadSchedule =
+          g_TextureLoadSchedules.emplace_back(
+              l_TextureIndex,
+              Util::JobManager::default_pool().enqueue(
+                  [l_FullPath, l_TextureIndex]() {
+                    for (auto it = g_TextureLoadSchedules.begin();
+                         it != g_TextureLoadSchedules.end(); ++it) {
+                      if (it->textureIndex == l_TextureIndex) {
+                        Util::Resource::load_image2d(
+                            Util::String(l_FullPath.c_str()),
+                            g_Image2Ds[l_TextureIndex]);
+                        break;
+                      }
+                    }
+                  }));
       l_LoadSchedule.textureResource = *this;
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
@@ -529,8 +542,9 @@ namespace Low {
            it != g_TextureLoadSchedules.end();) {
         if (it->future.wait_for(std::chrono::seconds(0)) ==
             std::future_status::ready) {
-          Renderer::upload_texture(it->textureResource.get_renderer_texture(),
-                                   g_Image2Ds[it->textureIndex]);
+          Renderer::upload_texture(
+              it->textureResource.get_renderer_texture(),
+              g_Image2Ds[it->textureIndex]);
 
           g_TextureSlots[it->textureIndex] = false;
 
@@ -561,7 +575,8 @@ namespace Low {
     void Texture2D::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -590,11 +605,11 @@ namespace Low {
                l_Capacity * sizeof(Renderer::Texture2D));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(Texture2DData, reference_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(Texture2DData, reference_count) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(Texture2DData, reference_count) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(Texture2DData, reference_count) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(Texture2DData, state) *
@@ -608,7 +623,8 @@ namespace Low {
                &ms_Buffer[offsetof(Texture2DData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -618,9 +634,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Texture2D from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for Texture2D from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

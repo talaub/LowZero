@@ -24,6 +24,7 @@ namespace Low {
       Name &operator=(const Name p_Other);
 
       char *c_str() const;
+      bool is_valid() const;
 
       static void initialize();
       static void cleanup();

@@ -56,8 +56,8 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, speed, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, height, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, radius, float) = 0.0f;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, offset, Math::Vector3))
-            Math::Vector3();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, offset,
+                                Math::Vector3)) Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, entity,
                                 Low::Core::Entity)) Low::Core::Entity();
 
@@ -136,11 +136,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, speed);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_speed();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent, speed,
-                                              float);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
+                                              speed, float);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -155,11 +156,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, height);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_height();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent, height,
-                                              float);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
+                                              height, float);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -174,11 +176,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, radius);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_radius();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent, radius,
-                                              float);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
+                                              radius, float);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -193,11 +196,12 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, offset);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_offset();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent, offset,
-                                              Math::Vector3);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
+                                              offset, Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -210,9 +214,11 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(agent_index);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, agent_index);
+          l_PropertyInfo.dataOffset =
+              offsetof(NavmeshAgentData, agent_index);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::INT;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_agent_index();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
@@ -232,11 +238,12 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent, entity,
-                                              Low::Core::Entity);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
+                                              entity, Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -249,13 +256,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(NavmeshAgentData, unique_id);
+          l_PropertyInfo.dataOffset =
+              offsetof(NavmeshAgentData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent, unique_id,
-                                              Low::Util::UniqueId);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, NavmeshAgent, unique_id, Low::Util::UniqueId);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -307,7 +316,8 @@ namespace Low {
         p_Node["speed"] = get_speed();
         p_Node["height"] = get_height();
         p_Node["radius"] = get_radius();
-        Low::Util::Serialization::serialize(p_Node["offset"], get_offset());
+        Low::Util::Serialization::serialize(p_Node["offset"],
+                                            get_offset());
         p_Node["agent_index"] = get_agent_index();
         p_Node["unique_id"] = get_unique_id();
 
@@ -322,8 +332,9 @@ namespace Low {
         l_NavmeshAgent.serialize(p_Node);
       }
 
-      Low::Util::Handle NavmeshAgent::deserialize(Low::Util::Yaml::Node &p_Node,
-                                                  Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      NavmeshAgent::deserialize(Low::Util::Yaml::Node &p_Node,
+                                Low::Util::Handle p_Creator)
       {
         NavmeshAgent l_Handle = NavmeshAgent::make(p_Creator.get_id());
 
@@ -345,13 +356,15 @@ namespace Low {
         }
         if (p_Node["offset"]) {
           l_Handle.set_offset(
-              Low::Util::Serialization::deserialize_vector3(p_Node["offset"]));
+              Low::Util::Serialization::deserialize_vector3(
+                  p_Node["offset"]));
         }
         if (p_Node["agent_index"]) {
           l_Handle.set_agent_index(p_Node["agent_index"].as<int>());
         }
         if (p_Node["unique_id"]) {
-          l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+          l_Handle.set_unique_id(
+              p_Node["unique_id"].as<Low::Util::UniqueId>());
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -387,8 +400,9 @@ namespace Low {
                     Low::Core::Component::PrefabInstance::TYPE_ID);
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
-              l_Instance.override(TYPE_ID, N(speed),
-                                  !l_Prefab.compare_property(*this, N(speed)));
+              l_Instance.override(
+                  TYPE_ID, N(speed),
+                  !l_Prefab.compare_property(*this, N(speed)));
             }
           }
         }
@@ -424,8 +438,9 @@ namespace Low {
                     Low::Core::Component::PrefabInstance::TYPE_ID);
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
-              l_Instance.override(TYPE_ID, N(height),
-                                  !l_Prefab.compare_property(*this, N(height)));
+              l_Instance.override(
+                  TYPE_ID, N(height),
+                  !l_Prefab.compare_property(*this, N(height)));
             }
           }
         }
@@ -461,8 +476,9 @@ namespace Low {
                     Low::Core::Component::PrefabInstance::TYPE_ID);
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
-              l_Instance.override(TYPE_ID, N(radius),
-                                  !l_Prefab.compare_property(*this, N(radius)));
+              l_Instance.override(
+                  TYPE_ID, N(radius),
+                  !l_Prefab.compare_property(*this, N(radius)));
             }
           }
         }
@@ -498,8 +514,9 @@ namespace Low {
                     Low::Core::Component::PrefabInstance::TYPE_ID);
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
-              l_Instance.override(TYPE_ID, N(offset),
-                                  !l_Prefab.compare_property(*this, N(offset)));
+              l_Instance.override(
+                  TYPE_ID, N(offset),
+                  !l_Prefab.compare_property(*this, N(offset)));
             }
           }
         }
@@ -577,10 +594,12 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
-      void NavmeshAgent::set_target_position(Math::Vector3 &p_TargetPosition)
+      void
+      NavmeshAgent::set_target_position(Math::Vector3 &p_TargetPosition)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_target_position
-        System::Navmesh::set_agent_target_position(get_id(), p_TargetPosition);
+        System::Navmesh::set_agent_target_position(get_id(),
+                                                   p_TargetPosition);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_target_position
       }
 
@@ -603,7 +622,8 @@ namespace Low {
       void NavmeshAgent::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -619,27 +639,31 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(&l_NewBuffer[offsetof(NavmeshAgentData, speed) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(NavmeshAgentData, speed) * (l_Capacity)],
-                 l_Capacity * sizeof(float));
+          memcpy(
+              &l_NewBuffer[offsetof(NavmeshAgentData, speed) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(NavmeshAgentData, speed) * (l_Capacity)],
+              l_Capacity * sizeof(float));
         }
         {
           memcpy(&l_NewBuffer[offsetof(NavmeshAgentData, height) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(NavmeshAgentData, height) * (l_Capacity)],
+                 &ms_Buffer[offsetof(NavmeshAgentData, height) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(float));
         }
         {
           memcpy(&l_NewBuffer[offsetof(NavmeshAgentData, radius) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(NavmeshAgentData, radius) * (l_Capacity)],
+                 &ms_Buffer[offsetof(NavmeshAgentData, radius) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(float));
         }
         {
           memcpy(&l_NewBuffer[offsetof(NavmeshAgentData, offset) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(NavmeshAgentData, offset) * (l_Capacity)],
+                 &ms_Buffer[offsetof(NavmeshAgentData, offset) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Math::Vector3));
         }
         {
@@ -652,15 +676,16 @@ namespace Low {
         {
           memcpy(&l_NewBuffer[offsetof(NavmeshAgentData, entity) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(NavmeshAgentData, entity) * (l_Capacity)],
+                 &ms_Buffer[offsetof(NavmeshAgentData, entity) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Low::Core::Entity));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(NavmeshAgentData, unique_id) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(NavmeshAgentData, unique_id) * (l_Capacity)],
-              l_Capacity * sizeof(Low::Util::UniqueId));
+          memcpy(&l_NewBuffer[offsetof(NavmeshAgentData, unique_id) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(NavmeshAgentData, unique_id) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Util::UniqueId));
         }
         for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
              ++i) {

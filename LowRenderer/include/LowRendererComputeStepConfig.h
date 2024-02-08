@@ -31,6 +31,7 @@ namespace Low {
       ComputeStepCallbacks callbacks;
       Util::List<ResourceConfig> resources;
       Util::List<ComputePipelineConfig> pipelines;
+      Util::Name output_image_name;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -107,6 +108,9 @@ namespace Low {
       Util::List<ResourceConfig> &get_resources() const;
 
       Util::List<ComputePipelineConfig> &get_pipelines() const;
+
+      Util::Name get_output_image_name() const;
+      void set_output_image_name(Util::Name p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

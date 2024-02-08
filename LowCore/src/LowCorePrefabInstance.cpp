@@ -28,7 +28,8 @@ namespace Low {
       PrefabInstance::PrefabInstance() : Low::Util::Handle(0ull)
       {
       }
-      PrefabInstance::PrefabInstance(uint64_t p_Id) : Low::Util::Handle(p_Id)
+      PrefabInstance::PrefabInstance(uint64_t p_Id)
+          : Low::Util::Handle(p_Id)
       {
       }
       PrefabInstance::PrefabInstance(PrefabInstance &p_Copy)
@@ -137,11 +138,12 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(PrefabInstanceData, prefab);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Prefab::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_prefab();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance, prefab,
-                                              Prefab);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance,
+                                              prefab, Prefab);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -154,9 +156,11 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(overrides);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PrefabInstanceData, overrides);
+          l_PropertyInfo.dataOffset =
+              offsetof(PrefabInstanceData, overrides);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_overrides();
             return (void *)&ACCESSOR_TYPE_SOA(
@@ -178,11 +182,12 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(PrefabInstanceData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance, entity,
-                                              Low::Core::Entity);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance,
+                                              entity, Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -195,13 +200,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PrefabInstanceData, unique_id);
+          l_PropertyInfo.dataOffset =
+              offsetof(PrefabInstanceData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance,
-                                              unique_id, Low::Util::UniqueId);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PrefabInstance, unique_id, Low::Util::UniqueId);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -258,12 +265,12 @@ namespace Low {
           p_Node["prefab"] = get_prefab().get_unique_id();
         }
 
-        for (auto cit = get_overrides().begin(); cit != get_overrides().end();
-             ++cit) {
+        for (auto cit = get_overrides().begin();
+             cit != get_overrides().end(); ++cit) {
           for (auto pit = cit->second.begin(); pit != cit->second.end();
                ++pit) {
-            p_Node["overrides"][LOW_TO_STRING(cit->first).c_str()].push_back(
-                pit->c_str());
+            p_Node["overrides"][LOW_TO_STRING(cit->first).c_str()]
+                .push_back(pit->c_str());
           }
         }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
@@ -292,22 +299,23 @@ namespace Low {
         if (p_Node["overrides"]) {
         }
         if (p_Node["unique_id"]) {
-          l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+          l_Handle.set_unique_id(
+              p_Node["unique_id"].as<Low::Util::UniqueId>());
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
         if (p_Node["prefab"]) {
-          l_Handle.set_prefab(
-              Util::find_handle_by_unique_id(p_Node["prefab"].as<uint64_t>())
-                  .get_id());
+          l_Handle.set_prefab(Util::find_handle_by_unique_id(
+                                  p_Node["prefab"].as<uint64_t>())
+                                  .get_id());
         }
 
         if (p_Node["overrides"]) {
           for (auto cit = p_Node["overrides"].begin();
                cit != p_Node["overrides"].end(); ++cit) {
             for (uint32_t i = 0; i < cit->second.size(); ++i) {
-              l_Handle.get_overrides()[cit->first.as<uint16_t>()].push_back(
-                  LOW_YAML_AS_NAME(cit->second[i]));
+              l_Handle.get_overrides()[cit->first.as<uint16_t>()]
+                  .push_back(LOW_YAML_AS_NAME(cit->second[i]));
             }
           }
         }
@@ -414,14 +422,15 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
-      void
-      PrefabInstance::update_component_from_prefab(uint16_t p_ComponentType)
+      void PrefabInstance::update_component_from_prefab(
+          uint16_t p_ComponentType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_component_from_prefab
         Util::RTTI::TypeInfo &l_TypeInfo =
             Util::Handle::get_type_info(p_ComponentType);
 
-        Util::Handle l_Handle = get_entity().get_component(p_ComponentType);
+        Util::Handle l_Handle =
+            get_entity().get_component(p_ComponentType);
 
         for (auto it = l_TypeInfo.properties.begin();
              it != l_TypeInfo.properties.end(); ++it) {
@@ -522,14 +531,16 @@ namespace Low {
       void PrefabInstance::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
         LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(PrefabInstanceData));
+        uint8_t *l_NewBuffer =
+            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                              sizeof(PrefabInstanceData));
         Low::Util::Instances::Slot *l_NewSlots =
             (Low::Util::Instances::Slot *)malloc(
                 (l_Capacity + l_CapacityIncrease) *
@@ -538,31 +549,31 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(
-              &l_NewBuffer[offsetof(PrefabInstanceData, prefab) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(PrefabInstanceData, prefab) * (l_Capacity)],
-              l_Capacity * sizeof(Prefab));
+          memcpy(&l_NewBuffer[offsetof(PrefabInstanceData, prefab) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(PrefabInstanceData, prefab) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Prefab));
         }
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
-            auto *i_ValPtr =
-                new (&l_NewBuffer[offsetof(PrefabInstanceData, overrides) *
-                                      (l_Capacity + l_CapacityIncrease) +
-                                  (it->get_index() *
-                                   sizeof(Util::Map<uint16_t,
-                                                    Util::List<Util::Name>>))])
-                    Util::Map<uint16_t, Util::List<Util::Name>>();
+            auto *i_ValPtr = new (
+                &l_NewBuffer[offsetof(PrefabInstanceData, overrides) *
+                                 (l_Capacity + l_CapacityIncrease) +
+                             (it->get_index() *
+                              sizeof(Util::Map<uint16_t,
+                                               Util::List<Util::Name>>))])
+                Util::Map<uint16_t, Util::List<Util::Name>>();
             *i_ValPtr = it->get_overrides();
           }
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(PrefabInstanceData, entity) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(PrefabInstanceData, entity) * (l_Capacity)],
-              l_Capacity * sizeof(Low::Core::Entity));
+          memcpy(&l_NewBuffer[offsetof(PrefabInstanceData, entity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(PrefabInstanceData, entity) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Core::Entity));
         }
         {
           memcpy(&l_NewBuffer[offsetof(PrefabInstanceData, unique_id) *

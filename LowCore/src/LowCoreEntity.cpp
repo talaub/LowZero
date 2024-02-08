@@ -47,8 +47,9 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Entity::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Entity, components,
-                              SINGLE_ARG(Util::Map<uint16_t, Util::Handle>)))
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, Entity, components,
+          SINGLE_ARG(Util::Map<uint16_t, Util::Handle>)))
           Util::Map<uint16_t, Util::Handle>();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Entity, region, Region)) Region();
       ACCESSOR_TYPE_SOA(l_Handle, Entity, name, Low::Util::Name) =
@@ -58,7 +59,8 @@ namespace Low {
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      l_Handle.set_unique_id(
+          Low::Util::generate_unique_id(l_Handle.get_id()));
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -74,17 +76,18 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       Util::List<uint16_t> l_ComponentTypes;
-      for (auto it = get_components().begin(); it != get_components().end();
-           ++it) {
+      for (auto it = get_components().begin();
+           it != get_components().end(); ++it) {
         if (has_component(it->first)) {
           l_ComponentTypes.push_back(it->first);
         }
       }
 
-      for (auto it = l_ComponentTypes.begin(); it != l_ComponentTypes.end();
-           ++it) {
+      for (auto it = l_ComponentTypes.begin();
+           it != l_ComponentTypes.end(); ++it) {
         Util::Handle i_Handle = get_component(*it);
-        Util::RTTI::TypeInfo &i_TypeInfo = Util::Handle::get_type_info(*it);
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(*it);
         if (i_TypeInfo.is_alive(i_Handle)) {
           i_TypeInfo.destroy(i_Handle);
         }
@@ -145,7 +148,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EntityData, components);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_components();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -163,10 +167,12 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(EntityData, region);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Region::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_region();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, region, Region);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, region,
+                                            Region);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -181,7 +187,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EntityData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, unique_id,
@@ -197,7 +204,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(EntityData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Entity, name,
@@ -251,8 +259,8 @@ namespace Low {
 
     Entity Entity::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -284,9 +292,9 @@ namespace Low {
 
       if (!l_Region.is_alive()) {
         if (p_Node["region"]) {
-          l_Region =
-              Util::find_handle_by_unique_id(p_Node["region"].as<uint64_t>())
-                  .get_id();
+          l_Region = Util::find_handle_by_unique_id(
+                         p_Node["region"].as<uint64_t>())
+                         .get_id();
         }
       }
 
@@ -294,8 +302,8 @@ namespace Low {
 
       p_Node["_handle"] = l_Entity.get_id();
 
-      // Parse the old unique id and assign it again (need to remove the auto
-      // generated uid first
+      // Parse the old unique id and assign it again (need to remove the
+      // auto generated uid first
       if (p_Node["unique_id"]) {
         Util::remove_unique_id(l_Entity.get_unique_id());
         l_Entity.set_unique_id(p_Node["unique_id"].as<uint64_t>());
@@ -306,11 +314,11 @@ namespace Low {
 
       Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
 
-      for (auto it = l_ComponentsNode.begin(); it != l_ComponentsNode.end();
-           ++it) {
+      for (auto it = l_ComponentsNode.begin();
+           it != l_ComponentsNode.end(); ++it) {
         Util::Yaml::Node &i_ComponentNode = *it;
-        Util::RTTI::TypeInfo &i_TypeInfo =
-            Util::Handle::get_type_info(i_ComponentNode["type"].as<uint16_t>());
+        Util::RTTI::TypeInfo &i_TypeInfo = Util::Handle::get_type_info(
+            i_ComponentNode["type"].as<uint16_t>());
 
         i_ComponentNode["_handle"] =
             i_TypeInfo.deserialize(i_ComponentNode["properties"], l_Entity)
@@ -432,7 +440,8 @@ namespace Low {
     void Entity::add_component(Util::Handle &p_Component)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
-      Util::Handle l_ExistingComponent = get_component(p_Component.get_type());
+      Util::Handle l_ExistingComponent =
+          get_component(p_Component.get_type());
       Util::RTTI::TypeInfo l_ComponentTypeInfo =
           get_type_info(p_Component.get_type());
 
@@ -450,9 +459,10 @@ namespace Low {
     void Entity::remove_component(uint16_t p_ComponentType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_component
-      LOW_ASSERT(has_component(p_ComponentType),
-                 "Cannot remove component from entity. This entity does not "
-                 "have a component of the specified type");
+      LOW_ASSERT(
+          has_component(p_ComponentType),
+          "Cannot remove component from entity. This entity does not "
+          "have a component of the specified type");
 
       Util::RTTI::TypeInfo &l_TypeInfo =
           Util::Handle::get_type_info(p_ComponentType);
@@ -464,7 +474,8 @@ namespace Low {
     bool Entity::has_component(uint16_t p_ComponentType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_component
-      if (get_components().find(p_ComponentType) == get_components().end()) {
+      if (get_components().find(p_ComponentType) ==
+          get_components().end()) {
         return false;
       }
 
@@ -485,7 +496,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
     }
 
-    void Entity::serialize(Util::Yaml::Node &p_Node, bool p_AddHandles) const
+    void Entity::serialize(Util::Yaml::Node &p_Node,
+                           bool p_AddHandles) const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize
       _LOW_ASSERT(is_alive());
@@ -500,8 +512,8 @@ namespace Low {
         p_Node["region"] = get_region().get_unique_id();
       }
 
-      for (auto it = get_components().begin(); it != get_components().end();
-           ++it) {
+      for (auto it = get_components().begin();
+           it != get_components().end(); ++it) {
         Util::Yaml::Node i_Node;
         i_Node["type"] = it->first;
         if (p_AddHandles) {
@@ -573,7 +585,8 @@ namespace Low {
     void Entity::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -591,12 +604,12 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(EntityData, components) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::Map<uint16_t, Util::Handle>))])
-                  Util::Map<uint16_t, Util::Handle>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(EntityData, components) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<uint16_t, Util::Handle>))])
+              Util::Map<uint16_t, Util::Handle>();
           *i_ValPtr = it->get_components();
         }
       }
@@ -618,7 +631,8 @@ namespace Low {
                &ms_Buffer[offsetof(EntityData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -628,9 +642,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Entity from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      LOW_LOG_DEBUG << "Auto-increased budget for Entity from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

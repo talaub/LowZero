@@ -18,13 +18,15 @@ namespace Mtd {
     uint32_t CameraController::ms_Capacity = 0u;
     uint8_t *CameraController::ms_Buffer = 0;
     Low::Util::Instances::Slot *CameraController::ms_Slots = 0;
-    Low::Util::List<CameraController> CameraController::ms_LivingInstances =
-        Low::Util::List<CameraController>();
+    Low::Util::List<CameraController>
+        CameraController::ms_LivingInstances =
+            Low::Util::List<CameraController>();
 
     CameraController::CameraController() : Low::Util::Handle(0ull)
     {
     }
-    CameraController::CameraController(uint64_t p_Id) : Low::Util::Handle(p_Id)
+    CameraController::CameraController(uint64_t p_Id)
+        : Low::Util::Handle(p_Id)
     {
     }
     CameraController::CameraController(CameraController &p_Copy)
@@ -49,7 +51,8 @@ namespace Mtd {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = CameraController::TYPE_ID;
 
-      ACCESSOR_TYPE_SOA(l_Handle, CameraController, distance, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, CameraController, distance, float) =
+          0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, CameraController, entity,
                               Low::Core::Entity)) Low::Core::Entity();
 
@@ -58,7 +61,8 @@ namespace Mtd {
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));
+      l_Handle.set_unique_id(
+          Low::Util::generate_unique_id(l_Handle.get_id()));
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -124,9 +128,11 @@ namespace Mtd {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(distance);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(CameraControllerData, distance);
+        l_PropertyInfo.dataOffset =
+            offsetof(CameraControllerData, distance);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           CameraController l_Handle = p_Handle.get_id();
           l_Handle.get_distance();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, CameraController,
@@ -146,11 +152,12 @@ namespace Mtd {
         l_PropertyInfo.dataOffset = offsetof(CameraControllerData, entity);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           CameraController l_Handle = p_Handle.get_id();
           l_Handle.get_entity();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, CameraController, entity,
-                                            Low::Core::Entity);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, CameraController,
+                                            entity, Low::Core::Entity);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -163,13 +170,15 @@ namespace Mtd {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(CameraControllerData, unique_id);
+        l_PropertyInfo.dataOffset =
+            offsetof(CameraControllerData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           CameraController l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, CameraController,
-                                            unique_id, Low::Util::UniqueId);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, CameraController, unique_id, Low::Util::UniqueId);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -236,7 +245,8 @@ namespace Mtd {
     CameraController::deserialize(Low::Util::Yaml::Node &p_Node,
                                   Low::Util::Handle p_Creator)
     {
-      CameraController l_Handle = CameraController::make(p_Creator.get_id());
+      CameraController l_Handle =
+          CameraController::make(p_Creator.get_id());
 
       if (p_Node["unique_id"]) {
         Low::Util::remove_unique_id(l_Handle.get_unique_id());
@@ -249,7 +259,8 @@ namespace Mtd {
         l_Handle.set_distance(p_Node["distance"].as<float>());
       }
       if (p_Node["unique_id"]) {
-        l_Handle.set_unique_id(p_Node["unique_id"].as<Low::Util::UniqueId>());
+        l_Handle.set_unique_id(
+            p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -346,14 +357,16 @@ namespace Mtd {
     void CameraController::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
       LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
 
-      uint8_t *l_NewBuffer = (uint8_t *)malloc(
-          (l_Capacity + l_CapacityIncrease) * sizeof(CameraControllerData));
+      uint8_t *l_NewBuffer =
+          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                            sizeof(CameraControllerData));
       Low::Util::Instances::Slot *l_NewSlots =
           (Low::Util::Instances::Slot *)malloc(
               (l_Capacity + l_CapacityIncrease) *
@@ -362,18 +375,18 @@ namespace Mtd {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(
-            &l_NewBuffer[offsetof(CameraControllerData, distance) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(CameraControllerData, distance) * (l_Capacity)],
-            l_Capacity * sizeof(float));
+        memcpy(&l_NewBuffer[offsetof(CameraControllerData, distance) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(CameraControllerData, distance) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(float));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(CameraControllerData, entity) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(CameraControllerData, entity) * (l_Capacity)],
-            l_Capacity * sizeof(Low::Core::Entity));
+        memcpy(&l_NewBuffer[offsetof(CameraControllerData, entity) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(CameraControllerData, entity) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Core::Entity));
       }
       {
         memcpy(&l_NewBuffer[offsetof(CameraControllerData, unique_id) *
@@ -382,7 +395,8 @@ namespace Mtd {
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Util::UniqueId));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -393,8 +407,8 @@ namespace Mtd {
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
       LOW_LOG_DEBUG << "Auto-increased budget for CameraController from "
-                    << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Component
 } // namespace Mtd

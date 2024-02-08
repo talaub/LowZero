@@ -13,3 +13,4 @@ SortIncludes: 'false'
 NamespaceIndentation: All
 TabWidth: '2'
 UseTab: Never
+ColumnLimit: 75

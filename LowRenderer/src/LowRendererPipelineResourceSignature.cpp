@@ -38,7 +38,8 @@ namespace Low {
       {
       }
 
-      Low::Util::Handle PipelineResourceSignature::_make(Low::Util::Name p_Name)
+      Low::Util::Handle
+      PipelineResourceSignature::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
       }
@@ -53,7 +54,8 @@ namespace Low {
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = PipelineResourceSignature::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, PipelineResourceSignature, signature,
+        new (&ACCESSOR_TYPE_SOA(l_Handle, PipelineResourceSignature,
+                                signature,
                                 Backend::PipelineResourceSignature))
             Backend::PipelineResourceSignature();
         ACCESSOR_TYPE_SOA(l_Handle, PipelineResourceSignature, name,
@@ -98,7 +100,8 @@ namespace Low {
         ms_Capacity = Low::Util::Config::get_capacity(
             N(LowRenderer), N(PipelineResourceSignature));
 
-        initialize_buffer(&ms_Buffer, PipelineResourceSignatureData::get_size(),
+        initialize_buffer(&ms_Buffer,
+                          PipelineResourceSignatureData::get_size(),
                           get_capacity(), &ms_Slots);
 
         LOW_PROFILE_ALLOC(type_buffer_PipelineResourceSignature);
@@ -117,7 +120,8 @@ namespace Low {
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &PipelineResourceSignature::living_instances);
-        l_TypeInfo.get_living_count = &PipelineResourceSignature::living_count;
+        l_TypeInfo.get_living_count =
+            &PipelineResourceSignature::living_count;
         l_TypeInfo.component = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -126,7 +130,8 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PipelineResourceSignatureData, signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
             l_Handle.get_signature();
             return (void *)&ACCESSOR_TYPE_SOA(
@@ -144,11 +149,13 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PipelineResourceSignatureData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
             l_Handle.get_name();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, PipelineResourceSignature, name, Low::Util::Name);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle,
+                                              PipelineResourceSignature,
+                                              name, Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -190,7 +197,8 @@ namespace Low {
       bool PipelineResourceSignature::is_alive() const
       {
         return m_Data.m_Type == PipelineResourceSignature::TYPE_ID &&
-               check_alive(ms_Slots, PipelineResourceSignature::get_capacity());
+               check_alive(ms_Slots,
+                           PipelineResourceSignature::get_capacity());
       }
 
       uint32_t PipelineResourceSignature::get_capacity()
@@ -209,8 +217,8 @@ namespace Low {
         }
       }
 
-      void
-      PipelineResourceSignature::serialize(Low::Util::Yaml::Node &p_Node) const
+      void PipelineResourceSignature::serialize(
+          Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -220,8 +228,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
-      void PipelineResourceSignature::serialize(Low::Util::Handle p_Handle,
-                                                Low::Util::Yaml::Node &p_Node)
+      void
+      PipelineResourceSignature::serialize(Low::Util::Handle p_Handle,
+                                           Low::Util::Yaml::Node &p_Node)
       {
         PipelineResourceSignature l_PipelineResourceSignature =
             p_Handle.get_id();
@@ -276,7 +285,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
-        TYPE_SOA(PipelineResourceSignature, name, Low::Util::Name) = p_Value;
+        TYPE_SOA(PipelineResourceSignature, name, Low::Util::Name) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -313,7 +323,8 @@ namespace Low {
       }
 
       void PipelineResourceSignature::set_image_resource(
-          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
+          Util::Name p_Name, uint32_t p_ArrayIndex,
+          Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_image_resource
         Backend::callbacks().pipeline_resource_signature_set_image(
@@ -322,7 +333,8 @@ namespace Low {
       }
 
       void PipelineResourceSignature::set_sampler_resource(
-          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
+          Util::Name p_Name, uint32_t p_ArrayIndex,
+          Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_sampler_resource
         Backend::callbacks().pipeline_resource_signature_set_sampler(
@@ -331,16 +343,19 @@ namespace Low {
       }
 
       void PipelineResourceSignature::set_unbound_sampler_resource(
-          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
+          Util::Name p_Name, uint32_t p_ArrayIndex,
+          Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_unbound_sampler_resource
-        Backend::callbacks().pipeline_resource_signature_set_unbound_sampler(
-            get_signature(), p_Name, p_ArrayIndex, p_Value);
+        Backend::callbacks()
+            .pipeline_resource_signature_set_unbound_sampler(
+                get_signature(), p_Name, p_ArrayIndex, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_unbound_sampler_resource
       }
 
       void PipelineResourceSignature::set_texture2d_resource(
-          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Image p_Value)
+          Util::Name p_Name, uint32_t p_ArrayIndex,
+          Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_texture2d_resource
         Backend::callbacks().pipeline_resource_signature_set_texture2d(
@@ -349,16 +364,19 @@ namespace Low {
       }
 
       void PipelineResourceSignature::set_constant_buffer_resource(
-          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Buffer p_Value)
+          Util::Name p_Name, uint32_t p_ArrayIndex,
+          Resource::Buffer p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_constant_buffer_resource
-        Backend::callbacks().pipeline_resource_signature_set_constant_buffer(
-            get_signature(), p_Name, p_ArrayIndex, p_Value);
+        Backend::callbacks()
+            .pipeline_resource_signature_set_constant_buffer(
+                get_signature(), p_Name, p_ArrayIndex, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_constant_buffer_resource
       }
 
       void PipelineResourceSignature::set_buffer_resource(
-          Util::Name p_Name, uint32_t p_ArrayIndex, Resource::Buffer p_Value)
+          Util::Name p_Name, uint32_t p_ArrayIndex,
+          Resource::Buffer p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_buffer_resource
         Backend::callbacks().pipeline_resource_signature_set_buffer(
@@ -392,7 +410,8 @@ namespace Low {
       void PipelineResourceSignature::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -409,19 +428,21 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(
-              &l_NewBuffer[offsetof(PipelineResourceSignatureData, signature) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(PipelineResourceSignatureData, signature) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(Backend::PipelineResourceSignature));
+          memcpy(&l_NewBuffer[offsetof(PipelineResourceSignatureData,
+                                       signature) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(PipelineResourceSignatureData,
+                                     signature) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Backend::PipelineResourceSignature));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(PipelineResourceSignatureData, name) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PipelineResourceSignatureData, name) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::Name));
+          memcpy(
+              &l_NewBuffer[offsetof(PipelineResourceSignatureData, name) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(PipelineResourceSignatureData, name) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(Low::Util::Name));
         }
         for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
              ++i) {

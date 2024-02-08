@@ -90,8 +90,8 @@ namespace Low {
         ms_Capacity =
             Low::Util::Config::get_capacity(N(LowRenderer), N(Buffer));
 
-        initialize_buffer(&ms_Buffer, BufferData::get_size(), get_capacity(),
-                          &ms_Slots);
+        initialize_buffer(&ms_Buffer, BufferData::get_size(),
+                          get_capacity(), &ms_Slots);
 
         LOW_PROFILE_ALLOC(type_buffer_Buffer);
         LOW_PROFILE_ALLOC(type_slots_Buffer);
@@ -117,7 +117,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(BufferData, buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.get_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, buffer,
@@ -136,7 +137,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(BufferData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, name,
@@ -284,7 +286,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         Buffer l_Buffer = Buffer::make(p_Name);
 
-        Backend::callbacks().buffer_create(l_Buffer.get_buffer(), p_Params);
+        Backend::callbacks().buffer_create(l_Buffer.get_buffer(),
+                                           p_Params);
 
         return l_Buffer;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
@@ -297,7 +300,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set
       }
 
-      void Buffer::write(void *p_Data, uint32_t p_DataSize, uint32_t p_Start)
+      void Buffer::write(void *p_Data, uint32_t p_DataSize,
+                         uint32_t p_Start)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write
         Backend::callbacks().buffer_write(get_buffer(), p_Data, p_DataSize,
@@ -305,7 +309,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_write
       }
 
-      void Buffer::read(void *p_Data, uint32_t p_DataSize, uint32_t p_Start)
+      void Buffer::read(void *p_Data, uint32_t p_DataSize,
+                        uint32_t p_Start)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_read
         Backend::callbacks().buffer_read(get_buffer(), p_Data, p_DataSize,
@@ -346,7 +351,8 @@ namespace Low {
       void Buffer::increase_budget()
       {
         uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+        uint32_t l_CapacityIncrease =
+            std::max(std::min(l_Capacity, 64u), 1u);
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
@@ -384,9 +390,9 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG << "Auto-increased budget for Buffer from " << l_Capacity
-                      << " to " << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        LOW_LOG_DEBUG << "Auto-increased budget for Buffer from "
+                      << l_Capacity << " to "
+                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
     } // namespace Resource
   }   // namespace Renderer

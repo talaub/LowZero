@@ -49,7 +49,8 @@ namespace Low {
 
       static Prefab make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Prefab(const Prefab &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Prefab(const Prefab &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -103,7 +104,8 @@ namespace Low {
       Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>> &
       get_components() const;
       void set_components(
-          Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>> &p_Value);
+          Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>
+              &p_Value);
 
       Low::Util::UniqueId get_unique_id() const;
 

@@ -21,8 +21,9 @@ namespace Low {
     uint32_t GraphicsStepConfig::ms_Capacity = 0u;
     uint8_t *GraphicsStepConfig::ms_Buffer = 0;
     Low::Util::Instances::Slot *GraphicsStepConfig::ms_Slots = 0;
-    Low::Util::List<GraphicsStepConfig> GraphicsStepConfig::ms_LivingInstances =
-        Low::Util::List<GraphicsStepConfig>();
+    Low::Util::List<GraphicsStepConfig>
+        GraphicsStepConfig::ms_LivingInstances =
+            Low::Util::List<GraphicsStepConfig>();
 
     GraphicsStepConfig::GraphicsStepConfig() : Low::Util::Handle(0ull)
     {
@@ -51,12 +52,14 @@ namespace Low {
       l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, callbacks,
-                              GraphicsStepCallbacks)) GraphicsStepCallbacks();
+                              GraphicsStepCallbacks))
+          GraphicsStepCallbacks();
       new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, resources,
                               Util::List<ResourceConfig>))
           Util::List<ResourceConfig>();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, dimensions_config,
-                              DimensionsConfig)) DimensionsConfig();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig,
+                              dimensions_config, DimensionsConfig))
+          DimensionsConfig();
       new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, pipelines,
                               Util::List<GraphicsPipelineConfig>))
           Util::List<GraphicsPipelineConfig>();
@@ -66,17 +69,19 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig,
                               rendertargets_clearcolor, Math::Color))
           Math::Color();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_rendertarget,
-                              PipelineResourceBindingConfig))
-          PipelineResourceBindingConfig();
-      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, use_depth, bool) = false;
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, GraphicsStepConfig, depth_rendertarget,
+          PipelineResourceBindingConfig)) PipelineResourceBindingConfig();
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, use_depth, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_clear, bool) =
           false;
-      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_test, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_test, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, depth_write, bool) =
           false;
-      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, name, Low::Util::Name) =
-          Low::Util::Name(0u);
+      ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, name,
+                        Low::Util::Name) = Low::Util::Name(0u);
 
       l_Handle.set_name(p_Name);
 
@@ -142,13 +147,16 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(callbacks);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, callbacks);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, callbacks);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_callbacks();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
-                                            callbacks, GraphicsStepCallbacks);
+                                            callbacks,
+                                            GraphicsStepCallbacks);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -161,9 +169,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, resources);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_resources();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -181,7 +191,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, dimensions_config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_dimensions_config();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -196,14 +207,16 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(pipelines);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, pipelines);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_pipelines();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
-                                            pipelines,
-                                            Util::List<GraphicsPipelineConfig>);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, GraphicsStepConfig, pipelines,
+              Util::List<GraphicsPipelineConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -216,7 +229,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, rendertargets);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_rendertargets();
           return (void *)&ACCESSOR_TYPE_SOA(
@@ -234,7 +248,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, rendertargets_clearcolor);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_rendertargets_clearcolor();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -255,7 +270,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_rendertarget);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_depth_rendertarget();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -274,9 +290,11 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(use_depth);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, use_depth);
+        l_PropertyInfo.dataOffset =
+            offsetof(GraphicsStepConfigData, use_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.is_use_depth();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -296,7 +314,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_clear);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.is_depth_clear();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -316,7 +335,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_test);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.is_depth_test();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -336,7 +356,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_write);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.is_depth_write();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
@@ -356,11 +377,13 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_compare_operation);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_depth_compare_operation();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
-                                            depth_compare_operation, uint8_t);
+                                            depth_compare_operation,
+                                            uint8_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -375,11 +398,12 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GraphicsStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const * {
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_name();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig, name,
-                                            Low::Util::Name);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GraphicsStepConfig,
+                                            name, Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -427,10 +451,11 @@ namespace Low {
       return ms_Capacity;
     }
 
-    GraphicsStepConfig GraphicsStepConfig::find_by_name(Low::Util::Name p_Name)
+    GraphicsStepConfig
+    GraphicsStepConfig::find_by_name(Low::Util::Name p_Name)
     {
-      for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();
-           ++it) {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
@@ -441,8 +466,9 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::Serialization::serialize(p_Node["rendertargets_clearcolor"],
-                                          get_rendertargets_clearcolor());
+      Low::Util::Serialization::serialize(
+          p_Node["rendertargets_clearcolor"],
+          get_rendertargets_clearcolor());
       p_Node["use_depth"] = is_use_depth();
       p_Node["depth_clear"] = is_depth_clear();
       p_Node["depth_test"] = is_depth_test();
@@ -518,7 +544,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_callbacks
       // LOW_CODEGEN::END::CUSTOM:GETTER_callbacks
 
-      return TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks);
+      return TYPE_SOA(GraphicsStepConfig, callbacks,
+                      GraphicsStepCallbacks);
     }
     void GraphicsStepConfig::set_callbacks(GraphicsStepCallbacks &p_Value)
     {
@@ -528,7 +555,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_callbacks
 
       // Set new value
-      TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks) = p_Value;
+      TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks) =
+          p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_callbacks
       // LOW_CODEGEN::END::CUSTOM:SETTER_callbacks
@@ -552,9 +580,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions_config
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions_config
 
-      return TYPE_SOA(GraphicsStepConfig, dimensions_config, DimensionsConfig);
+      return TYPE_SOA(GraphicsStepConfig, dimensions_config,
+                      DimensionsConfig);
     }
-    void GraphicsStepConfig::set_dimensions_config(DimensionsConfig &p_Value)
+    void
+    GraphicsStepConfig::set_dimensions_config(DimensionsConfig &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -603,7 +633,8 @@ namespace Low {
       return TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor,
                       Math::Color);
     }
-    void GraphicsStepConfig::set_rendertargets_clearcolor(Math::Color &p_Value)
+    void
+    GraphicsStepConfig::set_rendertargets_clearcolor(Math::Color &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -744,7 +775,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_compare_operation
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_compare_operation
 
-      return TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t);
+      return TYPE_SOA(GraphicsStepConfig, depth_compare_operation,
+                      uint8_t);
     }
     void GraphicsStepConfig::set_depth_compare_operation(uint8_t p_Value)
     {
@@ -754,7 +786,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_compare_operation
 
       // Set new value
-      TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t) = p_Value;
+      TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t) =
+          p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_compare_operation
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_compare_operation
@@ -809,7 +842,8 @@ namespace Low {
       l_Config.set_dimensions_config(l_DimensionsConfig);
 
       if (p_Node["resources"]) {
-        parse_resource_configs(p_Node["resources"], l_Config.get_resources());
+        parse_resource_configs(p_Node["resources"],
+                               l_Config.get_resources());
       }
 
       {
@@ -817,8 +851,8 @@ namespace Low {
         l_ResourceConfig.arraySize = 1;
         l_ResourceConfig.name = N(_renderobject_buffer);
         l_ResourceConfig.type = ResourceType::BUFFER;
-        l_ResourceConfig.buffer.size =
-            sizeof(RenderObjectShaderInfo) * LOW_RENDERER_RENDEROBJECT_COUNT;
+        l_ResourceConfig.buffer.size = sizeof(RenderObjectShaderInfo) *
+                                       LOW_RENDERER_RENDEROBJECT_COUNT;
         l_Config.get_resources().push_back(l_ResourceConfig);
       }
       {
@@ -869,7 +903,8 @@ namespace Low {
       l_Config.set_depth_write(false);
       l_Config.set_depth_test(false);
       l_Config.set_depth_clear(false);
-      l_Config.set_depth_compare_operation(Backend::CompareOperation::EQUAL);
+      l_Config.set_depth_compare_operation(
+          Backend::CompareOperation::EQUAL);
 
       if (p_Node["depth_rendertarget"]) {
         Util::String l_TargetString =
@@ -889,7 +924,8 @@ namespace Low {
         Util::String l_CompareOperationString =
             LOW_YAML_AS_STRING(p_Node["depth_compare_operation"]);
         if (l_CompareOperationString == "LESS") {
-          l_Config.set_depth_compare_operation(Backend::CompareOperation::LESS);
+          l_Config.set_depth_compare_operation(
+              Backend::CompareOperation::LESS);
         } else if (l_CompareOperationString == "EQUAL" ||
                    l_CompareOperationString == "EQUALS") {
           l_Config.set_depth_compare_operation(
@@ -922,14 +958,16 @@ namespace Low {
     void GraphicsStepConfig::increase_budget()
     {
       uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease = std::max(std::min(l_Capacity, 64u), 1u);
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
       LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
 
-      uint8_t *l_NewBuffer = (uint8_t *)malloc(
-          (l_Capacity + l_CapacityIncrease) * sizeof(GraphicsStepConfigData));
+      uint8_t *l_NewBuffer =
+          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                            sizeof(GraphicsStepConfigData));
       Low::Util::Instances::Slot *l_NewSlots =
           (Low::Util::Instances::Slot *)malloc(
               (l_Capacity + l_CapacityIncrease) *
@@ -947,32 +985,33 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(GraphicsStepConfigData, resources) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::List<ResourceConfig>))])
-                  Util::List<ResourceConfig>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepConfigData, resources) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::List<ResourceConfig>))])
+              Util::List<ResourceConfig>();
           *i_ValPtr = it->get_resources();
         }
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(GraphicsStepConfigData, dimensions_config) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(GraphicsStepConfigData, dimensions_config) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(DimensionsConfig));
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData,
+                                     dimensions_config) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData,
+                                   dimensions_config) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(DimensionsConfig));
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(GraphicsStepConfigData, pipelines) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::List<GraphicsPipelineConfig>))])
-                  Util::List<GraphicsPipelineConfig>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(GraphicsStepConfigData, pipelines) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::List<GraphicsPipelineConfig>))])
+              Util::List<GraphicsPipelineConfig>();
           *i_ValPtr = it->get_pipelines();
         }
       }
@@ -980,10 +1019,11 @@ namespace Low {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(GraphicsStepConfigData, rendertargets) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Util::List<PipelineResourceBindingConfig>))])
+              &l_NewBuffer
+                  [offsetof(GraphicsStepConfigData, rendertargets) *
+                       (l_Capacity + l_CapacityIncrease) +
+                   (it->get_index() *
+                    sizeof(Util::List<PipelineResourceBindingConfig>))])
               Util::List<PipelineResourceBindingConfig>();
           *i_ValPtr = it->get_rendertargets();
         }
@@ -998,12 +1038,13 @@ namespace Low {
                l_Capacity * sizeof(Math::Color));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(GraphicsStepConfigData, depth_rendertarget) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(GraphicsStepConfigData, depth_rendertarget) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(PipelineResourceBindingConfig));
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData,
+                                     depth_rendertarget) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData,
+                                   depth_rendertarget) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(PipelineResourceBindingConfig));
       }
       {
         memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, use_depth) *
@@ -1043,13 +1084,14 @@ namespace Low {
                l_Capacity * sizeof(uint8_t));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(GraphicsStepConfigData, name) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(GraphicsStepConfigData, name) * (l_Capacity)],
-            l_Capacity * sizeof(Low::Util::Name));
+        memcpy(&l_NewBuffer[offsetof(GraphicsStepConfigData, name) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(GraphicsStepConfigData, name) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease; ++i) {
+      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
+           ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -1060,8 +1102,8 @@ namespace Low {
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
       LOW_LOG_DEBUG << "Auto-increased budget for GraphicsStepConfig from "
-                    << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
     }
   } // namespace Renderer
 } // namespace Low

@@ -50,7 +50,8 @@ namespace Low {
       static Low::Util::Handle _make(Low::Util::Name p_Name);
 
     public:
-      explicit Material(const Material &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Material(const Material &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -101,7 +102,8 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static Material make(Util::Name p_Name, Interface::Context p_Context);
+      static Material make(Util::Name p_Name,
+                           Interface::Context p_Context);
       void set_property(Util::Name p_PropertyName, Util::Variant &p_Value);
 
     private:
