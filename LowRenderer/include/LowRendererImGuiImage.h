@@ -82,8 +82,9 @@ namespace Low {
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
-        static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator);
+        static Low::Util::Handle
+        deserialize(Low::Util::Yaml::Node &p_Node,
+                    Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
           return p_Handle.get_type() == ImGuiImage::TYPE_ID &&
@@ -104,7 +105,8 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static ImGuiImage make(Util::Name p_Name, Resource::Image p_Image);
+        static ImGuiImage make(Util::Name p_Name,
+                               Resource::Image p_Image);
         void render(Math::UVector2 &p_Dimensions);
 
       private:

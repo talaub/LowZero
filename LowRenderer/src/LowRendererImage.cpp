@@ -117,7 +117,8 @@ namespace Low {
           l_PropertyInfo.name = N(image);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ImageData, image);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Image l_Handle = p_Handle.get_id();
@@ -218,8 +219,9 @@ namespace Low {
         l_Image.serialize(p_Node);
       }
 
-      Low::Util::Handle Image::deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      Image::deserialize(Low::Util::Yaml::Node &p_Node,
+                         Low::Util::Handle p_Creator)
       {
         Image l_Handle = Image::make(N(Image));
 
@@ -296,13 +298,14 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
-      void
-      Image::reinitialize(Backend::ImageResourceCreateParams &p_Params)
+      void Image::reinitialize(
+          Backend::ImageResourceCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_reinitialize
         Backend::callbacks().imageresource_cleanup(get_image());
 
-        Backend::callbacks().imageresource_create(get_image(), p_Params);
+        Backend::callbacks().imageresource_create(get_image(),
+                                                  p_Params);
 
         get_image().handleId = get_id();
 
@@ -333,7 +336,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer = (uint8_t *)malloc(
             (l_Capacity + l_CapacityIncrease) * sizeof(ImageData));
@@ -345,10 +349,11 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(&l_NewBuffer[offsetof(ImageData, image) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ImageData, image) * (l_Capacity)],
-                 l_Capacity * sizeof(Backend::ImageResource));
+          memcpy(
+              &l_NewBuffer[offsetof(ImageData, image) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ImageData, image) * (l_Capacity)],
+              l_Capacity * sizeof(Backend::ImageResource));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ImageData, name) *
@@ -356,8 +361,8 @@ namespace Low {
                  &ms_Buffer[offsetof(ImageData, name) * (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -369,7 +374,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for Image from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Resource
   }   // namespace Renderer

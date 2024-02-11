@@ -21,7 +21,8 @@ namespace Low {
     struct LOW_RENDERER_API ResourceRegistry
     {
       void initialize(Util::List<ResourceConfig> &p_Configs,
-                      Interface::Context p_Context, RenderFlow p_RenderFlow);
+                      Interface::Context p_Context,
+                      RenderFlow p_RenderFlow);
       void cleanup();
 
       void update_dimensions(RenderFlow p_RenderFlow);
@@ -35,8 +36,8 @@ namespace Low {
                                     Resource::Buffer p_Buffer);
 
     private:
-      Interface::Context m_Context;
       Util::Map<Util::Name, ResourceInfo> m_Resources;
+      Interface::Context m_Context;
       Util::List<ResourceConfig> m_Configs;
 
       Util::Handle get_resource(Util::Name p_Name);

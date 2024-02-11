@@ -47,7 +47,8 @@ namespace Low {
 
       static Mesh make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Mesh(const Mesh &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      explicit Mesh(const Mesh &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -77,8 +78,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == Mesh::TYPE_ID &&

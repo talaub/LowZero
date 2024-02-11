@@ -86,8 +86,8 @@ namespace Low {
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowRenderer), N(Mesh));
 
-      initialize_buffer(&ms_Buffer, MeshData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, MeshData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Mesh);
       LOW_PROFILE_ALLOC(type_slots_Mesh);
@@ -118,8 +118,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertex_buffer_start();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
-                                            vertex_buffer_start, uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Mesh, vertex_buffer_start, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -138,8 +138,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertex_count();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, vertex_count,
-                                            uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
+                                            vertex_count, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -152,14 +152,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_buffer_start);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshData, index_buffer_start);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshData, index_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_index_buffer_start();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
-                                            index_buffer_start, uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Mesh, index_buffer_start, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -178,8 +179,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_index_count();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh, index_count,
-                                            uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
+                                            index_count, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -213,14 +214,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertexweight_count);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshData, vertexweight_count);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshData, vertexweight_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertexweight_count();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
-                                            vertexweight_count, uint32_t);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Mesh, vertexweight_count, uint32_t);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -332,14 +334,16 @@ namespace Low {
             p_Node["vertex_buffer_start"].as<uint32_t>());
       }
       if (p_Node["vertex_count"]) {
-        l_Handle.set_vertex_count(p_Node["vertex_count"].as<uint32_t>());
+        l_Handle.set_vertex_count(
+            p_Node["vertex_count"].as<uint32_t>());
       }
       if (p_Node["index_buffer_start"]) {
         l_Handle.set_index_buffer_start(
             p_Node["index_buffer_start"].as<uint32_t>());
       }
       if (p_Node["index_count"]) {
-        l_Handle.set_index_count(p_Node["index_count"].as<uint32_t>());
+        l_Handle.set_index_count(
+            p_Node["index_count"].as<uint32_t>());
       }
       if (p_Node["vertexweight_buffer_start"]) {
         l_Handle.set_vertexweight_buffer_start(
@@ -544,7 +548,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer = (uint8_t *)malloc(
           (l_Capacity + l_CapacityIncrease) * sizeof(MeshData));
@@ -565,7 +570,8 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, vertex_count) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshData, vertex_count) * (l_Capacity)],
+               &ms_Buffer[offsetof(MeshData, vertex_count) *
+                          (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
       }
       {
@@ -578,15 +584,18 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, index_count) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshData, index_count) * (l_Capacity)],
+               &ms_Buffer[offsetof(MeshData, index_count) *
+                          (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(MeshData, vertexweight_buffer_start) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshData, vertexweight_buffer_start) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+        memcpy(
+            &l_NewBuffer[offsetof(MeshData,
+                                  vertexweight_buffer_start) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MeshData, vertexweight_buffer_start) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, vertexweight_count) *
@@ -601,8 +610,8 @@ namespace Low {
                &ms_Buffer[offsetof(MeshData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -612,8 +621,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Mesh from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
+      LOW_LOG_DEBUG << "Auto-increased budget for Mesh from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
   } // namespace Renderer

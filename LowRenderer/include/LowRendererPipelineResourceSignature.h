@@ -73,7 +73,8 @@ namespace Low {
           return ms_LivingInstances.data();
         }
 
-        static PipelineResourceSignature find_by_index(uint32_t p_Index);
+        static PipelineResourceSignature
+        find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
 
@@ -86,8 +87,9 @@ namespace Low {
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
-        static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator);
+        static Low::Util::Handle
+        deserialize(Low::Util::Yaml::Node &p_Node,
+                    Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
           return p_Handle.get_type() ==
@@ -113,9 +115,11 @@ namespace Low {
              Util::List<Backend::PipelineResourceDescription>
                  &p_ResourceDescriptions);
         void commit();
-        void set_image_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
+        void set_image_resource(Util::Name p_Name,
+                                uint32_t p_ArrayIndex,
                                 Resource::Image p_Value);
-        void set_sampler_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
+        void set_sampler_resource(Util::Name p_Name,
+                                  uint32_t p_ArrayIndex,
                                   Resource::Image p_Value);
         void set_unbound_sampler_resource(Util::Name p_Name,
                                           uint32_t p_ArrayIndex,
@@ -126,7 +130,8 @@ namespace Low {
         void set_constant_buffer_resource(Util::Name p_Name,
                                           uint32_t p_ArrayIndex,
                                           Resource::Buffer p_Value);
-        void set_buffer_resource(Util::Name p_Name, uint32_t p_ArrayIndex,
+        void set_buffer_resource(Util::Name p_Name,
+                                 uint32_t p_ArrayIndex,
                                  Resource::Buffer p_Value);
         uint8_t get_binding();
 

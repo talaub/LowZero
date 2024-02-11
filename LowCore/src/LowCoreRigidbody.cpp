@@ -56,16 +56,18 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, fixed, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, gravity, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, mass, float) = 0.0f;
-        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, initialized, bool) = false;
+        ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, initialized, bool) =
+            false;
         new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, rigid_dynamic,
                                 PhysicsRigidDynamic))
             PhysicsRigidDynamic();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, physics_shape,
                                 PhysicsShape)) PhysicsShape();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, shape, Math::Shape))
-            Math::Shape();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, shape,
+                                Math::Shape)) Math::Shape();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, entity,
-                                Low::Core::Entity)) Low::Core::Entity();
+                                Low::Core::Entity))
+            Low::Core::Entity();
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -162,8 +164,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.is_fixed();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, fixed,
-                                              bool);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+                                              fixed, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -176,14 +178,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(gravity);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, gravity);
+          l_PropertyInfo.dataOffset =
+              offsetof(RigidbodyData, gravity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.is_gravity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, gravity,
-                                              bool);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+                                              gravity, bool);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -202,8 +205,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_mass();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, mass,
-                                              float);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+                                              mass, float);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -216,7 +219,8 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(initialized);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, initialized);
+          l_PropertyInfo.dataOffset =
+              offsetof(RigidbodyData, initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -235,13 +239,15 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(RigidbodyData, rigid_dynamic);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_rigid_dynamic();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Rigidbody, rigid_dynamic, PhysicsRigidDynamic);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+                                              rigid_dynamic,
+                                              PhysicsRigidDynamic);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -253,7 +259,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(RigidbodyData, physics_shape);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             return nullptr;
@@ -272,8 +279,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_shape();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, shape,
-                                              Math::Shape);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
+                                              shape, Math::Shape);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -293,8 +300,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody, entity,
-                                              Low::Core::Entity);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Rigidbody, entity, Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -307,7 +314,8 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, unique_id);
+          l_PropertyInfo.dataOffset =
+              offsetof(RigidbodyData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -366,7 +374,8 @@ namespace Low {
         p_Node["fixed"] = is_fixed();
         p_Node["gravity"] = is_gravity();
         p_Node["mass"] = get_mass();
-        Low::Util::Serialization::serialize(p_Node["shape"], get_shape());
+        Low::Util::Serialization::serialize(p_Node["shape"],
+                                            get_shape());
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -403,8 +412,9 @@ namespace Low {
           l_Handle.set_mass(p_Node["mass"].as<float>());
         }
         if (p_Node["shape"]) {
-          l_Handle.set_shape(Low::Util::Serialization::deserialize_shape(
-              p_Node["shape"]));
+          l_Handle.set_shape(
+              Low::Util::Serialization::deserialize_shape(
+                  p_Node["shape"]));
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -564,7 +574,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rigid_dynamic
         // LOW_CODEGEN::END::CUSTOM:GETTER_rigid_dynamic
 
-        return TYPE_SOA(Rigidbody, rigid_dynamic, PhysicsRigidDynamic);
+        return TYPE_SOA(Rigidbody, rigid_dynamic,
+                        PhysicsRigidDynamic);
       }
 
       PhysicsShape &Rigidbody::get_physics_shape() const
@@ -613,19 +624,21 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shape
         if (!is_initialized()) {
-          Component::Transform l_Transform = get_entity().get_transform();
+          Component::Transform l_Transform =
+              get_entity().get_transform();
 
           PhysicsShape::create(get_physics_shape(), p_Value);
 
-          void *l_UserData =
-              (void *)TYPE_SOA_PTR(Rigidbody, unique_id, Util::UniqueId);
+          void *l_UserData = (void *)TYPE_SOA_PTR(
+              Rigidbody, unique_id, Util::UniqueId);
 
           PhysicsRigidDynamic::create(
               get_rigid_dynamic(), get_physics_shape(),
               l_Transform.get_world_position(),
               l_Transform.get_world_rotation(), l_UserData);
 
-          System::Physics::register_rigid_dynamic(get_rigid_dynamic());
+          System::Physics::register_rigid_dynamic(
+              get_rigid_dynamic());
 
           set_initialized(true);
         } else {
@@ -707,10 +720,12 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(RigidbodyData));
+        uint8_t *l_NewBuffer =
+            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                              sizeof(RigidbodyData));
         Low::Util::Instances::Slot *l_NewSlots =
             (Low::Util::Instances::Slot *)malloc(
                 (l_Capacity + l_CapacityIncrease) *
@@ -721,20 +736,22 @@ namespace Low {
         {
           memcpy(&l_NewBuffer[offsetof(RigidbodyData, fixed) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, fixed) * (l_Capacity)],
+                 &ms_Buffer[offsetof(RigidbodyData, fixed) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(bool));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(RigidbodyData, gravity) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(RigidbodyData, gravity) * (l_Capacity)],
-              l_Capacity * sizeof(bool));
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, gravity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, gravity) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(bool));
         }
         {
           memcpy(&l_NewBuffer[offsetof(RigidbodyData, mass) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, mass) * (l_Capacity)],
+                 &ms_Buffer[offsetof(RigidbodyData, mass) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(float));
         }
         {
@@ -761,15 +778,16 @@ namespace Low {
         {
           memcpy(&l_NewBuffer[offsetof(RigidbodyData, shape) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, shape) * (l_Capacity)],
+                 &ms_Buffer[offsetof(RigidbodyData, shape) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Math::Shape));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(RigidbodyData, entity) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(RigidbodyData, entity) * (l_Capacity)],
-              l_Capacity * sizeof(Low::Core::Entity));
+          memcpy(&l_NewBuffer[offsetof(RigidbodyData, entity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(RigidbodyData, entity) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Core::Entity));
         }
         {
           memcpy(&l_NewBuffer[offsetof(RigidbodyData, unique_id) *
@@ -778,8 +796,8 @@ namespace Low {
                             (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::UniqueId));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -791,7 +809,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for Rigidbody from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Component
   }   // namespace Core

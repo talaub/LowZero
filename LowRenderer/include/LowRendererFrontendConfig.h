@@ -88,8 +88,9 @@ namespace Low {
       };
     };
 
-    void parse_resource_configs(Util::Yaml::Node &p_Node,
-                                Util::List<ResourceConfig> &p_Resources);
+    void
+    parse_resource_configs(Util::Yaml::Node &p_Node,
+                           Util::List<ResourceConfig> &p_Resources);
 
     namespace ResourceBindType {
       enum Enum
@@ -163,7 +164,8 @@ namespace Low {
         Util::String &p_TargetString, Util::String &p_TypeName);
 
     void parse_compute_pipeline_configs(
-        Util::Yaml::Node &p_Node, Util::List<ComputePipelineConfig> &p_Configs);
+        Util::Yaml::Node &p_Node,
+        Util::List<ComputePipelineConfig> &p_Configs);
 
     struct GraphicsPipelineConfig
     {
@@ -174,11 +176,20 @@ namespace Low {
       uint8_t frontFace;
       uint8_t polygonMode;
       bool translucency;
+      Util::List<PipelineResourceBindingConfig> resourceBinding;
     };
 
     void load_graphics_pipeline_configs(Util::String p_RootPath);
 
-    GraphicsPipelineConfig &get_graphics_pipeline_config(Util::Name p_Name);
+    GraphicsPipelineConfig &
+    get_graphics_pipeline_config(Util::Name p_Name);
 
+    void generate_graphics_pipeline_config_fullscreen_triangle(
+        GraphicsPipelineConfig &p_Config,
+        Util::String p_FragmentShaderName);
+
+    void parse_pipeline_resource_bindings(
+        Util::Yaml::Node &p_Node,
+        Util::List<PipelineResourceBindingConfig> &p_BindingConfigs);
   } // namespace Renderer
 } // namespace Low

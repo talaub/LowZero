@@ -118,8 +118,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == RenderFlow::TYPE_ID &&
@@ -145,7 +146,8 @@ namespace Low {
 
       Resource::Buffer get_frame_info_buffer() const;
 
-      Interface::PipelineResourceSignature get_resource_signature() const;
+      Interface::PipelineResourceSignature
+      get_resource_signature() const;
 
       Math::Vector3 &get_camera_position() const;
       void set_camera_position(Math::Vector3 &p_Value);
@@ -190,8 +192,8 @@ namespace Low {
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
       void set_frame_info_buffer(Resource::Buffer p_Value);
-      void
-      set_resource_signature(Interface::PipelineResourceSignature p_Value);
+      void set_resource_signature(
+          Interface::PipelineResourceSignature p_Value);
       void set_projection_matrix(Math::Matrix4x4 &p_Value);
       void set_view_matrix(Math::Matrix4x4 &p_Value);
     };

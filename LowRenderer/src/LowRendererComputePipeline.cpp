@@ -51,7 +51,8 @@ namespace Low {
         l_Handle.m_Data.m_Type = ComputePipeline::TYPE_ID;
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, ComputePipeline, pipeline,
-                                Backend::Pipeline)) Backend::Pipeline();
+                                Backend::Pipeline))
+            Backend::Pipeline();
         ACCESSOR_TYPE_SOA(l_Handle, ComputePipeline, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
@@ -93,8 +94,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
-                                                      N(ComputePipeline));
+        ms_Capacity = Low::Util::Config::get_capacity(
+            N(LowRenderer), N(ComputePipeline));
 
         initialize_buffer(&ms_Buffer, ComputePipelineData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -123,13 +124,15 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ComputePipelineData, pipeline);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             ComputePipeline l_Handle = p_Handle.get_id();
             l_Handle.get_pipeline();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline,
-                                              pipeline, Backend::Pipeline);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ComputePipeline, pipeline,
+                Backend::Pipeline);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -139,14 +142,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ComputePipelineData, name);
+          l_PropertyInfo.dataOffset =
+              offsetof(ComputePipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             ComputePipeline l_Handle = p_Handle.get_id();
             l_Handle.get_name();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputePipeline,
-                                              name, Low::Util::Name);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ComputePipeline, name, Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -160,7 +164,8 @@ namespace Low {
 
       void ComputePipeline::cleanup()
       {
-        Low::Util::List<ComputePipeline> l_Instances = ms_LivingInstances;
+        Low::Util::List<ComputePipeline> l_Instances =
+            ms_LivingInstances;
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
@@ -194,7 +199,8 @@ namespace Low {
         return ms_Capacity;
       }
 
-      ComputePipeline ComputePipeline::find_by_name(Low::Util::Name p_Name)
+      ComputePipeline
+      ComputePipeline::find_by_name(Low::Util::Name p_Name)
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
@@ -204,7 +210,8 @@ namespace Low {
         }
       }
 
-      void ComputePipeline::serialize(Low::Util::Yaml::Node &p_Node) const
+      void
+      ComputePipeline::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -280,7 +287,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         ComputePipeline l_Pipeline = ComputePipeline::make(p_Name);
 
-        PipelineManager::register_compute_pipeline(l_Pipeline, p_Params);
+        PipelineManager::register_compute_pipeline(l_Pipeline,
+                                                   p_Params);
 
         return l_Pipeline;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
@@ -293,11 +301,12 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind
       }
 
-      void ComputePipeline::set_constant(Util::Name p_Name, void *p_Value)
+      void ComputePipeline::set_constant(Util::Name p_Name,
+                                         void *p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_constant
-        Backend::callbacks().pipeline_set_constant(get_pipeline(), p_Name,
-                                                   p_Value);
+        Backend::callbacks().pipeline_set_constant(get_pipeline(),
+                                                   p_Name, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_constant
       }
 
@@ -325,7 +334,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer =
             (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
@@ -338,11 +348,12 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(&l_NewBuffer[offsetof(ComputePipelineData, pipeline) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ComputePipelineData, pipeline) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Backend::Pipeline));
+          memcpy(
+              &l_NewBuffer[offsetof(ComputePipelineData, pipeline) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ComputePipelineData, pipeline) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(Backend::Pipeline));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ComputePipelineData, name) *
@@ -351,8 +362,8 @@ namespace Low {
                             (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -362,9 +373,10 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG << "Auto-increased budget for ComputePipeline from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+        LOW_LOG_DEBUG
+            << "Auto-increased budget for ComputePipeline from "
+            << l_Capacity << " to "
+            << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
     } // namespace Interface
   }   // namespace Renderer

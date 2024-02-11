@@ -41,6 +41,7 @@ namespace Low {
       bool depth_test;
       bool depth_write;
       uint8_t depth_compare_operation;
+      Util::Name output_image_name;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -49,7 +50,8 @@ namespace Low {
       }
     };
 
-    struct LOW_RENDERER_API GraphicsStepConfig : public Low::Util::Handle
+    struct LOW_RENDERER_API GraphicsStepConfig
+        : public Low::Util::Handle
     {
     public:
       static uint8_t *ms_Buffer;
@@ -96,8 +98,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == GraphicsStepConfig::TYPE_ID &&
@@ -120,13 +123,15 @@ namespace Low {
 
       Util::List<GraphicsPipelineConfig> &get_pipelines() const;
 
-      Util::List<PipelineResourceBindingConfig> &get_rendertargets() const;
+      Util::List<PipelineResourceBindingConfig> &
+      get_rendertargets() const;
 
       Math::Color &get_rendertargets_clearcolor() const;
       void set_rendertargets_clearcolor(Math::Color &p_Value);
 
       PipelineResourceBindingConfig &get_depth_rendertarget() const;
-      void set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);
+      void
+      set_depth_rendertarget(PipelineResourceBindingConfig &p_Value);
 
       bool is_use_depth() const;
       void set_use_depth(bool p_Value);
@@ -142,6 +147,9 @@ namespace Low {
 
       uint8_t get_depth_compare_operation() const;
       void set_depth_compare_operation(uint8_t p_Value);
+
+      Util::Name get_output_image_name() const;
+      void set_output_image_name(Util::Name p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

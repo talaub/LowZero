@@ -44,7 +44,8 @@ namespace Low {
     MeshResource::MeshResource() : Low::Util::Handle(0ull)
     {
     }
-    MeshResource::MeshResource(uint64_t p_Id) : Low::Util::Handle(p_Id)
+    MeshResource::MeshResource(uint64_t p_Id)
+        : Low::Util::Handle(p_Id)
     {
     }
     MeshResource::MeshResource(MeshResource &p_Copy)
@@ -66,16 +67,18 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = MeshResource::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, path, Util::String))
-          Util::String();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, path,
+                              Util::String)) Util::String();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, submeshes,
-                              Util::List<Submesh>)) Util::List<Submesh>();
+                              Util::List<Submesh>))
+          Util::List<Submesh>();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, skeleton,
-                              Renderer::Skeleton)) Renderer::Skeleton();
+                              Renderer::Skeleton))
+          Renderer::Skeleton();
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, state,
                               ResourceState)) ResourceState();
-      ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name, Low::Util::Name) =
-          Low::Util::Name(0u);
+      ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name,
+                        Low::Util::Name) = Low::Util::Name(0u);
 
       l_Handle.set_name(p_Name);
 
@@ -119,8 +122,8 @@ namespace Low {
       }
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity =
-          Low::Util::Config::get_capacity(N(LowCore), N(MeshResource));
+      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
+                                                    N(MeshResource));
 
       initialize_buffer(&ms_Buffer, MeshResourceData::get_size(),
                         get_capacity(), &ms_Slots);
@@ -153,8 +156,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_path();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, path,
-                                            Util::String);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
+                                            path, Util::String);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -164,7 +167,8 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(submeshes);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshResourceData, submeshes);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, submeshes);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -196,15 +200,16 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(skeleton);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshResourceData, skeleton);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, skeleton);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Skeleton::TYPE_ID;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_skeleton();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
-                                            skeleton, Renderer::Skeleton);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshResource, skeleton, Renderer::Skeleton);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -220,8 +225,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_state();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, state,
-                                            ResourceState);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
+                                            state, ResourceState);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -240,8 +245,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_name();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource, name,
-                                            Low::Util::Name);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
+                                            name, Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -487,10 +492,10 @@ namespace Low {
 
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(
-          get_reference_count() > 0,
-          "Increased MeshResource reference count, but its not over 0. "
-          "Something went wrong.");
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased MeshResource reference count, but its "
+                 "not over 0. "
+                 "Something went wrong.");
 
       if (get_state() != ResourceState::UNLOADED) {
         return;
@@ -517,19 +522,21 @@ namespace Low {
           std::string(LOW_DATA_PATH) + "\\resources\\meshes\\";
       l_FullPath += get_path().c_str();
 
-      MeshLoadSchedule &l_LoadSchedule = g_MeshLoadSchedules.emplace_back(
-          l_MeshIndex,
-          Util::JobManager::default_pool().enqueue([l_FullPath,
-                                                    l_MeshIndex]() {
-            for (auto it = g_MeshLoadSchedules.begin();
-                 it != g_MeshLoadSchedules.end(); ++it) {
-              if (it->meshIndex == l_MeshIndex) {
-                Util::Resource::load_mesh(Util::String(l_FullPath.c_str()),
-                                          g_Meshes[l_MeshIndex]);
-                break;
-              }
-            }
-          }));
+      MeshLoadSchedule &l_LoadSchedule =
+          g_MeshLoadSchedules.emplace_back(
+              l_MeshIndex,
+              Util::JobManager::default_pool().enqueue(
+                  [l_FullPath, l_MeshIndex]() {
+                    for (auto it = g_MeshLoadSchedules.begin();
+                         it != g_MeshLoadSchedules.end(); ++it) {
+                      if (it->meshIndex == l_MeshIndex) {
+                        Util::Resource::load_mesh(
+                            Util::String(l_FullPath.c_str()),
+                            g_Meshes[l_MeshIndex]);
+                        break;
+                      }
+                    }
+                  }));
       l_LoadSchedule.meshResource = *this;
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
@@ -541,8 +548,8 @@ namespace Low {
       Util::Resource::Mesh &l_Mesh = g_Meshes[p_MeshIndex];
 
       for (uint32_t i = 0u; i < l_Mesh.submeshes.size(); ++i) {
-        for (uint32_t j = 0u; j < l_Mesh.submeshes[i].meshInfos.size();
-             ++j) {
+        for (uint32_t j = 0u;
+             j < l_Mesh.submeshes[i].meshInfos.size(); ++j) {
           Submesh i_Submesh;
           i_Submesh.name = l_Mesh.submeshes[i].name;
           i_Submesh.transformation = l_Mesh.submeshes[i].transform;
@@ -582,8 +589,8 @@ namespace Low {
       if (!is_loaded()) {
         return;
       }
-      for (auto it = get_submeshes().begin(); it != get_submeshes().end();
-           ++it) {
+      for (auto it = get_submeshes().begin();
+           it != get_submeshes().end(); ++it) {
         Renderer::unload_mesh(it->mesh);
       }
 
@@ -639,10 +646,12 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
-      uint8_t *l_NewBuffer = (uint8_t *)malloc(
-          (l_Capacity + l_CapacityIncrease) * sizeof(MeshResourceData));
+      uint8_t *l_NewBuffer =
+          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                            sizeof(MeshResourceData));
       Low::Util::Instances::Slot *l_NewSlots =
           (Low::Util::Instances::Slot *)malloc(
               (l_Capacity + l_CapacityIncrease) *
@@ -653,27 +662,29 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(MeshResourceData, path) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, path) * (l_Capacity)],
+               &ms_Buffer[offsetof(MeshResourceData, path) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Util::String));
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(MeshResourceData, submeshes) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::List<Submesh>))])
-                  Util::List<Submesh>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(MeshResourceData, submeshes) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::List<Submesh>))])
+              Util::List<Submesh>();
           *i_ValPtr = it->get_submeshes();
         }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, reference_count) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, reference_count) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
+        memcpy(
+            &l_NewBuffer[offsetof(MeshResourceData, reference_count) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MeshResourceData, reference_count) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshResourceData, skeleton) *
@@ -683,20 +694,21 @@ namespace Low {
                l_Capacity * sizeof(Renderer::Skeleton));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(MeshResourceData, state) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(MeshResourceData, state) * (l_Capacity)],
-            l_Capacity * sizeof(ResourceState));
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, state) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, state) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(ResourceState));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshResourceData, name) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, name) * (l_Capacity)],
+               &ms_Buffer[offsetof(MeshResourceData, name) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -708,7 +720,8 @@ namespace Low {
 
       LOW_LOG_DEBUG << "Auto-increased budget for MeshResource from "
                     << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                    << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

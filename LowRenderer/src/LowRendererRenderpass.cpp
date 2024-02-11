@@ -52,8 +52,8 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, Renderpass, renderpass,
                                 Backend::Renderpass))
             Backend::Renderpass();
-        ACCESSOR_TYPE_SOA(l_Handle, Renderpass, name, Low::Util::Name) =
-            Low::Util::Name(0u);
+        ACCESSOR_TYPE_SOA(l_Handle, Renderpass, name,
+                          Low::Util::Name) = Low::Util::Name(0u);
 
         l_Handle.set_name(p_Name);
 
@@ -94,8 +94,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowRenderer), N(Renderpass));
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                      N(Renderpass));
 
         initialize_buffer(&ms_Buffer, RenderpassData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -122,14 +122,17 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(renderpass);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(RenderpassData, renderpass);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.dataOffset =
+              offsetof(RenderpassData, renderpass);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.get_renderpass();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Renderpass, renderpass, Backend::Renderpass);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass,
+                                              renderpass,
+                                              Backend::Renderpass);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -148,8 +151,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.get_name();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass, name,
-                                              Low::Util::Name);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Renderpass,
+                                              name, Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -259,7 +262,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderpass
 
         // Set new value
-        TYPE_SOA(Renderpass, renderpass, Backend::Renderpass) = p_Value;
+        TYPE_SOA(Renderpass, renderpass, Backend::Renderpass) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderpass
         // LOW_CODEGEN::END::CUSTOM:SETTER_renderpass
@@ -372,10 +376,12 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(RenderpassData));
+        uint8_t *l_NewBuffer =
+            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                              sizeof(RenderpassData));
         Low::Util::Instances::Slot *l_NewSlots =
             (Low::Util::Instances::Slot *)malloc(
                 (l_Capacity + l_CapacityIncrease) *
@@ -393,11 +399,12 @@ namespace Low {
         {
           memcpy(&l_NewBuffer[offsetof(RenderpassData, name) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RenderpassData, name) * (l_Capacity)],
+                 &ms_Buffer[offsetof(RenderpassData, name) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -409,7 +416,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for Renderpass from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Interface
   }   // namespace Renderer

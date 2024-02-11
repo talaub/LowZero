@@ -51,8 +51,8 @@ namespace Low {
             Backend::ImGuiImage();
         new (&ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, image,
                                 Resource::Image)) Resource::Image();
-        ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, name, Low::Util::Name) =
-            Low::Util::Name(0u);
+        ACCESSOR_TYPE_SOA(l_Handle, ImGuiImage, name,
+                          Low::Util::Name) = Low::Util::Name(0u);
 
         l_Handle.set_name(p_Name);
 
@@ -91,8 +91,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowRenderer), N(ImGuiImage));
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                      N(ImGuiImage));
 
         initialize_buffer(&ms_Buffer, ImGuiImageData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -121,13 +121,15 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(ImGuiImageData, imgui_image);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();
             l_Handle.get_imgui_image();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, ImGuiImage, imgui_image, Backend::ImGuiImage);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage,
+                                              imgui_image,
+                                              Backend::ImGuiImage);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -144,8 +146,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();
             l_Handle.get_image();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, image,
-                                              Resource::Image);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage,
+                                              image, Resource::Image);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -161,8 +163,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();
             l_Handle.get_name();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage, name,
-                                              Low::Util::Name);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImGuiImage,
+                                              name, Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -369,10 +371,12 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(ImGuiImageData));
+        uint8_t *l_NewBuffer =
+            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                              sizeof(ImGuiImageData));
         Low::Util::Instances::Slot *l_NewSlots =
             (Low::Util::Instances::Slot *)malloc(
                 (l_Capacity + l_CapacityIncrease) *
@@ -388,20 +392,21 @@ namespace Low {
                  l_Capacity * sizeof(Backend::ImGuiImage));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(ImGuiImageData, image) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ImGuiImageData, image) * (l_Capacity)],
-              l_Capacity * sizeof(Resource::Image));
+          memcpy(&l_NewBuffer[offsetof(ImGuiImageData, image) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ImGuiImageData, image) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Resource::Image));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ImGuiImageData, name) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ImGuiImageData, name) * (l_Capacity)],
+                 &ms_Buffer[offsetof(ImGuiImageData, name) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -413,7 +418,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for ImGuiImage from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Interface
   }   // namespace Renderer

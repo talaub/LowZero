@@ -66,12 +66,13 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, path, Util::String))
-          Util::String();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, path,
+                              Util::String)) Util::String();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, renderer_texture,
-                              Renderer::Texture2D)) Renderer::Texture2D();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, state, ResourceState))
-          ResourceState();
+                              Renderer::Texture2D))
+          Renderer::Texture2D();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, state,
+                              ResourceState)) ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -169,8 +170,9 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_renderer_texture();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, Texture2D, renderer_texture, Renderer::Texture2D);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
+                                            renderer_texture,
+                                            Renderer::Texture2D);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -201,8 +203,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_state();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, state,
-                                            ResourceState);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
+                                            state, ResourceState);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -296,12 +298,14 @@ namespace Low {
       l_Texture2D.serialize(p_Node);
     }
 
-    Low::Util::Handle Texture2D::deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Texture2D::deserialize(Low::Util::Yaml::Node &p_Node,
+                           Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-      Texture2D l_Texture = Texture2D::make(LOW_YAML_AS_STRING(p_Node));
+      Texture2D l_Texture =
+          Texture2D::make(LOW_YAML_AS_STRING(p_Node));
       return l_Texture;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -336,7 +340,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_texture
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_texture
 
-      return TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D);
+      return TYPE_SOA(Texture2D, renderer_texture,
+                      Renderer::Texture2D);
     }
     void Texture2D::set_renderer_texture(Renderer::Texture2D p_Value)
     {
@@ -346,7 +351,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_texture
 
       // Set new value
-      TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D) = p_Value;
+      TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D) =
+          p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_texture
       // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_texture
@@ -433,7 +439,8 @@ namespace Low {
 
       Util::String l_FileName =
           p_Path.substr(p_Path.find_last_of("/\\") + 1);
-      Texture2D l_Texture = Texture2D::make(LOW_NAME(l_FileName.c_str()));
+      Texture2D l_Texture =
+          Texture2D::make(LOW_NAME(l_FileName.c_str()));
       l_Texture.set_path(p_Path);
 
       l_Texture.set_reference_count(0);
@@ -512,8 +519,9 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
       set_reference_count(get_reference_count() - 1);
 
-      LOW_ASSERT(get_reference_count() >= 0,
-                 "Texture2D reference count < 0. Something went wrong.");
+      LOW_ASSERT(
+          get_reference_count() >= 0,
+          "Texture2D reference count < 0. Something went wrong.");
 
       if (get_reference_count() <= 0) {
         _unload();
@@ -580,7 +588,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer = (uint8_t *)malloc(
           (l_Capacity + l_CapacityIncrease) * sizeof(Texture2DData));
@@ -592,17 +601,19 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(Texture2DData, path) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(Texture2DData, path) * (l_Capacity)],
-               l_Capacity * sizeof(Util::String));
+        memcpy(
+            &l_NewBuffer[offsetof(Texture2DData, path) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(Texture2DData, path) * (l_Capacity)],
+            l_Capacity * sizeof(Util::String));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(Texture2DData, renderer_texture) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(Texture2DData, renderer_texture) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Renderer::Texture2D));
+        memcpy(
+            &l_NewBuffer[offsetof(Texture2DData, renderer_texture) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(Texture2DData, renderer_texture) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(Renderer::Texture2D));
       }
       {
         memcpy(&l_NewBuffer[offsetof(Texture2DData, reference_count) *
@@ -612,19 +623,21 @@ namespace Low {
                l_Capacity * sizeof(uint32_t));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(Texture2DData, state) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(Texture2DData, state) * (l_Capacity)],
-               l_Capacity * sizeof(ResourceState));
+        memcpy(
+            &l_NewBuffer[offsetof(Texture2DData, state) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(Texture2DData, state) * (l_Capacity)],
+            l_Capacity * sizeof(ResourceState));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(Texture2DData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(Texture2DData, name) * (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
+        memcpy(
+            &l_NewBuffer[offsetof(Texture2DData, name) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(Texture2DData, name) * (l_Capacity)],
+            l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -636,7 +649,8 @@ namespace Low {
 
       LOW_LOG_DEBUG << "Auto-increased budget for Texture2D from "
                     << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                    << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

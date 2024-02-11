@@ -45,8 +45,8 @@ namespace Low {
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = Buffer::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Buffer, buffer, Backend::Buffer))
-            Backend::Buffer();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Buffer, buffer,
+                                Backend::Buffer)) Backend::Buffer();
         ACCESSOR_TYPE_SOA(l_Handle, Buffer, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -87,8 +87,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowRenderer), N(Buffer));
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                      N(Buffer));
 
         initialize_buffer(&ms_Buffer, BufferData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -116,13 +116,14 @@ namespace Low {
           l_PropertyInfo.name = N(buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(BufferData, buffer);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.get_buffer();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Buffer, buffer,
-                                              Backend::Buffer);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Buffer, buffer, Backend::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -217,8 +218,9 @@ namespace Low {
         l_Buffer.serialize(p_Node);
       }
 
-      Low::Util::Handle Buffer::deserialize(Low::Util::Yaml::Node &p_Node,
-                                            Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      Buffer::deserialize(Low::Util::Yaml::Node &p_Node,
+                          Low::Util::Handle p_Creator)
       {
         Buffer l_Handle = Buffer::make(N(Buffer));
 
@@ -304,8 +306,8 @@ namespace Low {
                          uint32_t p_Start)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write
-        Backend::callbacks().buffer_write(get_buffer(), p_Data, p_DataSize,
-                                          p_Start);
+        Backend::callbacks().buffer_write(get_buffer(), p_Data,
+                                          p_DataSize, p_Start);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_write
       }
 
@@ -313,8 +315,8 @@ namespace Low {
                         uint32_t p_Start)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_read
-        Backend::callbacks().buffer_read(get_buffer(), p_Data, p_DataSize,
-                                         p_Start);
+        Backend::callbacks().buffer_read(get_buffer(), p_Data,
+                                         p_DataSize, p_Start);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_read
       }
 
@@ -328,7 +330,8 @@ namespace Low {
       void Buffer::bind_index(uint8_t p_BindType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_index
-        Backend::callbacks().buffer_bind_index(get_buffer(), p_BindType);
+        Backend::callbacks().buffer_bind_index(get_buffer(),
+                                               p_BindType);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_index
       }
 
@@ -356,7 +359,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer = (uint8_t *)malloc(
             (l_Capacity + l_CapacityIncrease) * sizeof(BufferData));
@@ -368,19 +372,21 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(&l_NewBuffer[offsetof(BufferData, buffer) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(BufferData, buffer) * (l_Capacity)],
-                 l_Capacity * sizeof(Backend::Buffer));
+          memcpy(
+              &l_NewBuffer[offsetof(BufferData, buffer) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(BufferData, buffer) * (l_Capacity)],
+              l_Capacity * sizeof(Backend::Buffer));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(BufferData, name) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(BufferData, name) * (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::Name));
+          memcpy(
+              &l_NewBuffer[offsetof(BufferData, name) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(BufferData, name) * (l_Capacity)],
+              l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -392,7 +398,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for Buffer from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Resource
   }   // namespace Renderer

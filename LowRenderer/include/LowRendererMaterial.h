@@ -81,8 +81,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == Material::TYPE_ID &&
@@ -104,7 +105,8 @@ namespace Low {
 
       static Material make(Util::Name p_Name,
                            Interface::Context p_Context);
-      void set_property(Util::Name p_PropertyName, Util::Variant &p_Value);
+      void set_property(Util::Name p_PropertyName,
+                        Util::Variant &p_Value);
 
     private:
       static uint32_t ms_Capacity;

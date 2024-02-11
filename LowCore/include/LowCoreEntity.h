@@ -80,8 +80,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == Entity::TYPE_ID &&
@@ -111,7 +112,8 @@ namespace Low {
       void remove_component(uint16_t p_ComponentType);
       bool has_component(uint16_t p_ComponentType);
       Component::Transform get_transform() const;
-      void serialize(Util::Yaml::Node &p_Node, bool p_AddHandles) const;
+      void serialize(Util::Yaml::Node &p_Node,
+                     bool p_AddHandles) const;
       void serialize_hierarchy(Util::Yaml::Node &p_Node,
                                bool p_AddHandles) const;
       static Entity &deserialize_hierarchy(Util::Yaml::Node &p_Node,

@@ -48,14 +48,17 @@ namespace Low {
       l_Handle.m_Data.m_Type = Region::TYPE_ID;
 
       ACCESSOR_TYPE_SOA(l_Handle, Region, loaded, bool) = false;
-      ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_enabled, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_enabled, bool) =
+          false;
       new (&ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_position,
                               Math::Vector3)) Math::Vector3();
-      ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_radius, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, Region, streaming_radius, float) =
+          0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, Region, entities,
                               Util::Set<Util::UniqueId>))
           Util::Set<Util::UniqueId>();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Region, scene, Scene)) Scene();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Region, scene, Scene))
+          Scene();
       ACCESSOR_TYPE_SOA(l_Handle, Region, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -102,10 +105,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Region));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowCore), N(Region));
 
-      initialize_buffer(&ms_Buffer, RegionData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, RegionData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Region);
       LOW_PROFILE_ALLOC(type_slots_Region);
@@ -191,7 +195,8 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(streaming_radius);
         l_PropertyInfo.editorProperty = true;
-        l_PropertyInfo.dataOffset = offsetof(RegionData, streaming_radius);
+        l_PropertyInfo.dataOffset =
+            offsetof(RegionData, streaming_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -252,8 +257,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Region, unique_id,
-                                            Low::Util::UniqueId);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Region, unique_id, Low::Util::UniqueId);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -333,8 +338,8 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       p_Node["streaming_enabled"] = is_streaming_enabled();
-      Low::Util::Serialization::serialize(p_Node["streaming_position"],
-                                          get_streaming_position());
+      Low::Util::Serialization::serialize(
+          p_Node["streaming_position"], get_streaming_position());
       p_Node["streaming_radius"] = get_streaming_radius();
       p_Node["unique_id"] = get_unique_id();
       p_Node["name"] = get_name().c_str();
@@ -350,8 +355,9 @@ namespace Low {
       l_Region.serialize(p_Node);
     }
 
-    Low::Util::Handle Region::deserialize(Low::Util::Yaml::Node &p_Node,
-                                          Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Region::deserialize(Low::Util::Yaml::Node &p_Node,
+                        Low::Util::Handle p_Creator)
     {
       Region l_Handle = Region::make(N(Region));
 
@@ -564,8 +570,8 @@ namespace Low {
     void Region::serialize_entities(Util::Yaml::Node &p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_entities
-      for (auto it = get_entities().begin(); it != get_entities().end();
-           ++it) {
+      for (auto it = get_entities().begin();
+           it != get_entities().end(); ++it) {
         Core::Entity i_Entity =
             Util::find_handle_by_unique_id(*it).get_id();
         if (i_Entity.is_alive()) {
@@ -614,11 +620,12 @@ namespace Low {
         return;
       }
 
-      Util::Yaml::Node l_RootNode = Util::Yaml::load_file(l_Path.c_str());
+      Util::Yaml::Node l_RootNode =
+          Util::Yaml::load_file(l_Path.c_str());
       Util::Yaml::Node &l_EntitiesNode = l_RootNode["entities"];
 
-      for (auto it = l_EntitiesNode.begin(); it != l_EntitiesNode.end();
-           ++it) {
+      for (auto it = l_EntitiesNode.begin();
+           it != l_EntitiesNode.end(); ++it) {
         Util::Yaml::Node &i_EntityNode = *it;
         Entity::deserialize(i_EntityNode, *this);
       }
@@ -630,7 +637,8 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload_entities
       LOW_ASSERT(is_alive(), "Cannot unload dead region");
-      LOW_ASSERT(is_loaded(), "Cannot unload region that is not loaded");
+      LOW_ASSERT(is_loaded(),
+                 "Cannot unload region that is not loaded");
 
       set_loaded(false);
 
@@ -667,7 +675,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer = (uint8_t *)malloc(
           (l_Capacity + l_CapacityIncrease) * sizeof(RegionData));
@@ -679,10 +688,11 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(RegionData, loaded) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RegionData, loaded) * (l_Capacity)],
-               l_Capacity * sizeof(bool));
+        memcpy(
+            &l_NewBuffer[offsetof(RegionData, loaded) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(RegionData, loaded) * (l_Capacity)],
+            l_Capacity * sizeof(bool));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RegionData, streaming_enabled) *
@@ -708,12 +718,12 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(RegionData, entities) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::Set<Util::UniqueId>))])
-                  Util::Set<Util::UniqueId>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(RegionData, entities) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Set<Util::UniqueId>))])
+              Util::Set<Util::UniqueId>();
           *i_ValPtr = it->get_entities();
         }
       }
@@ -726,7 +736,8 @@ namespace Low {
       {
         memcpy(&l_NewBuffer[offsetof(RegionData, unique_id) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RegionData, unique_id) * (l_Capacity)],
+               &ms_Buffer[offsetof(RegionData, unique_id) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Low::Util::UniqueId));
       }
       {
@@ -735,8 +746,8 @@ namespace Low {
                &ms_Buffer[offsetof(RegionData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -748,7 +759,8 @@ namespace Low {
 
       LOW_LOG_DEBUG << "Auto-increased budget for Region from "
                     << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                    << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

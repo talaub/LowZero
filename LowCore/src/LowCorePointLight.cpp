@@ -52,9 +52,11 @@ namespace Low {
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, PointLight, color,
                                 Math::ColorRGB)) Math::ColorRGB();
-        ACCESSOR_TYPE_SOA(l_Handle, PointLight, intensity, float) = 0.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, PointLight, intensity, float) =
+            0.0f;
         new (&ACCESSOR_TYPE_SOA(l_Handle, PointLight, entity,
-                                Low::Core::Entity)) Low::Core::Entity();
+                                Low::Core::Entity))
+            Low::Core::Entity();
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -100,8 +102,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowCore), N(PointLight));
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
+                                                      N(PointLight));
 
         initialize_buffer(&ms_Buffer, PointLightData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -129,13 +131,14 @@ namespace Low {
           l_PropertyInfo.name = N(color);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(PointLightData, color);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLORRGB;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_color();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight, color,
-                                              Math::ColorRGB);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight,
+                                              color, Math::ColorRGB);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -148,7 +151,8 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(intensity);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(PointLightData, intensity);
+          l_PropertyInfo.dataOffset =
+              offsetof(PointLightData, intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -168,15 +172,16 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PointLightData, entity);
+          l_PropertyInfo.dataOffset =
+              offsetof(PointLightData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight, entity,
-                                              Low::Core::Entity);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PointLight, entity, Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -189,7 +194,8 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PointLightData, unique_id);
+          l_PropertyInfo.dataOffset =
+              offsetof(PointLightData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
@@ -245,7 +251,8 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        Low::Util::Serialization::serialize(p_Node["color"], get_color());
+        Low::Util::Serialization::serialize(p_Node["color"],
+                                            get_color());
         p_Node["intensity"] = get_intensity();
         p_Node["unique_id"] = get_unique_id();
 
@@ -274,8 +281,9 @@ namespace Low {
         }
 
         if (p_Node["color"]) {
-          l_Handle.set_color(Low::Util::Serialization::deserialize_vector3(
-              p_Node["color"]));
+          l_Handle.set_color(
+              Low::Util::Serialization::deserialize_vector3(
+                  p_Node["color"]));
         }
         if (p_Node["intensity"]) {
           l_Handle.set_intensity(p_Node["intensity"].as<float>());
@@ -407,7 +415,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        TYPE_SOA(PointLight, unique_id, Low::Util::UniqueId) = p_Value;
+        TYPE_SOA(PointLight, unique_id, Low::Util::UniqueId) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
@@ -437,10 +446,12 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(PointLightData));
+        uint8_t *l_NewBuffer =
+            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
+                              sizeof(PointLightData));
         Low::Util::Instances::Slot *l_NewSlots =
             (Low::Util::Instances::Slot *)malloc(
                 (l_Capacity + l_CapacityIncrease) *
@@ -449,11 +460,11 @@ namespace Low {
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
         {
-          memcpy(
-              &l_NewBuffer[offsetof(PointLightData, color) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(PointLightData, color) * (l_Capacity)],
-              l_Capacity * sizeof(Math::ColorRGB));
+          memcpy(&l_NewBuffer[offsetof(PointLightData, color) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(PointLightData, color) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Math::ColorRGB));
         }
         {
           memcpy(&l_NewBuffer[offsetof(PointLightData, intensity) *
@@ -463,11 +474,11 @@ namespace Low {
                  l_Capacity * sizeof(float));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(PointLightData, entity) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(PointLightData, entity) * (l_Capacity)],
-              l_Capacity * sizeof(Low::Core::Entity));
+          memcpy(&l_NewBuffer[offsetof(PointLightData, entity) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(PointLightData, entity) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Core::Entity));
         }
         {
           memcpy(&l_NewBuffer[offsetof(PointLightData, unique_id) *
@@ -476,8 +487,8 @@ namespace Low {
                             (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::UniqueId));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -489,7 +500,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for PointLight from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Component
   }   // namespace Core

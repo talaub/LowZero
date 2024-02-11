@@ -97,8 +97,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
-                                                    N(ComputeStepConfig));
+      ms_Capacity = Low::Util::Config::get_capacity(
+          N(LowRenderer), N(ComputeStepConfig));
 
       initialize_buffer(&ms_Buffer, ComputeStepConfigData::get_size(),
                         get_capacity(), &ms_Slots);
@@ -132,9 +132,9 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_callbacks();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
-                                            callbacks,
-                                            ComputeStepCallbacks);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, ComputeStepConfig, callbacks,
+              ComputeStepCallbacks);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -154,9 +154,9 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_resources();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
-                                            resources,
-                                            Util::List<ResourceConfig>);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, ComputeStepConfig, resources,
+              Util::List<ResourceConfig>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -192,8 +192,9 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_output_image_name();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
-                                            output_image_name, Util::Name);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, ComputeStepConfig, output_image_name,
+              Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -206,14 +207,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(ComputeStepConfigData, name);
+        l_PropertyInfo.dataOffset =
+            offsetof(ComputeStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStepConfig l_Handle = p_Handle.get_id();
           l_Handle.get_name();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStepConfig,
-                                            name, Low::Util::Name);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, ComputeStepConfig, name, Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -227,7 +229,8 @@ namespace Low {
 
     void ComputeStepConfig::cleanup()
     {
-      Low::Util::List<ComputeStepConfig> l_Instances = ms_LivingInstances;
+      Low::Util::List<ComputeStepConfig> l_Instances =
+          ms_LivingInstances;
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
@@ -238,7 +241,8 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_ComputeStepConfig);
     }
 
-    ComputeStepConfig ComputeStepConfig::find_by_index(uint32_t p_Index)
+    ComputeStepConfig
+    ComputeStepConfig::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
 
@@ -272,7 +276,8 @@ namespace Low {
       }
     }
 
-    void ComputeStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    ComputeStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -324,9 +329,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_callbacks
       // LOW_CODEGEN::END::CUSTOM:GETTER_callbacks
 
-      return TYPE_SOA(ComputeStepConfig, callbacks, ComputeStepCallbacks);
+      return TYPE_SOA(ComputeStepConfig, callbacks,
+                      ComputeStepCallbacks);
     }
-    void ComputeStepConfig::set_callbacks(ComputeStepCallbacks &p_Value)
+    void
+    ComputeStepConfig::set_callbacks(ComputeStepCallbacks &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -341,7 +348,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_callbacks
     }
 
-    Util::List<ResourceConfig> &ComputeStepConfig::get_resources() const
+    Util::List<ResourceConfig> &
+    ComputeStepConfig::get_resources() const
     {
       _LOW_ASSERT(is_alive());
 
@@ -371,7 +379,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image_name
 
-      return TYPE_SOA(ComputeStepConfig, output_image_name, Util::Name);
+      return TYPE_SOA(ComputeStepConfig, output_image_name,
+                      Util::Name);
     }
     void ComputeStepConfig::set_output_image_name(Util::Name p_Value)
     {
@@ -381,7 +390,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image_name
 
       // Set new value
-      TYPE_SOA(ComputeStepConfig, output_image_name, Util::Name) = p_Value;
+      TYPE_SOA(ComputeStepConfig, output_image_name, Util::Name) =
+          p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image_name
@@ -410,8 +420,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
-    ComputeStepConfig ComputeStepConfig::make(Util::Name p_Name,
-                                              Util::Yaml::Node &p_Node)
+    ComputeStepConfig
+    ComputeStepConfig::make(Util::Name p_Name,
+                            Util::Yaml::Node &p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       ComputeStepConfig l_Config = ComputeStepConfig::make(p_Name);
@@ -422,7 +433,8 @@ namespace Low {
           &ComputeStep::create_signatures;
       l_Config.get_callbacks().populate_signatures =
           &ComputeStep::prepare_signatures;
-      l_Config.get_callbacks().execute = &ComputeStep::default_execute;
+      l_Config.get_callbacks().execute =
+          &ComputeStep::default_execute;
 
       l_Config.set_output_image_name(
           LOW_YAML_AS_NAME(p_Node["output_image"]));
@@ -462,7 +474,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer =
           (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
@@ -475,17 +488,19 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData, callbacks) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepConfigData, callbacks) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(ComputeStepCallbacks));
+        memcpy(
+            &l_NewBuffer[offsetof(ComputeStepConfigData, callbacks) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(ComputeStepConfigData, callbacks) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(ComputeStepCallbacks));
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(ComputeStepConfigData, resources) *
+              &l_NewBuffer[offsetof(ComputeStepConfigData,
+                                    resources) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::List<ResourceConfig>))])
@@ -496,23 +511,24 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(ComputeStepConfigData, pipelines) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Util::List<ComputePipelineConfig>))])
-              Util::List<ComputePipelineConfig>();
+          auto *i_ValPtr =
+              new (&l_NewBuffer
+                       [offsetof(ComputeStepConfigData, pipelines) *
+                            (l_Capacity + l_CapacityIncrease) +
+                        (it->get_index() *
+                         sizeof(Util::List<ComputePipelineConfig>))])
+                  Util::List<ComputePipelineConfig>();
           *i_ValPtr = it->get_pipelines();
         }
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(ComputeStepConfigData,
-                                  output_image_name) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(ComputeStepConfigData, output_image_name) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(Util::Name));
+        memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData,
+                                     output_image_name) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(ComputeStepConfigData,
+                                   output_image_name) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::Name));
       }
       {
         memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData, name) *
@@ -521,8 +537,8 @@ namespace Low {
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -532,9 +548,10 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for ComputeStepConfig from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+      LOW_LOG_DEBUG
+          << "Auto-increased budget for ComputeStepConfig from "
+          << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
+          << LOW_LOG_END;
     }
   } // namespace Renderer
 } // namespace Low

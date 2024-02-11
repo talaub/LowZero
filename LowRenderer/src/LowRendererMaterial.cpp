@@ -28,7 +28,8 @@ namespace Low {
     Material::Material(uint64_t p_Id) : Low::Util::Handle(p_Id)
     {
     }
-    Material::Material(Material &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+    Material::Material(Material &p_Copy)
+        : Low::Util::Handle(p_Copy.m_Id)
     {
     }
 
@@ -49,7 +50,8 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Material, material_type,
                               MaterialType)) MaterialType();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Material, context,
-                              Interface::Context)) Interface::Context();
+                              Interface::Context))
+          Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Material, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -89,8 +91,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity =
-          Low::Util::Config::get_capacity(N(LowRenderer), N(Material));
+      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                    N(Material));
 
       initialize_buffer(&ms_Buffer, MaterialData::get_size(),
                         get_capacity(), &ms_Slots);
@@ -117,15 +119,16 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(material_type);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MaterialData, material_type);
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialData, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = MaterialType::TYPE_ID;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
           l_Handle.get_material_type();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Material,
-                                            material_type, MaterialType);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Material, material_type, MaterialType);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -241,8 +244,9 @@ namespace Low {
       l_Material.serialize(p_Node);
     }
 
-    Low::Util::Handle Material::deserialize(Low::Util::Yaml::Node &p_Node,
-                                            Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Material::deserialize(Low::Util::Yaml::Node &p_Node,
+                          Low::Util::Handle p_Creator)
     {
       Material l_Handle = Material::make(N(Material));
 
@@ -350,7 +354,8 @@ namespace Low {
           l_EmptyData,
           LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4),
           (l_Material.get_index() *
-           (LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4))));
+           (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+            sizeof(Math::Vector4))));
 
       return l_Material;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
@@ -373,9 +378,9 @@ namespace Low {
 
             get_context().get_material_data_buffer().write(
                 &i_Data, i_Size,
-                i_Offset +
-                    (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
-                                    sizeof(Math::Vector4))));
+                i_Offset + (get_index() *
+                            (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                             sizeof(Math::Vector4))));
 
           } else if (i_MaterialTypeProperty.type ==
                      MaterialTypePropertyType::TEXTURE2D) {
@@ -391,9 +396,9 @@ namespace Low {
 
             get_context().get_material_data_buffer().write(
                 &i_TextureIndexFloat, i_Size,
-                i_Offset +
-                    (get_index() * (LOW_RENDERER_MATERIAL_DATA_VECTORS *
-                                    sizeof(Math::Vector4))));
+                i_Offset + (get_index() *
+                            (LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                             sizeof(Math::Vector4))));
           } else {
             LOW_ASSERT(false, "Unknown material property type");
           }

@@ -23,7 +23,8 @@ namespace Low {
     {
       Util::Handle parent;
       Util::List<Util::Handle> children;
-      Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>> components;
+      Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>
+          components;
       Low::Util::UniqueId unique_id;
       Low::Util::Name name;
 
@@ -80,8 +81,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == Prefab::TYPE_ID &&

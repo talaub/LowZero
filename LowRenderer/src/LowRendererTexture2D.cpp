@@ -47,10 +47,11 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, image, Resource::Image))
-          Resource::Image();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, image,
+                              Resource::Image)) Resource::Image();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, context,
-                              Interface::Context)) Interface::Context();
+                              Interface::Context))
+          Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -102,8 +103,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity =
-          Low::Util::Config::get_capacity(N(LowRenderer), N(Texture2D));
+      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                    N(Texture2D));
 
       initialize_buffer(&ms_Buffer, Texture2DData::get_size(),
                         get_capacity(), &ms_Slots);
@@ -137,8 +138,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
           l_Handle.get_image();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, image,
-                                            Resource::Image);
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
+                                            image, Resource::Image);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -251,14 +252,15 @@ namespace Low {
       l_Texture2D.serialize(p_Node);
     }
 
-    Low::Util::Handle Texture2D::deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Texture2D::deserialize(Low::Util::Yaml::Node &p_Node,
+                           Low::Util::Handle p_Creator)
     {
       Texture2D l_Handle = Texture2D::make(N(Texture2D));
 
       if (p_Node["image"]) {
-        l_Handle.set_image(Resource::Image::deserialize(p_Node["image"],
-                                                        l_Handle.get_id())
+        l_Handle.set_image(Resource::Image::deserialize(
+                               p_Node["image"], l_Handle.get_id())
                                .get_id());
       }
       if (p_Node["context"]) {

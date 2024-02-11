@@ -133,7 +133,8 @@ namespace Low {
     Util::Name g_MainRenderFlowName;
 
     Interface::GraphicsPipeline g_FullscreenPipeline;
-    Interface::PipelineResourceSignature g_FullScreenPipelineSignature;
+    Interface::PipelineResourceSignature
+        g_FullScreenPipelineSignature;
 
     static void setup_custom_renderstep_configs()
     {
@@ -154,7 +155,8 @@ namespace Low {
       g_PendingRenderFlowUpdates.push_back(l_UpdateData);
     }
 
-    Mesh upload_mesh(Util::Name p_Name, Util::Resource::MeshInfo &p_MeshInfo)
+    Mesh upload_mesh(Util::Name p_Name,
+                     Util::Resource::MeshInfo &p_MeshInfo)
     {
       Mesh l_Mesh = Mesh::make(p_Name);
 
@@ -171,20 +173,24 @@ namespace Low {
       if (!p_MeshInfo.boneInfluences.empty()) {
 
         uint32_t l_WeightOffset = g_VertexWeightBuffer.write(
-            p_MeshInfo.boneInfluences.data(), p_MeshInfo.boneInfluences.size());
+            p_MeshInfo.boneInfluences.data(),
+            p_MeshInfo.boneInfluences.size());
 
         l_Mesh.set_vertexweight_buffer_start(l_WeightOffset);
-        l_Mesh.set_vertexweight_count(p_MeshInfo.boneInfluences.size());
+        l_Mesh.set_vertexweight_count(
+            p_MeshInfo.boneInfluences.size());
       }
 
       /*
       LOW_LOG_DEBUG << "UPLOADED: " << p_Name
-                   << " VERTEX: " << l_Mesh.get_vertex_buffer_start() << " -> "
+                   << " VERTEX: " << l_Mesh.get_vertex_buffer_start()
+      << " -> "
                    << l_Mesh.get_vertex_count() << " ("
                    << (l_Mesh.get_vertex_buffer_start() +
                        l_Mesh.get_vertex_count())
                    << ")"
-                   << " INDEX: " << l_Mesh.get_index_buffer_start() << " -> "
+                   << " INDEX: " << l_Mesh.get_index_buffer_start() <<
+      " -> "
                    << l_Mesh.get_index_count() << " ("
                    << (l_Mesh.get_index_buffer_start() +
                        l_Mesh.get_index_count())
@@ -202,17 +208,20 @@ namespace Low {
                          p_Mesh.get_index_count());
 
       if (p_Mesh.get_vertexweight_count() > 0) {
-        g_VertexWeightBuffer.free(p_Mesh.get_vertexweight_buffer_start(),
-                                  p_Mesh.get_vertexweight_count());
+        g_VertexWeightBuffer.free(
+            p_Mesh.get_vertexweight_buffer_start(),
+            p_Mesh.get_vertexweight_count());
       }
 
       p_Mesh.destroy();
     }
 
-    static void parse_bone(Skeleton p_Skeleton, Util::Resource::Mesh &p_Mesh,
+    static void parse_bone(Skeleton p_Skeleton,
+                           Util::Resource::Mesh &p_Mesh,
                            Util::Resource::Node &p_Node, Bone &p_Bone)
     {
-      Util::Resource::Submesh &l_Submesh = p_Mesh.submeshes[p_Node.index];
+      Util::Resource::Submesh &l_Submesh =
+          p_Mesh.submeshes[p_Node.index];
       Util::Resource::Bone &l_Bone = p_Mesh.bones[l_Submesh.name];
       p_Bone.name = l_Submesh.name;
       p_Bone.index = l_Bone.index;
@@ -222,11 +231,13 @@ namespace Low {
       p_Bone.children.resize(p_Node.children.size());
 
       for (uint32_t i = 0u; i < p_Node.children.size(); ++i) {
-        parse_bone(p_Skeleton, p_Mesh, p_Node.children[i], p_Bone.children[i]);
+        parse_bone(p_Skeleton, p_Mesh, p_Node.children[i],
+                   p_Bone.children[i]);
       }
     }
 
-    Skeleton upload_skeleton(Util::Name p_Name, Util::Resource::Mesh &p_Mesh)
+    Skeleton upload_skeleton(Util::Name p_Name,
+                             Util::Resource::Mesh &p_Mesh)
     {
       Skeleton l_Skeleton = Skeleton::make(p_Name);
 
@@ -249,7 +260,8 @@ namespace Low {
         l_Skeleton.get_animations()[i].get_channels().resize(
             p_Mesh.animations[i].channels.size());
 
-        for (uint32_t j = 0u; j < p_Mesh.animations[i].channels.size(); ++j) {
+        for (uint32_t j = 0u;
+             j < p_Mesh.animations[i].channels.size(); ++j) {
           l_Skeleton.get_animations()[i].get_channels()[j] =
               p_Mesh.animations[i].channels[j];
         }
@@ -279,7 +291,8 @@ namespace Low {
       return l_Texture;
     }
 
-    void upload_texture(Texture2D p_Texture, Util::Resource::Image2D &p_Image)
+    void upload_texture(Texture2D p_Texture,
+                        Util::Resource::Image2D &p_Image)
     {
       p_Texture.assign_image(g_Context, p_Image);
     }
@@ -340,13 +353,13 @@ namespace Low {
       */
     }
 
-    static uint32_t
-    material_type_place_properties_vector4(MaterialType p_MaterialType,
-                                           uint32_t p_StartOffset)
+    static uint32_t material_type_place_properties_vector4(
+        MaterialType p_MaterialType, uint32_t p_StartOffset)
     {
       uint32_t l_CurrentOffset = p_StartOffset;
 
-      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+      for (MaterialTypeProperty &i_Property :
+           p_MaterialType.get_properties()) {
         if (i_Property.offset != ~0u) {
           // Skip properties that have already been placed
           continue;
@@ -362,15 +375,15 @@ namespace Low {
       return l_CurrentOffset;
     }
 
-    uint32_t
-    material_type_place_properties_vector2(MaterialType p_MaterialType,
-                                           uint32_t p_StartOffset,
-                                           Util::List<uint32_t> &p_FreeSingles)
+    uint32_t material_type_place_properties_vector2(
+        MaterialType p_MaterialType, uint32_t p_StartOffset,
+        Util::List<uint32_t> &p_FreeSingles)
     {
       uint32_t l_CurrentOffset = p_StartOffset;
       uint32_t l_Vector2Count = 0;
 
-      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+      for (MaterialTypeProperty &i_Property :
+           p_MaterialType.get_properties()) {
         if (i_Property.offset != ~0u) {
           // Skip properties that have already been placed
           continue;
@@ -385,8 +398,8 @@ namespace Low {
       }
 
       if (l_Vector2Count % 2 == 1) {
-        // If there has been in odd number of vector2s that means that there are
-        // two single fields free to be filled later on
+        // If there has been in odd number of vector2s that means that
+        // there are two single fields free to be filled later on
         p_FreeSingles.push_back(l_CurrentOffset);
         p_FreeSingles.push_back(l_CurrentOffset + sizeof(uint32_t));
 
@@ -396,14 +409,14 @@ namespace Low {
       return l_CurrentOffset;
     }
 
-    uint32_t
-    material_type_place_properties_vector3(MaterialType p_MaterialType,
-                                           uint32_t p_StartOffset,
-                                           Util::List<uint32_t> &p_FreeSingles)
+    uint32_t material_type_place_properties_vector3(
+        MaterialType p_MaterialType, uint32_t p_StartOffset,
+        Util::List<uint32_t> &p_FreeSingles)
     {
       uint32_t l_CurrentOffset = p_StartOffset;
 
-      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+      for (MaterialTypeProperty &i_Property :
+           p_MaterialType.get_properties()) {
         if (i_Property.offset != ~0u) {
           // Skip properties that have already been placed
           continue;
@@ -421,22 +434,25 @@ namespace Low {
       return l_CurrentOffset;
     }
 
-    static void
-    material_type_place_properties_single(MaterialType p_MaterialType,
-                                          Util::List<uint32_t> &p_FreeSingles)
+    static void material_type_place_properties_single(
+        MaterialType p_MaterialType,
+        Util::List<uint32_t> &p_FreeSingles)
     {
-      for (MaterialTypeProperty &i_Property : p_MaterialType.get_properties()) {
+      for (MaterialTypeProperty &i_Property :
+           p_MaterialType.get_properties()) {
         if (i_Property.offset != ~0u) {
           // Skip properties that have already been placed
           continue;
         }
 
-        LOW_ASSERT(!(i_Property.type == MaterialTypePropertyType::VECTOR3 ||
-                     i_Property.type == MaterialTypePropertyType::VECTOR4 ||
-                     i_Property.type == MaterialTypePropertyType::VECTOR2),
-                   "Vector material property has not been placed yet");
+        LOW_ASSERT(
+            !(i_Property.type == MaterialTypePropertyType::VECTOR3 ||
+              i_Property.type == MaterialTypePropertyType::VECTOR4 ||
+              i_Property.type == MaterialTypePropertyType::VECTOR2),
+            "Vector material property has not been placed yet");
 
-        LOW_ASSERT(!p_FreeSingles.empty(), "No space left in material info");
+        LOW_ASSERT(!p_FreeSingles.empty(),
+                   "No space left in material info");
 
         uint32_t i_Offset = p_FreeSingles.front();
         p_FreeSingles.erase_first(i_Offset);
@@ -445,13 +461,14 @@ namespace Low {
       }
     }
 
-    static void material_type_place_properties(MaterialType p_MaterialType)
+    static void
+    material_type_place_properties(MaterialType p_MaterialType)
     {
       uint32_t l_CurrentOffset = 0u;
       Util::List<uint32_t> l_FreeSingles;
 
-      l_CurrentOffset = material_type_place_properties_vector4(p_MaterialType,
-                                                               l_CurrentOffset);
+      l_CurrentOffset = material_type_place_properties_vector4(
+          p_MaterialType, l_CurrentOffset);
 
       l_CurrentOffset = material_type_place_properties_vector2(
           p_MaterialType, l_CurrentOffset, l_FreeSingles);
@@ -459,28 +476,34 @@ namespace Low {
       l_CurrentOffset = material_type_place_properties_vector3(
           p_MaterialType, l_CurrentOffset, l_FreeSingles);
 
-      for (; l_CurrentOffset <
-             LOW_RENDERER_MATERIAL_DATA_VECTORS * sizeof(Math::Vector4);
+      for (; l_CurrentOffset < LOW_RENDERER_MATERIAL_DATA_VECTORS *
+                                   sizeof(Math::Vector4);
            l_CurrentOffset += sizeof(Math::Vector4)) {
         l_FreeSingles.push_back(l_CurrentOffset);
         l_FreeSingles.push_back(l_CurrentOffset + sizeof(float));
-        l_FreeSingles.push_back(l_CurrentOffset + (sizeof(float) * 2));
-        l_FreeSingles.push_back(l_CurrentOffset + (sizeof(float) * 3));
+        l_FreeSingles.push_back(l_CurrentOffset +
+                                (sizeof(float) * 2));
+        l_FreeSingles.push_back(l_CurrentOffset +
+                                (sizeof(float) * 3));
       }
 
-      material_type_place_properties_single(p_MaterialType, l_FreeSingles);
+      material_type_place_properties_single(p_MaterialType,
+                                            l_FreeSingles);
     }
 
     static void load_material_types()
     {
-      Util::String l_PipelineDirectory = g_ConfigPath + "/material_types";
+      Util::String l_PipelineDirectory =
+          g_ConfigPath + "/material_types";
       Util::List<Util::String> l_FilePaths;
-      Util::FileIO::list_directory(l_PipelineDirectory.c_str(), l_FilePaths);
+      Util::FileIO::list_directory(l_PipelineDirectory.c_str(),
+                                   l_FilePaths);
       Util::String l_Ending = ".materialtypes.yaml";
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
 
           for (auto it = i_Node.begin(); it != i_Node.end(); ++it) {
             Util::Name i_Name = LOW_YAML_AS_NAME(it->first);
@@ -494,7 +517,8 @@ namespace Low {
 
             i_MaterialType.set_internal(false);
             if (it->second["internal"]) {
-              i_MaterialType.set_internal(it->second["internal"].as<bool>());
+              i_MaterialType.set_internal(
+                  it->second["internal"].as<bool>());
             }
 
             i_MaterialType.set_gbuffer_pipeline(
@@ -507,7 +531,8 @@ namespace Low {
             if (it->second["properties"]) {
               for (auto pit = it->second["properties"].begin();
                    pit != it->second["properties"].end(); ++pit) {
-                Util::Name i_PropertyName = LOW_YAML_AS_NAME(pit->first);
+                Util::Name i_PropertyName =
+                    LOW_YAML_AS_NAME(pit->first);
                 Util::String i_PropertyTypeString =
                     LOW_YAML_AS_STRING(pit->second["type"]);
 
@@ -518,9 +543,11 @@ namespace Low {
                 if (i_PropertyTypeString == "Vector4") {
                   i_Property.type = MaterialTypePropertyType::VECTOR4;
                 } else if (i_PropertyTypeString == "Texture2D") {
-                  i_Property.type = MaterialTypePropertyType::TEXTURE2D;
+                  i_Property.type =
+                      MaterialTypePropertyType::TEXTURE2D;
                 } else {
-                  LOW_ASSERT(false, "Unknown materialtype property type");
+                  LOW_ASSERT(false,
+                             "Unknown materialtype property type");
                 }
 
                 i_MaterialType.get_properties().push_back(i_Property);
@@ -537,49 +564,60 @@ namespace Low {
 
     static void load_renderflows()
     {
-      Util::String l_RenderFlowDirectory = g_ConfigPath + "/renderflows";
+      Util::String l_RenderFlowDirectory =
+          g_ConfigPath + "/renderflows";
       Util::List<Util::String> l_FilePaths;
-      Util::FileIO::list_directory(l_RenderFlowDirectory.c_str(), l_FilePaths);
+      Util::FileIO::list_directory(l_RenderFlowDirectory.c_str(),
+                                   l_FilePaths);
       Util::String l_Ending = ".renderflow.yaml";
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           Util::String i_Filename = i_Path.substr(
               l_RenderFlowDirectory.length() + 1, i_Path.length());
-          Util::String i_Name =
-              i_Filename.substr(0, i_Filename.length() - l_Ending.length());
+          Util::String i_Name = i_Filename.substr(
+              0, i_Filename.length() - l_Ending.length());
 
-          RenderFlow::make(LOW_NAME(i_Name.c_str()), g_Context, i_Node);
+          RenderFlow::make(LOW_NAME(i_Name.c_str()), g_Context,
+                           i_Node);
 
-          LOW_LOG_DEBUG << "RenderFlow " << i_Name << " loaded" << LOW_LOG_END;
+          LOW_LOG_DEBUG << "RenderFlow " << i_Name << " loaded"
+                        << LOW_LOG_END;
         }
       }
     }
 
     static void load_renderstep_configs()
     {
-      Util::String l_RenderpassDirectory = g_ConfigPath + "/rendersteps";
+      Util::String l_RenderpassDirectory =
+          g_ConfigPath + "/rendersteps";
       Util::List<Util::String> l_FilePaths;
-      Util::FileIO::list_directory(l_RenderpassDirectory.c_str(), l_FilePaths);
+      Util::FileIO::list_directory(l_RenderpassDirectory.c_str(),
+                                   l_FilePaths);
       Util::String l_Ending = ".renderstep.yaml";
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           Util::String i_Filename = i_Path.substr(
               l_RenderpassDirectory.length() + 1, i_Path.length());
-          Util::String i_Name =
-              i_Filename.substr(0, i_Filename.length() - l_Ending.length());
+          Util::String i_Name = i_Filename.substr(
+              0, i_Filename.length() - l_Ending.length());
 
           if (LOW_YAML_AS_STRING(i_Node["type"]) == "compute") {
             ComputeStepConfig::make(LOW_NAME(i_Name.c_str()), i_Node);
-          } else if (LOW_YAML_AS_STRING(i_Node["type"]) == "graphics") {
-            GraphicsStepConfig::make(LOW_NAME(i_Name.c_str()), i_Node);
+          } else if (LOW_YAML_AS_STRING(i_Node["type"]) ==
+                     "graphics") {
+            GraphicsStepConfig::make(LOW_NAME(i_Name.c_str()),
+                                     i_Node);
           } else {
             LOW_ASSERT(false, "Unknown renderstep type");
           }
-          LOW_LOG_DEBUG << "Renderstep " << i_Name << " loaded" << LOW_LOG_END;
+          LOW_LOG_DEBUG << "Renderstep " << i_Name << " loaded"
+                        << LOW_LOG_END;
         }
       }
     }
@@ -605,22 +643,25 @@ namespace Low {
       l_Params.signatures = {g_Context.get_global_signature(),
                              g_FullScreenPipelineSignature};
       l_Params.cullMode = Backend::PipelineRasterizerCullMode::BACK;
-      l_Params.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
-      l_Params.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
+      l_Params.polygonMode =
+          Backend::PipelineRasterizerPolygonMode::FILL;
+      l_Params.frontFace =
+          Backend::PipelineRasterizerFrontFace::CLOCKWISE;
       l_Params.dimensions = g_Context.get_dimensions();
       l_Params.renderpass = g_Context.get_renderpasses()[0];
       l_Params.colorTargets = l_ColorTargets;
       l_Params.vertexDataAttributeTypes = {};
       l_Params.depthWrite = false;
       l_Params.depthTest = false;
-      l_Params.depthCompareOperation = Backend::CompareOperation::EQUAL;
+      l_Params.depthCompareOperation =
+          Backend::CompareOperation::EQUAL;
 
       if (g_FullscreenPipeline.is_alive()) {
         Interface::PipelineManager::register_graphics_pipeline(
             g_FullscreenPipeline, l_Params);
       } else {
-        g_FullscreenPipeline =
-            Interface::GraphicsPipeline::make(N(FullscreenPipeline), l_Params);
+        g_FullscreenPipeline = Interface::GraphicsPipeline::make(
+            N(FullscreenPipeline), l_Params);
       }
     }
 
@@ -642,9 +683,10 @@ namespace Low {
       return l_PoseIndex;
     }
 
-    uint32_t register_skinning_operation(Mesh p_Mesh, Skeleton p_Skeleton,
-                                         uint32_t p_PoseIndex,
-                                         Math::Matrix4x4 &p_Transformation)
+    uint32_t
+    register_skinning_operation(Mesh p_Mesh, Skeleton p_Skeleton,
+                                uint32_t p_PoseIndex,
+                                Math::Matrix4x4 &p_Transformation)
     {
       SkinningOperation l_Operation;
       l_Operation.mesh = p_Mesh;
@@ -663,7 +705,8 @@ namespace Low {
 
     void initialize()
     {
-      g_ConfigPath = Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
+      g_ConfigPath =
+          Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
       g_MainRenderFlowName = N(test);
 
       Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
@@ -686,27 +729,28 @@ namespace Low {
       window_initialize(l_Window, l_WindowInit);
 
 #ifdef LOW_RENDERER_VALIDATION_ENABLED
-      g_Context =
-          Interface::Context::make(N(DefaultContext), &l_Window, 2, true);
+      g_Context = Interface::Context::make(N(DefaultContext),
+                                           &l_Window, 2, true);
 #else
-      g_Context =
-          Interface::Context::make(N(DefaultContext), &l_Window, 2, false);
+      g_Context = Interface::Context::make(N(DefaultContext),
+                                           &l_Window, 2, false);
 #endif
 
       g_DebugGeometryTriangleVertexBuffer.initialize(
           N(DebugGeometryTriangleVertexBuffer), g_Context,
-          DynamicBufferType::VERTEX, sizeof(Util::Resource::Vertex), 1200u);
+          DynamicBufferType::VERTEX, sizeof(Util::Resource::Vertex),
+          1200u);
 
-      g_VertexBuffer.initialize(N(VertexBuffer), g_Context,
-                                DynamicBufferType::VERTEX,
-                                sizeof(Util::Resource::Vertex), 256000u);
+      g_VertexBuffer.initialize(
+          N(VertexBuffer), g_Context, DynamicBufferType::VERTEX,
+          sizeof(Util::Resource::Vertex), 256000u);
       g_IndexBuffer.initialize(N(IndexBuffer), g_Context,
-                               DynamicBufferType::INDEX, sizeof(uint32_t),
-                               512000u);
+                               DynamicBufferType::INDEX,
+                               sizeof(uint32_t), 512000u);
 
-      g_SkinningBuffer.initialize(N(SkinningBuffer), g_Context,
-                                  DynamicBufferType::VERTEX,
-                                  sizeof(Util::Resource::Vertex), 20000u);
+      g_SkinningBuffer.initialize(
+          N(SkinningBuffer), g_Context, DynamicBufferType::VERTEX,
+          sizeof(Util::Resource::Vertex), 20000u);
 
       g_VertexWeightBuffer.initialize(
           N(VertexWeightBuffer), g_Context, DynamicBufferType::MISC,
@@ -715,23 +759,29 @@ namespace Low {
       {
         Backend::BufferCreateParams l_Params;
         l_Params.context = &g_Context.get_context();
-        l_Params.bufferSize = sizeof(PoseBone) * LOW_RENDERER_MAX_POSE_BONES;
+        l_Params.bufferSize =
+            sizeof(PoseBone) * LOW_RENDERER_MAX_POSE_BONES;
         l_Params.data = nullptr;
-        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
-        g_PoseBuffer = Resource::Buffer::make(N(PoseBuffer), l_Params);
+        l_Params.usageFlags =
+            LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+        g_PoseBuffer =
+            Resource::Buffer::make(N(PoseBuffer), l_Params);
       }
 
-      g_ParticleEmitterBuffer.initialize(N(ParticleEmitterBuffer), g_Context,
-                                         DynamicBufferType::MISC,
-                                         sizeof(ParticleEmitter), 32u);
+      g_ParticleEmitterBuffer.initialize(
+          N(ParticleEmitterBuffer), g_Context,
+          DynamicBufferType::MISC, sizeof(ParticleEmitter), 32u);
 
       {
         Backend::BufferCreateParams l_Params;
         l_Params.context = &g_Context.get_context();
-        l_Params.bufferSize = sizeof(Particle) * LOW_RENDERER_MAX_PARTICLES;
+        l_Params.bufferSize =
+            sizeof(Particle) * LOW_RENDERER_MAX_PARTICLES;
         l_Params.data = nullptr;
-        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
-        g_ParticleBuffer = Resource::Buffer::make(N(ParticleBuffer), l_Params);
+        l_Params.usageFlags =
+            LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+        g_ParticleBuffer =
+            Resource::Buffer::make(N(ParticleBuffer), l_Params);
       }
 
       {
@@ -739,7 +789,8 @@ namespace Low {
         l_Params.context = g_Context;
         l_Params.shaderPath = "skinning.comp";
 
-        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+        Util::List<Backend::PipelineResourceDescription>
+            l_ResourceDescriptions;
 
         {
           Backend::PipelineResourceDescription l_Resource;
@@ -780,19 +831,23 @@ namespace Low {
 
         Interface::PipelineResourceSignature l_Signature =
             Interface::PipelineResourceSignature::make(
-                N(SkinningSignature), g_Context, 1, l_ResourceDescriptions);
+                N(SkinningSignature), g_Context, 1,
+                l_ResourceDescriptions);
 
         l_Signature.set_buffer_resource(N(u_VertexBuffer), 0,
                                         g_VertexBuffer.m_Buffer);
-        l_Signature.set_buffer_resource(N(u_VertexWeightBuffer), 0,
-                                        g_VertexWeightBuffer.m_Buffer);
-        l_Signature.set_buffer_resource(N(u_PoseBoneBuffer), 0, g_PoseBuffer);
+        l_Signature.set_buffer_resource(
+            N(u_VertexWeightBuffer), 0,
+            g_VertexWeightBuffer.m_Buffer);
+        l_Signature.set_buffer_resource(N(u_PoseBoneBuffer), 0,
+                                        g_PoseBuffer);
         l_Signature.set_buffer_resource(N(u_SkinningBuffer), 0,
                                         g_SkinningBuffer.m_Buffer);
 
         g_SkinningSignature = l_Signature;
 
-        l_Params.signatures = {g_Context.get_global_signature(), l_Signature};
+        l_Params.signatures = {g_Context.get_global_signature(),
+                               l_Signature};
 
         {
           Backend::PipelineConstantCreateParams l_Constant;
@@ -802,8 +857,8 @@ namespace Low {
           l_Params.constants.push_back(l_Constant);
         }
 
-        g_SkinningPipeline =
-            Interface::ComputePipeline::make(N(SkinningPipeline), l_Params);
+        g_SkinningPipeline = Interface::ComputePipeline::make(
+            N(SkinningPipeline), l_Params);
       }
 
       {
@@ -811,7 +866,8 @@ namespace Low {
         l_Params.context = g_Context;
         l_Params.shaderPath = "particle_update.comp";
 
-        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+        Util::List<Backend::PipelineResourceDescription>
+            l_ResourceDescriptions;
 
         {
           Backend::PipelineResourceDescription l_Resource;
@@ -837,14 +893,16 @@ namespace Low {
                 N(ParticleUpdateSignature), g_Context, 1,
                 l_ResourceDescriptions);
 
-        l_Signature.set_buffer_resource(N(u_ParticleEmitterBuffer), 0,
-                                        g_ParticleEmitterBuffer.m_Buffer);
+        l_Signature.set_buffer_resource(
+            N(u_ParticleEmitterBuffer), 0,
+            g_ParticleEmitterBuffer.m_Buffer);
         l_Signature.set_buffer_resource(N(u_ParticleBuffer), 0,
                                         g_ParticleBuffer);
 
         g_ParticleSignature = l_Signature;
 
-        l_Params.signatures = {g_Context.get_global_signature(), l_Signature};
+        l_Params.signatures = {g_Context.get_global_signature(),
+                               l_Signature};
 
         {
           Backend::PipelineConstantCreateParams l_Constant;
@@ -853,8 +911,8 @@ namespace Low {
           l_Params.constants.push_back(l_Constant);
         }
 
-        g_ParticlePipeline =
-            Interface::ComputePipeline::make(N(ParticlesPipeline), l_Params);
+        g_ParticlePipeline = Interface::ComputePipeline::make(
+            N(ParticlesPipeline), l_Params);
       }
 
       initialize_global_resources();
@@ -865,11 +923,13 @@ namespace Low {
 
       load_renderflows();
 
-      g_DefaultMaterial = create_material(
-          N(DefaultMaterial), MaterialType::find_by_name(N(solid_base)));
+      g_DefaultMaterial =
+          create_material(N(DefaultMaterial),
+                          MaterialType::find_by_name(N(solid_base)));
 
       g_DefaultMaterial.set_property(
-          N(albedo_color), Util::Variant(Math::Color(0.9f, 0.9f, 0.9f, 1.0f)));
+          N(albedo_color),
+          Util::Variant(Math::Color(0.9f, 0.9f, 0.9f, 1.0f)));
 
       {
         RenderFlow *l_RenderFlows = RenderFlow::living_instances();
@@ -888,7 +948,8 @@ namespace Low {
         Backend::PipelineResourceDescription l_ResourceDescription;
         l_ResourceDescription.name = N(u_FinalImage);
         l_ResourceDescription.arraySize = 1;
-        l_ResourceDescription.step = Backend::ResourcePipelineStep::FRAGMENT;
+        l_ResourceDescription.step =
+            Backend::ResourcePipelineStep::FRAGMENT;
         l_ResourceDescription.type = Backend::ResourceType::SAMPLER;
         Util::List<Backend::PipelineResourceDescription>
             l_ResourceDescriptions = {l_ResourceDescription};
@@ -901,12 +962,15 @@ namespace Low {
         create_fullscreen_pipeline();
 
         g_FullScreenPipelineSignature.set_sampler_resource(
-            N(u_FinalImage), 0, Texture2D::ms_LivingInstances[0].get_image());
+            N(u_FinalImage), 0,
+            Texture2D::ms_LivingInstances[0].get_image());
       }
 
-      g_MainRenderFlow.set_camera_position(Math::Vector3(0.0f, 0.0f, 5.0f));
+      g_MainRenderFlow.set_camera_position(
+          Math::Vector3(0.0f, 0.0f, 5.0f));
       g_MainRenderFlow.set_camera_direction(
-          Math::VectorUtil::normalize(Math::Vector3(0.0f, 0.0f, -1.0f)));
+          Math::VectorUtil::normalize(
+              Math::Vector3(0.0f, 0.0f, -1.0f)));
 
       {
         Util::String l_BasePath = LOW_DATA_PATH;
@@ -914,7 +978,8 @@ namespace Low {
         {
           Util::Resource::Mesh l_Mesh;
           Util::Resource::load_mesh(l_BasePath + "plane.glb", l_Mesh);
-          g_PlaneMesh = upload_mesh(N(Plane), l_Mesh.submeshes[0].meshInfos[0]);
+          g_PlaneMesh =
+              upload_mesh(N(Plane), l_Mesh.submeshes[0].meshInfos[0]);
         }
       }
 
@@ -960,8 +1025,8 @@ namespace Low {
       }
     }
 
-    static float calculate_interpolation_scale_factor(float t0, float t1,
-                                                      float t)
+    static float
+    calculate_interpolation_scale_factor(float t0, float t1, float t)
     {
       float scaleFactor = 0.0f;
       float midWayLength = t - t0;
@@ -970,12 +1035,13 @@ namespace Low {
       return scaleFactor;
     }
 
-    static Math::Matrix4x4
-    interpolate_bone_position(PoseCalculation &p_Calculation,
-                              Util::Resource::AnimationChannel &p_Channel)
+    static Math::Matrix4x4 interpolate_bone_position(
+        PoseCalculation &p_Calculation,
+        Util::Resource::AnimationChannel &p_Channel)
     {
       if (p_Channel.positions.size() == 1) {
-        return glm::translate(glm::mat4(1.0), p_Channel.positions[0].value);
+        return glm::translate(glm::mat4(1.0),
+                              p_Channel.positions[0].value);
       }
 
       uint32_t l_Index0 = 0;
@@ -994,18 +1060,19 @@ namespace Low {
 
       float l_ScaleFactor = calculate_interpolation_scale_factor(
           p_Channel.positions[l_Index0].timestamp,
-          p_Channel.positions[l_Index1].timestamp, p_Calculation.timestamp);
+          p_Channel.positions[l_Index1].timestamp,
+          p_Calculation.timestamp);
 
-      Math::Vector3 l_Position =
-          glm::mix(p_Channel.positions[l_Index0].value,
-                   p_Channel.positions[l_Index1].value, l_ScaleFactor);
+      Math::Vector3 l_Position = glm::mix(
+          p_Channel.positions[l_Index0].value,
+          p_Channel.positions[l_Index1].value, l_ScaleFactor);
 
       return glm::translate(glm::mat4(1.0f), l_Position);
     }
 
-    static Math::Matrix4x4
-    interpolate_bone_rotation(PoseCalculation &p_Calculation,
-                              Util::Resource::AnimationChannel &p_Channel)
+    static Math::Matrix4x4 interpolate_bone_rotation(
+        PoseCalculation &p_Calculation,
+        Util::Resource::AnimationChannel &p_Channel)
     {
       if (p_Channel.rotations.size() == 1) {
         glm::quat l_Quat0;
@@ -1033,7 +1100,8 @@ namespace Low {
 
       float l_ScaleFactor = calculate_interpolation_scale_factor(
           p_Channel.rotations[l_Index0].timestamp,
-          p_Channel.rotations[l_Index1].timestamp, p_Calculation.timestamp);
+          p_Channel.rotations[l_Index1].timestamp,
+          p_Calculation.timestamp);
 
       glm::quat l_Quat0;
       l_Quat0.x = p_Channel.rotations[l_Index0].value.x;
@@ -1055,9 +1123,9 @@ namespace Low {
       return glm::toMat4(l_Rotation);
     }
 
-    static Math::Matrix4x4
-    interpolate_bone_scale(PoseCalculation &p_Calculation,
-                           Util::Resource::AnimationChannel &p_Channel)
+    static Math::Matrix4x4 interpolate_bone_scale(
+        PoseCalculation &p_Calculation,
+        Util::Resource::AnimationChannel &p_Channel)
     {
       if (p_Channel.scales.size() == 1) {
         return glm::scale(glm::mat4(1.0), p_Channel.scales[0].value);
@@ -1079,7 +1147,8 @@ namespace Low {
 
       float l_ScaleFactor = calculate_interpolation_scale_factor(
           p_Channel.scales[l_Index0].timestamp,
-          p_Channel.scales[l_Index1].timestamp, p_Calculation.timestamp);
+          p_Channel.scales[l_Index1].timestamp,
+          p_Calculation.timestamp);
 
       Math::Vector3 l_Scale =
           glm::mix(p_Channel.scales[l_Index0].value,
@@ -1089,7 +1158,8 @@ namespace Low {
     }
 
     static void do_bone_calculation(PoseCalculation &p_Calculation,
-                                    Bone &p_Bone, Math::Matrix4x4 &p_Transform)
+                                    Bone &p_Bone,
+                                    Math::Matrix4x4 &p_Transform)
     {
       bool l_FoundChannel = false;
       Math::Matrix4x4 l_GlobalTransform(1.0f);
@@ -1097,8 +1167,8 @@ namespace Low {
       for (Util::Resource::AnimationChannel &i_Channel :
            p_Calculation.animation.get_channels()) {
         if (i_Channel.boneName == p_Bone.name) {
-          g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].name =
-              p_Bone.name.m_Index;
+          g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index]
+              .name = p_Bone.name.m_Index;
 
           Math::Matrix4x4 i_NodeTransform =
               interpolate_bone_position(p_Calculation, i_Channel) *
@@ -1107,8 +1177,8 @@ namespace Low {
 
           l_GlobalTransform = p_Transform * i_NodeTransform;
 
-          g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].transform =
-              l_GlobalTransform * p_Bone.offset;
+          g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index]
+              .transform = l_GlobalTransform * p_Bone.offset;
 
           l_FoundChannel = true;
           break;
@@ -1116,11 +1186,11 @@ namespace Low {
       }
 
       if (!l_FoundChannel) {
-        g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].name =
-            p_Bone.name.m_Index;
+        g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index]
+            .name = p_Bone.name.m_Index;
         l_GlobalTransform = p_Transform * p_Bone.localTransformation;
-        g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index].transform =
-            l_GlobalTransform;
+        g_PoseBones[p_Calculation.boneBufferStart + p_Bone.index]
+            .transform = l_GlobalTransform;
       }
 
       for (uint32_t i = 0u; i < p_Bone.children.size(); ++i) {
@@ -1129,10 +1199,12 @@ namespace Low {
       }
     }
 
-    static void calculate_bone_matrices(PoseCalculation &p_Calculation)
+    static void
+    calculate_bone_matrices(PoseCalculation &p_Calculation)
     {
       Math::Matrix4x4 l_Transformation(1.0f);
-      do_bone_calculation(p_Calculation, p_Calculation.skeleton.get_root_bone(),
+      do_bone_calculation(p_Calculation,
+                          p_Calculation.skeleton.get_root_bone(),
                           l_Transformation);
     }
 
@@ -1149,18 +1221,22 @@ namespace Low {
       g_SkinningSignature.commit();
 
       g_SkinningPipeline.bind();
-      for (uint32_t i = 0u; i < g_PendingSkinningOperations.size(); ++i) {
-        SkinningOperation &i_Operation = g_PendingSkinningOperations[i];
+      for (uint32_t i = 0u; i < g_PendingSkinningOperations.size();
+           ++i) {
+        SkinningOperation &i_Operation =
+            g_PendingSkinningOperations[i];
 
         SkinningCalculationInput i_Input;
         i_Input.skinningBufferStart = i_Operation.skinningBufferStart;
         i_Input.poseBoneStart = i_Operation.poseBoneIndex;
         i_Input.postBoneCount = i_Operation.skeleton.get_bone_count();
-        i_Input.vertexStart = i_Operation.mesh.get_vertex_buffer_start();
+        i_Input.vertexStart =
+            i_Operation.mesh.get_vertex_buffer_start();
         i_Input.vertexCount = i_Operation.mesh.get_vertex_count();
         i_Input.vertexWeightBufferStart =
             i_Operation.mesh.get_vertexweight_buffer_start();
-        i_Input.vertexWeightCount = i_Operation.mesh.get_vertexweight_count();
+        i_Input.vertexWeightCount =
+            i_Operation.mesh.get_vertexweight_count();
         i_Input.transformation = i_Operation.transformation;
 
         g_SkinningPipeline.set_constant(l_ConstantName, &i_Input);
@@ -1179,7 +1255,8 @@ namespace Low {
     {
       if (!g_PendingRenderFlowUpdates.empty()) {
         g_Context.wait_idle();
-        for (RenderFlowUpdateData &i_Update : g_PendingRenderFlowUpdates) {
+        for (RenderFlowUpdateData &i_Update :
+             g_PendingRenderFlowUpdates) {
           i_Update.renderflow.update_dimensions(i_Update.dimensions);
         }
         g_PendingRenderFlowUpdates.clear();
@@ -1239,7 +1316,8 @@ namespace Low {
 
       {
         LOW_PROFILE_CPU("Renderer", "Calculate bones");
-        for (uint32_t i = 0u; i < g_PendingPoseCalculations.size(); ++i) {
+        for (uint32_t i = 0u; i < g_PendingPoseCalculations.size();
+             ++i) {
           calculate_bone_matrices(g_PendingPoseCalculations[i]);
         }
       }
@@ -1347,8 +1425,8 @@ namespace Low {
 
     Material create_material(Util::Name, MaterialType p_Type)
     {
-      Material l_Material =
-          Renderer::Material::make(N(DebugGeometryMaterial), g_Context);
+      Material l_Material = Renderer::Material::make(
+          N(DebugGeometryMaterial), g_Context);
       l_Material.set_material_type(p_Type);
 
       return l_Material;
@@ -1382,8 +1460,10 @@ namespace Low {
       return g_DefaultMaterial;
     }
 
-    void render_debug_triangle(Math::Color p_Color, Math::Vector3 p_Vertex0,
-                               Math::Vector3 p_Vertex1, Math::Vector3 p_Vertex2)
+    void render_debug_triangle(Math::Color p_Color,
+                               Math::Vector3 p_Vertex0,
+                               Math::Vector3 p_Vertex1,
+                               Math::Vector3 p_Vertex2)
     {
       Low::Util::Array<Util::Resource::Vertex, 3> l_Vertices;
       l_Vertices[0].position = p_Vertex0;

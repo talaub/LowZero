@@ -96,10 +96,11 @@ namespace Low {
       FT_Init_FreeType(&ft);
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Font));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowCore), N(Font));
 
-      initialize_buffer(&ms_Buffer, FontData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, FontData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Font);
       LOW_PROFILE_ALLOC(type_slots_Font);
@@ -158,7 +159,8 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(reference_count);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(FontData, reference_count);
+        l_PropertyInfo.dataOffset =
+            offsetof(FontData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
@@ -435,9 +437,10 @@ namespace Low {
 
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(get_reference_count() > 0,
-                 "Increased Font reference count, but its not over 0. "
-                 "Something went wrong.");
+      LOW_ASSERT(
+          get_reference_count() > 0,
+          "Increased Font reference count, but its not over 0. "
+          "Something went wrong.");
 
       if (get_state() != ResourceState::UNLOADED) {
         return;
@@ -468,7 +471,8 @@ namespace Low {
         return;
       }
 
-      for (auto it = get_glyphs().begin(); it != get_glyphs().end();) {
+      for (auto it = get_glyphs().begin();
+           it != get_glyphs().end();) {
         it->second.rendererTexture.destroy();
         it = get_glyphs().erase(it);
       }
@@ -509,7 +513,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer = (uint8_t *)malloc(
           (l_Capacity + l_CapacityIncrease) * sizeof(FontData));
@@ -529,21 +534,21 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(FontData, glyphs) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::Map<char, FontGlyph>))])
-                  Util::Map<char, FontGlyph>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(FontData, glyphs) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::Map<char, FontGlyph>))])
+              Util::Map<char, FontGlyph>();
           *i_ValPtr = it->get_glyphs();
         }
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(FontData, reference_count) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(FontData, reference_count) * (l_Capacity)],
-            l_Capacity * sizeof(uint32_t));
+        memcpy(&l_NewBuffer[offsetof(FontData, reference_count) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(FontData, reference_count) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(FontData, state) *
@@ -557,8 +562,8 @@ namespace Low {
                &ms_Buffer[offsetof(FontData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -568,8 +573,9 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for Font from " << l_Capacity
-                    << " to " << (l_Capacity + l_CapacityIncrease)
+      LOW_LOG_DEBUG << "Auto-increased budget for Font from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
   } // namespace Core

@@ -35,7 +35,8 @@ namespace Low {
       {
       }
 
-      Low::Util::Handle DirectionalLight::_make(Low::Util::Handle p_Entity)
+      Low::Util::Handle
+      DirectionalLight::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
         LOW_ASSERT(l_Entity.is_alive(),
@@ -43,7 +44,8 @@ namespace Low {
         return make(l_Entity).get_id();
       }
 
-      DirectionalLight DirectionalLight::make(Low::Core::Entity p_Entity)
+      DirectionalLight
+      DirectionalLight::make(Low::Core::Entity p_Entity)
       {
         uint32_t l_Index = create_instance();
 
@@ -54,10 +56,11 @@ namespace Low {
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, color,
                                 Math::ColorRGB)) Math::ColorRGB();
-        ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, intensity, float) =
-            0.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, intensity,
+                          float) = 0.0f;
         new (&ACCESSOR_TYPE_SOA(l_Handle, DirectionalLight, entity,
-                                Low::Core::Entity)) Low::Core::Entity();
+                                Low::Core::Entity))
+            Low::Core::Entity();
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -103,10 +106,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
-                                                      N(DirectionalLight));
+        ms_Capacity = Low::Util::Config::get_capacity(
+            N(LowCore), N(DirectionalLight));
 
-        initialize_buffer(&ms_Buffer, DirectionalLightData::get_size(),
+        initialize_buffer(&ms_Buffer,
+                          DirectionalLightData::get_size(),
                           get_capacity(), &ms_Slots);
 
         LOW_PROFILE_ALLOC(type_buffer_DirectionalLight);
@@ -133,13 +137,14 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLightData, color);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLORRGB;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
             l_Handle.get_color();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight,
-                                              color, Math::ColorRGB);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, DirectionalLight, color, Math::ColorRGB);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -159,8 +164,8 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
             l_Handle.get_intensity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight,
-                                              intensity, float);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, DirectionalLight, intensity, float);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -181,8 +186,9 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight,
-                                              entity, Low::Core::Entity);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, DirectionalLight, entity,
+                Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -202,9 +208,9 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DirectionalLight,
-                                              unique_id,
-                                              Low::Util::UniqueId);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, DirectionalLight, unique_id,
+                Low::Util::UniqueId);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -215,7 +221,8 @@ namespace Low {
 
       void DirectionalLight::cleanup()
       {
-        Low::Util::List<DirectionalLight> l_Instances = ms_LivingInstances;
+        Low::Util::List<DirectionalLight> l_Instances =
+            ms_LivingInstances;
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
@@ -226,7 +233,8 @@ namespace Low {
         LOW_PROFILE_FREE(type_slots_DirectionalLight);
       }
 
-      DirectionalLight DirectionalLight::find_by_index(uint32_t p_Index)
+      DirectionalLight
+      DirectionalLight::find_by_index(uint32_t p_Index)
       {
         LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
 
@@ -241,7 +249,8 @@ namespace Low {
       bool DirectionalLight::is_alive() const
       {
         return m_Data.m_Type == DirectionalLight::TYPE_ID &&
-               check_alive(ms_Slots, DirectionalLight::get_capacity());
+               check_alive(ms_Slots,
+                           DirectionalLight::get_capacity());
       }
 
       uint32_t DirectionalLight::get_capacity()
@@ -249,11 +258,13 @@ namespace Low {
         return ms_Capacity;
       }
 
-      void DirectionalLight::serialize(Low::Util::Yaml::Node &p_Node) const
+      void
+      DirectionalLight::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
-        Low::Util::Serialization::serialize(p_Node["color"], get_color());
+        Low::Util::Serialization::serialize(p_Node["color"],
+                                            get_color());
         p_Node["intensity"] = get_intensity();
         p_Node["unique_id"] = get_unique_id();
 
@@ -283,8 +294,9 @@ namespace Low {
         }
 
         if (p_Node["color"]) {
-          l_Handle.set_color(Low::Util::Serialization::deserialize_vector3(
-              p_Node["color"]));
+          l_Handle.set_color(
+              Low::Util::Serialization::deserialize_vector3(
+                  p_Node["color"]));
         }
         if (p_Node["intensity"]) {
           l_Handle.set_intensity(p_Node["intensity"].as<float>());
@@ -393,7 +405,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
-        TYPE_SOA(DirectionalLight, entity, Low::Core::Entity) = p_Value;
+        TYPE_SOA(DirectionalLight, entity, Low::Core::Entity) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
@@ -406,9 +419,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        return TYPE_SOA(DirectionalLight, unique_id, Low::Util::UniqueId);
+        return TYPE_SOA(DirectionalLight, unique_id,
+                        Low::Util::UniqueId);
       }
-      void DirectionalLight::set_unique_id(Low::Util::UniqueId p_Value)
+      void
+      DirectionalLight::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -447,7 +462,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer =
             (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
@@ -467,11 +483,12 @@ namespace Low {
                  l_Capacity * sizeof(Math::ColorRGB));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(DirectionalLightData, intensity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(DirectionalLightData, intensity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(float));
+          memcpy(
+              &l_NewBuffer[offsetof(DirectionalLightData, intensity) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(DirectionalLightData, intensity) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(float));
         }
         {
           memcpy(&l_NewBuffer[offsetof(DirectionalLightData, entity) *
@@ -481,14 +498,15 @@ namespace Low {
                  l_Capacity * sizeof(Low::Core::Entity));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(DirectionalLightData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(DirectionalLightData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
+          memcpy(
+              &l_NewBuffer[offsetof(DirectionalLightData, unique_id) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(DirectionalLightData, unique_id) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(Low::Util::UniqueId));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -498,9 +516,10 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG << "Auto-increased budget for DirectionalLight from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+        LOW_LOG_DEBUG
+            << "Auto-increased budget for DirectionalLight from "
+            << l_Capacity << " to "
+            << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
     } // namespace Component
   }   // namespace Core

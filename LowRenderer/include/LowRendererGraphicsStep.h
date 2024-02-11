@@ -43,8 +43,12 @@ namespace Low {
           skinned_renderobjects;
       Util::Map<RenderFlow, Interface::Renderpass> renderpasses;
       Interface::Context context;
+      Util::Map<RenderFlow,
+                Util::List<Interface::PipelineResourceSignature>>
+          pipeline_signatures;
       Util::Map<RenderFlow, Interface::PipelineResourceSignature>
           signatures;
+      Resource::Image output_image;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -103,8 +107,9 @@ namespace Low {
 
       static void serialize(Low::Util::Handle p_Handle,
                             Low::Util::Yaml::Node &p_Node);
-      static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                           Low::Util::Handle p_Creator);
+      static Low::Util::Handle
+      deserialize(Low::Util::Yaml::Node &p_Node,
+                  Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         return p_Handle.get_type() == GraphicsStep::TYPE_ID &&
@@ -125,8 +130,8 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> &
       get_pipelines() const;
 
-      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>> &
-      get_renderobjects() const;
+      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
+          &get_renderobjects() const;
 
       Util::Map<Util::Name, Util::List<RenderObject>> &
       get_skinned_renderobjects() const;
@@ -136,8 +141,19 @@ namespace Low {
 
       Interface::Context get_context() const;
 
+      Util::Map<RenderFlow,
+                Util::List<Interface::PipelineResourceSignature>> &
+      get_pipeline_signatures() const;
+      void set_pipeline_signatures(
+          Util::Map<RenderFlow,
+                    Util::List<Interface::PipelineResourceSignature>>
+              &p_Value);
+
       Util::Map<RenderFlow, Interface::PipelineResourceSignature> &
       get_signatures() const;
+
+      Resource::Image get_output_image() const;
+      void set_output_image(Resource::Image p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -163,6 +179,10 @@ namespace Low {
                                   RenderFlow p_RenderFlow,
                                   Math::Matrix4x4 &p_ProjectionMatrix,
                                   Math::Matrix4x4 &p_ViewMatrix);
+      static void default_execute_fullscreen_triangle(
+          GraphicsStep p_Step, RenderFlow p_RenderFlow,
+          Math::Matrix4x4 &p_ProjectionMatrix,
+          Math::Matrix4x4 &p_ViewMatrix);
       static void draw_renderobjects(GraphicsStep p_Step,
                                      RenderFlow p_RenderFlow);
 
@@ -172,6 +192,8 @@ namespace Low {
       static void increase_budget();
       void set_config(GraphicsStepConfig p_Value);
       void set_context(Interface::Context p_Value);
+      static void fill_pipeline_signatures(GraphicsStep p_Step,
+                                           RenderFlow p_RenderFlow);
     };
   } // namespace Renderer
 } // namespace Low

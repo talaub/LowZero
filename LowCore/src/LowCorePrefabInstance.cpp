@@ -22,8 +22,9 @@ namespace Low {
       uint32_t PrefabInstance::ms_Capacity = 0u;
       uint8_t *PrefabInstance::ms_Buffer = 0;
       Low::Util::Instances::Slot *PrefabInstance::ms_Slots = 0;
-      Low::Util::List<PrefabInstance> PrefabInstance::ms_LivingInstances =
-          Low::Util::List<PrefabInstance>();
+      Low::Util::List<PrefabInstance>
+          PrefabInstance::ms_LivingInstances =
+              Low::Util::List<PrefabInstance>();
 
       PrefabInstance::PrefabInstance() : Low::Util::Handle(0ull)
       {
@@ -37,7 +38,8 @@ namespace Low {
       {
       }
 
-      Low::Util::Handle PrefabInstance::_make(Low::Util::Handle p_Entity)
+      Low::Util::Handle
+      PrefabInstance::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
         LOW_ASSERT(l_Entity.is_alive(),
@@ -54,14 +56,15 @@ namespace Low {
         l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
         l_Handle.m_Data.m_Type = PrefabInstance::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, PrefabInstance, prefab, Prefab))
-            Prefab();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, PrefabInstance, prefab,
+                                Prefab)) Prefab();
         new (&ACCESSOR_TYPE_SOA(
             l_Handle, PrefabInstance, overrides,
             SINGLE_ARG(Util::Map<uint16_t, Util::List<Util::Name>>)))
             Util::Map<uint16_t, Util::List<Util::Name>>();
         new (&ACCESSOR_TYPE_SOA(l_Handle, PrefabInstance, entity,
-                                Low::Core::Entity)) Low::Core::Entity();
+                                Low::Core::Entity))
+            Low::Core::Entity();
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -107,8 +110,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowCore), N(PrefabInstance));
+        ms_Capacity = Low::Util::Config::get_capacity(
+            N(LowCore), N(PrefabInstance));
 
         initialize_buffer(&ms_Buffer, PrefabInstanceData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -135,15 +138,16 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(prefab);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PrefabInstanceData, prefab);
+          l_PropertyInfo.dataOffset =
+              offsetof(PrefabInstanceData, prefab);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Prefab::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_prefab();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance,
-                                              prefab, Prefab);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PrefabInstance, prefab, Prefab);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -158,20 +162,22 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(PrefabInstanceData, overrides);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_overrides();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PrefabInstance, overrides,
-                SINGLE_ARG(Util::Map<uint16_t, Util::List<Util::Name>>));
+                SINGLE_ARG(
+                    Util::Map<uint16_t, Util::List<Util::Name>>));
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             PrefabInstance l_Handle = p_Handle.get_id();
-            l_Handle.set_overrides(
-                *(Util::Map<uint16_t, Util::List<Util::Name>> *)p_Data);
+            l_Handle.set_overrides(*(
+                Util::Map<uint16_t, Util::List<Util::Name>> *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -179,15 +185,16 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PrefabInstanceData, entity);
+          l_PropertyInfo.dataOffset =
+              offsetof(PrefabInstanceData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PrefabInstance,
-                                              entity, Low::Core::Entity);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PrefabInstance, entity, Low::Core::Entity);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -208,7 +215,8 @@ namespace Low {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, PrefabInstance, unique_id, Low::Util::UniqueId);
+                p_Handle, PrefabInstance, unique_id,
+                Low::Util::UniqueId);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -219,7 +227,8 @@ namespace Low {
 
       void PrefabInstance::cleanup()
       {
-        Low::Util::List<PrefabInstance> l_Instances = ms_LivingInstances;
+        Low::Util::List<PrefabInstance> l_Instances =
+            ms_LivingInstances;
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
@@ -253,7 +262,8 @@ namespace Low {
         return ms_Capacity;
       }
 
-      void PrefabInstance::serialize(Low::Util::Yaml::Node &p_Node) const
+      void
+      PrefabInstance::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -267,8 +277,8 @@ namespace Low {
 
         for (auto cit = get_overrides().begin();
              cit != get_overrides().end(); ++cit) {
-          for (auto pit = cit->second.begin(); pit != cit->second.end();
-               ++pit) {
+          for (auto pit = cit->second.begin();
+               pit != cit->second.end(); ++pit) {
             p_Node["overrides"][LOW_TO_STRING(cit->first).c_str()]
                 .push_back(pit->c_str());
           }
@@ -287,7 +297,8 @@ namespace Low {
       PrefabInstance::deserialize(Low::Util::Yaml::Node &p_Node,
                                   Low::Util::Handle p_Creator)
       {
-        PrefabInstance l_Handle = PrefabInstance::make(p_Creator.get_id());
+        PrefabInstance l_Handle =
+            PrefabInstance::make(p_Creator.get_id());
 
         if (p_Node["unique_id"]) {
           Low::Util::remove_unique_id(l_Handle.get_unique_id());
@@ -368,8 +379,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_overrides
 
         // Set new value
-        TYPE_SOA(PrefabInstance, overrides,
-                 SINGLE_ARG(Util::Map<uint16_t, Util::List<Util::Name>>)) =
+        TYPE_SOA(
+            PrefabInstance, overrides,
+            SINGLE_ARG(Util::Map<uint16_t, Util::List<Util::Name>>)) =
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_overrides
@@ -406,7 +418,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        return TYPE_SOA(PrefabInstance, unique_id, Low::Util::UniqueId);
+        return TYPE_SOA(PrefabInstance, unique_id,
+                        Low::Util::UniqueId);
       }
       void PrefabInstance::set_unique_id(Low::Util::UniqueId p_Value)
       {
@@ -416,7 +429,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        TYPE_SOA(PrefabInstance, unique_id, Low::Util::UniqueId) = p_Value;
+        TYPE_SOA(PrefabInstance, unique_id, Low::Util::UniqueId) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
@@ -450,10 +464,11 @@ namespace Low {
             continue;
           }
 
-          it->second.set(l_Handle,
-                         &get_prefab()
-                              .get_components()[p_ComponentType][it->first]
-                              .m_Bool);
+          it->second.set(
+              l_Handle,
+              &get_prefab()
+                   .get_components()[p_ComponentType][it->first]
+                   .m_Bool);
         }
 
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_component_from_prefab
@@ -477,7 +492,8 @@ namespace Low {
           if (it->first == TYPE_ID) {
             continue;
           }
-          if (it->first == Transform::TYPE_ID && !l_Parent.is_alive()) {
+          if (it->first == Transform::TYPE_ID &&
+              !l_Parent.is_alive()) {
             continue;
           }
           if (l_Prefab.get_components().find(it->first) ==
@@ -499,14 +515,16 @@ namespace Low {
                         get_overrides()[p_ComponentType].end(),
                         p_PropertyName) ==
               get_overrides()[p_ComponentType].end()) {
-            get_overrides()[p_ComponentType].push_back(p_PropertyName);
+            get_overrides()[p_ComponentType].push_back(
+                p_PropertyName);
           }
         } else {
           if (std::find(get_overrides()[p_ComponentType].begin(),
                         get_overrides()[p_ComponentType].end(),
                         p_PropertyName) !=
               get_overrides()[p_ComponentType].end()) {
-            get_overrides()[p_ComponentType].erase_first(p_PropertyName);
+            get_overrides()[p_ComponentType].erase_first(
+                p_PropertyName);
           }
         }
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_override
@@ -536,7 +554,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer =
             (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
@@ -559,11 +578,12 @@ namespace Low {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
             auto *i_ValPtr = new (
-                &l_NewBuffer[offsetof(PrefabInstanceData, overrides) *
-                                 (l_Capacity + l_CapacityIncrease) +
-                             (it->get_index() *
-                              sizeof(Util::Map<uint16_t,
-                                               Util::List<Util::Name>>))])
+                &l_NewBuffer
+                    [offsetof(PrefabInstanceData, overrides) *
+                         (l_Capacity + l_CapacityIncrease) +
+                     (it->get_index() *
+                      sizeof(Util::Map<uint16_t,
+                                       Util::List<Util::Name>>))])
                 Util::Map<uint16_t, Util::List<Util::Name>>();
             *i_ValPtr = it->get_overrides();
           }
@@ -576,14 +596,15 @@ namespace Low {
                  l_Capacity * sizeof(Low::Core::Entity));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(PrefabInstanceData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PrefabInstanceData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
+          memcpy(
+              &l_NewBuffer[offsetof(PrefabInstanceData, unique_id) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(PrefabInstanceData, unique_id) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(Low::Util::UniqueId));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -593,9 +614,10 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG << "Auto-increased budget for PrefabInstance from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+        LOW_LOG_DEBUG
+            << "Auto-increased budget for PrefabInstance from "
+            << l_Capacity << " to "
+            << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
     } // namespace Component
   }   // namespace Core

@@ -11,3 +11,5 @@ build/
 /misteda
 LowScriptingApi/bin
 LowScriptingApi/obj
+.rgignore
+.clangflags

@@ -19,7 +19,8 @@ namespace Low {
       const uint16_t PipelineResourceSignature::TYPE_ID = 3;
       uint32_t PipelineResourceSignature::ms_Capacity = 0u;
       uint8_t *PipelineResourceSignature::ms_Buffer = 0;
-      Low::Util::Instances::Slot *PipelineResourceSignature::ms_Slots = 0;
+      Low::Util::Instances::Slot
+          *PipelineResourceSignature::ms_Slots = 0;
       Low::Util::List<PipelineResourceSignature>
           PipelineResourceSignature::ms_LivingInstances =
               Low::Util::List<PipelineResourceSignature>();
@@ -28,7 +29,8 @@ namespace Low {
           : Low::Util::Handle(0ull)
       {
       }
-      PipelineResourceSignature::PipelineResourceSignature(uint64_t p_Id)
+      PipelineResourceSignature::PipelineResourceSignature(
+          uint64_t p_Id)
           : Low::Util::Handle(p_Id)
       {
       }
@@ -81,7 +83,8 @@ namespace Low {
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-        const PipelineResourceSignature *l_Instances = living_instances();
+        const PipelineResourceSignature *l_Instances =
+            living_instances();
         bool l_LivingInstanceFound = false;
         for (uint32_t i = 0u; i < living_count(); ++i) {
           if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
@@ -114,7 +117,8 @@ namespace Low {
         l_TypeInfo.is_alive = &PipelineResourceSignature::is_alive;
         l_TypeInfo.destroy = &PipelineResourceSignature::destroy;
         l_TypeInfo.serialize = &PipelineResourceSignature::serialize;
-        l_TypeInfo.deserialize = &PipelineResourceSignature::deserialize;
+        l_TypeInfo.deserialize =
+            &PipelineResourceSignature::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &PipelineResourceSignature::_make;
         l_TypeInfo.get_living_instances =
@@ -129,7 +133,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(PipelineResourceSignatureData, signature);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
@@ -153,9 +158,9 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
             l_Handle.get_name();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle,
-                                              PipelineResourceSignature,
-                                              name, Low::Util::Name);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PipelineResourceSignature, name,
+                Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
@@ -228,21 +233,20 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
-      void
-      PipelineResourceSignature::serialize(Low::Util::Handle p_Handle,
-                                           Low::Util::Yaml::Node &p_Node)
+      void PipelineResourceSignature::serialize(
+          Low::Util::Handle p_Handle, Low::Util::Yaml::Node &p_Node)
       {
         PipelineResourceSignature l_PipelineResourceSignature =
             p_Handle.get_id();
         l_PipelineResourceSignature.serialize(p_Node);
       }
 
-      Low::Util::Handle
-      PipelineResourceSignature::deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator)
+      Low::Util::Handle PipelineResourceSignature::deserialize(
+          Low::Util::Yaml::Node &p_Node, Low::Util::Handle p_Creator)
       {
         PipelineResourceSignature l_Handle =
-            PipelineResourceSignature::make(N(PipelineResourceSignature));
+            PipelineResourceSignature::make(
+                N(PipelineResourceSignature));
 
         if (p_Node["signature"]) {
         }
@@ -275,9 +279,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-        return TYPE_SOA(PipelineResourceSignature, name, Low::Util::Name);
+        return TYPE_SOA(PipelineResourceSignature, name,
+                        Low::Util::Name);
       }
-      void PipelineResourceSignature::set_name(Low::Util::Name p_Value)
+      void
+      PipelineResourceSignature::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -304,7 +310,8 @@ namespace Low {
         Backend::PipelineResourceSignatureCreateParams l_Params;
         l_Params.context = &p_Context.get_context();
         l_Params.binding = p_Binding;
-        l_Params.resourceDescriptionCount = p_ResourceDescriptions.size();
+        l_Params.resourceDescriptionCount =
+            p_ResourceDescriptions.size();
         l_Params.resourceDescriptions = p_ResourceDescriptions.data();
 
         Backend::callbacks().pipeline_resource_signature_create(
@@ -358,8 +365,9 @@ namespace Low {
           Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_texture2d_resource
-        Backend::callbacks().pipeline_resource_signature_set_texture2d(
-            get_signature(), p_Name, p_ArrayIndex, p_Value);
+        Backend::callbacks()
+            .pipeline_resource_signature_set_texture2d(
+                get_signature(), p_Name, p_ArrayIndex, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_texture2d_resource
       }
 
@@ -415,7 +423,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer =
             (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
@@ -434,18 +443,20 @@ namespace Low {
                  &ms_Buffer[offsetof(PipelineResourceSignatureData,
                                      signature) *
                             (l_Capacity)],
-                 l_Capacity * sizeof(Backend::PipelineResourceSignature));
+                 l_Capacity *
+                     sizeof(Backend::PipelineResourceSignature));
         }
         {
-          memcpy(
-              &l_NewBuffer[offsetof(PipelineResourceSignatureData, name) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(PipelineResourceSignatureData, name) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(Low::Util::Name));
+          memcpy(&l_NewBuffer[offsetof(PipelineResourceSignatureData,
+                                       name) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(PipelineResourceSignatureData,
+                                     name) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -455,10 +466,11 @@ namespace Low {
         ms_Slots = l_NewSlots;
         ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-        LOW_LOG_DEBUG
-            << "Auto-increased budget for PipelineResourceSignature from "
-            << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
-            << LOW_LOG_END;
+        LOW_LOG_DEBUG << "Auto-increased budget for "
+                         "PipelineResourceSignature from "
+                      << l_Capacity << " to "
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Interface
   }   // namespace Renderer

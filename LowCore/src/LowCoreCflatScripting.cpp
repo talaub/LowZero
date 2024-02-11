@@ -18,8 +18,8 @@ namespace Low {
 
       Util::Map<Util::String, Cflat::Struct *> g_CflatStructs;
 
-      static void
-      initial_load_directory(Util::FileSystem::WatchHandle p_WatchHandle)
+      static void initial_load_directory(
+          Util::FileSystem::WatchHandle p_WatchHandle)
       {
         Util::FileSystem::DirectoryWatcher &l_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(p_WatchHandle);
@@ -78,7 +78,8 @@ namespace Low {
               i_Pos->second != i_FileWatcher.modifiedTimestamp) {
             get_environment()->load(i_FileWatcher.path.c_str());
 
-            if (!get_environment()->load(i_FileWatcher.path.c_str())) {
+            if (!get_environment()->load(
+                    i_FileWatcher.path.c_str())) {
               LOW_LOG_ERROR << "Failed Cflat compilation of file "
                             << i_FileWatcher.path << LOW_LOG_END;
 
@@ -98,7 +99,8 @@ namespace Low {
       void tick(float p_Delta, Util::EngineState p_State)
       {
         LOW_PROFILE_CPU("Core", "Scripting hotreload");
-        tick_directory(Core::get_filesystem_watchers().scriptDirectory);
+        tick_directory(
+            Core::get_filesystem_watchers().scriptDirectory);
       }
     } // namespace Scripting
   }   // namespace Core
@@ -142,42 +144,48 @@ static void register_math()
     CflatStructAddMember(l_Namespace, Vector4, float, y);
     CflatStructAddMember(l_Namespace, Vector4, float, z);
     CflatStructAddMember(l_Namespace, Vector4, float, w);
-    CflatStructAddConstructorParams4(l_Namespace, Vector4, float, float,
-                                     float, float);
+    CflatStructAddConstructorParams4(l_Namespace, Vector4, float,
+                                     float, float, float);
     CflatStructAddCopyConstructor(l_Namespace, Vector4);
 
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector4, operator*,
-                                       const Vector4 &, const Vector4 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector4, operator*, const Vector4 &,
+        const Vector4 &);
   }
   {
     CflatRegisterStruct(l_Namespace, Vector3);
     CflatStructAddMember(l_Namespace, Vector3, float, x);
     CflatStructAddMember(l_Namespace, Vector3, float, y);
     CflatStructAddMember(l_Namespace, Vector3, float, z);
-    CflatStructAddConstructorParams3(l_Namespace, Vector3, float, float,
-                                     float);
+    CflatStructAddConstructorParams3(l_Namespace, Vector3, float,
+                                     float, float);
     CflatStructAddCopyConstructor(l_Namespace, Vector3);
 
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector3, operator+,
-                                       const Vector3 &, const Vector3 &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector3, operator-,
-                                       const Vector3 &, const Vector3 &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector3, operator*,
-                                       const Vector3 &, float);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector3, operator+, const Vector3 &,
+        const Vector3 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector3, operator-, const Vector3 &,
+        const Vector3 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector3, operator*, const Vector3 &, float);
   }
   {
     CflatRegisterStruct(l_Namespace, Vector2);
     CflatStructAddMember(l_Namespace, Vector2, float, x);
     CflatStructAddMember(l_Namespace, Vector2, float, y);
-    CflatStructAddConstructorParams2(l_Namespace, Vector2, float, float);
+    CflatStructAddConstructorParams2(l_Namespace, Vector2, float,
+                                     float);
     CflatStructAddCopyConstructor(l_Namespace, Vector2);
 
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector2, operator+,
-                                       const Vector2 &, const Vector2 &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector2, operator-,
-                                       const Vector2 &, const Vector2 &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector2, operator*,
-                                       const Vector2 &, float);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector2, operator+, const Vector2 &,
+        const Vector2 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector2, operator-, const Vector2 &,
+        const Vector2 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector2, operator*, const Vector2 &, float);
   }
   {
     CflatRegisterStruct(l_Namespace, UVector2);
@@ -187,12 +195,14 @@ static void register_math()
                                      uint32_t);
     CflatStructAddCopyConstructor(l_Namespace, UVector2);
 
-    CflatRegisterFunctionReturnParams2(l_Namespace, UVector2, operator+,
-                                       const UVector2 &, const UVector2 &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, UVector2, operator-,
-                                       const UVector2 &, const UVector2 &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, UVector2, operator*,
-                                       const UVector2 &, uint32_t);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, UVector2, operator+, const UVector2 &,
+        const UVector2 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, UVector2, operator-, const UVector2 &,
+        const UVector2 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, UVector2, operator*, const UVector2 &, uint32_t);
   }
   {
     CflatRegisterStruct(l_Namespace, Quaternion);
@@ -200,16 +210,16 @@ static void register_math()
     CflatStructAddMember(l_Namespace, Quaternion, float, y);
     CflatStructAddMember(l_Namespace, Quaternion, float, z);
     CflatStructAddMember(l_Namespace, Quaternion, float, w);
-    CflatStructAddConstructorParams4(l_Namespace, Quaternion, float, float,
-                                     float, float);
+    CflatStructAddConstructorParams4(l_Namespace, Quaternion, float,
+                                     float, float, float);
     CflatStructAddCopyConstructor(l_Namespace, Quaternion);
 
-    CflatRegisterFunctionReturnParams2(l_Namespace, Quaternion, operator*,
-                                       const Quaternion &,
-                                       const Quaternion &);
-    CflatRegisterFunctionReturnParams2(l_Namespace, Vector3, operator*,
-                                       const Quaternion &,
-                                       const Vector3 &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Quaternion, operator*, const Quaternion &,
+        const Quaternion &);
+    CflatRegisterFunctionReturnParams2(
+        l_Namespace, Vector3, operator*, const Quaternion &,
+        const Vector3 &);
   }
 }
 
@@ -232,18 +242,19 @@ static void register_lowutil_name()
   CflatStructAddMethodReturn(l_Namespace, Name, char *, c_str);
   CflatStructAddMember(l_Namespace, Name, uint32_t, m_Index);
 
-  CflatStructAddMethodReturnParams1(l_Namespace, Name, bool, operator==,
-                                    const Name &);
-  CflatStructAddMethodReturnParams1(l_Namespace, Name, bool, operator!=,
-                                    const Name &);
-  CflatStructAddMethodReturnParams1(l_Namespace, Name, bool, operator<,
-                                    const Name &);
-  CflatStructAddMethodReturnParams1(l_Namespace, Name, bool, operator>,
-                                    const Name &);
-  CflatStructAddMethodReturnParams1(l_Namespace, Name, Name &, operator=,
-                                    const Name);
+  CflatStructAddMethodReturnParams1(l_Namespace, Name,
+                                    bool, operator==, const Name &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Name,
+                                    bool, operator!=, const Name &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Name,
+                                    bool, operator<, const Name &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Name,
+                                    bool, operator>, const Name &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Name,
+                                    Name &, operator=, const Name);
 
-  Scripting::get_environment()->defineMacro("N(x)", "Low::Util::Name(#x)");
+  Scripting::get_environment()->defineMacro("N(x)",
+                                            "Low::Util::Name(#x)");
 }
 
 #include "LowUtilContainers.h"
@@ -289,16 +300,17 @@ static void register_lowutil_handle()
   CflatStructAddCopyConstructor(l_Namespace, Handle);
   CflatStructAddConstructorParams1(l_Namespace, Handle, uint64_t);
   CflatStructAddMethodReturn(l_Namespace, Handle, uint64_t, get_id);
-  CflatStructAddMethodReturn(l_Namespace, Handle, uint32_t, get_index);
+  CflatStructAddMethodReturn(l_Namespace, Handle, uint32_t,
+                             get_index);
   CflatStructAddMethodReturn(l_Namespace, Handle, uint16_t,
                              get_generation);
   CflatStructAddMethodReturn(l_Namespace, Handle, uint16_t, get_type);
-  CflatStructAddMethodReturnParams1(l_Namespace, Handle, bool, operator==,
-                                    const Handle &);
-  CflatStructAddMethodReturnParams1(l_Namespace, Handle, bool, operator!=,
-                                    const Handle &);
-  CflatStructAddMethodReturnParams1(l_Namespace, Handle, bool, operator<,
-                                    const Handle &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Handle,
+                                    bool, operator==, const Handle &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Handle,
+                                    bool, operator!=, const Handle &);
+  CflatStructAddMethodReturnParams1(l_Namespace, Handle,
+                                    bool, operator<, const Handle &);
 }
 
 // REGISTER_CFLAT_BEGIN
@@ -327,11 +339,12 @@ static void register_lowcore_entity()
   CflatStructAddMethodReturn(l_Namespace, Entity, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Entity, uint32_t,
                                    get_capacity);
-  CflatStructAddStaticMethodReturnParams1(
-      l_Namespace, Entity, Low::Core::Entity, find_by_index, uint32_t);
   CflatStructAddStaticMethodReturnParams1(l_Namespace, Entity,
-                                          Low::Core::Entity, find_by_name,
-                                          Low::Util::Name);
+                                          Low::Core::Entity,
+                                          find_by_index, uint32_t);
+  CflatStructAddStaticMethodReturnParams1(
+      l_Namespace, Entity, Low::Core::Entity, find_by_name,
+      Low::Util::Name);
 
   CflatStructAddMethodReturn(l_Namespace, Entity, Low::Util::Name,
                              get_name);
@@ -340,14 +353,14 @@ static void register_lowcore_entity()
 
   CflatStructAddMethodReturnParams1(l_Namespace, Entity, uint64_t,
                                     get_component, uint16_t);
-  CflatStructAddMethodVoidParams1(l_Namespace, Entity, void, add_component,
-                                  Util::Handle);
+  CflatStructAddMethodVoidParams1(l_Namespace, Entity, void,
+                                  add_component, Util::Handle);
   CflatStructAddMethodVoidParams1(l_Namespace, Entity, void,
                                   remove_component, uint16_t);
   CflatStructAddMethodReturnParams1(l_Namespace, Entity, bool,
                                     has_component, uint16_t);
-  CflatStructAddMethodReturn(l_Namespace, Entity, Component::Transform,
-                             get_transform);
+  CflatStructAddMethodReturn(l_Namespace, Entity,
+                             Component::Transform, get_transform);
 }
 
 static void register_lowcore_transform()
@@ -374,28 +387,29 @@ static void register_lowcore_transform()
   CflatStructAddMethodReturn(l_Namespace, Transform, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Transform, uint32_t,
                                    get_capacity);
-  CflatStructAddStaticMethodReturnParams1(l_Namespace, Transform,
-                                          Low::Core::Component::Transform,
-                                          find_by_index, uint32_t);
+  CflatStructAddStaticMethodReturnParams1(
+      l_Namespace, Transform, Low::Core::Component::Transform,
+      find_by_index, uint32_t);
 
   CflatStructAddMethodReturn(l_Namespace, Transform, Math::Vector3 &,
                              position);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, position,
-                                  Math::Vector3 &);
+  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void,
+                                  position, Math::Vector3 &);
 
-  CflatStructAddMethodReturn(l_Namespace, Transform, Math::Quaternion &,
-                             rotation);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, rotation,
-                                  Math::Quaternion &);
+  CflatStructAddMethodReturn(l_Namespace, Transform,
+                             Math::Quaternion &, rotation);
+  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void,
+                                  rotation, Math::Quaternion &);
 
   CflatStructAddMethodReturn(l_Namespace, Transform, Math::Vector3 &,
                              scale);
   CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, scale,
                                   Math::Vector3 &);
 
-  CflatStructAddMethodReturn(l_Namespace, Transform, uint64_t, get_parent);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, set_parent,
-                                  uint64_t);
+  CflatStructAddMethodReturn(l_Namespace, Transform, uint64_t,
+                             get_parent);
+  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void,
+                                  set_parent, uint64_t);
 
   CflatStructAddMethodReturn(l_Namespace, Transform,
                              Util::List<uint64_t> &, get_children);
@@ -403,16 +417,16 @@ static void register_lowcore_transform()
   CflatStructAddMethodReturn(l_Namespace, Transform, Math::Vector3 &,
                              get_world_position);
 
-  CflatStructAddMethodReturn(l_Namespace, Transform, Math::Quaternion &,
-                             get_world_rotation);
+  CflatStructAddMethodReturn(l_Namespace, Transform,
+                             Math::Quaternion &, get_world_rotation);
 
   CflatStructAddMethodReturn(l_Namespace, Transform, Math::Vector3 &,
                              get_world_scale);
 
-  CflatStructAddMethodReturn(l_Namespace, Transform, Low::Core::Entity,
-                             get_entity);
-  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void, set_entity,
-                                  Low::Core::Entity);
+  CflatStructAddMethodReturn(l_Namespace, Transform,
+                             Low::Core::Entity, get_entity);
+  CflatStructAddMethodVoidParams1(l_Namespace, Transform, void,
+                                  set_entity, Low::Core::Entity);
 }
 
 static void preregister_types()
@@ -425,8 +439,8 @@ static void preregister_types()
         Scripting::get_environment()->requestNamespace("Low::Core");
 
     CflatRegisterStruct(l_Namespace, Entity);
-    CflatStructAddBaseType(Scripting::get_environment(), Low::Core::Entity,
-                           Low::Util::Handle);
+    CflatStructAddBaseType(Scripting::get_environment(),
+                           Low::Core::Entity, Low::Util::Handle);
 
     Scripting::g_CflatStructs["Low::Core::Entity"] = type;
   }
@@ -442,7 +456,8 @@ static void preregister_types()
                            Low::Core::Component::Transform,
                            Low::Util::Handle);
 
-    Scripting::g_CflatStructs["Low::Core::Component::Transform"] = type;
+    Scripting::g_CflatStructs["Low::Core::Component::Transform"] =
+        type;
   }
 }
 static void register_types()

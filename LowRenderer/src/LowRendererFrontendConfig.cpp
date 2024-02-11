@@ -10,10 +10,12 @@
 
 namespace Low {
   namespace Renderer {
-    Util::Map<Util::Name, GraphicsPipelineConfig> g_GraphicsPipelineConfigs;
+    Util::Map<Util::Name, GraphicsPipelineConfig>
+        g_GraphicsPipelineConfigs;
 
-    static void parse_resource_buffer_config(Util::Yaml::Node &p_Node,
-                                             BufferResourceConfig &p_Config)
+    static void
+    parse_resource_buffer_config(Util::Yaml::Node &p_Node,
+                                 BufferResourceConfig &p_Config)
     {
       p_Config.size = p_Node["buffer_size"].as<int>();
     }
@@ -26,7 +28,8 @@ namespace Low {
 
       if (l_DimensionType == "relative") {
         p_Config.type = ImageResourceDimensionType::RELATIVE;
-        p_Config.relative.multiplier = p_Node["multiplier"].as<float>();
+        p_Config.relative.multiplier =
+            p_Node["multiplier"].as<float>();
         Util::String l_RelativeString =
             Util::String(p_Node["target"].as<std::string>().c_str());
         if (l_RelativeString == "renderflow") {
@@ -36,7 +39,8 @@ namespace Low {
           p_Config.relative.target =
               ImageResourceDimensionRelativeOptions::CONTEXT;
         } else {
-          LOW_ASSERT(false, "Unknown dimension relative target option");
+          LOW_ASSERT(false,
+                     "Unknown dimension relative target option");
         }
       } else if (l_DimensionType == "absolute") {
         p_Config.type = ImageResourceDimensionType::ABSOLUTE;
@@ -55,7 +59,8 @@ namespace Low {
       if (p_Config.type == ImageResourceDimensionType::ABSOLUTE) {
         p_Dimensions.x = p_Config.absolute.x;
         p_Dimensions.y = p_Config.absolute.y;
-      } else if (p_Config.type == ImageResourceDimensionType::RELATIVE) {
+      } else if (p_Config.type ==
+                 ImageResourceDimensionType::RELATIVE) {
         Math::Vector2 l_Dimensions;
         if (p_Config.relative.target ==
             ImageResourceDimensionRelativeOptions::RENDERFLOW) {
@@ -64,7 +69,8 @@ namespace Low {
                    ImageResourceDimensionRelativeOptions::CONTEXT) {
           l_Dimensions = p_Context.get_dimensions();
         } else {
-          LOW_ASSERT(false, "Unknown dimensions relative target option");
+          LOW_ASSERT(false,
+                     "Unknown dimensions relative target option");
         }
         l_Dimensions *= p_Config.relative.multiplier;
         p_Dimensions = l_Dimensions;
@@ -74,11 +80,14 @@ namespace Low {
       }
     }
 
-    static void parse_resource_image_config(Util::Yaml::Node &p_Node,
-                                            ImageResourceConfig &p_Config)
+    static void
+    parse_resource_image_config(Util::Yaml::Node &p_Node,
+                                ImageResourceConfig &p_Config)
     {
-      LOW_ASSERT((bool)p_Node["dimensions"], "Missing dimension information");
-      LOW_ASSERT((bool)p_Node["format"], "Missing format information");
+      LOW_ASSERT((bool)p_Node["dimensions"],
+                 "Missing dimension information");
+      LOW_ASSERT((bool)p_Node["format"],
+                 "Missing format information");
 
       Util::Yaml::Node &l_DimensionConfig = p_Node["dimensions"];
       parse_dimensions_config(l_DimensionConfig, p_Config.dimensions);
@@ -88,7 +97,8 @@ namespace Low {
         p_Config.depth = p_Node["depth"].as<bool>();
       }
 
-      Util::String l_FormatString = LOW_YAML_AS_STRING(p_Node["format"]);
+      Util::String l_FormatString =
+          LOW_YAML_AS_STRING(p_Node["format"]);
       if (l_FormatString == "RGBA8_UNORM") {
         p_Config.format = Backend::ImageFormat::RGBA8_UNORM;
       } else if (l_FormatString == "R8_UNORM") {
@@ -125,12 +135,14 @@ namespace Low {
       }
     }
 
-    void parse_resource_configs(Util::Yaml::Node &p_Node,
-                                Util::List<ResourceConfig> &p_Resources)
+    void
+    parse_resource_configs(Util::Yaml::Node &p_Node,
+                           Util::List<ResourceConfig> &p_Resources)
     {
       for (auto it = p_Node.begin(); it != p_Node.end(); ++it) {
         ResourceConfig i_Resource;
-        i_Resource.name = LOW_NAME(it->first.as<std::string>().c_str());
+        i_Resource.name =
+            LOW_NAME(it->first.as<std::string>().c_str());
         i_Resource.arraySize = it->second["array_size"].as<int>();
 
         Util::String i_TypeString =
@@ -165,11 +177,12 @@ namespace Low {
 
       Util::String i_Name = l_TargetString;
 
-      if (Util::StringHelper::begins_with(l_TargetString, l_ContextPrefix)) {
+      if (Util::StringHelper::begins_with(l_TargetString,
+                                          l_ContextPrefix)) {
         i_Name = l_TargetString.substr(l_ContextPrefix.length());
         p_BindingConfig.resourceScope = ResourceBindScope::CONTEXT;
-      } else if (Util::StringHelper::begins_with(l_TargetString,
-                                                 l_RenderFlowPrefix)) {
+      } else if (Util::StringHelper::begins_with(
+                     l_TargetString, l_RenderFlowPrefix)) {
         i_Name = l_TargetString.substr(l_RenderFlowPrefix.length());
         p_BindingConfig.resourceScope = ResourceBindScope::RENDERFLOW;
       }
@@ -190,7 +203,7 @@ namespace Low {
       }
     }
 
-    static void parse_pipeline_resource_bindings(
+    void parse_pipeline_resource_bindings(
         Util::Yaml::Node &p_Node,
         Util::List<PipelineResourceBindingConfig> &p_BindingConfigs)
     {
@@ -199,30 +212,32 @@ namespace Low {
         Util::String i_TargetString = LOW_YAML_AS_STRING(it->first);
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->second);
 
-        parse_pipeline_resource_binding(i_BindingConfig, i_TargetString,
-                                        i_TypeName);
+        parse_pipeline_resource_binding(i_BindingConfig,
+                                        i_TargetString, i_TypeName);
 
         p_BindingConfigs.push_back(i_BindingConfig);
       }
     }
 
-    void
-    parse_compute_pipeline_configs(Util::Yaml::Node &p_Node,
-                                   Util::List<ComputePipelineConfig> &p_Configs)
+    void parse_compute_pipeline_configs(
+        Util::Yaml::Node &p_Node,
+        Util::List<ComputePipelineConfig> &p_Configs)
     {
       for (auto it = p_Node.begin(); it != p_Node.end(); ++it) {
         Util::Yaml::Node i_Node = *it;
 
-        Util::Name i_Name = LOW_NAME(i_Node["name"].as<std::string>().c_str());
-        Util::String i_Shader = i_Node["shader"].as<std::string>().c_str();
+        Util::Name i_Name =
+            LOW_NAME(i_Node["name"].as<std::string>().c_str());
+        Util::String i_Shader =
+            i_Node["shader"].as<std::string>().c_str();
 
         ComputePipelineConfig i_Config;
         i_Config.name = i_Name;
         i_Config.shader = i_Shader;
 
         if (i_Node["resource_bindings"]) {
-          parse_pipeline_resource_bindings(i_Node["resource_bindings"],
-                                           i_Config.resourceBinding);
+          parse_pipeline_resource_bindings(
+              i_Node["resource_bindings"], i_Config.resourceBinding);
         }
 
         Util::String i_DimensionType =
@@ -250,42 +265,51 @@ namespace Low {
             i_Config.dispatchConfig.relative.target =
                 ComputeDispatchRelativeTarget::RENDERFLOW;
           } else {
-            LOW_ASSERT(false,
-                       "Unknown compute dispatch relative dimension option");
+            LOW_ASSERT(
+                false,
+                "Unknown compute dispatch relative dimension option");
           }
           i_Config.dispatchConfig.relative.multiplier =
               i_Node["dimensions"]["multiplier"].as<float>();
         } else {
-          LOW_ASSERT(false, "Unknown compute dispatch dimension type");
+          LOW_ASSERT(false,
+                     "Unknown compute dispatch dimension type");
         }
 
         p_Configs.push_back(i_Config);
       }
     }
 
-    static void parse_graphics_pipeline_config(Util::Yaml::Node &p_Node,
-                                               GraphicsPipelineConfig &p_Config)
+    static void
+    parse_graphics_pipeline_config(Util::Yaml::Node &p_Node,
+                                   GraphicsPipelineConfig &p_Config)
     {
       p_Config.vertexPath = LOW_YAML_AS_STRING(p_Node["vertex"]);
       p_Config.fragmentPath = LOW_YAML_AS_STRING(p_Node["fragment"]);
       p_Config.translucency = p_Node["translucency"].as<bool>();
 
       {
-        Util::String l_EnumString = LOW_YAML_AS_STRING(p_Node["cull_mode"]);
+        Util::String l_EnumString =
+            LOW_YAML_AS_STRING(p_Node["cull_mode"]);
         if (l_EnumString == "back") {
-          p_Config.cullMode = Backend::PipelineRasterizerCullMode::BACK;
+          p_Config.cullMode =
+              Backend::PipelineRasterizerCullMode::BACK;
         } else if (l_EnumString == "front") {
-          p_Config.cullMode = Backend::PipelineRasterizerCullMode::FRONT;
+          p_Config.cullMode =
+              Backend::PipelineRasterizerCullMode::FRONT;
         } else if (l_EnumString == "none") {
-          p_Config.cullMode = Backend::PipelineRasterizerCullMode::NONE;
+          p_Config.cullMode =
+              Backend::PipelineRasterizerCullMode::NONE;
         } else {
           LOW_ASSERT(false, "Unknown pipeline cull mode");
         }
       }
       {
-        Util::String l_EnumString = LOW_YAML_AS_STRING(p_Node["front_face"]);
+        Util::String l_EnumString =
+            LOW_YAML_AS_STRING(p_Node["front_face"]);
         if (l_EnumString == "clockwise") {
-          p_Config.frontFace = Backend::PipelineRasterizerFrontFace::CLOCKWISE;
+          p_Config.frontFace =
+              Backend::PipelineRasterizerFrontFace::CLOCKWISE;
         } else if (l_EnumString == "counter_clockwise") {
           p_Config.frontFace =
               Backend::PipelineRasterizerFrontFace::COUNTER_CLOCKWISE;
@@ -294,11 +318,14 @@ namespace Low {
         }
       }
       {
-        Util::String l_EnumString = LOW_YAML_AS_STRING(p_Node["polygon_mode"]);
+        Util::String l_EnumString =
+            LOW_YAML_AS_STRING(p_Node["polygon_mode"]);
         if (l_EnumString == "fill") {
-          p_Config.polygonMode = Backend::PipelineRasterizerPolygonMode::FILL;
+          p_Config.polygonMode =
+              Backend::PipelineRasterizerPolygonMode::FILL;
         } else if (l_EnumString == "line") {
-          p_Config.polygonMode = Backend::PipelineRasterizerPolygonMode::LINE;
+          p_Config.polygonMode =
+              Backend::PipelineRasterizerPolygonMode::LINE;
         } else {
           LOW_ASSERT(false, "Unknown pipeline polygon mode");
         }
@@ -307,14 +334,17 @@ namespace Low {
 
     void load_graphics_pipeline_configs(Util::String p_RootPath)
     {
-      Util::String l_PipelineDirectory = p_RootPath + "/graphics_pipelines";
+      Util::String l_PipelineDirectory =
+          p_RootPath + "/graphics_pipelines";
       Util::List<Util::String> l_FilePaths;
-      Util::FileIO::list_directory(l_PipelineDirectory.c_str(), l_FilePaths);
+      Util::FileIO::list_directory(l_PipelineDirectory.c_str(),
+                                   l_FilePaths);
       Util::String l_Ending = ".graphicspipelines.yaml";
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
 
           for (auto it = i_Node.begin(); it != i_Node.end(); ++it) {
             Util::Name i_Name = LOW_YAML_AS_NAME(it->first);
@@ -328,13 +358,29 @@ namespace Low {
       }
     }
 
-    GraphicsPipelineConfig &get_graphics_pipeline_config(Util::Name p_Name)
+    GraphicsPipelineConfig &
+    get_graphics_pipeline_config(Util::Name p_Name)
     {
       LOW_ASSERT(g_GraphicsPipelineConfigs.find(p_Name) !=
                      g_GraphicsPipelineConfigs.end(),
                  "Could not find graphics pipeline config");
 
       return g_GraphicsPipelineConfigs[p_Name];
+    }
+
+    void generate_graphics_pipeline_config_fullscreen_triangle(
+        GraphicsPipelineConfig &p_Config,
+        Util::String p_FragmentShaderName)
+    {
+      p_Config.name = LOW_NAME(p_FragmentShaderName.c_str());
+      p_Config.cullMode = Backend::PipelineRasterizerCullMode::BACK;
+      p_Config.polygonMode =
+          Backend::PipelineRasterizerPolygonMode::FILL;
+      p_Config.frontFace =
+          Backend::PipelineRasterizerFrontFace::CLOCKWISE;
+      p_Config.translucency = false;
+      p_Config.vertexPath = "fs.vert";
+      p_Config.fragmentPath = p_FragmentShaderName + ".frag";
     }
   } // namespace Renderer
 } // namespace Low

@@ -25,7 +25,8 @@ namespace Low {
           p_Prefab.get_components()[p_Handle.get_type()]);
     }
 
-    static void populate_component(Prefab p_Prefab, Util::Handle p_Handle)
+    static void populate_component(Prefab p_Prefab,
+                                   Util::Handle p_Handle)
     {
       Util::RTTI::TypeInfo &p_TypeInfo =
           Util::Handle::get_type_info(p_Handle.get_type());
@@ -90,7 +91,8 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(
           l_Handle, Prefab, components,
           SINGLE_ARG(
-              Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>)))
+              Util::Map<uint16_t,
+                        Util::Map<Util::Name, Util::Variant>>)))
           Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>();
       ACCESSOR_TYPE_SOA(l_Handle, Prefab, name, Low::Util::Name) =
           Low::Util::Name(0u);
@@ -138,10 +140,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowCore), N(Prefab));
+      ms_Capacity =
+          Low::Util::Config::get_capacity(N(LowCore), N(Prefab));
 
-      initialize_buffer(&ms_Buffer, PrefabData::get_size(), get_capacity(),
-                        &ms_Slots);
+      initialize_buffer(&ms_Buffer, PrefabData::get_size(),
+                        get_capacity(), &ms_Slots);
 
       LOW_PROFILE_ALLOC(type_buffer_Prefab);
       LOW_PROFILE_ALLOC(type_slots_Prefab);
@@ -191,8 +194,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_children();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Prefab, children,
-                                            Util::List<Util::Handle>);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Prefab, children, Util::List<Util::Handle>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -213,15 +216,17 @@ namespace Low {
           l_Handle.get_components();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, Prefab, components,
-              SINGLE_ARG(Util::Map<uint16_t,
-                                   Util::Map<Util::Name, Util::Variant>>));
+              SINGLE_ARG(
+                  Util::Map<uint16_t,
+                            Util::Map<Util::Name, Util::Variant>>));
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           Prefab l_Handle = p_Handle.get_id();
-          l_Handle.set_components(*(
-              Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>> *)
-                                      p_Data);
+          l_Handle.set_components(
+              *(Util::Map<uint16_t,
+                          Util::Map<Util::Name, Util::Variant>> *)
+                  p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -235,8 +240,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Prefab, unique_id,
-                                            Low::Util::UniqueId);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Prefab, unique_id, Low::Util::UniqueId);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -337,8 +342,8 @@ namespace Low {
         }
       }
 
-      for (auto cit = get_children().begin(); cit != get_children().end();
-           ++cit) {
+      for (auto cit = get_children().begin();
+           cit != get_children().end(); ++cit) {
         Prefab i_Prefab(cit->get_id());
         LOW_ASSERT(i_Prefab.is_alive(),
                    "Cannot serialize dead prefab (child)");
@@ -356,8 +361,9 @@ namespace Low {
       l_Prefab.serialize(p_Node);
     }
 
-    Low::Util::Handle Prefab::deserialize(Low::Util::Yaml::Node &p_Node,
-                                          Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Prefab::deserialize(Low::Util::Yaml::Node &p_Node,
+                        Low::Util::Handle p_Creator)
     {
       Prefab l_Handle = Prefab::make(N(Prefab));
 
@@ -393,10 +399,10 @@ namespace Low {
         for (auto cit = p_Node["components"].begin();
              cit != p_Node["components"].end(); ++cit) {
           uint16_t i_TypeId = cit->first.as<uint16_t>();
-          for (auto pit = cit->second.begin(); pit != cit->second.end();
-               ++pit) {
-            l_Handle
-                .get_components()[i_TypeId][LOW_YAML_AS_NAME(pit->first)] =
+          for (auto pit = cit->second.begin();
+               pit != cit->second.end(); ++pit) {
+            l_Handle.get_components()[i_TypeId]
+                                     [LOW_YAML_AS_NAME(pit->first)] =
                 Util::Serialization::deserialize_variant(pit->second);
           }
         }
@@ -469,10 +475,12 @@ namespace Low {
       return TYPE_SOA(
           Prefab, components,
           SINGLE_ARG(
-              Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>));
+              Util::Map<uint16_t,
+                        Util::Map<Util::Name, Util::Variant>>));
     }
     void Prefab::set_components(
-        Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>> &p_Value)
+        Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>
+            &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -480,10 +488,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_components
 
       // Set new value
-      TYPE_SOA(
-          Prefab, components,
-          SINGLE_ARG(
-              Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>)) =
+      TYPE_SOA(Prefab, components,
+               SINGLE_ARG(
+                   Util::Map<uint16_t,
+                             Util::Map<Util::Name, Util::Variant>>)) =
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_components
@@ -543,7 +551,8 @@ namespace Low {
       populate_prefab(l_Prefab, p_Entity);
 
       for (auto it = p_Entity.get_transform().get_children().begin();
-           it != p_Entity.get_transform().get_children().end(); ++it) {
+           it != p_Entity.get_transform().get_children().end();
+           ++it) {
         Component::Transform i_Transform(*it);
         LOW_ASSERT(i_Transform.is_alive(),
                    "Cannot create prefab from dead entity child");
@@ -553,7 +562,8 @@ namespace Low {
         l_Prefab.get_children().push_back(i_Prefab);
       }
 
-      if (!p_Entity.has_component(Component::PrefabInstance::TYPE_ID)) {
+      if (!p_Entity.has_component(
+              Component::PrefabInstance::TYPE_ID)) {
         Component::PrefabInstance::make(p_Entity);
       }
 
@@ -570,13 +580,15 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn
       Util::String l_Name = get_name().c_str();
       l_Name += " (Instance)";
-      Entity l_Entity = Entity::make(LOW_NAME(l_Name.c_str()), p_Region);
+      Entity l_Entity =
+          Entity::make(LOW_NAME(l_Name.c_str()), p_Region);
 
       for (auto cit = get_components().begin();
            cit != get_components().end(); ++cit) {
         Util::RTTI::TypeInfo &i_TypeInfo =
             Util::Handle::get_type_info(cit->first);
-        Util::Handle i_Component = i_TypeInfo.make_component(l_Entity);
+        Util::Handle i_Component =
+            i_TypeInfo.make_component(l_Entity);
 
         for (auto pit = i_TypeInfo.properties.begin();
              pit != i_TypeInfo.properties.end(); ++pit) {
@@ -587,8 +599,9 @@ namespace Low {
           if (pit->second.type == Util::RTTI::PropertyType::SHAPE) {
             Util::String i_BaseName = pit->first.c_str();
             i_BaseName += "__";
-            if (cit->second.find(LOW_NAME(
-                    (i_BaseName + "type").c_str())) == cit->second.end()) {
+            if (cit->second.find(
+                    LOW_NAME((i_BaseName + "type").c_str())) ==
+                cit->second.end()) {
               continue;
             }
 
@@ -599,20 +612,20 @@ namespace Low {
             if (i_ShapeTypeName == N(BOX)) {
               i_BaseName += "box_";
               i_Shape.type = Math::ShapeType::BOX;
-              i_Shape.box.position =
-                  cit->second[LOW_NAME((i_BaseName + "position").c_str())];
-              i_Shape.box.rotation =
-                  cit->second[LOW_NAME((i_BaseName + "rotation").c_str())];
+              i_Shape.box.position = cit->second[LOW_NAME(
+                  (i_BaseName + "position").c_str())];
+              i_Shape.box.rotation = cit->second[LOW_NAME(
+                  (i_BaseName + "rotation").c_str())];
               i_Shape.box.halfExtents = cit->second[LOW_NAME(
                   (i_BaseName + "halfextents").c_str())];
 
             } else {
-              LOW_ASSERT(
-                  false,
-                  "Unknown shape type while creating entity from prefab");
+              LOW_ASSERT(false, "Unknown shape type while creating "
+                                "entity from prefab");
             }
 
-            i_TypeInfo.properties[pit->first].set(i_Component, &i_Shape);
+            i_TypeInfo.properties[pit->first].set(i_Component,
+                                                  &i_Shape);
           } else if (i_PropPos != cit->second.end()) {
             i_TypeInfo.properties[pit->first].set(
                 i_Component, &i_PropPos->second.m_Bool);
@@ -624,8 +637,8 @@ namespace Low {
           Component::PrefabInstance::make(l_Entity);
       l_PrefabInstance.set_prefab(*this);
 
-      for (auto cit = get_children().begin(); cit != get_children().end();
-           ++cit) {
+      for (auto cit = get_children().begin();
+           cit != get_children().end(); ++cit) {
         Prefab i_Prefab = cit->get_id();
         Entity i_Entity = i_Prefab.spawn(p_Region);
         i_Entity.get_transform().set_parent(
@@ -659,7 +672,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_compare_property
     }
 
-    void Prefab::apply(Util::Handle p_Component, Util::Name p_PropertyName)
+    void Prefab::apply(Util::Handle p_Component,
+                       Util::Name p_PropertyName)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_apply
       Util::RTTI::TypeInfo &l_TypeInfo =
@@ -671,10 +685,12 @@ namespace Low {
       fill_variants(p_Component, l_PropertyInfo, l_Values);
 
       for (auto it = l_Values.begin(); it != l_Values.end(); ++it) {
-        get_components()[p_Component.get_type()][it->first] = it->second;
+        get_components()[p_Component.get_type()][it->first] =
+            it->second;
       }
 
-      for (auto it = Component::PrefabInstance::ms_LivingInstances.begin();
+      for (auto it =
+               Component::PrefabInstance::ms_LivingInstances.begin();
            it != Component::PrefabInstance::ms_LivingInstances.end();
            ++it) {
         if (it->get_prefab() == *this) {
@@ -683,12 +699,13 @@ namespace Low {
       }
 
       Entity l_Entity =
-          *(Entity *)l_TypeInfo.properties[N(entity)].get(p_Component);
+          *(Entity *)l_TypeInfo.properties[N(entity)].get(
+              p_Component);
       Component::PrefabInstance l_PrefabInstance =
           l_Entity.get_component(Component::PrefabInstance::TYPE_ID);
 
-      l_PrefabInstance.override(p_Component.get_type(), p_PropertyName,
-                                false);
+      l_PrefabInstance.override(p_Component.get_type(),
+                                p_PropertyName, false);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_apply
     }
 
@@ -716,7 +733,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer = (uint8_t *)malloc(
           (l_Capacity + l_CapacityIncrease) * sizeof(PrefabData));
@@ -728,20 +746,21 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(PrefabData, parent) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(PrefabData, parent) * (l_Capacity)],
-               l_Capacity * sizeof(Util::Handle));
+        memcpy(
+            &l_NewBuffer[offsetof(PrefabData, parent) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(PrefabData, parent) * (l_Capacity)],
+            l_Capacity * sizeof(Util::Handle));
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr =
-              new (&l_NewBuffer[offsetof(PrefabData, children) *
-                                    (l_Capacity + l_CapacityIncrease) +
-                                (it->get_index() *
-                                 sizeof(Util::List<Util::Handle>))])
-                  Util::List<Util::Handle>();
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(PrefabData, children) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Util::List<Util::Handle>))])
+              Util::List<Util::Handle>();
           *i_ValPtr = it->get_children();
         }
       }
@@ -749,20 +768,23 @@ namespace Low {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(PrefabData, components) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Util::Map<uint16_t,
-                                             Util::Map<Util::Name,
-                                                       Util::Variant>>))])
-              Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>();
+              &l_NewBuffer
+                  [offsetof(PrefabData, components) *
+                       (l_Capacity + l_CapacityIncrease) +
+                   (it->get_index() *
+                    sizeof(Util::Map<
+                           uint16_t,
+                           Util::Map<Util::Name, Util::Variant>>))])
+              Util::Map<uint16_t,
+                        Util::Map<Util::Name, Util::Variant>>();
           *i_ValPtr = it->get_components();
         }
       }
       {
         memcpy(&l_NewBuffer[offsetof(PrefabData, unique_id) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(PrefabData, unique_id) * (l_Capacity)],
+               &ms_Buffer[offsetof(PrefabData, unique_id) *
+                          (l_Capacity)],
                l_Capacity * sizeof(Low::Util::UniqueId));
       }
       {
@@ -771,8 +793,8 @@ namespace Low {
                &ms_Buffer[offsetof(PrefabData, name) * (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -784,7 +806,8 @@ namespace Low {
 
       LOW_LOG_DEBUG << "Auto-increased budget for Prefab from "
                     << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                    << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
     }
   } // namespace Core
 } // namespace Low

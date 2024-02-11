@@ -9,7 +9,8 @@ namespace Low {
   namespace Util {
     namespace Memory {
       MallocAllocator *g_DefaultMallocAllocator = nullptr;
-      GeneralPurposeAllocator *g_DefaultGeneralPurposeAllocator = nullptr;
+      GeneralPurposeAllocator *g_DefaultGeneralPurposeAllocator =
+          nullptr;
 
       void initialize()
       {
@@ -17,9 +18,11 @@ namespace Low {
           g_DefaultMallocAllocator = new MallocAllocator();
         }
         if (!g_DefaultGeneralPurposeAllocator) {
-          g_DefaultGeneralPurposeAllocator = new GeneralPurposeAllocator(
-              default_malloc_allocator()->allocate(500 * LOW_MEGABYTE_I),
-              500 * LOW_MEGABYTE_I, default_malloc_allocator());
+          g_DefaultGeneralPurposeAllocator =
+              new GeneralPurposeAllocator(
+                  default_malloc_allocator()->allocate(
+                      500 * LOW_MEGABYTE_I),
+                  500 * LOW_MEGABYTE_I, default_malloc_allocator());
         }
       }
 
@@ -50,8 +53,10 @@ namespace Low {
         return default_general_purpose_allocator();
       }
 
-      void *MallocAllocator::allocate(uint32_t p_Size, uint32_t p_Align)
+      void *MallocAllocator::allocate(uint32_t p_Size,
+                                      uint32_t p_Align)
       {
+        LOW_ASSERT(p_Size > 0, "Allocation size must be >0");
         return malloc(p_Size);
       }
 
@@ -61,17 +66,21 @@ namespace Low {
       }
 
       GeneralPurposeAllocator::GeneralPurposeAllocator(
-          void *p_Memory, uint32_t p_Size, Allocator *p_ParentAllocator)
+          void *p_Memory, uint32_t p_Size,
+          Allocator *p_ParentAllocator)
       {
-        LOW_ASSERT(p_Size > 0,
-                   "Cannot create general purpose allocator with no size");
+        LOW_ASSERT(
+            p_Size > 0,
+            "Cannot create general purpose allocator with no size");
         m_Buffer = p_Memory;
         m_ParentAllocator = p_ParentAllocator;
         m_Allocator = tlsf_create_with_pool(m_Buffer, p_Size);
       }
 
-      void *GeneralPurposeAllocator::allocate(uint32_t p_Size, uint32_t p_Align)
+      void *GeneralPurposeAllocator::allocate(uint32_t p_Size,
+                                              uint32_t p_Align)
       {
+        LOW_ASSERT(p_Size > 0, "Allocation size must be >0");
         void *l_Memory = tlsf_memalign(m_Allocator, p_Align, p_Size);
         LOW_ASSERT(l_Memory, "Failed to allocate memory");
 

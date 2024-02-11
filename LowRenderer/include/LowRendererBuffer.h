@@ -79,8 +79,9 @@ namespace Low {
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
-        static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator);
+        static Low::Util::Handle
+        deserialize(Low::Util::Yaml::Node &p_Node,
+                    Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
           return p_Handle.get_type() == Buffer::TYPE_ID &&
@@ -103,8 +104,10 @@ namespace Low {
         static Buffer make(Util::Name p_Name,
                            Backend::BufferCreateParams &p_Params);
         void set(void *p_Data);
-        void write(void *p_Data, uint32_t p_DataSize, uint32_t p_Start);
-        void read(void *p_Data, uint32_t p_DataSize, uint32_t p_Start);
+        void write(void *p_Data, uint32_t p_DataSize,
+                   uint32_t p_Start);
+        void read(void *p_Data, uint32_t p_DataSize,
+                  uint32_t p_Start);
         void bind_vertex();
         void bind_index(uint8_t p_BindType);
 

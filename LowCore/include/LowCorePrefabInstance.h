@@ -78,8 +78,9 @@ namespace Low {
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
-        static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator);
+        static Low::Util::Handle
+        deserialize(Low::Util::Yaml::Node &p_Node,
+                    Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
           return p_Handle.get_type() == PrefabInstance::TYPE_ID &&
@@ -96,7 +97,8 @@ namespace Low {
         Prefab get_prefab() const;
         void set_prefab(Prefab p_Value);
 
-        Util::Map<uint16_t, Util::List<Util::Name>> &get_overrides() const;
+        Util::Map<uint16_t, Util::List<Util::Name>> &
+        get_overrides() const;
         void set_overrides(
             Util::Map<uint16_t, Util::List<Util::Name>> &p_Value);
 
@@ -106,8 +108,8 @@ namespace Low {
         Low::Util::UniqueId get_unique_id() const;
 
         void update_from_prefab();
-        void override(uint16_t p_ComponentType, Util::Name p_PropertyName,
-                      bool p_IsOverride);
+        void override(uint16_t p_ComponentType,
+                      Util::Name p_PropertyName, bool p_IsOverride);
 
       private:
         static uint32_t ms_Capacity;

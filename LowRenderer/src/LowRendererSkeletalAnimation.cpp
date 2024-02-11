@@ -47,13 +47,13 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = SkeletalAnimation::TYPE_ID;
 
-      ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, duration, float) =
-          0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, duration,
+                        float) = 0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, ticks_per_second,
                         float) = 0.0f;
-      new (
-          &ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, channels,
-                             Util::List<Util::Resource::AnimationChannel>))
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, SkeletalAnimation, channels,
+          Util::List<Util::Resource::AnimationChannel>))
           Util::List<Util::Resource::AnimationChannel>();
       ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, name,
                         Low::Util::Name) = Low::Util::Name(0u);
@@ -94,8 +94,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
-                                                    N(SkeletalAnimation));
+      ms_Capacity = Low::Util::Config::get_capacity(
+          N(LowRenderer), N(SkeletalAnimation));
 
       initialize_buffer(&ms_Buffer, SkeletalAnimationData::get_size(),
                         get_capacity(), &ms_Slots);
@@ -129,8 +129,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_duration();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            duration, float);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, SkeletalAnimation, duration, float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -150,8 +150,8 @@ namespace Low {
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_ticks_per_second();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            ticks_per_second, float);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, SkeletalAnimation, ticks_per_second, float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -183,14 +183,15 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(SkeletalAnimationData, name);
+        l_PropertyInfo.dataOffset =
+            offsetof(SkeletalAnimationData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_name();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SkeletalAnimation,
-                                            name, Low::Util::Name);
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, SkeletalAnimation, name, Low::Util::Name);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
@@ -204,7 +205,8 @@ namespace Low {
 
     void SkeletalAnimation::cleanup()
     {
-      Low::Util::List<SkeletalAnimation> l_Instances = ms_LivingInstances;
+      Low::Util::List<SkeletalAnimation> l_Instances =
+          ms_LivingInstances;
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
@@ -215,7 +217,8 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_SkeletalAnimation);
     }
 
-    SkeletalAnimation SkeletalAnimation::find_by_index(uint32_t p_Index)
+    SkeletalAnimation
+    SkeletalAnimation::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
 
@@ -249,7 +252,8 @@ namespace Low {
       }
     }
 
-    void SkeletalAnimation::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    SkeletalAnimation::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -399,7 +403,8 @@ namespace Low {
       l_CapacityIncrease =
           std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-      LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
 
       uint8_t *l_NewBuffer =
           (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
@@ -412,31 +417,33 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, duration) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData, duration) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(float));
-      }
-      {
         memcpy(
-            &l_NewBuffer[offsetof(SkeletalAnimationData,
-                                  ticks_per_second) *
+            &l_NewBuffer[offsetof(SkeletalAnimationData, duration) *
                          (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(SkeletalAnimationData, ticks_per_second) *
+            &ms_Buffer[offsetof(SkeletalAnimationData, duration) *
                        (l_Capacity)],
             l_Capacity * sizeof(float));
       }
       {
+        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData,
+                                     ticks_per_second) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(SkeletalAnimationData,
+                                   ticks_per_second) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(float));
+      }
+      {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
-          auto *i_ValPtr = new (
-              &l_NewBuffer
-                  [offsetof(SkeletalAnimationData, channels) *
-                       (l_Capacity + l_CapacityIncrease) +
-                   (it->get_index() *
-                    sizeof(Util::List<Util::Resource::AnimationChannel>))])
-              Util::List<Util::Resource::AnimationChannel>();
+          auto *i_ValPtr =
+              new (&l_NewBuffer
+                       [offsetof(SkeletalAnimationData, channels) *
+                            (l_Capacity + l_CapacityIncrease) +
+                        (it->get_index() *
+                         sizeof(Util::List<
+                                Util::Resource::AnimationChannel>))])
+                  Util::List<Util::Resource::AnimationChannel>();
           *i_ValPtr = it->get_channels();
         }
       }
@@ -447,8 +454,8 @@ namespace Low {
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Util::Name));
       }
-      for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-           ++i) {
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
         l_NewSlots[i].m_Occupied = false;
         l_NewSlots[i].m_Generation = 0;
       }
@@ -458,9 +465,10 @@ namespace Low {
       ms_Slots = l_NewSlots;
       ms_Capacity = l_Capacity + l_CapacityIncrease;
 
-      LOW_LOG_DEBUG << "Auto-increased budget for SkeletalAnimation from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+      LOW_LOG_DEBUG
+          << "Auto-increased budget for SkeletalAnimation from "
+          << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
+          << LOW_LOG_END;
     }
   } // namespace Renderer
 } // namespace Low

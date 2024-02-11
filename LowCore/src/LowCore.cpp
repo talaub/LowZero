@@ -57,12 +57,13 @@ namespace Low {
       float l_UpdateTime = 8.0f;
       Util::String l_DataPath = LOW_DATA_PATH;
 
-      g_FilesystemWatchers.scriptDirectory = Util::FileSystem::watch_directory(
-          l_DataPath + "/scripts",
-          [](Util::FileSystem::FileWatcher &p_FileWatcher) {
-            return (Util::Handle)0;
-          },
-          0.5f);
+      g_FilesystemWatchers.scriptDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/scripts",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                return (Util::Handle)0;
+              },
+              0.5f);
 
       g_FilesystemWatchers.meshAssetDirectory =
           Util::FileSystem::watch_directory(
@@ -73,7 +74,8 @@ namespace Low {
                   return (Util::Handle)0;
                 }
                 Util::List<Util::String> l_Parts;
-                Util::StringHelper::split(p_FileWatcher.name, '.', l_Parts);
+                Util::StringHelper::split(p_FileWatcher.name, '.',
+                                          l_Parts);
                 uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
 
                 return Util::find_handle_by_unique_id(l_UniqueId);
@@ -91,7 +93,8 @@ namespace Low {
                   return (Util::Handle)0;
                 }
                 Util::List<Util::String> l_Parts;
-                Util::StringHelper::split(p_FileWatcher.name, '.', l_Parts);
+                Util::StringHelper::split(p_FileWatcher.name, '.',
+                                          l_Parts);
                 uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
 
                 return Util::find_handle_by_unique_id(l_UniqueId);
@@ -109,7 +112,8 @@ namespace Low {
                   return (Util::Handle)0;
                 }
                 Util::List<Util::String> l_Parts;
-                Util::StringHelper::split(p_FileWatcher.name, '.', l_Parts);
+                Util::StringHelper::split(p_FileWatcher.name, '.',
+                                          l_Parts);
                 uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
 
                 return Util::find_handle_by_unique_id(l_UniqueId);
@@ -176,7 +180,8 @@ namespace Low {
 
     static void load_mesh_resources()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\resources\\meshes";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\resources\\meshes";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -192,7 +197,8 @@ namespace Low {
 
     static void load_texture2d_resources()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\resources\\img2d";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\resources\\img2d";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -242,14 +248,16 @@ namespace Low {
 
     static void load_mesh_assets()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
 
       load_mesh_assets_from_directory(l_Path);
     }
 
     static void load_materials()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\materials";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\materials";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -266,14 +274,16 @@ namespace Low {
 
     static void load_prefabs()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\prefabs";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\prefabs";
 
       load_prefabs_from_directory(l_Path);
     }
 
     static void load_regions()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\regions";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\regions";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -290,7 +300,8 @@ namespace Low {
 
     static void load_scenes()
     {
-      Util::String l_Path = Util::String(LOW_DATA_PATH) + "\\assets\\scenes";
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\scenes";
 
       Util::List<Util::String> l_FilePaths;
 

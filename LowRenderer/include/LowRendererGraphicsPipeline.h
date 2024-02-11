@@ -30,7 +30,8 @@ namespace Low {
         }
       };
 
-      struct LOW_RENDERER_API GraphicsPipeline : public Low::Util::Handle
+      struct LOW_RENDERER_API GraphicsPipeline
+          : public Low::Util::Handle
       {
       public:
         static uint8_t *ms_Buffer;
@@ -80,8 +81,9 @@ namespace Low {
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
-        static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator);
+        static Low::Util::Handle
+        deserialize(Low::Util::Yaml::Node &p_Node,
+                    Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
           return p_Handle.get_type() == GraphicsPipeline::TYPE_ID &&
@@ -101,7 +103,8 @@ namespace Low {
         void set_name(Low::Util::Name p_Value);
 
         static GraphicsPipeline
-        make(Util::Name p_Name, PipelineGraphicsCreateParams &p_Params);
+        make(Util::Name p_Name,
+             PipelineGraphicsCreateParams &p_Params);
         void bind();
 
       private:

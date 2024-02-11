@@ -32,7 +32,8 @@ namespace Low {
       Context::Context(uint64_t p_Id) : Low::Util::Handle(p_Id)
       {
       }
-      Context::Context(Context &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
+      Context::Context(Context &p_Copy)
+          : Low::Util::Handle(p_Copy.m_Id)
       {
       }
 
@@ -60,7 +61,8 @@ namespace Low {
             PipelineResourceSignature();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Context, frame_info_buffer,
                                 Resource::Buffer)) Resource::Buffer();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Context, material_data_buffer,
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Context,
+                                material_data_buffer,
                                 Resource::Buffer)) Resource::Buffer();
         ACCESSOR_TYPE_SOA(l_Handle, Context, name, Low::Util::Name) =
             Low::Util::Name(0u);
@@ -102,8 +104,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
-        ms_Capacity =
-            Low::Util::Config::get_capacity(N(LowRenderer), N(Context));
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
+                                                      N(Context));
 
         initialize_buffer(&ms_Buffer, ContextData::get_size(),
                           get_capacity(), &ms_Slots);
@@ -131,13 +133,14 @@ namespace Low {
           l_PropertyInfo.name = N(context);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, context);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_context();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context, context,
-                                              Backend::Context);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Context, context, Backend::Context);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -147,14 +150,17 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(renderpasses);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ContextData, renderpasses);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.dataOffset =
+              offsetof(ContextData, renderpasses);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_renderpasses();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Context, renderpasses, Util::List<Renderpass>);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
+                                              renderpasses,
+                                              Util::List<Renderpass>);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -167,14 +173,15 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ContextData, global_signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = PipelineResourceSignature::TYPE_ID;
+          l_PropertyInfo.handleType =
+              PipelineResourceSignature::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_global_signature();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
-                                              global_signature,
-                                              PipelineResourceSignature);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Context, global_signature,
+                PipelineResourceSignature);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -192,8 +199,9 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_frame_info_buffer();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Context, frame_info_buffer, Resource::Buffer);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
+                                              frame_info_buffer,
+                                              Resource::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -211,8 +219,9 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_material_data_buffer();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, Context, material_data_buffer, Resource::Buffer);
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Context,
+                                              material_data_buffer,
+                                              Resource::Buffer);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
@@ -292,10 +301,12 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         if (get_global_signature().is_alive()) {
-          get_global_signature().serialize(p_Node["global_signature"]);
+          get_global_signature().serialize(
+              p_Node["global_signature"]);
         }
         if (get_frame_info_buffer().is_alive()) {
-          get_frame_info_buffer().serialize(p_Node["frame_info_buffer"]);
+          get_frame_info_buffer().serialize(
+              p_Node["frame_info_buffer"]);
         }
         if (get_material_data_buffer().is_alive()) {
           get_material_data_buffer().serialize(
@@ -314,8 +325,9 @@ namespace Low {
         l_Context.serialize(p_Node);
       }
 
-      Low::Util::Handle Context::deserialize(Low::Util::Yaml::Node &p_Node,
-                                             Low::Util::Handle p_Creator)
+      Low::Util::Handle
+      Context::deserialize(Low::Util::Yaml::Node &p_Node,
+                           Low::Util::Handle p_Creator)
       {
         Context l_Handle = Context::make(N(Context));
 
@@ -331,14 +343,14 @@ namespace Low {
         }
         if (p_Node["frame_info_buffer"]) {
           l_Handle.set_frame_info_buffer(
-              Resource::Buffer::deserialize(p_Node["frame_info_buffer"],
-                                            l_Handle.get_id())
+              Resource::Buffer::deserialize(
+                  p_Node["frame_info_buffer"], l_Handle.get_id())
                   .get_id());
         }
         if (p_Node["material_data_buffer"]) {
           l_Handle.set_material_data_buffer(
-              Resource::Buffer::deserialize(p_Node["material_data_buffer"],
-                                            l_Handle.get_id())
+              Resource::Buffer::deserialize(
+                  p_Node["material_data_buffer"], l_Handle.get_id())
                   .get_id());
         }
         if (p_Node["name"]) {
@@ -368,7 +380,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpasses
         // LOW_CODEGEN::END::CUSTOM:GETTER_renderpasses
 
-        return TYPE_SOA(Context, renderpasses, Util::List<Renderpass>);
+        return TYPE_SOA(Context, renderpasses,
+                        Util::List<Renderpass>);
       }
 
       PipelineResourceSignature Context::get_global_signature() const
@@ -381,7 +394,8 @@ namespace Low {
         return TYPE_SOA(Context, global_signature,
                         PipelineResourceSignature);
       }
-      void Context::set_global_signature(PipelineResourceSignature p_Value)
+      void
+      Context::set_global_signature(PipelineResourceSignature p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -389,8 +403,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_global_signature
 
         // Set new value
-        TYPE_SOA(Context, global_signature, PipelineResourceSignature) =
-            p_Value;
+        TYPE_SOA(Context, global_signature,
+                 PipelineResourceSignature) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_global_signature
         // LOW_CODEGEN::END::CUSTOM:SETTER_global_signature
@@ -413,7 +427,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
 
         // Set new value
-        TYPE_SOA(Context, frame_info_buffer, Resource::Buffer) = p_Value;
+        TYPE_SOA(Context, frame_info_buffer, Resource::Buffer) =
+            p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
@@ -426,7 +441,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_data_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_material_data_buffer
 
-        return TYPE_SOA(Context, material_data_buffer, Resource::Buffer);
+        return TYPE_SOA(Context, material_data_buffer,
+                        Resource::Buffer);
       }
       void Context::set_material_data_buffer(Resource::Buffer p_Value)
       {
@@ -480,7 +496,8 @@ namespace Low {
         Backend::callbacks().context_create(l_Context.get_context(),
                                             l_Params);
 
-        l_Context.get_renderpasses().resize(l_Context.get_image_count());
+        l_Context.get_renderpasses().resize(
+            l_Context.get_image_count());
         for (uint8_t i = 0u; i < l_Context.get_renderpasses().size();
              ++i) {
           l_Context.get_renderpasses()[i] = Renderpass::make(p_Name);
@@ -509,17 +526,18 @@ namespace Low {
 
           l_Params.data = &l_InverseDimensions;
 
-          l_Context.set_frame_info_buffer(
-              Resource::Buffer::make(N(ContextFrameInfoBuffer), l_Params));
+          l_Context.set_frame_info_buffer(Resource::Buffer::make(
+              N(ContextFrameInfoBuffer), l_Params));
         }
 
         {
           Backend::BufferCreateParams l_Params;
-          l_Params.bufferSize =
-              Material::get_capacity() *
-              (sizeof(Math::Vector4) * LOW_RENDERER_MATERIAL_DATA_VECTORS);
+          l_Params.bufferSize = Material::get_capacity() *
+                                (sizeof(Math::Vector4) *
+                                 LOW_RENDERER_MATERIAL_DATA_VECTORS);
           l_Params.context = &l_Context.get_context();
-          l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+          l_Params.usageFlags =
+              LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
           l_Params.data = nullptr;
 
           l_Context.set_material_data_buffer(Resource::Buffer::make(
@@ -527,7 +545,8 @@ namespace Low {
         }
 
         {
-          Util::List<Backend::PipelineResourceDescription> l_Resources;
+          Util::List<Backend::PipelineResourceDescription>
+              l_Resources;
 
           {
             Backend::PipelineResourceDescription l_Resource;
@@ -556,14 +575,18 @@ namespace Low {
             l_Resources.push_back(l_Resource);
           }
 
-          l_Context.set_global_signature(PipelineResourceSignature::make(
-              N(GlobalSignature), l_Context, 0, l_Resources));
+          l_Context.set_global_signature(
+              PipelineResourceSignature::make(
+                  N(GlobalSignature), l_Context, 0, l_Resources));
 
-          l_Context.get_global_signature().set_constant_buffer_resource(
-              N(g_ContextFrameInfo), 0, l_Context.get_frame_info_buffer());
+          l_Context.get_global_signature()
+              .set_constant_buffer_resource(
+                  N(g_ContextFrameInfo), 0,
+                  l_Context.get_frame_info_buffer());
 
           l_Context.get_global_signature().set_buffer_resource(
-              N(g_MaterialInfos), 0, l_Context.get_material_data_buffer());
+              N(g_MaterialInfos), 0,
+              l_Context.get_material_data_buffer());
 
           {
             Util::Resource::Image2D l_Image;
@@ -572,10 +595,11 @@ namespace Low {
                     "/resources/img2d/default_texture.ktx",
                 l_Image);
 
-            Texture2D l_Texture2D =
-                Texture2D::make(N(DefaultTexture), l_Context, l_Image);
+            Texture2D l_Texture2D = Texture2D::make(
+                N(DefaultTexture), l_Context, l_Image);
 
-            for (uint32_t i = 1u; i < Texture2D::get_capacity(); ++i) {
+            for (uint32_t i = 1u; i < Texture2D::get_capacity();
+                 ++i) {
               l_Context.get_global_signature().set_sampler_resource(
                   N(g_Texture2Ds), i, l_Texture2D.get_image());
             }
@@ -746,7 +770,8 @@ namespace Low {
         l_CapacityIncrease =
             std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
 
-        LOW_ASSERT(l_CapacityIncrease > 0, "Could not increase capacity");
+        LOW_ASSERT(l_CapacityIncrease > 0,
+                   "Could not increase capacity");
 
         uint8_t *l_NewBuffer = (uint8_t *)malloc(
             (l_Capacity + l_CapacityIncrease) * sizeof(ContextData));
@@ -760,50 +785,56 @@ namespace Low {
         {
           memcpy(&l_NewBuffer[offsetof(ContextData, context) *
                               (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ContextData, context) * (l_Capacity)],
+                 &ms_Buffer[offsetof(ContextData, context) *
+                            (l_Capacity)],
                  l_Capacity * sizeof(Backend::Context));
         }
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
-            auto *i_ValPtr =
-                new (&l_NewBuffer[offsetof(ContextData, renderpasses) *
-                                      (l_Capacity + l_CapacityIncrease) +
-                                  (it->get_index() *
-                                   sizeof(Util::List<Renderpass>))])
-                    Util::List<Renderpass>();
+            auto *i_ValPtr = new (
+                &l_NewBuffer[offsetof(ContextData, renderpasses) *
+                                 (l_Capacity + l_CapacityIncrease) +
+                             (it->get_index() *
+                              sizeof(Util::List<Renderpass>))])
+                Util::List<Renderpass>();
             *i_ValPtr = it->get_renderpasses();
           }
         }
         {
-          memcpy(&l_NewBuffer[offsetof(ContextData, global_signature) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ContextData, global_signature) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(PipelineResourceSignature));
+          memcpy(
+              &l_NewBuffer[offsetof(ContextData, global_signature) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ContextData, global_signature) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(PipelineResourceSignature));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(ContextData, frame_info_buffer) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ContextData, frame_info_buffer) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Resource::Buffer));
+          memcpy(
+              &l_NewBuffer[offsetof(ContextData, frame_info_buffer) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ContextData, frame_info_buffer) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(Resource::Buffer));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(ContextData, material_data_buffer) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ContextData, material_data_buffer) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Resource::Buffer));
+          memcpy(
+              &l_NewBuffer[offsetof(ContextData,
+                                    material_data_buffer) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ContextData, material_data_buffer) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(Resource::Buffer));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(ContextData, name) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ContextData, name) * (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::Name));
+          memcpy(
+              &l_NewBuffer[offsetof(ContextData, name) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ContextData, name) * (l_Capacity)],
+              l_Capacity * sizeof(Low::Util::Name));
         }
-        for (uint32_t i = l_Capacity; i < l_Capacity + l_CapacityIncrease;
-             ++i) {
+        for (uint32_t i = l_Capacity;
+             i < l_Capacity + l_CapacityIncrease; ++i) {
           l_NewSlots[i].m_Occupied = false;
           l_NewSlots[i].m_Generation = 0;
         }
@@ -815,7 +846,8 @@ namespace Low {
 
         LOW_LOG_DEBUG << "Auto-increased budget for Context from "
                       << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+                      << (l_Capacity + l_CapacityIncrease)
+                      << LOW_LOG_END;
       }
     } // namespace Interface
   }   // namespace Renderer
