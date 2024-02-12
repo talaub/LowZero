@@ -72,7 +72,7 @@ function process_file(p_FileName) {
 	i_Type.name = i_TypeName;
 	i_Type.module = l_Config.module;
 	i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module
-	i_Type.api_file = `${i_Type.prefix}Api.h`;
+	i_Type.api_file = `${i_Type.module}Api.h`;
 	if (l_Config.api_file) {
 	    i_Type.api_file = l_Config.api_file;
 	}
@@ -109,6 +109,17 @@ function process_file(p_FileName) {
 	if (i_Type.component) {
 	    i_Type.properties['entity'] = {
 		type: 'Low::Core::Entity',
+		handle: true,
+		skip_serialization: true,
+		skip_deserialization: true,
+		expose_scripting: true,
+		scripting_hide_setter: true
+	    }
+
+	    i_Type.unique_id = true;
+	} else if (i_Type.ui_component) {
+	    i_Type.properties['element'] = {
+		type: 'Low::Core::UI::Element',
 		handle: true,
 		skip_serialization: true,
 		skip_deserialization: true,
@@ -154,7 +165,7 @@ function process_file(p_FileName) {
 	    }
 	}
 
-	if (!i_Type.component) {
+	if (!i_Type.component && !i_Type.ui_component) {
 	    i_Type.properties['name'] = {
 		'type': 'Low::Util::Name',
 		'expose_scripting': true

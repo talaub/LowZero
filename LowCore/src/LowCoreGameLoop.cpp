@@ -13,6 +13,7 @@
 
 #include "LowCoreMeshResource.h"
 #include "LowCoreTexture2D.h"
+#include "LowCoreFont.h"
 
 #include <chrono>
 #include <microprofile.h>
@@ -53,9 +54,10 @@ namespace Low {
 
         MeshResource::update();
         Texture2D::update();
+        Font::update();
 
-        for (auto it = g_TickCallbacks.begin(); it != g_TickCallbacks.end();
-             ++it) {
+        for (auto it = g_TickCallbacks.begin();
+             it != g_TickCallbacks.end(); ++it) {
           (*it)(p_Delta, get_engine_state());
         }
 

@@ -154,6 +154,7 @@ namespace Low {
                 &Rigidbody::living_instances);
         l_TypeInfo.get_living_count = &Rigidbody::living_count;
         l_TypeInfo.component = true;
+        l_TypeInfo.uiComponent = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(fixed);

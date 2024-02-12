@@ -113,7 +113,6 @@ function generate_scripting_api(p_Type) {
     t += line(`Cflat::Namespace *l_Namespace = Scripting::get_environment()->requestNamespace("${p_Type.namespace_string}");`)
     t += empty()
 
-    
     /*
     t += line(`CflatRegisterStruct(l_Namespace, ${p_Type.name});`)
     t += line(`CflatStructAddBaseType(Scripting::get_environment(), ${l_TypeString}, Low::Util::Handle);`)
@@ -133,7 +132,7 @@ function generate_scripting_api(p_Type) {
 
     t += line(`CflatStructAddStaticMethodReturn(l_Namespace, ${p_Type.name}, uint32_t, get_capacity);`)
     t += line(`CflatStructAddStaticMethodReturnParams1(l_Namespace, ${p_Type.name}, ${l_TypeString}, find_by_index, uint32_t);`)
-    if (!p_Type.component) {
+    if (!p_Type.component && !p_Type.ui_component) {
 	t += line(`CflatStructAddStaticMethodReturnParams1(l_Namespace, ${p_Type.name}, ${l_TypeString}, find_by_name, Low::Util::Name);`)
     }
     t += empty()

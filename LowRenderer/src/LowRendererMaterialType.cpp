@@ -120,6 +120,7 @@ namespace Low {
               &MaterialType::living_instances);
       l_TypeInfo.get_living_count = &MaterialType::living_count;
       l_TypeInfo.component = false;
+      l_TypeInfo.uiComponent = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(gbuffer_pipeline);

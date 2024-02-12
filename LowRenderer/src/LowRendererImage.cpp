@@ -112,6 +112,7 @@ namespace Low {
                 &Image::living_instances);
         l_TypeInfo.get_living_count = &Image::living_count;
         l_TypeInfo.component = false;
+        l_TypeInfo.uiComponent = false;
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(image);

@@ -210,6 +210,10 @@ function generate_header(p_Type) {
 	t += include('LowCoreEntity.h');
 	t += empty();
     }
+    else if (p_Type.ui_component) {
+	t += include('LowCoreUiElement.h');
+	t += empty();
+    }
 
     if (p_Type.header_imports) {
 	for (const i_Import of p_Type.header_imports) {
@@ -307,6 +311,10 @@ function generate_header(p_Type) {
 	t += line(`static ${p_Type.name} make(Low::Core::Entity p_Entity);`);
 	t += line(`static Low::Util::Handle _make(Low::Util::Handle p_Entity);`);
     }
+    else if (p_Type.ui_component) {
+	t += line(`static ${p_Type.name} make(Low::Core::UI::Element p_Element);`);
+	t += line(`static Low::Util::Handle _make(Low::Util::Handle p_Element);`);
+    }
     else {
 	t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
 	t += line(`static Low::Util::Handle _make(Low::Util::Name p_Name);`);
@@ -335,13 +343,13 @@ function generate_header(p_Type) {
     t += empty();
 
     t += line(`bool is_alive() const;`, n);
-    
+
     t += empty();
     t += line(`static uint32_t get_capacity();`);
     t += empty();
     t += line(`void serialize(Low::Util::Yaml::Node& p_Node) const;`, n);
     t += empty();
-    if (!p_Type.component) {
+    if (!p_Type.component && !p_Type.ui_component) {
 	t += line(`static ${p_Type.name} find_by_name(Low::Util::Name p_Name);`, n);
 	t += empty();
     }
@@ -518,6 +526,12 @@ function generate_source(p_Type) {
 	t += line(`LOW_ASSERT(l_Entity.is_alive(), "Cannot create component for dead entity");`);
 	t += line(`return make(l_Entity).get_id();`);
 	t += line(`}`);
+    } else if (p_Type.ui_component) {
+	t += line(`Low::Util::Handle ${p_Type.name}::_make(Low::Util::Handle p_Element) {`);
+	t += line(`Low::Core::UI::Element l_Element = p_Element.get_id();`);
+	t += line(`LOW_ASSERT(l_Element.is_alive(), "Cannot create component for dead element");`);
+	t += line(`return make(l_Element).get_id();`);
+	t += line(`}`);
     } else {
 	t += line(`Low::Util::Handle ${p_Type.name}::_make(Low::Util::Name p_Name) {`);
 	t += line(`return make(p_Name).get_id();`);
@@ -526,6 +540,9 @@ function generate_source(p_Type) {
     t += empty();
     if (p_Type.component) {
 	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Core::Entity p_Entity){`);
+    }
+    else if (p_Type.ui_component) {
+	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Core::UI::Element p_Element){`);
     }
     else {
 	t += line(`${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name){`);
@@ -555,6 +572,10 @@ function generate_source(p_Type) {
     if (p_Type.component) {
 	t += line('l_Handle.set_entity(p_Entity);');
 	t += line('p_Entity.add_component(l_Handle);');
+	t += empty();
+    } else if (p_Type.ui_component) {
+	t += line('l_Handle.set_element(p_Element);');
+	t += line('p_Element.add_component(l_Handle);');
 	t += empty();
     } else
     {
@@ -672,6 +693,9 @@ function generate_source(p_Type) {
     if (p_Type.component) {
 	t += line(`l_TypeInfo.make_default = nullptr;`);
 	t += line(`l_TypeInfo.make_component = &${p_Type.name}::_make;`);
+    } else if (p_Type.ui_component) {
+	t += line(`l_TypeInfo.make_default = nullptr;`);
+	t += line(`l_TypeInfo.make_component = &${p_Type.name}::_make;`);
     } else {
 	t += line(`l_TypeInfo.make_component = nullptr;`);
 	t += line(`l_TypeInfo.make_default = &${p_Type.name}::_make;`);
@@ -680,8 +704,13 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.get_living_count = &${p_Type.name}::living_count;`);
     if (p_Type.component) {
 	t += line(`l_TypeInfo.component = true;`);
+	t += line(`l_TypeInfo.uiComponent = false;`);
+    } else if (p_Type.ui_component) {
+	t += line(`l_TypeInfo.component = false;`);
+	t += line(`l_TypeInfo.uiComponent = true;`);
     } else {
 	t += line(`l_TypeInfo.component = false;`);
+	t += line(`l_TypeInfo.uiComponent = false;`);
     }
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
 	t += line(`{`);
@@ -755,7 +784,7 @@ function generate_source(p_Type) {
     t += line('return ms_Capacity;');
     t += line('}');
     t += empty();
-    if (!p_Type.component) {
+    if (!p_Type.component && !p_Type.ui_component) {
 	t += line(`${p_Type.name} ${p_Type.name}::find_by_name(Low::Util::Name p_Name) {`, n);
 	t += line(`for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`);
 	t += line(`if (it->get_name() == p_Name) {`);
@@ -851,6 +880,8 @@ function generate_source(p_Type) {
     t += line(`Low::Util::Handle ${p_Type.name}::deserialize(Low::Util::Yaml::Node& p_Node, Low::Util::Handle p_Creator) {`, n);
     if (!p_Type.no_auto_deserialize) {
 	if (p_Type.component) {
+	    t += line(`${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id());`);
+	} else if (p_Type.ui_component) {
 	    t += line(`${p_Type.name} l_Handle = ${p_Type.name}::make(p_Creator.get_id());`);
 	} else {
 	    t += line(`${p_Type.name} l_Handle = ${p_Type.name}::make(N(${p_Type.name}));`);

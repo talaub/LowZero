@@ -316,6 +316,8 @@ static void register_lowutil_handle()
 // REGISTER_CFLAT_BEGIN
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreUiElement.h"
+#include "LowCoreUiDisplay.h"
 
 static void register_lowcore_entity()
 {
@@ -429,6 +431,120 @@ static void register_lowcore_transform()
                                   set_entity, Low::Core::Entity);
 }
 
+static void register_lowcore_element()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace Low::Core::UI;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace("Low::Core::UI");
+
+  Cflat::Struct *type =
+      Low::Core::Scripting::g_CflatStructs["Low::Core::UI::Element"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Scripting::get_environment()->requestNamespace("Low::Util");
+
+    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
+                                 Low::Core::UI::Element);
+  }
+
+  CflatStructAddMethodReturn(l_Namespace, Element, bool, is_alive);
+  CflatStructAddStaticMethodReturn(l_Namespace, Element, uint32_t,
+                                   get_capacity);
+  CflatStructAddStaticMethodReturnParams1(l_Namespace, Element,
+                                          Low::Core::UI::Element,
+                                          find_by_index, uint32_t);
+  CflatStructAddStaticMethodReturnParams1(
+      l_Namespace, Element, Low::Core::UI::Element, find_by_name,
+      Low::Util::Name);
+
+  CflatStructAddMethodReturn(l_Namespace, Element, Low::Util::Name,
+                             get_name);
+  CflatStructAddMethodVoidParams1(l_Namespace, Element, void,
+                                  set_name, Low::Util::Name);
+
+  CflatStructAddMethodReturnParams1(l_Namespace, Element, uint64_t,
+                                    get_component, uint16_t);
+  CflatStructAddMethodVoidParams1(l_Namespace, Element, void,
+                                  add_component, Util::Handle);
+  CflatStructAddMethodVoidParams1(l_Namespace, Element, void,
+                                  remove_component, uint16_t);
+  CflatStructAddMethodReturnParams1(l_Namespace, Element, bool,
+                                    has_component, uint16_t);
+  CflatStructAddMethodReturn(l_Namespace, Element,
+                             UI::Component::Display, get_display);
+}
+
+static void register_lowcore_display()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace Low::Core::UI::Component;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace(
+          "Low::Core::UI::Component");
+
+  Cflat::Struct *type = Low::Core::Scripting::g_CflatStructs
+      ["Low::Core::UI::Component::Display"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Scripting::get_environment()->requestNamespace("Low::Util");
+
+    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
+                                 Low::Core::UI::Component::Display);
+  }
+
+  CflatStructAddMethodReturn(l_Namespace, Display, bool, is_alive);
+  CflatStructAddStaticMethodReturn(l_Namespace, Display, uint32_t,
+                                   get_capacity);
+  CflatStructAddStaticMethodReturnParams1(
+      l_Namespace, Display, Low::Core::UI::Component::Display,
+      find_by_index, uint32_t);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
+                             position);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
+                                  position, Math::Vector3 &);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Quaternion &,
+                             rotation);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
+                                  rotation, Math::Quaternion &);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
+                             scale);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void, scale,
+                                  Math::Vector3 &);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, uint64_t,
+                             get_parent);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
+                                  set_parent, uint64_t);
+
+  CflatStructAddMethodReturn(l_Namespace, Display,
+                             Util::List<uint64_t> &, get_children);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
+                             get_world_position);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Quaternion &,
+                             get_world_rotation);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
+                             get_world_scale);
+
+  CflatStructAddMethodReturn(l_Namespace, Display,
+                             Low::Core::UI::Element, get_element);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
+                                  set_element,
+                                  Low::Core::UI::Element);
+}
+
 static void preregister_types()
 {
   using namespace Low::Core;
@@ -459,6 +575,34 @@ static void preregister_types()
     Scripting::g_CflatStructs["Low::Core::Component::Transform"] =
         type;
   }
+
+  {
+    using namespace Low::Core::UI;
+    Cflat::Namespace *l_Namespace =
+        Scripting::get_environment()->requestNamespace(
+            "Low::Core::UI");
+
+    CflatRegisterStruct(l_Namespace, Element);
+    CflatStructAddBaseType(Scripting::get_environment(),
+                           Low::Core::UI::Element, Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::UI::Element"] = type;
+  }
+
+  {
+    using namespace Low::Core::UI::Component;
+    Cflat::Namespace *l_Namespace =
+        Scripting::get_environment()->requestNamespace(
+            "Low::Core::UI::Component");
+
+    CflatRegisterStruct(l_Namespace, Display);
+    CflatStructAddBaseType(Scripting::get_environment(),
+                           Low::Core::UI::Component::Display,
+                           Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::UI::Component::Display"] =
+        type;
+  }
 }
 static void register_types()
 {
@@ -466,6 +610,8 @@ static void register_types()
 
   register_lowcore_entity();
   register_lowcore_transform();
+  register_lowcore_element();
+  register_lowcore_display();
 }
 // REGISTER_CFLAT_END
 

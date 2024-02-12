@@ -21,6 +21,10 @@
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreFont.h"
 
+#include "LowCoreUiView.h"
+#include "LowCoreUiElement.h"
+#include "LowCoreUiDisplay.h"
+
 #include "LowRenderer.h"
 
 #include "LowUtilFileIO.h"
@@ -37,9 +41,10 @@ void *operator new[](size_t size, const char *pName, int flags,
   return malloc(size);
 }
 
-void *operator new[](size_t size, size_t alignment, size_t alignmentOffset,
-                     const char *pName, int flags, unsigned debugFlags,
-                     const char *file, int line)
+void *operator new[](size_t size, size_t alignment,
+                     size_t alignmentOffset, const char *pName,
+                     int flags, unsigned debugFlags, const char *file,
+                     int line)
 {
   return malloc(size);
 }
@@ -88,8 +93,8 @@ namespace Low {
           Util::FileSystem::watch_directory(
               l_DataPath + "/assets/materials",
               [](Util::FileSystem::FileWatcher &p_FileWatcher) {
-                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
-                                                   ".material.yaml")) {
+                if (!Util::StringHelper::ends_with(
+                        p_FileWatcher.name, ".material.yaml")) {
                   return (Util::Handle)0;
                 }
                 Util::List<Util::String> l_Parts;
@@ -130,7 +135,8 @@ namespace Low {
                                                    ".glb")) {
                   return (Util::Handle)0;
                 }
-                return (Util::Handle)MeshResource::make(p_FileWatcher.name)
+                return (Util::Handle)MeshResource::make(
+                           p_FileWatcher.name)
                     .get_id();
               },
               l_UpdateTime);
@@ -170,12 +176,26 @@ namespace Low {
       Entity::initialize();
     }
 
+    static void initialize_ui_component_types()
+    {
+      UI::Component::Display::initialize();
+    }
+
+    static void initialize_ui_types()
+    {
+      UI::Element::initialize();
+      UI::View::initialize();
+
+      initialize_ui_component_types();
+    }
+
     static void initialize_types()
     {
       initialize_resource_types();
       initialize_asset_types();
       initialize_base_types();
       initialize_component_types();
+      initialize_ui_types();
     }
 
     static void load_mesh_resources()
@@ -190,7 +210,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          MeshResource::make(i_Path.substr(i_Path.find_last_of('\\') + 1));
+          MeshResource::make(
+              i_Path.substr(i_Path.find_last_of('\\') + 1));
         }
       }
     }
@@ -207,7 +228,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Texture2D::make(i_Path.substr(i_Path.find_last_of('\\') + 1));
+          Texture2D::make(
+              i_Path.substr(i_Path.find_last_of('\\') + 1));
         }
       }
     }
@@ -221,7 +243,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           MeshAsset::deserialize(i_Node, 0);
         } else if (Util::FileIO::is_directory(i_Path.c_str())) {
           load_mesh_assets_from_directory(i_Path);
@@ -238,7 +261,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           Prefab::deserialize(i_Node, 0);
         } else if (Util::FileIO::is_directory(i_Path.c_str())) {
           load_prefabs_from_directory(i_Path);
@@ -266,7 +290,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           Material::deserialize(i_Node, 0);
         }
       }
@@ -292,7 +317,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           Region::deserialize(i_Node, 0);
         }
       }
@@ -310,7 +336,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node = Util::Yaml::load_file(i_Path.c_str());
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
           Scene::deserialize(i_Node, 0);
         }
       }
@@ -388,12 +415,26 @@ namespace Low {
       Scene::cleanup();
     }
 
+    static void cleanup_ui_component_types()
+    {
+      UI::Component::Display::cleanup();
+    }
+
+    static void cleanup_ui_types()
+    {
+      cleanup_ui_component_types();
+
+      UI::View::cleanup();
+      UI::Element::cleanup();
+    }
+
     static void cleanup_types()
     {
       cleanup_component_types();
       cleanup_base_types();
       cleanup_asset_types();
       cleanup_resource_types();
+      cleanup_ui_types();
     }
 
     void cleanup()
@@ -423,7 +464,8 @@ namespace Low {
       g_StoredData.scene = Scene::get_loaded_scene();
 
       g_StoredData.regions.clear();
-      g_StoredData.regions.resize(g_StoredData.scene.get_regions().size());
+      g_StoredData.regions.resize(
+          g_StoredData.scene.get_regions().size());
 
       for (auto it = g_StoredData.scene.get_regions().begin();
            it != g_StoredData.scene.get_regions().end(); ++it) {
@@ -454,7 +496,8 @@ namespace Low {
       return g_FilesystemWatchers;
     }
 
-    Util::FileSystem::WatchHandle get_filesystem_watcher(uint16_t p_Type)
+    Util::FileSystem::WatchHandle
+    get_filesystem_watcher(uint16_t p_Type)
     {
       auto l_Pos = g_WatchHandles.find(p_Type);
 

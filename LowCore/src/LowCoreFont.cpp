@@ -15,6 +15,27 @@
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    FT_Library g_FreeType;
+
+#define FONT_COUNT 50
+    Util::List<bool> g_FontSlots;
+    // Util::List<Util::Resource::Font> g_Fonts;
+
+    /*
+    struct MeshLoadSchedule
+    {
+      uint32_t meshIndex;
+      Util::Future<void> future;
+      // MeshResource meshResource;
+
+      MeshLoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
+          : meshIndex(p_Id), future(std::move(p_Future))
+      {
+      }
+    };
+
+    Util::List<MeshLoadSchedule> g_MeshLoadSchedules;
+    */
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Font::TYPE_ID = 36;
@@ -92,8 +113,8 @@ namespace Low {
     void Font::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
-      FT_Library ft;
-      FT_Init_FreeType(&ft);
+      LOW_ASSERT(!FT_Init_FreeType(&g_FreeType),
+                 "Failed to initialize FreeType");
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -120,6 +141,7 @@ namespace Low {
               &Font::living_instances);
       l_TypeInfo.get_living_count = &Font::living_count;
       l_TypeInfo.component = false;
+      l_TypeInfo.uiComponent = false;
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(path);

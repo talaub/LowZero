@@ -11,19 +11,22 @@
 
 #define SINGLE_ARG(...) __VA_ARGS__
 
-#define TYPE_SOA_PTR(type, member, membertype)                                 \
-  ((membertype *)&(                                                            \
-      ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \
+#define TYPE_SOA_PTR(type, member, membertype)                       \
+  ((membertype *)&(                                                  \
+      ms_Buffer[offsetof(##type##Data, member) *                     \
+                    type::get_capacity() +                           \
                 (m_Data.m_Index * sizeof(membertype))]))
 
-#define TYPE_SOA(type, member, membertype)                                     \
-  *((membertype *)&(                                                           \
-      ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \
+#define TYPE_SOA(type, member, membertype)                           \
+  *((membertype *)&(                                                 \
+      ms_Buffer[offsetof(##type##Data, member) *                     \
+                    type::get_capacity() +                           \
                 (m_Data.m_Index * sizeof(membertype))]))
 
-#define ACCESSOR_TYPE_SOA(accessor, type, member, membertype)                  \
-  *((membertype *)&(                                                           \
-      ms_Buffer[offsetof(##type##Data, member) * type::get_capacity() +        \
+#define ACCESSOR_TYPE_SOA(accessor, type, member, membertype)        \
+  *((membertype *)&(                                                 \
+      ms_Buffer[offsetof(##type##Data, member) *                     \
+                    type::get_capacity() +                           \
                 (accessor.m_Data.m_Index * sizeof(membertype))]))
 
 namespace Low {
@@ -39,7 +42,8 @@ namespace Low {
 
       LOW_EXPORT void initialize_buffer(uint8_t **p_Buffer,
                                         size_t p_ElementSize,
-                                        size_t p_ElementCount, Slot **p_Slots);
+                                        size_t p_ElementCount,
+                                        Slot **p_Slots);
 
       void initialize();
       void cleanup();
@@ -88,6 +92,7 @@ namespace Low {
         Name name;
         uint16_t typeId;
         bool component;
+        bool uiComponent;
         Map<Name, PropertyInfo> properties;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
@@ -130,7 +135,8 @@ namespace Low {
       uint16_t get_generation() const;
       uint16_t get_type() const;
 
-      bool check_alive(Instances::Slot *p_Slots, uint32_t p_Capacity) const;
+      bool check_alive(Instances::Slot *p_Slots,
+                       uint32_t p_Capacity) const;
 
       static RTTI::TypeInfo &get_type_info(uint16_t p_TypeId);
       static List<uint16_t> &get_component_types();
@@ -146,7 +152,8 @@ namespace Low {
     };
 
     UniqueId LOW_EXPORT generate_unique_id(Handle p_Handle);
-    void LOW_EXPORT register_unique_id(UniqueId p_UniqueId, Handle p_Handle);
+    void LOW_EXPORT register_unique_id(UniqueId p_UniqueId,
+                                       Handle p_Handle);
     void LOW_EXPORT remove_unique_id(UniqueId p_UniqueId);
 
     Handle LOW_EXPORT find_handle_by_unique_id(UniqueId p_UniqueId);
