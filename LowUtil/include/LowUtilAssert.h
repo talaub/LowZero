@@ -8,7 +8,7 @@ namespace Low {
   namespace Util {
     namespace Assertion {
       LOW_EXPORT
-      void print_assert(uint8_t p_LogLevel, const char *p_Module,
+      void print_assert(u8 p_LogLevel, const char *p_Module,
                         const char *p_Message, const char *p_File, int p_Line,
                         const char *p_Function, bool p_Terminate);
 

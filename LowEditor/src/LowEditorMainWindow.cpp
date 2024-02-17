@@ -22,6 +22,7 @@
 #include "LowEditorMetadata.h"
 #include "LowEditorCommonOperations.h"
 #include "LowEditorResourceWidget.h"
+#include "LowEditorThemes.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -91,12 +92,14 @@ namespace Low {
 
     Util::Queue<EditorJob> g_EditorJobQueue;
 
-    void register_editor_job(Util::String p_Title, std::function<void()> p_Func)
+    void register_editor_job(Util::String p_Title,
+                             std::function<void()> p_Func)
     {
       g_EditorJobQueue.emplace(p_Title, p_Func);
     }
 
-    static void register_editor_widget(const char *p_Name, Widget *p_Widget,
+    static void register_editor_widget(const char *p_Name,
+                                       Widget *p_Widget,
                                        bool p_DefaultOpen = false)
     {
       g_Widgets.push_back({p_Widget, p_Name, p_DefaultOpen});
@@ -169,6 +172,7 @@ namespace Low {
 
         l_Config["widgets"].push_back(i_Widget);
       }
+      l_Config["theme"] = theme_get_current_name().c_str();
 
       Util::String l_Path = LOW_DATA_PATH;
       l_Path += "/../user.yaml";
@@ -183,8 +187,9 @@ namespace Low {
       Util::String l_JobTitle = "Saving scene ";
       l_JobTitle += p_Scene.get_name().c_str();
 
-      register_editor_job(l_JobTitle,
-                          [l_SceneId] { SaveHelper::save_scene(l_SceneId); });
+      register_editor_job(l_JobTitle, [l_SceneId] {
+        SaveHelper::save_scene(l_SceneId);
+      });
     }
 
     static void schedule_import_image(Util::String p_Path)
@@ -198,11 +203,13 @@ namespace Low {
             p_Path.find_last_of('\\') + 1,
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         ResourceProcessor::Image::process(
-            Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" + l_FileName,
+            Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" +
+                l_FileName,
             l_Image);
 
         LOW_LOG_INFO << "Image file '" << l_FileName
-                     << "' has been successfully imported." << LOW_LOG_END;
+                     << "' has been successfully imported."
+                     << LOW_LOG_END;
       });
     }
 
@@ -216,21 +223,25 @@ namespace Low {
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         bool l_HasAnimations = ResourceProcessor::Mesh::process(
             p_Path.c_str(), Util::String(LOW_DATA_PATH) +
-                                "\\resources\\meshes\\" + l_FileName + ".glb");
+                                "\\resources\\meshes\\" + l_FileName +
+                                ".glb");
 
         Core::MeshResource::make(Util::String(l_FileName + ".glb"));
 
         LOW_LOG_INFO << "Mesh file '" << l_FileName
-                     << "' has been successfully imported." << LOW_LOG_END;
+                     << "' has been successfully imported."
+                     << LOW_LOG_END;
 
         if (l_HasAnimations) {
           ResourceProcessor::Mesh::process_animations(
-              p_Path.c_str(), Util::String(LOW_DATA_PATH) +
-                                  "\\resources\\skeletal_animations\\" +
-                                  l_FileName + ".glb");
+              p_Path.c_str(),
+              Util::String(LOW_DATA_PATH) +
+                  "\\resources\\skeletal_animations\\" + l_FileName +
+                  ".glb");
 
           LOW_LOG_INFO << "Animations from file '" << l_FileName
-                       << "' have been successfully imported." << LOW_LOG_END;
+                       << "' have been successfully imported."
+                       << LOW_LOG_END;
         }
       });
     }
@@ -251,11 +262,19 @@ namespace Low {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
-          for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+          for (auto it = g_Widgets.begin(); it != g_Widgets.end();
+               ++it) {
             if (ImGui::MenuItem(it->name, nullptr, it->open)) {
               it->open = !it->open;
               save_user_settings();
             }
+          }
+          ImGui::Separator();
+          if (ImGui::BeginMenu("Themes")) {
+            if (themes_render_menu()) {
+              save_user_settings();
+            }
+            ImGui::EndMenu();
           }
           ImGui::EndMenu();
         }
@@ -284,12 +303,13 @@ namespace Low {
             Util::String l_Path = Gui::FileExplorer();
 
             if (!l_Path.empty()) {
-              if (Util::StringHelper::ends_with(l_Path, Util::String(".png"))) {
+              if (Util::StringHelper::ends_with(
+                      l_Path, Util::String(".png"))) {
                 schedule_import_image(l_Path);
-              } else if (Util::StringHelper::ends_with(l_Path,
-                                                       Util::String(".obj")) ||
-                         Util::StringHelper::ends_with(l_Path,
-                                                       Util::String(".glb"))) {
+              } else if (Util::StringHelper::ends_with(
+                             l_Path, Util::String(".obj")) ||
+                         Util::StringHelper::ends_with(
+                             l_Path, Util::String(".glb"))) {
                 schedule_import_mesh(l_Path);
               }
             }
@@ -318,8 +338,9 @@ namespace Low {
         ImGui::Dummy({l_Spacing, 0.0f});
         int l_GreyVal = 120;
 
-        ImGui::PushStyleColor(ImGuiCol_Text,
-                              IM_COL32(l_GreyVal, l_GreyVal, l_GreyVal, 255));
+        ImGui::PushStyleColor(
+            ImGuiCol_Text,
+            color_to_imvec4(theme_get_current().subtext));
         ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_300);
         ImVec2 cursor = ImGui::GetCursorPos();
         ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
@@ -334,8 +355,8 @@ namespace Low {
       }
 
       if (ImGui::BeginPopupModal("Create scene")) {
-        ImGui::Text(
-            "You are about to create a new scene. Please select a name.");
+        ImGui::Text("You are about to create a new scene. Please "
+                    "select a name.");
         static char l_NameBuffer[255];
         ImGui::InputText("##name", l_NameBuffer, 255);
 
@@ -353,8 +374,9 @@ namespace Low {
           for (auto it = Core::Scene::ms_LivingInstances.begin();
                it != Core::Scene::ms_LivingInstances.end(); ++it) {
             if (l_Name == it->get_name()) {
-              LOW_LOG_ERROR << "Cannot create scene. The chosen name '"
-                            << l_Name << "' is already in use" << LOW_LOG_END;
+              LOW_LOG_ERROR
+                  << "Cannot create scene. The chosen name '"
+                  << l_Name << "' is already in use" << LOW_LOG_END;
               l_Ok = false;
               break;
             }
@@ -377,11 +399,14 @@ namespace Low {
       float height = ImGui::GetFrameHeight();
 
       ImGui::BeginViewportSideBar(
-          "Statusbar", ImGui::GetMainViewport(), ImGuiDir_Down, height,
-          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings |
+          "Statusbar", ImGui::GetMainViewport(), ImGuiDir_Down,
+          height,
+          ImGuiWindowFlags_NoScrollbar |
+              ImGuiWindowFlags_NoSavedSettings |
               ImGuiWindowFlags_MenuBar);
       if (ImGui::BeginMenuBar()) {
-        if (!g_EditorJobQueue.empty() && g_EditorJobQueue.front().submitted) {
+        if (!g_EditorJobQueue.empty() &&
+            g_EditorJobQueue.front().submitted) {
           Gui::spinner("Loading", 6.0f, 2.0f,
                        Math::Color(0.0f, 0.7f, 0.73f, 1.0f));
           ImGui::SameLine();
@@ -395,34 +420,37 @@ namespace Low {
 
     static void render_central_docking_space(float p_Delta)
     {
-      // We are using the ImGuiWindowFlags_NoDocking flag to make the parent
-      // window not dockable into, because it would be confusing to have two
-      // docking targets within each others.
+      // We are using the ImGuiWindowFlags_NoDocking flag to make the
+      // parent window not dockable into, because it would be
+      // confusing to have two docking targets within each others.
       ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
       const ImGuiViewport *viewport = ImGui::GetMainViewport();
-      static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+      static ImGuiDockNodeFlags dockspace_flags =
+          ImGuiDockNodeFlags_None;
 
       ImGui::SetNextWindowPos(viewport->WorkPos);
       ImGui::SetNextWindowSize(viewport->WorkSize);
       ImGui::SetNextWindowViewport(viewport->ID);
       ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
       ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-      window_flags |= ImGuiWindowFlags_NoTitleBar |
-                      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                      ImGuiWindowFlags_NoMove;
       window_flags |=
-          ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+          ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
+          ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+      window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus |
+                      ImGuiWindowFlags_NoNavFocus;
 
       if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
         window_flags |= ImGuiWindowFlags_NoBackground;
 
-      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                          ImVec2(0.0f, 0.0f));
       ImGui::Begin("DockSpace", &g_CentralDockOpen, window_flags);
       ImGui::PopStyleVar(3);
 
       ImGuiIO &io = ImGui::GetIO();
       ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-      ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+      ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f),
+                       dockspace_flags);
 
       ImGui::End();
     }
@@ -433,16 +461,20 @@ namespace Low {
 
       g_SphericalBillboardMaterials.sun =
           Core::DebugGeometry::create_spherical_billboard_material(
-              l_DataPath + "/_internal/assets/editor_icons/ktx/sun.ktx");
+              l_DataPath +
+              "/_internal/assets/editor_icons/ktx/sun.ktx");
       g_SphericalBillboardMaterials.bulb =
           Core::DebugGeometry::create_spherical_billboard_material(
-              l_DataPath + "/_internal/assets/editor_icons/ktx/bulb.ktx");
+              l_DataPath +
+              "/_internal/assets/editor_icons/ktx/bulb.ktx");
       g_SphericalBillboardMaterials.camera =
           Core::DebugGeometry::create_spherical_billboard_material(
-              l_DataPath + "/_internal/assets/editor_icons/ktx/camera.ktx");
+              l_DataPath +
+              "/_internal/assets/editor_icons/ktx/camera.ktx");
       g_SphericalBillboardMaterials.region =
           Core::DebugGeometry::create_spherical_billboard_material(
-              l_DataPath + "/_internal/assets/editor_icons/ktx/region.ktx");
+              l_DataPath +
+              "/_internal/assets/editor_icons/ktx/region.ktx");
     }
 
     static void initialize_billboard_materials()
@@ -476,7 +508,8 @@ namespace Low {
     static void parse_type_metadata(TypeMetadata &p_Metadata,
                                     Util::Yaml::Node &p_Node)
     {
-      p_Metadata.typeInfo = Util::Handle::get_type_info(p_Metadata.typeId);
+      p_Metadata.typeInfo =
+          Util::Handle::get_type_info(p_Metadata.typeId);
 
       const char *l_PropertiesName = "properties";
 
@@ -488,7 +521,8 @@ namespace Low {
           if (p_Node["name_editable"]) {
             l_Metadata.editor = true;
           }
-          l_Metadata.propInfo = p_Metadata.typeInfo.properties[l_Metadata.name];
+          l_Metadata.propInfo =
+              p_Metadata.typeInfo.properties[l_Metadata.name];
 
           p_Metadata.properties.push_back(l_Metadata);
         }
@@ -499,9 +533,11 @@ namespace Low {
           i_Metadata.name = LOW_YAML_AS_NAME(it->first);
           i_Metadata.editor = false;
           if (it->second["editor_editable"]) {
-            i_Metadata.editor = it->second["editor_editable"].as<bool>();
+            i_Metadata.editor =
+                it->second["editor_editable"].as<bool>();
           }
-          i_Metadata.propInfo = p_Metadata.typeInfo.properties[i_Metadata.name];
+          i_Metadata.propInfo =
+              p_Metadata.typeInfo.properties[i_Metadata.name];
 
           p_Metadata.properties.push_back(i_Metadata);
         }
@@ -511,10 +547,11 @@ namespace Low {
     static inline void parse_metadata(Util::Yaml::Node &p_Node,
                                       Util::Yaml::Node &p_TypeIdsNode)
     {
-      Util::String l_ModuleString = LOW_YAML_AS_STRING(p_Node["module"]);
+      Util::String l_ModuleString =
+          LOW_YAML_AS_STRING(p_Node["module"]);
 
-      for (auto it = p_Node["types"].begin(); it != p_Node["types"].end();
-           ++it) {
+      for (auto it = p_Node["types"].begin();
+           it != p_Node["types"].end(); ++it) {
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
         TypeMetadata i_Metadata;
         i_Metadata.name = LOW_YAML_AS_NAME(it->first);
@@ -534,13 +571,15 @@ namespace Low {
       Util::String l_TypeConfigPath = LOW_DATA_PATH;
       l_TypeConfigPath += "/_internal/type_configs";
 
-      Util::Yaml::Node l_TypeIdsNode =
-          Util::Yaml::load_file((l_TypeConfigPath + "/typeids.yaml").c_str());
+      Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
+          (l_TypeConfigPath + "/typeids.yaml").c_str());
 
       Util::List<Util::String> l_FilePaths;
-      Util::FileIO::list_directory(l_TypeConfigPath.c_str(), l_FilePaths);
+      Util::FileIO::list_directory(l_TypeConfigPath.c_str(),
+                                   l_FilePaths);
 
-      for (auto it = l_FilePaths.begin(); it != l_FilePaths.end(); ++it) {
+      for (auto it = l_FilePaths.begin(); it != l_FilePaths.end();
+           ++it) {
         if (!Util::StringHelper::ends_with(*it, ".types.yaml")) {
           continue;
         }
@@ -561,10 +600,11 @@ namespace Low {
 
       Util::Yaml::Node l_Root = Util::Yaml::load_file(l_Path.c_str());
 
-      Low::Core::Scene l_Scene = Low::Core::Scene::find_by_name(N(TestScene));
+      Low::Core::Scene l_Scene =
+          Low::Core::Scene::find_by_name(N(TestScene));
       if (l_Root["loaded_scene"]) {
-        Core::Scene l_LocalScene =
-            Core::Scene::find_by_name(LOW_YAML_AS_NAME(l_Root["loaded_scene"]));
+        Core::Scene l_LocalScene = Core::Scene::find_by_name(
+            LOW_YAML_AS_NAME(l_Root["loaded_scene"]));
         if (l_LocalScene.is_alive()) {
           l_Scene = l_LocalScene;
         }
@@ -574,18 +614,27 @@ namespace Low {
 
       if (l_Root["widgets"]) {
         for (uint32_t i = 0; i < l_Root["widgets"].size(); ++i) {
-          for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
-            if (LOW_YAML_AS_STRING(l_Root["widgets"][i]["name"]) == it->name) {
+          for (auto it = g_Widgets.begin(); it != g_Widgets.end();
+               ++it) {
+            if (LOW_YAML_AS_STRING(l_Root["widgets"][i]["name"]) ==
+                it->name) {
               it->open = l_Root["widgets"][i]["open"].as<bool>();
               break;
             }
           }
         }
       }
+
+      if (l_Root["theme"]) {
+        theme_apply(LOW_YAML_AS_NAME(l_Root["theme"]));
+      } else if (theme_exists(N(dracula))) {
+        theme_apply(N(dracula));
+      }
     }
 
     void initialize()
     {
+      themes_load();
       load_metadata();
 
       initialize_billboard_materials();
@@ -603,7 +652,8 @@ namespace Low {
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
       register_editor_widget("Resources", new ResourceWidget());
-      register_editor_widget("StateGraph", new StateGraphWidget(), true);
+      register_editor_widget("StateGraph", new StateGraphWidget(),
+                             true);
 
       Util::String l_Path = LOW_DATA_PATH;
       l_Path += "/assets/meshes";
@@ -621,14 +671,14 @@ namespace Low {
       l_Node["name"] = l_NameString.c_str();
 
       Util::Yaml::Node &l_ComponentsNode = l_Node["components"];
-      for (auto it = l_ComponentsNode.begin(); it != l_ComponentsNode.end();
-           ++it) {
+      for (auto it = l_ComponentsNode.begin();
+           it != l_ComponentsNode.end(); ++it) {
         Util::Yaml::Node &i_ComponentNode = *it;
         i_ComponentNode["properties"].remove("unique_id");
       }
 
-      return Core::Entity::deserialize(l_Node,
-                                       get_selected_entity().get_region())
+      return Core::Entity::deserialize(
+                 l_Node, get_selected_entity().get_region())
           .get_id();
     }
 
@@ -705,7 +755,8 @@ namespace Low {
         }
       }
 
-      if (!g_FocusedWidget || !g_FocusedWidget->handle_shortcuts(p_Delta)) {
+      if (!g_FocusedWidget ||
+          !g_FocusedWidget->handle_shortcuts(p_Delta)) {
         handle_shortcuts(p_Delta);
       }
       // ImGui::ShowDemoWindow();
@@ -723,7 +774,8 @@ namespace Low {
 
     TypeMetadata &get_type_metadata(uint16_t p_TypeId)
     {
-      LOW_ASSERT(g_TypeMetadata.find(p_TypeId) != g_TypeMetadata.end(),
+      LOW_ASSERT(g_TypeMetadata.find(p_TypeId) !=
+                     g_TypeMetadata.end(),
                  "Could not find type metadata");
       return g_TypeMetadata[p_TypeId];
     }

@@ -3,6 +3,7 @@
 #include "imgui_impl_glfw.h"
 
 #include "LowRendererImGuiHelper.h"
+#include "LowRendererImGuiImage.h"
 
 #include "ImGuizmo.h"
 
@@ -27,7 +28,6 @@
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
 #include "LowRendererBuffer.h"
-#include "LowRendererImGuiImage.h"
 
 #include <GLFW/glfw3.h>
 
@@ -1203,6 +1203,12 @@ namespace Low {
           _LOW_ASSERT(p_Result == VK_SUCCESS);
         }
 
+        static ImVec4 convert_rgb_to_imvec4(int r, int g, int b)
+        {
+          return ImVec4(((float)r) / 255.0f, ((float)g) / 255.0f,
+                        ((float)b) / 255.0f, 1.0f);
+        }
+
         static void setup_imgui(Backend::Context &p_Context)
         {
           // 1: create descriptor pool for IMGUI
@@ -2227,6 +2233,8 @@ namespace Low {
           // g_FramebufferResized = false;
           // recreate_swapchain();
           // TODO: Handle reconfigure renderer
+          // UPDATE: I don't think we need to do anything actually...
+          // it has been working like this for a while...
         } else {
           LOW_ASSERT(l_Result == VK_SUCCESS,
                      "Failed to present swapchain image");
@@ -3870,7 +3878,10 @@ namespace Low {
           if ((i_Target.wirteMask &
                LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) ==
               LOW_RENDERER_COLOR_WRITE_BIT_ALPHA) {
-            l_WriteMask |= VK_COLOR_COMPONENT_A_BIT;
+            // l_WriteMask |= VK_COLOR_COMPONENT_A_BIT;
+            //  TODO: This is currently disabled because transparency
+            //  lead to problems. This should be fixed on a higher
+            //  level I guess.
           }
 
           VkPipelineColorBlendAttachmentState

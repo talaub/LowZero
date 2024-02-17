@@ -4,6 +4,8 @@
 
 #include "LowCoreEntity.h"
 
+#include "LowEditorThemes.h"
+
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
@@ -26,22 +28,22 @@ namespace Low {
         ImVec2 l_Pos = GetCursorScreenPos();
 
         /*
-              l_DrawList->AddCircleFilled({l_Pos.x + l_CircleSize / 2.0f,
-                                           l_Pos.y + (l_CircleSize / 2.0f)
+              l_DrawList->AddCircleFilled({l_Pos.x + l_CircleSize
+           / 2.0f, l_Pos.y + (l_CircleSize / 2.0f)
            + 5.0f}, l_CircleSize, p_Color);
         */
 
-        l_DrawList->AddRectFilled(l_Pos, l_Pos + ImVec2(16, 23), p_Color);
+        l_DrawList->AddRectFilled(l_Pos, l_Pos + ImVec2(16, 23),
+                                  p_Color);
 
         SetCursorScreenPos({l_Pos.x + 3.0f, l_Pos.y + 2.0f});
         Text(p_Label.c_str());
         SetCursorScreenPos({l_Pos.x + 15, l_Pos.y});
       }
 
-      static bool draw_single_coefficient_editor(Util::String p_Label,
-                                                 ImColor p_Color,
-                                                 float *p_Value, float p_Width,
-                                                 float p_Margin, bool p_Break)
+      static bool draw_single_coefficient_editor(
+          Util::String p_Label, ImColor p_Color, float *p_Value,
+          float p_Width, float p_Margin, bool p_Break)
       {
         using namespace ImGui;
 
@@ -52,7 +54,8 @@ namespace Low {
 
         Util::String l_Label = "##" + p_Label;
         PushItemWidth(p_Width - 16.0f);
-        if (DragFloat(l_Label.c_str(), p_Value, 0.2f, 0.0f, 0.0f, "%.2f")) {
+        if (DragFloat(l_Label.c_str(), p_Value, 0.2f, 0.0f, 0.0f,
+                      "%.2f")) {
           l_Changed = true;
         }
         PopItemWidth();
@@ -66,28 +69,31 @@ namespace Low {
 
       static bool draw_single_coefficient_editor(Util::String p_Label,
                                                  ImColor p_Color,
-                                                 float *p_Value, float p_Width,
+                                                 float *p_Value,
+                                                 float p_Width,
                                                  bool p_Break)
       {
-        return draw_single_coefficient_editor(p_Label, p_Color, p_Value,
-                                              p_Width, 0.0f, p_Break);
+        return draw_single_coefficient_editor(
+            p_Label, p_Color, p_Value, p_Width, 0.0f, p_Break);
       }
 
       static bool draw_single_coefficient_editor(Util::String p_Label,
                                                  ImColor p_Color,
-                                                 float *p_Value, float p_Width,
+                                                 float *p_Value,
+                                                 float p_Width,
                                                  float p_Margin)
       {
-        return draw_single_coefficient_editor(p_Label, p_Color, p_Value,
-                                              p_Width, p_Margin, false);
+        return draw_single_coefficient_editor(
+            p_Label, p_Color, p_Value, p_Width, p_Margin, false);
       }
 
       static bool draw_single_coefficient_editor(Util::String p_Label,
                                                  ImColor p_Color,
-                                                 float *p_Value, float p_Width)
+                                                 float *p_Value,
+                                                 float p_Width)
       {
-        return draw_single_coefficient_editor(p_Label, p_Color, p_Value,
-                                              p_Width, true);
+        return draw_single_coefficient_editor(p_Label, p_Color,
+                                              p_Value, p_Width, true);
       }
 
       bool Vector3Edit(Math::Vector3 &p_Vector)
@@ -97,16 +103,21 @@ namespace Low {
         float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 3.0f;
         bool l_Changed = false;
 
-        if (draw_single_coefficient_editor("X", IM_COL32(204, 42, 54, 255),
-                                           &p_Vector.x, l_Width, l_Spacing)) {
+        Theme &l_Theme = theme_get_current();
+
+        if (draw_single_coefficient_editor(
+                "X", color_to_imcolor(l_Theme.coords0), &p_Vector.x,
+                l_Width, l_Spacing)) {
           l_Changed = true;
         }
-        if (draw_single_coefficient_editor("Y", IM_COL32(42, 204, 54, 255),
-                                           &p_Vector.y, l_Width, l_Spacing)) {
+        if (draw_single_coefficient_editor(
+                "Y", color_to_imcolor(l_Theme.coords1), &p_Vector.y,
+                l_Width, l_Spacing)) {
           l_Changed = true;
         }
-        if (draw_single_coefficient_editor("Z", IM_COL32(0, 160, 176, 255),
-                                           &p_Vector.z, l_Width)) {
+        if (draw_single_coefficient_editor(
+                "Z", color_to_imcolor(l_Theme.coords2), &p_Vector.z,
+                l_Width)) {
           l_Changed = true;
         }
 
@@ -120,11 +131,13 @@ namespace Low {
         float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 2.0f;
         bool l_Changed = false;
 
-        if (draw_single_coefficient_editor("X", IM_COL32(204, 42, 54, 255),
-                                           &p_Vector.x, l_Width, l_Spacing)) {
+        if (draw_single_coefficient_editor(
+                "X", IM_COL32(204, 42, 54, 255), &p_Vector.x, l_Width,
+                l_Spacing)) {
           l_Changed = true;
         }
-        if (draw_single_coefficient_editor("Y", IM_COL32(42, 204, 54, 255),
+        if (draw_single_coefficient_editor("Y",
+                                           IM_COL32(42, 204, 54, 255),
                                            &p_Vector.y, l_Width)) {
           l_Changed = true;
         }
@@ -163,7 +176,8 @@ namespace Low {
         const ImGuiID id = window->GetID(label);
 
         ImVec2 pos = window->DC.CursorPos;
-        ImVec2 size((radius)*2, (radius + style.FramePadding.y) * 2);
+        ImVec2 size((radius) * 2,
+                    (radius + style.FramePadding.y) * 2);
 
         const ImRect bb(pos, ImVec2(pos.x + size.x, pos.y + size.y));
         ImGui::ItemSize(bb, style.FramePadding.y);
@@ -176,24 +190,26 @@ namespace Low {
         int num_segments = 30;
         int start = abs(ImSin(g.Time * 1.8f) * (num_segments - 5));
 
-        const float a_min = IM_PI * 2.0f * ((float)start) / (float)num_segments;
-        const float a_max =
-            IM_PI * 2.0f * ((float)num_segments - 3) / (float)num_segments;
+        const float a_min =
+            IM_PI * 2.0f * ((float)start) / (float)num_segments;
+        const float a_max = IM_PI * 2.0f * ((float)num_segments - 3) /
+                            (float)num_segments;
 
-        const ImVec2 centre =
-            ImVec2(pos.x + radius, pos.y + radius + style.FramePadding.y);
+        const ImVec2 centre = ImVec2(
+            pos.x + radius, pos.y + radius + style.FramePadding.y);
 
         for (int i = 0; i < num_segments; i++) {
-          const float a =
-              a_min + ((float)i / (float)num_segments) * (a_max - a_min);
+          const float a = a_min + ((float)i / (float)num_segments) *
+                                      (a_max - a_min);
           window->DrawList->PathLineTo(
               ImVec2(centre.x + ImCos(a + g.Time * 8) * radius,
                      centre.y + ImSin(a + g.Time * 8) * radius));
         }
 
-        window->DrawList->PathStroke(IM_COL32(p_Color.x * 255, p_Color.y * 255,
-                                              p_Color.z * 255, p_Color.a * 255),
-                                     false, thickness);
+        window->DrawList->PathStroke(
+            IM_COL32(p_Color.x * 255, p_Color.y * 255,
+                     p_Color.z * 255, p_Color.a * 255),
+            false, thickness);
       }
 
       void drag_handle(Util::Handle p_Handle)
@@ -207,11 +223,13 @@ namespace Low {
 
           if (l_TypeInfo.component) {
             Core::Entity l_Entity =
-                *(uint64_t *)l_TypeInfo.properties[N(entity)].get(p_Handle);
+                *(uint64_t *)l_TypeInfo.properties[N(entity)].get(
+                    p_Handle);
             l_Name = l_Entity.get_name();
           } else {
             l_Name =
-                *(Util::Name *)l_TypeInfo.properties[N(name)].get(p_Handle);
+                *(Util::Name *)l_TypeInfo.properties[N(name)].get(
+                    p_Handle);
           }
 
           ImGui::Text(l_Name.c_str());

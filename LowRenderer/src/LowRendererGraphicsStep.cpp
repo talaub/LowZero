@@ -1245,7 +1245,7 @@ namespace Low {
                        "Unsupported rendertarget resource scope");
           }
 
-          i_ColorTarget.blendEnable = false;
+          i_ColorTarget.blendEnable = i_Config.translucency;
           i_Params.colorTargets.push_back(i_ColorTarget);
         }
 

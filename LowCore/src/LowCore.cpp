@@ -61,6 +61,7 @@ namespace Low {
 
       float l_UpdateTime = 8.0f;
       Util::String l_DataPath = LOW_DATA_PATH;
+      l_UpdateTime = 1.0f;
 
       g_FilesystemWatchers.scriptDirectory =
           Util::FileSystem::watch_directory(

@@ -1,5 +1,7 @@
 #include "LowEditorLogWidget.h"
 
+#include "LowEditorThemes.h"
+
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 
@@ -35,21 +37,22 @@ namespace Low {
     {
       switch (p_Level) {
       case Util::Log::LogLevel::DEBUG:
-        return IM_COL32(79, 55, 45, 255);
+        return color_to_imcolor(theme_get_current().debug);
       case Util::Log::LogLevel::PROFILE:
-        return IM_COL32(180, 85, 200, 255);
+        return color_to_imcolor(theme_get_current().profile);
       case Util::Log::LogLevel::INFO:
-        return IM_COL32(0, 160, 176, 255);
+        return color_to_imcolor(theme_get_current().info);
       case Util::Log::LogLevel::WARN:
-        return IM_COL32(237, 201, 81, 255);
+        return color_to_imcolor(theme_get_current().warning);
       case Util::Log::LogLevel::ERROR:
-        return IM_COL32(204, 42, 54, 255);
+        return color_to_imcolor(theme_get_current().error);
       default:
-        return IM_COL32(128, 128, 128, 255);
+        return color_to_imcolor(theme_get_current().text);
       }
     }
 
-    static const char *get_module_label(const Util::Log::LogEntry &p_Entry)
+    static const char *
+    get_module_label(const Util::Log::LogEntry &p_Entry)
     {
       if (p_Entry.module == "lowcore") {
         return "Engine";
@@ -71,7 +74,8 @@ namespace Low {
     {
       ImGui::BeginGroup();
       ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
-      ImGui::PushStyleColor(ImGuiCol_Text, get_color_for_level(p_Entry.level));
+      ImGui::PushStyleColor(ImGuiCol_Text,
+                            get_color_for_level(p_Entry.level));
       ImGui::Text(get_icon_for_level(p_Entry.level));
       ImGui::PopStyleColor();
       ImGui::PopFont();
@@ -81,7 +85,9 @@ namespace Low {
       ImGui::TextWrapped(p_Entry.message.c_str());
       ImGui::PopFont();
 
-      ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(128, 128, 128, 255));
+      ImGui::PushStyleColor(
+          ImGuiCol_Text,
+          color_to_imvec4(theme_get_current().subtext));
       ImGui::TextWrapped(get_module_label(p_Entry));
       ImGui::PopStyleColor();
 

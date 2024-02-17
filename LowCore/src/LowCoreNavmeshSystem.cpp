@@ -194,7 +194,7 @@ namespace Low {
             for (int i = 0; i < p_Tile->header->vertCount; ++i) {
               const float *i_Vertex = &p_Tile->verts[i * 3];
               draw_point({i_Vertex[0], i_Vertex[1], i_Vertex[2]},
-                         Math::Color(0.0f, 1.0f, 0.0f, 1.0f));
+                         Math::Color(0.0f, 1.0f, 0.0f, 0.5f));
             }
           }
 
@@ -745,7 +745,7 @@ namespace Low {
 
           int a = g_NavMesh->getMaxTiles();
 
-          Debug::draw_navmesh(*g_NavMesh);
+          // Debug::draw_navmesh(*g_NavMesh);
 
           if (p_State != Util::EngineState::PLAYING) {
             return;

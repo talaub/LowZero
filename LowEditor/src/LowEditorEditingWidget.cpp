@@ -88,6 +88,9 @@ namespace Low {
         Core::DebugGeometry::render_cylinder(
             l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 1.0f), true,
             true);
+        Core::DebugGeometry::render_cylinder(
+            l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 0.1f), true,
+            false);
 
         Core::DebugGeometry::render_spherical_billboard(
             p_Region.get_streaming_position(),

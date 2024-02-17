@@ -49,6 +49,10 @@
 #define LOW_VECTOR3_FRONT Low::Math::Vector3(0.0f, 0.0f, -1.0f)
 #define LOW_VECTOR3_RIGHT Low::Math::Vector3(1.0f, 0.0f, 0.0f)
 
+typedef uint8_t u8;
+typedef uint32_t u32;
+typedef uint64_t u64;
+
 namespace Low {
   namespace Math {
     typedef glm::vec2 Vector2;
