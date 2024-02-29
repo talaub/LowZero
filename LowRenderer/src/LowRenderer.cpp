@@ -143,6 +143,7 @@ namespace Low {
       ParticlePrepareStep::setup_config();
       ParticleRenderStep::setup_config();
       DebugTriangleStep::setup_config();
+      UiStep::setup_config();
     }
 
     void adjust_renderflow_dimensions(RenderFlow p_RenderFlow,

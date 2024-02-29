@@ -551,11 +551,12 @@ namespace Low {
 
       // Sets the output image depending on what is configured in the
       // config
-      if (get_config().get_output_image_name().is_valid() &&
-          l_Resources[p_RenderFlow].has_resource(
-              get_config().get_output_image_name())) {
-        set_output_image(l_Resources[p_RenderFlow].get_image_resource(
-            get_config().get_output_image_name()));
+      if (step_has_resource_from_binding(
+              get_config().get_output_image(), p_RenderFlow, *this)) {
+        set_output_image(
+            (Resource::Image)step_get_resource_from_binding(
+                get_config().get_output_image(), p_RenderFlow, *this)
+                .get_id());
       }
 
       get_config().get_callbacks().setup_signatures(*this,

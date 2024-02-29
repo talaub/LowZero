@@ -20,16 +20,20 @@
 namespace Low {
   namespace Util {
     namespace Resource {
-      inline static Math::Matrix4x4 Assimp2Glm(const aiMatrix4x4 &from)
+      inline static Math::Matrix4x4
+      Assimp2Glm(const aiMatrix4x4 &from)
       {
         return Math::Matrix4x4(
-            (double)from.a1, (double)from.b1, (double)from.c1, (double)from.d1,
-            (double)from.a2, (double)from.b2, (double)from.c2, (double)from.d2,
-            (double)from.a3, (double)from.b3, (double)from.c3, (double)from.d3,
-            (double)from.a4, (double)from.b4, (double)from.c4, (double)from.d4);
+            (double)from.a1, (double)from.b1, (double)from.c1,
+            (double)from.d1, (double)from.a2, (double)from.b2,
+            (double)from.c2, (double)from.d2, (double)from.a3,
+            (double)from.b3, (double)from.c3, (double)from.d3,
+            (double)from.a4, (double)from.b4, (double)from.c4,
+            (double)from.d4);
       }
 
-      void load_image2d(String p_FilePath, Image2D &p_Image, uint8_t p_MipLevel)
+      void load_image2d(String p_FilePath, Image2D &p_Image,
+                        uint8_t p_MipLevel)
       {
         LOW_ASSERT(p_MipLevel < 4, "Requested miplevel out of range");
 
@@ -46,18 +50,21 @@ namespace Low {
         p_Image.dimensions.x = l_Texture.extent(p_MipLevel).x;
         p_Image.dimensions.y = l_Texture.extent(p_MipLevel).y;
 
-        p_Image.data.resize(p_Image.dimensions.x * p_Image.dimensions.y *
-                            l_Channels);
+        p_Image.data.resize(p_Image.dimensions.x *
+                            p_Image.dimensions.y * l_Channels);
         memcpy(p_Image.data.data(), l_Texture.data(0, 0, p_MipLevel),
                p_Image.data.size());
+
+        p_Image.format = Image2DFormat::RGBA8;
       }
 
-      static void parse_mesh(const aiMesh *p_AiMesh, MeshInfo &p_MeshInfo,
-                             Mesh &p_Mesh)
+      static void parse_mesh(const aiMesh *p_AiMesh,
+                             MeshInfo &p_MeshInfo, Mesh &p_Mesh)
       {
         LOW_ASSERT(p_AiMesh->HasPositions(),
                    "Mesh has no position information");
-        LOW_ASSERT(p_AiMesh->HasNormals(), "Mesh has no normal information");
+        LOW_ASSERT(p_AiMesh->HasNormals(),
+                   "Mesh has no normal information");
         LOW_ASSERT(p_AiMesh->HasTextureCoords(0),
                    "Mesh has no texture coordinates");
         LOW_ASSERT(p_AiMesh->HasTangentsAndBitangents(),
@@ -65,9 +72,9 @@ namespace Low {
 
         p_MeshInfo.vertices.resize(p_AiMesh->mNumVertices);
         for (uint32_t i = 0u; i < p_AiMesh->mNumVertices; ++i) {
-          p_MeshInfo.vertices[i].position = {p_AiMesh->mVertices[i].x,
-                                             p_AiMesh->mVertices[i].y,
-                                             p_AiMesh->mVertices[i].z};
+          p_MeshInfo.vertices[i].position = {
+              p_AiMesh->mVertices[i].x, p_AiMesh->mVertices[i].y,
+              p_AiMesh->mVertices[i].z};
 
           p_MeshInfo.vertices[i].texture_coordinates = {
               p_AiMesh->mTextureCoords[0][i].x,
@@ -80,15 +87,18 @@ namespace Low {
           p_MeshInfo.vertices[i].tangent = {p_AiMesh->mTangents[i].x,
                                             p_AiMesh->mTangents[i].y,
                                             p_AiMesh->mTangents[i].z};
-          p_MeshInfo.vertices[i].bitangent = {p_AiMesh->mBitangents[i].x,
-                                              p_AiMesh->mBitangents[i].y,
-                                              p_AiMesh->mBitangents[i].z};
+          p_MeshInfo.vertices[i].bitangent = {
+              p_AiMesh->mBitangents[i].x, p_AiMesh->mBitangents[i].y,
+              p_AiMesh->mBitangents[i].z};
         }
 
-        LOW_ASSERT(p_AiMesh->HasFaces(), "Mesh has no index information");
+        LOW_ASSERT(p_AiMesh->HasFaces(),
+                   "Mesh has no index information");
         for (uint32_t i = 0u; i < p_AiMesh->mNumFaces; ++i) {
-          for (uint32_t j = 0u; j < p_AiMesh->mFaces[i].mNumIndices; ++j) {
-            p_MeshInfo.indices.push_back(p_AiMesh->mFaces[i].mIndices[j]);
+          for (uint32_t j = 0u; j < p_AiMesh->mFaces[i].mNumIndices;
+               ++j) {
+            p_MeshInfo.indices.push_back(
+                p_AiMesh->mFaces[i].mIndices[j]);
           }
         }
 
@@ -96,12 +106,14 @@ namespace Low {
           for (uint32_t i = 0u; i < p_AiMesh->mNumBones; ++i) {
             uint32_t i_BoneIndex = 0;
 
-            Name i_BoneName = LOW_NAME(p_AiMesh->mBones[i]->mName.C_Str());
+            Name i_BoneName =
+                LOW_NAME(p_AiMesh->mBones[i]->mName.C_Str());
 
             if (p_Mesh.bones.find(i_BoneName) == p_Mesh.bones.end()) {
               Bone i_Bone;
               i_Bone.index = p_Mesh.boneCount;
-              i_Bone.offset = Assimp2Glm(p_AiMesh->mBones[i]->mOffsetMatrix);
+              i_Bone.offset =
+                  Assimp2Glm(p_AiMesh->mBones[i]->mOffsetMatrix);
               p_Mesh.bones[i_BoneName] = i_Bone;
 
               p_Mesh.boneCount++;
@@ -126,9 +138,11 @@ namespace Low {
 
       static void parse_submesh(const aiScene *p_AiScene,
                                 const aiNode *p_AiNode, Mesh &p_Mesh,
-                                Math::Matrix4x4 &p_Transformation, Node &p_Node)
+                                Math::Matrix4x4 &p_Transformation,
+                                Node &p_Node)
       {
-        aiMatrix4x4 l_TransformationMatrix = p_AiNode->mTransformation;
+        aiMatrix4x4 l_TransformationMatrix =
+            p_AiNode->mTransformation;
 
         Submesh l_Submesh;
         l_Submesh.name = LOW_NAME(p_AiNode->mName.C_Str());
@@ -136,7 +150,8 @@ namespace Low {
         l_Submesh.parentTransform = p_Transformation;
         l_Submesh.localTransform = Assimp2Glm(l_TransformationMatrix);
 
-        l_Submesh.transform = p_Transformation * l_Submesh.localTransform;
+        l_Submesh.transform =
+            p_Transformation * l_Submesh.localTransform;
 
         l_Submesh.meshInfos.resize(p_AiNode->mNumMeshes);
 
@@ -146,7 +161,8 @@ namespace Low {
         }
         // printf("SIZE: %s = %d\n", l_Submesh.name.c_str(),
         // p_Mesh.bones.size());
-        for (auto it = p_Mesh.bones.begin(); it != p_Mesh.bones.end(); ++it) {
+        for (auto it = p_Mesh.bones.begin(); it != p_Mesh.bones.end();
+             ++it) {
           // printf("B: %s\n", it->first.c_str());
         }
 
@@ -170,8 +186,9 @@ namespace Low {
         }
       }
 
-      static void parse_animation_channel(const aiNodeAnim *p_NodeAnim,
-                                          AnimationChannel &p_Channel)
+      static void
+      parse_animation_channel(const aiNodeAnim *p_NodeAnim,
+                              AnimationChannel &p_Channel)
       {
         p_Channel.boneName = LOW_NAME(p_NodeAnim->mNodeName.C_Str());
 
@@ -211,11 +228,15 @@ namespace Low {
           }
           if (i < p_NodeAnim->mNumScalingKeys) {
 
-            p_Channel.scales[i].value.x = p_NodeAnim->mScalingKeys[i].mValue.x;
-            p_Channel.scales[i].value.y = p_NodeAnim->mScalingKeys[i].mValue.y;
-            p_Channel.scales[i].value.z = p_NodeAnim->mScalingKeys[i].mValue.z;
+            p_Channel.scales[i].value.x =
+                p_NodeAnim->mScalingKeys[i].mValue.x;
+            p_Channel.scales[i].value.y =
+                p_NodeAnim->mScalingKeys[i].mValue.y;
+            p_Channel.scales[i].value.z =
+                p_NodeAnim->mScalingKeys[i].mValue.z;
 
-            p_Channel.scales[i].timestamp = p_NodeAnim->mScalingKeys[i].mTime;
+            p_Channel.scales[i].timestamp =
+                p_NodeAnim->mScalingKeys[i].mTime;
           }
         }
       }
@@ -234,7 +255,8 @@ namespace Low {
         }
       }
 
-      static void parse_animations(const aiScene *p_AiScene, Mesh &p_Mesh)
+      static void parse_animations(const aiScene *p_AiScene,
+                                   Mesh &p_Mesh)
       {
         p_Mesh.animations.resize(p_AiScene->mNumAnimations);
 
@@ -255,8 +277,8 @@ namespace Low {
 
         Assimp::Importer l_Importer;
 
-        const aiScene *l_AiScene =
-            l_Importer.ReadFile(p_FilePath.c_str(), aiProcess_CalcTangentSpace);
+        const aiScene *l_AiScene = l_Importer.ReadFile(
+            p_FilePath.c_str(), aiProcess_CalcTangentSpace);
 
         LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
 

@@ -557,6 +557,10 @@ namespace Low {
 
           g_TextureSlots[it->textureIndex] = false;
 
+          Texture2D i_Texture =
+              Texture2D::find_by_index(it->textureIndex);
+          i_Texture.set_state(ResourceState::LOADED);
+
           it = g_TextureLoadSchedules.erase(it);
         } else {
           ++it;

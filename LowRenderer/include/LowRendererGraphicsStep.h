@@ -28,6 +28,7 @@ namespace Low {
       alignas(16) Math::Matrix4x4 model_matrix;
       uint32_t material_index;
       uint32_t entity_id;
+      uint32_t texture_index;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 

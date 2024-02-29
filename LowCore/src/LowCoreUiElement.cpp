@@ -363,40 +363,82 @@ namespace Low {
       Element Element::make(Util::Name p_Name, UI::View p_View)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-        return 0;
+        Element l_Element = Element::make(p_Name);
+        // TODO: Fully implement - see entity
+        return l_Element;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
       uint64_t Element::get_component(uint16_t p_TypeId) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_component
-        return 0;
+        if (get_components().find(p_TypeId) ==
+            get_components().end()) {
+          return ~0ull;
+        }
+        return get_components()[p_TypeId].get_id();
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_component
       }
 
       void Element::add_component(Util::Handle &p_Component)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
+        Util::Handle l_ExistingComponent =
+            get_component(p_Component.get_type());
+        Util::RTTI::TypeInfo l_ComponentTypeInfo =
+            get_type_info(p_Component.get_type());
+
+        LOW_ASSERT(l_ComponentTypeInfo.uiComponent,
+                   "Can only add ui components to an element");
+        LOW_ASSERT(
+            !l_ComponentTypeInfo.is_alive(l_ExistingComponent),
+            "An element can only hold one component of a given type");
+
+        l_ComponentTypeInfo.properties[N(element)].set(p_Component,
+                                                       this);
+
+        get_components()[p_Component.get_type()] =
+            p_Component.get_id();
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_component
       }
 
       void Element::remove_component(uint16_t p_ComponentType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_component
+        LOW_ASSERT(has_component(p_ComponentType),
+                   "Cannot remove component from element. This "
+                   "element does not "
+                   "have a component of the specified type");
+
+        Util::RTTI::TypeInfo &l_TypeInfo =
+            Util::Handle::get_type_info(p_ComponentType);
+
+        l_TypeInfo.destroy(get_components()[p_ComponentType]);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_remove_component
       }
 
       bool Element::has_component(uint16_t p_ComponentType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_component
-        return false;
+        if (get_components().find(p_ComponentType) ==
+            get_components().end()) {
+          return false;
+        }
+
+        Util::Handle l_Handle = get_components()[p_ComponentType];
+
+        Util::RTTI::TypeInfo &l_TypeInfo =
+            Util::Handle::get_type_info(p_ComponentType);
+
+        return l_TypeInfo.is_alive(l_Handle);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_component
       }
 
       UI::Component::Display Element::get_display() const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_display
-        return 0;
+        _LOW_ASSERT(is_alive());
+        return get_component(UI::Component::Display::TYPE_ID);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_display
       }
 

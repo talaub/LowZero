@@ -41,7 +41,7 @@ namespace Low {
       bool depth_test;
       bool depth_write;
       uint8_t depth_compare_operation;
-      Util::Name output_image_name;
+      PipelineResourceBindingConfig output_image;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -148,8 +148,8 @@ namespace Low {
       uint8_t get_depth_compare_operation() const;
       void set_depth_compare_operation(uint8_t p_Value);
 
-      Util::Name get_output_image_name() const;
-      void set_output_image_name(Util::Name p_Value);
+      PipelineResourceBindingConfig &get_output_image() const;
+      void set_output_image(PipelineResourceBindingConfig &p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

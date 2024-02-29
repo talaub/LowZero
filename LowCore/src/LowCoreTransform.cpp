@@ -1020,13 +1020,6 @@ namespace Low {
         Low::Math::Quaternion l_Rotation = rotation();
         Low::Math::Vector3 l_Scale = scale();
 
-        /*
-              LOW_LOG_DEBUG << "-----------TRANSFORM---------" <<
-           LOW_LOG_END; LOW_LOG_DEBUG << l_Position << LOW_LOG_END;
-              LOW_LOG_DEBUG << l_Rotation << LOW_LOG_END;
-              LOW_LOG_DEBUG << l_Scale << LOW_LOG_END;
-        */
-
         Transform l_Parent = get_parent();
 
         Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
@@ -1040,19 +1033,8 @@ namespace Low {
             l_Parent.recalculate_world_transform();
           }
 
-          Low::Math::Vector3 l_ParentPosition =
-              l_Parent.get_world_position();
-          Low::Math::Quaternion l_ParentRotation =
-              l_Parent.get_world_rotation();
-          Low::Math::Vector3 l_ParentScale =
-              l_Parent.get_world_scale();
-
-          Low::Math::Matrix4x4 l_ParentMatrix(1.0f);
-
-          l_ParentMatrix =
-              glm::translate(l_ParentMatrix, l_ParentPosition);
-          l_ParentMatrix *= glm::toMat4(l_ParentRotation);
-          l_ParentMatrix = glm::scale(l_ParentMatrix, l_ParentScale);
+          Math::Matrix4x4 l_ParentMatrix =
+              l_Parent.get_world_matrix();
 
           Low::Math::Matrix4x4 l_WorldMatrix =
               l_ParentMatrix * l_LocalMatrix;

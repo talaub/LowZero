@@ -8,6 +8,8 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowMathQuaternionUtil.h"
+
 namespace Low {
   namespace Core {
     namespace UI {
@@ -51,23 +53,23 @@ namespace Low {
               ms_Slots[l_Index].m_Generation;
           l_Handle.m_Data.m_Type = Display::TYPE_ID;
 
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, position,
-                                  Math::Vector3)) Math::Vector3();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, rotation,
-                                  Math::Quaternion))
-              Math::Quaternion();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, scale,
-                                  Math::Vector3)) Math::Vector3();
+          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, pixel_position,
+                                  Math::Vector2)) Math::Vector2();
+          ACCESSOR_TYPE_SOA(l_Handle, Display, rotation, float) =
+              0.0f;
+          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, pixel_scale,
+                                  Math::Vector2)) Math::Vector2();
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, children,
                                   Util::List<uint64_t>))
               Util::List<uint64_t>();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, world_position,
-                                  Math::Vector3)) Math::Vector3();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, world_rotation,
-                                  Math::Quaternion))
-              Math::Quaternion();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, world_scale,
-                                  Math::Vector3)) Math::Vector3();
+          new (&ACCESSOR_TYPE_SOA(l_Handle, Display,
+                                  absolute_pixel_position,
+                                  Math::Vector2)) Math::Vector2();
+          ACCESSOR_TYPE_SOA(l_Handle, Display, absolute_rotation,
+                            float) = 0.0f;
+          new (&ACCESSOR_TYPE_SOA(
+              l_Handle, Display, absolute_pixel_scale, Math::Vector2))
+              Math::Vector2();
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, world_matrix,
                                   Math::Matrix4x4)) Math::Matrix4x4();
           ACCESSOR_TYPE_SOA(l_Handle, Display, world_updated, bool) =
@@ -151,23 +153,23 @@ namespace Low {
           l_TypeInfo.uiComponent = true;
           {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(position);
+            l_PropertyInfo.name = N(pixel_position);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, position);
+                offsetof(DisplayData, pixel_position);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
+                Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.position();
+              l_Handle.pixel_position();
               return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, position, Math::Vector3);
+                  p_Handle, Display, pixel_position, Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.position(*(Math::Vector3 *)p_Data);
+              l_Handle.pixel_position(*(Math::Vector2 *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -179,40 +181,41 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(DisplayData, rotation);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::QUATERNION;
+                Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.rotation();
-              return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, rotation, Math::Quaternion);
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
+                                                rotation, float);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.rotation(*(Math::Quaternion *)p_Data);
+              l_Handle.rotation(*(float *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
           }
           {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(scale);
+            l_PropertyInfo.name = N(pixel_scale);
             l_PropertyInfo.editorProperty = true;
-            l_PropertyInfo.dataOffset = offsetof(DisplayData, scale);
+            l_PropertyInfo.dataOffset =
+                offsetof(DisplayData, pixel_scale);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
+                Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.scale();
-              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
-                                                scale, Math::Vector3);
+              l_Handle.pixel_scale();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Display, pixel_scale, Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.scale(*(Math::Vector3 *)p_Data);
+              l_Handle.pixel_scale(*(Math::Vector2 *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -281,18 +284,19 @@ namespace Low {
           }
           {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(world_position);
+            l_PropertyInfo.name = N(absolute_pixel_position);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, world_position);
+                offsetof(DisplayData, absolute_pixel_position);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
+                Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.get_world_position();
+              l_Handle.get_absolute_pixel_position();
               return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, world_position, Math::Vector3);
+                  p_Handle, Display, absolute_pixel_position,
+                  Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -301,39 +305,39 @@ namespace Low {
           }
           {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(world_rotation);
+            l_PropertyInfo.name = N(absolute_rotation);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, world_rotation);
+                offsetof(DisplayData, absolute_rotation);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::QUATERNION;
+                Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.get_world_rotation();
+              l_Handle.get_absolute_rotation();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Display, absolute_rotation, float);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {};
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+          }
+          {
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(absolute_pixel_scale);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(DisplayData, absolute_pixel_scale);
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::VECTOR2;
+            l_PropertyInfo.get =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Display l_Handle = p_Handle.get_id();
+              l_Handle.get_absolute_pixel_scale();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
-                                                world_rotation,
-                                                Math::Quaternion);
-            };
-            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                    const void *p_Data) -> void {};
-            l_TypeInfo.properties[l_PropertyInfo.name] =
-                l_PropertyInfo;
-          }
-          {
-            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(world_scale);
-            l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, world_scale);
-            l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::VECTOR3;
-            l_PropertyInfo.get =
-                [](Low::Util::Handle p_Handle) -> void const * {
-              Display l_Handle = p_Handle.get_id();
-              l_Handle.get_world_scale();
-              return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, world_scale, Math::Vector3);
+                                                absolute_pixel_scale,
+                                                Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -514,12 +518,11 @@ namespace Low {
         {
           _LOW_ASSERT(is_alive());
 
-          Low::Util::Serialization::serialize(p_Node["position"],
-                                              position());
-          Low::Util::Serialization::serialize(p_Node["rotation"],
-                                              rotation());
-          Low::Util::Serialization::serialize(p_Node["scale"],
-                                              scale());
+          Low::Util::Serialization::serialize(
+              p_Node["pixel_position"], pixel_position());
+          p_Node["rotation"] = rotation();
+          Low::Util::Serialization::serialize(p_Node["pixel_scale"],
+                                              pixel_scale());
           p_Node["parent_uid"] = get_parent_uid();
           p_Node["unique_id"] = get_unique_id();
 
@@ -548,20 +551,18 @@ namespace Low {
                                           l_Handle.get_id());
           }
 
-          if (p_Node["position"]) {
-            l_Handle.position(
-                Low::Util::Serialization::deserialize_vector3(
-                    p_Node["position"]));
+          if (p_Node["pixel_position"]) {
+            l_Handle.pixel_position(
+                Low::Util::Serialization::deserialize_vector2(
+                    p_Node["pixel_position"]));
           }
           if (p_Node["rotation"]) {
-            l_Handle.rotation(
-                Low::Util::Serialization::deserialize_quaternion(
-                    p_Node["rotation"]));
+            l_Handle.rotation(p_Node["rotation"].as<float>());
           }
-          if (p_Node["scale"]) {
-            l_Handle.scale(
-                Low::Util::Serialization::deserialize_vector3(
-                    p_Node["scale"]));
+          if (p_Node["pixel_scale"]) {
+            l_Handle.pixel_scale(
+                Low::Util::Serialization::deserialize_vector2(
+                    p_Node["pixel_scale"]));
           }
           if (p_Node["parent_uid"]) {
             l_Handle.set_parent_uid(
@@ -578,45 +579,46 @@ namespace Low {
           return l_Handle;
         }
 
-        Math::Vector3 &Display::position() const
+        Math::Vector2 &Display::pixel_position() const
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
-          // LOW_CODEGEN::END::CUSTOM:GETTER_position
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
+          // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
-          return TYPE_SOA(Display, position, Math::Vector3);
+          return TYPE_SOA(Display, pixel_position, Math::Vector2);
         }
-        void Display::position(Math::Vector3 &p_Value)
+        void Display::pixel_position(Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_position
 
-          if (position() != p_Value) {
+          if (pixel_position() != p_Value) {
             // Set dirty flags
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
-            TYPE_SOA(Display, position, Math::Vector3) = p_Value;
+            TYPE_SOA(Display, pixel_position, Math::Vector2) =
+                p_Value;
 
-            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
-            // LOW_CODEGEN::END::CUSTOM:SETTER_position
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
+            // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
           }
         }
 
-        Math::Quaternion &Display::rotation() const
+        float Display::rotation() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
           // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
-          return TYPE_SOA(Display, rotation, Math::Quaternion);
+          return TYPE_SOA(Display, rotation, float);
         }
-        void Display::rotation(Math::Quaternion &p_Value)
+        void Display::rotation(float p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -629,39 +631,39 @@ namespace Low {
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
-            TYPE_SOA(Display, rotation, Math::Quaternion) = p_Value;
+            TYPE_SOA(Display, rotation, float) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
             // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
           }
         }
 
-        Math::Vector3 &Display::scale() const
+        Math::Vector2 &Display::pixel_scale() const
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale
-          // LOW_CODEGEN::END::CUSTOM:GETTER_scale
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_scale
+          // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_scale
 
-          return TYPE_SOA(Display, scale, Math::Vector3);
+          return TYPE_SOA(Display, pixel_scale, Math::Vector2);
         }
-        void Display::scale(Math::Vector3 &p_Value)
+        void Display::pixel_scale(Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_scale
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_scale
 
-          if (scale() != p_Value) {
+          if (pixel_scale() != p_Value) {
             // Set dirty flags
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
-            TYPE_SOA(Display, scale, Math::Vector3) = p_Value;
+            TYPE_SOA(Display, pixel_scale, Math::Vector2) = p_Value;
 
-            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale
-            // LOW_CODEGEN::END::CUSTOM:SETTER_scale
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
+            // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_scale
           }
         }
 
@@ -733,74 +735,81 @@ namespace Low {
           return TYPE_SOA(Display, children, Util::List<uint64_t>);
         }
 
-        Math::Vector3 &Display::get_world_position()
+        Math::Vector2 &Display::get_absolute_pixel_position()
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_position
-          // LOW_CODEGEN::END::CUSTOM:GETTER_world_position
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_pixel_position
+          recalculate_world_transform();
+          // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_position
 
-          return TYPE_SOA(Display, world_position, Math::Vector3);
+          return TYPE_SOA(Display, absolute_pixel_position,
+                          Math::Vector2);
         }
-        void Display::set_world_position(Math::Vector3 &p_Value)
+        void
+        Display::set_absolute_pixel_position(Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_position
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_pixel_position
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_position
 
           // Set new value
-          TYPE_SOA(Display, world_position, Math::Vector3) = p_Value;
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_position
-          // LOW_CODEGEN::END::CUSTOM:SETTER_world_position
-        }
-
-        Math::Quaternion &Display::get_world_rotation()
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_rotation
-          // LOW_CODEGEN::END::CUSTOM:GETTER_world_rotation
-
-          return TYPE_SOA(Display, world_rotation, Math::Quaternion);
-        }
-        void Display::set_world_rotation(Math::Quaternion &p_Value)
-        {
-          _LOW_ASSERT(is_alive());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_rotation
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_rotation
-
-          // Set new value
-          TYPE_SOA(Display, world_rotation, Math::Quaternion) =
+          TYPE_SOA(Display, absolute_pixel_position, Math::Vector2) =
               p_Value;
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_rotation
-          // LOW_CODEGEN::END::CUSTOM:SETTER_world_rotation
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_position
+          // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_position
         }
 
-        Math::Vector3 &Display::get_world_scale()
+        float Display::get_absolute_rotation()
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_scale
-          // LOW_CODEGEN::END::CUSTOM:GETTER_world_scale
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_rotation
+          recalculate_world_transform();
+          // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_rotation
 
-          return TYPE_SOA(Display, world_scale, Math::Vector3);
+          return TYPE_SOA(Display, absolute_rotation, float);
         }
-        void Display::set_world_scale(Math::Vector3 &p_Value)
+        void Display::set_absolute_rotation(float p_Value)
         {
           _LOW_ASSERT(is_alive());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_scale
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_scale
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_rotation
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_rotation
 
           // Set new value
-          TYPE_SOA(Display, world_scale, Math::Vector3) = p_Value;
+          TYPE_SOA(Display, absolute_rotation, float) = p_Value;
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_scale
-          // LOW_CODEGEN::END::CUSTOM:SETTER_world_scale
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_rotation
+          // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_rotation
+        }
+
+        Math::Vector2 &Display::get_absolute_pixel_scale()
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_pixel_scale
+          recalculate_world_transform();
+          // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_scale
+
+          return TYPE_SOA(Display, absolute_pixel_scale,
+                          Math::Vector2);
+        }
+        void Display::set_absolute_pixel_scale(Math::Vector2 &p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_pixel_scale
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_scale
+
+          // Set new value
+          TYPE_SOA(Display, absolute_pixel_scale, Math::Vector2) =
+              p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
+          // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_scale
         }
 
         Math::Matrix4x4 &Display::get_world_matrix()
@@ -808,6 +817,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_matrix
+          recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
           return TYPE_SOA(Display, world_matrix, Math::Matrix4x4);
@@ -924,6 +934,16 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
+          if (TYPE_SOA(Display, world_dirty, bool)) {
+            return TYPE_SOA(Display, world_dirty, bool);
+          }
+
+          Display l_Parent = get_parent();
+
+          if (l_Parent.is_alive()) {
+            return l_Parent.is_world_dirty() ||
+                   l_Parent.is_world_updated();
+          }
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
           return TYPE_SOA(Display, world_dirty, bool);
@@ -945,6 +965,89 @@ namespace Low {
         void Display::recalculate_world_transform()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
+          LOW_ASSERT(
+              is_alive(),
+              "Cannot calculate world position of dead ui display");
+
+          if (!is_world_dirty()) {
+            return;
+          }
+
+          if (!Display(get_parent()).is_alive() &&
+              get_parent_uid() != 0) {
+            set_parent(
+                Util::find_handle_by_unique_id(get_parent_uid())
+                    .get_id());
+          }
+
+          Math::Vector2 l_Position = pixel_position();
+          float l_Rotation = rotation();
+          Math::Vector2 l_Scale = pixel_scale();
+
+          Display l_Parent = get_parent();
+
+          Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+          l_LocalMatrix = glm::translate(
+              l_LocalMatrix,
+              Math::Vector3(l_Position.x, l_Position.y + l_Scale.y,
+                            0.0f));
+          l_LocalMatrix *= glm::toMat4(Math::VectorUtil::from_euler(
+              Math::Vector3(0.0f, 0.0f, l_Rotation)));
+          l_LocalMatrix =
+              glm::scale(l_LocalMatrix,
+                         Math::Vector3(l_Scale.x, l_Scale.y, 1.0f));
+
+          if (l_Parent.is_alive()) {
+            if (l_Parent.is_world_dirty()) {
+              l_Parent.recalculate_world_transform();
+            }
+
+            /*
+            Low::Math::Vector3 l_ParentPosition =
+                l_Parent.get_world_position();
+            Low::Math::Quaternion l_ParentRotation =
+                l_Parent.get_world_rotation();
+            Low::Math::Vector3 l_ParentScale =
+                l_Parent.get_world_scale();
+
+            Low::Math::Matrix4x4 l_ParentMatrix(1.0f);
+
+            l_ParentMatrix =
+                glm::translate(l_ParentMatrix, l_ParentPosition);
+            l_ParentMatrix *= glm::toMat4(l_ParentRotation);
+            l_ParentMatrix =
+                glm::scale(l_ParentMatrix, l_ParentScale);
+
+            Low::Math::Matrix4x4 l_WorldMatrix =
+                l_ParentMatrix * l_LocalMatrix;
+
+            Low::Math::Vector3 l_WorldScale;
+            Low::Math::Quaternion l_WorldRotation;
+            Low::Math::Vector3 l_WorldPosition;
+            Low::Math::Vector3 l_WorldSkew;
+            Low::Math::Vector4 l_WorldPerspective;
+
+            set_world_matrix(l_WorldMatrix);
+
+            glm::decompose(l_WorldMatrix, l_WorldScale,
+                           l_WorldRotation, l_WorldPosition,
+                           l_WorldSkew, l_WorldPerspective);
+
+            l_Position = l_WorldPosition;
+            l_Rotation = l_WorldRotation;
+            l_Scale = l_WorldScale;
+            */
+          } else {
+            set_world_matrix(l_LocalMatrix);
+          }
+
+          set_absolute_pixel_position(l_Position);
+          set_absolute_rotation(l_Rotation);
+          set_absolute_pixel_scale(l_Scale);
+
+          set_world_dirty(false);
+          set_world_updated(true);
           // LOW_CODEGEN::END::CUSTOM:FUNCTION_recalculate_world_transform
         }
 
@@ -986,25 +1089,26 @@ namespace Low {
           memcpy(l_NewSlots, ms_Slots,
                  l_Capacity * sizeof(Low::Util::Instances::Slot));
           {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, position) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, position) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Math::Vector3));
+            memcpy(
+                &l_NewBuffer[offsetof(DisplayData, pixel_position) *
+                             (l_Capacity + l_CapacityIncrease)],
+                &ms_Buffer[offsetof(DisplayData, pixel_position) *
+                           (l_Capacity)],
+                l_Capacity * sizeof(Math::Vector2));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, rotation) *
                                 (l_Capacity + l_CapacityIncrease)],
                    &ms_Buffer[offsetof(DisplayData, rotation) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Quaternion));
+                   l_Capacity * sizeof(float));
           }
           {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, scale) *
+            memcpy(&l_NewBuffer[offsetof(DisplayData, pixel_scale) *
                                 (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, scale) *
+                   &ms_Buffer[offsetof(DisplayData, pixel_scale) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Vector3));
+                   l_Capacity * sizeof(Math::Vector2));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, parent) *
@@ -1033,27 +1137,31 @@ namespace Low {
             }
           }
           {
-            memcpy(
-                &l_NewBuffer[offsetof(DisplayData, world_position) *
-                             (l_Capacity + l_CapacityIncrease)],
-                &ms_Buffer[offsetof(DisplayData, world_position) *
-                           (l_Capacity)],
-                l_Capacity * sizeof(Math::Vector3));
-          }
-          {
-            memcpy(
-                &l_NewBuffer[offsetof(DisplayData, world_rotation) *
-                             (l_Capacity + l_CapacityIncrease)],
-                &ms_Buffer[offsetof(DisplayData, world_rotation) *
-                           (l_Capacity)],
-                l_Capacity * sizeof(Math::Quaternion));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, world_scale) *
+            memcpy(&l_NewBuffer[offsetof(DisplayData,
+                                         absolute_pixel_position) *
                                 (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, world_scale) *
+                   &ms_Buffer[offsetof(DisplayData,
+                                       absolute_pixel_position) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Vector3));
+                   l_Capacity * sizeof(Math::Vector2));
+          }
+          {
+            memcpy(
+                &l_NewBuffer[offsetof(DisplayData,
+                                      absolute_rotation) *
+                             (l_Capacity + l_CapacityIncrease)],
+                &ms_Buffer[offsetof(DisplayData, absolute_rotation) *
+                           (l_Capacity)],
+                l_Capacity * sizeof(float));
+          }
+          {
+            memcpy(&l_NewBuffer[offsetof(DisplayData,
+                                         absolute_pixel_scale) *
+                                (l_Capacity + l_CapacityIncrease)],
+                   &ms_Buffer[offsetof(DisplayData,
+                                       absolute_pixel_scale) *
+                              (l_Capacity)],
+                   l_Capacity * sizeof(Math::Vector2));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, world_matrix) *

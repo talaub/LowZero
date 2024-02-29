@@ -11,7 +11,8 @@ namespace Low {
 
       ImGui::Begin(ICON_FA_GLASSES " Details");
 
-      for (auto it = m_Sections.begin(); it != m_Sections.end(); ++it) {
+      for (auto it = m_Sections.begin(); it != m_Sections.end();
+           ++it) {
         if (m_BreakRunning) {
           break;
         }

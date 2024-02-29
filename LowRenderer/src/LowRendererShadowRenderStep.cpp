@@ -16,23 +16,26 @@
 namespace Low {
   namespace Renderer {
     namespace ShadowStep {
-      void setup_signature(GraphicsStep p_Step, RenderFlow p_RenderFlow)
+      void setup_signature(GraphicsStep p_Step,
+                           RenderFlow p_RenderFlow)
       {
-        Util::List<Backend::PipelineResourceDescription> l_ResourceDescriptions;
+        Util::List<Backend::PipelineResourceDescription>
+            l_ResourceDescriptions;
 
         {
           Backend::PipelineResourceDescription l_ResourceDescription;
           l_ResourceDescription.arraySize = 1;
           l_ResourceDescription.name = N(u_RenderObjects);
-          l_ResourceDescription.step = Backend::ResourcePipelineStep::GRAPHICS;
+          l_ResourceDescription.step =
+              Backend::ResourcePipelineStep::GRAPHICS;
           l_ResourceDescription.type = Backend::ResourceType::BUFFER;
 
           l_ResourceDescriptions.push_back(l_ResourceDescription);
         }
         p_Step.get_signatures()[p_RenderFlow] =
-            Interface::PipelineResourceSignature::make(N(StepResourceSignature),
-                                                       p_Step.get_context(), 2,
-                                                       l_ResourceDescriptions);
+            Interface::PipelineResourceSignature::make(
+                N(StepResourceSignature), p_Step.get_context(), 2,
+                l_ResourceDescriptions);
 
         p_Step.get_signatures()[p_RenderFlow].set_buffer_resource(
             N(u_RenderObjects), 0,
@@ -40,9 +43,10 @@ namespace Low {
                 N(_renderobject_buffer)));
       }
 
-      void get_frustum_corners_world_space(const glm::mat4 &p_Projection,
-                                           const glm::mat4 &p_View,
-                                           Math::Vector4 *p_OutPositions)
+      void
+      get_frustum_corners_world_space(const glm::mat4 &p_Projection,
+                                      const glm::mat4 &p_View,
+                                      Math::Vector4 *p_OutPositions)
       {
         const auto inv = glm::inverse(p_Projection * p_View);
 
@@ -60,19 +64,18 @@ namespace Low {
         }
       }
 
-      static void
-      calculate_directional_light_matrices(RenderFlow p_RenderFlow,
-                                           Math::Matrix4x4 *p_LightProjection,
-                                           Math::Matrix4x4 *p_LightView)
+      static void calculate_directional_light_matrices(
+          RenderFlow p_RenderFlow, Math::Matrix4x4 *p_LightProjection,
+          Math::Matrix4x4 *p_LightView)
       {
 
 #define FRUSTUM_POINT_COUNT 8
 
-        Math::Matrix4x4 proj =
-            glm::perspective(glm::radians(p_RenderFlow.get_camera_fov()),
-                             ((float)p_RenderFlow.get_dimensions().x) /
-                                 ((float)p_RenderFlow.get_dimensions().y),
-                             p_RenderFlow.get_camera_near_plane(), 15.0f);
+        Math::Matrix4x4 proj = glm::perspective(
+            glm::radians(p_RenderFlow.get_camera_fov()),
+            ((float)p_RenderFlow.get_dimensions().x) /
+                ((float)p_RenderFlow.get_dimensions().y),
+            p_RenderFlow.get_camera_near_plane(), 15.0f);
 
         proj[1][1] *= -1.0f; // Convert from OpenGL y-axis
 
@@ -85,9 +88,10 @@ namespace Low {
         DirectionalLight &l_DirectionalLight =
             p_RenderFlow.get_directional_light();
 
-        glm::vec3 lightDirection = glm::normalize(Math::VectorUtil::direction(
-                                       l_DirectionalLight.rotation)) *
-                                   -1.0f;
+        glm::vec3 lightDirection =
+            glm::normalize(Math::VectorUtil::direction(
+                l_DirectionalLight.rotation)) *
+            -1.0f;
 
         Math::Vector4 l_Corners[FRUSTUM_POINT_COUNT];
         get_frustum_corners_world_space(proj, viewMatrix, l_Corners);
@@ -98,8 +102,9 @@ namespace Low {
         }
         center /= FRUSTUM_POINT_COUNT;
 
-        const auto lightView = glm::lookAt(center + lightDirection, center,
-                                           glm::vec3(0.0f, 1.0f, 0.0f));
+        const auto lightView =
+            glm::lookAt(center + lightDirection, center,
+                        glm::vec3(0.0f, 1.0f, 0.0f));
 
         float minX = std::numeric_limits<float>::max();
         float maxX = std::numeric_limits<float>::lowest();
@@ -151,10 +156,11 @@ namespace Low {
 
         Math::Matrix4x4 l_ProjectionMatrix;
         Math::Matrix4x4 l_ViewMatrix;
-        calculate_directional_light_matrices(p_RenderFlow, &l_ProjectionMatrix,
-                                             &l_ViewMatrix);
+        calculate_directional_light_matrices(
+            p_RenderFlow, &l_ProjectionMatrix, &l_ViewMatrix);
 
-        Math::Matrix4x4 l_LightSpace = l_ProjectionMatrix * l_ViewMatrix;
+        Math::Matrix4x4 l_LightSpace =
+            l_ProjectionMatrix * l_ViewMatrix;
 
         DirectionalLightShaderInfo l_DirectionalLightShaderInfo;
         l_DirectionalLightShaderInfo.lightSpaceMatrix = l_LightSpace;
@@ -169,17 +175,20 @@ namespace Low {
             .set(&l_DirectionalLightShaderInfo);
 
         {
-          PointLightShaderInfo l_PointLights[LOW_RENDERER_POINTLIGHT_COUNT];
-          uint32_t l_PointLightCount = p_RenderFlow.get_point_lights().size();
-          l_PointLightCount = Math::Util::clamp(l_PointLightCount, 0,
-                                                LOW_RENDERER_POINTLIGHT_COUNT);
+          PointLightShaderInfo
+              l_PointLights[LOW_RENDERER_POINTLIGHT_COUNT];
+          uint32_t l_PointLightCount =
+              p_RenderFlow.get_point_lights().size();
+          l_PointLightCount = Math::Util::clamp(
+              l_PointLightCount, 0, LOW_RENDERER_POINTLIGHT_COUNT);
 
           p_RenderFlow.get_resources()
               .get_buffer_resource(N(_point_light_info))
               .write(&l_PointLightCount, sizeof(uint32_t), 0);
 
           for (uint32_t i = 0u; i < l_PointLightCount; ++i) {
-            l_PointLights[i].color = p_RenderFlow.get_point_lights()[i].color;
+            l_PointLights[i].color =
+                p_RenderFlow.get_point_lights()[i].color;
             l_PointLights[i].position =
                 p_RenderFlow.get_point_lights()[i].position;
           }
@@ -199,26 +208,34 @@ namespace Low {
         uint32_t l_ObjectIndex = 0;
 
         for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
-             pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {
+             pit != p_Step.get_pipelines()[p_RenderFlow].end();
+             ++pit) {
 
           for (auto mit =
-                   p_Step.get_skinned_renderobjects()[pit->get_name()].begin();
-               mit != p_Step.get_skinned_renderobjects()[pit->get_name()].end();
+                   p_Step.get_skinned_renderobjects()[pit->get_name()]
+                       .begin();
+               mit !=
+               p_Step.get_skinned_renderobjects()[pit->get_name()]
+                   .end();
                ++mit) {
             RenderObject &i_RenderObject = *mit;
 
-            Math::Matrix4x4 l_MVPMatrix =
-                l_ProjectionMatrix * l_ViewMatrix * i_RenderObject.transform;
+            Math::Matrix4x4 l_MVPMatrix = l_ProjectionMatrix *
+                                          l_ViewMatrix *
+                                          i_RenderObject.transform;
 
             l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
 
             l_ObjectIndex++;
           }
 
-          for (auto mit = p_Step.get_renderobjects()[pit->get_name()].begin();
-               mit != p_Step.get_renderobjects()[pit->get_name()].end();
+          for (auto mit = p_Step.get_renderobjects()[pit->get_name()]
+                              .begin();
+               mit !=
+               p_Step.get_renderobjects()[pit->get_name()].end();
                ++mit) {
-            for (auto it = mit->second.begin(); it != mit->second.end();) {
+            for (auto it = mit->second.begin();
+                 it != mit->second.end();) {
               Math::Matrix4x4 l_MVPMatrix =
                   l_ProjectionMatrix * l_ViewMatrix * it->transform;
 
@@ -242,7 +259,8 @@ namespace Low {
 
       void setup_config()
       {
-        GraphicsStepConfig l_Config = GraphicsStepConfig::make(N(ShadowPass));
+        GraphicsStepConfig l_Config =
+            GraphicsStepConfig::make(N(ShadowPass));
         l_Config.get_dimensions_config().type =
             ImageResourceDimensionType::ABSOLUTE;
         l_Config.get_dimensions_config().absolute.x = 1024;
@@ -250,14 +268,16 @@ namespace Low {
 
         {
           l_Config.set_depth_clear(true);
-          l_Config.set_depth_compare_operation(Backend::CompareOperation::LESS);
+          l_Config.set_depth_compare_operation(
+              Backend::CompareOperation::LESS);
           l_Config.set_depth_test(true);
           l_Config.set_depth_write(true);
           l_Config.set_use_depth(true);
 
           PipelineResourceBindingConfig l_ResourceBinding;
           l_ResourceBinding.resourceName = N(ShadowAtlas);
-          l_ResourceBinding.resourceScope = ResourceBindScope::RENDERFLOW;
+          l_ResourceBinding.resourceScope =
+              ResourceBindScope::RENDERFLOW;
           l_ResourceBinding.bindType = ResourceBindType::IMAGE;
           l_Config.set_depth_rendertarget(l_ResourceBinding);
         }
@@ -291,7 +311,8 @@ namespace Low {
           l_ResourceConfig.name = N(_renderobject_buffer);
           l_ResourceConfig.type = ResourceType::BUFFER;
           l_ResourceConfig.buffer.size =
-              sizeof(RenderObjectShaderInfo) * LOW_RENDERER_RENDEROBJECT_COUNT;
+              sizeof(RenderObjectShaderInfo) *
+              LOW_RENDERER_RENDEROBJECT_COUNT;
           l_Config.get_resources().push_back(l_ResourceConfig);
         }
       }

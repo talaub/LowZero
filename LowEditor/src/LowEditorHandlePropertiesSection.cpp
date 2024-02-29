@@ -39,13 +39,16 @@ namespace Low {
       ImGui::SameLine();
 
       bool l_IsChildEntity =
-          Core::Component::Transform(l_Entity.get_transform().get_parent())
+          Core::Component::Transform(
+              l_Entity.get_transform().get_parent())
               .is_alive();
 
       bool l_IsPrefabInstance =
-          l_Entity.has_component(Core::Component::PrefabInstance::TYPE_ID) &&
+          l_Entity.has_component(
+              Core::Component::PrefabInstance::TYPE_ID) &&
           Core::Component::PrefabInstance(
-              l_Entity.get_component(Core::Component::PrefabInstance::TYPE_ID))
+              l_Entity.get_component(
+                  Core::Component::PrefabInstance::TYPE_ID))
               .get_prefab()
               .is_alive();
 
@@ -84,7 +87,8 @@ namespace Low {
 
           if (ImGui::BeginPopup(l_PopupName.c_str())) {
 
-            for (Core::Region i_Region : Core::Region::ms_LivingInstances) {
+            for (Core::Region i_Region :
+                 Core::Region::ms_LivingInstances) {
               if (!i_Region.get_scene().is_loaded()) {
                 continue;
               }
@@ -100,8 +104,9 @@ namespace Low {
 
       if (l_IsPrefabInstance) {
         int l_GreyVal = 120;
-        ImGui::PushStyleColor(ImGuiCol_Text,
-                              IM_COL32(l_GreyVal, l_GreyVal, l_GreyVal, 255));
+        ImGui::PushStyleColor(
+            ImGuiCol_Text,
+            IM_COL32(l_GreyVal, l_GreyVal, l_GreyVal, 255));
         ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_300);
         ImGui::Text("Prefab instance");
         ImGui::PopFont();
@@ -118,7 +123,8 @@ namespace Low {
           if (l_Entity.has_component(*it)) {
             continue;
           }
-          Util::RTTI::TypeInfo &i_TypeInfo = Util::Handle::get_type_info(*it);
+          Util::RTTI::TypeInfo &i_TypeInfo =
+              Util::Handle::get_type_info(*it);
 
           if (ImGui::MenuItem(i_TypeInfo.name.c_str())) {
             i_TypeInfo.make_component(l_Entity.get_id());
@@ -147,11 +153,13 @@ namespace Low {
       ImGui::Text("Type");
       ImGui::SameLine();
 
-      if (ImGui::BeginCombo("##typeselector",
-                            l_Material.get_material_type().get_name().c_str(),
-                            0)) {
-        for (auto it = Renderer::MaterialType::ms_LivingInstances.begin();
-             it != Renderer::MaterialType::ms_LivingInstances.end(); ++it) {
+      if (ImGui::BeginCombo(
+              "##typeselector",
+              l_Material.get_material_type().get_name().c_str(), 0)) {
+        for (auto it =
+                 Renderer::MaterialType::ms_LivingInstances.begin();
+             it != Renderer::MaterialType::ms_LivingInstances.end();
+             ++it) {
           bool i_Selected = *it == l_Material.get_material_type();
 
           if (it->is_internal()) {
@@ -167,7 +175,8 @@ namespace Low {
         ImGui::EndCombo();
       }
 
-      Renderer::MaterialType l_MaterialType = l_Material.get_material_type();
+      Renderer::MaterialType l_MaterialType =
+          l_Material.get_material_type();
 
       bool l_FirstEdit = true;
 
@@ -177,28 +186,33 @@ namespace Low {
 
         ImGui::PushID(l_Id++);
 
-        if (pit->type == Renderer::MaterialTypePropertyType::TEXTURE2D) {
-          uint64_t i_TextureId = (uint64_t)l_Material.get_property(pit->name);
+        if (pit->type ==
+            Renderer::MaterialTypePropertyType::TEXTURE2D) {
+          uint64_t i_TextureId =
+              (uint64_t)l_Material.get_property(pit->name);
 
           if (PropertyEditors::render_handle_selector(
-                  pit->name.c_str(), Core::Texture2D::TYPE_ID, &i_TextureId)) {
-            l_Material.set_property(pit->name,
-                                    Util::Variant::from_handle(i_TextureId));
+                  pit->name.c_str(), Core::Texture2D::TYPE_ID,
+                  &i_TextureId)) {
+            l_Material.set_property(
+                pit->name, Util::Variant::from_handle(i_TextureId));
 
             l_ChangedProperties.push_back(pit->name);
           } else if (m_CurrentlyEditing == pit->name.c_str()) {
             m_CurrentlyEditing = "";
           }
         }
-        if (pit->type == Renderer::MaterialTypePropertyType::VECTOR4) {
+        if (pit->type ==
+            Renderer::MaterialTypePropertyType::VECTOR4) {
           Math::Vector4 l_Color = l_Material.get_property(pit->name);
 
-          if (PropertyEditors::render_color_selector(pit->name.c_str(),
-                                                     &l_Color)) {
+          if (PropertyEditors::render_color_selector(
+                  pit->name.c_str(), &l_Color)) {
             l_FirstEdit = m_CurrentlyEditing != pit->name.c_str();
             m_CurrentlyEditing = pit->name.c_str();
             l_Color.a = 1.0f;
-            l_Material.set_property(pit->name, Util::Variant(l_Color));
+            l_Material.set_property(pit->name,
+                                    Util::Variant(l_Color));
             l_ChangedProperties.push_back(pit->name);
           } else if (m_CurrentlyEditing == pit->name.c_str()) {
             m_CurrentlyEditing = "";
@@ -210,8 +224,8 @@ namespace Low {
       Util::StoredHandle l_AfterChange;
       Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
 
-      Transaction l_Transaction =
-          Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
+      Transaction l_Transaction = Transaction::from_diff(
+          m_Handle, l_StoredHandle, l_AfterChange);
 
       for (auto it = l_ChangedProperties.begin();
            it != l_ChangedProperties.end(); ++it) {
@@ -226,18 +240,22 @@ namespace Low {
       if (!l_FirstEdit) {
         Transaction l_OldTransaction = get_global_changelist().peek();
 
-        for (uint32_t i = 0; i < l_Transaction.get_operations().size(); ++i) {
-          AssetOperations::MaterialPropertyEditOperation *i_Operation =
-              (AssetOperations::MaterialPropertyEditOperation *)
-                  l_Transaction.get_operations()[i];
-          for (uint32_t j = 0; j < l_OldTransaction.get_operations().size();
-               ++j) {
-            AssetOperations::MaterialPropertyEditOperation *i_OldOperation =
-                (AssetOperations::MaterialPropertyEditOperation *)
-                    l_OldTransaction.get_operations()[j];
+        for (uint32_t i = 0;
+             i < l_Transaction.get_operations().size(); ++i) {
+          AssetOperations::MaterialPropertyEditOperation
+              *i_Operation =
+                  (AssetOperations::MaterialPropertyEditOperation *)
+                      l_Transaction.get_operations()[i];
+          for (uint32_t j = 0;
+               j < l_OldTransaction.get_operations().size(); ++j) {
+            AssetOperations::MaterialPropertyEditOperation
+                *i_OldOperation =
+                    (AssetOperations::MaterialPropertyEditOperation *)
+                        l_OldTransaction.get_operations()[j];
 
             if (i_OldOperation->m_Handle == i_Operation->m_Handle &&
-                i_OldOperation->m_PropertyName == i_Operation->m_PropertyName) {
+                i_OldOperation->m_PropertyName ==
+                    i_Operation->m_PropertyName) {
               i_Operation->m_OldValue = i_OldOperation->m_OldValue;
             }
           }
@@ -268,11 +286,13 @@ namespace Low {
         if (i_PropInfo.editorProperty) {
           ImVec2 l_Pos = ImGui::GetCursorScreenPos();
           float l_FullWidth = ImGui::GetContentRegionAvail().x;
-          float l_LabelWidth = l_FullWidth * LOW_EDITOR_LABEL_WIDTH_REL;
+          float l_LabelWidth =
+              l_FullWidth * LOW_EDITOR_LABEL_WIDTH_REL;
           float l_LabelHeight = 20.0f;
 
           if (i_PropInfo.type == Util::RTTI::PropertyType::HANDLE) {
-            PropertyEditors::render_handle_selector(i_PropInfo, m_Handle);
+            PropertyEditors::render_handle_selector(i_PropInfo,
+                                                    m_Handle);
           } else {
             PropertyEditors::render_editor(i_PropInfo, m_Handle,
                                            i_PropInfo.get(m_Handle));
@@ -289,7 +309,8 @@ namespace Low {
           if (ImGui::BeginPopupContextItem(i_InvisButtonId.c_str())) {
             if (m_Metadata.typeInfo.component) {
               Core::Entity i_Entity =
-                  *(Core::Entity *)m_Metadata.typeInfo.properties[l_EntityName]
+                  *(Core::Entity *)m_Metadata.typeInfo
+                       .properties[l_EntityName]
                        .get(m_Handle);
               if (i_Entity.has_component(
                       Core::Component::PrefabInstance::TYPE_ID)) {
@@ -297,19 +318,26 @@ namespace Low {
                     i_Entity.get_component(
                         Core::Component::PrefabInstance::TYPE_ID);
                 if (i_Instance.get_prefab().is_alive()) {
-                  if (i_Instance.get_overrides().find(m_Metadata.typeId) !=
+                  if (i_Instance.get_overrides().find(
+                          m_Metadata.typeId) !=
                       i_Instance.get_overrides().end()) {
                     if (std::find(
-                            i_Instance.get_overrides()[m_Metadata.typeId]
+                            i_Instance
+                                .get_overrides()[m_Metadata.typeId]
                                 .begin(),
-                            i_Instance.get_overrides()[m_Metadata.typeId].end(),
+                            i_Instance
+                                .get_overrides()[m_Metadata.typeId]
+                                .end(),
                             i_PropInfo.name) !=
-                        i_Instance.get_overrides()[m_Metadata.typeId].end()) {
+                        i_Instance.get_overrides()[m_Metadata.typeId]
+                            .end()) {
                       if (ImGui::MenuItem("Apply to prefab")) {
-                        i_Instance.get_prefab().apply(m_Handle,
-                                                      i_PropInfo.name);
-                        Core::Prefab i_Prefab = i_Instance.get_prefab();
-                        while (Core::Prefab(i_Prefab.get_parent().get_id())
+                        i_Instance.get_prefab().apply(
+                            m_Handle, i_PropInfo.name);
+                        Core::Prefab i_Prefab =
+                            i_Instance.get_prefab();
+                        while (Core::Prefab(
+                                   i_Prefab.get_parent().get_id())
                                    .is_alive()) {
                           i_Prefab = i_Prefab.get_parent().get_id();
                         }
@@ -336,9 +364,9 @@ namespace Low {
         return;
       }
 
-      if (ImGui::CollapsingHeader(m_Metadata.name.c_str(),
-                                  m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen
-                                                : 0)) {
+      if (ImGui::CollapsingHeader(
+              m_Metadata.name.c_str(),
+              m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {
 
         Util::StoredHandle l_StoredHandle;
         Util::DiffUtil::store_handle(l_StoredHandle, m_Handle);
@@ -363,8 +391,8 @@ namespace Low {
           Util::DiffUtil::store_handle(l_AfterChange, m_Handle);
 
           if (!Core::Material::is_alive(m_Handle)) {
-            Transaction l_Transaction =
-                Transaction::from_diff(m_Handle, l_StoredHandle, l_AfterChange);
+            Transaction l_Transaction = Transaction::from_diff(
+                m_Handle, l_StoredHandle, l_AfterChange);
 
             get_global_changelist().add_entry(l_Transaction);
           }

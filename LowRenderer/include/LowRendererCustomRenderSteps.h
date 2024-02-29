@@ -17,5 +17,8 @@ namespace Low {
     namespace DebugTriangleStep {
       void setup_config();
     }
+    namespace UiStep {
+      void setup_config();
+    }
   } // namespace Renderer
 } // namespace Low

@@ -2645,12 +2645,21 @@ namespace Low {
           } else {
             LOW_ASSERT(false, "Unknown image sample filter");
           }
+#if 0
           l_SamplerInfo.addressModeU =
               VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
           l_SamplerInfo.addressModeV =
               VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
           l_SamplerInfo.addressModeW =
               VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+#else
+          l_SamplerInfo.addressModeU =
+              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+          l_SamplerInfo.addressModeV =
+              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+          l_SamplerInfo.addressModeW =
+              VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+#endif
 
           // l_SamplerInfo.addressModeU =
           // VK_SAMPLER_ADDRESS_MODE_REPEAT;

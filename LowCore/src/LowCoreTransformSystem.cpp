@@ -20,7 +20,8 @@ namespace Low {
           Component::Transform *l_Transforms =
               Component::Transform::living_instances();
 
-          for (uint32_t i = 0u; i < Component::Transform::living_count(); ++i) {
+          for (uint32_t i = 0u;
+               i < Component::Transform::living_count(); ++i) {
             Component::Transform i_Transform = l_Transforms[i];
 
             i_Transform.set_world_updated(false);

@@ -58,6 +58,10 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, pipelines,
                               Util::List<ComputePipelineConfig>))
           Util::List<ComputePipelineConfig>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig,
+                              output_image,
+                              PipelineResourceBindingConfig))
+          PipelineResourceBindingConfig();
       ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -184,23 +188,24 @@ namespace Low {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(output_image_name);
+        l_PropertyInfo.name = N(output_image);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ComputeStepConfigData, output_image_name);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+            offsetof(ComputeStepConfigData, output_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStepConfig l_Handle = p_Handle.get_id();
-          l_Handle.get_output_image_name();
+          l_Handle.get_output_image();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, ComputeStepConfig, output_image_name,
-              Util::Name);
+              p_Handle, ComputeStepConfig, output_image,
+              PipelineResourceBindingConfig);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           ComputeStepConfig l_Handle = p_Handle.get_id();
-          l_Handle.set_output_image_name(*(Util::Name *)p_Data);
+          l_Handle.set_output_image(
+              *(PipelineResourceBindingConfig *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
       }
@@ -282,7 +287,6 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["output_image_name"] = get_output_image_name().c_str();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -309,9 +313,7 @@ namespace Low {
       }
       if (p_Node["pipelines"]) {
       }
-      if (p_Node["output_image_name"]) {
-        l_Handle.set_output_image_name(
-            LOW_YAML_AS_NAME(p_Node["output_image_name"]));
+      if (p_Node["output_image"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -373,29 +375,31 @@ namespace Low {
                       Util::List<ComputePipelineConfig>);
     }
 
-    Util::Name ComputeStepConfig::get_output_image_name() const
+    PipelineResourceBindingConfig &
+    ComputeStepConfig::get_output_image() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image_name
-      // LOW_CODEGEN::END::CUSTOM:GETTER_output_image_name
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
-      return TYPE_SOA(ComputeStepConfig, output_image_name,
-                      Util::Name);
+      return TYPE_SOA(ComputeStepConfig, output_image,
+                      PipelineResourceBindingConfig);
     }
-    void ComputeStepConfig::set_output_image_name(Util::Name p_Value)
+    void ComputeStepConfig::set_output_image(
+        PipelineResourceBindingConfig &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image_name
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image_name
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
-      TYPE_SOA(ComputeStepConfig, output_image_name, Util::Name) =
-          p_Value;
+      TYPE_SOA(ComputeStepConfig, output_image,
+               PipelineResourceBindingConfig) = p_Value;
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image_name
-      // LOW_CODEGEN::END::CUSTOM:SETTER_output_image_name
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
     }
 
     Low::Util::Name ComputeStepConfig::get_name() const
@@ -437,8 +441,13 @@ namespace Low {
       l_Config.get_callbacks().execute =
           &ComputeStep::default_execute;
 
-      l_Config.set_output_image_name(
-          LOW_YAML_AS_NAME(p_Node["output_image"]));
+      if (p_Node["output_image"]) {
+        PipelineResourceBindingConfig l_Binding;
+        parse_pipeline_resource_binding(
+            l_Binding, LOW_YAML_AS_STRING(p_Node["output_image"]),
+            Util::String("image"));
+        l_Config.set_output_image(l_Binding);
+      }
 
       if (p_Node["resources"]) {
         parse_resource_configs(p_Node["resources"],
@@ -523,13 +532,13 @@ namespace Low {
         }
       }
       {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData,
-                                     output_image_name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepConfigData,
-                                   output_image_name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::Name));
+        memcpy(
+            &l_NewBuffer[offsetof(ComputeStepConfigData,
+                                  output_image) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(ComputeStepConfigData, output_image) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(PipelineResourceBindingConfig));
       }
       {
         memcpy(&l_NewBuffer[offsetof(ComputeStepConfigData, name) *

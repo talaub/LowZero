@@ -7,6 +7,8 @@
 
 #include "LowRendererBackend.h"
 #include "LowRendererRenderFlow.h"
+#include "LowRendererGraphicsStep.h"
+#include "LowRendererComputeStep.h"
 
 namespace Low {
   namespace Renderer {
@@ -381,6 +383,104 @@ namespace Low {
       p_Config.translucency = false;
       p_Config.vertexPath = "fs.vert";
       p_Config.fragmentPath = p_FragmentShaderName + ".frag";
+    }
+
+    bool step_has_resource_from_binding(
+        PipelineResourceBindingConfig &p_BindingConfig,
+        RenderFlow p_RenderFlow, Util::Handle p_StepHandle)
+    {
+      GraphicsStep l_GraphicsStep = 0;
+      ComputeStep l_ComputeStep = 0;
+      if (p_StepHandle.get_type() == GraphicsStep::TYPE_ID) {
+        l_GraphicsStep = p_StepHandle.get_id();
+      } else if (p_StepHandle.get_type() == ComputeStep::TYPE_ID) {
+        l_ComputeStep = p_StepHandle.get_id();
+      } else {
+        LOW_ASSERT(false, "Unsupported renderstep type");
+      }
+
+      if (p_BindingConfig.resourceScope == ResourceBindScope::LOCAL) {
+        if (p_BindingConfig.resourceName == N(INPUT_IMAGE)) {
+          return true;
+        } else {
+          if (l_GraphicsStep.is_alive()) {
+            return l_GraphicsStep.get_resources()[p_RenderFlow]
+                .has_resource(p_BindingConfig.resourceName);
+          } else {
+            return l_ComputeStep.get_resources()[p_RenderFlow]
+                .has_resource(p_BindingConfig.resourceName);
+          }
+        }
+      } else if (p_BindingConfig.resourceScope ==
+                 ResourceBindScope::RENDERFLOW) {
+        return p_RenderFlow.get_resources().has_resource(
+            p_BindingConfig.resourceName);
+      } else {
+        LOW_ASSERT(false, "Resource bind scope not supported");
+      }
+
+      return false;
+    }
+
+    Util::Handle step_get_resource_from_binding(
+        PipelineResourceBindingConfig &p_BindingConfig,
+        RenderFlow p_RenderFlow, Util::Handle p_StepHandle)
+    {
+      GraphicsStep l_GraphicsStep = 0;
+      ComputeStep l_ComputeStep = 0;
+      if (p_StepHandle.get_type() == GraphicsStep::TYPE_ID) {
+        l_GraphicsStep = p_StepHandle.get_id();
+      } else if (p_StepHandle.get_type() == ComputeStep::TYPE_ID) {
+        l_ComputeStep = p_StepHandle.get_id();
+      } else {
+        LOW_ASSERT(false, "Unsupported renderstep type");
+      }
+
+      if (p_BindingConfig.bindType == ResourceBindType::IMAGE) {
+        if (p_BindingConfig.resourceScope ==
+            ResourceBindScope::LOCAL) {
+          if (p_BindingConfig.resourceName == N(INPUT_IMAGE)) {
+            return p_RenderFlow.get_previous_output_image(
+                p_StepHandle);
+          } else {
+            if (l_GraphicsStep.is_alive()) {
+              return l_GraphicsStep.get_resources()[p_RenderFlow]
+                  .get_image_resource(p_BindingConfig.resourceName);
+            } else {
+              return l_ComputeStep.get_resources()[p_RenderFlow]
+                  .get_image_resource(p_BindingConfig.resourceName);
+            }
+          }
+        } else if (p_BindingConfig.resourceScope ==
+                   ResourceBindScope::RENDERFLOW) {
+          return p_RenderFlow.get_resources().get_image_resource(
+              p_BindingConfig.resourceName);
+        } else {
+          LOW_ASSERT(false, "Resource bind scope not supported");
+        }
+      } else if (p_BindingConfig.bindType ==
+                 ResourceBindType::BUFFER) {
+        if (p_BindingConfig.resourceScope ==
+            ResourceBindScope::LOCAL) {
+          if (l_GraphicsStep.is_alive()) {
+            return l_GraphicsStep.get_resources()[p_RenderFlow]
+                .get_buffer_resource(p_BindingConfig.resourceName);
+          } else {
+            return l_ComputeStep.get_resources()[p_RenderFlow]
+                .get_buffer_resource(p_BindingConfig.resourceName);
+          }
+        } else if (p_BindingConfig.resourceScope ==
+                   ResourceBindScope::RENDERFLOW) {
+          return p_RenderFlow.get_resources().get_buffer_resource(
+              p_BindingConfig.resourceName);
+        } else {
+          LOW_ASSERT(false, "Resource bind scope not supported");
+        }
+      }
+
+      LOW_ASSERT(false, "Unknown resource bind type");
+
+      return 0;
     }
   } // namespace Renderer
 } // namespace Low

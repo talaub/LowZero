@@ -30,8 +30,10 @@ namespace Low {
     {
       static Name l_NameName = N(name);
       static Name l_EntityPropertyName = N(entity);
+      static Name l_ElementPropertyName = N(element);
 
-      RTTI::TypeInfo &l_TypeInfo = Handle::get_type_info(p_Handle.get_type());
+      RTTI::TypeInfo &l_TypeInfo =
+          Handle::get_type_info(p_Handle.get_type());
 
       UniqueIdCombination l_Combinator;
 
@@ -39,21 +41,38 @@ namespace Low {
       Handle l_HandleForName = p_Handle;
 
       if (l_TypeInfo.component) {
-        LOW_ASSERT(l_TypeInfo.properties.find(l_EntityPropertyName) !=
-                       l_TypeInfo.properties.end(),
-                   "Could not find entity property for component while "
-                   "generating uniqueId");
+        LOW_ASSERT(
+            l_TypeInfo.properties.find(l_EntityPropertyName) !=
+                l_TypeInfo.properties.end(),
+            "Could not find entity property for component while "
+            "generating uniqueId");
 
         l_HandleForName =
-            *(Handle *)l_TypeInfo.properties[l_EntityPropertyName].get(
-                p_Handle);
+            *(Handle *)l_TypeInfo.properties[l_EntityPropertyName]
+                 .get(p_Handle);
 
-        l_TypeInfoForName = Handle::get_type_info(l_HandleForName.get_type());
+        l_TypeInfoForName =
+            Handle::get_type_info(l_HandleForName.get_type());
+      }
+      if (l_TypeInfo.uiComponent) {
+        LOW_ASSERT(
+            l_TypeInfo.properties.find(l_ElementPropertyName) !=
+                l_TypeInfo.properties.end(),
+            "Could not find element property for ui component while "
+            "generating uniqueId");
+
+        l_HandleForName =
+            *(Handle *)l_TypeInfo.properties[l_ElementPropertyName]
+                 .get(p_Handle);
+
+        l_TypeInfoForName =
+            Handle::get_type_info(l_HandleForName.get_type());
       }
 
-      LOW_ASSERT(l_TypeInfoForName.properties.find(l_NameName) !=
-                     l_TypeInfoForName.properties.end(),
-                 "Could not find name property for unique id generation");
+      LOW_ASSERT(
+          l_TypeInfoForName.properties.find(l_NameName) !=
+              l_TypeInfoForName.properties.end(),
+          "Could not find name property for unique id generation");
 
       l_Combinator.data.nameHash =
           ((Name *)l_TypeInfoForName.properties[l_NameName].get(
@@ -85,7 +104,8 @@ namespace Low {
 
     Handle find_handle_by_unique_id(UniqueId p_UniqueId)
     {
-      if (g_UniqueIdRegistry.find(p_UniqueId) == g_UniqueIdRegistry.end()) {
+      if (g_UniqueIdRegistry.find(p_UniqueId) ==
+          g_UniqueIdRegistry.end()) {
         return 0;
       }
       return g_UniqueIdRegistry[p_UniqueId];
@@ -147,14 +167,16 @@ namespace Low {
       }
 
       return p_Slots[m_Data.m_Index].m_Occupied &&
-             p_Slots[m_Data.m_Index].m_Generation == m_Data.m_Generation;
+             p_Slots[m_Data.m_Index].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     void Handle::register_type_info(uint16_t p_TypeId,
                                     RTTI::TypeInfo &p_TypeInfo)
     {
-      LOW_ASSERT(g_TypeInfos.find(p_TypeId) == g_TypeInfos.end(),
-                 "Type info for this type id has already been registered");
+      LOW_ASSERT(
+          g_TypeInfos.find(p_TypeId) == g_TypeInfos.end(),
+          "Type info for this type id has already been registered");
 
       g_TypeInfos[p_TypeId] = p_TypeInfo;
 
@@ -176,36 +198,44 @@ namespace Low {
       return g_ComponentTypes;
     }
 
-    void Handle::fill_variants(Util::Handle p_Handle,
-                               Util::RTTI::PropertyInfo &p_PropertyInfo,
-                               Util::Map<Util::Name, Util::Variant> &p_Variants)
+    void Handle::fill_variants(
+        Util::Handle p_Handle,
+        Util::RTTI::PropertyInfo &p_PropertyInfo,
+        Util::Map<Util::Name, Util::Variant> &p_Variants)
     {
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::UNKNOWN) {
         return;
       }
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::SHAPE) {
-        Math::Shape l_Shape = *(Math::Shape *)p_PropertyInfo.get(p_Handle);
+        Math::Shape l_Shape =
+            *(Math::Shape *)p_PropertyInfo.get(p_Handle);
         Util::String l_BaseString = p_PropertyInfo.name.c_str();
         l_BaseString += "__";
 
         if (l_Shape.type == Math::ShapeType::BOX) {
-          p_Variants[LOW_NAME((l_BaseString + "type").c_str())] = N(BOX);
+          p_Variants[LOW_NAME((l_BaseString + "type").c_str())] =
+              N(BOX);
 
-          p_Variants[LOW_NAME((l_BaseString + "box_position").c_str())] =
+          p_Variants[LOW_NAME(
+              (l_BaseString + "box_position").c_str())] =
               l_Shape.box.position;
-          p_Variants[LOW_NAME((l_BaseString + "box_rotation").c_str())] =
+          p_Variants[LOW_NAME(
+              (l_BaseString + "box_rotation").c_str())] =
               l_Shape.box.rotation;
-          p_Variants[LOW_NAME((l_BaseString + "box_halfextents").c_str())] =
+          p_Variants[LOW_NAME(
+              (l_BaseString + "box_halfextents").c_str())] =
               l_Shape.box.halfExtents;
         } else {
-          LOW_ASSERT(false, "Reading component property while populating "
-                            "prefab failed. Unsupported shape type");
+          LOW_ASSERT(false,
+                     "Reading component property while populating "
+                     "prefab failed. Unsupported shape type");
         }
 
         return;
       }
 
-      p_Variants[p_PropertyInfo.name] = p_PropertyInfo.get_variant(p_Handle);
+      p_Variants[p_PropertyInfo.name] =
+          p_PropertyInfo.get_variant(p_Handle);
     }
 
     Variant RTTI::PropertyInfo::get_variant(Handle p_Handle)
@@ -250,8 +280,10 @@ namespace Low {
         return Variant::from_handle(*(uint64_t *)l_Ptr);
       }
 
-      LOW_ASSERT(false, "Getting property value as variant not supported for "
-                        "this property type");
+      LOW_ASSERT(
+          false,
+          "Getting property value as variant not supported for "
+          "this property type");
     }
 
     namespace Instances {
@@ -263,8 +295,8 @@ namespace Low {
             calloc(p_ElementCount * p_ElementSize, sizeof(uint8_t));
         (*p_Buffer) = (uint8_t *)l_Buffer;
 
-        void *l_SlotBuffer =
-            malloc(p_ElementCount * sizeof(Low::Util::Instances::Slot));
+        void *l_SlotBuffer = malloc(
+            p_ElementCount * sizeof(Low::Util::Instances::Slot));
         (*p_Slots) = (Low::Util::Instances::Slot *)l_SlotBuffer;
 
         // Initialize slots with unoccupied

@@ -506,20 +506,19 @@ static void register_lowcore_display()
       l_Namespace, Display, Low::Core::UI::Component::Display,
       find_by_index, uint32_t);
 
-  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
-                             position);
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector2 &,
+                             pixel_position);
   CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
-                                  position, Math::Vector3 &);
+                                  pixel_position, Math::Vector2 &);
 
-  CflatStructAddMethodReturn(l_Namespace, Display, Math::Quaternion &,
-                             rotation);
+  CflatStructAddMethodReturn(l_Namespace, Display, float, rotation);
   CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
-                                  rotation, Math::Quaternion &);
+                                  rotation, float);
 
-  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
-                             scale);
-  CflatStructAddMethodVoidParams1(l_Namespace, Display, void, scale,
-                                  Math::Vector3 &);
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector2 &,
+                             pixel_scale);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
+                                  pixel_scale, Math::Vector2 &);
 
   CflatStructAddMethodReturn(l_Namespace, Display, uint64_t,
                              get_parent);
@@ -529,14 +528,14 @@ static void register_lowcore_display()
   CflatStructAddMethodReturn(l_Namespace, Display,
                              Util::List<uint64_t> &, get_children);
 
-  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
-                             get_world_position);
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector2 &,
+                             get_absolute_pixel_position);
 
-  CflatStructAddMethodReturn(l_Namespace, Display, Math::Quaternion &,
-                             get_world_rotation);
+  CflatStructAddMethodReturn(l_Namespace, Display, float,
+                             get_absolute_rotation);
 
-  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector3 &,
-                             get_world_scale);
+  CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector2 &,
+                             get_absolute_pixel_scale);
 
   CflatStructAddMethodReturn(l_Namespace, Display,
                              Low::Core::UI::Element, get_element);

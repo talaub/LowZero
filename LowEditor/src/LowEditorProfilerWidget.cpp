@@ -8,6 +8,9 @@
 
 #include "LowUtilGlobals.h"
 
+#include <windows.h>
+#include <shellapi.h>
+
 #define BUFFER_SIZE 256
 
 namespace Low {
@@ -30,10 +33,11 @@ namespace Low {
         g_FpsBuffer[BUFFER_SIZE - 1] = Core::GameLoop::get_fps();
       }
 
-      ImGui::PlotLines("", g_FpsBuffer, BUFFER_SIZE, 0, NULL, 0.0f, 160.0f,
-                       ImVec2(0.0f, 40.0f));
+      ImGui::PlotLines("", g_FpsBuffer, BUFFER_SIZE, 0, NULL, 0.0f,
+                       160.0f, ImVec2(0.0f, 40.0f));
 
-      int l_DrawCalls = (int)Util::Globals::get(N(LOW_RENDERER_DRAWCALLS));
+      int l_DrawCalls =
+          (int)Util::Globals::get(N(LOW_RENDERER_DRAWCALLS));
 
       int l_ComputeDispatches =
           (int)Util::Globals::get(N(LOW_RENDERER_COMPUTEDISPATCH));
@@ -45,6 +49,10 @@ namespace Low {
       ImGui::Text("Compute: ");
       ImGui::SameLine();
       ImGui::Text(std::to_string(l_ComputeDispatches).c_str());
+
+      if (ImGui::Button("Open profiler")) {
+        ShellExecute(0, 0, "http://localhost:1338", 0, 0, SW_SHOW);
+      }
 
       ImGui::End();
     }

@@ -14,7 +14,8 @@ namespace Low {
 
       Variant get(Name p_Name)
       {
-        LOW_ASSERT(g_GlobalValues.find(p_Name) != g_GlobalValues.end(),
+        LOW_ASSERT(g_GlobalValues.find(p_Name) !=
+                       g_GlobalValues.end(),
                    "Could not find global");
 
         return g_GlobalValues[p_Name];

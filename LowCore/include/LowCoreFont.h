@@ -22,7 +22,7 @@ namespace Low {
     {
       Renderer::Texture2D rendererTexture;
       Math::UVector2 size;
-      Math::UVector2 bearing;
+      Math::IVector2 bearing;
       uint32_t advance;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -120,6 +120,7 @@ namespace Low {
       static Font make(Util::String &p_Path);
       bool is_loaded();
       void load();
+      void _load();
       void unload();
       static void update();
 

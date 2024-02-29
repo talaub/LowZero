@@ -3,6 +3,7 @@
 #include "LowUtilName.h"
 #include "LowUtilYaml.h"
 #include "LowUtilContainers.h"
+#include "LowUtilHandle.h"
 
 #include "LowMathVectorUtil.h"
 
@@ -191,5 +192,13 @@ namespace Low {
     void parse_pipeline_resource_bindings(
         Util::Yaml::Node &p_Node,
         Util::List<PipelineResourceBindingConfig> &p_BindingConfigs);
+
+    bool step_has_resource_from_binding(
+        PipelineResourceBindingConfig &p_BindingConfig,
+        RenderFlow p_RenderFlow, Util::Handle p_StepHandle);
+
+    Util::Handle step_get_resource_from_binding(
+        PipelineResourceBindingConfig &p_BindingConfig,
+        RenderFlow p_RenderFlow, Util::Handle p_StepHandle);
   } // namespace Renderer
 } // namespace Low

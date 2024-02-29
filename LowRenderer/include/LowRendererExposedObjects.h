@@ -18,6 +18,7 @@ namespace Low {
 
       Mesh mesh;
       Material material;
+      Texture2D texture;
 
       Math::Color color;
 

@@ -16,26 +16,6 @@ namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     FT_Library g_FreeType;
-
-#define FONT_COUNT 50
-    Util::List<bool> g_FontSlots;
-    // Util::List<Util::Resource::Font> g_Fonts;
-
-    /*
-    struct MeshLoadSchedule
-    {
-      uint32_t meshIndex;
-      Util::Future<void> future;
-      // MeshResource meshResource;
-
-      MeshLoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
-          : meshIndex(p_Id), future(std::move(p_Future))
-      {
-      }
-    };
-
-    Util::List<MeshLoadSchedule> g_MeshLoadSchedules;
-    */
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Font::TYPE_ID = 36;
@@ -469,7 +449,60 @@ namespace Low {
       }
 
       set_state(ResourceState::STREAMING);
+
+      _load();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
+    }
+
+    void Font::_load()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
+      LOW_ASSERT(is_alive(), "Cannot load dead font handle");
+
+      Util::String l_FullPath = Util::String(LOW_DATA_PATH) +
+                                "\\resources\\fonts\\" + get_path();
+
+      FT_Face l_Face;
+      LOW_ASSERT(
+          !FT_New_Face(g_FreeType, l_FullPath.c_str(), 0, &l_Face),
+          "Unable to load font face (ttf)");
+
+      FT_Set_Pixel_Sizes(l_Face, 0, 48);
+
+      for (unsigned char c = 0; c < 128; c++) {
+        // load character glyph
+        bool i_Success = !FT_Load_Char(l_Face, c, FT_LOAD_RENDER);
+
+        LOW_ASSERT_WARN(i_Success, "Could not load char from font");
+        if (!i_Success) {
+          continue;
+        }
+
+        Util::Resource::Image2D i_Image;
+        i_Image.miplevel = 0;
+        i_Image.dimensions.x = l_Face->glyph->bitmap.width;
+        i_Image.dimensions.y = l_Face->glyph->bitmap.rows;
+        i_Image.format = Util::Resource::Image2DFormat::R8;
+
+        i_Image.data.resize(i_Image.dimensions.x *
+                            i_Image.dimensions.y);
+        memcpy(i_Image.data.data(), l_Face->glyph->bitmap.buffer,
+               i_Image.data.size());
+
+        // now store character for later use
+        FontGlyph i_Glyph = {
+            Renderer::upload_texture(N(FontGlyph), i_Image),
+            glm::ivec2(l_Face->glyph->bitmap.width,
+                       l_Face->glyph->bitmap.rows),
+            glm::ivec2(l_Face->glyph->bitmap_left,
+                       l_Face->glyph->bitmap_top),
+            l_Face->glyph->advance.x};
+        get_glyphs()[c] = i_Glyph;
+      }
+
+      LOW_LOG_DEBUG << "Loaded font '" << get_path() << "'"
+                    << LOW_LOG_END;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
     }
 
     void Font::unload()

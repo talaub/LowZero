@@ -14,6 +14,7 @@
 #include "LowEditorSceneWidget.h"
 #include "LowEditorChangeWidget.h"
 #include "LowEditorRegionWidget.h"
+#include "LowEditorUiWidget.h"
 #include "LowEditorStateGraphWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorResourceProcessorImage.h"
@@ -654,6 +655,7 @@ namespace Low {
       register_editor_widget("Resources", new ResourceWidget());
       register_editor_widget("StateGraph", new StateGraphWidget(),
                              true);
+      register_editor_widget("UI-Views", new UiWidget(), false);
 
       Util::String l_Path = LOW_DATA_PATH;
       l_Path += "/assets/meshes";

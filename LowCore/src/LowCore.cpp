@@ -24,6 +24,8 @@
 #include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
+#include "LowCoreUiImage.h"
+#include "LowCoreUiText.h"
 
 #include "LowRenderer.h"
 
@@ -180,6 +182,8 @@ namespace Low {
     static void initialize_ui_component_types()
     {
       UI::Component::Display::initialize();
+      UI::Component::Image::initialize();
+      UI::Component::Text::initialize();
     }
 
     static void initialize_ui_types()
@@ -418,6 +422,8 @@ namespace Low {
 
     static void cleanup_ui_component_types()
     {
+      UI::Component::Text::cleanup();
+      UI::Component::Image::cleanup();
       UI::Component::Display::cleanup();
     }
 

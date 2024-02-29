@@ -371,7 +371,14 @@ namespace Low {
       l_Params.context = &p_Context.get_context();
       l_Params.createImage = true;
       l_Params.depth = false;
-      l_Params.format = Backend::ImageFormat::RGBA8_UNORM;
+      if (p_Image2d.format == Util::Resource::Image2DFormat::R8) {
+        l_Params.format = Backend::ImageFormat::R8_UNORM;
+      } else if (p_Image2d.format ==
+                 Util::Resource::Image2DFormat::RGBA8) {
+        l_Params.format = Backend::ImageFormat::RGBA8_UNORM;
+      } else {
+        LOW_ASSERT(false, "Unsupport util resource imag2dformat");
+      }
       l_Params.writable = false;
       l_Params.mip0Size = p_Image2d.data.size();
       l_Params.mip0Data = p_Image2d.data.data();

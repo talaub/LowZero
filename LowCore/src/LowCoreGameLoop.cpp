@@ -15,6 +15,14 @@
 #include "LowCoreTexture2D.h"
 #include "LowCoreFont.h"
 
+#include "LowCoreUiElement.h"
+#include "LowCoreUiDisplay.h"
+#include "LowCoreUiImage.h"
+#include "LowCoreUiText.h"
+#include "LowCoreUiDisplaySystem.h"
+#include "LowCoreUiImageSystem.h"
+#include "LowCoreUiTextSystem.h"
+
 #include <chrono>
 #include <microprofile.h>
 
@@ -45,6 +53,9 @@ namespace Low {
 
         Renderer::tick(p_Delta, get_engine_state());
         System::Transform::tick(p_Delta, get_engine_state());
+        UI::System::Display::tick(p_Delta, get_engine_state());
+        UI::System::Image::tick(p_Delta, get_engine_state());
+        UI::System::Text::tick(p_Delta, get_engine_state());
         System::Light::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
@@ -81,6 +92,43 @@ namespace Low {
         l_FirstRun = false;
       }
 
+      static void test_ui()
+      {
+        UI::View l_View = UI::View::make(N(TestView));
+        UI::Element l_Element = UI::Element::make(N(test), l_View);
+
+        UI::Component::Display l_Display =
+            UI::Component::Display::make(l_Element);
+
+        l_Display.pixel_position(Math::Vector2(100.0f, 100.0f));
+        l_Display.rotation(0.0f);
+        l_Display.pixel_scale(Math::Vector2(143.0f, 200.0f));
+
+        /*
+        UI::Component::Image l_Image =
+            UI::Component::Image::make(l_Element);
+
+        Core::Texture2D l_Texture = Core::Texture2D::make(
+            Util::String("low_poly_env4_texture.ktx"));
+        l_Image.set_texture(l_Texture);
+            */
+
+        {
+          Util::String l_Path = "arial.ttf";
+          Font l_Font = Font::make(l_Path);
+
+          l_Font.load();
+
+          UI::Component::Text l_Text =
+              UI::Component::Text::make(l_Element);
+          l_Text.set_font(l_Font);
+          l_Text.set_text(Util::String(
+              "The quick brown fox jumps over the lazy dog"));
+          l_Text.set_color(Math::Color(1.0f, 0.0f, 0.0f, 1.0f));
+          l_Text.set_size(0.65f);
+        }
+      }
+
       static void run()
       {
         const auto l_TimeStep = 1'000'000'000ns / 144;
@@ -95,9 +143,10 @@ namespace Low {
             Util::String(LOW_DATA_PATH) + "\\scripts\\testscript.cpp";
         Scripting::get_environment()->load(l_Path.c_str());
 
+        test_ui();
+
         while (g_Running) {
           {
-            LOW_PROFILE_CPU("Core", "Tick");
             auto i_Now = steady_clock::now();
             l_Accumulator += i_Now - l_LastTime;
             l_LastTime = i_Now;
@@ -106,6 +155,7 @@ namespace Low {
               TaskScheduler::tick();
               continue;
             }
+            LOW_PROFILE_CPU("Core", "Tick");
 
             l_SecondAccumulator += l_Accumulator;
 

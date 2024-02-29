@@ -40,10 +40,13 @@ namespace Mtd {
             l_ImGuiMousePosition.x - l_ScreenOffset.x,
             l_ImGuiMousePosition.y - l_ScreenOffset.y};
 
-        Low::Math::UVector2 l_Dimensions = l_RenderFlow.get_dimensions();
+        Low::Math::UVector2 l_Dimensions =
+            l_RenderFlow.get_dimensions();
 
-        if (l_WindowMousePos.x < 0 || l_WindowMousePos.x > l_Dimensions.x ||
-            l_WindowMousePos.y < 0 || l_WindowMousePos.y > l_Dimensions.y) {
+        if (l_WindowMousePos.x < 0 ||
+            l_WindowMousePos.x > l_Dimensions.x ||
+            l_WindowMousePos.y < 0 ||
+            l_WindowMousePos.y > l_Dimensions.y) {
           return;
         }
 
@@ -61,7 +64,8 @@ namespace Mtd {
 
         glm::vec4 clipCoords = glm::vec4(ndcX, ndcY, -1.0f, 1.0f);
 
-        glm::mat4 projectionMatrix = l_RenderFlow.get_projection_matrix();
+        glm::mat4 projectionMatrix =
+            l_RenderFlow.get_projection_matrix();
         glm::mat4 viewMatrix = l_RenderFlow.get_view_matrix();
 
         // Calculate the eye space coordinates
@@ -76,19 +80,21 @@ namespace Mtd {
         glm::vec4 rayWorld = inverseView * eyeCoords;
         glm::vec3 rayDirection = glm::normalize(glm::vec3(rayWorld));
 
-        glm::vec3 l_RayStartCamera = l_RenderFlow.get_camera_position();
+        glm::vec3 l_RayStartCamera =
+            l_RenderFlow.get_camera_position();
         glm::vec3 l_RayDir = rayDirection;
 
         Low::Core::Physics::RaycastHit l_Hit;
 
-        if (Low::Core::Physics::raycast(l_RayStartCamera, l_RayDir, 1000.0f,
-                                        l_Hit)) {
+        if (Low::Core::Physics::raycast(l_RayStartCamera, l_RayDir,
+                                        1000.0f, l_Hit)) {
           Low::Math::Sphere l_Sphere;
           l_Sphere.position = l_Hit.position;
           l_Sphere.radius = 0.2f;
 
           Low::Core::DebugGeometry::render_sphere(
-              l_Sphere, Low::Math::Color(1.0f, 0.0f, 0.0f, 1.0f), true, false);
+              l_Sphere, Low::Math::Color(1.0f, 0.0f, 0.0f, 1.0f),
+              true, false);
 
           if (Low::Renderer::get_window().mouse_button_down(
                   Low::Renderer::Input::MouseButton::LEFT)) {

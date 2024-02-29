@@ -10,11 +10,18 @@
 namespace Low {
   namespace Util {
     namespace Resource {
+      enum class Image2DFormat
+      {
+        RGBA8,
+        R8
+      };
+
       struct Image2D
       {
         List<uint8_t> data;
         Math::UVector2 dimensions;
         uint8_t miplevel;
+        Image2DFormat format;
       };
 
       struct Vertex
@@ -98,7 +105,8 @@ namespace Low {
         Node rootNode;
       };
 
-      LOW_EXPORT void load_image2d(String p_FilePath, Image2D &p_Image,
+      LOW_EXPORT void load_image2d(String p_FilePath,
+                                   Image2D &p_Image,
                                    uint8_t p_MipLevel = 0);
 
       LOW_EXPORT void load_mesh(String p_FilePath, Mesh &p_Mesh);
