@@ -21,6 +21,12 @@ namespace Low {
     namespace UI {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+        enum class TextContentFitOptions
+        {
+          None,
+          WordWrap,
+          Fit
+        };
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
         struct LOW_CORE_API TextData
@@ -29,6 +35,7 @@ namespace Low {
           Core::Font font;
           Math::Color color;
           float size;
+          TextContentFitOptions content_fit_approach;
           Low::Core::UI::Element element;
           Low::Util::UniqueId unique_id;
 
@@ -110,6 +117,10 @@ namespace Low {
 
           float get_size() const;
           void set_size(float p_Value);
+
+          TextContentFitOptions get_content_fit_approach() const;
+          void
+          set_content_fit_approach(TextContentFitOptions p_Value);
 
           Low::Core::UI::Element get_element() const;
           void set_element(Low::Core::UI::Element p_Value);

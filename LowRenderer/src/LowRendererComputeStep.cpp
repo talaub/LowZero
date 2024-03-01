@@ -576,6 +576,10 @@ namespace Low {
                      get_resources().end(),
                  "Step not prepared for renderflow");
 
+      Util::String l_ProfileString = get_name().c_str();
+      l_ProfileString += " (ComputeStep execute)";
+      LOW_PROFILE_CPU("Renderer", l_ProfileString.c_str());
+
       if (get_context().is_debug_enabled()) {
         Util::String l_RenderDocLabel =
             Util::String("ComputeStep - ") + get_name().c_str();

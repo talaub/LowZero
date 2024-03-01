@@ -787,6 +787,9 @@ namespace Low {
                                Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      Util::String l_ProfileString = get_name().c_str();
+      l_ProfileString += " (GraphicsStep execute)";
+      LOW_PROFILE_CPU("Renderer", l_ProfileString.c_str());
       if (get_context().is_debug_enabled()) {
         Util::String l_RenderDocLabel =
             Util::String("GraphicsStep - ") + get_name().c_str();
@@ -1112,6 +1115,7 @@ namespace Low {
 
       for (uint8_t i = 0u;
            i < p_Step.get_config().get_rendertargets().size(); ++i) {
+
         l_Params.clearColors.push_back(
             p_Step.get_config().get_rendertargets_clearcolor());
 
@@ -1212,10 +1216,11 @@ namespace Low {
              ++i) {
           Backend::GraphicsPipelineColorTarget i_ColorTarget;
 
+          Resource::Image i_Image = 0;
           if (p_Step.get_config()
                   .get_rendertargets()[i]
                   .resourceScope == ResourceBindScope::LOCAL) {
-            Resource::Image i_Image =
+            i_Image =
                 p_Step.get_resources()[p_RenderFlow]
                     .get_image_resource(p_Step.get_config()
                                             .get_rendertargets()[i]
@@ -1230,11 +1235,10 @@ namespace Low {
                          .get_rendertargets()[i]
                          .resourceScope ==
                      ResourceBindScope::RENDERFLOW) {
-            Resource::Image i_Image =
-                p_RenderFlow.get_resources().get_image_resource(
-                    p_Step.get_config()
-                        .get_rendertargets()[i]
-                        .resourceName);
+            i_Image = p_RenderFlow.get_resources().get_image_resource(
+                p_Step.get_config()
+                    .get_rendertargets()[i]
+                    .resourceName);
             LOW_ASSERT(i_Image.is_alive(),
                        "Could not find rendertarget image resource");
 
@@ -1246,7 +1250,14 @@ namespace Low {
                        "Unsupported rendertarget resource scope");
           }
 
-          i_ColorTarget.blendEnable = i_Config.translucency;
+          i_ColorTarget.blendEnable = false;
+
+          if (i_Image.get_image().format ==
+                  Backend::ImageFormat::RGBA16_SFLOAT ||
+              i_Image.get_image().format ==
+                  Backend::ImageFormat::RGBA32_SFLOAT) {
+            i_ColorTarget.blendEnable = i_Config.translucency;
+          }
           i_Params.colorTargets.push_back(i_ColorTarget);
         }
 

@@ -266,7 +266,12 @@ namespace Low {
         {
           LOW_PROFILE_CPU("Renderer", "Pipeline manager");
 #if LOW_RENDERER_COMPILE_SHADERS
-          do_tick(p_Delta);
+          static float l_Count = 0.0f;
+          if (l_Count > 1.0f) {
+            do_tick(p_Delta);
+            l_Count = 0.0f;
+          }
+          l_Count += p_Delta;
 #endif
         }
 

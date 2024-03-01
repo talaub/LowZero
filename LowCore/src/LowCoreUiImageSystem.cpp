@@ -136,6 +136,10 @@ namespace Low {
               i_RenderObject.transform = i_Display.get_world_matrix();
               i_RenderObject.useSkinningBuffer = false;
               i_RenderObject.vertexBufferStartOverride = 0;
+              i_RenderObject.entity_id =
+                  i_Image.get_element().get_index();
+              i_RenderObject.clickPassthrough =
+                  i_Image.get_element().is_click_passthrough();
 
               Renderer::get_main_renderflow().register_renderobject(
                   i_RenderObject);

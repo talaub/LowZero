@@ -461,6 +461,11 @@ static void register_lowcore_element()
       l_Namespace, Element, Low::Core::UI::Element, find_by_name,
       Low::Util::Name);
 
+  CflatStructAddMethodReturn(l_Namespace, Element, bool,
+                             is_click_passthrough);
+  CflatStructAddMethodVoidParams1(l_Namespace, Element, void,
+                                  set_click_passthrough, bool);
+
   CflatStructAddMethodReturn(l_Namespace, Element, Low::Util::Name,
                              get_name);
   CflatStructAddMethodVoidParams1(l_Namespace, Element, void,
@@ -520,6 +525,10 @@ static void register_lowcore_display()
   CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
                                   pixel_scale, Math::Vector2 &);
 
+  CflatStructAddMethodReturn(l_Namespace, Display, uint32_t, layer);
+  CflatStructAddMethodVoidParams1(l_Namespace, Display, void, layer,
+                                  uint32_t);
+
   CflatStructAddMethodReturn(l_Namespace, Display, uint64_t,
                              get_parent);
   CflatStructAddMethodVoidParams1(l_Namespace, Display, void,
@@ -536,6 +545,9 @@ static void register_lowcore_display()
 
   CflatStructAddMethodReturn(l_Namespace, Display, Math::Vector2 &,
                              get_absolute_pixel_scale);
+
+  CflatStructAddMethodReturn(l_Namespace, Display, uint32_t,
+                             get_absolute_layer);
 
   CflatStructAddMethodReturn(l_Namespace, Display,
                              Low::Core::UI::Element, get_element);

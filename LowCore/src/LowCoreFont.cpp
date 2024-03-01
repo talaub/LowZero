@@ -54,6 +54,7 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Font, glyphs,
                               SINGLE_ARG(Util::Map<char, FontGlyph>)))
           Util::Map<char, FontGlyph>();
+      ACCESSOR_TYPE_SOA(l_Handle, Font, font_size, float) = 0.0f;
       new (&ACCESSOR_TYPE_SOA(l_Handle, Font, state, ResourceState))
           ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, Font, name, Low::Util::Name) =
@@ -167,6 +168,23 @@ namespace Low {
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(font_size);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(FontData, font_size);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.get_font_size();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, font_size,
+                                            float);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -358,6 +376,29 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
+    float Font::get_font_size() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_font_size
+      // LOW_CODEGEN::END::CUSTOM:GETTER_font_size
+
+      return TYPE_SOA(Font, font_size, float);
+    }
+    void Font::set_font_size(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font_size
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_font_size
+
+      // Set new value
+      TYPE_SOA(Font, font_size, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font_size
+      // LOW_CODEGEN::END::CUSTOM:SETTER_font_size
+    }
+
     ResourceState Font::get_state() const
     {
       _LOW_ASSERT(is_alive());
@@ -500,6 +541,13 @@ namespace Low {
         get_glyphs()[c] = i_Glyph;
       }
 
+      int ascender = l_Face->ascender >> 6;
+      int descender = l_Face->descender >> 6;
+
+      // Calculate font height
+      int font_height = ascender - descender;
+      set_font_size((float)font_height);
+
       LOW_LOG_DEBUG << "Loaded font '" << get_path() << "'"
                     << LOW_LOG_END;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
@@ -604,6 +652,13 @@ namespace Low {
                &ms_Buffer[offsetof(FontData, reference_count) *
                           (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(FontData, font_size) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(FontData, font_size) * (l_Capacity)],
+            l_Capacity * sizeof(float));
       }
       {
         memcpy(&l_NewBuffer[offsetof(FontData, state) *

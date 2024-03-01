@@ -138,6 +138,8 @@ namespace Low {
                   i_RenderObject.entity_id;
               l_ObjectShaderInfos[l_ObjectIndex].texture_index =
                   i_RenderObject.texture.get_index();
+              l_ObjectShaderInfos[l_ObjectIndex].click_passthrough =
+                  i_RenderObject.clickPassthrough ? 1 : 0;
 
               l_ObjectIndex++;
 
@@ -159,6 +161,82 @@ namespace Low {
         p_Step.get_renderpasses()[p_RenderFlow].end();
       }
 
+      void setup_renderpass(GraphicsStep p_Step,
+                            RenderFlow p_RenderFlow)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_renderpass
+        Interface::RenderpassCreateParams l_Params;
+        l_Params.context = p_Step.get_context();
+        apply_dimensions_config(
+            p_Step.get_context(), p_RenderFlow,
+            p_Step.get_config().get_dimensions_config(),
+            l_Params.dimensions);
+        l_Params.useDepth = p_Step.get_config().is_use_depth();
+        if (p_Step.get_config().is_depth_clear()) {
+          l_Params.clearDepthColor = {1.0f, 1.0f};
+        } else {
+          l_Params.clearDepthColor = {1.0f, 0.0f};
+        }
+
+        for (uint8_t i = 0u;
+             i < p_Step.get_config().get_rendertargets().size();
+             ++i) {
+
+          if (i == 1) {
+            l_Params.clearColors.push_back(
+                Math::Color(32000.0f, 0.0f, 0.0f, 1.0f));
+          } else {
+            l_Params.clearColors.push_back(
+                p_Step.get_config().get_rendertargets_clearcolor());
+          }
+
+          if (p_Step.get_config()
+                  .get_rendertargets()[i]
+                  .resourceScope == ResourceBindScope::LOCAL) {
+            Resource::Image i_Image =
+                p_Step.get_resources()[p_RenderFlow]
+                    .get_image_resource(p_Step.get_config()
+                                            .get_rendertargets()[i]
+                                            .resourceName);
+            LOW_ASSERT(i_Image.is_alive(),
+                       "Could not find rendertarget image resource");
+
+            l_Params.renderTargets.push_back(i_Image);
+          } else if (p_Step.get_config()
+                         .get_rendertargets()[i]
+                         .resourceScope ==
+                     ResourceBindScope::RENDERFLOW) {
+            Resource::Image i_Image =
+                p_RenderFlow.get_resources().get_image_resource(
+                    p_Step.get_config()
+                        .get_rendertargets()[i]
+                        .resourceName);
+            LOW_ASSERT(i_Image.is_alive(),
+                       "Could not find rendertarget image resource");
+
+            l_Params.renderTargets.push_back(i_Image);
+          } else {
+            LOW_ASSERT(false,
+                       "Unsupported rendertarget resource scope");
+          }
+        }
+
+        if (p_Step.get_config().is_use_depth()) {
+          Resource::Image l_Image =
+              p_RenderFlow.get_resources().get_image_resource(
+                  p_Step.get_config()
+                      .get_depth_rendertarget()
+                      .resourceName);
+          LOW_ASSERT(l_Image.is_alive(),
+                     "Could not find rendertarget image resource");
+          l_Params.depthRenderTarget = l_Image;
+        }
+
+        p_Step.get_renderpasses()[p_RenderFlow] =
+            Interface::Renderpass::make(p_Step.get_name(), l_Params);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_create_renderpass
+      }
+
       void setup_config()
       {
         GraphicsStepConfig l_Config =
@@ -168,6 +246,9 @@ namespace Low {
         l_Config.get_dimensions_config().relative.multiplier = 1.0f;
         l_Config.get_dimensions_config().relative.target =
             ImageResourceDimensionRelativeOptions::RENDERFLOW;
+
+        l_Config.set_rendertargets_clearcolor(
+            Math::Color(0.0f, 0.0f, 0.0f, 0.0f));
 
         {
           l_Config.set_depth_clear(true);
@@ -193,6 +274,14 @@ namespace Low {
           l_ResourceBinding.bindType = ResourceBindType::IMAGE;
           l_Config.get_rendertargets().push_back(l_ResourceBinding);
         }
+        {
+          PipelineResourceBindingConfig l_ResourceBinding;
+          l_ResourceBinding.resourceName = N(ElementIndexMap);
+          l_ResourceBinding.resourceScope =
+              ResourceBindScope::RENDERFLOW;
+          l_ResourceBinding.bindType = ResourceBindType::IMAGE;
+          l_Config.get_rendertargets().push_back(l_ResourceBinding);
+        }
 
         {
           GraphicsPipelineConfig l_PipelineConfig =
@@ -210,8 +299,7 @@ namespace Low {
         l_Config.get_callbacks().setup_signature = &setup_signature;
         l_Config.get_callbacks().setup_pipelines =
             &GraphicsStep::create_pipelines;
-        l_Config.get_callbacks().setup_renderpass =
-            &GraphicsStep::create_renderpass;
+        l_Config.get_callbacks().setup_renderpass = &setup_renderpass;
         l_Config.get_callbacks().execute = &execute;
 
         {

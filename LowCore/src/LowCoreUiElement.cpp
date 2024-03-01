@@ -54,6 +54,8 @@ namespace Low {
             Util::Map<uint16_t, Util::Handle>();
         new (&ACCESSOR_TYPE_SOA(l_Handle, Element, view, UI::View))
             UI::View();
+        ACCESSOR_TYPE_SOA(l_Handle, Element, click_passthrough,
+                          bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Element, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -163,6 +165,27 @@ namespace Low {
                                   const void *p_Data) -> void {
             Element l_Handle = p_Handle.get_id();
             l_Handle.set_view(*(UI::View *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(click_passthrough);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ElementData, click_passthrough);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Element l_Handle = p_Handle.get_id();
+            l_Handle.is_click_passthrough();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Element, click_passthrough, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Element l_Handle = p_Handle.get_id();
+            l_Handle.set_click_passthrough(*(bool *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -312,6 +335,29 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view
         // LOW_CODEGEN::END::CUSTOM:SETTER_view
+      }
+
+      bool Element::is_click_passthrough() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_click_passthrough
+        // LOW_CODEGEN::END::CUSTOM:GETTER_click_passthrough
+
+        return TYPE_SOA(Element, click_passthrough, bool);
+      }
+      void Element::set_click_passthrough(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_click_passthrough
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_click_passthrough
+
+        // Set new value
+        TYPE_SOA(Element, click_passthrough, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_click_passthrough
+        // LOW_CODEGEN::END::CUSTOM:SETTER_click_passthrough
       }
 
       Low::Util::UniqueId Element::get_unique_id() const
@@ -520,6 +566,14 @@ namespace Low {
                            (l_Capacity + l_CapacityIncrease)],
               &ms_Buffer[offsetof(ElementData, view) * (l_Capacity)],
               l_Capacity * sizeof(UI::View));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(ElementData, click_passthrough) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ElementData, click_passthrough) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(bool));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ElementData, unique_id) *

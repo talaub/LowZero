@@ -26,9 +26,10 @@ namespace Low {
     {
       alignas(16) Math::Matrix4x4 mvp;
       alignas(16) Math::Matrix4x4 model_matrix;
-      uint32_t material_index;
-      uint32_t entity_id;
-      uint32_t texture_index;
+      u32 material_index;
+      u32 entity_id;
+      u32 texture_index;
+      u32 click_passthrough;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -131,8 +132,9 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> &
       get_pipelines() const;
 
-      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
-          &get_renderobjects() const;
+      Util::Map<Util::Name,
+                Util::Map<Mesh, Util::List<RenderObject>>> &
+      get_renderobjects() const;
 
       Util::Map<Util::Name, Util::List<RenderObject>> &
       get_skinned_renderobjects() const;

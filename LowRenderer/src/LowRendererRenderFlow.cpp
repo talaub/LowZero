@@ -1247,14 +1247,15 @@ namespace Low {
     void RenderFlow::execute()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      Util::String l_ProfileString = get_name().c_str();
+      l_ProfileString += " (RenderFlow execute)";
+      LOW_PROFILE_CPU("Renderer", l_ProfileString.c_str());
       if (get_context().is_debug_enabled()) {
         Util::String l_RenderDocLabel =
             Util::String("RenderFlow - ") + get_name().c_str();
         LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
             get_context().get_context(), l_RenderDocLabel,
             Math::Color(0.341f, 0.4249f, 0.2341f, 1.0f));
-        MICROPROFILE_SCOPEI("Renderer", l_RenderDocLabel.c_str(),
-                            MP_GREEN);
       }
 
       Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(

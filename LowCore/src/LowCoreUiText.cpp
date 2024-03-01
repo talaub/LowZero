@@ -57,6 +57,9 @@ namespace Low {
           new (&ACCESSOR_TYPE_SOA(l_Handle, Text, color, Math::Color))
               Math::Color();
           ACCESSOR_TYPE_SOA(l_Handle, Text, size, float) = 0.0f;
+          new (&ACCESSOR_TYPE_SOA(
+              l_Handle, Text, content_fit_approach,
+              TextContentFitOptions)) TextContentFitOptions();
           new (&ACCESSOR_TYPE_SOA(l_Handle, Text, element,
                                   Low::Core::UI::Element))
               Low::Core::UI::Element();
@@ -82,6 +85,9 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          if (get_font().is_alive()) {
+            get_font().unload();
+          }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
 
           Low::Util::remove_unique_id(get_unique_id());
@@ -216,6 +222,31 @@ namespace Low {
                                     const void *p_Data) -> void {
               Text l_Handle = p_Handle.get_id();
               l_Handle.set_size(*(float *)p_Data);
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+          }
+          {
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(content_fit_approach);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(TextData, content_fit_approach);
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_PropertyInfo.get =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.get_content_fit_approach();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Text, content_fit_approach,
+                  TextContentFitOptions);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.set_content_fit_approach(
+                  *(TextContentFitOptions *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -357,6 +388,8 @@ namespace Low {
           if (p_Node["size"]) {
             l_Handle.set_size(p_Node["size"].as<float>());
           }
+          if (p_Node["content_fit_approach"]) {
+          }
           if (p_Node["unique_id"]) {
             l_Handle.set_unique_id(
                 p_Node["unique_id"].as<Low::Util::UniqueId>());
@@ -405,6 +438,12 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font
+          if (get_font().is_alive()) {
+            get_font().unload();
+          }
+          if (p_Value.is_alive()) {
+            p_Value.load();
+          }
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_font
 
           // Set new value
@@ -458,6 +497,32 @@ namespace Low {
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
           // LOW_CODEGEN::END::CUSTOM:SETTER_size
+        }
+
+        TextContentFitOptions Text::get_content_fit_approach() const
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_content_fit_approach
+          // LOW_CODEGEN::END::CUSTOM:GETTER_content_fit_approach
+
+          return TYPE_SOA(Text, content_fit_approach,
+                          TextContentFitOptions);
+        }
+        void
+        Text::set_content_fit_approach(TextContentFitOptions p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_content_fit_approach
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_content_fit_approach
+
+          // Set new value
+          TYPE_SOA(Text, content_fit_approach,
+                   TextContentFitOptions) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content_fit_approach
+          // LOW_CODEGEN::END::CUSTOM:SETTER_content_fit_approach
         }
 
         Low::Core::UI::Element Text::get_element() const
@@ -569,6 +634,15 @@ namespace Low {
                              (l_Capacity + l_CapacityIncrease)],
                 &ms_Buffer[offsetof(TextData, size) * (l_Capacity)],
                 l_Capacity * sizeof(float));
+          }
+          {
+            memcpy(
+                &l_NewBuffer[offsetof(TextData,
+                                      content_fit_approach) *
+                             (l_Capacity + l_CapacityIncrease)],
+                &ms_Buffer[offsetof(TextData, content_fit_approach) *
+                           (l_Capacity)],
+                l_Capacity * sizeof(TextContentFitOptions));
           }
           {
             memcpy(&l_NewBuffer[offsetof(TextData, element) *

@@ -26,12 +26,14 @@ namespace Low {
           Math::Vector2 pixel_position;
           float rotation;
           Math::Vector2 pixel_scale;
+          uint32_t layer;
           uint64_t parent;
           uint64_t parent_uid;
           Util::List<uint64_t> children;
           Math::Vector2 absolute_pixel_position;
           float absolute_rotation;
           Math::Vector2 absolute_pixel_scale;
+          uint32_t absolute_layer;
           Math::Matrix4x4 world_matrix;
           bool world_updated;
           Low::Core::UI::Element element;
@@ -115,6 +117,9 @@ namespace Low {
           Math::Vector2 &pixel_scale() const;
           void pixel_scale(Math::Vector2 &p_Value);
 
+          uint32_t layer() const;
+          void layer(uint32_t p_Value);
+
           uint64_t get_parent() const;
           void set_parent(uint64_t p_Value);
 
@@ -127,6 +132,8 @@ namespace Low {
           float get_absolute_rotation();
 
           Math::Vector2 &get_absolute_pixel_scale();
+
+          uint32_t get_absolute_layer();
 
           Math::Matrix4x4 &get_world_matrix();
 
@@ -145,6 +152,7 @@ namespace Low {
           void set_world_dirty(bool p_Value);
 
           void recalculate_world_transform();
+          float get_absolute_layer_float();
 
         private:
           static uint32_t ms_Capacity;
@@ -154,6 +162,7 @@ namespace Low {
           void set_absolute_pixel_position(Math::Vector2 &p_Value);
           void set_absolute_rotation(float p_Value);
           void set_absolute_pixel_scale(Math::Vector2 &p_Value);
+          void set_absolute_layer(uint32_t p_Value);
           void set_world_matrix(Math::Matrix4x4 &p_Value);
           void set_unique_id(Low::Util::UniqueId p_Value);
         };

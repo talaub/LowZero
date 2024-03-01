@@ -1211,6 +1211,7 @@ namespace Low {
 
     static void do_skinning()
     {
+      LOW_PROFILE_CPU("Renderer", "Do skinning");
       static Util::Name l_ConstantName = N(inputInfo);
 
       if (g_Context.is_debug_enabled()) {
@@ -1351,7 +1352,10 @@ namespace Low {
         Backend::callbacks().draw(l_Params);
       }
 
-      g_Context.render_imgui();
+      {
+        LOW_PROFILE_CPU("Renderer", "Imgui render");
+        g_Context.render_imgui();
+      }
 
       g_Context.get_current_renderpass().end();
 

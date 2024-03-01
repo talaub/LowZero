@@ -26,6 +26,8 @@ namespace Low {
 
       bool useSkinningBuffer = false;
       uint32_t vertexBufferStartOverride = 0;
+
+      bool clickPassthrough = false;
     };
 
     struct ParticleEmitter

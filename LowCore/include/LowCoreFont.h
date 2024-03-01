@@ -32,6 +32,7 @@ namespace Low {
       Util::String path;
       Util::Map<char, FontGlyph> glyphs;
       uint32_t reference_count;
+      float font_size;
       ResourceState state;
       Low::Util::Name name;
 
@@ -111,6 +112,8 @@ namespace Low {
 
       Util::Map<char, FontGlyph> &get_glyphs() const;
 
+      float get_font_size() const;
+
       ResourceState get_state() const;
       void set_state(ResourceState p_Value);
 
@@ -132,6 +135,7 @@ namespace Low {
       void set_glyphs(Util::Map<char, FontGlyph> &p_Value);
       uint32_t get_reference_count() const;
       void set_reference_count(uint32_t p_Value);
+      void set_font_size(float p_Value);
       void _unload();
     };
   } // namespace Core

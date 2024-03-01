@@ -222,6 +222,28 @@ namespace Low {
           }
           {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(layer);
+            l_PropertyInfo.editorProperty = true;
+            l_PropertyInfo.dataOffset = offsetof(DisplayData, layer);
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_PropertyInfo.get =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Display l_Handle = p_Handle.get_id();
+              l_Handle.layer();
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
+                                                layer, uint32_t);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Display l_Handle = p_Handle.get_id();
+              l_Handle.layer(*(uint32_t *)p_Data);
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+          }
+          {
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(parent);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(DisplayData, parent);
@@ -338,6 +360,26 @@ namespace Low {
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 absolute_pixel_scale,
                                                 Math::Vector2);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {};
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+          }
+          {
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(absolute_layer);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(DisplayData, absolute_layer);
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_PropertyInfo.get =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Display l_Handle = p_Handle.get_id();
+              l_Handle.get_absolute_layer();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Display, absolute_layer, uint32_t);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -523,6 +565,7 @@ namespace Low {
           p_Node["rotation"] = rotation();
           Low::Util::Serialization::serialize(p_Node["pixel_scale"],
                                               pixel_scale());
+          p_Node["layer"] = layer();
           p_Node["parent_uid"] = get_parent_uid();
           p_Node["unique_id"] = get_unique_id();
 
@@ -563,6 +606,9 @@ namespace Low {
             l_Handle.pixel_scale(
                 Low::Util::Serialization::deserialize_vector2(
                     p_Node["pixel_scale"]));
+          }
+          if (p_Node["layer"]) {
+            l_Handle.layer(p_Node["layer"].as<uint32_t>());
           }
           if (p_Node["parent_uid"]) {
             l_Handle.set_parent_uid(
@@ -664,6 +710,35 @@ namespace Low {
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
             // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_scale
+          }
+        }
+
+        uint32_t Display::layer() const
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layer
+          // LOW_CODEGEN::END::CUSTOM:GETTER_layer
+
+          return TYPE_SOA(Display, layer, uint32_t);
+        }
+        void Display::layer(uint32_t p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layer
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_layer
+
+          if (layer() != p_Value) {
+            // Set dirty flags
+            TYPE_SOA(Display, dirty, bool) = true;
+            TYPE_SOA(Display, world_dirty, bool) = true;
+
+            // Set new value
+            TYPE_SOA(Display, layer, uint32_t) = p_Value;
+
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer
+            // LOW_CODEGEN::END::CUSTOM:SETTER_layer
           }
         }
 
@@ -810,6 +885,30 @@ namespace Low {
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_scale
+        }
+
+        uint32_t Display::get_absolute_layer()
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_layer
+          recalculate_world_transform();
+          // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_layer
+
+          return TYPE_SOA(Display, absolute_layer, uint32_t);
+        }
+        void Display::set_absolute_layer(uint32_t p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_layer
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_layer
+
+          // Set new value
+          TYPE_SOA(Display, absolute_layer, uint32_t) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_layer
+          // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_layer
         }
 
         Math::Matrix4x4 &Display::get_world_matrix()
@@ -983,72 +1082,62 @@ namespace Low {
           Math::Vector2 l_Position = pixel_position();
           float l_Rotation = rotation();
           Math::Vector2 l_Scale = pixel_scale();
+          uint32_t l_Layer = layer();
 
           Display l_Parent = get_parent();
 
           Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
-
-          l_LocalMatrix = glm::translate(
-              l_LocalMatrix,
-              Math::Vector3(l_Position.x, l_Position.y + l_Scale.y,
-                            0.0f));
-          l_LocalMatrix *= glm::toMat4(Math::VectorUtil::from_euler(
-              Math::Vector3(0.0f, 0.0f, l_Rotation)));
-          l_LocalMatrix =
-              glm::scale(l_LocalMatrix,
-                         Math::Vector3(l_Scale.x, l_Scale.y, 1.0f));
 
           if (l_Parent.is_alive()) {
             if (l_Parent.is_world_dirty()) {
               l_Parent.recalculate_world_transform();
             }
 
-            /*
-            Low::Math::Vector3 l_ParentPosition =
-                l_Parent.get_world_position();
-            Low::Math::Quaternion l_ParentRotation =
-                l_Parent.get_world_rotation();
-            Low::Math::Vector3 l_ParentScale =
-                l_Parent.get_world_scale();
+            Math::Vector2 l_ParentPosition =
+                l_Parent.get_absolute_pixel_position();
+            float l_ParentRotation = l_Parent.get_absolute_rotation();
+            Math::Vector2 l_ParentScale =
+                l_Parent.get_absolute_pixel_scale();
+            uint32_t l_ParentLayer = l_Parent.get_absolute_layer();
 
-            Low::Math::Matrix4x4 l_ParentMatrix(1.0f);
-
-            l_ParentMatrix =
-                glm::translate(l_ParentMatrix, l_ParentPosition);
-            l_ParentMatrix *= glm::toMat4(l_ParentRotation);
-            l_ParentMatrix =
-                glm::scale(l_ParentMatrix, l_ParentScale);
-
-            Low::Math::Matrix4x4 l_WorldMatrix =
-                l_ParentMatrix * l_LocalMatrix;
-
-            Low::Math::Vector3 l_WorldScale;
-            Low::Math::Quaternion l_WorldRotation;
-            Low::Math::Vector3 l_WorldPosition;
-            Low::Math::Vector3 l_WorldSkew;
-            Low::Math::Vector4 l_WorldPerspective;
-
-            set_world_matrix(l_WorldMatrix);
-
-            glm::decompose(l_WorldMatrix, l_WorldScale,
-                           l_WorldRotation, l_WorldPosition,
-                           l_WorldSkew, l_WorldPerspective);
-
-            l_Position = l_WorldPosition;
-            l_Rotation = l_WorldRotation;
-            l_Scale = l_WorldScale;
-            */
-          } else {
-            set_world_matrix(l_LocalMatrix);
+            l_Position += l_ParentPosition;
+            l_Rotation += l_ParentRotation;
+            // Could lead to some unwanted stretching
+            // TODO: Introduce overall multiplier variable on display
+            // to scale everything while keeping dimensions l_Scale *=
+            // l_ParentScale;
+            l_Layer += l_ParentLayer;
           }
 
           set_absolute_pixel_position(l_Position);
           set_absolute_rotation(l_Rotation);
           set_absolute_pixel_scale(l_Scale);
+          set_absolute_layer(l_Layer);
+
+          l_LocalMatrix = glm::translate(
+              l_LocalMatrix,
+              Math::Vector3(l_Position.x, l_Position.y + l_Scale.y,
+                            get_absolute_layer_float()));
+          l_LocalMatrix *= glm::toMat4(Math::VectorUtil::from_euler(
+              Math::Vector3(0.0f, 0.0f, l_Rotation)));
+          l_LocalMatrix =
+              glm::scale(l_LocalMatrix,
+                         Math::Vector3(l_Scale.x, l_Scale.y, 1.0f));
+
+          set_world_matrix(l_LocalMatrix);
 
           set_world_dirty(false);
           set_world_updated(true);
           // LOW_CODEGEN::END::CUSTOM:FUNCTION_recalculate_world_transform
+        }
+
+        float Display::get_absolute_layer_float()
+        {
+          // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_absolute_layer_float
+          float l_AbsoluteLayer =
+              (float)TYPE_SOA(Display, absolute_layer, uint32_t);
+          return l_AbsoluteLayer * 0.1f;
+          // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_absolute_layer_float
         }
 
         uint32_t Display::create_instance()
@@ -1111,6 +1200,13 @@ namespace Low {
                    l_Capacity * sizeof(Math::Vector2));
           }
           {
+            memcpy(&l_NewBuffer[offsetof(DisplayData, layer) *
+                                (l_Capacity + l_CapacityIncrease)],
+                   &ms_Buffer[offsetof(DisplayData, layer) *
+                              (l_Capacity)],
+                   l_Capacity * sizeof(uint32_t));
+          }
+          {
             memcpy(&l_NewBuffer[offsetof(DisplayData, parent) *
                                 (l_Capacity + l_CapacityIncrease)],
                    &ms_Buffer[offsetof(DisplayData, parent) *
@@ -1162,6 +1258,14 @@ namespace Low {
                                        absolute_pixel_scale) *
                               (l_Capacity)],
                    l_Capacity * sizeof(Math::Vector2));
+          }
+          {
+            memcpy(
+                &l_NewBuffer[offsetof(DisplayData, absolute_layer) *
+                             (l_Capacity + l_CapacityIncrease)],
+                &ms_Buffer[offsetof(DisplayData, absolute_layer) *
+                           (l_Capacity)],
+                l_Capacity * sizeof(uint32_t));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, world_matrix) *

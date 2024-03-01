@@ -1611,6 +1611,16 @@ namespace Low {
 
           if (p_Image.get_image().vk.m_State ==
               ImageState::UNDEFINED) {
+            if (!p_Image.get_image().depth) {
+              transition_image_barrier(
+                  l_CommandBuffer, p_Image.get_image(),
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 0,
+                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+              p_Image.get_image().vk.m_State = ImageState::UNDEFINED;
+            }
             return;
           } else if (p_Image.get_image().vk.m_State ==
                          ImageState::DEPTH_STENCIL_ATTACHMENT &&

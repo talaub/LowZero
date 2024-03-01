@@ -96,36 +96,154 @@ namespace Low {
       {
         UI::View l_View = UI::View::make(N(TestView));
         UI::Element l_Element = UI::Element::make(N(test), l_View);
+        l_Element.set_click_passthrough(false);
 
-        UI::Component::Display l_Display =
-            UI::Component::Display::make(l_Element);
+        Util::String l_Path = "arial.ttf";
+        Font l_Font = Font::make(l_Path);
 
-        l_Display.pixel_position(Math::Vector2(100.0f, 100.0f));
-        l_Display.rotation(0.0f);
-        l_Display.pixel_scale(Math::Vector2(143.0f, 200.0f));
-
-        /*
-        UI::Component::Image l_Image =
-            UI::Component::Image::make(l_Element);
-
-        Core::Texture2D l_Texture = Core::Texture2D::make(
-            Util::String("low_poly_env4_texture.ktx"));
-        l_Image.set_texture(l_Texture);
-            */
-
+        // Background
         {
-          Util::String l_Path = "arial.ttf";
-          Font l_Font = Font::make(l_Path);
+          UI::Component::Display l_Display =
+              UI::Component::Display::make(l_Element);
+          l_Display.pixel_position(Math::Vector2(100.0f, 100.0f));
+          l_Display.rotation(0.0f);
+          l_Display.pixel_scale(Math::Vector2(200.0f, 280.0f));
+          l_Display.layer(1);
 
-          l_Font.load();
+          UI::Component::Image l_Image =
+              UI::Component::Image::make(l_Element);
+
+          Core::Texture2D l_Texture =
+              Core::Texture2D::make(Util::String("card_bg.ktx"));
+          l_Image.set_texture(l_Texture);
+        }
+
+        // Background icon
+        {
+          UI::Element l_BgIconElement =
+              UI::Element::make(N(cardbg), l_View);
+          l_BgIconElement.set_click_passthrough(true);
+
+          UI::Component::Display l_Display =
+              UI::Component::Display::make(l_BgIconElement);
+
+          l_Display.pixel_position(Math::Vector2(10.0f, 50.0f));
+          l_Display.rotation(0.0f);
+          l_Display.pixel_scale(Math::Vector2(180.0f, 180.0f));
+          l_Display.layer(2);
+
+          l_Display.set_parent(l_Element.get_display().get_id());
+
+          UI::Component::Image l_Image =
+              UI::Component::Image::make(l_BgIconElement);
+
+          Core::Texture2D l_Texture =
+              Core::Texture2D::make(Util::String("magic.ktx"));
+          l_Image.set_texture(l_Texture);
+        }
+
+        // Resource icon
+        {
+          UI::Element l_ResourceIconElement =
+              UI::Element::make(N(resourcebg), l_View);
+          l_ResourceIconElement.set_click_passthrough(true);
+
+          UI::Component::Display l_Display =
+              UI::Component::Display::make(l_ResourceIconElement);
+
+          l_Display.pixel_position(Math::Vector2(5.0f, 5.0f));
+          l_Display.rotation(0.0f);
+          l_Display.pixel_scale(Math::Vector2(50.0f, 50.0f));
+          l_Display.layer(2);
+
+          l_Display.set_parent(l_Element.get_display().get_id());
+
+          UI::Component::Image l_Image =
+              UI::Component::Image::make(l_ResourceIconElement);
+
+          Core::Texture2D l_Texture =
+              Core::Texture2D::make(Util::String("crystal.ktx"));
+          l_Image.set_texture(l_Texture);
+        }
+
+        // ResourceText
+        {
+          UI::Element l_ResourceElement =
+              UI::Element::make(N(resourcetxt), l_View);
+          l_ResourceElement.set_click_passthrough(true);
+
+          UI::Component::Display l_Display =
+              UI::Component::Display::make(l_ResourceElement);
+
+          l_Display.pixel_position(Math::Vector2(20.0f, 15.0f));
+          l_Display.rotation(0.0f);
+          l_Display.pixel_scale(Math::Vector2(30.0f, 40.0f));
+          l_Display.layer(3);
+
+          l_Display.set_parent(l_Element.get_display().get_id());
 
           UI::Component::Text l_Text =
-              UI::Component::Text::make(l_Element);
+              UI::Component::Text::make(l_ResourceElement);
           l_Text.set_font(l_Font);
-          l_Text.set_text(Util::String(
-              "The quick brown fox jumps over the lazy dog"));
-          l_Text.set_color(Math::Color(1.0f, 0.0f, 0.0f, 1.0f));
-          l_Text.set_size(0.65f);
+          l_Text.set_text(Util::String("6"));
+          l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
+          l_Text.set_size(0.7f);
+        }
+
+        // Title
+        {
+          UI::Element l_TitleElement =
+              UI::Element::make(N(cardtitle), l_View);
+          l_TitleElement.set_click_passthrough(true);
+
+          UI::Component::Display l_Display =
+              UI::Component::Display::make(l_TitleElement);
+
+          l_Display.pixel_position(Math::Vector2(60.0f, 10.0f));
+          l_Display.rotation(0.0f);
+          l_Display.pixel_scale(Math::Vector2(130.0f, 40.0f));
+          l_Display.layer(3);
+
+          l_Display.set_parent(l_Element.get_display().get_id());
+
+          UI::Component::Text l_Text =
+              UI::Component::Text::make(l_TitleElement);
+          l_Text.set_font(l_Font);
+          l_Text.set_text(Util::String("Nightcrawler"));
+          l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
+          l_Text.set_size(0.45f);
+
+          l_Text.set_content_fit_approach(
+              UI::Component::TextContentFitOptions::Fit);
+        }
+
+        // Description
+        {
+          UI::Element l_DescriptionElement =
+              UI::Element::make(N(carddesc), l_View);
+          l_DescriptionElement.set_click_passthrough(true);
+
+          UI::Component::Display l_Display =
+              UI::Component::Display::make(l_DescriptionElement);
+
+          l_Display.pixel_position(Math::Vector2(10.0f, 60.0f));
+          l_Display.rotation(0.0f);
+          l_Display.pixel_scale(Math::Vector2(180.0f, 170.0f));
+          l_Display.layer(3);
+
+          l_Display.set_parent(l_Element.get_display().get_id());
+
+          UI::Component::Text l_Text =
+              UI::Component::Text::make(l_DescriptionElement);
+          l_Text.set_font(l_Font);
+          l_Text.set_text(
+              Util::String("Send a dark creature out for your "
+                           "opponent dealing 12 shadow damage."));
+          l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
+          l_Text.set_size(0.3f);
+
+          l_Text.set_content_fit_approach(
+              UI::Component::TextContentFitOptions::WordWrap);
         }
       }
 
