@@ -1292,55 +1292,26 @@ namespace Low {
           continue;
         }
 
-        for (auto mit =
-                 p_Step
-                     .get_skinned_renderobjects()[i_GraphicsPipeline
-                                                      .get_name()]
-                     .begin();
-             mit !=
-             p_Step
-                 .get_skinned_renderobjects()[i_GraphicsPipeline
+        {
+          LOW_PROFILE_CPU("Renderer", "Collect renderobjects");
+          for (auto mit =
+                   p_Step
+                       .get_skinned_renderobjects()[i_GraphicsPipeline
+                                                        .get_name()]
+                       .begin();
+               mit !=
+               p_Step
+                   .get_skinned_renderobjects()[i_GraphicsPipeline
 
-                                                  .get_name()]
-                 .end();
-             ++mit) {
-          RenderObject &i_RenderObject = *mit;
-
-          Math::Matrix4x4 l_MVPMatrix = p_ProjectionMatrix *
-                                        p_ViewMatrix *
-                                        i_RenderObject.transform;
-
-          l_Colors[l_ObjectIndex] = i_RenderObject.color;
-
-          l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
-          l_ObjectShaderInfos[l_ObjectIndex].model_matrix =
-              i_RenderObject.transform;
-
-          l_ObjectShaderInfos[l_ObjectIndex].material_index =
-              i_RenderObject.material.get_index();
-          l_ObjectShaderInfos[l_ObjectIndex].entity_id =
-              i_RenderObject.entity_id;
-          l_ObjectShaderInfos[l_ObjectIndex].texture_index =
-              i_RenderObject.texture.get_index();
-
-          l_ObjectIndex++;
-        }
-
-        for (auto mit = p_Step
-                            .get_renderobjects()[i_GraphicsPipeline
-                                                     .get_name()]
-                            .begin();
-             mit !=
-             p_Step.get_renderobjects()[i_GraphicsPipeline.get_name()]
-                 .end();
-             ++mit) {
-          for (auto it = mit->second.begin();
-               it != mit->second.end();) {
-            RenderObject &i_RenderObject = *it;
+                                                    .get_name()]
+                   .end();
+               ++mit) {
+            RenderObject &i_RenderObject = *mit;
 
             Math::Matrix4x4 l_MVPMatrix = p_ProjectionMatrix *
                                           p_ViewMatrix *
                                           i_RenderObject.transform;
+
             l_Colors[l_ObjectIndex] = i_RenderObject.color;
 
             l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
@@ -1351,25 +1322,64 @@ namespace Low {
                 i_RenderObject.material.get_index();
             l_ObjectShaderInfos[l_ObjectIndex].entity_id =
                 i_RenderObject.entity_id;
+            l_ObjectShaderInfos[l_ObjectIndex].texture_index =
+                i_RenderObject.texture.get_index();
 
             l_ObjectIndex++;
+          }
 
-            ++it;
+          for (auto mit = p_Step
+                              .get_renderobjects()[i_GraphicsPipeline
+                                                       .get_name()]
+                              .begin();
+               mit !=
+               p_Step
+                   .get_renderobjects()[i_GraphicsPipeline.get_name()]
+                   .end();
+               ++mit) {
+            for (auto it = mit->second.begin();
+                 it != mit->second.end();) {
+              RenderObject &i_RenderObject = *it;
+
+              Math::Matrix4x4 l_MVPMatrix = p_ProjectionMatrix *
+                                            p_ViewMatrix *
+                                            i_RenderObject.transform;
+              l_Colors[l_ObjectIndex] = i_RenderObject.color;
+
+              l_ObjectShaderInfos[l_ObjectIndex].mvp = l_MVPMatrix;
+              l_ObjectShaderInfos[l_ObjectIndex].model_matrix =
+                  i_RenderObject.transform;
+
+              l_ObjectShaderInfos[l_ObjectIndex].material_index =
+                  i_RenderObject.material.get_index();
+              l_ObjectShaderInfos[l_ObjectIndex].entity_id =
+                  i_RenderObject.entity_id;
+
+              l_ObjectIndex++;
+
+              ++it;
+            }
           }
         }
       }
 
-      p_Step.get_resources()[p_RenderFlow]
-          .get_buffer_resource(N(_renderobject_buffer))
-          .set((void *)l_ObjectShaderInfos);
+      {
+        LOW_PROFILE_CPU("Renderer", "Write buffers");
+        p_Step.get_resources()[p_RenderFlow]
+            .get_buffer_resource(N(_renderobject_buffer))
+            .set((void *)l_ObjectShaderInfos);
 
-      p_Step.get_resources()[p_RenderFlow]
-          .get_buffer_resource(N(_color_buffer))
-          .set((void *)l_Colors);
+        p_Step.get_resources()[p_RenderFlow]
+            .get_buffer_resource(N(_color_buffer))
+            .set((void *)l_Colors);
+      }
 
-      p_Step.get_renderpasses()[p_RenderFlow].begin();
-      GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
-      p_Step.get_renderpasses()[p_RenderFlow].end();
+      {
+        LOW_PROFILE_CPU("Renderer", "Renderpass");
+        p_Step.get_renderpasses()[p_RenderFlow].begin();
+        GraphicsStep::draw_renderobjects(p_Step, p_RenderFlow);
+        p_Step.get_renderpasses()[p_RenderFlow].end();
+      }
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
     }
 
@@ -1413,6 +1423,8 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_draw_renderobjects
       uint32_t l_InstanceId = 0;
+
+      LOW_PROFILE_CPU("Renderer", "Draw renderobjects");
 
       for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
            pit != p_Step.get_pipelines()[p_RenderFlow].end(); ++pit) {

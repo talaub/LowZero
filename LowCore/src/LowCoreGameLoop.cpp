@@ -10,6 +10,7 @@
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreNavmeshSystem.h"
 #include "LowCoreCflatScripting.h"
+#include "LowCoreCameraSystem.h"
 
 #include "LowCoreMeshResource.h"
 #include "LowCoreTexture2D.h"
@@ -58,6 +59,7 @@ namespace Low {
         UI::System::Text::tick(p_Delta, get_engine_state());
         System::Light::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
+        System::Camera::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
           System::Physics::tick(p_Delta, get_engine_state());
           System::Navmesh::tick(p_Delta, get_engine_state());
@@ -72,8 +74,21 @@ namespace Low {
           (*it)(p_Delta, get_engine_state());
         }
 
-        Scripting::tick(p_Delta, get_engine_state());
-        CflatVoidCall(testfunc);
+        if (get_engine_state() == Util::EngineState::PLAYING) {
+          Util::String l_TickFunctionName =
+              get_current_gamemode().get_tick_function_name();
+          Cflat::Identifier l_FunctionNameCflat(
+              l_TickFunctionName.c_str());
+
+          Cflat::Function *l_Function =
+              CflatGlobal::getEnvironment()->getFunction(
+                  l_FunctionNameCflat);
+
+          LOW_ASSERT(l_Function,
+                     "Could not find gamemode tick function");
+
+          CflatGlobal::getEnvironment()->voidFunctionCall(l_Function);
+        }
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());
 
@@ -256,10 +271,6 @@ namespace Low {
         auto l_LastTime = steady_clock::now();
 
         int l_Fps = 0;
-
-        Util::String l_Path =
-            Util::String(LOW_DATA_PATH) + "\\scripts\\testscript.cpp";
-        Scripting::get_environment()->load(l_Path.c_str());
 
         test_ui();
 

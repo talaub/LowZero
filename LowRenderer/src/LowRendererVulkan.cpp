@@ -401,6 +401,11 @@ namespace Low {
 
           if (l_UsingTransferCommandBuffer) {
             l_CommandBuffer = p_Context.vk.m_TransferCommandBuffer;
+            if (p_Context.debugEnabled) {
+              LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+                  p_Context, "Copy buffer - Transfer",
+                  Math::Color(0.241f, 0.6249f, 0.6341f, 1.0f));
+            }
           } else {
             VkCommandBufferAllocateInfo l_AllocInfo{};
             l_AllocInfo.sType =
@@ -419,6 +424,12 @@ namespace Low {
                 VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
             vkBeginCommandBuffer(l_CommandBuffer, &l_BeginInfo);
+
+            if (p_Context.debugEnabled) {
+              LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+                  p_Context, "Copy buffer - Immediate",
+                  Math::Color(0.841f, 0.2249f, 0.2341f, 1.0f));
+            }
           }
 
           VkBufferCopy l_CopyRegion{};
@@ -443,6 +454,10 @@ namespace Low {
             vkFreeCommandBuffers(p_Context.vk.m_Device,
                                  p_Context.vk.m_TransferCommandPool,
                                  1, &l_CommandBuffer);
+          }
+
+          if (p_Context.debugEnabled) {
+            LOW_RENDERER_END_RENDERDOC_SECTION(p_Context);
           }
         }
 
@@ -2063,6 +2078,12 @@ namespace Low {
 
       uint8_t vk_frame_prepare(Backend::Context &p_Context)
       {
+        if (p_Context.debugEnabled) {
+          LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+              p_Context, "Vulkan::PrepareFrame",
+              Math::Color(0.4578f, 0.2478f, 0.9947f, 1.0f));
+        }
+
         VkFence l_Fences[] = {
             p_Context.vk
                 .m_InFlightFences[p_Context.currentFrameIndex],
@@ -2110,6 +2131,10 @@ namespace Low {
         l_BeginInfo.flags = 0;
         l_BeginInfo.pInheritanceInfo = nullptr;
 
+        if (p_Context.debugEnabled) {
+          LOW_RENDERER_END_RENDERDOC_SECTION(p_Context);
+        }
+
         VkCommandBuffer l_CommandBuffer =
             ContextHelper::get_current_commandbuffer(p_Context);
         LOW_ASSERT(vkBeginCommandBuffer(l_CommandBuffer,
@@ -2151,6 +2176,7 @@ namespace Low {
 
       void vk_frame_render(Backend::Context &p_Context)
       {
+        LOW_PROFILE_CPU("Renderer", "Vulkan::RenderFrame");
         VkCommandBuffer l_CommandBuffer =
             ContextHelper::get_current_commandbuffer(p_Context);
 
@@ -2511,6 +2537,7 @@ namespace Low {
 
       void vk_renderpass_begin(Backend::Renderpass &p_Renderpass)
       {
+        LOW_PROFILE_CPU("Renderer", "Vulkan::RenderpassBegin");
 
         vk_renderpass_perform_barriers(p_Renderpass);
 
@@ -2545,6 +2572,13 @@ namespace Low {
                 p_Renderpass.clearTargetColor[i].b,
                 p_Renderpass.clearTargetColor[i].a}}};
           l_ClearValues.push_back(l_ClearColor);
+
+          Resource::Image i_Image(
+              p_Renderpass.renderTargets[i].handleId);
+
+          if (i_Image.is_alive()) {
+            i_Image.get_image().vk.m_State = ImageState::PRESENT_SRC;
+          }
         }
         if (p_Renderpass.clearDepthColor.y > 0.0f) {
           l_ClearValues.push_back({p_Renderpass.clearDepthColor.r,
@@ -2559,19 +2593,6 @@ namespace Low {
             ContextHelper::get_current_commandbuffer(
                 *p_Renderpass.context);
 
-        vkCmdBeginRenderPass(l_CommandBuffer, &l_RenderpassInfo,
-                             VK_SUBPASS_CONTENTS_INLINE);
-
-        for (uint8_t i = 0u; i < p_Renderpass.renderTargetCount;
-             ++i) {
-          Resource::Image i_Image(
-              p_Renderpass.renderTargets[i].handleId);
-
-          if (i_Image.is_alive()) {
-            i_Image.get_image().vk.m_State = ImageState::PRESENT_SRC;
-          }
-        }
-
         if (p_Renderpass.useDepth) {
           Resource::Image l_Image(
               p_Renderpass.depthRenderTargetHandleId);
@@ -2582,19 +2603,27 @@ namespace Low {
           }
         }
 
-        VkViewport l_Viewport{};
-        l_Viewport.x = 0.f;
-        l_Viewport.y = 0.f;
-        l_Viewport.width = static_cast<float>(l_ActualExtent.width);
-        l_Viewport.height = static_cast<float>(l_ActualExtent.height);
-        l_Viewport.minDepth = 0.f;
-        l_Viewport.maxDepth = 1.f;
-        vkCmdSetViewport(l_CommandBuffer, 0, 1, &l_Viewport);
+        {
+          LOW_PROFILE_CPU("Renderer", "Vulkan::RecordCommands");
 
-        VkRect2D l_Scissor{};
-        l_Scissor.offset = {0, 0};
-        l_Scissor.extent = l_ActualExtent;
-        vkCmdSetScissor(l_CommandBuffer, 0, 1, &l_Scissor);
+          vkCmdBeginRenderPass(l_CommandBuffer, &l_RenderpassInfo,
+                               VK_SUBPASS_CONTENTS_INLINE);
+
+          VkViewport l_Viewport{};
+          l_Viewport.x = 0.f;
+          l_Viewport.y = 0.f;
+          l_Viewport.width = static_cast<float>(l_ActualExtent.width);
+          l_Viewport.height =
+              static_cast<float>(l_ActualExtent.height);
+          l_Viewport.minDepth = 0.f;
+          l_Viewport.maxDepth = 1.f;
+          vkCmdSetViewport(l_CommandBuffer, 0, 1, &l_Viewport);
+
+          VkRect2D l_Scissor{};
+          l_Scissor.offset = {0, 0};
+          l_Scissor.extent = l_ActualExtent;
+          vkCmdSetScissor(l_CommandBuffer, 0, 1, &l_Scissor);
+        }
       }
 
       void vk_renderpass_end(Backend::Renderpass &p_Renderpass)
@@ -3988,6 +4017,7 @@ namespace Low {
 
       void vk_pipeline_bind(Backend::Pipeline &p_Pipeline)
       {
+        LOW_PROFILE_CPU("Renderer", "Vulkan::BindPipeline");
         if (p_Pipeline.type == Backend::PipelineType::GRAPHICS) {
           p_Pipeline.context->vk.m_BoundPipelineLayout =
               p_Pipeline.vk.m_PipelineLayout;
@@ -4049,6 +4079,8 @@ namespace Low {
 
       static void vk_perform_barriers(Backend::Context &p_Context)
       {
+        LOW_PROFILE_CPU("Renderer", "Vulkan::PerformBarriers");
+
         for (uint32_t i = 0u;
              i < LOW_RENDERER_BACKEND_MAX_COMMITTED_PRS; ++i) {
           uint32_t i_Index =
@@ -4170,13 +4202,14 @@ namespace Low {
 
       void vk_draw_indexed(Backend::DrawIndexedParams &p_Params)
       {
+        LOW_PROFILE_CPU("Renderer", "Vulkan::DrawIndexed");
         vkCmdDrawIndexed(ContextHelper::get_current_commandbuffer(
                              *p_Params.context),
                          p_Params.indexCount, p_Params.instanceCount,
                          p_Params.firstIndex, p_Params.vertexOffset,
                          p_Params.firstInstance);
 
-        Util::Name l_GlobalName = N(LOW_RENDERER_DRAWCALLS);
+        static Util::Name l_GlobalName = N(LOW_RENDERER_DRAWCALLS);
         Util::Globals::set(l_GlobalName,
                            ((int)Util::Globals::get(l_GlobalName)) +
                                1);
@@ -4360,8 +4393,14 @@ namespace Low {
         VkDeviceMemory l_StagingBufferMemory;
         void *l_Data;
         uint32_t l_StagingBufferOffset = 0;
+        Backend::Context *l_Context = p_Buffer.context;
 
         if (p_Buffer.context->running) {
+          if (l_Context->debugEnabled) {
+            LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+                *l_Context, "Write buffer - Transfer",
+                Math::Color(0.641f, 0.2249f, 0.4341f, 1.0f));
+          }
           l_StagingBuffer = p_Buffer.context->vk.m_StagingBuffer;
           l_StagingBufferMemory =
               p_Buffer.context->vk.m_StagingBufferMemory;
@@ -4375,6 +4414,11 @@ namespace Low {
                       p_DataSize, 0, &l_Data);
 
         } else {
+          if (l_Context->debugEnabled) {
+            LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+                *l_Context, "Write buffer - Immediate",
+                Math::Color(0.641f, 0.2249f, 0.4341f, 1.0f));
+          }
           Helper::create_buffer(
               *p_Buffer.context, p_DataSize,
               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -4402,6 +4446,9 @@ namespace Low {
                           l_StagingBuffer, nullptr);
           vkFreeMemory(p_Buffer.context->vk.m_Device,
                        l_StagingBufferMemory, nullptr);
+        }
+        if (l_Context->debugEnabled) {
+          LOW_RENDERER_END_RENDERDOC_SECTION(*l_Context);
         }
       }
 

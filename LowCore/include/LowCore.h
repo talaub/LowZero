@@ -3,6 +3,7 @@
 #include "LowCoreApi.h"
 
 #include "LowCoreScene.h"
+#include "LowCoreGameMode.h"
 
 #include "LowUtilEnums.h"
 #include "LowUtilFileSystem.h"
@@ -13,7 +14,9 @@ namespace Low {
     LOW_CORE_API void cleanup();
 
     LOW_CORE_API Util::EngineState get_engine_state();
-    LOW_CORE_API void begin_playmode();
+    LOW_CORE_API GameMode get_current_gamemode();
+    LOW_CORE_API
+    void begin_playmode();
     LOW_CORE_API void exit_playmode();
 
     LOW_CORE_API Scene get_loaded_scene();

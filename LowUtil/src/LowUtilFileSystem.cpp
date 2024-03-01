@@ -17,6 +17,8 @@ namespace Low {
       Map<WatchHandle, DirectoryWatcher> g_Directories;
       Map<WatchHandle, FileWatcher> g_Files;
 
+      void update_directory(WatchHandle p_WatchHandle);
+
       static String get_name_from_path(String p_Path)
       {
         String l_Path = StringHelper::replace(p_Path, '\\', '/');
@@ -26,10 +28,10 @@ namespace Low {
         return l_Parts[l_Parts.size() - 1];
       }
 
-      WatchHandle
-      watch_directory(String p_Path,
-                      Util::Function<Handle(FileWatcher &)> p_HandleCallback,
-                      float p_UpdateTimer)
+      WatchHandle watch_directory(
+          String p_Path,
+          Util::Function<Handle(FileWatcher &)> p_HandleCallback,
+          float p_UpdateTimer)
       {
         auto l_HandlePos = g_Handles.find(p_Path);
 
@@ -45,25 +47,28 @@ namespace Low {
           l_DirectoryWatcher.update = true;
           l_DirectoryWatcher.handleCallback = p_HandleCallback;
 
-          g_Directories[l_DirectoryWatcher.watchHandle] = l_DirectoryWatcher;
+          g_Directories[l_DirectoryWatcher.watchHandle] =
+              l_DirectoryWatcher;
           g_Handles[p_Path] = l_DirectoryWatcher.watchHandle;
 
           l_WatchHandle = l_DirectoryWatcher.watchHandle;
+          update_directory(l_WatchHandle);
         } else {
           l_WatchHandle = l_HandlePos->second;
 
-          g_Directories[l_WatchHandle].updateTimer = LOW_MATH_MIN(
-              g_Directories[l_WatchHandle].updateTimer, p_UpdateTimer);
+          g_Directories[l_WatchHandle].updateTimer =
+              LOW_MATH_MIN(g_Directories[l_WatchHandle].updateTimer,
+                           p_UpdateTimer);
           g_Directories[l_WatchHandle].update = true;
         }
 
         return l_WatchHandle;
       }
 
-      WatchHandle
-      watch_file(String p_Path,
-                 Util::Function<Handle(FileWatcher &)> p_HandleCallback,
-                 float p_UpdateTimer)
+      WatchHandle watch_file(
+          String p_Path,
+          Util::Function<Handle(FileWatcher &)> p_HandleCallback,
+          float p_UpdateTimer)
       {
         auto l_HandlePos = g_Handles.find(p_Path);
 
@@ -93,18 +98,21 @@ namespace Low {
 
       static void update_directory(WatchHandle p_WatchHandle)
       {
-        DirectoryWatcher &l_DirectoryWatcher = g_Directories[p_WatchHandle];
+        DirectoryWatcher &l_DirectoryWatcher =
+            g_Directories[p_WatchHandle];
 
         // Resetting update timers
         l_DirectoryWatcher.update = false;
         l_DirectoryWatcher.lateUpdate = true;
-        l_DirectoryWatcher.currentUpdateTimer = l_DirectoryWatcher.updateTimer;
+        l_DirectoryWatcher.currentUpdateTimer =
+            l_DirectoryWatcher.updateTimer;
 
         l_DirectoryWatcher.subdirectories.clear();
         l_DirectoryWatcher.files.clear();
 
         List<Util::String> l_Contents;
-        FileIO::list_directory(l_DirectoryWatcher.path.c_str(), l_Contents);
+        FileIO::list_directory(l_DirectoryWatcher.path.c_str(),
+                               l_Contents);
 
         std::sort(
             l_Contents.begin(), l_Contents.end(),
@@ -112,27 +120,32 @@ namespace Low {
               Util::String aName = a;
               Util::String bName = b;
 
-              std::transform(aName.begin(), aName.end(), aName.begin(),
-                             [](unsigned char c) { return std::tolower(c); });
+              std::transform(
+                  aName.begin(), aName.end(), aName.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
 
-              std::transform(bName.begin(), bName.end(), bName.begin(),
-                             [](unsigned char c) { return std::tolower(c); });
+              std::transform(
+                  bName.begin(), bName.end(), bName.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
 
               return aName < bName;
             });
 
-        for (auto it = l_Contents.begin(); it != l_Contents.end(); ++it) {
-          String i_Path = StringHelper::replace(it->c_str(), '\\', '/');
+        for (auto it = l_Contents.begin(); it != l_Contents.end();
+             ++it) {
+          String i_Path =
+              StringHelper::replace(it->c_str(), '\\', '/');
 
           if (FileIO::is_directory(i_Path.c_str())) {
-            WatchHandle i_WatchHandle =
-                watch_directory(i_Path, l_DirectoryWatcher.handleCallback,
-                                l_DirectoryWatcher.updateTimer);
+            WatchHandle i_WatchHandle = watch_directory(
+                i_Path, l_DirectoryWatcher.handleCallback,
+                l_DirectoryWatcher.updateTimer);
             DirectoryWatcher &i_NewDirectoryWatcher =
                 get_directory_watcher(i_WatchHandle);
             i_NewDirectoryWatcher.parentWatchHandle =
                 l_DirectoryWatcher.watchHandle;
-            l_DirectoryWatcher.subdirectories.push_back(i_WatchHandle);
+            l_DirectoryWatcher.subdirectories.push_back(
+                i_WatchHandle);
           } else {
             l_DirectoryWatcher.files.push_back(
                 watch_file(i_Path, l_DirectoryWatcher.handleCallback,
@@ -143,8 +156,10 @@ namespace Low {
 
       static void tick_directories(float p_Delta)
       {
-        for (auto it = g_Directories.begin(); it != g_Directories.end(); ++it) {
-          if (it->second.update || it->second.currentUpdateTimer <= 0.0f) {
+        for (auto it = g_Directories.begin();
+             it != g_Directories.end(); ++it) {
+          if (it->second.update ||
+              it->second.currentUpdateTimer <= 0.0f) {
             update_directory(it->first);
           } else {
             it->second.currentUpdateTimer -= p_Delta;
@@ -162,13 +177,15 @@ namespace Low {
         l_FileWatcher.modifiedTimestamp =
             Util::FileIO::modified_sync(l_FileWatcher.path.c_str());
 
-        l_FileWatcher.handle = l_FileWatcher.handleCallback(l_FileWatcher);
+        l_FileWatcher.handle =
+            l_FileWatcher.handleCallback(l_FileWatcher);
       }
 
       static void tick_files(float p_Delta)
       {
         for (auto it = g_Files.begin(); it != g_Files.end(); ++it) {
-          if (it->second.update || it->second.currentUpdateTimer <= 0.0f) {
+          if (it->second.update ||
+              it->second.currentUpdateTimer <= 0.0f) {
             update_file(it->first);
           } else {
             it->second.currentUpdateTimer -= p_Delta;
@@ -178,7 +195,8 @@ namespace Low {
 
       static void late_update_directory(WatchHandle p_WatchHandle)
       {
-        DirectoryWatcher &l_DirectoryWatcher = g_Directories[p_WatchHandle];
+        DirectoryWatcher &l_DirectoryWatcher =
+            g_Directories[p_WatchHandle];
 
         // Resetting update timers
         l_DirectoryWatcher.lateUpdate = false;
@@ -208,19 +226,24 @@ namespace Low {
         }
 
         std::sort(
-            l_DirectoryWatcher.files.begin(), l_DirectoryWatcher.files.end(),
+            l_DirectoryWatcher.files.begin(),
+            l_DirectoryWatcher.files.end(),
             [l_Pos](const WatchHandle a, const WatchHandle &b) {
               FileWatcher &l_af = get_file_watcher(a);
               FileWatcher &l_bf = get_file_watcher(b);
 
-              String aName = ((Name *)l_Pos->second.get(l_af.handle))->c_str();
-              String bName = ((Name *)l_Pos->second.get(l_bf.handle))->c_str();
+              String aName =
+                  ((Name *)l_Pos->second.get(l_af.handle))->c_str();
+              String bName =
+                  ((Name *)l_Pos->second.get(l_bf.handle))->c_str();
 
-              std::transform(aName.begin(), aName.end(), aName.begin(),
-                             [](unsigned char c) { return std::tolower(c); });
+              std::transform(
+                  aName.begin(), aName.end(), aName.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
 
-              std::transform(bName.begin(), bName.end(), bName.begin(),
-                             [](unsigned char c) { return std::tolower(c); });
+              std::transform(
+                  bName.begin(), bName.end(), bName.begin(),
+                  [](unsigned char c) { return std::tolower(c); });
 
               return aName < bName;
             });
@@ -228,14 +251,16 @@ namespace Low {
 
       static void late_tick_directories(float p_Delta)
       {
-        for (auto it = g_Directories.begin(); it != g_Directories.end(); ++it) {
+        for (auto it = g_Directories.begin();
+             it != g_Directories.end(); ++it) {
           if (it->second.lateUpdate) {
             late_update_directory(it->first);
           }
         }
       }
 
-      DirectoryWatcher &get_directory_watcher(WatchHandle p_WatchHandle)
+      DirectoryWatcher &
+      get_directory_watcher(WatchHandle p_WatchHandle)
       {
         auto l_Pos = g_Directories.find(p_WatchHandle);
         LOW_ASSERT(l_Pos != g_Directories.end(),

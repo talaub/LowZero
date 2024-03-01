@@ -9,16 +9,21 @@
 #include <stdint.h>
 #include <string>
 
-#define LOW_LOG_DEBUG                                                          \
-  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::DEBUG, LOW_MODULE_NAME)
-#define LOW_LOG_INFO                                                           \
-  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::INFO, LOW_MODULE_NAME)
-#define LOW_LOG_WARN                                                           \
-  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::WARN, LOW_MODULE_NAME)
-#define LOW_LOG_ERROR                                                          \
-  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::ERROR, LOW_MODULE_NAME)
-#define LOW_LOG_PROFILE                                                        \
-  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::PROFILE, LOW_MODULE_NAME)
+#define LOW_LOG_DEBUG                                                \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::DEBUG,         \
+                            LOW_MODULE_NAME)
+#define LOW_LOG_INFO                                                 \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::INFO,          \
+                            LOW_MODULE_NAME)
+#define LOW_LOG_WARN                                                 \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::WARN,          \
+                            LOW_MODULE_NAME)
+#define LOW_LOG_ERROR                                                \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::ERROR,         \
+                            LOW_MODULE_NAME)
+#define LOW_LOG_PROFILE                                              \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::PROFILE,       \
+                            LOW_MODULE_NAME)
 
 #define LOW_LOG_END Low::Util::Log::LogLineEnd::LINE_END
 
@@ -37,7 +42,7 @@ namespace Low {
         };
       }
 
-      enum LogLineEnd
+      enum class LogLineEnd
       {
         LINE_END
       };
@@ -56,7 +61,8 @@ namespace Low {
 
       typedef void (*LogCallback)(const LogEntry &);
 
-      LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module,
+      LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel,
+                                      const char *p_Module,
                                       bool p_Terminate = false);
 
       struct LOW_EXPORT LogStream

@@ -17,6 +17,7 @@
 #include "LowCorePointLight.h"
 #include "LowCoreRigidbody.h"
 #include "LowCoreNavmeshAgent.h"
+#include "LowCoreCamera.h"
 
 #include "LowUtilEnums.h"
 
@@ -27,9 +28,11 @@
 
 namespace Low {
   namespace Editor {
-    void render_billboards(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
+    void render_billboards(float p_Delta,
+                           RenderFlowWidget &p_RenderFlowWidget)
     {
-      Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
+      Renderer::RenderFlow l_RenderFlow =
+          p_RenderFlowWidget.get_renderflow();
 
       Helper::SphericalBillboardMaterials l_Materials =
           Helper::get_spherical_billboard_materials();
@@ -63,13 +66,29 @@ namespace Low {
             LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
             l_Materials.bulb);
       }
+
+      for (Core::Component::Camera i_Camera :
+           Core::Component::Camera::ms_LivingInstances) {
+        Core::Component::Transform i_Transform =
+            i_Camera.get_entity().get_transform();
+
+        float l_ScreenSpaceAdjustment =
+            Core::DebugGeometry::screen_space_multiplier(
+                l_RenderFlow, i_Transform.get_world_position());
+
+        Core::DebugGeometry::render_spherical_billboard(
+            i_Transform.get_world_position(),
+            LOW_EDITOR_BILLBOARD_SIZE * l_ScreenSpaceAdjustment,
+            l_Materials.camera);
+      }
     }
 
     void render_region_gizmos(float p_Delta,
                               RenderFlowWidget &p_RenderFlowWidget,
                               Core::Region p_Region)
     {
-      Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
+      Renderer::RenderFlow l_RenderFlow =
+          p_RenderFlowWidget.get_renderflow();
 
       if (p_Region.is_streaming_enabled()) {
         float l_ScreenSpaceAdjustment =
@@ -80,17 +99,19 @@ namespace Low {
             Helper::get_spherical_billboard_materials();
 
         Math::Cylinder l_StreamingCylinder;
-        l_StreamingCylinder.position = p_Region.get_streaming_position();
+        l_StreamingCylinder.position =
+            p_Region.get_streaming_position();
         l_StreamingCylinder.radius = p_Region.get_streaming_radius();
         l_StreamingCylinder.height = 75.0f;
-        l_StreamingCylinder.rotation = Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
+        l_StreamingCylinder.rotation =
+            Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
 
         Core::DebugGeometry::render_cylinder(
-            l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 1.0f), true,
-            true);
+            l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 1.0f),
+            true, true);
         Core::DebugGeometry::render_cylinder(
-            l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 0.1f), true,
-            false);
+            l_StreamingCylinder, Math::Color(1.0f, 1.0f, 0.0f, 0.1f),
+            true, false);
 
         Core::DebugGeometry::render_spherical_billboard(
             p_Region.get_streaming_position(),
@@ -99,9 +120,8 @@ namespace Low {
       }
     }
 
-    static void
-    render_rigidbody_debug_geometry(float p_Delta,
-                                    RenderFlowWidget &p_RenderFlowWidget)
+    static void render_rigidbody_debug_geometry(
+        float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
     {
       if (!get_selected_entity().is_alive()) {
         return;
@@ -122,16 +142,18 @@ namespace Low {
 
       if (l_Rigidbody.get_shape().type == Math::ShapeType::BOX) {
         Math::Box l_Box = l_Rigidbody.get_shape().box;
-        l_Box.position = l_Rigidbody.get_rigid_dynamic().get_position();
-        l_Box.rotation = l_Rigidbody.get_rigid_dynamic().get_rotation();
+        l_Box.position =
+            l_Rigidbody.get_rigid_dynamic().get_position();
+        l_Box.rotation =
+            l_Rigidbody.get_rigid_dynamic().get_rotation();
 
-        Core::DebugGeometry::render_box(l_Box, l_DrawColor, false, true);
+        Core::DebugGeometry::render_box(l_Box, l_DrawColor, false,
+                                        true);
       }
     }
 
-    static void
-    render_navmeshagent_debug_geometry(float p_Delta,
-                                       RenderFlowWidget &p_RenderFlowWidget)
+    static void render_navmeshagent_debug_geometry(
+        float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
     {
       if (!get_selected_entity().is_alive()) {
         return;
@@ -159,10 +181,12 @@ namespace Low {
       l_Cylinder.rotation = Math::QuaternionUtil::get_identity();
 
       Core::DebugGeometry::render_cylinder(
-          l_Cylinder, Math::Color(1.0f, 0.0f, 1.0f, 1.0f), false, true);
+          l_Cylinder, Math::Color(1.0f, 0.0f, 1.0f, 1.0f), false,
+          true);
     }
 
-    void render_gizmos(float p_Delta, RenderFlowWidget &p_RenderFlowWidget)
+    void render_gizmos(float p_Delta,
+                       RenderFlowWidget &p_RenderFlowWidget)
     {
       const float l_TopPadding = 40.0f;
 
@@ -170,23 +194,30 @@ namespace Low {
 
       ImGui::SetNextWindowPos(
           {p_RenderFlowWidget.get_widget_position().x +
-               (p_RenderFlowWidget.get_renderflow().get_dimensions().x / 2.0f) +
+               (p_RenderFlowWidget.get_renderflow()
+                    .get_dimensions()
+                    .x /
+                2.0f) +
                10.0f,
-           p_RenderFlowWidget.get_widget_position().y + l_TopPadding});
+           p_RenderFlowWidget.get_widget_position().y +
+               l_TopPadding});
 
-      ImGui::BeginChild(
-          "Controls", ImVec2(30, 30), false,
-          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
-              ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
-              ImGuiWindowFlags_NoScrollWithMouse |
-              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
-              ImGuiWindowFlags_AlwaysAutoResize);
+      ImGui::BeginChild("Controls", ImVec2(30, 30), false,
+                        ImGuiWindowFlags_NoBackground |
+                            ImGuiWindowFlags_NoDocking |
+                            ImGuiWindowFlags_NoCollapse |
+                            ImGuiWindowFlags_NoScrollbar |
+                            ImGuiWindowFlags_NoScrollWithMouse |
+                            ImGuiWindowFlags_NoSavedSettings |
+                            ImGuiWindowFlags_NoDecoration |
+                            ImGuiWindowFlags_AlwaysAutoResize);
       if (Core::get_engine_state() == Util::EngineState::EDITING) {
         if (ImGui::Button(ICON_FA_PLAY)) {
           set_selected_entity(0);
           Core::begin_playmode();
         }
-      } else if (Core::get_engine_state() == Util::EngineState::PLAYING) {
+      } else if (Core::get_engine_state() ==
+                 Util::EngineState::PLAYING) {
         if (ImGui::Button(ICON_FA_STOP)) {
           Core::exit_playmode();
         }
@@ -202,7 +233,8 @@ namespace Low {
 
       render_billboards(p_Delta, p_RenderFlowWidget);
 
-      Renderer::RenderFlow l_RenderFlow = p_RenderFlowWidget.get_renderflow();
+      Renderer::RenderFlow l_RenderFlow =
+          p_RenderFlowWidget.get_renderflow();
 
       static ImGuizmo::OPERATION l_Operation = ImGuizmo::TRANSLATE;
 
@@ -220,15 +252,18 @@ namespace Low {
 
       ImGui::SetNextWindowPos(
           {p_RenderFlowWidget.get_widget_position().x + 20.0f,
-           p_RenderFlowWidget.get_widget_position().y + l_TopPadding});
+           p_RenderFlowWidget.get_widget_position().y +
+               l_TopPadding});
 
-      ImGui::BeginChild(
-          "Tools", ImVec2(30, 200), false,
-          ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking |
-              ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar |
-              ImGuiWindowFlags_NoScrollWithMouse |
-              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration |
-              ImGuiWindowFlags_AlwaysAutoResize);
+      ImGui::BeginChild("Tools", ImVec2(30, 200), false,
+                        ImGuiWindowFlags_NoBackground |
+                            ImGuiWindowFlags_NoDocking |
+                            ImGuiWindowFlags_NoCollapse |
+                            ImGuiWindowFlags_NoScrollbar |
+                            ImGuiWindowFlags_NoScrollWithMouse |
+                            ImGuiWindowFlags_NoSavedSettings |
+                            ImGuiWindowFlags_NoDecoration |
+                            ImGuiWindowFlags_AlwaysAutoResize);
       if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
         l_Operation = ImGuizmo::TRANSLATE;
       }
@@ -246,15 +281,16 @@ namespace Low {
       ImGuizmo::SetOrthographic(false);
       float windowWidth = (float)ImGui::GetWindowWidth();
       float windowHeight = (float)ImGui::GetWindowHeight();
-      ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y,
-                        windowWidth, windowHeight);
+      ImGuizmo::SetRect(ImGui::GetWindowPos().x,
+                        ImGui::GetWindowPos().y, windowWidth,
+                        windowHeight);
 
-      Math::Matrix4x4 l_ProjectionMatrix =
-          glm::perspective(glm::radians(l_RenderFlow.get_camera_fov()),
-                           ((float)l_RenderFlow.get_dimensions().x) /
-                               ((float)l_RenderFlow.get_dimensions().y),
-                           l_RenderFlow.get_camera_near_plane(),
-                           l_RenderFlow.get_camera_far_plane());
+      Math::Matrix4x4 l_ProjectionMatrix = glm::perspective(
+          glm::radians(l_RenderFlow.get_camera_fov()),
+          ((float)l_RenderFlow.get_dimensions().x) /
+              ((float)l_RenderFlow.get_dimensions().y),
+          l_RenderFlow.get_camera_near_plane(),
+          l_RenderFlow.get_camera_far_plane());
 
       Math::Matrix4x4 l_ViewMatrix =
           glm::lookAt(l_RenderFlow.get_camera_position(),
@@ -265,27 +301,33 @@ namespace Low {
       Core::Entity l_Entity = get_selected_entity();
 
       if (l_Entity.is_alive()) {
-        Core::Component::Transform l_Transform = l_Entity.get_transform();
+        Core::Component::Transform l_Transform =
+            l_Entity.get_transform();
 
-        Math::Matrix4x4 l_TransformMatrix = l_Transform.get_world_matrix();
-        // glm::translate(glm::mat4(1.0f), l_Transform.get_world_position()) *
+        Math::Matrix4x4 l_TransformMatrix =
+            l_Transform.get_world_matrix();
+        // glm::translate(glm::mat4(1.0f),
+        // l_Transform.get_world_position()) *
         // glm::toMat4(l_Transform.get_world_rotation()) *
         // glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
 
         if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
-                                 (float *)&l_ProjectionMatrix, l_Operation,
-                                 ImGuizmo::LOCAL, (float *)&l_TransformMatrix,
-                                 NULL, NULL, NULL, NULL)) {
+                                 (float *)&l_ProjectionMatrix,
+                                 l_Operation, ImGuizmo::LOCAL,
+                                 (float *)&l_TransformMatrix, NULL,
+                                 NULL, NULL, NULL)) {
 
           bool l_IsFirst = false;
           if (!get_gizmos_dragged()) {
             l_IsFirst = true;
           }
 
-          Core::Component::Transform l_Parent = l_Transform.get_parent();
+          Core::Component::Transform l_Parent =
+              l_Transform.get_parent();
           if (l_Parent.is_alive()) {
             l_TransformMatrix =
-                glm::inverse(l_Parent.get_world_matrix()) * l_TransformMatrix;
+                glm::inverse(l_Parent.get_world_matrix()) *
+                l_TransformMatrix;
           }
 
           glm::vec3 scale;
@@ -293,8 +335,8 @@ namespace Low {
           glm::vec3 translation;
           glm::vec3 skew;
           glm::vec4 perspective;
-          glm::decompose(l_TransformMatrix, scale, rotation, translation, skew,
-                         perspective);
+          glm::decompose(l_TransformMatrix, scale, rotation,
+                         translation, skew, perspective);
 
           Util::StoredHandle l_Before;
           Util::StoredHandle l_After;
@@ -315,23 +357,28 @@ namespace Low {
           }
 
           if (!l_IsFirst && !l_Transaction.empty()) {
-            Transaction l_OldTransaction = get_global_changelist().peek();
+            Transaction l_OldTransaction =
+                get_global_changelist().peek();
 
-            for (uint32_t i = 0; i < l_Transaction.get_operations().size();
-                 ++i) {
+            for (uint32_t i = 0;
+                 i < l_Transaction.get_operations().size(); ++i) {
               CommonOperations::PropertyEditOperation *i_Operation =
                   (CommonOperations::PropertyEditOperation *)
                       l_Transaction.get_operations()[i];
-              for (uint32_t j = 0; j < l_OldTransaction.get_operations().size();
+              for (uint32_t j = 0;
+                   j < l_OldTransaction.get_operations().size();
                    ++j) {
-                CommonOperations::PropertyEditOperation *i_OldOperation =
-                    (CommonOperations::PropertyEditOperation *)
-                        l_OldTransaction.get_operations()[j];
+                CommonOperations::PropertyEditOperation
+                    *i_OldOperation =
+                        (CommonOperations::PropertyEditOperation *)
+                            l_OldTransaction.get_operations()[j];
 
-                if (i_OldOperation->m_Handle == i_Operation->m_Handle &&
+                if (i_OldOperation->m_Handle ==
+                        i_Operation->m_Handle &&
                     i_OldOperation->m_PropertyName ==
                         i_Operation->m_PropertyName) {
-                  i_Operation->m_OldValue = i_OldOperation->m_OldValue;
+                  i_Operation->m_OldValue =
+                      i_OldOperation->m_OldValue;
                 }
               }
             }
@@ -355,9 +402,9 @@ namespace Low {
 
     EditingWidget::EditingWidget() : m_CameraSpeed(3.5f)
     {
-      m_RenderFlowWidget =
-          new RenderFlowWidget(ICON_FA_EYE " Viewport",
-                               Renderer::get_main_renderflow(), &render_gizmos);
+      m_RenderFlowWidget = new RenderFlowWidget(
+          ICON_FA_EYE " Viewport", Renderer::get_main_renderflow(),
+          &render_gizmos);
       m_LastPitchYaw = Math::Vector2(0.0f, -90.0f);
     }
 
@@ -383,7 +430,8 @@ namespace Low {
           cos(l_PitchRadian) * cos(l_YawRadian), -sin(l_PitchRadian),
           cos(l_PitchRadian) * sin(l_YawRadian));
 
-      m_RenderFlowWidget->get_renderflow().set_camera_direction(l_Forward);
+      m_RenderFlowWidget->get_renderflow().set_camera_direction(
+          l_Forward);
 
       m_LastPitchYaw.x = l_Pitch;
       m_LastPitchYaw.y = l_Yaw;
@@ -405,35 +453,40 @@ namespace Low {
       Math::Vector3 l_CameraFront = l_CameraDirection * -1.0f;
 
       Math::Vector3 l_CameraRight =
-          glm::normalize(glm::cross(LOW_VECTOR3_UP, l_CameraFront)) * -1.0f;
+          glm::normalize(glm::cross(LOW_VECTOR3_UP, l_CameraFront)) *
+          -1.0f;
       Math::Vector3 l_CameraUp =
           glm::cross(l_CameraFront, l_CameraRight) * -1.0f;
 
       if (!ImGui::IsAnyItemActive()) {
         if (Renderer::get_window().keyboard_button_down(
-                Renderer::Input::KeyboardButton::W)) {
-          l_CameraPosition -= (l_CameraFront * p_Delta * m_CameraSpeed);
+                Util::KeyboardButton::W)) {
+          l_CameraPosition -=
+              (l_CameraFront * p_Delta * m_CameraSpeed);
         }
         if (Renderer::get_window().keyboard_button_down(
-                Renderer::Input::KeyboardButton::S)) {
-          l_CameraPosition += (l_CameraFront * p_Delta * m_CameraSpeed);
-        }
-
-        if (Renderer::get_window().keyboard_button_down(
-                Renderer::Input::KeyboardButton::A)) {
-          l_CameraPosition += (l_CameraRight * p_Delta * m_CameraSpeed);
-        }
-        if (Renderer::get_window().keyboard_button_down(
-                Renderer::Input::KeyboardButton::D)) {
-          l_CameraPosition -= (l_CameraRight * p_Delta * m_CameraSpeed);
+                Util::KeyboardButton::S)) {
+          l_CameraPosition +=
+              (l_CameraFront * p_Delta * m_CameraSpeed);
         }
 
         if (Renderer::get_window().keyboard_button_down(
-                Renderer::Input::KeyboardButton::Q)) {
+                Util::KeyboardButton::A)) {
+          l_CameraPosition +=
+              (l_CameraRight * p_Delta * m_CameraSpeed);
+        }
+        if (Renderer::get_window().keyboard_button_down(
+                Util::KeyboardButton::D)) {
+          l_CameraPosition -=
+              (l_CameraRight * p_Delta * m_CameraSpeed);
+        }
+
+        if (Renderer::get_window().keyboard_button_down(
+                Util::KeyboardButton::Q)) {
           l_CameraPosition += (l_CameraUp * p_Delta * m_CameraSpeed);
         }
         if (Renderer::get_window().keyboard_button_down(
-                Renderer::Input::KeyboardButton::E)) {
+                Util::KeyboardButton::E)) {
           l_CameraPosition -= (l_CameraUp * p_Delta * m_CameraSpeed);
         }
       }
@@ -446,9 +499,10 @@ namespace Low {
 
       l_MousePositionDifference *= m_Sensitivity * p_Delta;
 
-      if (m_LastMousePosition.x < 1.5f && m_LastMousePosition.y < 1.5f &&
+      if (m_LastMousePosition.x < 1.5f &&
+          m_LastMousePosition.y < 1.5f &&
           Renderer::get_window().mouse_button_down(
-              Renderer::Input::MouseButton::RIGHT)) {
+              Util::MouseButton::RIGHT)) {
 
         set_camera_rotation(l_MousePositionDifference.y,
                             l_MousePositionDifference.x);
@@ -466,7 +520,8 @@ namespace Low {
     {
       ImGuiIO &io = ImGui::GetIO();
 
-      bool l_AllowRendererBasedPicking = m_RenderFlowWidget->is_hovered();
+      bool l_AllowRendererBasedPicking =
+          m_RenderFlowWidget->is_hovered();
 
       if (m_RenderFlowWidget->is_hovered()) {
         l_AllowRendererBasedPicking =
@@ -481,7 +536,8 @@ namespace Low {
 
       m_CameraSpeed = Math::Util::clamp(m_CameraSpeed, 0.1f, 15.0f);
 
-      m_LastMousePosition = m_RenderFlowWidget->get_relative_hover_position();
+      m_LastMousePosition =
+          m_RenderFlowWidget->get_relative_hover_position();
 
       if (ImGuizmo::IsOver()) {
         l_AllowRendererBasedPicking = false;
@@ -493,7 +549,8 @@ namespace Low {
       Math::Vector2 l_HoverCoordinates = {2.0f, 2.0f};
 
       if (l_AllowRendererBasedPicking) {
-        l_HoverCoordinates = m_RenderFlowWidget->get_relative_hover_position();
+        l_HoverCoordinates =
+            m_RenderFlowWidget->get_relative_hover_position();
 
         uint32_t l_EntityIndex;
         m_RenderFlowWidget->get_renderflow()

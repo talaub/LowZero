@@ -97,7 +97,7 @@ namespace Mtd {
               true, false);
 
           if (Low::Renderer::get_window().mouse_button_down(
-                  Low::Renderer::Input::MouseButton::LEFT)) {
+                  Low::Util::MouseButton::LEFT)) {
             Low::Core::Component::NavmeshAgent::ms_LivingInstances[0]
                 .set_target_position(l_Hit.position);
           }

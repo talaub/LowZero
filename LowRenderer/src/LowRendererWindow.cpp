@@ -9,7 +9,8 @@
 
 namespace Low {
   namespace Renderer {
-    static void glfw_window_initialize(Window &p_Window, WindowInit &p_Init)
+    static void glfw_window_initialize(Window &p_Window,
+                                       WindowInit &p_Init)
     {
       LOW_ASSERT(glfwInit(), "Failed to initialize GLFW");
 
@@ -20,8 +21,9 @@ namespace Low {
       l_Path += "/_internal/assets/editor_icons/raw/logo.png";
 
       GLFWimage images[1];
-      images[0].pixels = stbi_load(l_Path.c_str(), &images[0].width,
-                                   &images[0].height, 0, 4); // rgba channels
+      images[0].pixels =
+          stbi_load(l_Path.c_str(), &images[0].width,
+                    &images[0].height, 0, 4); // rgba channels
 
       p_Window.m_Glfw =
           glfwCreateWindow(p_Init.dimensions.x, p_Init.dimensions.y,
@@ -84,32 +86,32 @@ namespace Low {
     }
 
     namespace Input {
-      static uint8_t keyboard_button(KeyboardButton p_Button)
+      static uint8_t keyboard_button(Util::KeyboardButton p_Button)
       {
         switch (p_Button) {
-        case KeyboardButton::Q:
+        case Util::KeyboardButton::Q:
           return GLFW_KEY_Q;
-        case KeyboardButton::W:
+        case Util::KeyboardButton::W:
           return GLFW_KEY_W;
-        case KeyboardButton::E:
+        case Util::KeyboardButton::E:
           return GLFW_KEY_E;
-        case KeyboardButton::A:
+        case Util::KeyboardButton::A:
           return GLFW_KEY_A;
-        case KeyboardButton::S:
+        case Util::KeyboardButton::S:
           return GLFW_KEY_S;
-        case KeyboardButton::D:
+        case Util::KeyboardButton::D:
           return GLFW_KEY_D;
         default:
           LOW_ASSERT(false, "Unknown keyboard button");
         }
       }
 
-      static uint8_t mouse_button(MouseButton p_Button)
+      static uint8_t mouse_button(Util::MouseButton p_Button)
       {
         switch (p_Button) {
-        case MouseButton::LEFT:
+        case Util::MouseButton::LEFT:
           return GLFW_MOUSE_BUTTON_LEFT;
-        case MouseButton::RIGHT:
+        case Util::MouseButton::RIGHT:
           return GLFW_MOUSE_BUTTON_RIGHT;
         default:
           LOW_ASSERT(false, "Unknown mouse button");
@@ -117,26 +119,28 @@ namespace Low {
       }
     } // namespace Input
 
-    bool Window::keyboard_button_down(Input::KeyboardButton p_Button)
+    bool Window::keyboard_button_down(Util::KeyboardButton p_Button)
     {
-      return glfwGetKey(m_Glfw, Input::keyboard_button(p_Button)) == GLFW_PRESS;
+      return glfwGetKey(m_Glfw, Input::keyboard_button(p_Button)) ==
+             GLFW_PRESS;
     }
 
-    bool Window::keyboard_button_up(Input::KeyboardButton p_Button)
+    bool Window::keyboard_button_up(Util::KeyboardButton p_Button)
     {
       return glfwGetKey(m_Glfw, Input::keyboard_button(p_Button)) ==
              GLFW_RELEASE;
     }
 
-    bool Window::mouse_button_down(Input::MouseButton p_Button)
+    bool Window::mouse_button_down(Util::MouseButton p_Button)
     {
-      return glfwGetMouseButton(m_Glfw, Input::mouse_button(p_Button)) ==
-             GLFW_PRESS;
+      return glfwGetMouseButton(
+                 m_Glfw, Input::mouse_button(p_Button)) == GLFW_PRESS;
     }
 
-    bool Window::mouse_button_up(Input::MouseButton p_Button)
+    bool Window::mouse_button_up(Util::MouseButton p_Button)
     {
-      return glfwGetMouseButton(m_Glfw, Input::mouse_button(p_Button)) ==
+      return glfwGetMouseButton(m_Glfw,
+                                Input::mouse_button(p_Button)) ==
              GLFW_RELEASE;
     }
   } // namespace Renderer

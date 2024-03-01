@@ -20,6 +20,8 @@
 #include "LowCoreCflatScripting.h"
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreFont.h"
+#include "LowCoreGameMode.h"
+#include "LowCoreCamera.h"
 
 #include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
@@ -54,6 +56,7 @@ void *operator new[](size_t size, size_t alignment,
 namespace Low {
   namespace Core {
     Util::EngineState g_CurrentEngineState;
+    Util::Stack<GameMode> g_GameModes;
 
     FileSystemWatchers g_FilesystemWatchers;
     Util::Map<uint16_t, Util::FileSystem::WatchHandle> g_WatchHandles;
@@ -170,6 +173,7 @@ namespace Low {
       Component::Rigidbody::initialize();
       Component::PrefabInstance::initialize();
       Component::NavmeshAgent::initialize();
+      Component::Camera::initialize();
     }
 
     static void initialize_base_types()
@@ -177,6 +181,7 @@ namespace Low {
       Scene::initialize();
       Region::initialize();
       Entity::initialize();
+      GameMode::initialize();
     }
 
     static void initialize_ui_component_types()
@@ -361,6 +366,25 @@ namespace Low {
       load_prefabs();
     }
 
+    static void load_gamemodes()
+    {
+      Util::String l_Path =
+          Util::String(LOW_DATA_PATH) + "\\assets\\gamemodes";
+
+      Util::List<Util::String> l_FilePaths;
+
+      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+      Util::String l_Ending = ".gamemode.yaml";
+
+      for (Util::String &i_Path : l_FilePaths) {
+        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+          Util::Yaml::Node i_Node =
+              Util::Yaml::load_file(i_Path.c_str());
+          GameMode::deserialize(i_Node, 0);
+        }
+      }
+    }
+
     static void initialize_globals()
     {
       Util::Globals::set(N(LOW_SCREEN_OFFSET),
@@ -386,6 +410,8 @@ namespace Low {
 
       load_regions();
       load_scenes();
+
+      load_gamemodes();
     }
 
     static void cleanup_asset_types()
@@ -404,6 +430,7 @@ namespace Low {
 
     static void cleanup_component_types()
     {
+      Component::Camera::cleanup();
       Component::NavmeshAgent::cleanup();
       Component::PrefabInstance::cleanup();
       Component::Rigidbody::cleanup();
@@ -415,6 +442,7 @@ namespace Low {
 
     static void cleanup_base_types()
     {
+      GameMode::cleanup();
       Entity::cleanup();
       Region::cleanup();
       Scene::cleanup();
@@ -470,6 +498,8 @@ namespace Low {
     {
       g_StoredData.scene = Scene::get_loaded_scene();
 
+      g_GameModes.push(GameMode::find_by_name(N(DefaultGamemode)));
+
       g_StoredData.regions.clear();
       g_StoredData.regions.resize(
           g_StoredData.scene.get_regions().size());
@@ -489,6 +519,10 @@ namespace Low {
     void exit_playmode()
     {
       g_CurrentEngineState = Util::EngineState::EDITING;
+
+      while (!g_GameModes.empty()) {
+        g_GameModes.pop();
+      }
 
       Renderer::get_main_renderflow().set_camera_position(
           g_StoredData.cameraPosition);
@@ -513,6 +547,18 @@ namespace Low {
       }
 
       return 0;
+    }
+
+    GameMode get_current_gamemode()
+    {
+      LOW_ASSERT(!g_GameModes.empty(),
+                 "Cannot fetch current gamemode. No gamemodes have "
+                 "been pushed");
+      if (g_GameModes.empty()) {
+        return 0;
+      }
+
+      return g_GameModes.top();
     }
   } // namespace Core
 } // namespace Low

@@ -7,6 +7,7 @@
 #include "LowUtilString.h"
 #include "LowUtilVariant.h"
 #include "LowUtilGlobals.h"
+#include "LowUtilJobManager.h"
 
 #include "imgui.h"
 
@@ -42,6 +43,7 @@
 #include "microprofile.h"
 
 #define LOW_RENDERER_MAX_POSE_BONES 512
+#define RECORD_IN_DIFFERENT_THREAD 0
 
 namespace Low {
   namespace Renderer {
@@ -94,6 +96,11 @@ namespace Low {
     };
 
     Interface::Context g_Context;
+
+#if RECORD_IN_DIFFERENT_THREAD
+    Util::JobManager::ThreadPool *g_ThreadPool;
+    Util::Future<void> g_Future;
+#endif
 
     Material g_DefaultMaterial;
 
@@ -713,6 +720,10 @@ namespace Low {
       Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
       Util::Globals::set(N(LOW_RENDERER_COMPUTEDISPATCH), (int)0);
 
+#if RECORD_IN_DIFFERENT_THREAD
+      g_ThreadPool = new Util::JobManager::ThreadPool(1);
+#endif
+
       Backend::initialize();
 
       load_graphics_pipeline_configs(g_ConfigPath);
@@ -1002,6 +1013,15 @@ namespace Low {
     void tick(float p_Delta, Util::EngineState p_State)
     {
       LOW_PROFILE_CPU("Renderer", "TICK");
+
+#if RECORD_IN_DIFFERENT_THREAD
+      if (g_Future.valid()) {
+        while (g_Future.wait_for(std::chrono::seconds(0)) !=
+               std::future_status::ready) {
+        }
+      }
+#endif
+
       g_Context.get_window().tick();
 
       Interface::PipelineManager::tick(p_Delta);
@@ -1013,12 +1033,22 @@ namespace Low {
 
       g_Context.begin_imgui_frame();
 
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            g_Context.get_context(), "Tick",
+            Math::Color(0.4578f, 0.9478f, 0.5947f, 1.0f));
+      }
+
       g_MainRenderFlow.clear_renderbojects();
       g_PoseBoneIndex = 0;
       g_SkinningBuffer.clear();
       g_PendingPoseCalculations.clear();
       g_PendingSkinningOperations.clear();
       g_DebugGeometryTriangleVertexBuffer.clear();
+
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
+      }
 
       if (l_ContextState == Backend::ContextState::OUT_OF_DATE) {
         g_Context.update_dimensions();
@@ -1296,20 +1326,13 @@ namespace Low {
       }
     }
 
-    void late_tick(float p_Delta, Util::EngineState p_State)
+    static void do_late_tick(float p_Delta)
     {
-      MICROPROFILE_SCOPEI("Renderer", "LATETICK", MP_GREEN);
-      if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
-        ImGui::EndFrame();
-        ImGui::UpdatePlatformWindows();
-        return;
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_BEGIN_RENDERDOC_SECTION(
+            g_Context.get_context(), "Late tick",
+            Math::Color(0.241f, 0.6249f, 0.6341f, 1.0f));
       }
-
-      Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
-      Util::Globals::set(N(LOW_RENDERER_COMPUTEDISPATCH), (int)0);
-
-      static int x = 0;
-      x += 1;
 
       g_VertexBuffer.bind();
       g_IndexBuffer.bind();
@@ -1329,6 +1352,8 @@ namespace Low {
       do_skinning();
 
       do_particle_updates(p_Delta);
+
+      u64 l_RenderFlowId = g_MainRenderFlow.get_id();
 
       g_MainRenderFlow.execute();
 
@@ -1366,6 +1391,30 @@ namespace Low {
       g_Context.render_frame();
 
       execute_pending_renderflow_dimension_updates();
+
+      if (g_Context.is_debug_enabled()) {
+        LOW_RENDERER_END_RENDERDOC_SECTION(g_Context.get_context());
+      }
+    }
+
+    void late_tick(float p_Delta, Util::EngineState p_State)
+    {
+      MICROPROFILE_SCOPEI("Renderer", "LATETICK", MP_GREEN);
+      if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
+        ImGui::EndFrame();
+        ImGui::UpdatePlatformWindows();
+        return;
+      }
+
+      Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
+      Util::Globals::set(N(LOW_RENDERER_COMPUTEDISPATCH), (int)0);
+
+#if RECORD_IN_DIFFERENT_THREAD
+      g_Future =
+          g_ThreadPool->enqueue([p_Delta] { do_late_tick(p_Delta); });
+#else
+      do_late_tick(p_Delta);
+#endif
     }
 
     bool window_is_open()

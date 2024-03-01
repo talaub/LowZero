@@ -1,0 +1,29 @@
+#include "LowCoreInput.h"
+
+#include "LowRenderer.h"
+
+namespace Low {
+  namespace Core {
+    namespace Input {
+      bool keyboard_button_down(Util::KeyboardButton p_Button)
+      {
+        return Renderer::get_window().keyboard_button_down(p_Button);
+      }
+
+      bool keyboard_button_up(Util::KeyboardButton p_Button)
+      {
+        return Renderer::get_window().keyboard_button_up(p_Button);
+      }
+
+      bool mouse_button_down(Util::MouseButton p_Button)
+      {
+        return Renderer::get_window().mouse_button_down(p_Button);
+      }
+
+      bool mouse_button_up(Util::MouseButton p_Button)
+      {
+        return Renderer::get_window().mouse_button_up(p_Button);
+      }
+    } // namespace Input
+  }   // namespace Core
+} // namespace Low

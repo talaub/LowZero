@@ -36,6 +36,9 @@ namespace Low {
                           << i_FileWatcher.path << LOW_LOG_END;
 
             LOW_ASSERT(false, get_environment()->getErrorMessage());
+          } else {
+            LOW_LOG_DEBUG << "Loaded script '" << i_FileWatcher.name
+                          << "'" << LOW_LOG_END;
           }
         }
 
@@ -223,6 +226,75 @@ static void register_math()
   }
 }
 
+#include "LowUtilEnums.h"
+static void register_lowutil_enums()
+{
+  using namespace Low::Core;
+  using namespace Low::Util;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace("Low::Util");
+
+  {
+    CflatRegisterEnumClass(l_Namespace, KeyboardButton);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, Q);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, W);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, E);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, R);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, T);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, Y);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, U);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, I);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, O);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, P);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, A);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, S);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, D);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, F);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, G);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, H);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, J);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, K);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, L);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, Z);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, X);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, C);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, V);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, B);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, N);
+    CflatEnumClassAddValue(l_Namespace, KeyboardButton, M);
+  }
+
+  {
+    CflatRegisterEnumClass(l_Namespace, MouseButton);
+    CflatEnumClassAddValue(l_Namespace, MouseButton, LEFT);
+    CflatEnumClassAddValue(l_Namespace, MouseButton, RIGHT);
+  }
+}
+
+#include "LowCoreInput.h"
+static void register_lowcore_input()
+{
+
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace Low::Core::Input;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace(
+          "Low::Core::Input");
+
+  CflatRegisterFunctionReturnParams1(
+      l_Namespace, bool, keyboard_button_down, Util::KeyboardButton);
+  CflatRegisterFunctionReturnParams1(
+      l_Namespace, bool, keyboard_button_up, Util::KeyboardButton);
+
+  CflatRegisterFunctionReturnParams1(
+      l_Namespace, bool, mouse_button_down, Util::MouseButton);
+  CflatRegisterFunctionReturnParams1(
+      l_Namespace, bool, mouse_button_up, Util::MouseButton);
+}
+
 #include "LowUtilName.h"
 static void register_lowutil_name()
 {
@@ -313,9 +385,95 @@ static void register_lowutil_handle()
                                     bool, operator<, const Handle &);
 }
 
+#include "LowUtilLogger.h"
+static void register_lowutil_logger()
+{
+  using namespace Low::Core;
+  using namespace Low::Util;
+  using namespace Low::Util::Log;
+  using namespace Low::Util::Log::LogLevel;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace(
+          "Low::Util::Log");
+
+  {
+    Cflat::Namespace *l_EnumNamespace =
+        Scripting::get_environment()->requestNamespace(
+            "Low::Util::Log::LogLevel");
+
+    CflatRegisterEnum(l_EnumNamespace, Enum);
+    CflatEnumAddValue(l_EnumNamespace, Enum, INFO);
+    CflatEnumAddValue(l_EnumNamespace, Enum, DEBUG);
+    CflatEnumAddValue(l_EnumNamespace, Enum, WARN);
+    CflatEnumAddValue(l_EnumNamespace, Enum, ERROR);
+    CflatEnumAddValue(l_EnumNamespace, Enum, PROFILE);
+  }
+
+  {
+    CflatRegisterEnumClass(l_Namespace, LogLineEnd);
+    CflatEnumClassAddValue(l_Namespace, LogLineEnd, LINE_END);
+  }
+
+  {
+    CflatRegisterStruct(l_Namespace, LogStream);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<, int);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<, bool);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<, size_t);
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, uint32_t);
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, int32_t);
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, uint16_t);
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, int16_t);
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, uint8_t);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<, int8_t);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<, float);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<,
+                                     const char *);
+    /*
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, String &);
+        */
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<, Name);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<,
+                                     Low::Math::Vector3 &);
+    CflatClassAddMethodReturnParams1(
+        l_Namespace, LogStream, LogStream &, operator<<, LogLineEnd);
+  }
+
+  {
+    CflatRegisterFunctionReturnParams3(l_Namespace, LogStream &,
+                                       begin_log, uint8_t,
+                                       const char *, bool);
+  }
+
+  {
+    Scripting::get_environment()->defineMacro(
+        "LOW_LOG_DEBUG",
+        "Low::Util::Log::begin_log("
+        "Low::Util::Log::LogLevel::DEBUG, \"Script\", false)");
+
+    Scripting::get_environment()->defineMacro(
+        "LOW_LOG_END", "Low::Util::Log::LogLineEnd::LINE_END");
+  }
+}
+
 // REGISTER_CFLAT_BEGIN
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
+#include "LowCoreCamera.h"
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
 
@@ -338,6 +496,8 @@ static void register_lowcore_entity()
                                  Low::Core::Entity);
   }
 
+  CflatStructAddConstructorParams1(l_Namespace, Entity, uint64_t);
+  CflatStructAddStaticMember(l_Namespace, Entity, uint16_t, TYPE_ID);
   CflatStructAddMethodReturn(l_Namespace, Entity, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Entity, uint32_t,
                                    get_capacity);
@@ -386,6 +546,9 @@ static void register_lowcore_transform()
                                  Low::Core::Component::Transform);
   }
 
+  CflatStructAddConstructorParams1(l_Namespace, Transform, uint64_t);
+  CflatStructAddStaticMember(l_Namespace, Transform, uint16_t,
+                             TYPE_ID);
   CflatStructAddMethodReturn(l_Namespace, Transform, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Transform, uint32_t,
                                    get_capacity);
@@ -431,6 +594,48 @@ static void register_lowcore_transform()
                                   set_entity, Low::Core::Entity);
 }
 
+static void register_lowcore_camera()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace Low::Core::Component;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace(
+          "Low::Core::Component");
+
+  Cflat::Struct *type = Low::Core::Scripting::g_CflatStructs
+      ["Low::Core::Component::Camera"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Scripting::get_environment()->requestNamespace("Low::Util");
+
+    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
+                                 Low::Core::Component::Camera);
+  }
+
+  CflatStructAddConstructorParams1(l_Namespace, Camera, uint64_t);
+  CflatStructAddStaticMember(l_Namespace, Camera, uint16_t, TYPE_ID);
+  CflatStructAddMethodReturn(l_Namespace, Camera, bool, is_alive);
+  CflatStructAddStaticMethodReturn(l_Namespace, Camera, uint32_t,
+                                   get_capacity);
+  CflatStructAddStaticMethodReturnParams1(
+      l_Namespace, Camera, Low::Core::Component::Camera,
+      find_by_index, uint32_t);
+
+  CflatStructAddMethodReturn(l_Namespace, Camera, bool, is_active);
+
+  CflatStructAddMethodReturn(l_Namespace, Camera, float, get_fov);
+  CflatStructAddMethodVoidParams1(l_Namespace, Camera, void, set_fov,
+                                  float);
+
+  CflatStructAddMethodReturn(l_Namespace, Camera, Low::Core::Entity,
+                             get_entity);
+  CflatStructAddMethodVoidParams1(l_Namespace, Camera, void,
+                                  set_entity, Low::Core::Entity);
+}
+
 static void register_lowcore_element()
 {
   using namespace Low;
@@ -451,6 +656,8 @@ static void register_lowcore_element()
                                  Low::Core::UI::Element);
   }
 
+  CflatStructAddConstructorParams1(l_Namespace, Element, uint64_t);
+  CflatStructAddStaticMember(l_Namespace, Element, uint16_t, TYPE_ID);
   CflatStructAddMethodReturn(l_Namespace, Element, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Element, uint32_t,
                                    get_capacity);
@@ -504,6 +711,8 @@ static void register_lowcore_display()
                                  Low::Core::UI::Component::Display);
   }
 
+  CflatStructAddConstructorParams1(l_Namespace, Display, uint64_t);
+  CflatStructAddStaticMember(l_Namespace, Display, uint16_t, TYPE_ID);
   CflatStructAddMethodReturn(l_Namespace, Display, bool, is_alive);
   CflatStructAddStaticMethodReturn(l_Namespace, Display, uint32_t,
                                    get_capacity);
@@ -588,6 +797,20 @@ static void preregister_types()
   }
 
   {
+    using namespace Low::Core::Component;
+    Cflat::Namespace *l_Namespace =
+        Scripting::get_environment()->requestNamespace(
+            "Low::Core::Component");
+
+    CflatRegisterStruct(l_Namespace, Camera);
+    CflatStructAddBaseType(Scripting::get_environment(),
+                           Low::Core::Component::Camera,
+                           Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::Component::Camera"] = type;
+  }
+
+  {
     using namespace Low::Core::UI;
     Cflat::Namespace *l_Namespace =
         Scripting::get_environment()->requestNamespace(
@@ -621,6 +844,7 @@ static void register_types()
 
   register_lowcore_entity();
   register_lowcore_transform();
+  register_lowcore_camera();
   register_lowcore_element();
   register_lowcore_display();
 }
@@ -629,9 +853,12 @@ static void register_types()
 static void setup_environment()
 {
   register_math();
+  register_lowutil_enums();
   register_lowutil_name();
   register_lowutil_handle();
+  register_lowutil_logger();
   register_lowutil_containers();
   register_types();
+  register_lowcore_input();
 }
 #endif

@@ -132,9 +132,8 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> &
       get_pipelines() const;
 
-      Util::Map<Util::Name,
-                Util::Map<Mesh, Util::List<RenderObject>>> &
-      get_renderobjects() const;
+      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
+          &get_renderobjects() const;
 
       Util::Map<Util::Name, Util::List<RenderObject>> &
       get_skinned_renderobjects() const;
