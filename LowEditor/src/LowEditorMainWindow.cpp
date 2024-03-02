@@ -24,6 +24,7 @@
 #include "LowEditorCommonOperations.h"
 #include "LowEditorResourceWidget.h"
 #include "LowEditorThemes.h"
+#include "LowEditorTestManagerWidget.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -39,6 +40,8 @@
 #include "LowCoreRigidbody.h"
 #include "LowCorePrefabInstance.h"
 #include "LowCorePhysicsSystem.h"
+#include "LowCoreMeshAsset.h"
+#include "LowCoreMaterial.h"
 
 #include <chrono>
 #include <cstddef>
@@ -656,6 +659,14 @@ namespace Low {
       register_editor_widget("StateGraph", new StateGraphWidget(),
                              true);
       register_editor_widget("UI-Views", new UiWidget(), false);
+      register_editor_widget(
+          "MeshAssets",
+          new TestManagerWidget(Core::MeshAsset::TYPE_ID), true);
+#if 1
+      register_editor_widget(
+          "Materials", new TestManagerWidget(Core::Material::TYPE_ID),
+          true);
+#endif
 
       Util::String l_Path = LOW_DATA_PATH;
       l_Path += "/assets/meshes";
