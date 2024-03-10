@@ -102,6 +102,10 @@ namespace Mtd {
       CflatStructAddMethodVoidParams1(
           Low::Core::Scripting::get_environment(), Mtd::Ability, void,
           set_name, Low::Util::Name);
+
+      CflatStructAddMethodReturn(
+          Low::Core::Scripting::get_environment(), Mtd::Ability,
+          Low::Core::UI::View, spawn_card);
     }
 
     static void preregister_types()

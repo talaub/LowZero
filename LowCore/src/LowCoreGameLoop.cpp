@@ -52,15 +52,6 @@ namespace Low {
         static bool l_FirstRun = true;
         Util::tick(p_Delta);
 
-        if (g_Frames == 1000) {
-          UI::View l_View = UI::View::find_by_name(N(TestView));
-          UI::View l_NewView = l_View.spawn_instance(N(CardView));
-
-          l_NewView.rotation(0);
-          l_NewView.pixel_position(Math::Vector2(200.0f, 100.0f));
-          l_NewView.scale_multiplier(1.0f);
-        }
-
         Renderer::tick(p_Delta, get_engine_state());
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::Display::tick(p_Delta, get_engine_state());
@@ -129,7 +120,7 @@ namespace Low {
 
       static void test_ui()
       {
-        UI::View l_View = UI::View::make(N(TestView));
+        UI::View l_View = UI::View::make(N(CardTemplateView));
         l_View.set_view_template(true);
         l_View.load_elements();
 

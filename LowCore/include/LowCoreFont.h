@@ -9,10 +9,8 @@
 
 #include "LowRendererExposedObjects.h"
 #include "LowCoreResource.h"
-#include "ft2build.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include FT_FREETYPE_H
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

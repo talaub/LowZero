@@ -11,6 +11,11 @@
 #include "LowUtilResource.h"
 #include "LowUtilJobManager.h"
 #include "LowRenderer.h"
+#include "ft2build.h"
+
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include FT_FREETYPE_H
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {

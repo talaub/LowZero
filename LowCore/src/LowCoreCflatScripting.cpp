@@ -30,16 +30,6 @@ namespace Low {
               Util::FileSystem::get_file_watcher(i_WatchHandle);
           g_SourceTimes[i_FileWatcher.path] =
               i_FileWatcher.modifiedTimestamp;
-
-          if (!get_environment()->load(i_FileWatcher.path.c_str())) {
-            LOW_LOG_ERROR << "Failed Cflat compilation of file "
-                          << i_FileWatcher.path << LOW_LOG_END;
-
-            LOW_ASSERT(false, get_environment()->getErrorMessage());
-          } else {
-            LOW_LOG_DEBUG << "Loaded script '" << i_FileWatcher.name
-                          << "'" << LOW_LOG_END;
-          }
         }
 
         for (Util::FileSystem::WatchHandle i_WatchHandle :
@@ -80,7 +70,7 @@ namespace Low {
           if (i_Pos == g_SourceTimes.end() ||
               i_Pos->second != i_FileWatcher.modifiedTimestamp) {
 
-            get_environment()->load(i_FileWatcher.path.c_str());
+            // get_environment()->load(i_FileWatcher.path.c_str());
 
             if (!get_environment()->load(
                     i_FileWatcher.path.c_str())) {
@@ -529,6 +519,7 @@ static void register_lowutil_logger()
 #include "LowCoreTransform.h"
 #include "LowCoreCamera.h"
 #include "LowCoreUiElement.h"
+#include "LowCoreUiView.h"
 #include "LowCoreUiDisplay.h"
 
 static void register_lowcore_entity()
@@ -821,6 +812,80 @@ static void register_lowcore_element()
       Low::Core::UI::Component::Display, get_display);
 }
 
+static void register_lowcore_view()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace ::Low::Core::UI;
+
+  Cflat::Namespace *l_Namespace =
+      Low::Core::Scripting::get_environment()->requestNamespace(
+          "Low::Core::UI");
+
+  Cflat::Struct *type =
+      Scripting::g_CflatStructs["Low::Core::UI::View"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Low::Core::Scripting::get_environment()->requestNamespace(
+            "Low::Util");
+
+    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
+                                 Low::Core::UI::View);
+  }
+
+  CflatStructAddConstructorParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      uint64_t);
+  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View, uint16_t, TYPE_ID);
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View, bool, is_alive);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      uint32_t, get_capacity);
+  CflatStructAddStaticMethodReturnParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      Low::Core::UI::View, find_by_index, uint32_t);
+  CflatStructAddStaticMethodReturnParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      Low::Core::UI::View, find_by_name, Low::Util::Name);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View,
+                             Low::Math::Vector2 &, pixel_position);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      void, pixel_position, Low::Math::Vector2 &);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View, float, rotation);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      void, rotation, float);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View, float,
+                             scale_multiplier);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      void, scale_multiplier, float);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View, Low::Util::Name,
+                             get_name);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      void, set_name, Low::Util::Name);
+
+  CflatStructAddMethodReturnParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      Low::Core::UI::View, spawn_instance, Low::Util::Name);
+  CflatStructAddMethodReturnParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      Low::Core::UI::Element, find_element_by_name, Low::Util::Name);
+}
+
 static void register_lowcore_display()
 {
   using namespace Low;
@@ -989,6 +1054,19 @@ static void preregister_types()
   }
 
   {
+    using namespace Low::Core::UI;
+    Cflat::Namespace *l_Namespace =
+        Low::Core::Scripting::get_environment()->requestNamespace(
+            "Low::Core::UI");
+
+    CflatRegisterStruct(l_Namespace, View);
+    CflatStructAddBaseType(Low::Core::Scripting::get_environment(),
+                           Low::Core::UI::View, Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::UI::View"] = type;
+  }
+
+  {
     using namespace Low::Core::UI::Component;
     Cflat::Namespace *l_Namespace =
         Low::Core::Scripting::get_environment()->requestNamespace(
@@ -1011,6 +1089,7 @@ static void register_types()
   register_lowcore_transform();
   register_lowcore_camera();
   register_lowcore_element();
+  register_lowcore_view();
   register_lowcore_display();
 }
 // REGISTER_CFLAT_END

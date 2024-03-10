@@ -136,6 +136,8 @@ namespace Low {
         void load_elements();
         void unload_elements();
         Low::Core::UI::View spawn_instance(Low::Util::Name p_Name);
+        Low::Core::UI::Element
+        find_element_by_name(Low::Util::Name p_Name);
 
       private:
         static uint32_t ms_Capacity;

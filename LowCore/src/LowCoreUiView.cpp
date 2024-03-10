@@ -12,6 +12,9 @@
 #include "LowCoreUiDisplay.h"
 #include "LowUtilFileIO.h"
 
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
+
 namespace Low {
   namespace Core {
     namespace UI {
@@ -768,6 +771,25 @@ namespace Low {
 
         return l_View;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_instance
+      }
+
+      Low::Core::UI::Element
+      View::find_element_by_name(Low::Util::Name p_Name)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_element_by_name
+        _LOW_ASSERT(is_alive());
+        _LOW_ASSERT(is_loaded());
+
+        for (u64 i_ElementId : get_elements()) {
+          Element l_Element =
+              Util::find_handle_by_unique_id(i_ElementId);
+          if (l_Element.get_name() == p_Name) {
+            return l_Element;
+          }
+        }
+
+        return 0;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_element_by_name
       }
 
       uint32_t View::create_instance()

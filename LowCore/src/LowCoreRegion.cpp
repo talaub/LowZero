@@ -11,6 +11,9 @@
 #include "LowCoreEntity.h"
 #include "LowUtilFileIO.h"
 
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
+
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE

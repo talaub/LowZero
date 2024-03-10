@@ -13,6 +13,9 @@
 #include "LowRendererMaterial.h"
 #include "LowUtilResource.h"
 
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
+
 namespace Low {
   namespace Renderer {
     namespace Interface {

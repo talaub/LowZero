@@ -8,6 +8,15 @@
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
 
+#include "LowCoreUiText.h"
+#include "LowCoreUiImage.h"
+#include "LowCoreUiView.h"
+#include "LowCoreUiElement.h"
+#include "LowCoreUiDisplay.h"
+
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
+
 namespace Mtd {
   // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
   // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -464,6 +473,37 @@ namespace Mtd {
 
     // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
     // LOW_CODEGEN::END::CUSTOM:SETTER_name
+  }
+
+  Low::Core::UI::View Ability::spawn_card()
+  {
+    // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_card
+    _LOW_ASSERT(is_alive());
+
+    Low::Core::UI::View l_TemplateView =
+        Low::Core::UI::View::find_by_name(N(CardTemplateView));
+
+    Low::Core::UI::View l_AbilityView =
+        l_TemplateView.spawn_instance(get_name());
+
+    Low::Core::UI::Component::Text l_TitleText =
+        l_AbilityView.find_element_by_name(N(cardtitle))
+            .get_component(Low::Core::UI::Component::Text::TYPE_ID);
+    l_TitleText.set_text(get_title());
+
+    Low::Core::UI::Component::Text l_DescText =
+        l_AbilityView.find_element_by_name(N(carddesc))
+            .get_component(Low::Core::UI::Component::Text::TYPE_ID);
+
+    Low::Core::UI::Component::Text l_ResourceText =
+        l_AbilityView.find_element_by_name(N(resourcetxt))
+            .get_component(Low::Core::UI::Component::Text::TYPE_ID);
+    Low::Util::String l_ResourceCost =
+        std::to_string(get_resource_cost()).c_str();
+    l_ResourceText.set_text(l_ResourceCost);
+
+    return l_AbilityView;
+    // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_card
   }
 
   uint32_t Ability::create_instance()
