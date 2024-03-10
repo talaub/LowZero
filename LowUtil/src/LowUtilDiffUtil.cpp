@@ -25,11 +25,13 @@ namespace Low {
         LOW_ASSERT(p_H1.typeId == p_H2.typeId,
                    "Stored handles don't have the same type");
 
-        RTTI::TypeInfo &l_TypeInfo = Handle::get_type_info(p_H1.typeId);
+        RTTI::TypeInfo &l_TypeInfo =
+            Handle::get_type_info(p_H1.typeId);
 
         for (auto it = l_TypeInfo.properties.begin();
              it != l_TypeInfo.properties.end(); ++it) {
-          if (p_H1.properties[it->first] != p_H2.properties[it->first]) {
+          if (p_H1.properties[it->first] !=
+              p_H2.properties[it->first]) {
             p_Diff.push_back(it->first);
           }
         }

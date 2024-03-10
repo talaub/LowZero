@@ -53,9 +53,11 @@ namespace Low {
         l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, mesh,
-                                MeshAsset)) MeshAsset();
+                                Low::Core::MeshAsset))
+            Low::Core::MeshAsset();
         new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, material,
-                                Material)) Material();
+                                Low::Core::Material))
+            Low::Core::Material();
         new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, entity,
                                 Low::Core::Entity))
             Low::Core::Entity();
@@ -130,6 +132,8 @@ namespace Low {
         l_TypeInfo.deserialize = &MeshRenderer::deserialize;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &MeshRenderer::_make;
+        l_TypeInfo.duplicate_default = nullptr;
+        l_TypeInfo.duplicate_component = &MeshRenderer::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &MeshRenderer::living_instances);
@@ -143,18 +147,18 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(MeshRendererData, mesh);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = MeshAsset::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::MeshAsset::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
             l_Handle.get_mesh();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer,
-                                              mesh, MeshAsset);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, MeshRenderer, mesh, Low::Core::MeshAsset);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             MeshRenderer l_Handle = p_Handle.get_id();
-            l_Handle.set_mesh(*(MeshAsset *)p_Data);
+            l_Handle.set_mesh(*(Low::Core::MeshAsset *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -165,18 +169,19 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(MeshRendererData, material);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Material::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::Material::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
             l_Handle.get_material();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer,
-                                              material, Material);
+                                              material,
+                                              Low::Core::Material);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             MeshRenderer l_Handle = p_Handle.get_id();
-            l_Handle.set_material(*(Material *)p_Data);
+            l_Handle.set_material(*(Low::Core::Material *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -261,6 +266,40 @@ namespace Low {
         return ms_Capacity;
       }
 
+      MeshRenderer
+      MeshRenderer::duplicate(Low::Core::Entity p_Entity) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        MeshRenderer l_Handle = make(p_Entity);
+        if (get_mesh().is_alive()) {
+          l_Handle.set_mesh(get_mesh());
+        }
+        if (get_material().is_alive()) {
+          l_Handle.set_material(get_material());
+        }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      MeshRenderer MeshRenderer::duplicate(MeshRenderer p_Handle,
+                                           Low::Core::Entity p_Entity)
+      {
+        return p_Handle.duplicate(p_Entity);
+      }
+
+      Low::Util::Handle
+      MeshRenderer::_duplicate(Low::Util::Handle p_Handle,
+                               Low::Util::Handle p_Entity)
+      {
+        MeshRenderer l_MeshRenderer = p_Handle.get_id();
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        return l_MeshRenderer.duplicate(l_Entity);
+      }
+
       void
       MeshRenderer::serialize(Low::Util::Yaml::Node &p_Node) const
       {
@@ -312,16 +351,16 @@ namespace Low {
         return l_Handle;
       }
 
-      MeshAsset MeshRenderer::get_mesh() const
+      Low::Core::MeshAsset MeshRenderer::get_mesh() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
         // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
-        return TYPE_SOA(MeshRenderer, mesh, MeshAsset);
+        return TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset);
       }
-      void MeshRenderer::set_mesh(MeshAsset p_Value)
+      void MeshRenderer::set_mesh(Low::Core::MeshAsset p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -332,7 +371,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
         // Set new value
-        TYPE_SOA(MeshRenderer, mesh, MeshAsset) = p_Value;
+        TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset) = p_Value;
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -356,16 +395,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
       }
 
-      Material MeshRenderer::get_material() const
+      Low::Core::Material MeshRenderer::get_material() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
         // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
-        return TYPE_SOA(MeshRenderer, material, Material);
+        return TYPE_SOA(MeshRenderer, material, Low::Core::Material);
       }
-      void MeshRenderer::set_material(Material p_Value)
+      void MeshRenderer::set_material(Low::Core::Material p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -376,7 +415,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
         // Set new value
-        TYPE_SOA(MeshRenderer, material, Material) = p_Value;
+        TYPE_SOA(MeshRenderer, material, Low::Core::Material) =
+            p_Value;
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -489,14 +529,14 @@ namespace Low {
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(MeshRendererData, mesh) *
                             (l_Capacity)],
-                 l_Capacity * sizeof(MeshAsset));
+                 l_Capacity * sizeof(Low::Core::MeshAsset));
         }
         {
           memcpy(&l_NewBuffer[offsetof(MeshRendererData, material) *
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(MeshRendererData, material) *
                             (l_Capacity)],
-                 l_Capacity * sizeof(Material));
+                 l_Capacity * sizeof(Low::Core::Material));
         }
         {
           memcpy(&l_NewBuffer[offsetof(MeshRendererData, entity) *
@@ -528,6 +568,10 @@ namespace Low {
             << l_Capacity << " to "
             << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

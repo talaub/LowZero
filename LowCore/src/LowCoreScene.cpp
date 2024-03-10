@@ -115,6 +115,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Scene::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Scene::_make;
+      l_TypeInfo.duplicate_default = &Scene::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Scene::living_instances);
@@ -239,6 +241,31 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Scene Scene::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Scene l_Handle = make(p_Name);
+      l_Handle.set_loaded(is_loaded());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Scene Scene::duplicate(Scene p_Handle, Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Scene::_duplicate(Low::Util::Handle p_Handle,
+                                        Low::Util::Name p_Name)
+    {
+      Scene l_Scene = p_Handle.get_id();
+      return l_Scene.duplicate(p_Name);
     }
 
     void Scene::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -506,5 +533,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

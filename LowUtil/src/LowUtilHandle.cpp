@@ -234,6 +234,12 @@ namespace Low {
         return;
       }
 
+      if (p_PropertyInfo.type == Util::RTTI::PropertyType::STRING) {
+        // TODO: Integrate String type into variant
+        // Currently strings are not managed in variants
+        return;
+      }
+
       p_Variants[p_PropertyInfo.name] =
           p_PropertyInfo.get_variant(p_Handle);
     }

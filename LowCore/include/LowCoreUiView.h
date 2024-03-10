@@ -22,7 +22,12 @@ namespace Low {
       struct LOW_CORE_API ViewData
       {
         bool loaded;
-        Util::Set<Util::UniqueId> entities;
+        Util::Set<Util::UniqueId> elements;
+        bool internal;
+        bool view_template;
+        Low::Math::Vector2 pixel_position;
+        float rotation;
+        float scale_multiplier;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
 
@@ -75,6 +80,12 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        View duplicate(Low::Util::Name p_Name) const;
+        static View duplicate(View p_Handle, Low::Util::Name p_Name);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Name p_Name);
+
         static View find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
@@ -98,24 +109,45 @@ namespace Low {
         bool is_loaded() const;
         void set_loaded(bool p_Value);
 
+        Util::Set<Util::UniqueId> &get_elements() const;
+
+        bool is_internal() const;
+
+        bool is_view_template() const;
+        void set_view_template(bool p_Value);
+
+        Low::Math::Vector2 &pixel_position() const;
+        void pixel_position(Low::Math::Vector2 &p_Value);
+
+        float rotation() const;
+        void rotation(float p_Value);
+
+        float scale_multiplier() const;
+        void scale_multiplier(float p_Value);
+
         Low::Util::UniqueId get_unique_id() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        void serialize_views(Util::Yaml::Node &p_Node);
+        void serialize_elements(Util::Yaml::Node &p_Node);
         void add_element(Element p_Element);
         void remove_element(Element p_Element);
         void load_elements();
         void unload_elements();
+        Low::Core::UI::View spawn_instance(Low::Util::Name p_Name);
 
       private:
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
-        Util::Set<Util::UniqueId> &get_entities() const;
+        void set_internal(bool p_Value);
         void set_unique_id(Low::Util::UniqueId p_Value);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace UI
   }   // namespace Core
 } // namespace Low

@@ -118,6 +118,8 @@ namespace Low {
         l_TypeInfo.deserialize = &Camera::deserialize;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Camera::_make;
+        l_TypeInfo.duplicate_default = nullptr;
+        l_TypeInfo.duplicate_component = &Camera::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Camera::living_instances);
@@ -236,6 +238,34 @@ namespace Low {
       uint32_t Camera::get_capacity()
       {
         return ms_Capacity;
+      }
+
+      Camera Camera::duplicate(Low::Core::Entity p_Entity) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        Camera l_Handle = make(p_Entity);
+        l_Handle.set_active(is_active());
+        l_Handle.set_fov(get_fov());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      Camera Camera::duplicate(Camera p_Handle,
+                               Low::Core::Entity p_Entity)
+      {
+        return p_Handle.duplicate(p_Entity);
+      }
+
+      Low::Util::Handle Camera::_duplicate(Low::Util::Handle p_Handle,
+                                           Low::Util::Handle p_Entity)
+      {
+        Camera l_Camera = p_Handle.get_id();
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        return l_Camera.duplicate(l_Entity);
       }
 
       void Camera::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -483,6 +513,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

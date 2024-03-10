@@ -9,6 +9,7 @@
 #include "LowUtilSerialization.h"
 
 #include "LowCoreUiElement.h"
+#include "LowCoreUiDisplay.h"
 #include "LowUtilFileIO.h"
 
 namespace Low {
@@ -49,9 +50,18 @@ namespace Low {
         l_Handle.m_Data.m_Type = View::TYPE_ID;
 
         ACCESSOR_TYPE_SOA(l_Handle, View, loaded, bool) = false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, View, entities,
+        new (&ACCESSOR_TYPE_SOA(l_Handle, View, elements,
                                 Util::Set<Util::UniqueId>))
             Util::Set<Util::UniqueId>();
+        ACCESSOR_TYPE_SOA(l_Handle, View, internal, bool) = false;
+        ACCESSOR_TYPE_SOA(l_Handle, View, view_template, bool) =
+            false;
+        new (&ACCESSOR_TYPE_SOA(l_Handle, View, pixel_position,
+                                Low::Math::Vector2))
+            Low::Math::Vector2();
+        ACCESSOR_TYPE_SOA(l_Handle, View, rotation, float) = 0.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, View, scale_multiplier, float) =
+            0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, View, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -65,6 +75,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        l_Handle.set_internal(false);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -117,6 +128,8 @@ namespace Low {
         l_TypeInfo.deserialize = &View::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &View::_make;
+        l_TypeInfo.duplicate_default = &View::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &View::living_instances);
@@ -145,17 +158,121 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(entities);
+          l_PropertyInfo.name = N(elements);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, entities);
+          l_PropertyInfo.dataOffset = offsetof(ViewData, elements);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
-            return nullptr;
+            View l_Handle = p_Handle.get_id();
+            l_Handle.get_elements();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, View, elements, Util::Set<Util::UniqueId>);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(internal);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(ViewData, internal);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.is_internal();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
+                                              internal, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(view_template);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewData, view_template);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.is_view_template();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
+                                              view_template, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.set_view_template(*(bool *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(pixel_position);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewData, pixel_position);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::VECTOR2;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.pixel_position();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, View, pixel_position, Low::Math::Vector2);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.pixel_position(*(Low::Math::Vector2 *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(rotation);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(ViewData, rotation);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.rotation();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
+                                              rotation, float);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.rotation(*(float *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(scale_multiplier);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewData, scale_multiplier);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.scale_multiplier();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, View, scale_multiplier, float);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.scale_multiplier(*(float *)p_Data);
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -244,10 +361,65 @@ namespace Low {
         }
       }
 
+      View View::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        LOW_ASSERT(is_loaded(), "Cannot duplicate unloaded view");
+
+        View l_ClonedView = make(p_Name);
+        l_ClonedView.set_view_template(is_view_template());
+        l_ClonedView.set_loaded(true);
+        l_ClonedView.set_internal(is_internal());
+
+        Util::Set<Util::UniqueId> l_Elements = get_elements();
+
+        for (Util::UniqueId i_UniqueId : l_Elements) {
+          Element i_Element =
+              Util::find_handle_by_unique_id(i_UniqueId).get_id();
+
+          if (!i_Element.is_alive()) {
+            continue;
+          }
+
+          Component::Display i_Parent =
+              i_Element.get_display().get_parent();
+
+          if (i_Parent.is_alive()) {
+            continue;
+          }
+
+          Element i_CopiedElement =
+              i_Element.duplicate(i_Element.get_name());
+          l_ClonedView.add_element(i_CopiedElement);
+        }
+
+        return l_ClonedView;
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+      }
+
+      View View::duplicate(View p_Handle, Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle View::_duplicate(Low::Util::Handle p_Handle,
+                                         Low::Util::Name p_Name)
+      {
+        View l_View = p_Handle.get_id();
+        return l_View.duplicate(p_Name);
+      }
+
       void View::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
+        p_Node["view_template"] = is_view_template();
+        Low::Util::Serialization::serialize(p_Node["pixel_position"],
+                                            pixel_position());
+        p_Node["rotation"] = rotation();
+        p_Node["scale_multiplier"] = scale_multiplier();
         p_Node["unique_id"] = get_unique_id();
         p_Node["name"] = get_name().c_str();
 
@@ -275,6 +447,22 @@ namespace Low {
                                         l_Handle.get_id());
         }
 
+        if (p_Node["view_template"]) {
+          l_Handle.set_view_template(
+              p_Node["view_template"].as<bool>());
+        }
+        if (p_Node["pixel_position"]) {
+          l_Handle.pixel_position(
+              Low::Util::Serialization::deserialize_vector2(
+                  p_Node["pixel_position"]));
+        }
+        if (p_Node["rotation"]) {
+          l_Handle.rotation(p_Node["rotation"].as<float>());
+        }
+        if (p_Node["scale_multiplier"]) {
+          l_Handle.scale_multiplier(
+              p_Node["scale_multiplier"].as<float>());
+        }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
               p_Node["unique_id"].as<Low::Util::UniqueId>());
@@ -312,14 +500,129 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
       }
 
-      Util::Set<Util::UniqueId> &View::get_entities() const
+      Util::Set<Util::UniqueId> &View::get_elements() const
       {
         _LOW_ASSERT(is_alive());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entities
-        // LOW_CODEGEN::END::CUSTOM:GETTER_entities
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_elements
+        // LOW_CODEGEN::END::CUSTOM:GETTER_elements
 
-        return TYPE_SOA(View, entities, Util::Set<Util::UniqueId>);
+        return TYPE_SOA(View, elements, Util::Set<Util::UniqueId>);
+      }
+
+      bool View::is_internal() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
+        // LOW_CODEGEN::END::CUSTOM:GETTER_internal
+
+        return TYPE_SOA(View, internal, bool);
+      }
+      void View::set_internal(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
+
+        // Set new value
+        TYPE_SOA(View, internal, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
+        // LOW_CODEGEN::END::CUSTOM:SETTER_internal
+      }
+
+      bool View::is_view_template() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_template
+        // LOW_CODEGEN::END::CUSTOM:GETTER_view_template
+
+        return TYPE_SOA(View, view_template, bool);
+      }
+      void View::set_view_template(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_template
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_template
+
+        // Set new value
+        TYPE_SOA(View, view_template, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_template
+        // LOW_CODEGEN::END::CUSTOM:SETTER_view_template
+      }
+
+      Low::Math::Vector2 &View::pixel_position() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
+        // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
+
+        return TYPE_SOA(View, pixel_position, Low::Math::Vector2);
+      }
+      void View::pixel_position(Low::Math::Vector2 &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_position
+
+        // Set new value
+        TYPE_SOA(View, pixel_position, Low::Math::Vector2) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
+        // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
+      }
+
+      float View::rotation() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
+        // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
+
+        return TYPE_SOA(View, rotation, float);
+      }
+      void View::rotation(float p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
+
+        // Set new value
+        TYPE_SOA(View, rotation, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+        // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
+      }
+
+      float View::scale_multiplier() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale_multiplier
+        // LOW_CODEGEN::END::CUSTOM:GETTER_scale_multiplier
+
+        return TYPE_SOA(View, scale_multiplier, float);
+      }
+      void View::scale_multiplier(float p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale_multiplier
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale_multiplier
+
+        // Set new value
+        TYPE_SOA(View, scale_multiplier, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_multiplier
+        // LOW_CODEGEN::END::CUSTOM:SETTER_scale_multiplier
       }
 
       Low::Util::UniqueId View::get_unique_id() const
@@ -368,15 +671,31 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
-      void View::serialize_views(Util::Yaml::Node &p_Node)
+      void View::serialize_elements(Util::Yaml::Node &p_Node)
       {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_views
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_views
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_elements
+        for (auto it = get_elements().begin();
+             it != get_elements().end(); ++it) {
+          Element i_Element =
+              Util::find_handle_by_unique_id(*it).get_id();
+          if (i_Element.is_alive()) {
+            Util::Yaml::Node i_Node;
+            i_Element.serialize(i_Node);
+            p_Node["elements"].push_back(i_Node);
+          }
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_elements
       }
 
       void View::add_element(Element p_Element)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_element
+        if (p_Element.get_view().is_alive()) {
+          p_Element.get_view().remove_element(p_Element);
+        }
+
+        p_Element.set_view(*this);
+        get_elements().insert(p_Element.get_unique_id());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_element
       }
 
@@ -389,13 +708,66 @@ namespace Low {
       void View::load_elements()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load_elements
+        LOW_ASSERT(is_alive(), "Cannot load dead view");
+        LOW_ASSERT(!is_loaded(), "View is already loaded");
+
+        set_loaded(true);
+
+        Util::String l_Path =
+            Util::String(LOW_DATA_PATH) + "\\assets\\ui_views\\";
+        l_Path += std::to_string(get_unique_id()).c_str();
+        l_Path += ".elements.yaml";
+
+        if (!Util::FileIO::file_exists_sync(l_Path.c_str())) {
+          return;
+        }
+
+        Util::Yaml::Node l_RootNode =
+            Util::Yaml::load_file(l_Path.c_str());
+        Util::Yaml::Node &l_ElementsNode = l_RootNode["elements"];
+
+        for (auto it = l_ElementsNode.begin();
+             it != l_ElementsNode.end(); ++it) {
+          Util::Yaml::Node &i_ElementNode = *it;
+          Element::deserialize(i_ElementNode, *this);
+        }
+
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_load_elements
       }
 
       void View::unload_elements()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload_elements
+        LOW_ASSERT(is_alive(), "Cannot unload dead view");
+        LOW_ASSERT(is_loaded(),
+                   "Cannot unload view that is not loaded");
+
+        set_loaded(false);
+
+        while (!get_elements().empty()) {
+          Element i_Element =
+              Util::find_handle_by_unique_id(*get_elements().begin())
+                  .get_id();
+          i_Element.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload_elements
+      }
+
+      Low::Core::UI::View View::spawn_instance(Low::Util::Name p_Name)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
+        _LOW_ASSERT(is_alive());
+        LOW_ASSERT(is_view_template(),
+                   "Cannot spawn instances of UI-Views that are not "
+                   "marked as templates.");
+
+        View l_View = duplicate(p_Name);
+
+        l_View.set_view_template(false);
+        l_View.set_internal(true);
+
+        return l_View;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_instance
       }
 
       uint32_t View::create_instance()
@@ -445,13 +817,48 @@ namespace Low {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
             auto *i_ValPtr = new (
-                &l_NewBuffer[offsetof(ViewData, entities) *
+                &l_NewBuffer[offsetof(ViewData, elements) *
                                  (l_Capacity + l_CapacityIncrease) +
                              (it->get_index() *
                               sizeof(Util::Set<Util::UniqueId>))])
                 Util::Set<Util::UniqueId>();
-            *i_ValPtr = it->get_entities();
+            *i_ValPtr = it->get_elements();
           }
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(ViewData, internal) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ViewData, internal) * (l_Capacity)],
+              l_Capacity * sizeof(bool));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewData, view_template) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewData, view_template) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(bool));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewData, pixel_position) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewData, pixel_position) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Math::Vector2));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(ViewData, rotation) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ViewData, rotation) * (l_Capacity)],
+              l_Capacity * sizeof(float));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewData, scale_multiplier) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewData, scale_multiplier) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(float));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ViewData, unique_id) *
@@ -482,6 +889,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace UI
   }   // namespace Core
 } // namespace Low

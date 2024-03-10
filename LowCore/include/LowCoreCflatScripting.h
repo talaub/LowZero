@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowCoreApi.h"
+
 #include "CflatGlobal.h"
 #include "Cflat.h"
 
@@ -11,7 +13,7 @@ namespace Low {
       void initialize();
       void tick(float p_Delta, Util::EngineState p_State);
       void cleanup();
-      Cflat::Environment *get_environment();
+      LOW_CORE_API Cflat::Environment *get_environment();
     } // namespace Scripting
   }   // namespace Core
 } // namespace Low

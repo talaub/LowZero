@@ -121,6 +121,8 @@ namespace Mtd {
       l_TypeInfo.deserialize = &CameraController::deserialize;
       l_TypeInfo.make_default = nullptr;
       l_TypeInfo.make_component = &CameraController::_make;
+      l_TypeInfo.duplicate_default = nullptr;
+      l_TypeInfo.duplicate_component = &CameraController::_duplicate;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &CameraController::living_instances);
@@ -227,6 +229,36 @@ namespace Mtd {
     uint32_t CameraController::get_capacity()
     {
       return ms_Capacity;
+    }
+
+    CameraController
+    CameraController::duplicate(Low::Core::Entity p_Entity) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      CameraController l_Handle = make(p_Entity);
+      l_Handle.set_distance(get_distance());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    CameraController
+    CameraController::duplicate(CameraController p_Handle,
+                                Low::Core::Entity p_Entity)
+    {
+      return p_Handle.duplicate(p_Entity);
+    }
+
+    Low::Util::Handle
+    CameraController::_duplicate(Low::Util::Handle p_Handle,
+                                 Low::Util::Handle p_Entity)
+    {
+      CameraController l_CameraController = p_Handle.get_id();
+      Low::Core::Entity l_Entity = p_Entity.get_id();
+      return l_CameraController.duplicate(l_Entity);
     }
 
     void
@@ -422,5 +454,9 @@ namespace Mtd {
           << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
           << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Component
 } // namespace Mtd

@@ -23,8 +23,8 @@ namespace Low {
 
       struct LOW_CORE_API MeshRendererData
       {
-        MeshAsset mesh;
-        Material material;
+        Low::Core::MeshAsset mesh;
+        Low::Core::Material material;
         Low::Core::Entity entity;
         Low::Util::UniqueId unique_id;
 
@@ -77,6 +77,13 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        MeshRenderer duplicate(Low::Core::Entity p_Entity) const;
+        static MeshRenderer duplicate(MeshRenderer p_Handle,
+                                      Low::Core::Entity p_Entity);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Handle p_Entity);
+
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
         static Low::Util::Handle
@@ -95,11 +102,11 @@ namespace Low {
           l_MeshRenderer.destroy();
         }
 
-        MeshAsset get_mesh() const;
-        void set_mesh(MeshAsset p_Value);
+        Low::Core::MeshAsset get_mesh() const;
+        void set_mesh(Low::Core::MeshAsset p_Value);
 
-        Material get_material() const;
-        void set_material(Material p_Value);
+        Low::Core::Material get_material() const;
+        void set_material(Low::Core::Material p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);
@@ -112,6 +119,10 @@ namespace Low {
         static void increase_budget();
         void set_unique_id(Low::Util::UniqueId p_Value);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

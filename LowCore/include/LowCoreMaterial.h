@@ -76,6 +76,12 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+      Material duplicate(Low::Util::Name p_Name) const;
+      static Material duplicate(Material p_Handle,
+                                Low::Util::Name p_Name);
+      static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
+                                          Low::Util::Name p_Name);
+
       static Material find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -124,5 +130,9 @@ namespace Low {
       void set_unique_id(Low::Util::UniqueId p_Value);
       void _unload();
     };
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
   } // namespace Core
 } // namespace Low

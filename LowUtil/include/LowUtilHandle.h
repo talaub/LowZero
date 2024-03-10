@@ -68,7 +68,8 @@ namespace Low {
           INT,
           BOOL,
           HANDLE,
-          SHAPE
+          SHAPE,
+          STRING
         };
       }
 
@@ -98,6 +99,8 @@ namespace Low {
         bool (*is_alive)(Handle);
         void (*serialize)(Handle, Yaml::Node &);
         Handle (*deserialize)(Yaml::Node &, Handle);
+        Handle (*duplicate_default)(Handle, Name);
+        Handle (*duplicate_component)(Handle, Handle);
         Handle (*make_default)(Name);
         Handle (*make_component)(Handle);
         void (*destroy)(Handle);

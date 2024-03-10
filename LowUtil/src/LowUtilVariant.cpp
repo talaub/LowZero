@@ -30,23 +30,28 @@ namespace Low {
     {
       m_Uint64 = p_Value;
     }
-    Variant::Variant(Math::UVector2 p_Value) : m_Type(VariantType::UVector2)
+    Variant::Variant(Math::UVector2 p_Value)
+        : m_Type(VariantType::UVector2)
     {
       m_UVector2 = p_Value;
     }
-    Variant::Variant(Math::Vector2 p_Value) : m_Type(VariantType::Vector2)
+    Variant::Variant(Math::Vector2 p_Value)
+        : m_Type(VariantType::Vector2)
     {
       m_Vector2 = p_Value;
     }
-    Variant::Variant(Math::Vector3 p_Value) : m_Type(VariantType::Vector3)
+    Variant::Variant(Math::Vector3 p_Value)
+        : m_Type(VariantType::Vector3)
     {
       m_Vector3 = p_Value;
     }
-    Variant::Variant(Math::Vector4 p_Value) : m_Type(VariantType::Vector4)
+    Variant::Variant(Math::Vector4 p_Value)
+        : m_Type(VariantType::Vector4)
     {
       m_Vector4 = p_Value;
     }
-    Variant::Variant(Math::Quaternion p_Value) : m_Type(VariantType::Quaternion)
+    Variant::Variant(Math::Quaternion p_Value)
+        : m_Type(VariantType::Quaternion)
     {
       m_Quaternion = p_Value;
     }

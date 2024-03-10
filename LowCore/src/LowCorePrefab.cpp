@@ -159,6 +159,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Prefab::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Prefab::_make;
+      l_TypeInfo.duplicate_default = &Prefab::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Prefab::living_instances);
@@ -315,6 +317,33 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Prefab Prefab::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Prefab l_Handle = make(p_Name);
+      l_Handle.set_parent(get_parent());
+      l_Handle.set_children(get_children());
+      l_Handle.set_components(get_components());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Prefab Prefab::duplicate(Prefab p_Handle, Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Prefab::_duplicate(Low::Util::Handle p_Handle,
+                                         Low::Util::Name p_Name)
+    {
+      Prefab l_Prefab = p_Handle.get_id();
+      return l_Prefab.duplicate(p_Name);
     }
 
     void Prefab::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -810,5 +839,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

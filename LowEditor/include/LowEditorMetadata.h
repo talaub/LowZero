@@ -11,6 +11,13 @@ namespace Low {
       Util::Name name;
       bool editor;
       Util::RTTI::PropertyInfo propInfo;
+      bool multiline;
+    };
+
+    struct TypeEditorMetadata
+    {
+      bool manager;
+      bool saveable;
     };
 
     struct TypeMetadata
@@ -20,6 +27,7 @@ namespace Low {
       uint16_t typeId;
       Util::RTTI::TypeInfo typeInfo;
       Util::List<PropertyMetadata> properties;
+      TypeEditorMetadata editor;
     };
   } // namespace Editor
 } // namespace Low

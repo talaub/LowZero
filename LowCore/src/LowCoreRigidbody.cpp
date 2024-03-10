@@ -149,6 +149,8 @@ namespace Low {
         l_TypeInfo.deserialize = &Rigidbody::deserialize;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Rigidbody::_make;
+        l_TypeInfo.duplicate_default = nullptr;
+        l_TypeInfo.duplicate_component = &Rigidbody::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Rigidbody::living_instances);
@@ -366,6 +368,38 @@ namespace Low {
       uint32_t Rigidbody::get_capacity()
       {
         return ms_Capacity;
+      }
+
+      Rigidbody Rigidbody::duplicate(Low::Core::Entity p_Entity) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        Rigidbody l_Handle = make(p_Entity);
+        l_Handle.set_fixed(is_fixed());
+        l_Handle.set_gravity(is_gravity());
+        l_Handle.set_mass(get_mass());
+        l_Handle.set_initialized(is_initialized());
+        l_Handle.set_shape(get_shape());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      Rigidbody Rigidbody::duplicate(Rigidbody p_Handle,
+                                     Low::Core::Entity p_Entity)
+      {
+        return p_Handle.duplicate(p_Entity);
+      }
+
+      Low::Util::Handle
+      Rigidbody::_duplicate(Low::Util::Handle p_Handle,
+                            Low::Util::Handle p_Entity)
+      {
+        Rigidbody l_Rigidbody = p_Handle.get_id();
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        return l_Rigidbody.duplicate(l_Entity);
       }
 
       void Rigidbody::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -813,6 +847,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

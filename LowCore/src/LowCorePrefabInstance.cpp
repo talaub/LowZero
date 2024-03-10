@@ -129,6 +129,8 @@ namespace Low {
         l_TypeInfo.deserialize = &PrefabInstance::deserialize;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &PrefabInstance::_make;
+        l_TypeInfo.duplicate_default = nullptr;
+        l_TypeInfo.duplicate_component = &PrefabInstance::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &PrefabInstance::living_instances);
@@ -261,6 +263,39 @@ namespace Low {
       uint32_t PrefabInstance::get_capacity()
       {
         return ms_Capacity;
+      }
+
+      PrefabInstance
+      PrefabInstance::duplicate(Low::Core::Entity p_Entity) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        PrefabInstance l_Handle = make(p_Entity);
+        if (get_prefab().is_alive()) {
+          l_Handle.set_prefab(get_prefab());
+        }
+        l_Handle.set_overrides(get_overrides());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      PrefabInstance
+      PrefabInstance::duplicate(PrefabInstance p_Handle,
+                                Low::Core::Entity p_Entity)
+      {
+        return p_Handle.duplicate(p_Entity);
+      }
+
+      Low::Util::Handle
+      PrefabInstance::_duplicate(Low::Util::Handle p_Handle,
+                                 Low::Util::Handle p_Entity)
+      {
+        PrefabInstance l_PrefabInstance = p_Handle.get_id();
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        return l_PrefabInstance.duplicate(l_Entity);
       }
 
       void
@@ -620,6 +655,10 @@ namespace Low {
             << l_Capacity << " to "
             << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

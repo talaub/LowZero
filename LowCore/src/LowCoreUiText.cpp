@@ -50,12 +50,14 @@ namespace Low {
               ms_Slots[l_Index].m_Generation;
           l_Handle.m_Data.m_Type = Text::TYPE_ID;
 
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Text, text, Util::String))
-              Util::String();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Text, font, Core::Font))
-              Core::Font();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Text, color, Math::Color))
-              Math::Color();
+          new (&ACCESSOR_TYPE_SOA(l_Handle, Text, text,
+                                  Low::Util::String))
+              Low::Util::String();
+          new (&ACCESSOR_TYPE_SOA(l_Handle, Text, font,
+                                  Low::Core::Font)) Low::Core::Font();
+          new (&ACCESSOR_TYPE_SOA(l_Handle, Text, color,
+                                  Low::Math::Color))
+              Low::Math::Color();
           ACCESSOR_TYPE_SOA(l_Handle, Text, size, float) = 0.0f;
           new (&ACCESSOR_TYPE_SOA(
               l_Handle, Text, content_fit_approach,
@@ -131,6 +133,8 @@ namespace Low {
           l_TypeInfo.deserialize = &Text::deserialize;
           l_TypeInfo.make_default = nullptr;
           l_TypeInfo.make_component = &Text::_make;
+          l_TypeInfo.duplicate_default = nullptr;
+          l_TypeInfo.duplicate_component = &Text::_duplicate;
           l_TypeInfo.get_living_instances = reinterpret_cast<
               Low::Util::RTTI::LivingInstancesGetter>(
               &Text::living_instances);
@@ -143,18 +147,18 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(TextData, text);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
+                Low::Util::RTTI::PropertyType::STRING;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_text();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text, text,
-                                                Util::String);
+                                                Low::Util::String);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Text l_Handle = p_Handle.get_id();
-              l_Handle.set_text(*(Util::String *)p_Data);
+              l_Handle.set_text(*(Low::Util::String *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -166,18 +170,18 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(TextData, font);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
-            l_PropertyInfo.handleType = Core::Font::TYPE_ID;
+            l_PropertyInfo.handleType = Low::Core::Font::TYPE_ID;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_font();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text, font,
-                                                Core::Font);
+                                                Low::Core::Font);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Text l_Handle = p_Handle.get_id();
-              l_Handle.set_font(*(Core::Font *)p_Data);
+              l_Handle.set_font(*(Low::Core::Font *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -194,12 +198,12 @@ namespace Low {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_color();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text, color,
-                                                Math::Color);
+                                                Low::Math::Color);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Text l_Handle = p_Handle.get_id();
-              l_Handle.set_color(*(Math::Color *)p_Data);
+              l_Handle.set_color(*(Low::Math::Color *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -334,6 +338,41 @@ namespace Low {
           return ms_Capacity;
         }
 
+        Text Text::duplicate(Low::Core::UI::Element p_Element) const
+        {
+          _LOW_ASSERT(is_alive());
+
+          Text l_Handle = make(p_Element);
+          l_Handle.set_text(get_text());
+          if (get_font().is_alive()) {
+            l_Handle.set_font(get_font());
+          }
+          l_Handle.set_color(get_color());
+          l_Handle.set_size(get_size());
+          l_Handle.set_content_fit_approach(
+              get_content_fit_approach());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+          // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+          return l_Handle;
+        }
+
+        Text Text::duplicate(Text p_Handle,
+                             Low::Core::UI::Element p_Element)
+        {
+          return p_Handle.duplicate(p_Element);
+        }
+
+        Low::Util::Handle
+        Text::_duplicate(Low::Util::Handle p_Handle,
+                         Low::Util::Handle p_Element)
+        {
+          Text l_Text = p_Handle.get_id();
+          Low::Core::UI::Element l_Element = p_Element.get_id();
+          return l_Text.duplicate(l_Element);
+        }
+
         void Text::serialize(Low::Util::Yaml::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
@@ -376,7 +415,7 @@ namespace Low {
             l_Handle.set_text(LOW_YAML_AS_STRING(p_Node["text"]));
           }
           if (p_Node["font"]) {
-            l_Handle.set_font(Core::Font::deserialize(
+            l_Handle.set_font(Low::Core::Font::deserialize(
                                   p_Node["font"], l_Handle.get_id())
                                   .get_id());
           }
@@ -401,16 +440,16 @@ namespace Low {
           return l_Handle;
         }
 
-        Util::String &Text::get_text() const
+        Low::Util::String &Text::get_text() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_text
           // LOW_CODEGEN::END::CUSTOM:GETTER_text
 
-          return TYPE_SOA(Text, text, Util::String);
+          return TYPE_SOA(Text, text, Low::Util::String);
         }
-        void Text::set_text(Util::String &p_Value)
+        void Text::set_text(Low::Util::String &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -418,22 +457,22 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_text
 
           // Set new value
-          TYPE_SOA(Text, text, Util::String) = p_Value;
+          TYPE_SOA(Text, text, Low::Util::String) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_text
           // LOW_CODEGEN::END::CUSTOM:SETTER_text
         }
 
-        Core::Font Text::get_font() const
+        Low::Core::Font Text::get_font() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_font
           // LOW_CODEGEN::END::CUSTOM:GETTER_font
 
-          return TYPE_SOA(Text, font, Core::Font);
+          return TYPE_SOA(Text, font, Low::Core::Font);
         }
-        void Text::set_font(Core::Font p_Value)
+        void Text::set_font(Low::Core::Font p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -447,22 +486,22 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_font
 
           // Set new value
-          TYPE_SOA(Text, font, Core::Font) = p_Value;
+          TYPE_SOA(Text, font, Low::Core::Font) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
           // LOW_CODEGEN::END::CUSTOM:SETTER_font
         }
 
-        Math::Color &Text::get_color() const
+        Low::Math::Color &Text::get_color() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
           // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
-          return TYPE_SOA(Text, color, Math::Color);
+          return TYPE_SOA(Text, color, Low::Math::Color);
         }
-        void Text::set_color(Math::Color &p_Value)
+        void Text::set_color(Low::Math::Color &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -470,7 +509,7 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
           // Set new value
-          TYPE_SOA(Text, color, Math::Color) = p_Value;
+          TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
           // LOW_CODEGEN::END::CUSTOM:SETTER_color
@@ -612,21 +651,21 @@ namespace Low {
                 &l_NewBuffer[offsetof(TextData, text) *
                              (l_Capacity + l_CapacityIncrease)],
                 &ms_Buffer[offsetof(TextData, text) * (l_Capacity)],
-                l_Capacity * sizeof(Util::String));
+                l_Capacity * sizeof(Low::Util::String));
           }
           {
             memcpy(
                 &l_NewBuffer[offsetof(TextData, font) *
                              (l_Capacity + l_CapacityIncrease)],
                 &ms_Buffer[offsetof(TextData, font) * (l_Capacity)],
-                l_Capacity * sizeof(Core::Font));
+                l_Capacity * sizeof(Low::Core::Font));
           }
           {
             memcpy(
                 &l_NewBuffer[offsetof(TextData, color) *
                              (l_Capacity + l_CapacityIncrease)],
                 &ms_Buffer[offsetof(TextData, color) * (l_Capacity)],
-                l_Capacity * sizeof(Math::Color));
+                l_Capacity * sizeof(Low::Math::Color));
           }
           {
             memcpy(
@@ -674,6 +713,10 @@ namespace Low {
                         << (l_Capacity + l_CapacityIncrease)
                         << LOW_LOG_END;
         }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+        // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       } // namespace Component
     }   // namespace UI
   }     // namespace Core

@@ -88,6 +88,11 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+      Font duplicate(Low::Util::Name p_Name) const;
+      static Font duplicate(Font p_Handle, Low::Util::Name p_Name);
+      static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
+                                          Low::Util::Name p_Name);
+
       static Font find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -138,5 +143,9 @@ namespace Low {
       void set_font_size(float p_Value);
       void _unload();
     };
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
   } // namespace Core
 } // namespace Low

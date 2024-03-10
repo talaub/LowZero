@@ -280,6 +280,8 @@ namespace Low {
             LOW_TO_STRING(l_Id) + LOW_TO_STRING(m_Metadata.typeId);
         ImGui::PushID(std::stoul(i_Id.c_str()));
 
+        PropertyMetadata l_PropMetadata = *it;
+
         l_Id++;
         Util::RTTI::PropertyInfo &i_PropInfo = it->propInfo;
 
@@ -294,7 +296,7 @@ namespace Low {
             PropertyEditors::render_handle_selector(i_PropInfo,
                                                     m_Handle);
           } else {
-            PropertyEditors::render_editor(i_PropInfo, m_Handle,
+            PropertyEditors::render_editor(l_PropMetadata, m_Handle,
                                            i_PropInfo.get(m_Handle));
           }
           ImVec2 l_PosNew = ImGui::GetCursorScreenPos();

@@ -8,9 +8,9 @@
 
 namespace Low {
   namespace Editor {
-    struct TestManagerWidget : public Widget
+    struct TypeManagerWidget : public Widget
     {
-      TestManagerWidget(uint16_t p_TypeId);
+      TypeManagerWidget(uint16_t p_TypeId);
       void render(float p_Delta) override;
 
     private:
@@ -19,6 +19,15 @@ namespace Low {
       bool m_LayoutConstructed;
       Util::String m_ListWindowName;
       Util::String m_InfoWindowName;
+      Util::Handle m_Selected;
+
+      Util::RTTI::PropertyInfo m_NamePropertyInfo;
+      Util::List<HandlePropertiesSection> m_Sections;
+
+      void render_list(float p_Delta);
+      void render_info(float p_Delta);
+
+      void select(Util::Handle p_Handle);
     };
   } // namespace Editor
 } // namespace Low

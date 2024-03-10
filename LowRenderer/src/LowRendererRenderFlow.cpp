@@ -143,6 +143,8 @@ namespace Low {
       l_TypeInfo.deserialize = &RenderFlow::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &RenderFlow::_make;
+      l_TypeInfo.duplicate_default = &RenderFlow::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &RenderFlow::living_instances);
@@ -533,6 +535,53 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    RenderFlow RenderFlow::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      RenderFlow l_Handle = make(p_Name);
+      if (get_context().is_alive()) {
+        l_Handle.set_context(get_context());
+      }
+      if (get_output_image().is_alive()) {
+        l_Handle.set_output_image(get_output_image());
+      }
+      l_Handle.set_steps(get_steps());
+      if (get_frame_info_buffer().is_alive()) {
+        l_Handle.set_frame_info_buffer(get_frame_info_buffer());
+      }
+      if (get_resource_signature().is_alive()) {
+        l_Handle.set_resource_signature(get_resource_signature());
+      }
+      l_Handle.set_camera_position(get_camera_position());
+      l_Handle.set_camera_direction(get_camera_direction());
+      l_Handle.set_camera_fov(get_camera_fov());
+      l_Handle.set_camera_near_plane(get_camera_near_plane());
+      l_Handle.set_camera_far_plane(get_camera_far_plane());
+      l_Handle.set_projection_matrix(get_projection_matrix());
+      l_Handle.set_view_matrix(get_view_matrix());
+      l_Handle.set_directional_light(get_directional_light());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    RenderFlow RenderFlow::duplicate(RenderFlow p_Handle,
+                                     Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    RenderFlow::_duplicate(Low::Util::Handle p_Handle,
+                           Low::Util::Name p_Name)
+    {
+      RenderFlow l_RenderFlow = p_Handle.get_id();
+      return l_RenderFlow.duplicate(p_Name);
     }
 
     void RenderFlow::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -1365,8 +1414,8 @@ namespace Low {
         }
       }
 
-      // If the current renderstep could not be found just return the
-      // last output image
+      // If the current renderstep could not be found just
+      // return the last output image
       if (!get_steps().empty()) {
         Util::Handle l_Step = get_steps().back();
         if (l_Step.get_type() == ComputeStep::TYPE_ID) {
@@ -1572,5 +1621,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Renderer
 } // namespace Low

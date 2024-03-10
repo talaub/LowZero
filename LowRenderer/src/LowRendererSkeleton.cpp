@@ -108,6 +108,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Skeleton::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Skeleton::_make;
+      l_TypeInfo.duplicate_default = &Skeleton::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Skeleton::living_instances);
@@ -241,6 +243,33 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Skeleton Skeleton::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Skeleton l_Handle = make(p_Name);
+      l_Handle.set_root_bone(get_root_bone());
+      l_Handle.set_bone_count(get_bone_count());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Skeleton Skeleton::duplicate(Skeleton p_Handle,
+                                 Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Skeleton::_duplicate(Low::Util::Handle p_Handle,
+                                           Low::Util::Name p_Name)
+    {
+      Skeleton l_Skeleton = p_Handle.get_id();
+      return l_Skeleton.duplicate(p_Name);
     }
 
     void Skeleton::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -449,5 +478,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Renderer
 } // namespace Low

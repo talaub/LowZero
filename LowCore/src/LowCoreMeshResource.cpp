@@ -141,6 +141,8 @@ namespace Low {
       l_TypeInfo.deserialize = &MeshResource::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &MeshResource::_make;
+      l_TypeInfo.duplicate_default = &MeshResource::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &MeshResource::living_instances);
@@ -152,7 +154,7 @@ namespace Low {
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, path);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
@@ -303,6 +305,38 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    MeshResource MeshResource::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      MeshResource l_Handle = make(p_Name);
+      l_Handle.set_path(get_path());
+      l_Handle.set_reference_count(get_reference_count());
+      if (get_skeleton().is_alive()) {
+        l_Handle.set_skeleton(get_skeleton());
+      }
+      l_Handle.set_state(get_state());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    MeshResource MeshResource::duplicate(MeshResource p_Handle,
+                                         Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    MeshResource::_duplicate(Low::Util::Handle p_Handle,
+                             Low::Util::Name p_Name)
+    {
+      MeshResource l_MeshResource = p_Handle.get_id();
+      return l_MeshResource.duplicate(p_Name);
     }
 
     void MeshResource::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -574,9 +608,9 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
       set_reference_count(get_reference_count() - 1);
 
-      LOW_ASSERT(
-          get_reference_count() >= 0,
-          "MeshResource reference count < 0. Something went wrong.");
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "MeshResource reference count < 0. Something "
+                 "went wrong.");
 
       if (get_reference_count() <= 0) {
         _unload();
@@ -724,5 +758,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

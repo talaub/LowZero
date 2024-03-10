@@ -7,6 +7,7 @@ var CRC32 = require("crc-32");
 const {
   read_file,
   collect_types,
+  collect_types_for,
   write,
   line,
   empty,
@@ -108,12 +109,12 @@ function generate_scripting_api(p_Type) {
   t += line(`using namespace Low;`);
   t += line(`using namespace Low::Core;`);
   if (!["Low::Core"].includes(p_Type.namespace_string)) {
-    t += line(`using namespace ${p_Type.namespace_string};`);
+    t += line(`using namespace ::${p_Type.namespace_string};`);
   }
   t += empty();
 
   t += line(
-    `Cflat::Namespace *l_Namespace = Scripting::get_environment()->requestNamespace("${p_Type.namespace_string}");`,
+    `Cflat::Namespace *l_Namespace = Low::Core::Scripting::get_environment()->requestNamespace("${p_Type.namespace_string}");`,
   );
   t += empty();
 
@@ -122,13 +123,13 @@ function generate_scripting_api(p_Type) {
     t += line(`CflatStructAddBaseType(Scripting::get_environment(), ${l_TypeString}, Low::Util::Handle);`)
     */
   t += line(
-    `Cflat::Struct *type = Low::Core::Scripting::g_CflatStructs["${l_TypeString}"];`,
+    `Cflat::Struct *type = Scripting::g_CflatStructs["${l_TypeString}"];`,
   );
   t += empty();
 
   t += line("{");
   t += line(
-    `Cflat::Namespace *l_UtilNamespace = Scripting::get_environment()->requestNamespace("Low::Util");`,
+    `Cflat::Namespace *l_UtilNamespace = Low::Core::Scripting::get_environment()->requestNamespace("Low::Util");`,
   );
   t += empty();
   t += line(
@@ -138,25 +139,25 @@ function generate_scripting_api(p_Type) {
   t += empty();
 
   t += line(
-    `CflatStructAddConstructorParams1(l_Namespace, ${p_Type.name}, uint64_t);`,
+    `CflatStructAddConstructorParams1(Low::Core::Scripting::get_environment(), ${l_TypeString}, uint64_t);`,
   );
 
   t += line(
-    `CflatStructAddStaticMember(l_Namespace, ${p_Type.name}, uint16_t, TYPE_ID);`,
+    `CflatStructAddStaticMember(Low::Core::Scripting::get_environment(), ${l_TypeString}, uint16_t, TYPE_ID);`,
   );
   t += line(
-    `CflatStructAddMethodReturn(l_Namespace, ${p_Type.name}, bool, is_alive);`,
+    `CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, bool, is_alive);`,
   );
 
   t += line(
-    `CflatStructAddStaticMethodReturn(l_Namespace, ${p_Type.name}, uint32_t, get_capacity);`,
+    `CflatStructAddStaticMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, uint32_t, get_capacity);`,
   );
   t += line(
-    `CflatStructAddStaticMethodReturnParams1(l_Namespace, ${p_Type.name}, ${l_TypeString}, find_by_index, uint32_t);`,
+    `CflatStructAddStaticMethodReturnParams1(Low::Core::Scripting::get_environment(), ${l_TypeString}, ${l_TypeString}, find_by_index, uint32_t);`,
   );
   if (!p_Type.component && !p_Type.ui_component) {
     t += line(
-      `CflatStructAddStaticMethodReturnParams1(l_Namespace, ${p_Type.name}, ${l_TypeString}, find_by_name, Low::Util::Name);`,
+      `CflatStructAddStaticMethodReturnParams1(Low::Core::Scripting::get_environment(), ${l_TypeString}, ${l_TypeString}, find_by_name, Low::Util::Name);`,
     );
   }
   t += empty();
@@ -168,13 +169,13 @@ function generate_scripting_api(p_Type) {
     if (!i_Prop.static) {
       if (!i_Prop.no_getter && !i_Prop.private_getter) {
         t += line(
-          `CflatStructAddMethodReturn(l_Namespace, ${p_Type.name}, ${i_Prop.accessor_type}, ${i_Prop.getter_name});`,
+          `CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, ${i_Prop.accessor_type}, ${i_Prop.getter_name});`,
         );
       }
 
       if (!i_Prop.no_setter && !i_Prop.private_setter) {
         t += line(
-          `CflatStructAddMethodVoidParams1(l_Namespace, ${p_Type.name}, void, ${i_Prop.setter_name}, ${i_Prop.accessor_type});`,
+          `CflatStructAddMethodVoidParams1(Low::Core::Scripting::get_environment(), ${l_TypeString}, void, ${i_Prop.setter_name}, ${i_Prop.accessor_type});`,
         );
       }
     }
@@ -200,7 +201,7 @@ function generate_scripting_api(p_Type) {
         }
         t += write("(");
         t += write(
-          `l_Namespace, ${p_Type.name}, ${i_Func.return_type}, ${i_FuncName}`,
+          `Low::Core::Scripting::get_environment(), ${l_TypeString}, ${i_Func.return_type}, ${i_FuncName}`,
         );
         if (i_Func.parameters) {
           for (let i_Param of i_Func.parameters) {
@@ -218,12 +219,8 @@ function generate_scripting_api(p_Type) {
   return t;
 }
 
-function main() {
-  const l_Types = collect_types();
-
-  const l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`;
-
-  const l_OriginalContent = read_file(l_FilePath);
+function generate_scripting_api_for(p_FilePath, p_Types) {
+  const l_OriginalContent = read_file(p_FilePath);
 
   const l_IndexStart = l_OriginalContent.indexOf(`// REGISTER_CFLAT_BEGIN`);
   const l_IndexEnd = l_OriginalContent.indexOf(`// REGISTER_CFLAT_END`);
@@ -243,7 +240,7 @@ function main() {
   l_PreRegisterCode += line(`using namespace Low::Core;`);
   l_PreRegisterCode += empty();
 
-  for (const i_Type of l_Types) {
+  for (const i_Type of p_Types) {
     if (i_Type.scripting_expose) {
       l_IncludeCode += line(`#include "${i_Type.header_file_name}"`);
 
@@ -254,14 +251,14 @@ function main() {
       l_PreRegisterCode += line(`{`);
       l_PreRegisterCode += line(`using namespace ${i_Type.namespace_string};`);
       l_PreRegisterCode += line(
-        `Cflat::Namespace* l_Namespace = Scripting::get_environment()->requestNamespace("${i_Type.namespace_string}");`,
+        `Cflat::Namespace* l_Namespace = Low::Core::Scripting::get_environment()->requestNamespace("${i_Type.namespace_string}");`,
       );
       l_PreRegisterCode += empty();
       l_PreRegisterCode += line(
         `CflatRegisterStruct(l_Namespace, ${i_Type.name});`,
       );
       l_PreRegisterCode += line(
-        `CflatStructAddBaseType(Scripting::get_environment(), ${i_Type.namespace_string}::${i_Type.name}, Low::Util::Handle);`,
+        `CflatStructAddBaseType(Low::Core::Scripting::get_environment(), ${i_Type.namespace_string}::${i_Type.name}, Low::Util::Handle);`,
       );
       l_PreRegisterCode += empty();
       l_PreRegisterCode += line(
@@ -283,8 +280,19 @@ function main() {
   l_FinalContent += l_EntryMethodCode;
   l_FinalContent += `// REGISTER_CFLAT_END` + l_PostContent;
 
-  const l_Formatted = format(l_FilePath, l_FinalContent);
-  save_file(l_FilePath, l_Formatted);
+  const l_Formatted = format(p_FilePath, l_FinalContent);
+  save_file(p_FilePath, l_Formatted);
+}
+
+function main() {
+  const l_Types = collect_types_for("Low");
+  const l_ProjectTypes = collect_types_for("Misteda");
+
+  const l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`;
+  const l_ProjectFilePath = `../../MistedaPlugin/src/MtdCflatScripting.cpp`;
+
+  generate_scripting_api_for(l_FilePath, l_Types);
+  generate_scripting_api_for(l_ProjectFilePath, l_ProjectTypes);
 }
 
 main();

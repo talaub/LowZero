@@ -136,6 +136,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Texture2D::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Texture2D::_make;
+      l_TypeInfo.duplicate_default = &Texture2D::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Texture2D::living_instances);
@@ -147,7 +149,7 @@ namespace Low {
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, path);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
@@ -281,6 +283,38 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Texture2D Texture2D::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Texture2D l_Handle = make(p_Name);
+      l_Handle.set_path(get_path());
+      if (get_renderer_texture().is_alive()) {
+        l_Handle.set_renderer_texture(get_renderer_texture());
+      }
+      l_Handle.set_reference_count(get_reference_count());
+      l_Handle.set_state(get_state());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Texture2D Texture2D::duplicate(Texture2D p_Handle,
+                                   Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    Texture2D::_duplicate(Low::Util::Handle p_Handle,
+                          Low::Util::Name p_Name)
+    {
+      Texture2D l_Texture2D = p_Handle.get_id();
+      return l_Texture2D.duplicate(p_Name);
     }
 
     void Texture2D::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -464,10 +498,10 @@ namespace Low {
 
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(
-          get_reference_count() > 0,
-          "Increased Texture2D reference count, but its not over 0. "
-          "Something went wrong.");
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased Texture2D reference count, but its "
+                 "not over 0. "
+                 "Something went wrong.");
 
       if (get_state() != ResourceState::UNLOADED) {
         return;
@@ -520,9 +554,9 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
       set_reference_count(get_reference_count() - 1);
 
-      LOW_ASSERT(
-          get_reference_count() >= 0,
-          "Texture2D reference count < 0. Something went wrong.");
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "Texture2D reference count < 0. Something "
+                 "went wrong.");
 
       if (get_reference_count() <= 0) {
         _unload();
@@ -657,5 +691,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

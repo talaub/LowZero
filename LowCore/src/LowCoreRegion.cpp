@@ -124,6 +124,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Region::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Region::_make;
+      l_TypeInfo.duplicate_default = &Region::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Region::living_instances);
@@ -332,6 +334,37 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Region Region::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Region l_Handle = make(p_Name);
+      l_Handle.set_loaded(is_loaded());
+      l_Handle.set_streaming_enabled(is_streaming_enabled());
+      l_Handle.set_streaming_position(get_streaming_position());
+      l_Handle.set_streaming_radius(get_streaming_radius());
+      if (get_scene().is_alive()) {
+        l_Handle.set_scene(get_scene());
+      }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Region Region::duplicate(Region p_Handle, Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Region::_duplicate(Low::Util::Handle p_Handle,
+                                         Low::Util::Name p_Name)
+    {
+      Region l_Region = p_Handle.get_id();
+      return l_Region.duplicate(p_Name);
     }
 
     void Region::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -763,5 +796,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

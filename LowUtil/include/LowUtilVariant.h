@@ -5,6 +5,7 @@
 #include "LowMath.h"
 
 #include "LowUtilHandle.h"
+#include "LowUtilContainers.h"
 
 #include <type_traits>
 
@@ -24,7 +25,8 @@ namespace Low {
         Vector4,
         Quaternion,
         Name,
-        Handle
+        Handle,
+        String
       };
     }
 

@@ -78,6 +78,13 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        ImGuiImage duplicate(Low::Util::Name p_Name) const;
+        static ImGuiImage duplicate(ImGuiImage p_Handle,
+                                    Low::Util::Name p_Name);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Name p_Name);
+
         static ImGuiImage find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
@@ -115,6 +122,10 @@ namespace Low {
         static void increase_budget();
         void set_image(Resource::Image p_Value);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

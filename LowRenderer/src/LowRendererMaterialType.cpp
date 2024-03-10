@@ -115,6 +115,8 @@ namespace Low {
       l_TypeInfo.deserialize = &MaterialType::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &MaterialType::_make;
+      l_TypeInfo.duplicate_default = &MaterialType::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &MaterialType::living_instances);
@@ -278,6 +280,36 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    MaterialType MaterialType::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      MaterialType l_Handle = make(p_Name);
+      l_Handle.set_gbuffer_pipeline(get_gbuffer_pipeline());
+      l_Handle.set_depth_pipeline(get_depth_pipeline());
+      l_Handle.set_internal(is_internal());
+      l_Handle.set_properties(get_properties());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    MaterialType MaterialType::duplicate(MaterialType p_Handle,
+                                         Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    MaterialType::_duplicate(Low::Util::Handle p_Handle,
+                             Low::Util::Name p_Name)
+    {
+      MaterialType l_MaterialType = p_Handle.get_id();
+      return l_MaterialType.duplicate(p_Name);
     }
 
     void MaterialType::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -529,5 +561,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Renderer
 } // namespace Low

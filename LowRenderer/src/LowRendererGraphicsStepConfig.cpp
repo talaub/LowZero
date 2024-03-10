@@ -147,6 +147,8 @@ namespace Low {
       l_TypeInfo.deserialize = &GraphicsStepConfig::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &GraphicsStepConfig::_make;
+      l_TypeInfo.duplicate_default = &GraphicsStepConfig::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &GraphicsStepConfig::living_instances);
@@ -498,6 +500,46 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    GraphicsStepConfig
+    GraphicsStepConfig::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      GraphicsStepConfig l_Handle = make(p_Name);
+      l_Handle.set_callbacks(get_callbacks());
+      l_Handle.set_dimensions_config(get_dimensions_config());
+      l_Handle.set_rendertargets_clearcolor(
+          get_rendertargets_clearcolor());
+      l_Handle.set_depth_rendertarget(get_depth_rendertarget());
+      l_Handle.set_use_depth(is_use_depth());
+      l_Handle.set_depth_clear(is_depth_clear());
+      l_Handle.set_depth_test(is_depth_test());
+      l_Handle.set_depth_write(is_depth_write());
+      l_Handle.set_depth_compare_operation(
+          get_depth_compare_operation());
+      l_Handle.set_output_image(get_output_image());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    GraphicsStepConfig
+    GraphicsStepConfig::duplicate(GraphicsStepConfig p_Handle,
+                                  Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    GraphicsStepConfig::_duplicate(Low::Util::Handle p_Handle,
+                                   Low::Util::Name p_Name)
+    {
+      GraphicsStepConfig l_GraphicsStepConfig = p_Handle.get_id();
+      return l_GraphicsStepConfig.duplicate(p_Name);
     }
 
     void
@@ -1241,5 +1283,9 @@ namespace Low {
           << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
           << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Renderer
 } // namespace Low

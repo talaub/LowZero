@@ -112,6 +112,8 @@ namespace Low {
       l_TypeInfo.deserialize = &GameMode::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &GameMode::_make;
+      l_TypeInfo.duplicate_default = &GameMode::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &GameMode::living_instances);
@@ -124,7 +126,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset =
             offsetof(GameModeData, tick_function_name);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
@@ -223,6 +225,32 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    GameMode GameMode::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      GameMode l_Handle = make(p_Name);
+      l_Handle.set_tick_function_name(get_tick_function_name());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    GameMode GameMode::duplicate(GameMode p_Handle,
+                                 Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle GameMode::_duplicate(Low::Util::Handle p_Handle,
+                                           Low::Util::Name p_Name)
+    {
+      GameMode l_GameMode = p_Handle.get_id();
+      return l_GameMode.duplicate(p_Name);
     }
 
     void GameMode::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -418,5 +446,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

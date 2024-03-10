@@ -54,24 +54,27 @@ namespace Low {
           l_Handle.m_Data.m_Type = Display::TYPE_ID;
 
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, pixel_position,
-                                  Math::Vector2)) Math::Vector2();
+                                  Low::Math::Vector2))
+              Low::Math::Vector2();
           ACCESSOR_TYPE_SOA(l_Handle, Display, rotation, float) =
               0.0f;
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, pixel_scale,
-                                  Math::Vector2)) Math::Vector2();
+                                  Low::Math::Vector2))
+              Low::Math::Vector2();
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, children,
-                                  Util::List<uint64_t>))
-              Util::List<uint64_t>();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display,
-                                  absolute_pixel_position,
-                                  Math::Vector2)) Math::Vector2();
+                                  Low::Util::List<uint64_t>))
+              Low::Util::List<uint64_t>();
+          new (&ACCESSOR_TYPE_SOA(
+              l_Handle, Display, absolute_pixel_position,
+              Low::Math::Vector2)) Low::Math::Vector2();
           ACCESSOR_TYPE_SOA(l_Handle, Display, absolute_rotation,
                             float) = 0.0f;
           new (&ACCESSOR_TYPE_SOA(
-              l_Handle, Display, absolute_pixel_scale, Math::Vector2))
-              Math::Vector2();
+              l_Handle, Display, absolute_pixel_scale,
+              Low::Math::Vector2)) Low::Math::Vector2();
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, world_matrix,
-                                  Math::Matrix4x4)) Math::Matrix4x4();
+                                  Low::Math::Matrix4x4))
+              Low::Math::Matrix4x4();
           ACCESSOR_TYPE_SOA(l_Handle, Display, world_updated, bool) =
               false;
           new (&ACCESSOR_TYPE_SOA(l_Handle, Display, element,
@@ -145,6 +148,8 @@ namespace Low {
           l_TypeInfo.deserialize = &Display::deserialize;
           l_TypeInfo.make_default = nullptr;
           l_TypeInfo.make_component = &Display::_make;
+          l_TypeInfo.duplicate_default = nullptr;
+          l_TypeInfo.duplicate_component = &Display::_duplicate;
           l_TypeInfo.get_living_instances = reinterpret_cast<
               Low::Util::RTTI::LivingInstancesGetter>(
               &Display::living_instances);
@@ -163,13 +168,14 @@ namespace Low {
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.pixel_position();
-              return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, pixel_position, Math::Vector2);
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
+                                                pixel_position,
+                                                Low::Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.pixel_position(*(Math::Vector2 *)p_Data);
+              l_Handle.pixel_position(*(Low::Math::Vector2 *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -210,12 +216,12 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.pixel_scale();
               return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, pixel_scale, Math::Vector2);
+                  p_Handle, Display, pixel_scale, Low::Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.pixel_scale(*(Math::Vector2 *)p_Data);
+              l_Handle.pixel_scale(*(Low::Math::Vector2 *)p_Data);
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -297,7 +303,8 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_children();
               return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, children, Util::List<uint64_t>);
+                  p_Handle, Display, children,
+                  Low::Util::List<uint64_t>);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -318,7 +325,7 @@ namespace Low {
               l_Handle.get_absolute_pixel_position();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, absolute_pixel_position,
-                  Math::Vector2);
+                  Low::Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -359,7 +366,7 @@ namespace Low {
               l_Handle.get_absolute_pixel_scale();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 absolute_pixel_scale,
-                                                Math::Vector2);
+                                                Low::Math::Vector2);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -398,8 +405,9 @@ namespace Low {
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_world_matrix();
-              return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Display, world_matrix, Math::Matrix4x4);
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
+                                                world_matrix,
+                                                Low::Math::Matrix4x4);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -556,6 +564,41 @@ namespace Low {
           return ms_Capacity;
         }
 
+        Display
+        Display::duplicate(Low::Core::UI::Element p_Element) const
+        {
+          _LOW_ASSERT(is_alive());
+
+          Display l_Handle = make(p_Element);
+          l_Handle.pixel_position(pixel_position());
+          l_Handle.rotation(rotation());
+          l_Handle.pixel_scale(pixel_scale());
+          l_Handle.layer(layer());
+          l_Handle.set_dirty(is_dirty());
+          l_Handle.set_world_dirty(is_world_dirty());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+          return 0;
+          // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+          return l_Handle;
+        }
+
+        Display Display::duplicate(Display p_Handle,
+                                   Low::Core::UI::Element p_Element)
+        {
+          return p_Handle.duplicate(p_Element);
+        }
+
+        Low::Util::Handle
+        Display::_duplicate(Low::Util::Handle p_Handle,
+                            Low::Util::Handle p_Element)
+        {
+          Display l_Display = p_Handle.get_id();
+          Low::Core::UI::Element l_Element = p_Element.get_id();
+          return l_Display.duplicate(l_Element);
+        }
+
         void Display::serialize(Low::Util::Yaml::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
@@ -625,16 +668,17 @@ namespace Low {
           return l_Handle;
         }
 
-        Math::Vector2 &Display::pixel_position() const
+        Low::Math::Vector2 &Display::pixel_position() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
-          return TYPE_SOA(Display, pixel_position, Math::Vector2);
+          return TYPE_SOA(Display, pixel_position,
+                          Low::Math::Vector2);
         }
-        void Display::pixel_position(Math::Vector2 &p_Value)
+        void Display::pixel_position(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -647,7 +691,7 @@ namespace Low {
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
-            TYPE_SOA(Display, pixel_position, Math::Vector2) =
+            TYPE_SOA(Display, pixel_position, Low::Math::Vector2) =
                 p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
@@ -684,16 +728,16 @@ namespace Low {
           }
         }
 
-        Math::Vector2 &Display::pixel_scale() const
+        Low::Math::Vector2 &Display::pixel_scale() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_scale
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_scale
 
-          return TYPE_SOA(Display, pixel_scale, Math::Vector2);
+          return TYPE_SOA(Display, pixel_scale, Low::Math::Vector2);
         }
-        void Display::pixel_scale(Math::Vector2 &p_Value)
+        void Display::pixel_scale(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -706,7 +750,8 @@ namespace Low {
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
-            TYPE_SOA(Display, pixel_scale, Math::Vector2) = p_Value;
+            TYPE_SOA(Display, pixel_scale, Low::Math::Vector2) =
+                p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
             // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_scale
@@ -756,6 +801,17 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
+          Display l_Parent = get_parent();
+          if (l_Parent.is_alive()) {
+            for (auto it = l_Parent.get_children().begin();
+                 it != l_Parent.get_children().end();) {
+              if (*it == get_id()) {
+                it = l_Parent.get_children().erase(it);
+              } else {
+                ++it;
+              }
+            }
+          }
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent
 
           if (get_parent() != p_Value) {
@@ -767,6 +823,13 @@ namespace Low {
             TYPE_SOA(Display, parent, uint64_t) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
+            Display l_Parent(p_Value);
+            if (l_Parent.is_alive()) {
+              set_parent_uid(l_Parent.get_unique_id());
+              l_Parent.get_children().push_back(get_id());
+            } else {
+              set_parent_uid(0);
+            }
             // LOW_CODEGEN::END::CUSTOM:SETTER_parent
           }
         }
@@ -800,17 +863,18 @@ namespace Low {
           }
         }
 
-        Util::List<uint64_t> &Display::get_children() const
+        Low::Util::List<uint64_t> &Display::get_children() const
         {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
           // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
-          return TYPE_SOA(Display, children, Util::List<uint64_t>);
+          return TYPE_SOA(Display, children,
+                          Low::Util::List<uint64_t>);
         }
 
-        Math::Vector2 &Display::get_absolute_pixel_position()
+        Low::Math::Vector2 &Display::get_absolute_pixel_position()
         {
           _LOW_ASSERT(is_alive());
 
@@ -819,10 +883,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_position
 
           return TYPE_SOA(Display, absolute_pixel_position,
-                          Math::Vector2);
+                          Low::Math::Vector2);
         }
-        void
-        Display::set_absolute_pixel_position(Math::Vector2 &p_Value)
+        void Display::set_absolute_pixel_position(
+            Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -830,8 +894,8 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_position
 
           // Set new value
-          TYPE_SOA(Display, absolute_pixel_position, Math::Vector2) =
-              p_Value;
+          TYPE_SOA(Display, absolute_pixel_position,
+                   Low::Math::Vector2) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_position
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_position
@@ -861,7 +925,7 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_rotation
         }
 
-        Math::Vector2 &Display::get_absolute_pixel_scale()
+        Low::Math::Vector2 &Display::get_absolute_pixel_scale()
         {
           _LOW_ASSERT(is_alive());
 
@@ -870,9 +934,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_scale
 
           return TYPE_SOA(Display, absolute_pixel_scale,
-                          Math::Vector2);
+                          Low::Math::Vector2);
         }
-        void Display::set_absolute_pixel_scale(Math::Vector2 &p_Value)
+        void
+        Display::set_absolute_pixel_scale(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -880,8 +945,8 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_scale
 
           // Set new value
-          TYPE_SOA(Display, absolute_pixel_scale, Math::Vector2) =
-              p_Value;
+          TYPE_SOA(Display, absolute_pixel_scale,
+                   Low::Math::Vector2) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_scale
@@ -911,7 +976,7 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_layer
         }
 
-        Math::Matrix4x4 &Display::get_world_matrix()
+        Low::Math::Matrix4x4 &Display::get_world_matrix()
         {
           _LOW_ASSERT(is_alive());
 
@@ -919,9 +984,10 @@ namespace Low {
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
-          return TYPE_SOA(Display, world_matrix, Math::Matrix4x4);
+          return TYPE_SOA(Display, world_matrix,
+                          Low::Math::Matrix4x4);
         }
-        void Display::set_world_matrix(Math::Matrix4x4 &p_Value)
+        void Display::set_world_matrix(Low::Math::Matrix4x4 &p_Value)
         {
           _LOW_ASSERT(is_alive());
 
@@ -929,7 +995,8 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
           // Set new value
-          TYPE_SOA(Display, world_matrix, Math::Matrix4x4) = p_Value;
+          TYPE_SOA(Display, world_matrix, Low::Math::Matrix4x4) =
+              p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
@@ -1064,9 +1131,8 @@ namespace Low {
         void Display::recalculate_world_transform()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
-          LOW_ASSERT(
-              is_alive(),
-              "Cannot calculate world position of dead ui display");
+          LOW_ASSERT(is_alive(), "Cannot calculate world position of "
+                                 "dead ui display");
 
           if (!is_world_dirty()) {
             return;
@@ -1079,6 +1145,7 @@ namespace Low {
                     .get_id());
           }
 
+          Element l_Element = get_element();
           Math::Vector2 l_Position = pixel_position();
           float l_Rotation = rotation();
           Math::Vector2 l_Scale = pixel_scale();
@@ -1089,6 +1156,7 @@ namespace Low {
           Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
           if (l_Parent.is_alive()) {
+            l_Position *= l_Element.get_view().scale_multiplier();
             if (l_Parent.is_world_dirty()) {
               l_Parent.recalculate_world_transform();
             }
@@ -1103,11 +1171,16 @@ namespace Low {
             l_Position += l_ParentPosition;
             l_Rotation += l_ParentRotation;
             // Could lead to some unwanted stretching
-            // TODO: Introduce overall multiplier variable on display
-            // to scale everything while keeping dimensions l_Scale *=
-            // l_ParentScale;
+            // TODO: Introduce overall multiplier variable
+            // on display to scale everything while keeping
+            // dimensions l_Scale *= l_ParentScale;
             l_Layer += l_ParentLayer;
+          } else {
+            l_Position += l_Element.get_view().pixel_position();
+            l_Rotation += l_Element.get_view().rotation();
           }
+
+          l_Scale *= l_Element.get_view().scale_multiplier();
 
           set_absolute_pixel_position(l_Position);
           set_absolute_rotation(l_Rotation);
@@ -1183,7 +1256,7 @@ namespace Low {
                              (l_Capacity + l_CapacityIncrease)],
                 &ms_Buffer[offsetof(DisplayData, pixel_position) *
                            (l_Capacity)],
-                l_Capacity * sizeof(Math::Vector2));
+                l_Capacity * sizeof(Low::Math::Vector2));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, rotation) *
@@ -1197,7 +1270,7 @@ namespace Low {
                                 (l_Capacity + l_CapacityIncrease)],
                    &ms_Buffer[offsetof(DisplayData, pixel_scale) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Vector2));
+                   l_Capacity * sizeof(Low::Math::Vector2));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, layer) *
@@ -1227,8 +1300,8 @@ namespace Low {
                   &l_NewBuffer[offsetof(DisplayData, children) *
                                    (l_Capacity + l_CapacityIncrease) +
                                (it->get_index() *
-                                sizeof(Util::List<uint64_t>))])
-                  Util::List<uint64_t>();
+                                sizeof(Low::Util::List<uint64_t>))])
+                  Low::Util::List<uint64_t>();
               *i_ValPtr = it->get_children();
             }
           }
@@ -1239,7 +1312,7 @@ namespace Low {
                    &ms_Buffer[offsetof(DisplayData,
                                        absolute_pixel_position) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Vector2));
+                   l_Capacity * sizeof(Low::Math::Vector2));
           }
           {
             memcpy(
@@ -1257,7 +1330,7 @@ namespace Low {
                    &ms_Buffer[offsetof(DisplayData,
                                        absolute_pixel_scale) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Vector2));
+                   l_Capacity * sizeof(Low::Math::Vector2));
           }
           {
             memcpy(
@@ -1272,7 +1345,7 @@ namespace Low {
                                 (l_Capacity + l_CapacityIncrease)],
                    &ms_Buffer[offsetof(DisplayData, world_matrix) *
                               (l_Capacity)],
-                   l_Capacity * sizeof(Math::Matrix4x4));
+                   l_Capacity * sizeof(Low::Math::Matrix4x4));
           }
           {
             memcpy(&l_NewBuffer[offsetof(DisplayData, world_updated) *
@@ -1325,6 +1398,10 @@ namespace Low {
                         << (l_Capacity + l_CapacityIncrease)
                         << LOW_LOG_END;
         }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+        // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       } // namespace Component
     }   // namespace UI
   }     // namespace Core

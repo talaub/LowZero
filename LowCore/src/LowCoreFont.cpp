@@ -117,6 +117,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Font::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Font::_make;
+      l_TypeInfo.duplicate_default = &Font::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Font::living_instances);
@@ -128,7 +130,7 @@ namespace Low {
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FontData, path);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
@@ -277,6 +279,35 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Font Font::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Font l_Handle = make(p_Name);
+      l_Handle.set_path(get_path());
+      l_Handle.set_glyphs(get_glyphs());
+      l_Handle.set_reference_count(get_reference_count());
+      l_Handle.set_font_size(get_font_size());
+      l_Handle.set_state(get_state());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Font Font::duplicate(Font p_Handle, Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Font::_duplicate(Low::Util::Handle p_Handle,
+                                       Low::Util::Name p_Name)
+    {
+      Font l_Font = p_Handle.get_id();
+      return l_Font.duplicate(p_Name);
     }
 
     void Font::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -688,5 +719,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

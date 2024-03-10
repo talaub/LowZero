@@ -111,6 +111,7 @@ function process_file(p_FileName) {
         skip_deserialization: true,
         expose_scripting: true,
         scripting_hide_setter: true,
+        skip_duplication: true,
       };
 
       i_Type.unique_id = true;
@@ -122,6 +123,7 @@ function process_file(p_FileName) {
         skip_deserialization: true,
         expose_scripting: true,
         scripting_hide_setter: true,
+        skip_duplication: true,
       };
 
       i_Type.unique_id = true;
@@ -131,6 +133,7 @@ function process_file(p_FileName) {
       i_Type.properties["unique_id"] = {
         type: "Low::Util::UniqueId",
         private_setter: true,
+        skip_duplication: true,
       };
     }
 
@@ -164,6 +167,7 @@ function process_file(p_FileName) {
       i_Type.properties["name"] = {
         type: "Low::Util::Name",
         expose_scripting: true,
+        skip_duplication: true,
       };
       if (i_Type.name_editable) {
         i_Type.properties.name.editor_editable = true;
@@ -394,7 +398,7 @@ function removeItemOnce(arr, value) {
   return arr;
 }
 
-function collect_types() {
+function collect_types_for(env) {
   const l_TypeIdContent = read_file(`${g_Directory}/typeids.yaml`);
   g_TypeIdMap = YAML.parse(l_TypeIdContent);
   for (const [key, value] of Object.entries(g_TypeIdMap)) {
@@ -439,7 +443,15 @@ function collect_types() {
 
   fs.writeFileSync(`${g_Directory}/typeids.yaml`, YAML.stringify(g_TypeIdMap));
 
+  if (env !== "ALL") {
+    return l_Types.filter((type) => type.module.startsWith(env));
+  }
+
   return l_Types;
+}
+
+function collect_types() {
+  return collect_types_for("ALL");
 }
 
 function save_file(p_FilePath, p_Content) {
@@ -491,6 +503,7 @@ function find_end_marker_end(p_Text, p_Name) {
 module.exports = {
   read_file,
   collect_types,
+  collect_types_for,
   get_plain_type,
   get_accessor_type,
   is_reference_type,

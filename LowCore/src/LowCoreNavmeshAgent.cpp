@@ -62,7 +62,8 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, radius, float) =
             0.0f;
         new (&ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, offset,
-                                Math::Vector3)) Math::Vector3();
+                                Low::Math::Vector3))
+            Low::Math::Vector3();
         new (&ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, entity,
                                 Low::Core::Entity))
             Low::Core::Entity();
@@ -131,6 +132,8 @@ namespace Low {
         l_TypeInfo.deserialize = &NavmeshAgent::deserialize;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &NavmeshAgent::_make;
+        l_TypeInfo.duplicate_default = nullptr;
+        l_TypeInfo.duplicate_component = &NavmeshAgent::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &NavmeshAgent::living_instances);
@@ -212,13 +215,13 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_offset();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, NavmeshAgent,
-                                              offset, Math::Vector3);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, NavmeshAgent, offset, Low::Math::Vector3);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             NavmeshAgent l_Handle = p_Handle.get_id();
-            l_Handle.set_offset(*(Math::Vector3 *)p_Data);
+            l_Handle.set_offset(*(Low::Math::Vector3 *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -322,6 +325,39 @@ namespace Low {
       uint32_t NavmeshAgent::get_capacity()
       {
         return ms_Capacity;
+      }
+
+      NavmeshAgent
+      NavmeshAgent::duplicate(Low::Core::Entity p_Entity) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        NavmeshAgent l_Handle = make(p_Entity);
+        l_Handle.set_speed(get_speed());
+        l_Handle.set_height(get_height());
+        l_Handle.set_radius(get_radius());
+        l_Handle.set_offset(get_offset());
+        l_Handle.set_agent_index(get_agent_index());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      NavmeshAgent NavmeshAgent::duplicate(NavmeshAgent p_Handle,
+                                           Low::Core::Entity p_Entity)
+      {
+        return p_Handle.duplicate(p_Entity);
+      }
+
+      Low::Util::Handle
+      NavmeshAgent::_duplicate(Low::Util::Handle p_Handle,
+                               Low::Util::Handle p_Entity)
+      {
+        NavmeshAgent l_NavmeshAgent = p_Handle.get_id();
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        return l_NavmeshAgent.duplicate(l_Entity);
       }
 
       void
@@ -504,16 +540,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_radius
       }
 
-      Math::Vector3 &NavmeshAgent::get_offset() const
+      Low::Math::Vector3 &NavmeshAgent::get_offset() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_offset
         // LOW_CODEGEN::END::CUSTOM:GETTER_offset
 
-        return TYPE_SOA(NavmeshAgent, offset, Math::Vector3);
+        return TYPE_SOA(NavmeshAgent, offset, Low::Math::Vector3);
       }
-      void NavmeshAgent::set_offset(Math::Vector3 &p_Value)
+      void NavmeshAgent::set_offset(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -521,7 +557,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_offset
 
         // Set new value
-        TYPE_SOA(NavmeshAgent, offset, Math::Vector3) = p_Value;
+        TYPE_SOA(NavmeshAgent, offset, Low::Math::Vector3) = p_Value;
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -613,7 +649,7 @@ namespace Low {
       }
 
       void NavmeshAgent::set_target_position(
-          Math::Vector3 &p_TargetPosition)
+          Low::Math::Vector3 &p_TargetPosition)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_target_position
         System::Navmesh::set_agent_target_position(get_id(),
@@ -684,7 +720,7 @@ namespace Low {
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(NavmeshAgentData, offset) *
                             (l_Capacity)],
-                 l_Capacity * sizeof(Math::Vector3));
+                 l_Capacity * sizeof(Low::Math::Vector3));
         }
         {
           memcpy(
@@ -724,6 +760,10 @@ namespace Low {
             << l_Capacity << " to "
             << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

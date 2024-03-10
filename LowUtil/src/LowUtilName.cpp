@@ -52,7 +52,8 @@ namespace Low {
       return *this;
     }
 
-    bool Name::is_valid() const {
+    bool Name::is_valid() const
+    {
       return buffer_contains_name(m_Index);
     }
 
@@ -100,7 +101,8 @@ namespace Low {
       return ~crc;
     }
 
-    static void add_name_to_buffer(const uint32_t p_Index, const char *p_String)
+    static void add_name_to_buffer(const uint32_t p_Index,
+                                   const char *p_String)
     {
       if (buffer_contains_name(p_Index)) {
         return;

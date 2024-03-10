@@ -78,6 +78,13 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        Element duplicate(Low::Util::Name p_Name) const;
+        static Element duplicate(Element p_Handle,
+                                 Low::Util::Name p_Name);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Name p_Name);
+
         static Element find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
@@ -111,12 +118,13 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static Element make(Util::Name p_Name, UI::View p_View);
+        static Element make(Low::Util::Name p_Name,
+                            Low::Core::UI::View p_View);
         uint64_t get_component(uint16_t p_TypeId) const;
-        void add_component(Util::Handle &p_Component);
+        void add_component(Low::Util::Handle &p_Component);
         void remove_component(uint16_t p_ComponentType);
         bool has_component(uint16_t p_ComponentType);
-        UI::Component::Display get_display() const;
+        Low::Core::UI::Component::Display get_display() const;
         void serialize(Util::Yaml::Node &p_Node,
                        bool p_AddHandles) const;
         void serialize_hierarchy(Util::Yaml::Node &p_Node,
@@ -131,6 +139,10 @@ namespace Low {
         static void increase_budget();
         void set_unique_id(Low::Util::UniqueId p_Value);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace UI
   }   // namespace Core
 } // namespace Low

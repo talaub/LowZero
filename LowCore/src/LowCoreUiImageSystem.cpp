@@ -118,6 +118,12 @@ namespace Low {
                  i < Component::Image::living_count(); ++i) {
               Component::Image i_Image = l_Images[i];
 
+              if (i_Image.get_element()
+                      .get_view()
+                      .is_view_template()) {
+                continue;
+              }
+
               Component::Display i_Display =
                   i_Image.get_element().get_display();
 

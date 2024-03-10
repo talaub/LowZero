@@ -137,6 +137,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Material::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Material::_make;
+      l_TypeInfo.duplicate_default = &Material::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Material::living_instances);
@@ -305,6 +307,38 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Material Material::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Material l_Handle = make(p_Name);
+      if (get_material_type().is_alive()) {
+        l_Handle.set_material_type(get_material_type());
+      }
+      if (get_renderer_material().is_alive()) {
+        l_Handle.set_renderer_material(get_renderer_material());
+      }
+      l_Handle.set_reference_count(get_reference_count());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Material Material::duplicate(Material p_Handle,
+                                 Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Material::_duplicate(Low::Util::Handle p_Handle,
+                                           Low::Util::Name p_Name)
+    {
+      Material l_Material = p_Handle.get_id();
+      return l_Material.duplicate(p_Name);
     }
 
     void Material::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -600,10 +634,10 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(
-          get_reference_count() > 0,
-          "Increased Texture2D reference count, but its not over 0. "
-          "Something went wrong.");
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased Texture2D reference count, but its "
+                 "not over 0. "
+                 "Something went wrong.");
 
       if (is_loaded()) {
         return;
@@ -636,9 +670,9 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
       set_reference_count(get_reference_count() - 1);
 
-      LOW_ASSERT(
-          get_reference_count() >= 0,
-          "Texture2D reference count < 0. Something went wrong.");
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "Texture2D reference count < 0. Something "
+                 "went wrong.");
 
       if (get_reference_count() <= 0) {
         _unload();
@@ -767,5 +801,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

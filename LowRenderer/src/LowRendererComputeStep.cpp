@@ -130,6 +130,8 @@ namespace Low {
       l_TypeInfo.deserialize = &ComputeStep::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &ComputeStep::_make;
+      l_TypeInfo.duplicate_default = &ComputeStep::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &ComputeStep::living_instances);
@@ -324,6 +326,41 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    ComputeStep ComputeStep::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      ComputeStep l_Handle = make(p_Name);
+      if (get_config().is_alive()) {
+        l_Handle.set_config(get_config());
+      }
+      if (get_context().is_alive()) {
+        l_Handle.set_context(get_context());
+      }
+      if (get_output_image().is_alive()) {
+        l_Handle.set_output_image(get_output_image());
+      }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    ComputeStep ComputeStep::duplicate(ComputeStep p_Handle,
+                                       Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    ComputeStep::_duplicate(Low::Util::Handle p_Handle,
+                            Low::Util::Name p_Name)
+    {
+      ComputeStep l_ComputeStep = p_Handle.get_id();
+      return l_ComputeStep.duplicate(p_Name);
     }
 
     void ComputeStep::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -549,8 +586,8 @@ namespace Low {
       l_Resources[p_RenderFlow].initialize(
           get_config().get_resources(), get_context(), p_RenderFlow);
 
-      // Sets the output image depending on what is configured in the
-      // config
+      // Sets the output image depending on what is configured
+      // in the config
       if (step_has_resource_from_binding(
               get_config().get_output_image(), p_RenderFlow, *this)) {
         set_output_image(
@@ -992,5 +1029,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Renderer
 } // namespace Low

@@ -113,6 +113,8 @@ namespace Low {
         l_TypeInfo.deserialize = &Renderpass::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Renderpass::_make;
+        l_TypeInfo.duplicate_default = &Renderpass::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Renderpass::living_instances);
@@ -209,6 +211,33 @@ namespace Low {
             return *it;
           }
         }
+      }
+
+      Renderpass Renderpass::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        Renderpass l_Handle = make(p_Name);
+        l_Handle.set_renderpass(get_renderpass());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      Renderpass Renderpass::duplicate(Renderpass p_Handle,
+                                       Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle
+      Renderpass::_duplicate(Low::Util::Handle p_Handle,
+                             Low::Util::Name p_Name)
+      {
+        Renderpass l_Renderpass = p_Handle.get_id();
+        return l_Renderpass.duplicate(p_Name);
       }
 
       void Renderpass::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -420,6 +449,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

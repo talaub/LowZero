@@ -122,6 +122,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Texture2D::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Texture2D::_make;
+      l_TypeInfo.duplicate_default = &Texture2D::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Texture2D::living_instances);
@@ -228,6 +230,38 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Texture2D Texture2D::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Texture2D l_Handle = make(p_Name);
+      if (get_image().is_alive()) {
+        l_Handle.set_image(get_image());
+      }
+      if (get_context().is_alive()) {
+        l_Handle.set_context(get_context());
+      }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Texture2D Texture2D::duplicate(Texture2D p_Handle,
+                                   Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    Texture2D::_duplicate(Low::Util::Handle p_Handle,
+                          Low::Util::Name p_Name)
+    {
+      Texture2D l_Texture2D = p_Handle.get_id();
+      return l_Texture2D.duplicate(p_Name);
     }
 
     void Texture2D::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -406,6 +440,9 @@ namespace Low {
       ms_Slots[l_Index].m_Occupied = true;
       return l_Index;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer
 } // namespace Low

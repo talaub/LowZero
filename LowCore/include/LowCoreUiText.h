@@ -31,9 +31,9 @@ namespace Low {
 
         struct LOW_CORE_API TextData
         {
-          Util::String text;
-          Core::Font font;
-          Math::Color color;
+          Low::Util::String text;
+          Low::Core::Font font;
+          Low::Math::Color color;
           float size;
           TextContentFitOptions content_fit_approach;
           Low::Core::UI::Element element;
@@ -88,6 +88,13 @@ namespace Low {
 
           void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+          Text duplicate(Low::Core::UI::Element p_Entity) const;
+          static Text duplicate(Text p_Handle,
+                                Low::Core::UI::Element p_Element);
+          static Low::Util::Handle
+          _duplicate(Low::Util::Handle p_Handle,
+                     Low::Util::Handle p_Element);
+
           static void serialize(Low::Util::Handle p_Handle,
                                 Low::Util::Yaml::Node &p_Node);
           static Low::Util::Handle
@@ -106,14 +113,14 @@ namespace Low {
             l_Text.destroy();
           }
 
-          Util::String &get_text() const;
-          void set_text(Util::String &p_Value);
+          Low::Util::String &get_text() const;
+          void set_text(Low::Util::String &p_Value);
 
-          Core::Font get_font() const;
-          void set_font(Core::Font p_Value);
+          Low::Core::Font get_font() const;
+          void set_font(Low::Core::Font p_Value);
 
-          Math::Color &get_color() const;
-          void set_color(Math::Color &p_Value);
+          Low::Math::Color &get_color() const;
+          void set_color(Low::Math::Color &p_Value);
 
           float get_size() const;
           void set_size(float p_Value);
@@ -133,6 +140,10 @@ namespace Low {
           static void increase_budget();
           void set_unique_id(Low::Util::UniqueId p_Value);
         };
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+        // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
       } // namespace Component
     }   // namespace UI
   }     // namespace Core

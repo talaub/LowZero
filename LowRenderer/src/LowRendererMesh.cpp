@@ -102,6 +102,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Mesh::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Mesh::_make;
+      l_TypeInfo.duplicate_default = &Mesh::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Mesh::living_instances);
@@ -299,6 +301,37 @@ namespace Low {
           return *it;
         }
       }
+    }
+
+    Mesh Mesh::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      Mesh l_Handle = make(p_Name);
+      l_Handle.set_vertex_buffer_start(get_vertex_buffer_start());
+      l_Handle.set_vertex_count(get_vertex_count());
+      l_Handle.set_index_buffer_start(get_index_buffer_start());
+      l_Handle.set_index_count(get_index_count());
+      l_Handle.set_vertexweight_buffer_start(
+          get_vertexweight_buffer_start());
+      l_Handle.set_vertexweight_count(get_vertexweight_count());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    Mesh Mesh::duplicate(Mesh p_Handle, Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Mesh::_duplicate(Low::Util::Handle p_Handle,
+                                       Low::Util::Name p_Name)
+    {
+      Mesh l_Mesh = p_Handle.get_id();
+      return l_Mesh.duplicate(p_Name);
     }
 
     void Mesh::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -627,5 +660,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Renderer
 } // namespace Low

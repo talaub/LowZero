@@ -24,7 +24,7 @@
 #include "LowEditorCommonOperations.h"
 #include "LowEditorResourceWidget.h"
 #include "LowEditorThemes.h"
-#include "LowEditorTestManagerWidget.h"
+#include "LowEditorTypeManagerWidget.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
@@ -509,11 +509,43 @@ namespace Low {
       }
     }
 
+    static void
+    parse_editor_type_metadata(TypeEditorMetadata &p_Metadata,
+                               Util::Yaml::Node &p_Node)
+    {
+      p_Metadata.manager = false;
+      if (p_Node["manager"]) {
+        p_Metadata.manager = p_Node["manager"].as<bool>();
+      }
+      if (p_Node["saveable"]) {
+        p_Metadata.saveable = p_Node["saveable"].as<bool>();
+      }
+    }
+
+    static void parse_property_metadata(PropertyMetadata &p_Metadata,
+                                        Util::Yaml::Node &p_Node)
+    {
+      if (p_Node["multiline"]) {
+        p_Metadata.multiline = p_Node["multiline"].as<bool>();
+      }
+    }
+
     static void parse_type_metadata(TypeMetadata &p_Metadata,
                                     Util::Yaml::Node &p_Node)
     {
       p_Metadata.typeInfo =
           Util::Handle::get_type_info(p_Metadata.typeId);
+
+      {
+        // Initializing the editor part of the metadata
+        p_Metadata.editor.manager = false;
+        p_Metadata.editor.saveable = false;
+      }
+
+      if (p_Node["editor"]) {
+        parse_editor_type_metadata(p_Metadata.editor,
+                                   p_Node["editor"]);
+      }
 
       const char *l_PropertiesName = "properties";
 
@@ -542,6 +574,14 @@ namespace Low {
           }
           i_Metadata.propInfo =
               p_Metadata.typeInfo.properties[i_Metadata.name];
+
+          {
+            i_Metadata.multiline = false;
+          }
+          if (it->second["metadata"]) {
+            parse_property_metadata(i_Metadata,
+                                    it->second["metadata"]);
+          }
 
           p_Metadata.properties.push_back(i_Metadata);
         }
@@ -659,14 +699,14 @@ namespace Low {
       register_editor_widget("StateGraph", new StateGraphWidget(),
                              true);
       register_editor_widget("UI-Views", new UiWidget(), false);
-      register_editor_widget(
-          "MeshAssets",
-          new TestManagerWidget(Core::MeshAsset::TYPE_ID), true);
-#if 1
-      register_editor_widget(
-          "Materials", new TestManagerWidget(Core::Material::TYPE_ID),
-          true);
-#endif
+
+      for (auto &it : g_TypeMetadata) {
+        if (it.second.editor.manager) {
+          register_editor_widget(
+              it.second.name.c_str(),
+              new TypeManagerWidget(it.second.typeId));
+        }
+      }
 
       Util::String l_Path = LOW_DATA_PATH;
       l_Path += "/assets/meshes";

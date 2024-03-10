@@ -116,6 +116,8 @@ namespace Low {
       l_TypeInfo.deserialize = &MeshAsset::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &MeshAsset::_make;
+      l_TypeInfo.duplicate_default = &MeshAsset::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &MeshAsset::living_instances);
@@ -245,6 +247,36 @@ namespace Low {
       }
     }
 
+    MeshAsset MeshAsset::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      MeshAsset l_Handle = make(p_Name);
+      if (get_lod0().is_alive()) {
+        l_Handle.set_lod0(get_lod0());
+      }
+      l_Handle.set_reference_count(get_reference_count());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    MeshAsset MeshAsset::duplicate(MeshAsset p_Handle,
+                                   Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    MeshAsset::_duplicate(Low::Util::Handle p_Handle,
+                          Low::Util::Name p_Name)
+    {
+      MeshAsset l_MeshAsset = p_Handle.get_id();
+      return l_MeshAsset.duplicate(p_Name);
+    }
+
     void MeshAsset::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
@@ -322,8 +354,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod0
       if (is_loaded()) {
-        // If this asset is already loaded we need to increase the
-        // reference count of the resource
+        // If this asset is already loaded we need to increase
+        // the reference count of the resource
         p_Value.load();
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod0
@@ -414,10 +446,10 @@ namespace Low {
 
       set_reference_count(get_reference_count() + 1);
 
-      LOW_ASSERT(
-          get_reference_count() > 0,
-          "Increased MeshAsset reference count, but its not over 0. "
-          "Something went wrong.");
+      LOW_ASSERT(get_reference_count() > 0,
+                 "Increased MeshAsset reference count, but its "
+                 "not over 0. "
+                 "Something went wrong.");
 
       if (l_HasBeenLoaded) {
         return;
@@ -438,9 +470,9 @@ namespace Low {
 
       set_reference_count(get_reference_count() - 1);
 
-      LOW_ASSERT(
-          get_reference_count() >= 0,
-          "MeshAsset reference count < 0. Something went wrong.");
+      LOW_ASSERT(get_reference_count() >= 0,
+                 "MeshAsset reference count < 0. Something "
+                 "went wrong.");
 
       if (get_reference_count() <= 0) {
         _unload();
@@ -539,5 +571,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

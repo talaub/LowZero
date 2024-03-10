@@ -139,6 +139,8 @@ namespace Low {
       l_TypeInfo.deserialize = &Entity::deserialize;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Entity::_make;
+      l_TypeInfo.duplicate_default = &Entity::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
       l_TypeInfo.get_living_instances =
           reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
               &Entity::living_instances);
@@ -270,6 +272,54 @@ namespace Low {
       }
     }
 
+    Entity Entity::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      Entity l_Entity = make(p_Name);
+
+      for (auto it = get_components().begin();
+           it != get_components().end(); ++it) {
+        Util::RTTI::TypeInfo &i_ComponentTypeInfo =
+            Util::Handle::get_type_info(it->first);
+
+        i_ComponentTypeInfo.duplicate_component(it->second, l_Entity);
+      }
+
+      Component::Transform l_Transform = get_transform();
+
+      for (u32 i = 0; i < l_Transform.get_children().size(); ++i) {
+        Component::Transform i_ChildTransform =
+            l_Transform.get_children()[i];
+
+        Entity i_CopiedEntity =
+            i_ChildTransform.get_entity().duplicate(
+                i_ChildTransform.get_entity().get_name());
+
+        i_CopiedEntity.get_transform().set_parent(
+            l_Entity.get_transform());
+      }
+
+      l_Entity.get_transform().set_parent(l_Transform.get_parent());
+      get_region().add_entity(l_Entity);
+
+      return l_Entity;
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+    }
+
+    Entity Entity::duplicate(Entity p_Handle, Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle Entity::_duplicate(Low::Util::Handle p_Handle,
+                                         Low::Util::Name p_Name)
+    {
+      Entity l_Entity = p_Handle.get_id();
+      return l_Entity.duplicate(p_Name);
+    }
+
     void Entity::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
@@ -307,8 +357,8 @@ namespace Low {
 
       p_Node["_handle"] = l_Entity.get_id();
 
-      // Parse the old unique id and assign it again (need to remove
-      // the auto generated uid first
+      // Parse the old unique id and assign it again (need to
+      // remove the auto generated uid first)
       if (p_Node["unique_id"]) {
         Util::remove_unique_id(l_Entity.get_unique_id());
         l_Entity.set_unique_id(p_Node["unique_id"].as<uint64_t>());
@@ -428,8 +478,6 @@ namespace Low {
     Entity Entity::make(Util::Name p_Name, Region p_Region)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-      LOW_LOG_DEBUG << "Creating entity: " << p_Name << " with region"
-                    << LOW_LOG_END;
       Entity l_Entity = Entity::make(p_Name);
       p_Region.add_entity(l_Entity);
       return l_Entity;
@@ -446,7 +494,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_component
     }
 
-    void Entity::add_component(Util::Handle &p_Component)
+    void Entity::add_component(Low::Util::Handle &p_Component)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
       Util::Handle l_ExistingComponent =
@@ -456,9 +504,9 @@ namespace Low {
 
       LOW_ASSERT(l_ComponentTypeInfo.component,
                  "Can only add components to an entity");
-      LOW_ASSERT(
-          !l_ComponentTypeInfo.is_alive(l_ExistingComponent),
-          "An entity can only hold one component of a given type");
+      LOW_ASSERT(!l_ComponentTypeInfo.is_alive(l_ExistingComponent),
+                 "An entity can only hold one component of a given "
+                 "type");
 
       l_ComponentTypeInfo.properties[N(entity)].set(p_Component,
                                                     this);
@@ -470,10 +518,10 @@ namespace Low {
     void Entity::remove_component(uint16_t p_ComponentType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_component
-      LOW_ASSERT(
-          has_component(p_ComponentType),
-          "Cannot remove component from entity. This entity does not "
-          "have a component of the specified type");
+      LOW_ASSERT(has_component(p_ComponentType),
+                 "Cannot remove component from entity. This "
+                 "entity does not "
+                 "have a component of the specified type");
 
       Util::RTTI::TypeInfo &l_TypeInfo =
           Util::Handle::get_type_info(p_ComponentType);
@@ -499,7 +547,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_component
     }
 
-    Component::Transform Entity::get_transform() const
+    Low::Core::Component::Transform Entity::get_transform() const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
       _LOW_ASSERT(is_alive());
@@ -507,7 +555,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
     }
 
-    void Entity::serialize(Util::Yaml::Node &p_Node,
+    void Entity::serialize(Low::Util::Yaml::Node &p_Node,
                            bool p_AddHandles) const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize
@@ -563,7 +611,7 @@ namespace Low {
     }
 
     Entity &Entity::deserialize_hierarchy(Util::Yaml::Node &p_Node,
-                                          Util::Handle p_Creator)
+                                          Low::Util::Handle p_Creator)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy
       Entity l_Entity =
@@ -665,5 +713,9 @@ namespace Low {
                     << (l_Capacity + l_CapacityIncrease)
                     << LOW_LOG_END;
     }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
   } // namespace Core
 } // namespace Low

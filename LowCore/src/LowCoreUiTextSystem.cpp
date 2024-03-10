@@ -125,6 +125,8 @@ namespace Low {
             float l_Ypos = l_Display.get_absolute_pixel_position().y;
 
             float l_FontSize = p_Text.get_size();
+            l_FontSize *=
+                p_Text.get_element().get_view().scale_multiplier();
             float l_FontHeight = l_Font.get_font_size();
 
             char l_LastCharacter = '\0';
@@ -218,6 +220,13 @@ namespace Low {
             for (uint32_t i = 0u; i < Component::Text::living_count();
                  ++i) {
               Component::Text i_Text = l_Texts[i];
+
+              if (i_Text.get_element()
+                      .get_view()
+                      .is_view_template()) {
+                continue;
+              }
+
               render_text(i_Text);
             }
           }

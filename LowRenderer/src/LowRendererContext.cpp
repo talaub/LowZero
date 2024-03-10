@@ -123,6 +123,8 @@ namespace Low {
         l_TypeInfo.deserialize = &Context::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Context::_make;
+        l_TypeInfo.duplicate_default = &Context::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Context::living_instances);
@@ -295,6 +297,42 @@ namespace Low {
             return *it;
           }
         }
+      }
+
+      Context Context::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        Context l_Handle = make(p_Name);
+        if (get_global_signature().is_alive()) {
+          l_Handle.set_global_signature(get_global_signature());
+        }
+        if (get_frame_info_buffer().is_alive()) {
+          l_Handle.set_frame_info_buffer(get_frame_info_buffer());
+        }
+        if (get_material_data_buffer().is_alive()) {
+          l_Handle.set_material_data_buffer(
+              get_material_data_buffer());
+        }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      Context Context::duplicate(Context p_Handle,
+                                 Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle
+      Context::_duplicate(Low::Util::Handle p_Handle,
+                          Low::Util::Name p_Name)
+      {
+        Context l_Context = p_Handle.get_id();
+        return l_Context.duplicate(p_Name);
       }
 
       void Context::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -850,6 +888,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

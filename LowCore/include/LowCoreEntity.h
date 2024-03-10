@@ -76,6 +76,12 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+      Entity duplicate(Low::Util::Name p_Name) const;
+      static Entity duplicate(Entity p_Handle,
+                              Low::Util::Name p_Name);
+      static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
+                                          Low::Util::Name p_Name);
+
       static Entity find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -108,16 +114,17 @@ namespace Low {
 
       static Entity make(Util::Name p_Name, Region p_Region);
       uint64_t get_component(uint16_t p_TypeId) const;
-      void add_component(Util::Handle &p_Component);
+      void add_component(Low::Util::Handle &p_Component);
       void remove_component(uint16_t p_ComponentType);
       bool has_component(uint16_t p_ComponentType);
-      Component::Transform get_transform() const;
-      void serialize(Util::Yaml::Node &p_Node,
+      Low::Core::Component::Transform get_transform() const;
+      void serialize(Low::Util::Yaml::Node &p_Node,
                      bool p_AddHandles) const;
       void serialize_hierarchy(Util::Yaml::Node &p_Node,
                                bool p_AddHandles) const;
-      static Entity &deserialize_hierarchy(Util::Yaml::Node &p_Node,
-                                           Util::Handle p_Creator);
+      static Entity &
+      deserialize_hierarchy(Util::Yaml::Node &p_Node,
+                            Low::Util::Handle p_Creator);
 
     private:
       static uint32_t ms_Capacity;
@@ -125,5 +132,9 @@ namespace Low {
       static void increase_budget();
       void set_unique_id(Low::Util::UniqueId p_Value);
     };
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
   } // namespace Core
 } // namespace Low

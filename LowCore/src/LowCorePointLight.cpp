@@ -51,7 +51,8 @@ namespace Low {
         l_Handle.m_Data.m_Type = PointLight::TYPE_ID;
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, PointLight, color,
-                                Math::ColorRGB)) Math::ColorRGB();
+                                Low::Math::ColorRGB))
+            Low::Math::ColorRGB();
         ACCESSOR_TYPE_SOA(l_Handle, PointLight, intensity, float) =
             0.0f;
         new (&ACCESSOR_TYPE_SOA(l_Handle, PointLight, entity,
@@ -121,6 +122,8 @@ namespace Low {
         l_TypeInfo.deserialize = &PointLight::deserialize;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &PointLight::_make;
+        l_TypeInfo.duplicate_default = nullptr;
+        l_TypeInfo.duplicate_component = &PointLight::_duplicate;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &PointLight::living_instances);
@@ -138,13 +141,13 @@ namespace Low {
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_color();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight,
-                                              color, Math::ColorRGB);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PointLight, color, Low::Math::ColorRGB);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             PointLight l_Handle = p_Handle.get_id();
-            l_Handle.set_color(*(Math::ColorRGB *)p_Data);
+            l_Handle.set_color(*(Low::Math::ColorRGB *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -248,6 +251,36 @@ namespace Low {
         return ms_Capacity;
       }
 
+      PointLight
+      PointLight::duplicate(Low::Core::Entity p_Entity) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        PointLight l_Handle = make(p_Entity);
+        l_Handle.set_color(get_color());
+        l_Handle.set_intensity(get_intensity());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      PointLight PointLight::duplicate(PointLight p_Handle,
+                                       Low::Core::Entity p_Entity)
+      {
+        return p_Handle.duplicate(p_Entity);
+      }
+
+      Low::Util::Handle
+      PointLight::_duplicate(Low::Util::Handle p_Handle,
+                             Low::Util::Handle p_Entity)
+      {
+        PointLight l_PointLight = p_Handle.get_id();
+        Low::Core::Entity l_Entity = p_Entity.get_id();
+        return l_PointLight.duplicate(l_Entity);
+      }
+
       void PointLight::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
@@ -300,16 +333,16 @@ namespace Low {
         return l_Handle;
       }
 
-      Math::ColorRGB &PointLight::get_color() const
+      Low::Math::ColorRGB &PointLight::get_color() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
         // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
-        return TYPE_SOA(PointLight, color, Math::ColorRGB);
+        return TYPE_SOA(PointLight, color, Low::Math::ColorRGB);
       }
-      void PointLight::set_color(Math::ColorRGB &p_Value)
+      void PointLight::set_color(Low::Math::ColorRGB &p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -317,7 +350,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
         // Set new value
-        TYPE_SOA(PointLight, color, Math::ColorRGB) = p_Value;
+        TYPE_SOA(PointLight, color, Low::Math::ColorRGB) = p_Value;
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -465,7 +498,7 @@ namespace Low {
                               (l_Capacity + l_CapacityIncrease)],
                  &ms_Buffer[offsetof(PointLightData, color) *
                             (l_Capacity)],
-                 l_Capacity * sizeof(Math::ColorRGB));
+                 l_Capacity * sizeof(Low::Math::ColorRGB));
         }
         {
           memcpy(&l_NewBuffer[offsetof(PointLightData, intensity) *
@@ -504,6 +537,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

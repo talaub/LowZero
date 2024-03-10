@@ -22,16 +22,16 @@ namespace Low {
 
       struct LOW_CORE_API TransformData
       {
-        Math::Vector3 position;
-        Math::Quaternion rotation;
-        Math::Vector3 scale;
+        Low::Math::Vector3 position;
+        Low::Math::Quaternion rotation;
+        Low::Math::Vector3 scale;
         uint64_t parent;
         uint64_t parent_uid;
-        Util::List<uint64_t> children;
-        Math::Vector3 world_position;
-        Math::Quaternion world_rotation;
-        Math::Vector3 world_scale;
-        Math::Matrix4x4 world_matrix;
+        Low::Util::List<uint64_t> children;
+        Low::Math::Vector3 world_position;
+        Low::Math::Quaternion world_rotation;
+        Low::Math::Vector3 world_scale;
+        Low::Math::Matrix4x4 world_matrix;
         bool world_updated;
         Low::Core::Entity entity;
         Low::Util::UniqueId unique_id;
@@ -87,6 +87,13 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        Transform duplicate(Low::Core::Entity p_Entity) const;
+        static Transform duplicate(Transform p_Handle,
+                                   Low::Core::Entity p_Entity);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Handle p_Entity);
+
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
         static Low::Util::Handle
@@ -105,29 +112,29 @@ namespace Low {
           l_Transform.destroy();
         }
 
-        Math::Vector3 &position() const;
-        void position(Math::Vector3 &p_Value);
+        Low::Math::Vector3 &position() const;
+        void position(Low::Math::Vector3 &p_Value);
 
-        Math::Quaternion &rotation() const;
-        void rotation(Math::Quaternion &p_Value);
+        Low::Math::Quaternion &rotation() const;
+        void rotation(Low::Math::Quaternion &p_Value);
 
-        Math::Vector3 &scale() const;
-        void scale(Math::Vector3 &p_Value);
+        Low::Math::Vector3 &scale() const;
+        void scale(Low::Math::Vector3 &p_Value);
 
         uint64_t get_parent() const;
         void set_parent(uint64_t p_Value);
 
         uint64_t get_parent_uid() const;
 
-        Util::List<uint64_t> &get_children() const;
+        Low::Util::List<uint64_t> &get_children() const;
 
-        Math::Vector3 &get_world_position();
+        Low::Math::Vector3 &get_world_position();
 
-        Math::Quaternion &get_world_rotation();
+        Low::Math::Quaternion &get_world_rotation();
 
-        Math::Vector3 &get_world_scale();
+        Low::Math::Vector3 &get_world_scale();
 
-        Math::Matrix4x4 &get_world_matrix();
+        Low::Math::Matrix4x4 &get_world_matrix();
 
         bool is_world_updated() const;
         void set_world_updated(bool p_Value);
@@ -150,12 +157,16 @@ namespace Low {
         static uint32_t create_instance();
         static void increase_budget();
         void set_parent_uid(uint64_t p_Value);
-        void set_world_position(Math::Vector3 &p_Value);
-        void set_world_rotation(Math::Quaternion &p_Value);
-        void set_world_scale(Math::Vector3 &p_Value);
-        void set_world_matrix(Math::Matrix4x4 &p_Value);
+        void set_world_position(Low::Math::Vector3 &p_Value);
+        void set_world_rotation(Low::Math::Quaternion &p_Value);
+        void set_world_scale(Low::Math::Vector3 &p_Value);
+        void set_world_matrix(Low::Math::Matrix4x4 &p_Value);
         void set_unique_id(Low::Util::UniqueId p_Value);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

@@ -22,7 +22,7 @@ namespace Low {
 
       struct LOW_CORE_API PointLightData
       {
-        Math::ColorRGB color;
+        Low::Math::ColorRGB color;
         float intensity;
         Low::Core::Entity entity;
         Low::Util::UniqueId unique_id;
@@ -76,6 +76,13 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        PointLight duplicate(Low::Core::Entity p_Entity) const;
+        static PointLight duplicate(PointLight p_Handle,
+                                    Low::Core::Entity p_Entity);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Handle p_Entity);
+
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
         static Low::Util::Handle
@@ -94,8 +101,8 @@ namespace Low {
           l_PointLight.destroy();
         }
 
-        Math::ColorRGB &get_color() const;
-        void set_color(Math::ColorRGB &p_Value);
+        Low::Math::ColorRGB &get_color() const;
+        void set_color(Low::Math::ColorRGB &p_Value);
 
         float get_intensity() const;
         void set_intensity(float p_Value);
@@ -111,6 +118,10 @@ namespace Low {
         static void increase_budget();
         void set_unique_id(Low::Util::UniqueId p_Value);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

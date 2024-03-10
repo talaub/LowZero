@@ -52,7 +52,8 @@ namespace Low {
         if (p_Shape.type == Math::ShapeType::BOX) {
           serialize(p_Node["box"], p_Shape.box);
         } else {
-          LOW_ASSERT(false, "Serialization of shape type not supported");
+          LOW_ASSERT(false,
+                     "Serialization of shape type not supported");
         }
       }
 
@@ -97,12 +98,14 @@ namespace Low {
               Handle::get_type_info(l_Handle.get_type());
           LOW_ASSERT(l_TypeInfo.properties.find(N(unique_id)) !=
                          l_TypeInfo.properties.end(),
-                     "Can only serialize handle variant where the handle has a "
+                     "Can only serialize handle variant where the "
+                     "handle has a "
                      "unique_id");
 
           p_Node["type"] = "Handle";
           p_Node["value"] =
-              *(UniqueId *)l_TypeInfo.properties[N(unique_id)].get(l_Handle);
+              *(UniqueId *)l_TypeInfo.properties[N(unique_id)].get(
+                  l_Handle);
         } else {
           LOW_ASSERT(false, "Cannot serialize variant of this type");
         }
@@ -163,8 +166,10 @@ namespace Low {
         Math::Box l_Result;
 
         l_Result.position = deserialize_vector3(p_Node["position"]);
-        l_Result.rotation = deserialize_quaternion(p_Node["rotation"]);
-        l_Result.halfExtents = deserialize_vector3(p_Node["half_extents"]);
+        l_Result.rotation =
+            deserialize_quaternion(p_Node["rotation"]);
+        l_Result.halfExtents =
+            deserialize_vector3(p_Node["half_extents"]);
 
         return l_Result;
       }
@@ -218,11 +223,12 @@ namespace Low {
           return Variant(LOW_YAML_AS_NAME(p_Node["value"]));
         }
         if (LOW_YAML_AS_STRING(p_Node["type"]) == "Handle") {
-          return Variant::from_handle(
-              find_handle_by_unique_id(p_Node["value"].as<uint64_t>()));
+          return Variant::from_handle(find_handle_by_unique_id(
+              p_Node["value"].as<uint64_t>()));
         }
 
-        LOW_ASSERT(false, "Could not deserialize variant. Unknown type");
+        LOW_ASSERT(false,
+                   "Could not deserialize variant. Unknown type");
       }
     } // namespace Serialization
   }   // namespace Util

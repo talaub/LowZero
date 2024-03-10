@@ -76,6 +76,13 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+        PrefabInstance duplicate(Low::Core::Entity p_Entity) const;
+        static PrefabInstance duplicate(PrefabInstance p_Handle,
+                                        Low::Core::Entity p_Entity);
+        static Low::Util::Handle
+        _duplicate(Low::Util::Handle p_Handle,
+                   Low::Util::Handle p_Entity);
+
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
         static Low::Util::Handle
@@ -118,6 +125,10 @@ namespace Low {
         void set_unique_id(Low::Util::UniqueId p_Value);
         void update_component_from_prefab(uint16_t p_ComponentType);
       };
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     } // namespace Component
   }   // namespace Core
 } // namespace Low

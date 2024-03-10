@@ -113,6 +113,8 @@ namespace Low {
         l_TypeInfo.deserialize = &ComputePipeline::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &ComputePipeline::_make;
+        l_TypeInfo.duplicate_default = &ComputePipeline::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &ComputePipeline::living_instances);
@@ -209,6 +211,34 @@ namespace Low {
             return *it;
           }
         }
+      }
+
+      ComputePipeline
+      ComputePipeline::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        ComputePipeline l_Handle = make(p_Name);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      ComputePipeline
+      ComputePipeline::duplicate(ComputePipeline p_Handle,
+                                 Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle
+      ComputePipeline::_duplicate(Low::Util::Handle p_Handle,
+                                  Low::Util::Name p_Name)
+      {
+        ComputePipeline l_ComputePipeline = p_Handle.get_id();
+        return l_ComputePipeline.duplicate(p_Name);
       }
 
       void
@@ -379,6 +409,10 @@ namespace Low {
             << l_Capacity << " to "
             << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Interface
   }   // namespace Renderer
 } // namespace Low

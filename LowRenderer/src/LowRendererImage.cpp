@@ -107,6 +107,8 @@ namespace Low {
         l_TypeInfo.deserialize = &Image::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Image::_make;
+        l_TypeInfo.duplicate_default = &Image::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Image::living_instances);
@@ -201,6 +203,31 @@ namespace Low {
             return *it;
           }
         }
+      }
+
+      Image Image::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        Image l_Handle = make(p_Name);
+        l_Handle.set_image(get_image());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+        return l_Handle;
+      }
+
+      Image Image::duplicate(Image p_Handle, Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle Image::_duplicate(Low::Util::Handle p_Handle,
+                                          Low::Util::Name p_Name)
+      {
+        Image l_Image = p_Handle.get_id();
+        return l_Image.duplicate(p_Name);
       }
 
       void Image::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -378,6 +405,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace Resource
   }   // namespace Renderer
 } // namespace Low

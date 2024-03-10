@@ -52,6 +52,15 @@ namespace Low {
         static bool l_FirstRun = true;
         Util::tick(p_Delta);
 
+        if (g_Frames == 1000) {
+          UI::View l_View = UI::View::find_by_name(N(TestView));
+          UI::View l_NewView = l_View.spawn_instance(N(CardView));
+
+          l_NewView.rotation(0);
+          l_NewView.pixel_position(Math::Vector2(200.0f, 100.0f));
+          l_NewView.scale_multiplier(1.0f);
+        }
+
         Renderer::tick(p_Delta, get_engine_state());
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::Display::tick(p_Delta, get_engine_state());
@@ -64,6 +73,8 @@ namespace Low {
           System::Physics::tick(p_Delta, get_engine_state());
           System::Navmesh::tick(p_Delta, get_engine_state());
         }
+
+        Scripting::tick(p_Delta, get_engine_state());
 
         MeshResource::update();
         Texture2D::update();
@@ -87,7 +98,16 @@ namespace Low {
           LOW_ASSERT(l_Function,
                      "Could not find gamemode tick function");
 
-          CflatGlobal::getEnvironment()->voidFunctionCall(l_Function);
+          static const Cflat::TypeUsage kTypeUsageFloat =
+              Scripting::get_environment()->getTypeUsage("float");
+
+          Cflat::Value l_ReturnValue;
+          CflatArgsVector(Cflat::Value) l_Arguments;
+          Cflat::Value l_Val;
+          l_Val.initExternal(kTypeUsageFloat);
+          l_Val.set(&p_Delta);
+          l_Arguments.push_back(l_Val);
+          l_Function->execute(l_Arguments, &l_ReturnValue);
         }
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());
@@ -110,6 +130,9 @@ namespace Low {
       static void test_ui()
       {
         UI::View l_View = UI::View::make(N(TestView));
+        l_View.set_view_template(true);
+        l_View.load_elements();
+
         UI::Element l_Element = UI::Element::make(N(test), l_View);
         l_Element.set_click_passthrough(false);
 
@@ -120,7 +143,7 @@ namespace Low {
         {
           UI::Component::Display l_Display =
               UI::Component::Display::make(l_Element);
-          l_Display.pixel_position(Math::Vector2(100.0f, 100.0f));
+          l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
           l_Display.rotation(0.0f);
           l_Display.pixel_scale(Math::Vector2(200.0f, 280.0f));
           l_Display.layer(1);
@@ -272,6 +295,8 @@ namespace Low {
 
         int l_Fps = 0;
 
+        static u64 l_Frames = 0;
+
         test_ui();
 
         while (g_Running) {
@@ -289,6 +314,7 @@ namespace Low {
             l_SecondAccumulator += l_Accumulator;
 
             l_Fps++;
+            l_Frames++;
 
             float l_DeltaTime =
                 duration_cast<duration<float>>(l_Accumulator).count();

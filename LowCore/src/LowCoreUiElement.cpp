@@ -121,6 +121,8 @@ namespace Low {
         l_TypeInfo.deserialize = &Element::deserialize;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Element::_make;
+        l_TypeInfo.duplicate_default = &Element::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
                 &Element::living_instances);
@@ -276,11 +278,63 @@ namespace Low {
         }
       }
 
+      Element Element::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        Element l_Element = make(p_Name);
+
+        for (auto it = get_components().begin();
+             it != get_components().end(); ++it) {
+          Util::RTTI::TypeInfo &i_ComponentTypeInfo =
+              Util::Handle::get_type_info(it->first);
+
+          i_ComponentTypeInfo.duplicate_component(it->second,
+                                                  l_Element);
+        }
+
+        Component::Display l_Display = get_display();
+
+        for (u32 i = 0; i < l_Display.get_children().size(); ++i) {
+          Component::Display i_ChildDisplay =
+              l_Display.get_children()[i];
+
+          Element i_CopiedElement =
+              i_ChildDisplay.get_element().duplicate(
+                  i_ChildDisplay.get_element().get_name());
+
+          i_CopiedElement.get_display().set_parent(
+              l_Element.get_display());
+        }
+
+        l_Element.get_display().set_parent(l_Display.get_parent());
+        get_view().add_element(l_Element);
+
+        return l_Element;
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+      }
+
+      Element Element::duplicate(Element p_Handle,
+                                 Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle
+      Element::_duplicate(Low::Util::Handle p_Handle,
+                          Low::Util::Name p_Name)
+      {
+        Element l_Element = p_Handle.get_id();
+        return l_Element.duplicate(p_Name);
+      }
+
       void Element::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        serialize(p_Node, false);
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -297,7 +351,49 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-        return 0;
+        View l_View = p_Creator.get_id();
+
+        if (!l_View.is_alive()) {
+          if (p_Node["view"]) {
+            l_View = Util::find_handle_by_unique_id(
+                         p_Node["view"].as<uint64_t>())
+                         .get_id();
+          }
+        }
+
+        Element l_Element =
+            Element::make(LOW_YAML_AS_NAME(p_Node["name"]));
+
+        p_Node["_handle"] = l_Element.get_id();
+
+        // Parse the old unique id and assign it again (need
+        // to remove the auto generated uid first)
+        if (p_Node["unique_id"]) {
+          Util::remove_unique_id(l_Element.get_unique_id());
+          l_Element.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+          Util::register_unique_id(l_Element.get_unique_id(),
+                                   l_Element);
+        }
+
+        l_View.add_element(l_Element);
+
+        Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
+
+        for (auto it = l_ComponentsNode.begin();
+             it != l_ComponentsNode.end(); ++it) {
+          Util::Yaml::Node &i_ComponentNode = *it;
+          Util::RTTI::TypeInfo &i_TypeInfo =
+              Util::Handle::get_type_info(
+                  i_ComponentNode["type"].as<uint16_t>());
+
+          i_ComponentNode["_handle"] =
+              i_TypeInfo
+                  .deserialize(i_ComponentNode["properties"],
+                               l_Element)
+                  .get_id();
+        }
+
+        return l_Element;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
 
@@ -334,6 +430,14 @@ namespace Low {
         TYPE_SOA(Element, view, UI::View) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view
+        if (get_display().is_alive()) {
+          // If a parent gets a new view assigned all children get
+          // moved to that view as well
+          for (u64 i_ChildId : get_display().get_children()) {
+            Component::Display i_ChildDisplay = i_ChildId;
+            p_Value.add_element(i_ChildDisplay.get_element());
+          }
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_view
       }
 
@@ -406,11 +510,12 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
-      Element Element::make(Util::Name p_Name, UI::View p_View)
+      Element Element::make(Low::Util::Name p_Name,
+                            Low::Core::UI::View p_View)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
         Element l_Element = Element::make(p_Name);
-        // TODO: Fully implement - see entity
+        p_View.add_element(l_Element);
         return l_Element;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
@@ -426,7 +531,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_component
       }
 
-      void Element::add_component(Util::Handle &p_Component)
+      void Element::add_component(Low::Util::Handle &p_Component)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
         Util::Handle l_ExistingComponent =
@@ -436,9 +541,9 @@ namespace Low {
 
         LOW_ASSERT(l_ComponentTypeInfo.uiComponent,
                    "Can only add ui components to an element");
-        LOW_ASSERT(
-            !l_ComponentTypeInfo.is_alive(l_ExistingComponent),
-            "An element can only hold one component of a given type");
+        LOW_ASSERT(!l_ComponentTypeInfo.is_alive(l_ExistingComponent),
+                   "An element can only hold one component "
+                   "of a given type");
 
         l_ComponentTypeInfo.properties[N(element)].set(p_Component,
                                                        this);
@@ -480,7 +585,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_has_component
       }
 
-      UI::Component::Display Element::get_display() const
+      Low::Core::UI::Component::Display Element::get_display() const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_display
         _LOW_ASSERT(is_alive());
@@ -492,6 +597,33 @@ namespace Low {
                               bool p_AddHandles) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize
+        _LOW_ASSERT(is_alive());
+
+        p_Node["name"] = get_name().c_str();
+        p_Node["unique_id"] = get_unique_id();
+        if (p_AddHandles) {
+          p_Node["handle"] = get_id();
+        }
+        p_Node["view"] = 0;
+        if (get_view().is_alive()) {
+          p_Node["view"] = get_view().get_unique_id();
+        }
+
+        for (auto it = get_components().begin();
+             it != get_components().end(); ++it) {
+          Util::Yaml::Node i_Node;
+          i_Node["type"] = it->first;
+          if (p_AddHandles) {
+            i_Node["handle"] = it->second.get_id();
+          }
+
+          Util::RTTI::TypeInfo &i_TypeInfo =
+              Util::Handle::get_type_info(it->first);
+          Util::Yaml::Node i_PropertiesNode;
+          i_TypeInfo.serialize(it->second, i_PropertiesNode);
+          i_Node["properties"] = i_PropertiesNode;
+          p_Node["components"].push_back(i_Node);
+        }
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
       }
 
@@ -499,6 +631,20 @@ namespace Low {
                                         bool p_AddHandles) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_hierarchy
+        serialize(p_Node, p_AddHandles);
+
+        Component::Display l_Display = get_display();
+
+        for (auto it = l_Display.get_children().begin();
+             it != l_Display.get_children().end(); ++it) {
+          Component::Display i_Child = *it;
+
+          Util::Yaml::Node i_Node;
+          i_Child.get_element().serialize_hierarchy(i_Node,
+                                                    p_AddHandles);
+
+          p_Node["children"].push_back(i_Node);
+        }
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_hierarchy
       }
 
@@ -507,7 +653,17 @@ namespace Low {
                                      Util::Handle p_Creator)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy
-        return 0;
+        Element l_Element =
+            (Element)deserialize(p_Node, p_Creator).get_id();
+
+        if (p_Node["children"]) {
+          for (uint32_t i = 0; i < p_Node["children"].size(); ++i) {
+            Element::deserialize_hierarchy(p_Node["children"][i],
+                                           p_Creator);
+          }
+        }
+
+        return l_Element;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_deserialize_hierarchy
       }
 
@@ -605,6 +761,10 @@ namespace Low {
                       << (l_Capacity + l_CapacityIncrease)
                       << LOW_LOG_END;
       }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     } // namespace UI
   }   // namespace Core
 } // namespace Low

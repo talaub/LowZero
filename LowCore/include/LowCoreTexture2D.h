@@ -78,6 +78,12 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
+      Texture2D duplicate(Low::Util::Name p_Name) const;
+      static Texture2D duplicate(Texture2D p_Handle,
+                                 Low::Util::Name p_Name);
+      static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
+                                          Low::Util::Name p_Name);
+
       static Texture2D find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -124,5 +130,9 @@ namespace Low {
       void set_reference_count(uint32_t p_Value);
       void _unload();
     };
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
   } // namespace Core
 } // namespace Low
