@@ -675,9 +675,12 @@ namespace Low {
               *(Util::String *)p_DataPtr, true);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::VECTOR2) {
+          Math::Vector2 l_Vec = *(Math::Vector2 *)p_DataPtr;
           render_vector2_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
-              *(Math::Vector2 *)p_DataPtr, true);
+              Util::String(p_PropertyMetadata.name.c_str()), l_Vec,
+              true);
+
+          p_PropertyMetadata.propInfo.set(p_Handle, &l_Vec);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::VECTOR3) {
           Math::Vector3 l_Vec = *(Math::Vector3 *)p_DataPtr;
@@ -704,9 +707,11 @@ namespace Low {
               *(bool *)p_DataPtr, true);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::FLOAT) {
+          float l_Float = *(float *)p_DataPtr;
           render_float_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
-              *(float *)p_DataPtr, true);
+              Util::String(p_PropertyMetadata.name.c_str()), l_Float,
+              true);
+          p_PropertyMetadata.propInfo.set(p_Handle, &l_Float);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::UINT32) {
           render_uint32_editor(

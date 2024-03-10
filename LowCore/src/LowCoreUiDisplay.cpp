@@ -1103,6 +1103,11 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
+          if (get_element().get_view().is_alive() &&
+              get_element().get_view().is_transform_dirty()) {
+            return true;
+          }
+
           if (TYPE_SOA(Display, world_dirty, bool)) {
             return TYPE_SOA(Display, world_dirty, bool);
           }

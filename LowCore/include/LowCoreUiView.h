@@ -29,6 +29,7 @@ namespace Low {
         float rotation;
         float scale_multiplier;
         Low::Util::UniqueId unique_id;
+        bool transform_dirty;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -126,6 +127,9 @@ namespace Low {
         void scale_multiplier(float p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
+
+        bool is_transform_dirty() const;
+        void set_transform_dirty(bool p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

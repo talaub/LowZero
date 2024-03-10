@@ -23,6 +23,7 @@
 #include "LowCoreUiDisplaySystem.h"
 #include "LowCoreUiImageSystem.h"
 #include "LowCoreUiTextSystem.h"
+#include "LowCoreUiViewSystem.h"
 
 #include <chrono>
 #include <microprofile.h>
@@ -54,9 +55,8 @@ namespace Low {
 
         Renderer::tick(p_Delta, get_engine_state());
         System::Transform::tick(p_Delta, get_engine_state());
+        UI::System::View::tick(p_Delta, get_engine_state());
         UI::System::Display::tick(p_Delta, get_engine_state());
-        UI::System::Image::tick(p_Delta, get_engine_state());
-        UI::System::Text::tick(p_Delta, get_engine_state());
         System::Light::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
         System::Camera::tick(p_Delta, get_engine_state());
@@ -102,6 +102,8 @@ namespace Low {
         }
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());
+        UI::System::Image::tick(p_Delta, get_engine_state());
+        UI::System::Text::tick(p_Delta, get_engine_state());
 
         l_FirstRun = false;
       }

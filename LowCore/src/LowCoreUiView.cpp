@@ -65,6 +65,8 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, View, rotation, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, View, scale_multiplier, float) =
             0.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, View, transform_dirty, bool) =
+            false;
         ACCESSOR_TYPE_SOA(l_Handle, View, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -293,6 +295,27 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(transform_dirty);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewData, transform_dirty);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.is_transform_dirty();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
+                                              transform_dirty, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.set_transform_dirty(*(bool *)p_Data);
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
         {
@@ -575,11 +598,17 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_position
 
-        // Set new value
-        TYPE_SOA(View, pixel_position, Low::Math::Vector2) = p_Value;
+        if (pixel_position() != p_Value) {
+          // Set dirty flags
+          TYPE_SOA(View, transform_dirty, bool) = true;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
-        // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
+          // Set new value
+          TYPE_SOA(View, pixel_position, Low::Math::Vector2) =
+              p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
+          // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
+        }
       }
 
       float View::rotation() const
@@ -598,11 +627,16 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
 
-        // Set new value
-        TYPE_SOA(View, rotation, float) = p_Value;
+        if (rotation() != p_Value) {
+          // Set dirty flags
+          TYPE_SOA(View, transform_dirty, bool) = true;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
-        // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
+          // Set new value
+          TYPE_SOA(View, rotation, float) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+          // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
+        }
       }
 
       float View::scale_multiplier() const
@@ -621,11 +655,16 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale_multiplier
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale_multiplier
 
-        // Set new value
-        TYPE_SOA(View, scale_multiplier, float) = p_Value;
+        if (scale_multiplier() != p_Value) {
+          // Set dirty flags
+          TYPE_SOA(View, transform_dirty, bool) = true;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_multiplier
-        // LOW_CODEGEN::END::CUSTOM:SETTER_scale_multiplier
+          // Set new value
+          TYPE_SOA(View, scale_multiplier, float) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_multiplier
+          // LOW_CODEGEN::END::CUSTOM:SETTER_scale_multiplier
+        }
       }
 
       Low::Util::UniqueId View::get_unique_id() const
@@ -649,6 +688,29 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+      }
+
+      bool View::is_transform_dirty() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transform_dirty
+        // LOW_CODEGEN::END::CUSTOM:GETTER_transform_dirty
+
+        return TYPE_SOA(View, transform_dirty, bool);
+      }
+      void View::set_transform_dirty(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transform_dirty
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_transform_dirty
+
+        // Set new value
+        TYPE_SOA(View, transform_dirty, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform_dirty
+        // LOW_CODEGEN::END::CUSTOM:SETTER_transform_dirty
       }
 
       Low::Util::Name View::get_name() const
@@ -888,6 +950,13 @@ namespace Low {
                  &ms_Buffer[offsetof(ViewData, unique_id) *
                             (l_Capacity)],
                  l_Capacity * sizeof(Low::Util::UniqueId));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewData, transform_dirty) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewData, transform_dirty) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(bool));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ViewData, name) *
