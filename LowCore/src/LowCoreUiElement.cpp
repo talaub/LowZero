@@ -311,6 +311,7 @@ namespace Low {
               l_Element.get_display());
         }
 
+        l_Element.set_click_passthrough(is_click_passthrough());
         l_Element.get_display().set_parent(l_Display.get_parent());
         get_view().add_element(l_Element);
 

@@ -1,5 +1,6 @@
 #include "MtdPlugin.h"
 
+#include "MtdFighter.h"
 #include "MtdCameraController.h"
 #include "MtdTestSystem.h"
 #include "MtdAbility.h"
@@ -34,6 +35,7 @@ namespace Mtd {
   static void initialize_component_types()
   {
     Component::CameraController::initialize();
+    Component::Fighter::initialize();
   }
 
   static void initialize_base_types()
@@ -85,6 +87,7 @@ namespace Mtd {
 
   static void cleanup_component_types()
   {
+    Component::Fighter::cleanup();
     Component::CameraController::cleanup();
   }
 

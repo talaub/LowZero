@@ -1221,6 +1221,29 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_absolute_layer_float
         }
 
+        bool
+        Display::point_is_in_bounding_box(Low::Math::Vector2 &p_Point)
+        {
+          // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_point_is_in_bounding_box
+          Math::Vector2 l_Position = get_absolute_pixel_position();
+          Math::Vector2 l_Size = get_absolute_pixel_scale();
+
+          if (p_Point.x < l_Position.x || p_Point.y < l_Position.x) {
+            return false;
+          }
+
+          if (p_Point.x > (l_Position.x + l_Size.x)) {
+            return false;
+          }
+
+          if (p_Point.y > (l_Position.y + l_Size.y)) {
+            return false;
+          }
+
+          return true;
+          // LOW_CODEGEN::END::CUSTOM:FUNCTION_point_is_in_bounding_box
+        }
+
         uint32_t Display::create_instance()
         {
           uint32_t l_Index = 0u;

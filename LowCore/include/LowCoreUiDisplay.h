@@ -160,6 +160,7 @@ namespace Low {
 
           void recalculate_world_transform();
           float get_absolute_layer_float();
+          bool point_is_in_bounding_box(Low::Math::Vector2 &p_Point);
 
         private:
           static uint32_t ms_Capacity;

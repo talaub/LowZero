@@ -12,10 +12,11 @@ namespace Low {
   namespace Editor {
     const float g_UpdateDimensionTimer = 1.8f;
 
-    RenderFlowWidget::RenderFlowWidget(Util::String p_Title,
-                                       Renderer::RenderFlow p_RenderFlow,
-                                       RenderFlowWidgetCallback p_Callback)
-        : m_RenderFlow(p_RenderFlow), m_Title(p_Title), m_Callback(p_Callback)
+    RenderFlowWidget::RenderFlowWidget(
+        Util::String p_Title, Renderer::RenderFlow p_RenderFlow,
+        RenderFlowWidgetCallback p_Callback)
+        : m_RenderFlow(p_RenderFlow), m_Title(p_Title),
+          m_Callback(p_Callback)
     {
       m_ImGuiImage = Renderer::Interface::ImGuiImage::make(
           N(RenderFlowImGuiImage), p_RenderFlow.get_output_image());
@@ -23,7 +24,8 @@ namespace Low {
 
     void RenderFlowWidget::render(float p_Delta)
     {
-      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,
+                          ImVec2(0.0f, 0.0f));
       ImGui::Begin(m_Title.c_str());
 
       Math::Vector2 l_HoverRelativePosition{2.0f, 2.0f};
@@ -49,9 +51,10 @@ namespace Low {
         m_WidgetPosition.x = l_Viewport->Pos.x;
         m_WidgetPosition.y = l_Viewport->Pos.y;
       }
-      Util::Globals::set(N(LOW_SCREEN_OFFSET), Util::Variant(Math::UVector2(
-                                                   l_ImGuiCursorPosition.x,
-                                                   l_ImGuiCursorPosition.y)));
+      Util::Globals::set(
+          N(LOW_SCREEN_OFFSET),
+          Util::Variant(Math::Vector2(l_ImGuiCursorPosition.x,
+                                      l_ImGuiCursorPosition.y)));
 
       if (m_LastFrameDimensions == l_ViewportDimensions &&
           l_ViewportDimensions != m_LastSavedDimensions) {
@@ -63,19 +66,23 @@ namespace Low {
         m_LastSavedDimensions = l_ViewportDimensions;
 
       } else if (m_ImGuiImage.is_alive()) {
-        if (l_ViewportDimensions.x > 0u && l_ViewportDimensions.y > 0u) {
+        if (l_ViewportDimensions.x > 0u &&
+            l_ViewportDimensions.y > 0u) {
           ImVec2 l_ImGuiMousePosition = ImGui::GetMousePos();
           ImVec2 l_WindowMousePos = {
               l_ImGuiMousePosition.x - l_ImGuiCursorPosition.x,
               l_ImGuiMousePosition.y - l_ImGuiCursorPosition.y};
 
-          if (l_WindowMousePos.x > 0.0f && l_WindowMousePos.y > 0.0f &&
+          if (l_WindowMousePos.x > 0.0f &&
+              l_WindowMousePos.y > 0.0f &&
               l_WindowMousePos.x < l_ViewportDimensions.x &&
               l_WindowMousePos.y < l_ViewportDimensions.y) {
             l_HoverRelativePosition.x =
-                ((float)l_WindowMousePos.x) / ((float)l_ViewportDimensions.x);
+                ((float)l_WindowMousePos.x) /
+                ((float)l_ViewportDimensions.x);
             l_HoverRelativePosition.y =
-                ((float)l_WindowMousePos.y) / ((float)l_ViewportDimensions.y);
+                ((float)l_WindowMousePos.y) /
+                ((float)l_ViewportDimensions.y);
           }
         }
         m_ImGuiImage.render(l_ViewportDimensions);

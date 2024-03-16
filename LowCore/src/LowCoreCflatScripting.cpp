@@ -9,6 +9,15 @@
 
 #include "CflatHelper.h"
 
+// REGISTER_CFLAT_INCLUDES_BEGIN
+#include "LowCoreEntity.h"
+#include "LowCoreTransform.h"
+#include "LowCoreCamera.h"
+#include "LowCoreUiElement.h"
+#include "LowCoreUiView.h"
+#include "LowCoreUiDisplay.h"
+// REGISTER_CFLAT_INCLUDES_END
+
 void setup_environment();
 
 namespace Low {
@@ -323,7 +332,7 @@ static void register_lowutil_name()
   CflatStructAddMethodReturnParams1(l_Namespace, Name,
                                     Name &, operator=, const Name);
 
-  Scripting::get_environment()->defineMacro("N(x)",
+  Scripting::get_environment()->defineMacro("_LNAME(x)",
                                             "Low::Util::Name(#x)");
 }
 
@@ -515,13 +524,6 @@ static void register_lowutil_logger()
 }
 
 // REGISTER_CFLAT_BEGIN
-#include "LowCoreEntity.h"
-#include "LowCoreTransform.h"
-#include "LowCoreCamera.h"
-#include "LowCoreUiElement.h"
-#include "LowCoreUiView.h"
-#include "LowCoreUiDisplay.h"
-
 static void register_lowcore_entity()
 {
   using namespace Low;

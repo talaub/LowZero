@@ -6,6 +6,7 @@
 
 #define LOW_NAME(x) Low::Util::Name(x)
 #define N(x) Low::Util::Name(#x)
+#define _LNAME(x) Low::Util::Name(#x)
 
 namespace Low {
   namespace Util {

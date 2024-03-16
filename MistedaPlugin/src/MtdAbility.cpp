@@ -494,6 +494,7 @@ namespace Mtd {
     Low::Core::UI::Component::Text l_DescText =
         l_AbilityView.find_element_by_name(N(carddesc))
             .get_component(Low::Core::UI::Component::Text::TYPE_ID);
+    l_DescText.set_text(get_description());
 
     Low::Core::UI::Component::Text l_ResourceText =
         l_AbilityView.find_element_by_name(N(resourcetxt))

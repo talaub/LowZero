@@ -143,5 +143,23 @@ namespace Low {
                                 Input::mouse_button(p_Button)) ==
              GLFW_RELEASE;
     }
+
+    void Window::mouse_position(Math::Vector2 &p_Position)
+    {
+      double l_PosX, l_PosY;
+
+      glfwGetCursorPos(m_Glfw, &l_PosX, &l_PosY);
+
+      p_Position.x = l_PosX;
+      p_Position.y = l_PosY;
+    }
+
+    void Window::position(Math::Vector2 &p_Position)
+    {
+      int x, y;
+      glfwGetWindowPos(m_Glfw, &x, &y);
+      p_Position.x = x;
+      p_Position.y = y;
+    }
   } // namespace Renderer
 } // namespace Low

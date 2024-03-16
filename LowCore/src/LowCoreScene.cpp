@@ -50,8 +50,8 @@ namespace Low {
       l_Handle.m_Data.m_Type = Scene::TYPE_ID;
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, Scene, regions,
-                              Util::Set<Util::UniqueId>))
-          Util::Set<Util::UniqueId>();
+                              Low::Util::Set<Util::UniqueId>))
+          Low::Util::Set<Util::UniqueId>();
       ACCESSOR_TYPE_SOA(l_Handle, Scene, loaded, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, Scene, name, Low::Util::Name) =
           Low::Util::Name(0u);
@@ -137,7 +137,8 @@ namespace Low {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_regions();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, Scene, regions, Util::Set<Util::UniqueId>);
+              p_Handle, Scene, regions,
+              Low::Util::Set<Util::UniqueId>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
@@ -315,14 +316,14 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
-    Util::Set<Util::UniqueId> &Scene::get_regions() const
+    Low::Util::Set<Util::UniqueId> &Scene::get_regions() const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_regions
       // LOW_CODEGEN::END::CUSTOM:GETTER_regions
 
-      return TYPE_SOA(Scene, regions, Util::Set<Util::UniqueId>);
+      return TYPE_SOA(Scene, regions, Low::Util::Set<Util::UniqueId>);
     }
 
     bool Scene::is_loaded() const
@@ -496,8 +497,8 @@ namespace Low {
               &l_NewBuffer[offsetof(SceneData, regions) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
-                            sizeof(Util::Set<Util::UniqueId>))])
-              Util::Set<Util::UniqueId>();
+                            sizeof(Low::Util::Set<Util::UniqueId>))])
+              Low::Util::Set<Util::UniqueId>();
           *i_ValPtr = it->get_regions();
         }
       }

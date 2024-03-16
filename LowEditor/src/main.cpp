@@ -65,11 +65,11 @@ int run_low()
 
   Low::Core::initialize();
 
-  setup_scene();
-
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
   Mtd::initialize();
+
+  setup_scene();
 
   Low::Editor::initialize();
 

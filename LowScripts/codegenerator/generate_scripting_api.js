@@ -222,10 +222,25 @@ function generate_scripting_api(p_Type) {
 function generate_scripting_api_for(p_FilePath, p_Types) {
   const l_OriginalContent = read_file(p_FilePath);
 
+  const l_IncludeIndexStart = l_OriginalContent.indexOf(
+    `// REGISTER_CFLAT_INCLUDES_BEGIN`,
+  );
+  const l_IncludeIndexEnd = l_OriginalContent.indexOf(
+    `// REGISTER_CFLAT_INCLUDES_END`,
+  );
+
   const l_IndexStart = l_OriginalContent.indexOf(`// REGISTER_CFLAT_BEGIN`);
   const l_IndexEnd = l_OriginalContent.indexOf(`// REGISTER_CFLAT_END`);
 
-  const l_PreContent = l_OriginalContent.substring(0, l_IndexStart);
+  const l_IncludePreContent = l_OriginalContent.substring(
+    0,
+    l_IncludeIndexStart,
+  );
+  const l_IncludePostContent = l_OriginalContent.substring(
+    l_IncludeIndexEnd + `// REGISTER_CFLAT_INCLUDES_END`.length,
+    l_IndexStart,
+  );
+
   const l_PostContent = l_OriginalContent.substring(
     l_IndexEnd + `// REGISTER_CFLAT_END`.length,
   );
@@ -272,9 +287,12 @@ function generate_scripting_api_for(p_FilePath, p_Types) {
   l_EntryMethodCode += line("}");
   l_PreRegisterCode += line("}");
 
-  let l_FinalContent = l_PreContent + `// REGISTER_CFLAT_BEGIN\n`;
+  let l_FinalContent =
+    l_IncludePreContent + `// REGISTER_CFLAT_INCLUDES_BEGIN\n`;
   l_FinalContent += l_IncludeCode;
-  l_FinalContent += empty();
+  l_FinalContent += `// REGISTER_CFLAT_INCLUDES_END\n`;
+  l_FinalContent += l_IncludePostContent;
+  l_FinalContent += `// REGISTER_CFLAT_BEGIN\n`;
   l_FinalContent += l_RegisterCode;
   l_FinalContent += l_PreRegisterCode;
   l_FinalContent += l_EntryMethodCode;

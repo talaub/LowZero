@@ -32,6 +32,9 @@ namespace Low {
 
       bool mouse_button_down(Util::MouseButton p_Button);
       bool mouse_button_up(Util::MouseButton p_Button);
+      void mouse_position(Math::Vector2 &p_Position);
+
+      void position(Math::Vector2 &p_Position);
     };
 
     void LOW_RENDERER_API window_initialize(Window &p_Window,
