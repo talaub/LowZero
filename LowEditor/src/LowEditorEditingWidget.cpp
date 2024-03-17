@@ -20,6 +20,7 @@
 #include "LowCoreCamera.h"
 
 #include "LowUtilEnums.h"
+#include "LowUtilGlobals.h"
 
 #include "LowMathQuaternionUtil.h"
 #include <stdint.h>
@@ -578,6 +579,9 @@ namespace Low {
     void EditingWidget::render(float p_Delta)
     {
       m_RenderFlowWidget->render(p_Delta);
+
+      Util::Globals::set(N(LOW_GAME_DIMENSIONS),
+                         m_RenderFlowWidget->get_widget_dimensions());
 
       if (Core::get_engine_state() == Util::EngineState::EDITING) {
         render_editing(p_Delta);

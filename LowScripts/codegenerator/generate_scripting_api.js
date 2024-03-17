@@ -133,7 +133,7 @@ function generate_scripting_api(p_Type) {
   );
   t += empty();
   t += line(
-    `CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List, ${l_TypeString});`,
+    `CflatRegisterSTLVectorCustom(Low::Core::Scripting::get_environment(), Low::Util::List, ${l_TypeString});`,
   );
   t += line("}");
   t += empty();
@@ -147,6 +147,10 @@ function generate_scripting_api(p_Type) {
   );
   t += line(
     `CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, bool, is_alive);`,
+  );
+
+  t += line(
+    `CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(), ${l_TypeString}, void, destroy);`,
   );
 
   t += line(
@@ -248,8 +252,6 @@ function generate_scripting_api_for(p_FilePath, p_Types) {
   let l_IncludeCode = "";
   let l_RegisterCode = "";
   let l_EntryMethodCode = line(`static void register_types() {`);
-  l_EntryMethodCode += line(`preregister_types();`);
-  l_EntryMethodCode += empty();
 
   let l_PreRegisterCode = line(`static void preregister_types() {`);
   l_PreRegisterCode += line(`using namespace Low::Core;`);

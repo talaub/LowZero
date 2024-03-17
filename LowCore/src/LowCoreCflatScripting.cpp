@@ -1,13 +1,17 @@
 #include "LowCoreCflatScripting.h"
 
 #include "LowCore.h"
+#include "LowCoreUi.h"
 
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 #include "LowUtilFileSystem.h"
 #include "LowUtilProfiler.h"
+#include "LowUtilString.h"
 
 #include "CflatHelper.h"
+
+#include "LowMathVectorUtil.h"
 
 // REGISTER_CFLAT_INCLUDES_BEGIN
 #include "LowCoreEntity.h"
@@ -16,6 +20,7 @@
 #include "LowCoreUiElement.h"
 #include "LowCoreUiView.h"
 #include "LowCoreUiDisplay.h"
+#include "LowCoreUiText.h"
 // REGISTER_CFLAT_INCLUDES_END
 
 void setup_environment();
@@ -147,15 +152,28 @@ static void register_math()
     CflatStructAddMember(l_Namespace, Vector4, float, y);
     CflatStructAddMember(l_Namespace, Vector4, float, z);
     CflatStructAddMember(l_Namespace, Vector4, float, w);
-    /*
     CflatStructAddConstructorParams4(l_Namespace, Vector4, float,
                                      float, float, float);
-                                     */
     CflatStructAddCopyConstructor(l_Namespace, Vector4);
 
     CflatRegisterFunctionReturnParams2(
         l_Namespace, Vector4, operator*, const Vector4 &,
         const Vector4 &);
+  }
+
+  {
+    CflatRegisterStruct(l_Namespace, Color);
+    CflatStructAddMember(l_Namespace, Color, float, x);
+    CflatStructAddMember(l_Namespace, Color, float, y);
+    CflatStructAddMember(l_Namespace, Color, float, z);
+    CflatStructAddMember(l_Namespace, Color, float, w);
+    CflatStructAddConstructorParams4(l_Namespace, Color, float, float,
+                                     float, float);
+    CflatStructAddCopyConstructor(l_Namespace, Color);
+
+    CflatRegisterFunctionReturnParams2(l_Namespace,
+                                       Vector4, operator*,
+                                       const Color &, const Color &);
   }
   {
     CflatRegisterStruct(l_Namespace, Vector3);
@@ -180,6 +198,7 @@ static void register_math()
     CflatRegisterStruct(l_Namespace, Vector2);
     CflatStructAddMember(l_Namespace, Vector2, float, x);
     CflatStructAddMember(l_Namespace, Vector2, float, y);
+    CflatStructAddConstructor(l_Namespace, Vector2);
     CflatStructAddConstructorParams2(l_Namespace, Vector2, float,
                                      float);
 
@@ -200,6 +219,7 @@ static void register_math()
     CflatStructAddMember(l_Namespace, UVector2, uint32_t, y);
     CflatStructAddConstructorParams2(l_Namespace, UVector2, uint32_t,
                                      uint32_t);
+    CflatStructAddConstructor(l_Namespace, UVector2);
 
     CflatStructAddCopyConstructor(l_Namespace, UVector2);
 
@@ -230,6 +250,22 @@ static void register_math()
     CflatRegisterFunctionReturnParams2(
         l_Namespace, Vector3, operator*, const Quaternion &,
         const Vector3 &);
+  }
+  {
+    using namespace Low;
+    using namespace Low::Math;
+    using namespace Low::Math::VectorUtil;
+
+    Cflat::Namespace *l_Namespace =
+        Scripting::get_environment()->requestNamespace(
+            "Low::Math::VectorUtil");
+
+    CflatRegisterFunctionReturnParams3(
+        l_Namespace, Low::Math::Vector3, lerp, Low::Math::Vector3 &,
+        Low::Math::Vector3 &, float);
+    CflatRegisterFunctionReturnParams3(
+        l_Namespace, Low::Math::Vector2, lerp, Low::Math::Vector2 &,
+        Low::Math::Vector2 &, float);
   }
 }
 
@@ -279,6 +315,18 @@ static void register_lowutil_enums()
   }
 }
 
+static void register_lowcore()
+{
+  using namespace Low;
+  using namespace Low::Core;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace("Low::Core");
+
+  CflatRegisterFunctionVoidParams1(l_Namespace, void, game_dimensions,
+                                   Low::Math::UVector2 &);
+}
+
 #include "LowCoreInput.h"
 static void register_lowcore_input()
 {
@@ -300,6 +348,19 @@ static void register_lowcore_input()
       l_Namespace, bool, mouse_button_down, Util::MouseButton);
   CflatRegisterFunctionReturnParams1(
       l_Namespace, bool, mouse_button_up, Util::MouseButton);
+}
+
+static void register_lowcore_ui()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace Low::Core::UI;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace("Low::Core::UI");
+
+  CflatRegisterFunctionReturn(l_Namespace, Element,
+                              get_hovered_element);
 }
 
 #include "LowUtilName.h"
@@ -407,6 +468,20 @@ static void register_lowutil_string()
         Low::Core::Scripting::get_environment(),
         Low::Util::String, operator+, const Low::Util::String &,
         const char *);
+    CflatRegisterFunctionReturnParams2(
+        Low::Core::Scripting::get_environment(),
+        Low::Util::String, operator+, const Low::Util::String &, int);
+  }
+
+  {
+    using namespace Low::Util::StringHelper;
+
+    Cflat::Namespace *l_Namespace =
+        Low::Core::Scripting::get_environment()->requestNamespace(
+            "Low::Util::StringHelper");
+
+    CflatRegisterFunctionVoidParams2(l_Namespace, void, append,
+                                     Low::Util::String &, int);
   }
 }
 
@@ -516,7 +591,15 @@ static void register_lowutil_logger()
     Scripting::get_environment()->defineMacro(
         "LOW_LOG_DEBUG",
         "Low::Util::Log::begin_log("
-        "Low::Util::Log::LogLevel::DEBUG, \"Script\", false)");
+        "Low::Util::Log::LogLevel::DEBUG, \"scripting\", false)");
+    Scripting::get_environment()->defineMacro(
+        "LOW_LOG_INFO",
+        "Low::Util::Log::begin_log("
+        "Low::Util::Log::LogLevel::INFO, \"scripting\", false)");
+    Scripting::get_environment()->defineMacro(
+        "LOW_LOG_ERROR",
+        "Low::Util::Log::begin_log("
+        "Low::Util::Log::LogLevel::ERROR, \"scripting\", false)");
 
     Scripting::get_environment()->defineMacro(
         "LOW_LOG_END", "Low::Util::Log::LogLineEnd::LINE_END");
@@ -541,8 +624,9 @@ static void register_lowcore_entity()
         Low::Core::Scripting::get_environment()->requestNamespace(
             "Low::Util");
 
-    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
-                                 Low::Core::Entity);
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::Entity);
   }
 
   CflatStructAddConstructorParams1(
@@ -552,6 +636,8 @@ static void register_lowcore_entity()
                              Low::Core::Entity, uint16_t, TYPE_ID);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::Entity, bool, is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::Entity, void, destroy);
   CflatStructAddStaticMethodReturn(
       Low::Core::Scripting::get_environment(), Low::Core::Entity,
       uint32_t, get_capacity);
@@ -604,8 +690,9 @@ static void register_lowcore_transform()
         Low::Core::Scripting::get_environment()->requestNamespace(
             "Low::Util");
 
-    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
-                                 Low::Core::Component::Transform);
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::Component::Transform);
   }
 
   CflatStructAddConstructorParams1(
@@ -617,6 +704,9 @@ static void register_lowcore_transform()
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::Component::Transform, bool,
                              is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::Component::Transform, void,
+                           destroy);
   CflatStructAddStaticMethodReturn(
       Low::Core::Scripting::get_environment(),
       Low::Core::Component::Transform, uint32_t, get_capacity);
@@ -702,8 +792,9 @@ static void register_lowcore_camera()
         Low::Core::Scripting::get_environment()->requestNamespace(
             "Low::Util");
 
-    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
-                                 Low::Core::Component::Camera);
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::Component::Camera);
   }
 
   CflatStructAddConstructorParams1(
@@ -715,6 +806,9 @@ static void register_lowcore_camera()
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::Component::Camera, bool,
                              is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::Component::Camera, void,
+                           destroy);
   CflatStructAddStaticMethodReturn(
       Low::Core::Scripting::get_environment(),
       Low::Core::Component::Camera, uint32_t, get_capacity);
@@ -761,8 +855,9 @@ static void register_lowcore_element()
         Low::Core::Scripting::get_environment()->requestNamespace(
             "Low::Util");
 
-    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
-                                 Low::Core::UI::Element);
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::UI::Element);
   }
 
   CflatStructAddConstructorParams1(
@@ -773,6 +868,8 @@ static void register_lowcore_element()
                              TYPE_ID);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Element, bool, is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::UI::Element, void, destroy);
   CflatStructAddStaticMethodReturn(
       Low::Core::Scripting::get_environment(), Low::Core::UI::Element,
       uint32_t, get_capacity);
@@ -782,6 +879,13 @@ static void register_lowcore_element()
   CflatStructAddStaticMethodReturnParams1(
       Low::Core::Scripting::get_environment(), Low::Core::UI::Element,
       Low::Core::UI::Element, find_by_name, Low::Util::Name);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Element,
+                             Low::Core::UI::View, get_view);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::Element,
+      void, set_view, Low::Core::UI::View);
 
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Element, bool,
@@ -832,8 +936,9 @@ static void register_lowcore_view()
         Low::Core::Scripting::get_environment()->requestNamespace(
             "Low::Util");
 
-    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
-                                 Low::Core::UI::View);
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::UI::View);
   }
 
   CflatStructAddConstructorParams1(
@@ -843,6 +948,8 @@ static void register_lowcore_view()
                              Low::Core::UI::View, uint16_t, TYPE_ID);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::View, bool, is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::UI::View, void, destroy);
   CflatStructAddStaticMethodReturn(
       Low::Core::Scripting::get_environment(), Low::Core::UI::View,
       uint32_t, get_capacity);
@@ -872,6 +979,13 @@ static void register_lowcore_view()
   CflatStructAddMethodVoidParams1(
       Low::Core::Scripting::get_environment(), Low::Core::UI::View,
       void, scale_multiplier, float);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::View, uint32_t,
+                             layer_offset);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      void, layer_offset, uint32_t);
 
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::View, Low::Util::Name,
@@ -906,8 +1020,9 @@ static void register_lowcore_display()
         Low::Core::Scripting::get_environment()->requestNamespace(
             "Low::Util");
 
-    CflatRegisterSTLVectorCustom(l_UtilNamespace, Low::Util::List,
-                                 Low::Core::UI::Component::Display);
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::UI::Component::Display);
   }
 
   CflatStructAddConstructorParams1(
@@ -919,6 +1034,9 @@ static void register_lowcore_display()
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Component::Display, bool,
                              is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::UI::Component::Display, void,
+                           destroy);
   CflatStructAddStaticMethodReturn(
       Low::Core::Scripting::get_environment(),
       Low::Core::UI::Component::Display, uint32_t, get_capacity);
@@ -993,6 +1111,81 @@ static void register_lowcore_display()
   CflatStructAddMethodVoidParams1(
       Low::Core::Scripting::get_environment(),
       Low::Core::UI::Component::Display, void, set_element,
+      Low::Core::UI::Element);
+}
+
+static void register_lowcore_text()
+{
+  using namespace Low;
+  using namespace Low::Core;
+  using namespace ::Low::Core::UI::Component;
+
+  Cflat::Namespace *l_Namespace =
+      Low::Core::Scripting::get_environment()->requestNamespace(
+          "Low::Core::UI::Component");
+
+  Cflat::Struct *type =
+      Scripting::g_CflatStructs["Low::Core::UI::Component::Text"];
+
+  {
+    Cflat::Namespace *l_UtilNamespace =
+        Low::Core::Scripting::get_environment()->requestNamespace(
+            "Low::Util");
+
+    CflatRegisterSTLVectorCustom(
+        Low::Core::Scripting::get_environment(), Low::Util::List,
+        Low::Core::UI::Component::Text);
+  }
+
+  CflatStructAddConstructorParams1(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, uint64_t);
+  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Component::Text, uint16_t,
+                             TYPE_ID);
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Component::Text, bool,
+                             is_alive);
+  CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(),
+                           Low::Core::UI::Component::Text, void,
+                           destroy);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, uint32_t, get_capacity);
+  CflatStructAddStaticMethodReturnParams1(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, Low::Core::UI::Component::Text,
+      find_by_index, uint32_t);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Component::Text,
+                             Low::Util::String &, get_text);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, void, set_text,
+      Low::Util::String &);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Component::Text,
+                             Low::Math::Color &, get_color);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, void, set_color,
+      Low::Math::Color &);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Component::Text, float,
+                             get_size);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, void, set_size, float);
+
+  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
+                             Low::Core::UI::Component::Text,
+                             Low::Core::UI::Element, get_element);
+  CflatStructAddMethodVoidParams1(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, void, set_element,
       Low::Core::UI::Element);
 }
 
@@ -1082,17 +1275,31 @@ static void preregister_types()
     Scripting::g_CflatStructs["Low::Core::UI::Component::Display"] =
         type;
   }
+
+  {
+    using namespace Low::Core::UI::Component;
+    Cflat::Namespace *l_Namespace =
+        Low::Core::Scripting::get_environment()->requestNamespace(
+            "Low::Core::UI::Component");
+
+    CflatRegisterStruct(l_Namespace, Text);
+    CflatStructAddBaseType(Low::Core::Scripting::get_environment(),
+                           Low::Core::UI::Component::Text,
+                           Low::Util::Handle);
+
+    Scripting::g_CflatStructs["Low::Core::UI::Component::Text"] =
+        type;
+  }
 }
 static void register_types()
 {
-  preregister_types();
-
   register_lowcore_entity();
   register_lowcore_transform();
   register_lowcore_camera();
   register_lowcore_element();
   register_lowcore_view();
   register_lowcore_display();
+  register_lowcore_text();
 }
 // REGISTER_CFLAT_END
 
@@ -1105,7 +1312,10 @@ static void setup_environment()
   register_lowutil_string();
   register_lowutil_logger();
   register_lowutil_containers();
+  preregister_types();
   register_types();
+  register_lowcore();
   register_lowcore_input();
+  register_lowcore_ui();
 }
 #endif

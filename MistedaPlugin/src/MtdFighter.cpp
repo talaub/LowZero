@@ -55,6 +55,10 @@ namespace Mtd {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Fighter, deck,
                               Low::Util::List<Mtd::Ability>))
           Low::Util::List<Mtd::Ability>();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, Fighter, status_effects,
+          Low::Util::List<Mtd::StatusEffectInstance>))
+          Low::Util::List<Mtd::StatusEffectInstance>();
       new (&ACCESSOR_TYPE_SOA(l_Handle, Fighter, entity,
                               Low::Core::Entity)) Low::Core::Entity();
 
@@ -178,6 +182,45 @@ namespace Mtd {
       }
       {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(hp);
+        l_PropertyInfo.editorProperty = true;
+        l_PropertyInfo.dataOffset = offsetof(FighterData, hp);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::INT;
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Fighter l_Handle = p_Handle.get_id();
+          l_Handle.get_hp();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Fighter, hp,
+                                            int);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Fighter l_Handle = p_Handle.get_id();
+          l_Handle.set_hp(*(int *)p_Data);
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(status_effects);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(FighterData, status_effects);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.get =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Fighter l_Handle = p_Handle.get_id();
+          l_Handle.get_status_effects();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Fighter, status_effects,
+              Low::Util::List<Mtd::StatusEffectInstance>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(entity);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(FighterData, entity);
@@ -260,6 +303,8 @@ namespace Mtd {
       Fighter l_Handle = make(p_Entity);
       l_Handle.set_deck(get_deck());
       l_Handle.set_mana(get_mana());
+      l_Handle.set_hp(get_hp());
+      l_Handle.set_status_effects(get_status_effects());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -286,6 +331,7 @@ namespace Mtd {
       _LOW_ASSERT(is_alive());
 
       p_Node["mana"] = get_mana();
+      p_Node["hp"] = get_hp();
       p_Node["unique_id"] = get_unique_id();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -316,6 +362,11 @@ namespace Mtd {
       }
       if (p_Node["mana"]) {
         l_Handle.set_mana(p_Node["mana"].as<uint32_t>());
+      }
+      if (p_Node["hp"]) {
+        l_Handle.set_hp(p_Node["hp"].as<int>());
+      }
+      if (p_Node["status_effects"]) {
       }
       if (p_Node["unique_id"]) {
         l_Handle.set_unique_id(
@@ -390,6 +441,71 @@ namespace Mtd {
       // LOW_CODEGEN::END::CUSTOM:SETTER_mana
     }
 
+    int Fighter::get_hp() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_hp
+      // LOW_CODEGEN::END::CUSTOM:GETTER_hp
+
+      return TYPE_SOA(Fighter, hp, int);
+    }
+    void Fighter::set_hp(int p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_hp
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_hp
+
+      // Set new value
+      TYPE_SOA(Fighter, hp, int) = p_Value;
+      {
+        Low::Core::Entity l_Entity = get_entity();
+        if (l_Entity.has_component(
+                Low::Core::Component::PrefabInstance::TYPE_ID)) {
+          Low::Core::Component::PrefabInstance l_Instance =
+              l_Entity.get_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID);
+          Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+          if (l_Prefab.is_alive()) {
+            l_Instance.override(
+                TYPE_ID, N(hp),
+                !l_Prefab.compare_property(*this, N(hp)));
+          }
+        }
+      }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_hp
+      // LOW_CODEGEN::END::CUSTOM:SETTER_hp
+    }
+
+    Low::Util::List<Mtd::StatusEffectInstance> &
+    Fighter::get_status_effects() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_status_effects
+      // LOW_CODEGEN::END::CUSTOM:GETTER_status_effects
+
+      return TYPE_SOA(Fighter, status_effects,
+                      Low::Util::List<Mtd::StatusEffectInstance>);
+    }
+    void Fighter::set_status_effects(
+        Low::Util::List<Mtd::StatusEffectInstance> &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_status_effects
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_status_effects
+
+      // Set new value
+      TYPE_SOA(Fighter, status_effects,
+               Low::Util::List<Mtd::StatusEffectInstance>) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_status_effects
+      // LOW_CODEGEN::END::CUSTOM:SETTER_status_effects
+    }
+
     Low::Core::Entity Fighter::get_entity() const
     {
       _LOW_ASSERT(is_alive());
@@ -457,6 +573,48 @@ namespace Mtd {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_draw
     }
 
+    void Fighter::deal_damage(uint32_t p_Amount)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deal_damage
+      _LOW_ASSERT(is_alive());
+
+      set_hp(get_hp() - p_Amount);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_deal_damage
+    }
+
+    void Fighter::heal(uint32_t p_Amount)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_heal
+      _LOW_ASSERT(is_alive());
+
+      set_hp(get_hp() + p_Amount);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_heal
+    }
+
+    void
+    Fighter::apply_status_effect(Mtd::StatusEffect p_StatusEffect,
+                                 int p_Duration,
+                                 Mtd::Component::Fighter p_Caster)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_apply_status_effect
+      _LOW_ASSERT(is_alive());
+
+      LOW_LOG_DEBUG << "Applying status effect "
+                    << p_StatusEffect.get_name() << LOW_LOG_END;
+
+      for (Mtd::StatusEffectInstance &i_Instance :
+           get_status_effects()) {
+        if (i_Instance.statusEffect == p_StatusEffect) {
+          i_Instance.remainingRounds += p_Duration;
+          return;
+        }
+      }
+
+      get_status_effects().push_back(
+          {p_StatusEffect, 0, p_Duration, p_Caster.get_id()});
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_apply_status_effect
+    }
+
     uint32_t Fighter::create_instance()
     {
       uint32_t l_Index = 0u;
@@ -510,6 +668,25 @@ namespace Mtd {
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(FighterData, mana) * (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(FighterData, hp) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(FighterData, hp) * (l_Capacity)],
+               l_Capacity * sizeof(int));
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(FighterData, status_effects) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Low::Util::List<
+                                   Mtd::StatusEffectInstance>))])
+              Low::Util::List<Mtd::StatusEffectInstance>();
+          *i_ValPtr = it->get_status_effects();
+        }
       }
       {
         memcpy(

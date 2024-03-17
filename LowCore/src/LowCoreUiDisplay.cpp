@@ -108,6 +108,9 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          // Doing this to remove the transform from the list of
+          // children
+          set_parent(0);
           // LOW_CODEGEN::END::CUSTOM:DESTROY
 
           Low::Util::remove_unique_id(get_unique_id());
@@ -1186,6 +1189,7 @@ namespace Low {
           } else {
             l_Position += l_Element.get_view().pixel_position();
             l_Rotation += l_Element.get_view().rotation();
+            l_Layer += l_Element.get_view().layer_offset();
           }
 
           l_Scale *= l_Element.get_view().scale_multiplier();
@@ -1228,7 +1232,7 @@ namespace Low {
           Math::Vector2 l_Position = get_absolute_pixel_position();
           Math::Vector2 l_Size = get_absolute_pixel_scale();
 
-          if (p_Point.x < l_Position.x || p_Point.y < l_Position.x) {
+          if (p_Point.x < l_Position.x || p_Point.y < l_Position.y) {
             return false;
           }
 

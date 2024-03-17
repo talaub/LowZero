@@ -7,10 +7,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "LowMath.h"
-
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowCoreUiElement.h"
+#include "LowCoreUiView.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Mtd {
@@ -20,37 +18,36 @@ namespace Mtd {
   }
   // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-  struct MISTEDA_API AbilityData
+  struct MISTEDA_API StatusEffectData
   {
     Low::Util::String title;
     Low::Util::String description;
-    Low::Util::String execute_function_name;
-    uint32_t resource_cost;
+    Low::Util::String start_turn_function;
     Low::Util::Name name;
 
     static size_t get_size()
     {
-      return sizeof(AbilityData);
+      return sizeof(StatusEffectData);
     }
   };
 
-  struct MISTEDA_API Ability : public Low::Util::Handle
+  struct MISTEDA_API StatusEffect : public Low::Util::Handle
   {
   public:
     static uint8_t *ms_Buffer;
     static Low::Util::Instances::Slot *ms_Slots;
 
-    static Low::Util::List<Ability> ms_LivingInstances;
+    static Low::Util::List<StatusEffect> ms_LivingInstances;
 
     const static uint16_t TYPE_ID;
 
-    Ability();
-    Ability(uint64_t p_Id);
-    Ability(Ability &p_Copy);
+    StatusEffect();
+    StatusEffect(uint64_t p_Id);
+    StatusEffect(StatusEffect &p_Copy);
 
-    static Ability make(Low::Util::Name p_Name);
+    static StatusEffect make(Low::Util::Name p_Name);
     static Low::Util::Handle _make(Low::Util::Name p_Name);
-    explicit Ability(const Ability &p_Copy)
+    explicit StatusEffect(const StatusEffect &p_Copy)
         : Low::Util::Handle(p_Copy.m_Id)
     {
     }
@@ -64,12 +61,12 @@ namespace Mtd {
     {
       return static_cast<uint32_t>(ms_LivingInstances.size());
     }
-    static Ability *living_instances()
+    static StatusEffect *living_instances()
     {
       return ms_LivingInstances.data();
     }
 
-    static Ability find_by_index(uint32_t p_Index);
+    static StatusEffect find_by_index(uint32_t p_Index);
 
     bool is_alive() const;
 
@@ -77,13 +74,13 @@ namespace Mtd {
 
     void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-    Ability duplicate(Low::Util::Name p_Name) const;
-    static Ability duplicate(Ability p_Handle,
-                             Low::Util::Name p_Name);
+    StatusEffect duplicate(Low::Util::Name p_Name) const;
+    static StatusEffect duplicate(StatusEffect p_Handle,
+                                  Low::Util::Name p_Name);
     static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                         Low::Util::Name p_Name);
 
-    static Ability find_by_name(Low::Util::Name p_Name);
+    static StatusEffect find_by_name(Low::Util::Name p_Name);
 
     static void serialize(Low::Util::Handle p_Handle,
                           Low::Util::Yaml::Node &p_Node);
@@ -92,15 +89,15 @@ namespace Mtd {
                 Low::Util::Handle p_Creator);
     static bool is_alive(Low::Util::Handle p_Handle)
     {
-      return p_Handle.get_type() == Ability::TYPE_ID &&
+      return p_Handle.get_type() == StatusEffect::TYPE_ID &&
              p_Handle.check_alive(ms_Slots, get_capacity());
     }
 
     static void destroy(Low::Util::Handle p_Handle)
     {
       _LOW_ASSERT(is_alive(p_Handle));
-      Ability l_Ability = p_Handle.get_id();
-      l_Ability.destroy();
+      StatusEffect l_StatusEffect = p_Handle.get_id();
+      l_StatusEffect.destroy();
     }
 
     Low::Util::String &get_title() const;
@@ -109,18 +106,14 @@ namespace Mtd {
     Low::Util::String &get_description() const;
     void set_description(Low::Util::String &p_Value);
 
-    Low::Util::String &get_execute_function_name() const;
-    void set_execute_function_name(Low::Util::String &p_Value);
-
-    uint32_t get_resource_cost() const;
-    void set_resource_cost(uint32_t p_Value);
+    Low::Util::String &get_start_turn_function() const;
+    void set_start_turn_function(Low::Util::String &p_Value);
 
     Low::Util::Name get_name() const;
     void set_name(Low::Util::Name p_Value);
 
-    Low::Core::UI::View spawn_card();
     void execute(Mtd::Component::Fighter p_Caster,
-                 Mtd::Component::Fighter p_Target);
+                 Mtd::Component::Fighter p_Target, int p_Remaining);
 
   private:
     static uint32_t ms_Capacity;
@@ -129,10 +122,12 @@ namespace Mtd {
   };
 
   // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-  struct HandAbility
+  struct StatusEffectInstance
   {
-    Ability ability;
+    StatusEffect statusEffect;
     Low::Core::UI::View view;
+    int remainingRounds;
+    Low::Util::Handle caster;
   };
   // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 

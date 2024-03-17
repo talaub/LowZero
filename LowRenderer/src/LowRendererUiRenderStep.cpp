@@ -20,6 +20,9 @@
 namespace Low {
   namespace Renderer {
     namespace UiStep {
+      // TODO: Hard coded rnederobjectcount for UI
+      const u32 l_RenderObjectCount = 5000;
+
       void setup_signature(GraphicsStep p_Step,
                            RenderFlow p_RenderFlow)
       {
@@ -81,8 +84,8 @@ namespace Low {
                    Math::Matrix4x4 &p_ProjectionMatrix,
                    Math::Matrix4x4 &p_ViewMatrix)
       {
-        float l_NearPlane = -1.0f;
-        float l_FarPlane = 100.0f;
+        float l_NearPlane = -100.0f;
+        float l_FarPlane = 10.0f;
 
         Math::Vector2 l_Dimensions;
         l_Dimensions.x = (float)p_RenderFlow.get_dimensions().x;
@@ -98,8 +101,8 @@ namespace Low {
             .set(&l_OrthographicMatrix);
 
         RenderObjectShaderInfo
-            l_ObjectShaderInfos[LOW_RENDERER_RENDEROBJECT_COUNT];
-        Math::Color l_Colors[LOW_RENDERER_RENDEROBJECT_COUNT];
+            l_ObjectShaderInfos[l_RenderObjectCount];
+        Math::Color l_Colors[l_RenderObjectCount];
         uint32_t l_ObjectIndex = 0;
 
         for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
@@ -308,8 +311,7 @@ namespace Low {
           l_ResourceConfig.name = N(_renderobject_buffer);
           l_ResourceConfig.type = ResourceType::BUFFER;
           l_ResourceConfig.buffer.size =
-              sizeof(RenderObjectShaderInfo) *
-              LOW_RENDERER_RENDEROBJECT_COUNT;
+              sizeof(RenderObjectShaderInfo) * l_RenderObjectCount;
           l_Config.get_resources().push_back(l_ResourceConfig);
         }
 
@@ -319,7 +321,7 @@ namespace Low {
           l_ResourceConfig.name = N(_color_buffer);
           l_ResourceConfig.type = ResourceType::BUFFER;
           l_ResourceConfig.buffer.size =
-              sizeof(Math::Color) * LOW_RENDERER_RENDEROBJECT_COUNT;
+              sizeof(Math::Color) * l_RenderObjectCount;
           l_Config.get_resources().push_back(l_ResourceConfig);
         }
 

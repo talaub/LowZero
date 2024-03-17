@@ -12,6 +12,7 @@ namespace Low {
       bool editor;
       Util::RTTI::PropertyInfo propInfo;
       bool multiline;
+      bool enumType;
     };
 
     struct TypeEditorMetadata
@@ -28,6 +29,19 @@ namespace Low {
       Util::RTTI::TypeInfo typeInfo;
       Util::List<PropertyMetadata> properties;
       TypeEditorMetadata editor;
+    };
+
+    struct EnumEntryMetadata
+    {
+      Util::Name name;
+    };
+
+    struct EnumMetadata
+    {
+      Util::Name name;
+      Util::String fullTypeName;
+      Util::String module;
+      Util::List<EnumEntryMetadata> options;
     };
   } // namespace Editor
 } // namespace Low

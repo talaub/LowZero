@@ -9,11 +9,13 @@ namespace Low {
   namespace Editor {
     struct RenderFlowWidget;
 
-    typedef void (*RenderFlowWidgetCallback)(float, RenderFlowWidget &);
+    typedef void (*RenderFlowWidgetCallback)(float,
+                                             RenderFlowWidget &);
 
     struct RenderFlowWidget
     {
-      RenderFlowWidget(Util::String p_Title, Renderer::RenderFlow p_RenderFlow,
+      RenderFlowWidget(Util::String p_Title,
+                       Renderer::RenderFlow p_RenderFlow,
                        RenderFlowWidgetCallback p_Callback);
 
       void render(float p_Delta);
@@ -26,6 +28,7 @@ namespace Low {
       bool is_hovered();
       Math::Vector2 get_relative_hover_position();
       Math::Vector2 get_widget_position();
+      Math::UVector2 get_widget_dimensions();
 
     private:
       Util::String m_Title;

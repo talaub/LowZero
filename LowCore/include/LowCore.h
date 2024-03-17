@@ -22,6 +22,8 @@ namespace Low {
     LOW_CORE_API Scene get_loaded_scene();
     LOW_CORE_API void load_scene(Scene p_Scene);
 
+    LOW_CORE_API void game_dimensions(Math::UVector2 &p_Dimensions);
+
     struct FileSystemWatchers
     {
       Util::FileSystem::WatchHandle scriptDirectory;

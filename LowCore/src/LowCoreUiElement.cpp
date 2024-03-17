@@ -55,8 +55,9 @@ namespace Low {
             l_Handle, Element, components,
             SINGLE_ARG(Util::Map<uint16_t, Util::Handle>)))
             Util::Map<uint16_t, Util::Handle>();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Element, view, UI::View))
-            UI::View();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, Element, view,
+                                Low::Core::UI::View))
+            Low::Core::UI::View();
         ACCESSOR_TYPE_SOA(l_Handle, Element, click_passthrough,
                           bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Element, name, Low::Util::Name) =
@@ -82,6 +83,39 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Util::List<Element> l_Children;
+        if (get_display().is_alive()) {
+          for (Component::Display i_Child :
+               get_display().get_children()) {
+            l_Children.push_back(i_Child.get_element());
+          }
+        }
+
+        for (Element i_Child : l_Children) {
+          i_Child.destroy();
+        }
+
+        Util::List<uint16_t> l_ComponentTypes;
+        for (auto it = get_components().begin();
+             it != get_components().end(); ++it) {
+          if (has_component(it->first)) {
+            l_ComponentTypes.push_back(it->first);
+          }
+        }
+
+        for (auto it = l_ComponentTypes.begin();
+             it != l_ComponentTypes.end(); ++it) {
+          Util::Handle i_Handle = get_component(*it);
+          Util::RTTI::TypeInfo &i_TypeInfo =
+              Util::Handle::get_type_info(*it);
+          if (i_TypeInfo.is_alive(i_Handle)) {
+            i_TypeInfo.destroy(i_Handle);
+          }
+        }
+
+        if (get_view().is_alive()) {
+          get_view().remove_element(*this);
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         Low::Util::remove_unique_id(get_unique_id());
@@ -158,18 +192,18 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ElementData, view);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = UI::View::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::UI::View::TYPE_ID;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
             l_Handle.get_view();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Element, view,
-                                              UI::View);
+                                              Low::Core::UI::View);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             Element l_Handle = p_Handle.get_id();
-            l_Handle.set_view(*(UI::View *)p_Data);
+            l_Handle.set_view(*(Low::Core::UI::View *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
@@ -414,16 +448,16 @@ namespace Low {
             SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
       }
 
-      UI::View Element::get_view() const
+      Low::Core::UI::View Element::get_view() const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view
         // LOW_CODEGEN::END::CUSTOM:GETTER_view
 
-        return TYPE_SOA(Element, view, UI::View);
+        return TYPE_SOA(Element, view, Low::Core::UI::View);
       }
-      void Element::set_view(UI::View p_Value)
+      void Element::set_view(Low::Core::UI::View p_Value)
       {
         _LOW_ASSERT(is_alive());
 
@@ -431,7 +465,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view
 
         // Set new value
-        TYPE_SOA(Element, view, UI::View) = p_Value;
+        TYPE_SOA(Element, view, Low::Core::UI::View) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view
         if (get_display().is_alive()) {
@@ -439,7 +473,9 @@ namespace Low {
           // moved to that view as well
           for (u64 i_ChildId : get_display().get_children()) {
             Component::Display i_ChildDisplay = i_ChildId;
-            p_Value.add_element(i_ChildDisplay.get_element());
+            if (p_Value.is_alive()) {
+              p_Value.add_element(i_ChildDisplay.get_element());
+            }
           }
         }
         // LOW_CODEGEN::END::CUSTOM:SETTER_view
@@ -725,7 +761,7 @@ namespace Low {
               &l_NewBuffer[offsetof(ElementData, view) *
                            (l_Capacity + l_CapacityIncrease)],
               &ms_Buffer[offsetof(ElementData, view) * (l_Capacity)],
-              l_Capacity * sizeof(UI::View));
+              l_Capacity * sizeof(Low::Core::UI::View));
         }
         {
           memcpy(

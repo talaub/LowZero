@@ -7,6 +7,7 @@
 
 #include "LowCoreUiDisplay.h"
 #include "LowCoreInput.h"
+#include "LowCoreUi.h"
 
 namespace Low {
   namespace Core {
@@ -35,6 +36,7 @@ namespace Low {
                        .get_view()
                        .is_view_template() &&
                   !i_Display.get_element().is_click_passthrough()) {
+
                 if (i_Display.point_is_in_bounding_box(
                         l_MousePosition)) {
                   if (!l_HoveredDisplay.is_alive()) {
@@ -48,10 +50,9 @@ namespace Low {
             }
 
             if (l_HoveredDisplay.is_alive()) {
-              LOW_LOG_DEBUG
-                  << "Hovering: "
-                  << l_HoveredDisplay.get_element().get_name()
-                  << LOW_LOG_END;
+              set_hovered_element(l_HoveredDisplay.get_element());
+            } else {
+              set_hovered_element(0);
             }
           }
 

@@ -87,8 +87,16 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-          if (get_renderer_material().is_alive()) {
-            get_renderer_material().destroy();
+          bool l_DeleteMaterial = true;
+          if (get_element().get_view().is_alive()) {
+            l_DeleteMaterial =
+                !get_element().get_view().is_internal();
+          }
+
+          if (l_DeleteMaterial) {
+            if (get_renderer_material().is_alive()) {
+              get_renderer_material().destroy();
+            }
           }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
 

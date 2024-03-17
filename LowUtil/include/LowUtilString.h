@@ -18,6 +18,8 @@ namespace Low {
 
       LOW_EXPORT String replace(String p_String, char p_Replacee,
                                 char p_Replacer);
+
+      LOW_EXPORT void append(String &p_String, int p_Appendix);
     } // namespace StringHelper
   }   // namespace Util
 } // namespace Low

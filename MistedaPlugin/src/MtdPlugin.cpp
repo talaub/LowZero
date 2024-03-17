@@ -5,6 +5,7 @@
 #include "MtdTestSystem.h"
 #include "MtdAbility.h"
 #include "MtdCflatScripting.h"
+#include "MtdStatusEffect.h"
 
 #include "LowCoreGameLoop.h"
 
@@ -41,6 +42,7 @@ namespace Mtd {
   static void initialize_base_types()
   {
     Ability::initialize();
+    StatusEffect::initialize();
   }
 
   static void initialize_types()
@@ -69,9 +71,30 @@ namespace Mtd {
     }
   }
 
+  static void load_statuseffects()
+  {
+    using namespace Low;
+    Util::String l_Path =
+        Util::String(LOW_DATA_PATH) + "\\assets\\statuseffect";
+
+    Util::List<Util::String> l_FilePaths;
+
+    Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
+    Util::String l_Ending = ".statuseffect.yaml";
+
+    for (Util::String &i_Path : l_FilePaths) {
+      if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+        Util::Yaml::Node i_Node =
+            Util::Yaml::load_file(i_Path.c_str());
+        StatusEffect::deserialize(i_Node, 0);
+      }
+    }
+  }
+
   static void load_assets()
   {
     load_abilities();
+    load_statuseffects();
   }
 
   void initialize()
@@ -94,6 +117,7 @@ namespace Mtd {
   static void cleanup_base_types()
   {
     Ability::cleanup();
+    StatusEffect::cleanup();
   }
 
   static void cleanup_types()

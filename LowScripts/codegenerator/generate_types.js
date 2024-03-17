@@ -21,6 +21,7 @@ const {
   find_end_marker_start,
   find_end_marker_end,
   save_file,
+  collect_enums_for,
 } = require("./lib.js");
 
 const g_TypeInitializerCppPath = `${__dirname}\\..\\..\\LowUtil\\src\\LowUtilTypeInitializer.cpp`;
@@ -160,6 +161,160 @@ function get_property_type(p_Type) {
 }
 
 function write_header_imports(p_Imports) {}
+
+const g_EnumType = "uint8_t";
+
+function generate_enum_header(p_Enum) {
+  let t = "";
+  let n = 0;
+
+  let l_OldCode = "";
+  if (fs.existsSync(p_Enum.header_file_path)) {
+    l_OldCode = read_file(p_Enum.header_file_path);
+  }
+
+  const l_EnumString = `${p_Enum.namespace_string}::${p_Enum.name}`;
+
+  t += line("#pragma once");
+  t += empty();
+  t += include(`${p_Enum.api_file}`);
+  t += empty();
+  t += include(`LowMath.h`);
+  t += include(`LowUtilName.h`);
+  t += empty();
+
+  for (let i_Namespace of p_Enum.namespace) {
+    t += line(`namespace ${i_Namespace} {`, n++);
+  }
+
+  t += line(`enum class ${p_Enum.name}`, n);
+  t += line("{", n++);
+
+  for (let i_Option of p_Enum.options) {
+    t += line(`${i_Option.name.toUpperCase()},`, n);
+  }
+
+  t += line("};", --n);
+  t += empty();
+
+  t += line(`namespace ${p_Enum.name}EnumHelper {`);
+  t += line(`void ${p_Enum.dll_macro} initialize();`);
+  t += line(`void ${p_Enum.dll_macro} cleanup();`);
+  t += empty();
+
+  t += line(
+    `Low::Util::Name ${p_Enum.dll_macro} option_name(${l_EnumString} p_Value);`,
+  );
+
+  t += line(
+    `Low::Util::Name ${p_Enum.dll_macro} _option_name(${g_EnumType} p_Value);`,
+  );
+
+  t += empty();
+
+  t += line(
+    `${l_EnumString} ${p_Enum.dll_macro} option_value(Low::Util::Name p_Name);`,
+  );
+
+  t += line(
+    `${g_EnumType} ${p_Enum.dll_macro} _option_value(Low::Util::Name p_Name);`,
+  );
+
+  t += line("}");
+
+  for (let i_Namespace of p_Enum.namespace) {
+    t += line("}");
+  }
+
+  const l_Formatted = format(p_Enum.header_file_path, t);
+
+  if (l_Formatted !== l_OldCode) {
+    save_file(p_Enum.header_file_path, l_Formatted);
+    return true;
+  }
+  return false;
+}
+
+function generate_enum_source(p_Enum) {
+  let t = "";
+  let n = 0;
+
+  let l_OldCode = "";
+  if (fs.existsSync(p_Enum.source_file_path)) {
+    l_OldCode = read_file(p_Enum.source_file_path);
+  }
+
+  const l_EnumString = `${p_Enum.namespace_string}::${p_Enum.name}`;
+
+  t += include(`${p_Enum.header_file_name}`);
+  t += empty();
+  t += include(`LowUtilAssert.h`);
+  t += empty();
+
+  for (let i_Namespace of p_Enum.namespace) {
+    t += line(`namespace ${i_Namespace} {`, n++);
+  }
+
+  t += line(`namespace ${p_Enum.name}EnumHelper {`);
+  t += line(`void initialize() {`);
+  t += line(`}`);
+  t += empty();
+  t += line(`void cleanup() {`);
+  t += line(`}`);
+  t += empty();
+
+  t += line(`Low::Util::Name option_name(${l_EnumString} p_Value) {`);
+  for (let i_Option of p_Enum.options) {
+    t += line(`if (p_Value == ${p_Enum.name}::${i_Option.uppercase}) {`);
+    t += line(`return N(${i_Option.name});`);
+    t += line("}");
+  }
+  t += empty();
+  t += line(
+    `LOW_ASSERT(false, "Could not find option in enum ${p_Enum.name}.");`,
+  );
+  t += line("return N(EMPTY);");
+  t += line("}");
+  t += empty();
+
+  t += line(`Low::Util::Name _option_name(${g_EnumType} p_Value) {`);
+  t += line(`${l_EnumString} l_Enum = static_cast<${l_EnumString}>(p_Value);`);
+  t += line(`return option_name(l_Enum);`);
+  t += line("}");
+  t += empty();
+
+  t += line(`${l_EnumString} option_value(Low::Util::Name p_Name) {`);
+  for (let i_Option of p_Enum.options) {
+    t += line(`if (p_Name == N(${i_Option.name})) {`);
+    t += line(`return ${l_EnumString}::${i_Option.uppercase};`);
+    t += line("}");
+  }
+  t += empty();
+  t += line(
+    `LOW_ASSERT(false, "Could not find option in enum ${p_Enum.name}.");`,
+  );
+  t += line(`return static_cast<${l_EnumString}>(0);`);
+  t += line("}");
+  t += empty();
+
+  t += line(`${g_EnumType} _option_value(Low::Util::Name p_Name) {`);
+  t += line(`return static_cast<${g_EnumType}>(option_value(p_Name));`);
+  t += line("}");
+
+  t += line("}");
+
+  for (let i_Namespace of p_Enum.namespace) {
+    t += line("}");
+  }
+
+  const l_Formatted = format(p_Enum.source_file_path, t);
+
+  if (l_Formatted !== l_OldCode) {
+    save_file(p_Enum.source_file_path, l_Formatted);
+    return true;
+  }
+  return false;
+}
 
 function generate_header(p_Type) {
   let t = "";
@@ -1551,7 +1706,23 @@ function main() {
     }
   }
 
-  // generate_type_initializer(l_Types);
+  const l_Enums = collect_enums_for("ALL");
+
+  for (const i_Enum of l_Enums) {
+    const changed_header = generate_enum_header(i_Enum);
+    const changed_source = generate_enum_source(i_Enum);
+
+    if (changed_header || changed_source) {
+      let change_string = `${changed_header ? "HEADER" : ""}`;
+      if (changed_header && changed_source) {
+        change_string += ", ";
+      }
+      if (changed_source) {
+        change_string += "SOURCE";
+      }
+      console.log(`${i_Enum.name} -> ${change_string}`);
+    }
+  }
 }
 
 main();

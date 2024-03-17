@@ -12,6 +12,7 @@
 #include "MtdAbility.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "MtdStatusEffect.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Mtd {
@@ -23,6 +24,8 @@ namespace Mtd {
     {
       Low::Util::List<Mtd::Ability> deck;
       uint32_t mana;
+      int hp;
+      Low::Util::List<Mtd::StatusEffectInstance> status_effects;
       Low::Core::Entity entity;
       Low::Util::UniqueId unique_id;
 
@@ -105,17 +108,30 @@ namespace Mtd {
       uint32_t get_mana() const;
       void set_mana(uint32_t p_Value);
 
+      int get_hp() const;
+      void set_hp(int p_Value);
+
+      Low::Util::List<Mtd::StatusEffectInstance> &
+      get_status_effects() const;
+
       Low::Core::Entity get_entity() const;
       void set_entity(Low::Core::Entity p_Value);
 
       Low::Util::UniqueId get_unique_id() const;
 
       Mtd::Ability draw();
+      void deal_damage(uint32_t p_Amount);
+      void heal(uint32_t p_Amount);
+      void apply_status_effect(Mtd::StatusEffect p_StatusEffect,
+                               int p_Duration,
+                               Mtd::Component::Fighter p_Caster);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
+      void set_status_effects(
+          Low::Util::List<Mtd::StatusEffectInstance> &p_Value);
       void set_unique_id(Low::Util::UniqueId p_Value);
     };
 

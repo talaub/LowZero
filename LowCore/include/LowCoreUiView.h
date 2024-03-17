@@ -28,6 +28,7 @@ namespace Low {
         Low::Math::Vector2 pixel_position;
         float rotation;
         float scale_multiplier;
+        uint32_t layer_offset;
         Low::Util::UniqueId unique_id;
         bool transform_dirty;
         Low::Util::Name name;
@@ -125,6 +126,9 @@ namespace Low {
 
         float scale_multiplier() const;
         void scale_multiplier(float p_Value);
+
+        uint32_t layer_offset() const;
+        void layer_offset(uint32_t p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
 

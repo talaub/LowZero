@@ -58,6 +58,7 @@ namespace Low {
     ChangeList g_ChangeList;
 
     Util::Map<uint16_t, TypeMetadata> g_TypeMetadata;
+    Util::List<EnumMetadata> g_EnumMetadata;
 
     struct EditorWidget
     {
@@ -116,6 +117,16 @@ namespace Low {
       g_SelectedHandle = p_Handle;
 
       g_DetailsWidget->clear();
+
+      {
+        Core::UI::Element l_Element = p_Handle.get_id();
+        if (l_Element.is_alive()) {
+          for (auto it = l_Element.get_components().begin();
+               it != l_Element.get_components().end(); ++it) {
+            g_DetailsWidget->add_section(it->second);
+          }
+        }
+      }
 
       Core::Entity l_Entity = p_Handle.get_id();
       if (!l_Entity.is_alive()) {
@@ -572,6 +583,10 @@ namespace Low {
             i_Metadata.editor =
                 it->second["editor_editable"].as<bool>();
           }
+          i_Metadata.enumType = false;
+          if (it->second["enum"]) {
+            i_Metadata.enumType = it->second["enum"].as<bool>();
+          }
           i_Metadata.propInfo =
               p_Metadata.typeInfo.properties[i_Metadata.name];
 
@@ -607,6 +622,32 @@ namespace Low {
         parse_type_metadata(i_Metadata, it->second);
 
         g_TypeMetadata[i_Metadata.typeId] = i_Metadata;
+      }
+    }
+
+    static inline void parse_enum_metadata(Util::Yaml::Node &p_Node)
+    {
+      Util::String l_ModuleString =
+          LOW_YAML_AS_STRING(p_Node["module"]);
+
+      for (auto it = p_Node["enums"].begin();
+           it != p_Node["enums"].end(); ++it) {
+        Util::String i_EnumName = LOW_YAML_AS_STRING(it->first);
+        EnumMetadata i_Metadata;
+        i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+        i_Metadata.module = l_ModuleString;
+
+        for (auto oit = it->second["options"].begin();
+             oit != it->second["options"].end(); ++oit) {
+          Util::Yaml::Node &i_Node = *oit;
+
+          EnumEntryMetadata i_Entry;
+          i_Entry.name = LOW_YAML_AS_NAME(i_Node["name"]);
+
+          i_Metadata.options.push_back(i_Entry);
+        }
+
+        g_EnumMetadata.push_back(i_Metadata);
       }
     }
 
@@ -831,6 +872,18 @@ namespace Low {
                      g_TypeMetadata.end(),
                  "Could not find type metadata");
       return g_TypeMetadata[p_TypeId];
+    }
+
+    EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName)
+    {
+      for (EnumMetadata &i_Metadata : g_EnumMetadata) {
+        if (i_Metadata.fullTypeName == p_EnumTypeName) {
+          return i_Metadata;
+        }
+      }
+
+      LOW_ASSERT(false, "Could not find enum metadata");
+      return EnumMetadata();
     }
 
     void set_focused_widget(Widget *p_Widget)

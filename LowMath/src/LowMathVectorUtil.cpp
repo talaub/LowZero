@@ -48,16 +48,17 @@ namespace Low {
         /*
               float dot = glm::dot(p_Up, direction);
               if (fabs(dot - (-1.0f)) < 0.000001f) {
-                return glm::angleAxis(glm::degrees(PI), LOW_VECTOR3_UP);
-              } else if (fabs(dot - (1.0f)) < 0.000001f) {
-                return glm::quat();
+                return glm::angleAxis(glm::degrees(PI),
+           LOW_VECTOR3_UP); } else if (fabs(dot - (1.0f)) < 0.000001f)
+           { return glm::quat();
               }
 
               float angle = -glm::degrees(acosf(dot));
 
               glm::vec3 cross =
-                  glm::normalize(glm::cross(LOW_VECTOR3_FRONT, direction));
-              return glm::normalize(glm::angleAxis(angle, cross));
+                  glm::normalize(glm::cross(LOW_VECTOR3_FRONT,
+           direction)); return glm::normalize(glm::angleAxis(angle,
+           cross));
         */
       }
 
@@ -86,10 +87,12 @@ namespace Low {
           float sqZ = z * z;
           yawf = atan2(2 * y * w - 2 * x * z, 1 - 2 * sqY - 2 * sqZ);
           rollf = asin(2 * test);
-          pitchf = atan2(2 * x * w - 2 * y * z, 1 - 2 * sqX - 2 * sqZ);
+          pitchf =
+              atan2(2 * x * w - 2 * y * z, 1 - 2 * sqX - 2 * sqZ);
         }
 
-        glm::vec3 l_Degrees = glm::degrees(Math::Vector3(pitchf, yawf, rollf));
+        glm::vec3 l_Degrees =
+            glm::degrees(Math::Vector3(pitchf, yawf, rollf));
 
         return l_Degrees;
       }
@@ -100,9 +103,11 @@ namespace Low {
 
         /*
               glm::mat4 rotationMatrix =
-                  glm::rotate(glm::mat4(1.0f), l_Radians.y, glm::vec3(0, 1, 0))
-           * glm::rotate(glm::mat4(1.0f), l_Radians.x, glm::vec3(1, 0, 0)) *
-                  glm::rotate(glm::mat4(1.0f), l_Radians.z, glm::vec3(0, 0, 1));
+                  glm::rotate(glm::mat4(1.0f), l_Radians.y,
+           glm::vec3(0, 1, 0))
+           * glm::rotate(glm::mat4(1.0f), l_Radians.x, glm::vec3(1, 0,
+           0)) * glm::rotate(glm::mat4(1.0f), l_Radians.z,
+           glm::vec3(0, 0, 1));
 
               glm::quat l_Quat = glm::quat_cast(rotationMatrix);
         */
@@ -130,8 +135,8 @@ namespace Low {
         /*
               return p_Vec +
                      2.0f * glm::cross({p_Quat.x, p_Quat.y, p_Quat.z},
-                                       cross({p_Quat.x, p_Quat.y, p_Quat.z},
-           p_Vec) + p_Quat.w * p_Vec);
+                                       cross({p_Quat.x, p_Quat.y,
+           p_Quat.z}, p_Vec) + p_Quat.w * p_Vec);
         */
         return p_Quat * p_Vec;
       }
@@ -197,7 +202,8 @@ namespace Low {
         return l_Result;
       }
 
-      float pitch_degrees(Quaternion &p_Rotation, bool p_ReprojectAxis)
+      float pitch_degrees(Quaternion &p_Rotation,
+                          bool p_ReprojectAxis)
       {
         return glm::degrees(pitch(p_Rotation, p_ReprojectAxis));
       }
@@ -226,6 +232,16 @@ namespace Low {
       Quaternion between(Vector3 p_From, Vector3 p_To)
       {
         return glm::rotation(p_From, p_To);
+      }
+
+      Vector2 lerp(Vector2 &p_Start, Vector2 &p_End, float p_Delta)
+      {
+        return p_Start + (p_End - p_Start) * p_Delta;
+      }
+
+      Vector3 lerp(Vector3 &p_Start, Vector3 &p_End, float p_Delta)
+      {
+        return p_Start + (p_End - p_Start) * p_Delta;
       }
     } // namespace VectorUtil
   }   // namespace Math

@@ -5,6 +5,8 @@
 #include "LowUtilEnums.h"
 
 #include "LowCoreEntity.h"
+#include "LowCoreUiElement.h"
+
 #include "LowRendererMaterial.h"
 
 #include "LowEditorChangeList.h"
@@ -14,6 +16,7 @@ namespace Low {
     struct DetailsWidget;
     struct EditingWidget;
     struct TypeMetadata;
+    struct EnumMetadata;
     struct Widget;
 
     void initialize();
@@ -33,6 +36,7 @@ namespace Low {
     EditingWidget *get_editing_widget();
 
     TypeMetadata &get_type_metadata(uint16_t p_TypeId);
+    EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName);
 
     void duplicate(Util::List<Util::Handle> p_Handles);
 

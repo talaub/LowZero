@@ -122,5 +122,10 @@ namespace Low {
     {
       return m_WidgetPosition;
     }
+
+    Math::UVector2 RenderFlowWidget::get_widget_dimensions()
+    {
+      return m_LastFrameDimensions;
+    }
   } // namespace Editor
 } // namespace Low

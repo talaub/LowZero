@@ -24,7 +24,7 @@ namespace Low {
       struct LOW_CORE_API ElementData
       {
         Util::Map<uint16_t, Util::Handle> components;
-        UI::View view;
+        Low::Core::UI::View view;
         bool click_passthrough;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
@@ -107,8 +107,8 @@ namespace Low {
 
         Util::Map<uint16_t, Util::Handle> &get_components() const;
 
-        UI::View get_view() const;
-        void set_view(UI::View p_Value);
+        Low::Core::UI::View get_view() const;
+        void set_view(Low::Core::UI::View p_Value);
 
         bool is_click_passthrough() const;
         void set_click_passthrough(bool p_Value);

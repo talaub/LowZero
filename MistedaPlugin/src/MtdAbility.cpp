@@ -15,6 +15,8 @@
 #include "LowCoreUiDisplay.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "MtdFighter.h"
+#include "LowCoreCflatScripting.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Mtd {
@@ -505,6 +507,46 @@ namespace Mtd {
 
     return l_AbilityView;
     // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_card
+  }
+
+  void Ability::execute(Mtd::Component::Fighter p_Caster,
+                        Mtd::Component::Fighter p_Target)
+  {
+    // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+    _LOW_ASSERT(is_alive());
+
+    if (get_execute_function_name().empty()) {
+      LOW_LOG_WARN << "Trying to execute ability " << get_name()
+                   << " but execute function is empty."
+                   << LOW_LOG_END;
+      return;
+    }
+
+    Cflat::Function *l_Function =
+        Low::Core::Scripting::get_environment()->getFunction(
+            get_execute_function_name().c_str());
+
+    LOW_ASSERT(l_Function, "Could not find ability execute function");
+
+    static const Cflat::TypeUsage kTypeUsageFighter =
+        Low::Core::Scripting::get_environment()->getTypeUsage(
+            "Mtd::Component::Fighter");
+
+    Cflat::Value l_ReturnValue;
+    CflatArgsVector(Cflat::Value) l_Arguments;
+
+    Cflat::Value l_Caster;
+    l_Caster.initExternal(kTypeUsageFighter);
+    l_Caster.set(&p_Caster);
+    l_Arguments.push_back(l_Caster);
+
+    Cflat::Value l_Target;
+    l_Target.initExternal(kTypeUsageFighter);
+    l_Target.set(&p_Target);
+    l_Arguments.push_back(l_Target);
+
+    l_Function->execute(l_Arguments, &l_ReturnValue);
+    // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
   }
 
   uint32_t Ability::create_instance()

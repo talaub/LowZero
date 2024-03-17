@@ -55,6 +55,52 @@ function read_file(p_FilePath) {
   return fs.readFileSync(p_FilePath, { encoding: "utf8", flag: "r" });
 }
 
+function process_enum_file(p_FileName) {
+  const l_FileContent = read_file(`${g_Directory}\\${p_FileName}`);
+
+  const l_Config = YAML.parse(l_FileContent);
+
+  const l_Enums = [];
+
+  for (let [i_EnumName, i_Enum] of Object.entries(l_Config.enums)) {
+    i_Enum.name = i_EnumName;
+    i_Enum.module = l_Config.module;
+    i_Enum.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
+    i_Enum.namespace = l_Config.namespace;
+    i_Enum.scripting_namespace = l_Config.namespace;
+
+    i_Enum.api_file = `${i_Enum.module}Api.h`;
+    if (l_Config.api_file) {
+      i_Enum.api_file = l_Config.api_file;
+    }
+
+    i_Enum.dll_macro = l_Config.dll_macro;
+
+    i_Enum.namespace_string = "";
+
+    for (let i = 0; i < i_Enum.namespace.length; ++i) {
+      if (i) {
+        i_Enum.namespace_string += "::";
+      }
+      i_Enum.namespace_string += i_Enum.namespace[i];
+    }
+
+    i_Enum.module_path = `${__dirname}\\..\\..\\${i_Enum.module}`;
+    i_Enum.header_file_name = `${i_Enum.prefix}${i_Enum.name}.h`;
+    i_Enum.header_file_path = `${i_Enum.module_path}\\include\\${i_Enum.prefix}${i_Enum.name}.h`;
+    i_Enum.source_file_name = `${i_Enum.prefix}${i_Enum.name}.cpp`;
+    i_Enum.source_file_path = `${i_Enum.module_path}\\src\\${i_Enum.prefix}${i_Enum.name}.cpp`;
+
+    for (let i_Option of i_Enum.options) {
+      i_Option.uppercase = i_Option.name.toUpperCase();
+    }
+
+    l_Enums.push(i_Enum);
+  }
+
+  return l_Enums;
+}
+
 function process_file(p_FileName) {
   const l_FileContent = read_file(`${g_Directory}\\${p_FileName}`);
 
@@ -398,6 +444,30 @@ function removeItemOnce(arr, value) {
   return arr;
 }
 
+function collect_enums_for(env) {
+  const l_FileList = fs.readdirSync(g_Directory);
+
+  const l_Enums = [];
+
+  const l_EnumFiles = [];
+
+  for (let i_FileName of l_FileList) {
+    if (i_FileName.endsWith(".enums.yaml")) {
+      l_EnumFiles.push(i_FileName);
+    }
+  }
+
+  for (let i_FileName of l_EnumFiles) {
+    l_Enums.push(...process_enum_file(i_FileName));
+  }
+
+  if (env !== "ALL") {
+    return l_Enums.filter((type) => type.module.startsWith(env));
+  }
+
+  return l_Enums;
+}
+
 function collect_types_for(env) {
   const l_TypeIdContent = read_file(`${g_Directory}/typeids.yaml`);
   g_TypeIdMap = YAML.parse(l_TypeIdContent);
@@ -504,6 +574,7 @@ module.exports = {
   read_file,
   collect_types,
   collect_types_for,
+  collect_enums_for,
   get_plain_type,
   get_accessor_type,
   is_reference_type,

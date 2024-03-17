@@ -292,7 +292,9 @@ namespace Low {
               l_FullWidth * LOW_EDITOR_LABEL_WIDTH_REL;
           float l_LabelHeight = 20.0f;
 
-          if (i_PropInfo.type == Util::RTTI::PropertyType::HANDLE) {
+          if (it->enumType) {
+          } else if (i_PropInfo.type ==
+                     Util::RTTI::PropertyType::HANDLE) {
             PropertyEditors::render_handle_selector(i_PropInfo,
                                                     m_Handle);
           } else {

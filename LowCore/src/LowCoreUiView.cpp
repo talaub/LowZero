@@ -91,6 +91,29 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Util::List<Element> l_ElementsToDelete;
+        for (u64 i_ElementId : get_elements()) {
+          Element i_Element =
+              Util::find_handle_by_unique_id(i_ElementId);
+
+          if (!i_Element.is_alive()) {
+            continue;
+          }
+
+          Component::Display i_Parent = 0;
+
+          if (i_Element.get_display().is_alive()) {
+            i_Parent = i_Element.get_display().get_parent();
+          }
+
+          if (!i_Parent.is_alive()) {
+            l_ElementsToDelete.push_back(i_Element);
+          }
+        }
+
+        for (Element i_Element : l_ElementsToDelete) {
+          i_Element.destroy();
+        }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         Low::Util::remove_unique_id(get_unique_id());
@@ -282,6 +305,27 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(layer_offset);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewData, layer_offset);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+          l_PropertyInfo.get =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.layer_offset();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
+                                              layer_offset, uint32_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.layer_offset(*(uint32_t *)p_Data);
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ViewData, unique_id);
@@ -446,6 +490,7 @@ namespace Low {
                                             pixel_position());
         p_Node["rotation"] = rotation();
         p_Node["scale_multiplier"] = scale_multiplier();
+        p_Node["layer_offset"] = layer_offset();
         p_Node["unique_id"] = get_unique_id();
         p_Node["name"] = get_name().c_str();
 
@@ -488,6 +533,10 @@ namespace Low {
         if (p_Node["scale_multiplier"]) {
           l_Handle.scale_multiplier(
               p_Node["scale_multiplier"].as<float>());
+        }
+        if (p_Node["layer_offset"]) {
+          l_Handle.layer_offset(
+              p_Node["layer_offset"].as<uint32_t>());
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -667,6 +716,34 @@ namespace Low {
         }
       }
 
+      uint32_t View::layer_offset() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layer_offset
+        // LOW_CODEGEN::END::CUSTOM:GETTER_layer_offset
+
+        return TYPE_SOA(View, layer_offset, uint32_t);
+      }
+      void View::layer_offset(uint32_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layer_offset
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_layer_offset
+
+        if (layer_offset() != p_Value) {
+          // Set dirty flags
+          TYPE_SOA(View, transform_dirty, bool) = true;
+
+          // Set new value
+          TYPE_SOA(View, layer_offset, uint32_t) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer_offset
+          // LOW_CODEGEN::END::CUSTOM:SETTER_layer_offset
+        }
+      }
+
       Low::Util::UniqueId View::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
@@ -767,6 +844,8 @@ namespace Low {
       void View::remove_element(Element p_Element)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_element
+        p_Element.set_view(0);
+        get_elements().erase(p_Element.get_unique_id());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_remove_element
       }
 
@@ -943,6 +1022,13 @@ namespace Low {
                  &ms_Buffer[offsetof(ViewData, scale_multiplier) *
                             (l_Capacity)],
                  l_Capacity * sizeof(float));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewData, layer_offset) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewData, layer_offset) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(uint32_t));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ViewData, unique_id) *
