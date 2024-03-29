@@ -21,6 +21,14 @@
 
 namespace Mtd {
   // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+  struct
+  {
+    Low::Core::Texture2D attack;
+    Low::Core::Texture2D defense;
+    Low::Core::Texture2D buff;
+    Low::Core::Texture2D debuff;
+    Low::Core::Texture2D magic;
+  } g_AbilityTypeIcons;
   // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
   const uint16_t Ability::TYPE_ID = 45;
@@ -56,6 +64,8 @@ namespace Mtd {
 
     new (&ACCESSOR_TYPE_SOA(l_Handle, Ability, title,
                             Low::Util::String)) Low::Util::String();
+    new (&ACCESSOR_TYPE_SOA(l_Handle, Ability, type,
+                            Mtd::AbilityType)) Mtd::AbilityType();
     new (&ACCESSOR_TYPE_SOA(l_Handle, Ability, description,
                             Low::Util::String)) Low::Util::String();
     new (&ACCESSOR_TYPE_SOA(l_Handle, Ability, execute_function_name,
@@ -97,6 +107,25 @@ namespace Mtd {
   void Ability::initialize()
   {
     // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+    g_AbilityTypeIcons.magic =
+        Low::Core::Texture2D::make(Low::Util::String("magic.ktx"));
+    // g_AbilityTypeIcons.magic.load();
+
+    g_AbilityTypeIcons.debuff =
+        Low::Core::Texture2D::make(Low::Util::String("debuff.ktx"));
+    // g_AbilityTypeIcons.debuff.load();
+
+    g_AbilityTypeIcons.buff =
+        Low::Core::Texture2D::make(Low::Util::String("buff.ktx"));
+    // g_AbilityTypeIcons.buff.load();
+
+    g_AbilityTypeIcons.attack =
+        Low::Core::Texture2D::make(Low::Util::String("sword.ktx"));
+    g_AbilityTypeIcons.attack.load();
+
+    g_AbilityTypeIcons.defense =
+        Low::Core::Texture2D::make(Low::Util::String("shield.ktx"));
+    g_AbilityTypeIcons.defense.load();
     // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
     ms_Capacity =
@@ -143,6 +172,28 @@ namespace Mtd {
                               const void *p_Data) -> void {
         Ability l_Handle = p_Handle.get_id();
         l_Handle.set_title(*(Low::Util::String *)p_Data);
+      };
+      l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+    }
+    {
+      Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+      l_PropertyInfo.name = N(type);
+      l_PropertyInfo.editorProperty = true;
+      l_PropertyInfo.dataOffset = offsetof(AbilityData, type);
+      l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+      l_PropertyInfo.handleType =
+          Mtd::AbilityTypeEnumHelper::get_enum_id();
+      l_PropertyInfo.get =
+          [](Low::Util::Handle p_Handle) -> void const * {
+        Ability l_Handle = p_Handle.get_id();
+        l_Handle.get_type();
+        return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Ability, type,
+                                          Mtd::AbilityType);
+      };
+      l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                              const void *p_Data) -> void {
+        Ability l_Handle = p_Handle.get_id();
+        l_Handle.set_type(*(Mtd::AbilityType *)p_Data);
       };
       l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
     }
@@ -285,6 +336,7 @@ namespace Mtd {
 
     Ability l_Handle = make(p_Name);
     l_Handle.set_title(get_title());
+    l_Handle.set_type(get_type());
     l_Handle.set_description(get_description());
     l_Handle.set_execute_function_name(get_execute_function_name());
     l_Handle.set_resource_cost(get_resource_cost());
@@ -312,6 +364,9 @@ namespace Mtd {
     _LOW_ASSERT(is_alive());
 
     p_Node["title"] = get_title().c_str();
+    Low::Util::Serialization::serialize_enum(
+        p_Node["type"], Mtd::AbilityTypeEnumHelper::get_enum_id(),
+        static_cast<uint8_t>(get_type()));
     p_Node["description"] = get_description().c_str();
     p_Node["execute_function_name"] =
         get_execute_function_name().c_str();
@@ -337,6 +392,11 @@ namespace Mtd {
 
     if (p_Node["title"]) {
       l_Handle.set_title(LOW_YAML_AS_STRING(p_Node["title"]));
+    }
+    if (p_Node["type"]) {
+      l_Handle.set_type(static_cast<Mtd::AbilityType>(
+          Low::Util::Serialization::deserialize_enum(
+              p_Node["type"])));
     }
     if (p_Node["description"]) {
       l_Handle.set_description(
@@ -381,6 +441,29 @@ namespace Mtd {
 
     // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_title
     // LOW_CODEGEN::END::CUSTOM:SETTER_title
+  }
+
+  Mtd::AbilityType Ability::get_type() const
+  {
+    _LOW_ASSERT(is_alive());
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_type
+    // LOW_CODEGEN::END::CUSTOM:GETTER_type
+
+    return TYPE_SOA(Ability, type, Mtd::AbilityType);
+  }
+  void Ability::set_type(Mtd::AbilityType p_Value)
+  {
+    _LOW_ASSERT(is_alive());
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_type
+    // LOW_CODEGEN::END::CUSTOM:PRESETTER_type
+
+    // Set new value
+    TYPE_SOA(Ability, type, Mtd::AbilityType) = p_Value;
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_type
+    // LOW_CODEGEN::END::CUSTOM:SETTER_type
   }
 
   Low::Util::String &Ability::get_description() const
@@ -505,6 +588,25 @@ namespace Mtd {
         std::to_string(get_resource_cost()).c_str();
     l_ResourceText.set_text(l_ResourceCost);
 
+    Low::Core::UI::Component::Image l_TypeImage =
+        l_AbilityView.find_element_by_name(N(cardbg)).get_component(
+            Low::Core::UI::Component::Image::TYPE_ID);
+
+    if (get_type() == AbilityType::BUFF) {
+      l_TypeImage.set_texture(g_AbilityTypeIcons.buff);
+    } else if (get_type() == AbilityType::MAGIC) {
+      l_TypeImage.set_texture(g_AbilityTypeIcons.magic);
+    } else if (get_type() == AbilityType::DEBUFF) {
+      l_TypeImage.set_texture(g_AbilityTypeIcons.debuff);
+    } else if (get_type() == AbilityType::DEFENSE) {
+      LOW_LOG_DEBUG << g_AbilityTypeIcons.defense.is_alive() << ", "
+                    << g_AbilityTypeIcons.defense.is_loaded()
+                    << LOW_LOG_END;
+      l_TypeImage.set_texture(g_AbilityTypeIcons.defense);
+    } else {
+      l_TypeImage.set_texture(g_AbilityTypeIcons.attack);
+    }
+
     return l_AbilityView;
     // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_card
   }
@@ -589,6 +691,12 @@ namespace Mtd {
                           (l_Capacity + l_CapacityIncrease)],
              &ms_Buffer[offsetof(AbilityData, title) * (l_Capacity)],
              l_Capacity * sizeof(Low::Util::String));
+    }
+    {
+      memcpy(&l_NewBuffer[offsetof(AbilityData, type) *
+                          (l_Capacity + l_CapacityIncrease)],
+             &ms_Buffer[offsetof(AbilityData, type) * (l_Capacity)],
+             l_Capacity * sizeof(Mtd::AbilityType));
     }
     {
       memcpy(&l_NewBuffer[offsetof(AbilityData, description) *

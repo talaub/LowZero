@@ -69,7 +69,8 @@ namespace Low {
           BOOL,
           HANDLE,
           SHAPE,
-          STRING
+          STRING,
+          ENUM
         };
       }
 
@@ -106,6 +107,23 @@ namespace Low {
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
         uint32_t (*get_living_count)();
+      };
+
+      struct EnumEntryInfo
+      {
+        Name name;
+        u8 value;
+      };
+
+      struct EnumInfo
+      {
+        Name name;
+        u16 enumId;
+
+        List<EnumEntryInfo> entries;
+
+        Name (*entry_name)(u8);
+        u8 (*entry_value)(Name);
       };
     } // namespace RTTI
 
@@ -153,6 +171,10 @@ namespace Low {
       static void register_type_info(uint16_t p_TypeId,
                                      RTTI::TypeInfo &p_TypeInfo);
     };
+
+    void LOW_EXPORT register_enum_info(u16 p_EnumId,
+                                       RTTI::EnumInfo &p_EnumInfo);
+    LOW_EXPORT RTTI::EnumInfo &get_enum_info(u16 p_EnumId);
 
     UniqueId LOW_EXPORT generate_unique_id(Handle p_Handle);
     void LOW_EXPORT register_unique_id(UniqueId p_UniqueId,

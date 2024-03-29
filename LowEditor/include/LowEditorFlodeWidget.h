@@ -2,17 +2,19 @@
 
 #include "LowEditorWidget.h"
 
+#include "FlodeEditor.h"
+
 #include <imgui_node_editor.h>
 
 namespace Low {
   namespace Editor {
-    struct StateGraphWidget : public Widget
+    struct FlodeWidget : public Widget
     {
-      StateGraphWidget();
+      FlodeWidget();
       void render(float p_Delta) override;
 
     private:
-      ax::NodeEditor::EditorContext *m_Context;
+      Flode::Editor *m_Editor;
     };
   } // namespace Editor
 } // namespace Low

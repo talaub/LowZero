@@ -381,10 +381,12 @@ namespace Low {
           if (p_Value.is_alive()) {
             p_Value.load();
 
+            /*
             get_renderer_material().set_property(
                 N(image_map),
                 Util::Variant::from_handle(
                     p_Value.get_renderer_texture().get_id()));
+                    */
           }
           // LOW_CODEGEN::END::CUSTOM:SETTER_texture
         }

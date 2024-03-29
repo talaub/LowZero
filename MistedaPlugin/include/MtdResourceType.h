@@ -6,7 +6,7 @@
 #include "LowUtilName.h"
 
 namespace Mtd {
-  enum class ResourceType
+  enum class ResourceType : u8
   {
     ENERGY,
     MANA,
@@ -16,12 +16,12 @@ namespace Mtd {
     void MISTEDA_API initialize();
     void MISTEDA_API cleanup();
 
-    Low::Util::Name MISTEDA_API
-    option_name(Mtd::ResourceType p_Value);
-    Low::Util::Name MISTEDA_API _option_name(uint8_t p_Value);
+    Low::Util::Name MISTEDA_API entry_name(Mtd::ResourceType p_Value);
+    Low::Util::Name MISTEDA_API _entry_name(uint8_t p_Value);
 
-    Mtd::ResourceType MISTEDA_API
-    option_value(Low::Util::Name p_Name);
-    uint8_t MISTEDA_API _option_value(Low::Util::Name p_Name);
+    Mtd::ResourceType MISTEDA_API entry_value(Low::Util::Name p_Name);
+    uint8_t MISTEDA_API _entry_value(Low::Util::Name p_Name);
+
+    u16 MISTEDA_API get_enum_id();
   } // namespace ResourceTypeEnumHelper
 } // namespace Mtd

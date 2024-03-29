@@ -4,8 +4,12 @@ const exec = require("child_process").execSync;
 const YAML = require("yaml");
 
 const g_Directory = `${__dirname}\\..\\..\\misteda\\data\\_internal\\type_configs`;
+
 let g_TypeIdMap = {};
 const g_AllTypeIds = [];
+
+let g_EnumIdMap = {};
+const g_AllEnumIds = [];
 
 function line(l, n = 0) {
   let t = "";
@@ -51,6 +55,16 @@ function get_unused_type_id() {
   return id;
 }
 
+function get_unused_enum_id() {
+  let id = 1;
+
+  while (g_AllEnumIds.includes(id)) {
+    id++;
+  }
+
+  return id;
+}
+
 function read_file(p_FilePath) {
   return fs.readFileSync(p_FilePath, { encoding: "utf8", flag: "r" });
 }
@@ -60,6 +74,10 @@ function process_enum_file(p_FileName) {
 
   const l_Config = YAML.parse(l_FileContent);
 
+  if (!g_EnumIdMap[l_Config.module]) {
+    g_EnumIdMap[l_Config.module] = {};
+  }
+
   const l_Enums = [];
 
   for (let [i_EnumName, i_Enum] of Object.entries(l_Config.enums)) {
@@ -68,6 +86,15 @@ function process_enum_file(p_FileName) {
     i_Enum.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Enum.namespace = l_Config.namespace;
     i_Enum.scripting_namespace = l_Config.namespace;
+
+    i_Enum.enumId = 0;
+    if (g_EnumIdMap[l_Config.module][i_EnumName]) {
+      i_Enum.enumId = g_EnumIdMap[l_Config.module][i_EnumName];
+    } else {
+      i_Enum.enumId = get_unused_enum_id();
+      g_AllEnumIds.push(i_Enum.enumId);
+      g_EnumIdMap[l_Config.module][i_EnumName] = i_Enum.enumId;
+    }
 
     i_Enum.api_file = `${i_Enum.module}Api.h`;
     if (l_Config.api_file) {
@@ -447,6 +474,15 @@ function removeItemOnce(arr, value) {
 function collect_enums_for(env) {
   const l_FileList = fs.readdirSync(g_Directory);
 
+  const l_EnumIdContent = read_file(`${g_Directory}/enumids.yaml`);
+  g_EnumIdMap = YAML.parse(l_EnumIdContent);
+
+  for (const [key, value] of Object.entries(g_EnumIdMap)) {
+    for (const [k, v] of Object.entries(value)) {
+      g_AllEnumIds.push(v);
+    }
+  }
+
   const l_Enums = [];
 
   const l_EnumFiles = [];
@@ -460,6 +496,8 @@ function collect_enums_for(env) {
   for (let i_FileName of l_EnumFiles) {
     l_Enums.push(...process_enum_file(i_FileName));
   }
+
+  fs.writeFileSync(`${g_Directory}/enumids.yaml`, YAML.stringify(g_EnumIdMap));
 
   if (env !== "ALL") {
     return l_Enums.filter((type) => type.module.startsWith(env));

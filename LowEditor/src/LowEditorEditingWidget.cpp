@@ -210,8 +210,7 @@ namespace Low {
                             ImGuiWindowFlags_NoScrollbar |
                             ImGuiWindowFlags_NoScrollWithMouse |
                             ImGuiWindowFlags_NoSavedSettings |
-                            ImGuiWindowFlags_NoDecoration |
-                            ImGuiWindowFlags_AlwaysAutoResize);
+                            ImGuiWindowFlags_NoDecoration);
       if (Core::get_engine_state() == Util::EngineState::EDITING) {
         if (ImGui::Button(ICON_FA_PLAY)) {
           set_selected_entity(0);
@@ -263,8 +262,7 @@ namespace Low {
                             ImGuiWindowFlags_NoScrollbar |
                             ImGuiWindowFlags_NoScrollWithMouse |
                             ImGuiWindowFlags_NoSavedSettings |
-                            ImGuiWindowFlags_NoDecoration |
-                            ImGuiWindowFlags_AlwaysAutoResize);
+                            ImGuiWindowFlags_NoDecoration);
       if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
         l_Operation = ImGuizmo::TRANSLATE;
       }

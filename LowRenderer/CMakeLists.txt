@@ -14,6 +14,7 @@ SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui_demo.cpp"
   "${IMGUI_PATH}/imgui_tables.cpp"
   "${IMGUI_PATH}/imgui_widgets.cpp"
+  "${IMGUI_PATH}/imgui_stacklayout.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_glfw.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_vulkan.cpp"
 )

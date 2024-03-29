@@ -11,6 +11,7 @@
 
 namespace Low {
   namespace Util {
+    Map<uint16_t, RTTI::EnumInfo> g_EnumInfos;
     Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
     List<uint16_t> g_ComponentTypes;
     Map<UniqueId, Handle> g_UniqueIdRegistry;
@@ -25,6 +26,23 @@ namespace Low {
         uint16_t randomComponent;
       } data;
     };
+
+    void register_enum_info(u16 p_EnumId, RTTI::EnumInfo &p_EnumInfo)
+    {
+      LOW_ASSERT(
+          g_EnumInfos.find(p_EnumId) == g_EnumInfos.end(),
+          "Enum info for this enum id has already been registered");
+
+      g_EnumInfos[p_EnumId] = p_EnumInfo;
+    }
+
+    RTTI::EnumInfo &get_enum_info(u16 p_EnumId)
+    {
+     LOW_ASSERT(g_EnumInfos.find(p_EnumId) != g_EnumInfos.end(),
+                 "Enum info has not been registered for enum id");
+
+      return g_EnumInfos[p_EnumId];
+    }
 
     UniqueId generate_unique_id(Handle p_Handle)
     {
@@ -237,6 +255,12 @@ namespace Low {
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::STRING) {
         // TODO: Integrate String type into variant
         // Currently strings are not managed in variants
+        return;
+      }
+
+      if (p_PropertyInfo.type == Util::RTTI::PropertyType::ENUM) {
+        // TODO: Handle Enums
+        // Currently enums are not managed in variants
         return;
       }
 

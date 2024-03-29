@@ -11,6 +11,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowCoreUiElement.h"
+#include "MtdAbilityType.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Mtd {
@@ -23,6 +24,7 @@ namespace Mtd {
   struct MISTEDA_API AbilityData
   {
     Low::Util::String title;
+    Mtd::AbilityType type;
     Low::Util::String description;
     Low::Util::String execute_function_name;
     uint32_t resource_cost;
@@ -105,6 +107,9 @@ namespace Mtd {
 
     Low::Util::String &get_title() const;
     void set_title(Low::Util::String &p_Value);
+
+    Mtd::AbilityType get_type() const;
+    void set_type(Mtd::AbilityType p_Value);
 
     Low::Util::String &get_description() const;
     void set_description(Low::Util::String &p_Value);

@@ -1062,7 +1062,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot calculate world "
                                "position of dead transform");
 
-        if (!is_world_dirty()) {
+        if (!is_world_dirty() || is_world_updated()) {
           return;
         }
 

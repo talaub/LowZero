@@ -1,6 +1,7 @@
 #include "LowCoreTexture2D.h"
 
 #include <algorithm>
+#include <future>
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -28,8 +29,10 @@ namespace Low {
       Util::Future<void> future;
       Texture2D textureResource;
 
-      TextureLoadSchedule(uint64_t p_Id, Util::Future<void> p_Future)
-          : textureIndex(p_Id), future(std::move(p_Future))
+      TextureLoadSchedule(uint64_t p_Id, Util::Future<void> p_Future,
+                          Texture2D p_TextureResource)
+          : textureIndex(p_Id), future(std::move(p_Future)),
+            textureResource(p_TextureResource)
       {
       }
     };
@@ -532,23 +535,25 @@ namespace Low {
 
       set_renderer_texture(Renderer::reserve_texture(get_name()));
 
+      u64 l_HandleId = get_id();
+
       TextureLoadSchedule &l_LoadSchedule =
           g_TextureLoadSchedules.emplace_back(
               l_TextureIndex,
               Util::JobManager::default_pool().enqueue(
-                  [l_FullPath, l_TextureIndex]() {
+                  [l_FullPath, l_TextureIndex, l_HandleId]() {
                     for (auto it = g_TextureLoadSchedules.begin();
                          it != g_TextureLoadSchedules.end(); ++it) {
-                      if (it->textureIndex == l_TextureIndex) {
+                      if (it->textureResource.get_id() ==
+                          l_HandleId) {
                         Util::Resource::load_image2d(
                             Util::String(l_FullPath.c_str()),
-                            g_Image2Ds[l_TextureIndex]);
+                            g_Image2Ds[it->textureIndex]);
                         break;
                       }
                     }
-                  }));
-      l_LoadSchedule.textureResource = *this;
-
+                  }),
+              *this);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
     }
 
@@ -586,16 +591,16 @@ namespace Low {
       LOW_PROFILE_CPU("Core", "Update Texture2D");
       for (auto it = g_TextureLoadSchedules.begin();
            it != g_TextureLoadSchedules.end();) {
-        if (it->future.wait_for(std::chrono::seconds(0)) ==
-            std::future_status::ready) {
-          Renderer::upload_texture(
-              it->textureResource.get_renderer_texture(),
-              g_Image2Ds[it->textureIndex]);
+        std::future_status i_Status =
+            it->future.wait_for(std::chrono::seconds(0));
+
+        Texture2D i_Texture = it->textureResource;
+        if (i_Status == std::future_status::ready) {
+          Renderer::upload_texture(i_Texture.get_renderer_texture(),
+                                   g_Image2Ds[it->textureIndex]);
 
           g_TextureSlots[it->textureIndex] = false;
 
-          Texture2D i_Texture =
-              Texture2D::find_by_index(it->textureIndex);
           i_Texture.set_state(ResourceState::LOADED);
 
           it = g_TextureLoadSchedules.erase(it);

@@ -34,7 +34,9 @@
 
 #include "LowEditorMainWindow.h"
 
-#include "MtdPlugin.h"
+// #include "MtdPlugin.h"
+
+#include <windows.h>
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -50,6 +52,8 @@ void *operator new[](size_t size, size_t alignment,
   return malloc(size);
 }
 
+typedef int(__stdcall *f_funci)();
+
 static void setup_scene()
 {
   Low::Core::Scene l_Scene =
@@ -59,6 +63,29 @@ static void setup_scene()
 
 int run_low()
 {
+  HINSTANCE hGetProcIDDLL = LoadLibrary("mistedaplugind.dll");
+
+  if (!hGetProcIDDLL) {
+    std::cout << "could not load the dynamic library" << std::endl;
+    return 1;
+  }
+
+  // resolve function address here
+  f_funci plugin_initialize =
+      (f_funci)GetProcAddress(hGetProcIDDLL, "plugin_initialize");
+  if (!plugin_initialize) {
+    std::cout << "could not locate the initialize function"
+              << std::endl;
+    return 1;
+  }
+
+  f_funci plugin_cleanup =
+      (f_funci)GetProcAddress(hGetProcIDDLL, "plugin_cleanup");
+  if (!plugin_cleanup) {
+    std::cout << "could not locate the cleanup function" << std::endl;
+    return 1;
+  }
+
   Low::Util::initialize();
 
   Low::Renderer::initialize();
@@ -67,7 +94,9 @@ int run_low()
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
-  Mtd::initialize();
+  // Mtd::initialize();
+
+  plugin_initialize();
 
   setup_scene();
 
@@ -75,7 +104,9 @@ int run_low()
 
   Low::Core::GameLoop::start();
 
-  Mtd::cleanup();
+  // Mtd::cleanup();
+
+  plugin_cleanup();
 
   Low::Core::cleanup();
 

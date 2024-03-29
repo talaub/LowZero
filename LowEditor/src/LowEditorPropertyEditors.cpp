@@ -48,6 +48,45 @@ namespace Low {
             {l_Pos.x + l_LabelWidth + LOW_EDITOR_SPACING, l_Pos.y});
       }
 
+      bool render_enum_selector(PropertyMetadata &p_Metadata,
+                                Util::Handle p_Handle)
+      {
+
+        Util::String l_FriendlyLabel = p_Metadata.name.c_str();
+        render_label(l_FriendlyLabel);
+
+        struct Funcs
+        {
+          static bool EnumGetter(void *data, int n,
+                                 const char **out_str)
+          {
+            Util::RTTI::EnumEntryInfo l_EntryInfo =
+                ((Util::RTTI::EnumEntryInfo *)data)[n];
+            *out_str = l_EntryInfo.name.c_str();
+            return true;
+          }
+        };
+
+        Util::String l_Label = "##";
+        l_Label += p_Metadata.name.c_str();
+
+        Util::RTTI::EnumInfo &l_EnumInfo =
+            Util::get_enum_info(p_Metadata.propInfo.handleType);
+
+        int l_CurrentValue =
+            (int)*(u8 *)p_Metadata.propInfo.get(p_Handle);
+
+        bool l_Result = ImGui::Combo(
+            l_Label.c_str(), &l_CurrentValue, &Funcs::EnumGetter,
+            l_EnumInfo.entries.data(), l_EnumInfo.entries.size());
+
+        u8 l_CurrentValueU8 = l_CurrentValue;
+
+        p_Metadata.propInfo.set(p_Handle, &l_CurrentValueU8);
+
+        return l_Result;
+      }
+
       void render_name_editor(Util::String &p_Label,
                               Util::Name &p_Name, bool p_RenderLabel)
       {

@@ -28,10 +28,6 @@
 [submodule "LowDependencies/assimp"]
 	path = LowDependencies/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "LowDependencies/imgui"]
-	path = LowDependencies/imgui
-	url = https://github.com/ocornut/imgui.git
-	branch = docking
 [submodule "LowDependencies/IconFontCppHeaders"]
 	path = LowDependencies/IconFontCppHeaders
 	url = https://github.com/juliettef/IconFontCppHeaders.git
@@ -54,3 +50,7 @@
 [submodule "LowDependencies/freetype"]
 	path = LowDependencies/freetype
 	url = https://github.com/freetype/freetype.git
+[submodule "LowDependencies/imgui"]
+	path = LowDependencies/imgui
+	url = https://github.com/thedmd/imgui.git
+	branch = feature/docking-layout-external

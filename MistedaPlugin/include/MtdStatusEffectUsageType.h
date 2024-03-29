@@ -6,7 +6,7 @@
 #include "LowUtilName.h"
 
 namespace Mtd {
-  enum class StatusEffectUsageType
+  enum class StatusEffectUsageType : u8
   {
     STACK,
     DURATION,
@@ -17,11 +17,13 @@ namespace Mtd {
     void MISTEDA_API cleanup();
 
     Low::Util::Name MISTEDA_API
-    option_name(Mtd::StatusEffectUsageType p_Value);
-    Low::Util::Name MISTEDA_API _option_name(uint8_t p_Value);
+    entry_name(Mtd::StatusEffectUsageType p_Value);
+    Low::Util::Name MISTEDA_API _entry_name(uint8_t p_Value);
 
     Mtd::StatusEffectUsageType MISTEDA_API
-    option_value(Low::Util::Name p_Name);
-    uint8_t MISTEDA_API _option_value(Low::Util::Name p_Name);
+    entry_value(Low::Util::Name p_Name);
+    uint8_t MISTEDA_API _entry_value(Low::Util::Name p_Name);
+
+    u16 MISTEDA_API get_enum_id();
   } // namespace StatusEffectUsageTypeEnumHelper
 } // namespace Mtd

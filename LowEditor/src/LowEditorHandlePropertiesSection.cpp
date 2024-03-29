@@ -293,6 +293,8 @@ namespace Low {
           float l_LabelHeight = 20.0f;
 
           if (it->enumType) {
+            PropertyEditors::render_enum_selector(l_PropMetadata,
+                                                  m_Handle);
           } else if (i_PropInfo.type ==
                      Util::RTTI::PropertyType::HANDLE) {
             PropertyEditors::render_handle_selector(i_PropInfo,

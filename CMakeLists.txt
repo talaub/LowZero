@@ -69,6 +69,7 @@ add_compile_definitions(
   IMGUI_DEFINE_MATH_OPERATORS
   LOW_DATA_PATH="../../../misteda/data"
   IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}LowRenderer/include/LowRendererImguiConfig.h"
+  LOW_RENDERER_COMPILE_SHADERS
   LOW_RENDERER_VALIDATION_ENABLED
   LOW_COLOR_LOG
   PX_PHYSX_STATIC_LIB
@@ -109,6 +110,8 @@ ENDFOREACH()
 # Adds the game subdirectory to the list of subprojects
 #LIST(APPEND SUBPROJECTS zero)
 #LIST(APPEND SUBPROJECTS gamestart)
+
+LIST(APPEND SUBPROJECTS Flode)
 LIST(APPEND SUBPROJECTS MistedaPlugin)
 
 SET(LINK_DIRS "")

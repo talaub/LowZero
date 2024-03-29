@@ -1,4 +1,4 @@
-project(LowEditor)
+project(Flode)
 
 set(NODEGRAPH_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/node-editor")
 
@@ -15,48 +15,53 @@ SET(NODEGRAPH_SOURCES
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
-add_executable(LowEditor ${NODEGRAPH_SOURCES} ${SOURCES} ${INCLUDES} ${FLODE_NODE_SOURCES} ${FLODE_NODE_INCLUDES} app.o)
+add_library(Flode SHARED
+   ${NODEGRAPH_SOURCES} 
+   ${SOURCES} 
+   ${INCLUDES}
+  )
 
 source_group("Header Files" FILES ${INCLUDES})
 
-add_dependencies(LowEditor
+add_dependencies(Flode
   LowUtil
   LowMath
   LowRenderer
   LowCore
-  Flode
   nativefiledialog
   assimp
   physx
-  MistedaPlugin
 )
 
-set(LOWEDITOR_INCLUDE_DIRS
+set(FLODE_INCLUDE_DIRS
   "${NODEGRAPH_PATH}"
   "${NODEGRAPH_PATH}/examples/blueprints-example"
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-set_property(TARGET LowEditor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${APP_OUTPUT_DIR}")
+set_property(TARGET Flode PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${APP_OUTPUT_DIR}")
 
-target_compile_definitions(LowEditor PRIVATE
-  LOW_MODULE_NAME="lowed"
+target_compile_definitions(Flode PRIVATE
+  flode_EXPORTS
+  LOW_MODULE_NAME="flode"
 )
 
 include_directories(
-  ${LOWEDITOR_INCLUDE_DIRS}
+  ${FLODE_INCLUDE_DIRS}
 )
 
-set_target_properties(LowEditor PROPERTIES OUTPUT_NAME "lowed")
+target_include_directories(Flode PUBLIC
+  ${FLODE_INCLUDE_DIRS}
+)
 
-target_link_libraries(LowEditor PRIVATE
+set_target_properties(Flode PROPERTIES OUTPUT_NAME "flode")
+
+target_link_libraries(Flode PRIVATE
   LowCore
   LowRenderer
   LowUtil
   LowMath
-  Flode
   nativefiledialog
   assimp
   physx
-  MistedaPlugin
 )

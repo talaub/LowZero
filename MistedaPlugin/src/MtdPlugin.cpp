@@ -6,6 +6,7 @@
 #include "MtdAbility.h"
 #include "MtdCflatScripting.h"
 #include "MtdStatusEffect.h"
+#include "MtdAbilityType.h"
 
 #include "LowCoreGameLoop.h"
 
@@ -37,6 +38,11 @@ namespace Mtd {
   {
     Component::CameraController::initialize();
     Component::Fighter::initialize();
+  }
+
+  static void initialize_enums()
+  {
+    Mtd::AbilityTypeEnumHelper::initialize();
   }
 
   static void initialize_base_types()
@@ -99,6 +105,7 @@ namespace Mtd {
 
   void initialize()
   {
+    initialize_enums();
     initialize_types();
 
     Scripting::initialize();
@@ -126,8 +133,26 @@ namespace Mtd {
     cleanup_base_types();
   }
 
+  static void cleanup_enums()
+  {
+    Mtd::AbilityTypeEnumHelper::cleanup();
+  }
+
   void cleanup()
   {
     cleanup_types();
+    cleanup_enums();
   }
 } // namespace Mtd
+
+extern "C" int __declspec(dllexport) __stdcall plugin_initialize()
+{
+  Mtd::initialize();
+  return 0;
+}
+
+extern "C" int __declspec(dllexport) __stdcall plugin_cleanup()
+{
+  Mtd::cleanup();
+  return 0;
+}

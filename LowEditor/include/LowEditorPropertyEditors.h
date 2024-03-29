@@ -21,6 +21,10 @@ namespace Low {
       bool render_handle_selector(Util::String p_Label,
                                   uint16_t p_Type,
                                   uint64_t *p_HandleId);
+
+      bool render_enum_selector(PropertyMetadata &p_Metadata,
+                                Util::Handle p_Handle);
+
       void
       render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
                              Util::Handle p_Handle);

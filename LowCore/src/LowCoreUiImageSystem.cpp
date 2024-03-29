@@ -146,6 +146,8 @@ namespace Low {
                   i_Image.get_element().get_index();
               i_RenderObject.clickPassthrough =
                   i_Image.get_element().is_click_passthrough();
+              i_RenderObject.texture =
+                  i_Image.get_texture().get_renderer_texture();
 
               Renderer::get_main_renderflow().register_renderobject(
                   i_RenderObject);

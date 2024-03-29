@@ -111,6 +111,15 @@ namespace Low {
         }
       }
 
+      void serialize_enum(Yaml::Node &p_Node, u16 p_EnumId,
+                          u8 p_EnumValue)
+      {
+        RTTI::EnumInfo &l_EnumInfo = Util::get_enum_info(p_EnumId);
+        p_Node["enum_id"] = p_EnumId;
+        p_Node["enum_value"] =
+            l_EnumInfo.entry_name(p_EnumValue).c_str();
+      }
+
       Math::Quaternion deserialize_quaternion(Yaml::Node &p_Node)
       {
         Math::Quaternion l_Result;
@@ -229,6 +238,14 @@ namespace Low {
 
         LOW_ASSERT(false,
                    "Could not deserialize variant. Unknown type");
+      }
+
+      u8 deserialize_enum(Yaml::Node &p_Node)
+      {
+        RTTI::EnumInfo &l_EnumInfo =
+            get_enum_info(p_Node["enum_id"].as<u16>());
+        return l_EnumInfo.entry_value(
+            LOW_YAML_AS_NAME(p_Node["enum_value"]));
       }
     } // namespace Serialization
   }   // namespace Util

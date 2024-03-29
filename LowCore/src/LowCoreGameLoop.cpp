@@ -291,9 +291,11 @@ namespace Low {
           UI::Component::Image l_Image =
               UI::Component::Image::make(l_BgIconElement);
 
+          /*
           Core::Texture2D l_Texture =
               Core::Texture2D::make(Util::String("magic.ktx"));
           l_Image.set_texture(l_Texture);
+          */
         }
 
         // Resource icon

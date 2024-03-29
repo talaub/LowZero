@@ -15,7 +15,7 @@
 #include "LowEditorChangeWidget.h"
 #include "LowEditorRegionWidget.h"
 #include "LowEditorUiWidget.h"
-#include "LowEditorStateGraphWidget.h"
+#include "LowEditorFlodeWidget.h"
 #include "LowEditorGui.h"
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
@@ -42,6 +42,8 @@
 #include "LowCorePhysicsSystem.h"
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMaterial.h"
+
+#include "Flode.h"
 
 #include <chrono>
 #include <cstddef>
@@ -565,6 +567,7 @@ namespace Low {
           PropertyMetadata l_Metadata;
           l_Metadata.name = N(name);
           l_Metadata.editor = false;
+          l_Metadata.enumType = false;
           if (p_Node["name_editable"]) {
             l_Metadata.editor = true;
           }
@@ -737,8 +740,7 @@ namespace Low {
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
       register_editor_widget("Resources", new ResourceWidget());
-      register_editor_widget("StateGraph", new StateGraphWidget(),
-                             true);
+      register_editor_widget("Flode", new FlodeWidget(), false);
       register_editor_widget("UI-Views", new UiWidget(), false);
 
       for (auto &it : g_TypeMetadata) {

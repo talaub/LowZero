@@ -187,7 +187,7 @@ function generate_enum_header(p_Enum) {
     t += line(`namespace ${i_Namespace} {`, n++);
   }
 
-  t += line(`enum class ${p_Enum.name}`, n);
+  t += line(`enum class ${p_Enum.name}: u8`, n);
   t += line("{", n++);
 
   for (let i_Option of p_Enum.options) {
@@ -203,22 +203,25 @@ function generate_enum_header(p_Enum) {
   t += empty();
 
   t += line(
-    `Low::Util::Name ${p_Enum.dll_macro} option_name(${l_EnumString} p_Value);`,
+    `Low::Util::Name ${p_Enum.dll_macro} entry_name(${l_EnumString} p_Value);`,
   );
 
   t += line(
-    `Low::Util::Name ${p_Enum.dll_macro} _option_name(${g_EnumType} p_Value);`,
+    `Low::Util::Name ${p_Enum.dll_macro} _entry_name(${g_EnumType} p_Value);`,
   );
 
   t += empty();
 
   t += line(
-    `${l_EnumString} ${p_Enum.dll_macro} option_value(Low::Util::Name p_Name);`,
+    `${l_EnumString} ${p_Enum.dll_macro} entry_value(Low::Util::Name p_Name);`,
   );
 
   t += line(
-    `${g_EnumType} ${p_Enum.dll_macro} _option_value(Low::Util::Name p_Name);`,
+    `${g_EnumType} ${p_Enum.dll_macro} _entry_value(Low::Util::Name p_Name);`,
   );
+
+  t += empty();
+  t += line(`u16 ${p_Enum.dll_macro} get_enum_id();`);
 
   t += line("}");
 
@@ -249,6 +252,7 @@ function generate_enum_source(p_Enum) {
   t += include(`${p_Enum.header_file_name}`);
   t += empty();
   t += include(`LowUtilAssert.h`);
+  t += include(`LowUtilHandle.h`);
   t += empty();
 
   for (let i_Namespace of p_Enum.namespace) {
@@ -257,13 +261,32 @@ function generate_enum_source(p_Enum) {
 
   t += line(`namespace ${p_Enum.name}EnumHelper {`);
   t += line(`void initialize() {`);
+  t += line(`Low::Util::RTTI::EnumInfo l_EnumInfo;`);
+  t += line(`l_EnumInfo.name = N(${p_Enum.name});`);
+  t += line(`l_EnumInfo.enumId = ${p_Enum.enumId};`);
+  t += line(`l_EnumInfo.entry_name = &_entry_name;`);
+  t += line(`l_EnumInfo.entry_value = &_entry_value;`);
+  t += empty();
+  let l_OptionIndex = 0;
+  for (let i_Option of p_Enum.options) {
+    t += line("{");
+    t += line("Low::Util::RTTI::EnumEntryInfo l_Entry;");
+    t += line(`l_Entry.name = N(${i_Option.name});`);
+    t += line(`l_Entry.value = ${l_OptionIndex};`);
+    t += empty();
+    t += line(`l_EnumInfo.entries.push_back(l_Entry);`);
+    t += line("}");
+    l_OptionIndex++;
+  }
+  t += empty();
+  t += line(`Low::Util::register_enum_info(${p_Enum.enumId}, l_EnumInfo);`);
   t += line(`}`);
   t += empty();
   t += line(`void cleanup() {`);
   t += line(`}`);
   t += empty();
 
-  t += line(`Low::Util::Name option_name(${l_EnumString} p_Value) {`);
+  t += line(`Low::Util::Name entry_name(${l_EnumString} p_Value) {`);
   for (let i_Option of p_Enum.options) {
     t += line(`if (p_Value == ${p_Enum.name}::${i_Option.uppercase}) {`);
     t += line(`return N(${i_Option.name});`);
@@ -271,19 +294,19 @@ function generate_enum_source(p_Enum) {
   }
   t += empty();
   t += line(
-    `LOW_ASSERT(false, "Could not find option in enum ${p_Enum.name}.");`,
+    `LOW_ASSERT(false, "Could not find entry in enum ${p_Enum.name}.");`,
   );
   t += line("return N(EMPTY);");
   t += line("}");
   t += empty();
 
-  t += line(`Low::Util::Name _option_name(${g_EnumType} p_Value) {`);
+  t += line(`Low::Util::Name _entry_name(${g_EnumType} p_Value) {`);
   t += line(`${l_EnumString} l_Enum = static_cast<${l_EnumString}>(p_Value);`);
-  t += line(`return option_name(l_Enum);`);
+  t += line(`return entry_name(l_Enum);`);
   t += line("}");
   t += empty();
 
-  t += line(`${l_EnumString} option_value(Low::Util::Name p_Name) {`);
+  t += line(`${l_EnumString} entry_value(Low::Util::Name p_Name) {`);
   for (let i_Option of p_Enum.options) {
     t += line(`if (p_Name == N(${i_Option.name})) {`);
     t += line(`return ${l_EnumString}::${i_Option.uppercase};`);
@@ -291,14 +314,19 @@ function generate_enum_source(p_Enum) {
   }
   t += empty();
   t += line(
-    `LOW_ASSERT(false, "Could not find option in enum ${p_Enum.name}.");`,
+    `LOW_ASSERT(false, "Could not find entry in enum ${p_Enum.name}.");`,
   );
   t += line(`return static_cast<${l_EnumString}>(0);`);
   t += line("}");
   t += empty();
 
-  t += line(`${g_EnumType} _option_value(Low::Util::Name p_Name) {`);
-  t += line(`return static_cast<${g_EnumType}>(option_value(p_Name));`);
+  t += line(`${g_EnumType} _entry_value(Low::Util::Name p_Name) {`);
+  t += line(`return static_cast<${g_EnumType}>(entry_value(p_Name));`);
+  t += line("}");
+  t += empty();
+
+  t += line(`u16 get_enum_id() {`);
+  t += line(`return ${p_Enum.enumId};`);
   t += line("}");
 
   t += line("}");
@@ -979,6 +1007,11 @@ function generate_source(p_Type) {
     if (i_Prop.handle) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
       t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::TYPE_ID;`);
+    } else if (i_Prop.enum) {
+      t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
+      t += line(
+        `l_PropertyInfo.handleType = ${i_Prop.plain_type}EnumHelper::get_enum_id();`,
+      );
     } else {
       t += line(
         `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`,
@@ -1258,6 +1291,10 @@ function generate_source(p_Type) {
           `${i_Prop.getter_name}().serialize(p_Node["${i_PropName}"]);`,
         );
         t += line(`}`);
+      } else if (i_Prop.enum) {
+        t += line(
+          `Low::Util::Serialization::serialize_enum(p_Node["${i_PropName}"], ${i_Prop.plain_type}EnumHelper::get_enum_id(), static_cast<${g_EnumType}>(${i_Prop.getter_name}()));`,
+        );
       }
     }
   }
@@ -1369,6 +1406,10 @@ function generate_source(p_Type) {
       } else if (i_Prop.handle) {
         t += line(
           `l_Handle.${i_Prop.setter_name}(${i_Prop.plain_type}::deserialize(p_Node["${i_PropName}"], l_Handle.get_id()).get_id());`,
+        );
+      } else if (i_Prop.enum) {
+        t += line(
+          `l_Handle.${i_Prop.setter_name}(static_cast<${i_Prop.plain_type}>(Low::Util::Serialization::deserialize_enum(p_Node["${i_PropName}"])));`,
         );
       }
       t += line(`}`);

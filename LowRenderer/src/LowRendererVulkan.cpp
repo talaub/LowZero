@@ -1481,12 +1481,12 @@ namespace Low {
           VkCommandBuffer l_CommandBuffer =
               Helper::begin_single_time_commands(p_Context);
           // execute a gpu command to upload imgui font textures
-          ImGui_ImplVulkan_CreateFontsTexture(l_CommandBuffer);
+          ImGui_ImplVulkan_CreateFontsTexture(/* l_CommandBuffer*/);
 
           Helper::end_single_time_commands(p_Context,
                                            l_CommandBuffer);
 
-          ImGui_ImplVulkan_DestroyFontUploadObjects();
+          // ImGui_ImplVulkan_DestroyFontUploadObjects();
         }
 
         uint32_t
