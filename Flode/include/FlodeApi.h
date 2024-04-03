@@ -1,6 +1,8 @@
 #ifndef FLODE_EXPORT_H
 #define FLODE_EXPORT_H
 
+#if 0
+
 #ifdef flode_BUILT_AS_STATIC
 #define FLODE_API
 #define FLODE_NO_EXPORT
@@ -39,3 +41,7 @@
 #endif
 
 #endif /* LOW_EXPORT_H */
+
+#define FLODE_API
+
+#endif

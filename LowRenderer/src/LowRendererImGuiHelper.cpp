@@ -22,9 +22,17 @@ namespace Low {
         Util::String l_CommonFontPath =
             l_BaseInternalFontPath + "Roboto-Regular.ttf";
 
-        static const ImWchar l_IconRanges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+        static const ImWchar l_IconRanges[] = {ICON_MIN_FA,
+                                               ICON_MAX_16_FA, 0};
 
         ImGuiIO &io = ImGui::GetIO();
+
+        ImVector<ImWchar> l_TextRanges;
+        ImFontGlyphRangesBuilder l_TextRangeBuilder;
+        // l_TextRangeBuilder.AddText("‡");
+        l_TextRangeBuilder.AddRanges(
+            io.Fonts->GetGlyphRangesDefault());
+        l_TextRangeBuilder.BuildRanges(&l_TextRanges);
 
         {
           float l_FontSize = 12.0f;
@@ -70,7 +78,8 @@ namespace Low {
           l_Config.DstFont = g_Fonts.common_800;
 
           g_Fonts.icon_800 = io.Fonts->AddFontFromFileTTF(
-              l_IconFontPath.c_str(), l_FontSize, &l_Config, l_IconRanges);
+              l_IconFontPath.c_str(), l_FontSize, &l_Config,
+              l_IconRanges);
         }
       }
 

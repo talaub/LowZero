@@ -4,187 +4,170 @@
 #include "utilities/widgets.h"
 
 #include "LowUtilAssert.h"
+#include "LowUtilString.h"
 
-void *operator new[](size_t size, const char *pName, int flags,
-                     unsigned debugFlags, const char *file, int line)
-{
-  return malloc(size);
-}
+#include "FlodeMathNodes.h"
 
-void *operator new[](size_t size, size_t alignment,
-                     size_t alignmentOffset, const char *pName,
-                     int flags, unsigned debugFlags, const char *file,
-                     int line)
-{
-  return malloc(size);
-}
+#include "IconsFontAwesome5.h"
 
 namespace Flode {
-  Low::Util::Map<
-      Low::Util::String,
-      Low::Util::Map<Low::Util::String, Flode::create_node_callback>>
-      Editor::ms_NodeTypes;
-
-  const int m_PinIconSize = 20;
-
-  ImVec4 g_NodePadding(4, 2, 4, 4);
-
-  void
-  Editor::register_node_type(Low::Util::String p_Category,
-                             Low::Util::String p_Title,
-                             Flode::create_node_callback p_Callback)
-  {
-    ms_NodeTypes[p_Category][p_Title] = p_Callback;
-  }
-
-  ImColor get_icon_color(Flode::PinType type)
-  {
-    using namespace Flode;
-
-    switch (type) {
-    default:
-    case PinType::Flow:
-      return ImColor(255, 255, 255);
-    case PinType::Bool:
-      return ImColor(220, 48, 48);
-    case PinType::Int:
-      return ImColor(68, 201, 156);
-    case PinType::Float:
-      return ImColor(147, 226, 74);
-    case PinType::String:
-      return ImColor(124, 21, 153);
-    case PinType::Object:
-      return ImColor(51, 150, 215);
-    case PinType::Function:
-      return ImColor(218, 0, 183);
-    case PinType::Delegate:
-      return ImColor(255, 48, 48);
-    }
-  };
-
-  void draw_pin_icon(const Flode::Pin &pin, bool connected, int alpha)
-  {
-    using namespace ax::Drawing;
-
-    IconType iconType;
-    ImColor color = get_icon_color(pin.type);
-    color.Value.w = alpha / 255.0f;
-    switch (pin.type) {
-    case Flode::PinType::Flow:
-      iconType = IconType::Flow;
-      break;
-    case Flode::PinType::Bool:
-      iconType = IconType::Circle;
-      break;
-    case Flode::PinType::Int:
-      iconType = IconType::Circle;
-      break;
-    case Flode::PinType::Float:
-      iconType = IconType::Circle;
-      break;
-    case Flode::PinType::String:
-      iconType = IconType::Circle;
-      break;
-    case Flode::PinType::Object:
-      iconType = IconType::Circle;
-      break;
-    case Flode::PinType::Function:
-      iconType = IconType::Circle;
-      break;
-    case Flode::PinType::Delegate:
-      iconType = IconType::Square;
-      break;
-    default:
-      return;
-    }
-
-    ax::Widgets::Icon(ImVec2(static_cast<float>(m_PinIconSize),
-                             static_cast<float>(m_PinIconSize)),
-                      iconType, connected, color,
-                      ImColor(32, 32, 32, alpha));
-  };
-
-  Editor::Editor()
+  Editor::Editor() : m_FirstRun(true)
   {
     NodeEd::Config l_Config;
     m_Context = NodeEd::CreateEditor(&l_Config);
   }
 
+  void Editor::load(Low::Util::String p_Path)
+  {
+  }
+
   void Editor::render_graph(float p_Delta)
   {
-    collect_connected_pins();
+    // TODO: Collect connected pins on graph
+    // collect_connected_pins();
 
-    for (const Flode::Node &i_Node : m_Nodes) {
-      render_node(p_Delta, i_Node);
+    for (const auto &i_Node : m_Graph->m_Nodes) {
+      i_Node->render();
     }
 
-    for (const Flode::Link &i_Link : m_Links) {
+    for (const Flode::Link *i_Link : m_Graph->m_Links) {
       render_link(p_Delta, i_Link);
     }
   }
 
-  Flode::Pin Editor::find_pin(NodeEd::PinId p_PinId)
+  void Editor::create_node_popup()
   {
-    for (Flode::Node &i_Node : m_Nodes) {
-      for (Flode::Pin &i_Pin : i_Node.pins) {
-        if (i_Pin.id == p_PinId) {
-          return i_Pin;
+    ImGui::SetNextWindowSize(ImVec2(300, 200));
+    if (ImGui::BeginPopup("Create Node")) {
+      auto l_Categories = get_node_types();
+
+      ImGui::Text("Create Node");
+      ImGui::Separator();
+
+      for (auto cit = l_Categories.begin(); cit != l_Categories.end();
+           ++cit) {
+        if (ImGui::TreeNode(cit->first.c_str())) {
+          for (auto it = cit->second.begin(); it != cit->second.end();
+               ++it) {
+            if (ImGui::MenuItem(it->first.c_str())) {
+              Node *i_Node = m_Graph->create_node(it->second);
+              NodeEd::SetNodePosition(i_Node->id,
+                                      m_StoredMousePosition);
+            }
+          }
+          ImGui::TreePop();
         }
       }
+      ImGui::EndPopup();
     }
-
-    _LOW_ASSERT(false);
-
-    return Flode::Pin();
   }
 
-  bool Editor::can_create_link(NodeEd::PinId p_InputPinId,
-                               NodeEd::PinId p_OutputPinId)
+  void Editor::render_data_panel()
   {
-    if (p_InputPinId == p_OutputPinId) {
-      return false;
+    auto &io = ImGui::GetIO();
+
+    float l_Width = ImGui::GetContentRegionAvail().x / 4.0f;
+
+    l_Width = LOW_MATH_MAX(300.0f, l_Width);
+    l_Width = LOW_MATH_MIN(500.0f, l_Width);
+
+    // 300 seems to be a nice width so we hardcode it for now. Maybe
+    // we can make it "docked" like we do it in the different managers
+    l_Width = 300.0f;
+
+    ImGui::BeginChild(
+        "Selection",
+        ImVec2(l_Width, ImGui::GetContentRegionAvail().y), true, 0);
+    if (m_SelectedNodes.size() == 1) {
+      m_SelectedNodes[0]->render_data();
     }
-
-    Flode::Pin l_InputPin = find_pin(p_InputPinId);
-    Flode::Pin l_OutputPin = find_pin(p_OutputPinId);
-
-    if (l_InputPin.direction == l_OutputPin.direction) {
-      return false;
-    }
-
-    if (l_InputPin.nodeId == l_OutputPin.nodeId) {
-      return false;
-    }
-
-    return true;
-  }
-
-  void Editor::create_link(NodeEd::PinId p_InputPin,
-                           NodeEd::PinId p_OutputPin)
-  {
-    m_Links.push_back({NodeEd::LinkId(500), p_InputPin, p_OutputPin});
-
-    // Draw new link.
-    NodeEd::Link(m_Links.back().id, m_Links.back().inputPinId,
-                 m_Links.back().outputPinId);
-  }
-
-  void Editor::delete_link(NodeEd::LinkId p_LinkId)
-  {
-    for (auto &i_Link : m_Links) {
-      if (i_Link.id == p_LinkId) {
-        m_Links.erase(&i_Link);
-        break;
-      }
-    }
+    ImGui::EndChild();
   }
 
   void Editor::render(float p_Delta)
   {
+    bool l_Save = false;
+    if (ImGui::Button(ICON_FA_SAVE " Save")) {
+      l_Save = true;
+    }
+
+    if (m_Graph) {
+      ImGui::SameLine();
+      if (ImGui::Button(ICON_FA_COG " Compile")) {
+        m_Graph->compile();
+      }
+    }
+
+    render_data_panel();
+
+    ImGui::SameLine();
+
     NodeEd::SetCurrentEditor(m_Context);
     NodeEd::Begin("FlodeEditor", ImVec2(0.0, 0.0f));
 
-    render_graph(p_Delta);
+    m_StoredMousePosition = ImGui::GetMousePos();
+
+    if (m_FirstRun) {
+      m_FirstRun = false;
+      Low::Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/assets/flode/" + LOW_TO_STRING(25) + ".flode.yaml";
+
+      Low::Util::Yaml::Node l_Node =
+          Low::Util::Yaml::load_file(l_Path.c_str());
+
+      m_Graph = new Graph;
+      m_Graph->deserialize(l_Node);
+    }
+
+    NodeEd::Suspend();
+    /*
+    if (NodeEd::ShowNodeContextMenu(&contextNodeId))
+      ImGui::OpenPopup("Node Context Menu");
+    else if (NodeEd::ShowPinContextMenu(&contextPinId))
+      ImGui::OpenPopup("Pin Context Menu");
+    else if (NodeEd::ShowLinkContextMenu(&contextLinkId))
+      ImGui::OpenPopup("Link Context Menu");
+    else */
+    if (NodeEd::ShowBackgroundContextMenu()) {
+      ImGui::OpenPopup("Create Node");
+    }
+    NodeEd::Resume();
+
+    NodeEd::Suspend();
+    create_node_popup();
+    NodeEd::Resume();
+
+    m_SelectedNodes.clear();
+
+    if (m_Graph) {
+      Low::Util::List<NodeEd::NodeId> l_SelectedNodeIds;
+      l_SelectedNodeIds.resize(NodeEd::GetSelectedObjectCount());
+
+      int l_SelectedNodeCount = NodeEd::GetSelectedNodes(
+          l_SelectedNodeIds.data(),
+          static_cast<int>(l_SelectedNodeIds.size()));
+
+      for (int i = 0; i < l_SelectedNodeCount; ++i) {
+        m_SelectedNodes.push_back(
+            m_Graph->find_node(l_SelectedNodeIds[i]));
+      }
+
+      render_graph(p_Delta);
+    }
+
+    if (l_Save) {
+      Low::Util::Yaml::Node l_Node;
+      m_Graph->serialize(l_Node);
+
+      Low::Util::String l_Path = LOW_DATA_PATH;
+      l_Path += "/assets/flode/" + LOW_TO_STRING(25) + ".flode.yaml";
+
+      Low::Util::Yaml::write_file(l_Path.c_str(), l_Node);
+
+      LOW_LOG_INFO << "Saved flode graph '"
+                   << "test"
+                   << "' to file." << LOW_LOG_END;
+    }
 
     // Handle creation action, returns true if editor want to create
     // new object (node or link)
@@ -211,7 +194,7 @@ namespace Flode {
       };
 
       NodeEd::PinId l_InputPinId = 0, l_OutputPinId = 0;
-      if (NodeEd::QueryNewLink(&l_InputPinId, &l_OutputPinId)) {
+      if (NodeEd::QueryNewLink(&l_OutputPinId, &l_InputPinId)) {
         // QueryNewLink returns true if editor want to create new
         // link between pins.
         //
@@ -234,12 +217,13 @@ namespace Flode {
         {
           // ed::AcceptNewItem() return true when user release
           // mouse button.
-          if (can_create_link(l_InputPinId, l_OutputPinId)) {
+          if (m_Graph->can_create_link(l_InputPinId, l_OutputPinId)) {
             showLabel("+ Create Link", ImColor(32, 45, 32, 180));
             if (NodeEd::AcceptNewItem()) {
               // Since we accepted new link, lets add one to our
               // list of links.
-              create_link(l_InputPinId, l_OutputPinId);
+              m_Graph->create_link_castable(l_InputPinId,
+                                            l_OutputPinId);
             }
           } else {
             showLabel("x Not compatible", ImColor(45, 32, 32, 180));
@@ -254,13 +238,13 @@ namespace Flode {
       }
       NodeEd::PinId pinId = 0;
       if (NodeEd::QueryNewNode(&pinId)) {
-        Flode::Pin newLinkPin = find_pin(pinId);
+        Flode::Pin *newLinkPin = m_Graph->find_pin(pinId);
         showLabel("+ Create Node", ImColor(32, 45, 32, 180));
 
         if (NodeEd::AcceptNewItem()) {
           // newLinkPin = nullptr;
           NodeEd::Suspend();
-          // ImGui::OpenPopup("Create New Node");
+          ImGui::OpenPopup("Create Node");
           NodeEd::Resume();
         }
       }
@@ -276,7 +260,7 @@ namespace Flode {
         // If you agree that link can be deleted, accept deletion.
         if (NodeEd::AcceptDeletedItem()) {
           // Then remove link from your data.
-          delete_link(l_DeleteLinkId);
+          m_Graph->delete_link(l_DeleteLinkId);
         }
 
         // You may reject link deletion by calling:
@@ -289,185 +273,9 @@ namespace Flode {
     NodeEd::SetCurrentEditor(nullptr);
   }
 
-  void Editor::collect_connected_pins()
+  void Editor::render_link(float p_Delta, const Flode::Link *p_Link)
   {
-    m_ConnectedPins.clear();
-
-    for (Flode::Link &i_Link : m_Links) {
-      m_ConnectedPins.insert(i_Link.inputPinId.Get());
-      m_ConnectedPins.insert(i_Link.outputPinId.Get());
-    }
-  }
-
-  bool Editor::is_pin_connected(const Flode::Pin &p_Pin)
-  {
-    return false;
-  }
-
-  void Editor::render_pin(float p_Delta, const Flode::Pin &p_Pin)
-  {
-    if (p_Pin.direction == Flode::PinDirection::Input) {
-      NodeEd::BeginPin(p_Pin.id, NodeEd::PinKind::Input);
-    } else {
-      ImGui::Spring(0);
-      NodeEd::BeginPin(p_Pin.id, NodeEd::PinKind::Output);
-    }
-
-    auto alpha = ImGui::GetStyle().Alpha;
-
-    // ImGui::Spring(0);
-
-    ImGui::BeginHorizontal(p_Pin.id.AsPointer());
-    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
-
-    if (p_Pin.direction == Flode::PinDirection::Input) {
-      draw_pin_icon(p_Pin, is_pin_connected(p_Pin),
-                    (int)(alpha * 255));
-      ImGui::Spring(0);
-      if (!p_Pin.title.empty()) {
-        ImGui::TextUnformatted(p_Pin.title.c_str());
-        ImGui::Spring(0);
-      }
-      {
-        if (p_Pin.type == Flode::PinType::Bool) {
-          bool t;
-          ImGui::Checkbox("##edit", &t);
-        } else if (p_Pin.type == Flode::PinType::Int) {
-          int t;
-          ImGui::DragInt("##edit", &t);
-        }
-      }
-    } else {
-      if (!p_Pin.title.empty()) {
-        ImGui::Spring(0);
-        ImGui::TextUnformatted(p_Pin.title.c_str());
-      }
-      ImGui::Spring(0);
-      draw_pin_icon(p_Pin, is_pin_connected(p_Pin),
-                    (int)(alpha * 255));
-    }
-    ImGui::PopStyleVar();
-    ImGui::EndHorizontal();
-    NodeEd::EndPin();
-  }
-
-  void Editor::render_node(float p_Delta, const Flode::Node &p_Node)
-  {
-    NodeEd::GetStyle().NodeBorderWidth = 0.0f;
-    NodeEd::GetStyle().NodePadding = g_NodePadding;
-
-    /*
-    NodeEd::PushStyleColor(
-        NodeEd::StyleColor_NodeBg,
-        color_to_imvec4(theme_get_current().header));
-    NodeEd::PushStyleColor(NodeEd::StyleColor_Bg,
-                           color_to_imvec4(theme_get_current().base));
-    NodeEd::PushStyleColor(
-        NodeEd::StyleColor_SelNodeBorder,
-        color_to_imvec4(theme_get_current().button));
-    NodeEd::PushStyleColor(
-        NodeEd::StyleColor_PinRect,
-        color_to_imvec4(theme_get_current().button));
-                           */
-
-    u32 l_ColorCount = 4;
-
-    ImVec2 l_HeaderMax;
-    ImVec2 l_HeaderMin = l_HeaderMax = ImVec2();
-
-    NodeEd::PushStyleVar(NodeEd::StyleVar_NodePadding, g_NodePadding);
-
-    NodeEd::BeginNode(p_Node.id);
-    ImGui::BeginVertical("node");
-
-    ImGui::PushID(p_Node.id.AsPointer());
-
-    {
-      ImGui::BeginHorizontal("header");
-
-      ImGui::Spring(0);
-      // ImGui::TextUnformatted(p_Node.title.c_str());
-      ImGui::TextUnformatted("TEST");
-      ImGui::Spring(1);
-      ImGui::Dummy(ImVec2(0, 20));
-      ImGui::Spring(0);
-
-      ImGui::EndHorizontal();
-      l_HeaderMin = ImGui::GetItemRectMin();
-      l_HeaderMax = ImGui::GetItemRectMax();
-    }
-
-    ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
-
-    {
-      ImGui::BeginHorizontal("content");
-      ImGui::Spring(0, 0);
-    }
-
-    {
-      ImGui::BeginVertical("inputs", ImVec2(0, 0), 0.0f);
-
-      NodeEd::PushStyleVar(NodeEd::StyleVar_PivotAlignment,
-                           ImVec2(0, 0.5f));
-      NodeEd::PushStyleVar(NodeEd::StyleVar_PivotSize, ImVec2(0, 0));
-
-      for (auto &i_Pin : p_Node.pins) {
-        if (i_Pin.direction == Flode::PinDirection::Input) {
-          render_pin(p_Delta, i_Pin);
-        }
-      }
-
-      NodeEd::PopStyleVar(2);
-      ImGui::Spring(1, 0);
-      ImGui::EndVertical();
-    }
-
-    {
-      ImGui::Spring(1);
-
-      ImGui::BeginVertical("outputs", ImVec2(0, 0), 1.0f);
-
-      NodeEd::PushStyleVar(NodeEd::StyleVar_PivotAlignment,
-                           ImVec2(1.0f, 0.5f));
-      NodeEd::PushStyleVar(NodeEd::StyleVar_PivotSize, ImVec2(0, 0));
-
-      for (auto &i_Pin : p_Node.pins) {
-        if (i_Pin.direction == Flode::PinDirection::Output) {
-          render_pin(p_Delta, i_Pin);
-        }
-      }
-
-      NodeEd::PopStyleVar(2);
-
-      ImGui::Spring(1, 0);
-      ImGui::EndVertical();
-    }
-
-    ImGui::EndHorizontal();
-    ImGui::EndVertical();
-
-    NodeEd::EndNode();
-
-    const auto l_HalfBorderWidth =
-        NodeEd::GetStyle().NodeBorderWidth * 0.5f;
-
-    auto l_DrawList = NodeEd::GetNodeBackgroundDrawList(p_Node.id);
-    l_DrawList->AddRectFilled(
-        l_HeaderMin - ImVec2(g_NodePadding.z - l_HalfBorderWidth,
-                             g_NodePadding.y - l_HalfBorderWidth),
-        l_HeaderMax + ImVec2(g_NodePadding.x - l_HalfBorderWidth, 0),
-        IM_COL32_BLACK, NodeEd::GetStyle().NodeRounding,
-        ImDrawFlags_RoundCornersTop);
-
-    NodeEd::PopStyleVar();
-
-    ImGui::PopID();
-
-    // NodeEd::PopStyleColor(l_ColorCount);
-  }
-
-  void Editor::render_link(float p_Delta, const Flode::Link &p_Link)
-  {
-    NodeEd::Link(p_Link.id, p_Link.inputPinId, p_Link.outputPinId);
+    NodeEd::Link(p_Link->id, p_Link->inputPinId, p_Link->outputPinId,
+                 ImVec4(1.0f, 1.0f, 1.0f, 1.0f), 2.0f);
   }
 } // namespace Flode

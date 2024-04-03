@@ -1,6 +1,7 @@
 #include "LowUtilString.h"
 
 #include "LowUtilLogger.h"
+#include <cstdint>
 
 namespace Low {
   namespace Util {
@@ -56,5 +57,59 @@ namespace Low {
         p_String += std::to_string(p_Appendix).c_str();
       }
     } // namespace StringHelper
-  }   // namespace Util
+
+    String StringBuilder::get() const
+    {
+      return m_String;
+    }
+
+    StringBuilder &StringBuilder::endl()
+    {
+      return append("\n");
+    }
+
+    StringBuilder &StringBuilder::append(String p_String)
+    {
+      m_String += p_String;
+
+      return *this;
+    }
+
+    StringBuilder &StringBuilder::append(const char *p_String)
+    {
+      String l_String = p_String;
+
+      return append(l_String);
+    }
+
+    StringBuilder &StringBuilder::append(float p_Float)
+    {
+      return append(LOW_TO_STRING(p_Float));
+    }
+
+    StringBuilder &StringBuilder::append(uint8_t p_Content)
+    {
+      return append(LOW_TO_STRING(p_Content));
+    }
+
+    StringBuilder &StringBuilder::append(uint32_t p_Content)
+    {
+      return append(LOW_TO_STRING(p_Content));
+    }
+
+    StringBuilder &StringBuilder::append(uint64_t p_Content)
+    {
+      return append(LOW_TO_STRING(p_Content));
+    }
+
+    StringBuilder &StringBuilder::append(int p_Content)
+    {
+      return append(LOW_TO_STRING(p_Content));
+    }
+
+    StringBuilder &StringBuilder::append(Name p_Content)
+    {
+      return append(p_Content.c_str());
+    }
+  } // namespace Util
 } // namespace Low

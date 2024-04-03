@@ -44,6 +44,10 @@
 #include "LowCoreMaterial.h"
 
 #include "Flode.h"
+#include "FlodeMathNodes.h"
+#include "FlodeSyntaxNodes.h"
+#include "FlodeDebugNodes.h"
+#include "FlodeCastNodes.h"
 
 #include <chrono>
 #include <cstddef>
@@ -728,6 +732,13 @@ namespace Low {
       initialize_billboard_materials();
 
       LogWidget::initialize();
+
+      {
+        Flode::MathNodes::register_nodes();
+        Flode::SyntaxNodes::register_nodes();
+        Flode::DebugNodes::register_nodes();
+        Flode::CastNodes::register_nodes();
+      }
 
       g_MainViewportWidget = new EditingWidget();
       register_editor_widget("Viewport", g_MainViewportWidget, true);

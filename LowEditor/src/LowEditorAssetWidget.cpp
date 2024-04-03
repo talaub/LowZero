@@ -26,9 +26,9 @@
 
 namespace Low {
   namespace Editor {
-    const Util::String g_CategoryLabels[] = {ICON_FA_CUBES " Meshes",
-                                             ICON_FA_SPRAY_CAN " Materials",
-                                             ICON_FA_BOX_OPEN " Prefabs"};
+    const Util::String g_CategoryLabels[] = {
+        ICON_FA_CUBES " Meshes", ICON_FA_SPRAY_CAN " Materials",
+        ICON_FA_BOX_OPEN " Prefabs"};
     const uint32_t g_CategoryCount = 3;
 
     const float g_ElementSize = 128.0f;
@@ -46,8 +46,8 @@ namespace Low {
       Util::Yaml::Node l_Node;
       l_Asset.serialize(l_Node);
       Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/meshes/" + LOW_TO_STRING(l_Asset.get_unique_id()) +
-                ".mesh.yaml";
+      l_Path += "/assets/meshes/" +
+                LOW_TO_STRING(l_Asset.get_unique_id()) + ".mesh.yaml";
 
       if (g_Paths.find(p_Handle) != g_Paths.end()) {
         l_Path = g_Paths[p_Handle];
@@ -55,8 +55,8 @@ namespace Low {
 
       Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
-      LOW_LOG_INFO << "Saved mesh asset '" << l_Asset.get_name() << "' to file."
-                   << LOW_LOG_END;
+      LOW_LOG_INFO << "Saved mesh asset '" << l_Asset.get_name()
+                   << "' to file." << LOW_LOG_END;
     }
 
     void AssetWidget::save_prefab_asset(Util::Handle p_Handle)
@@ -66,7 +66,8 @@ namespace Low {
       Util::Yaml::Node l_Node;
       l_Asset.serialize(l_Node);
       Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/prefabs/" + LOW_TO_STRING(l_Asset.get_unique_id()) +
+      l_Path += "/assets/prefabs/" +
+                LOW_TO_STRING(l_Asset.get_unique_id()) +
                 ".prefab.yaml";
 
       if (g_Paths.find(p_Handle) != g_Paths.end()) {
@@ -75,8 +76,8 @@ namespace Low {
 
       Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
-      LOW_LOG_INFO << "Saved prefab '" << l_Asset.get_name() << "' to file."
-                   << LOW_LOG_END;
+      LOW_LOG_INFO << "Saved prefab '" << l_Asset.get_name()
+                   << "' to file." << LOW_LOG_END;
     }
 
     void AssetWidget::save_material_asset(Util::Handle p_Handle)
@@ -85,16 +86,18 @@ namespace Low {
       Util::Yaml::Node l_Node;
       l_Asset.serialize(l_Node);
       Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/materials/" + LOW_TO_STRING(l_Asset.get_unique_id()) +
+      l_Path += "/assets/materials/" +
+                LOW_TO_STRING(l_Asset.get_unique_id()) +
                 ".material.yaml";
       Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
-      LOW_LOG_INFO << "Saved material '" << l_Asset.get_name() << "' to file."
-                   << LOW_LOG_END;
+      LOW_LOG_INFO << "Saved material '" << l_Asset.get_name()
+                   << "' to file." << LOW_LOG_END;
     }
 
-    void render_material_details_footer(Util::Handle p_Handle,
-                                        Util::RTTI::TypeInfo &p_TypeInfo)
+    void
+    render_material_details_footer(Util::Handle p_Handle,
+                                   Util::RTTI::TypeInfo &p_TypeInfo)
     {
       Core::Material l_Asset = p_Handle.get_id();
 
@@ -103,8 +106,9 @@ namespace Low {
       }
     }
 
-    void render_mesh_asset_details_footer(Util::Handle p_Handle,
-                                          Util::RTTI::TypeInfo &p_TypeInfo)
+    void
+    render_mesh_asset_details_footer(Util::Handle p_Handle,
+                                     Util::RTTI::TypeInfo &p_TypeInfo)
     {
       Core::MeshAsset l_Asset = p_Handle.get_id();
 
@@ -113,8 +117,9 @@ namespace Low {
       }
     }
 
-    void render_prefab_details_footer(Util::Handle p_Handle,
-                                      Util::RTTI::TypeInfo &p_TypeInfo)
+    void
+    render_prefab_details_footer(Util::Handle p_Handle,
+                                 Util::RTTI::TypeInfo &p_TypeInfo)
     {
       Core::Prefab l_Asset = p_Handle.get_id();
 
@@ -162,10 +167,11 @@ namespace Low {
       }
     }
 
-    static bool render_directory(uint32_t p_Id, Util::String p_Icon,
-                                 Util::String p_Label, bool p_Draggable,
-                                 Util::FileSystem::WatchHandle p_WatchHandle,
-                                 AssetTypeConfig &p_Config)
+    static bool
+    render_directory(uint32_t p_Id, Util::String p_Icon,
+                     Util::String p_Label, bool p_Draggable,
+                     Util::FileSystem::WatchHandle p_WatchHandle,
+                     AssetTypeConfig &p_Config)
     {
       bool l_Result = false;
 
@@ -175,8 +181,8 @@ namespace Low {
 
       ImGui::PushID(p_Id);
       ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
-      l_Result =
-          ImGui::Button(p_Icon.c_str(), ImVec2(g_ElementSize, g_ElementSize));
+      l_Result = ImGui::Button(p_Icon.c_str(),
+                               ImVec2(g_ElementSize, g_ElementSize));
       if (l_Result) {
         p_Config.currentDirectoryWatchHandle = p_WatchHandle;
       }
@@ -190,7 +196,8 @@ namespace Low {
 
     static bool render_element(uint32_t p_Id, Util::String p_Icon,
                                Util::String p_Label, bool p_Draggable,
-                               Util::Handle p_Handle, bool *p_RequireUpdate)
+                               Util::Handle p_Handle,
+                               bool *p_RequireUpdate)
     {
       bool l_Result = false;
 
@@ -200,8 +207,8 @@ namespace Low {
 
       ImGui::PushID(p_Id);
       ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
-      l_Result =
-          ImGui::Button(p_Icon.c_str(), ImVec2(g_ElementSize, g_ElementSize));
+      l_Result = ImGui::Button(p_Icon.c_str(),
+                               ImVec2(g_ElementSize, g_ElementSize));
       if (p_Draggable && p_Handle.get_id() > 0) {
         if (ImGui::BeginPopupContextItem()) {
           ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
@@ -249,7 +256,8 @@ namespace Low {
       ImGui::Begin(ICON_FA_FILE " Assets");
 
       ImGui::BeginChild("Categories",
-                        ImVec2(200, ImGui::GetContentRegionAvail().y), true, 0);
+                        ImVec2(200, ImGui::GetContentRegionAvail().y),
+                        true, 0);
       for (uint32_t i = 0; i < g_CategoryCount; ++i) {
         if (ImGui::Selectable(g_CategoryLabels[i].c_str(),
                               i == m_SelectedCategory)) {
@@ -262,14 +270,16 @@ namespace Low {
       ImGui::SameLine();
 
       ImVec2 l_Cursor = ImGui::GetCursorScreenPos();
-      ImRect l_Rect(l_Cursor, {l_Cursor.x + ImGui::GetContentRegionAvail().x,
-                               l_Cursor.y + ImGui::GetContentRegionAvail().y});
+      ImRect l_Rect(l_Cursor,
+                    {l_Cursor.x + ImGui::GetContentRegionAvail().x,
+                     l_Cursor.y + ImGui::GetContentRegionAvail().y});
 
       ImGui::BeginChild("Content",
                         ImVec2(ImGui::GetContentRegionAvail().x,
                                ImGui::GetContentRegionAvail().y),
                         true);
-      if (m_SelectedCategory >= 0 && m_SelectedCategory < g_CategoryCount) {
+      if (m_SelectedCategory >= 0 &&
+          m_SelectedCategory < g_CategoryCount) {
         m_TypeConfigs[m_SelectedCategory].render(
             m_TypeConfigs[m_SelectedCategory], l_Rect);
       }
@@ -281,7 +291,8 @@ namespace Low {
       // ImGui::ShowDemoWindow();
     }
 
-    static void render_meshes(AssetTypeConfig &p_Config, ImRect p_Bounds)
+    static void render_meshes(AssetTypeConfig &p_Config,
+                              ImRect p_Bounds)
     {
       uint32_t l_Id = 0;
 
@@ -291,17 +302,19 @@ namespace Low {
           Util::FileSystem::get_directory_watcher(
               p_Config.currentDirectoryWatchHandle);
 
-      int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
+      int l_Columns =
+          LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset", false, 0,
-                         0)) {
+      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset",
+                         false, 0, 0)) {
         ImGui::OpenPopup("Create mesh asset");
       }
 
       if (ImGui::BeginPopupModal("Create mesh asset")) {
-        ImGui::Text("You are about to create a new mesh asset. Please select "
-                    "a name.");
+        ImGui::Text(
+            "You are about to create a new mesh asset. Please select "
+            "a name.");
         static char l_NameBuffer[255];
         ImGui::InputText("##name", l_NameBuffer, 255);
 
@@ -321,10 +334,12 @@ namespace Low {
           bool l_Ok = true;
 
           for (auto it = Core::MeshAsset::ms_LivingInstances.begin();
-               it != Core::MeshAsset::ms_LivingInstances.end(); ++it) {
+               it != Core::MeshAsset::ms_LivingInstances.end();
+               ++it) {
             if (l_Name == it->get_name()) {
-              LOW_LOG_ERROR << "Cannot create mesh asset. The chosen name '"
-                            << l_Name << "' is already in use" << LOW_LOG_END;
+              LOW_LOG_ERROR
+                  << "Cannot create mesh asset. The chosen name '"
+                  << l_Name << "' is already in use" << LOW_LOG_END;
               l_Ok = false;
               break;
             }
@@ -348,8 +363,9 @@ namespace Low {
       if (p_Config.currentDirectoryWatchHandle !=
           p_Config.rootDirectoryWatchHandle) {
 
-        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
-                             l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
         }
@@ -361,9 +377,11 @@ namespace Low {
         Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(*it);
 
-        if (render_directory(l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name,
-                             true, i_DirectoryWatcher.watchHandle, p_Config)) {
-          p_Config.currentDirectoryWatchHandle = i_DirectoryWatcher.watchHandle;
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              i_DirectoryWatcher.watchHandle;
         }
         ImGui::NextColumn();
       }
@@ -380,8 +398,9 @@ namespace Low {
 
         g_Paths[i_MeshAsset.get_id()] = i_FileWatcher.path;
 
-        if (render_element(l_Id++, ICON_FA_CUBE, i_MeshAsset.get_name().c_str(),
-                           true, i_MeshAsset, &l_DirectoryWatcher.update)) {
+        if (render_element(l_Id++, ICON_FA_CUBE,
+                           i_MeshAsset.get_name().c_str(), true,
+                           i_MeshAsset, &l_DirectoryWatcher.update)) {
           set_selected_handle(i_MeshAsset);
           HandlePropertiesSection i_Section(i_MeshAsset, true);
           i_Section.render_footer = &render_mesh_asset_details_footer;
@@ -393,7 +412,8 @@ namespace Low {
       ImGui::Columns(1);
     }
 
-    static void render_materials(AssetTypeConfig &p_Config, ImRect p_Bounds)
+    static void render_materials(AssetTypeConfig &p_Config,
+                                 ImRect p_Bounds)
     {
       uint32_t l_Id = 0;
 
@@ -403,17 +423,18 @@ namespace Low {
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
 
-      int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
+      int l_Columns =
+          LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create material", false, 0,
-                         0)) {
+      if (render_element(l_Id++, ICON_FA_PLUS, "Create material",
+                         false, 0, 0)) {
         ImGui::OpenPopup("Create material");
       }
 
       if (ImGui::BeginPopupModal("Create material")) {
-        ImGui::Text(
-            "You are about to create a new material. Please select a name.");
+        ImGui::Text("You are about to create a new material. Please "
+                    "select a name.");
         static char l_NameBuffer[255];
         ImGui::InputText("##name", l_NameBuffer, 255);
 
@@ -433,15 +454,17 @@ namespace Low {
           for (auto it = Core::Material::ms_LivingInstances.begin();
                it != Core::Material::ms_LivingInstances.end(); ++it) {
             if (l_Name == it->get_name()) {
-              LOW_LOG_ERROR << "Cannot create material. The chosen name '"
-                            << l_Name << "' is already in use" << LOW_LOG_END;
+              LOW_LOG_ERROR
+                  << "Cannot create material. The chosen name '"
+                  << l_Name << "' is already in use" << LOW_LOG_END;
               l_Ok = false;
               break;
             }
           }
 
           if (l_Ok) {
-            Core::Material l_NewMaterial = Core::Material::make(l_Name);
+            Core::Material l_NewMaterial =
+                Core::Material::make(l_Name);
             AssetWidget::save_material_asset(l_NewMaterial.get_id());
             l_DirectoryWatcher.update = true;
             set_selected_handle(l_NewMaterial);
@@ -457,8 +480,9 @@ namespace Low {
       if (p_Config.rootDirectoryWatchHandle !=
           p_Config.currentDirectoryWatchHandle) {
 
-        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
-                             l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
         }
@@ -469,9 +493,11 @@ namespace Low {
            it != l_DirectoryWatcher.subdirectories.end(); ++it) {
         Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(*it);
-        if (render_directory(l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name,
-                             true, i_DirectoryWatcher.watchHandle, p_Config)) {
-          p_Config.currentDirectoryWatchHandle = i_DirectoryWatcher.watchHandle;
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              i_DirectoryWatcher.watchHandle;
         }
         ImGui::NextColumn();
       }
@@ -491,12 +517,14 @@ namespace Low {
 
         if (render_element(l_Id++, ICON_FA_SPRAY_CAN,
                            i_Material.get_name().c_str(), true,
-                           i_FileWatcher.handle, &l_DirectoryWatcher.update)) {
+                           i_FileWatcher.handle,
+                           &l_DirectoryWatcher.update)) {
           if (!i_ShouldUpdate && l_DirectoryWatcher.update) {
             break;
           }
           set_selected_handle(i_FileWatcher.handle);
-          HandlePropertiesSection i_Section(i_FileWatcher.handle, true);
+          HandlePropertiesSection i_Section(i_FileWatcher.handle,
+                                            true);
           i_Section.render_footer = &render_material_details_footer;
           get_details_widget()->add_section(i_Section);
         }
@@ -506,7 +534,8 @@ namespace Low {
       ImGui::Columns(1);
     }
 
-    static void render_prefabs(AssetTypeConfig &p_Config, ImRect p_Bounds)
+    static void render_prefabs(AssetTypeConfig &p_Config,
+                               ImRect p_Bounds)
     {
       uint32_t l_Id = 0;
 
@@ -530,13 +559,15 @@ namespace Low {
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
 
-      int l_Columns = LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
+      int l_Columns =
+          LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
       if (p_Config.rootDirectoryWatchHandle !=
           p_Config.currentDirectoryWatchHandle) {
-        if (render_directory(l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
-                             l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
         }
@@ -547,9 +578,11 @@ namespace Low {
            it != l_DirectoryWatcher.subdirectories.end(); ++it) {
         Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(*it);
-        if (render_directory(l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name,
-                             true, i_DirectoryWatcher.watchHandle, p_Config)) {
-          p_Config.currentDirectoryWatchHandle = i_DirectoryWatcher.watchHandle;
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              i_DirectoryWatcher.watchHandle;
         }
         ImGui::NextColumn();
       }
@@ -562,14 +595,17 @@ namespace Low {
         if (!i_Prefab.is_alive()) {
           continue;
         }
-        if (!Core::Prefab(i_Prefab.get_parent().get_id()).is_alive()) {
+        if (!Core::Prefab(i_Prefab.get_parent().get_id())
+                 .is_alive()) {
 
           g_Paths[i_Prefab.get_id()] = i_FileWatcher.path;
-          if (render_element(
-                  l_Id++, ICON_FA_BOX_OPEN, i_Prefab.get_name().c_str(), true,
-                  i_FileWatcher.handle, &l_DirectoryWatcher.update)) {
+          if (render_element(l_Id++, ICON_FA_BOX_OPEN,
+                             i_Prefab.get_name().c_str(), true,
+                             i_FileWatcher.handle,
+                             &l_DirectoryWatcher.update)) {
             set_selected_handle(i_FileWatcher.handle);
-            HandlePropertiesSection i_Section(i_FileWatcher.handle, true);
+            HandlePropertiesSection i_Section(i_FileWatcher.handle,
+                                              true);
             i_Section.render_footer = &render_prefab_details_footer;
             get_details_widget()->add_section(i_Section);
           }

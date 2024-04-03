@@ -427,6 +427,19 @@ static void register_lowutil_containers()
 
 static void register_lowutil_string()
 {
+  {
+    Cflat::Helper::registerStdString(
+        Low::Core::Scripting::get_environment());
+  }
+
+  {
+    using namespace std;
+    Cflat::Namespace *l_Namespace =
+        Low::Core::Scripting::get_environment()->requestNamespace(
+            "std");
+    CflatRegisterFunctionReturnParams1(l_Namespace, string, to_string,
+                                       float);
+  }
 
   {
     CflatRegisterClass(Low::Core::Scripting::get_environment(),
@@ -482,6 +495,12 @@ static void register_lowutil_string()
 
     CflatRegisterFunctionVoidParams2(l_Namespace, void, append,
                                      Low::Util::String &, int);
+  }
+
+  {
+    Low::Core::Scripting::get_environment()->defineMacro(
+        "LOW_TO_STRING(x)",
+        "Low::Util::String(std::to_string(x).c_str())");
   }
 }
 
@@ -568,6 +587,9 @@ static void register_lowutil_logger()
     CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
                                      LogStream &, operator<<,
                                      const char *);
+    CflatClassAddMethodReturnParams1(l_Namespace, LogStream,
+                                     LogStream &, operator<<,
+                                     Low::Util::String);
     /*
     CflatClassAddMethodReturnParams1(
         l_Namespace, LogStream, LogStream &, operator<<, String &);

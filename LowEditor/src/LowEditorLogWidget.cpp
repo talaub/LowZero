@@ -66,6 +66,9 @@ namespace Low {
       if (p_Entry.module == "scripting") {
         return "Script";
       }
+      if (p_Entry.module == "flode") {
+        return "Flode";
+      }
 
       return "Low";
     }
@@ -106,6 +109,9 @@ namespace Low {
         return true;
       }
       if (p_Entry.module == "scripting") {
+        return true;
+      }
+      if (p_Entry.module == "flode") {
         return true;
       }
       if (p_Entry.module == "lowcore" &&

@@ -9,6 +9,26 @@
 
 namespace Low {
   namespace Util {
+    struct Name;
+
+    struct LOW_EXPORT StringBuilder
+    {
+      StringBuilder &append(String p_String);
+      StringBuilder &append(const char *p_String);
+      StringBuilder &append(float p_Float);
+      StringBuilder &append(uint32_t p_Content);
+      StringBuilder &append(int p_Content);
+      StringBuilder &append(uint64_t p_Content);
+      StringBuilder &append(uint8_t p_Content);
+      StringBuilder &append(Name p_Content);
+
+      StringBuilder &endl();
+
+      String get() const;
+
+    private:
+      String m_String;
+    };
     namespace StringHelper {
       LOW_EXPORT bool ends_with(String &p_Full, String p_Test);
       LOW_EXPORT bool begins_with(String &p_Full, String p_Test);
