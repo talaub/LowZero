@@ -54,3 +54,9 @@
 	path = LowDependencies/imgui
 	url = https://github.com/thedmd/imgui.git
 	branch = feature/docking-layout-external
+[submodule "LowDependencies/SDL"]
+	path = LowDependencies/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "LowDependencies/vk-bootstrap"]
+	path = LowDependencies/vk-bootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap.git

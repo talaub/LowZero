@@ -7,6 +7,8 @@ add_subdirectory(glfw)
 add_subdirectory(gli)
 add_subdirectory(assimp)
 add_subdirectory(freetype)
+add_subdirectory(SDL)
+add_subdirectory(vk-bootstrap)
 
 project(tlsf)
 
