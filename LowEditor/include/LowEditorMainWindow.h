@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowEditorApi.h"
+
 #include "imgui.h"
 
 #include "LowUtilEnums.h"
@@ -19,8 +21,9 @@ namespace Low {
     struct EnumMetadata;
     struct Widget;
 
-    void initialize();
-    void tick(float p_Delta, Util::EngineState p_State);
+    void LOW_EDITOR_API initialize();
+    void LOW_EDITOR_API tick(float p_Delta,
+                             Util::EngineState p_State);
 
     void set_selected_entity(Core::Entity p_Entity);
     Core::Entity get_selected_entity();

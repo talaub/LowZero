@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include "imgui.h"
-
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
@@ -29,14 +27,11 @@
 
 #include <stdint.h>
 
-#include <microprofile.h>
-#include <vector>
-
 #include "LowEditorMainWindow.h"
 
-// #include "MtdPlugin.h"
-
 #include <windows.h>
+
+typedef int(__stdcall *f_funci)();
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -51,8 +46,6 @@ void *operator new[](size_t size, size_t alignment,
 {
   return malloc(size);
 }
-
-typedef int(__stdcall *f_funci)();
 
 static void setup_scene()
 {
