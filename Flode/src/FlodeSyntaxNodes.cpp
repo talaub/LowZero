@@ -269,9 +269,12 @@ namespace Flode {
 
     void register_nodes()
     {
-      register_node_type("Syntax", "Function",
-                         &function_create_instance,
-                         N(FlodeSyntaxFunction));
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxFunction);
+        register_node(l_TypeName, &function_create_instance);
+
+        register_spawn_node("Syntax", "Function", l_TypeName);
+      }
     }
 
   } // namespace SyntaxNodes

@@ -349,6 +349,7 @@ namespace Flode {
         NodeEd::GetStyle().NodeBorderWidth * 0.5f;
 
     auto l_DrawList = NodeEd::GetNodeBackgroundDrawList(id);
+
     l_DrawList->AddRectFilled(
         m_HeaderMin - ImVec2(g_NodePadding.z - l_HalfBorderWidth,
                              g_NodePadding.y - l_HalfBorderWidth),

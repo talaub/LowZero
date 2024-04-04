@@ -38,8 +38,12 @@ namespace Flode {
 
     void register_nodes()
     {
-      register_node_type("Debug", "Log", &log_create_instance,
-                         N(FlodeDebugLog));
+      {
+        Low::Util::Name l_TypeName = N(FlodeDebugLog);
+        register_node(l_TypeName, &log_create_instance);
+
+        register_spawn_node("Debug", "Log", l_TypeName);
+      }
     }
 
   } // namespace DebugNodes
