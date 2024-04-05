@@ -1,7 +1,6 @@
 #include "LowCoreTexture2D.h"
 
 #include <algorithm>
-#include <future>
 
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
