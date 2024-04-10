@@ -5,7 +5,6 @@ const YAML = require("yaml");
 
 const {
   read_file,
-  collect_types,
   get_plain_type,
   get_accessor_type,
   is_reference_type,
@@ -21,10 +20,11 @@ const {
   find_end_marker_start,
   find_end_marker_end,
   save_file,
-  collect_enums_for,
+  collect_enums_for_low,
+  collect_enums_for_project,
+  collect_types_for_project,
+  collect_types_for_low,
 } = require("./lib.js");
-
-const g_TypeInitializerCppPath = `${__dirname}\\..\\..\\LowUtil\\src\\LowUtilTypeInitializer.cpp`;
 
 function get_deserializer_method_for_math_type(p_Type) {
   if (!is_math_type(p_Type)) {
@@ -251,6 +251,7 @@ function generate_enum_source(p_Enum) {
 
   t += include(`${p_Enum.header_file_name}`);
   t += empty();
+  t += include(`LowUtil.h`);
   t += include(`LowUtilAssert.h`);
   t += include(`LowUtilHandle.h`);
   t += empty();
@@ -680,6 +681,7 @@ function generate_source(p_Type) {
   t += empty();
   t += line("#include<algorithm>", n);
   t += empty();
+  t += include("LowUtil.h", n);
   t += include("LowUtilAssert.h", n);
   t += include("LowUtilLogger.h", n);
   t += include("LowUtilProfiler.h", n);
@@ -1729,7 +1731,22 @@ function generate_source(p_Type) {
 }
 
 function main() {
-  const l_Types = collect_types();
+  let l_Path = `${__dirname}/../../`;
+  let l_Project = false;
+  if (process.argv.length > 2) {
+    l_Path = process.argv[2];
+    l_Project = true;
+  }
+  if (!l_Path.endsWith("/") && !l_Path.endsWith("\\")) {
+    l_Path += "/";
+  }
+
+  let l_Types = 0;
+  if (l_Project) {
+    l_Types = collect_types_for_project(l_Path);
+  } else {
+    l_Types = collect_types_for_low(l_Path);
+  }
 
   for (const i_Type of l_Types) {
     const changed_header = generate_header(i_Type);
@@ -1747,7 +1764,12 @@ function main() {
     }
   }
 
-  const l_Enums = collect_enums_for("ALL");
+  let l_Enums = 0;
+  if (l_Project) {
+    l_Enums = collect_enums_for_project(l_Path);
+  } else {
+    l_Enums = collect_enums_for_low(l_Path);
+  }
 
   for (const i_Enum of l_Enums) {
     const changed_header = generate_enum_header(i_Enum);

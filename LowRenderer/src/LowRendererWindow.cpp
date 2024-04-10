@@ -1,5 +1,6 @@
 #include "LowRendererWindow.h"
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 
@@ -17,8 +18,9 @@ namespace Low {
       glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
       glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/_internal/assets/editor_icons/raw/logo.png";
+      Util::String l_Path =
+          Util::get_project().dataPath +
+          "/_internal/assets/editor_icons/raw/logo.png";
 
       GLFWimage images[1];
       images[0].pixels =

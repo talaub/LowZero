@@ -16,6 +16,7 @@
 
 #include "LowRendererVulkan.h"
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -1274,7 +1275,7 @@ namespace Low {
                      // Change to the font size you use.
 
           Util::String l_BaseInternalFontPath =
-              Util::String(LOW_DATA_PATH) +
+              Util::get_project().dataPath +
               "/_internal/assets/fonts/";
 
           {
@@ -4503,13 +4504,13 @@ namespace Low {
 
       Util::String get_source_path_vk_glsl(Util::String p_Path)
       {
-        return Util::String(LOW_DATA_PATH) + "/shader/src/vk_glsl/" +
+        return Util::get_project().dataPath + "/shader/src/vk_glsl/" +
                p_Path;
       }
 
       static Util::String compile_vk_glsl_to_spv(Util::String p_Path)
       {
-        Util::String l_OutPath = Util::String(LOW_DATA_PATH) +
+        Util::String l_OutPath = Util::get_project().dataPath +
                                  "/shader/dst/spv/" + p_Path + ".spv";
 
 #if LOW_RENDERER_COMPILE_SHADERS

@@ -1,5 +1,9 @@
+SET(BUILD_SHARED_LIBS OFF)
+
 SET(GLI_TEST_ENABLE OFF)
 SET(ASSIMP_BUILD_TESTS OFF)
+SET(YAML_CPP_BUILD_TOOLS OFF)
+SET(YAML_CPP_FORMAT_SOURCE OFF)
 
 add_subdirectory(glm)
 add_subdirectory(yaml-cpp)
@@ -9,8 +13,12 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 add_subdirectory(gli)
 add_subdirectory(assimp)
-add_subdirectory(freetype)
 add_subdirectory(EASTL)
+set(FT_DISABLE_ZLIB ON)
+set(FT_DISABLE_BZIP2 ON)
+set(FT_DISABLE_PNG ON)
+add_subdirectory(freetype)
+
 
 set_target_properties(EASTL PROPERTIES FOLDER "Dependencies")
 set_target_properties(gli_dummy PROPERTIES FOLDER "Dependencies")
@@ -20,17 +28,18 @@ set_target_properties(uninstall PROPERTIES FOLDER "Dependencies")
 set_target_properties(zlibstatic PROPERTIES FOLDER "Dependencies")
 set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "Dependencies")
 
-set_target_properties(yaml-cpp PROPERTIES FOLDER "Dependencies/yaml")
-set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies/yaml")
-set_target_properties(yaml-cpp-read PROPERTIES FOLDER "Dependencies/yaml")
-set_target_properties(yaml-cpp-sandbox PROPERTIES FOLDER "Dependencies/yaml")
-set_target_properties(format PROPERTIES FOLDER "Dependencies/yaml")
+set_target_properties(yaml-cpp PROPERTIES FOLDER "Dependencies")
+#set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies/yaml")
+#set_target_properties(yaml-cpp-read PROPERTIES FOLDER "Dependencies/yaml")
+#set_target_properties(yaml-cpp-sandbox PROPERTIES FOLDER "Dependencies/yaml")
+#set_target_properties(format PROPERTIES FOLDER "Dependencies/yaml")
 
 project(tlsf)
 
 add_library(tlsf STATIC "${CMAKE_CURRENT_SOURCE_DIR}/tlsf/tlsf.c")
 target_include_directories(tlsf PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/tlsf"
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tlsf>
+  $<INSTALL_INTERFACE:include>
 )
 set_target_properties(tlsf PROPERTIES FOLDER "Dependencies")
 cmake_minimum_required(VERSION 3.20)
@@ -76,17 +85,6 @@ target_include_directories(RecastDemo PUBLIC
 set_target_properties(RecastDemo PROPERTIES FOLDER "Dependencies")
 
 
-project(cflat)
-
-add_library(cflat STATIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/Cflat/Cflat.cpp"
-)
-
-target_include_directories(cflat PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/Cflat"
-)
-
-set_target_properties(cflat PROPERTIES FOLDER "Dependencies")
 
 project(physx)
 

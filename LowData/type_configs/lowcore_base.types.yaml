@@ -1,0 +1,184 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+dll_macro: LOW_CORE_API
+types:
+  Entity:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    name_editable: true
+    scripting_expose: true
+    unique_id: true
+    header_imports:
+      - LowCoreRegion.h
+    source_imports:
+      - LowCoreTransform.h
+      - LowCorePrefabInstance.h
+    properties:
+      components:
+        type: Util::Map<uint16_t, Util::Handle>
+        no_setter: true
+      region:
+        type: Region
+        handle: true
+    functions:
+      make:
+        static: true
+        return_type: Entity
+        return_handle: true
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: region
+            type: Region
+            handle: true
+      get_component:
+        expose_scripting: true
+        return_type: uint64_t
+        constant: true
+        parameters:
+          - name: typeId
+            type: uint16_t
+      add_component:
+        expose_scripting: true
+        return_type: void
+        parameters:
+          - name: component
+            type: Low::Util::Handle
+      remove_component:
+        expose_scripting: true
+        return_type: void
+        parameters:
+          - name: componentType
+            type: uint16_t
+      has_component:
+        expose_scripting: true
+        return_type: bool
+        parameters:
+          - name: componentType
+            type: uint16_t
+      get_transform:
+        expose_scripting: true
+        return_type: Low::Core::Component::Transform
+        return_handle: true
+        constant: true
+      serialize:
+        return_type: void
+        constant: true
+        parameters:
+          - name: node
+            type: Low::Util::Yaml::Node
+          - name: addHandles
+            type: bool
+      serialize_hierarchy:
+        return_type: void
+        constant: true
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+          - name: addHandles
+            type: bool
+      deserialize_hierarchy:
+        return_type: Entity
+        static: true
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+          - name: creator
+            type: Low::Util::Handle
+            handle: true
+
+  Region:
+    unique_id: true
+    name_editable: true
+    header_imports:
+      - LowMath.h
+      - LowCoreScene.h
+    source_imports:
+      - LowCoreEntity.h
+      - LowUtilFileIO.h
+    properties:
+      loaded:
+        type: bool
+        skip_serialization: true
+        skip_deserialization: true
+      streaming_enabled:
+        type: bool
+        editor_editable: true
+      streaming_position:
+        type: Math::Vector3
+        editor_editable: true
+      streaming_radius:
+        type: float
+        editor_editable: true
+      entities:
+        type: Util::Set<Util::UniqueId>
+        no_setter: true
+        private_getter: true
+        skip_serialization: true
+        skip_deserialization: true
+      scene:
+        type: Scene
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      serialize_entities:
+        return_type: void
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+      add_entity:
+       return_type: void 
+       parameters:
+         - name: entity
+           type: Entity
+           handle: true
+      remove_entity:
+       return_type: void 
+       parameters:
+         - name: entity
+           type: Entity
+           handle: true
+      load_entities:
+        return_type: void
+      unload_entities:
+        return_type: void
+
+  Scene:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    unique_id: true
+    source_imports:
+      - LowCoreRegion.h
+    properties:
+      regions:
+        type: Low::Util::Set<Util::UniqueId>
+        no_setter: true
+      loaded:
+        type: bool
+        private_setter: true
+    functions:
+      load:
+        return_type: void
+      unload:
+        return_type: void
+      _load:
+        return_type: void
+        private: true
+      get_loaded_scene:
+        return_type: Scene
+        return_handle: true
+        static: true
+
+  GameMode:
+    unique_id: true
+    name_editable: true
+    editor:
+      manager: true
+    properties:
+      tick_function_name:
+        type: Util::String
+        editor_editable: true

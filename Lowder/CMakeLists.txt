@@ -21,15 +21,11 @@ add_dependencies(Lowder
   LowEditor
 )
 
-add_dependencies(Lowder
-  MistedaPlugin
-)
-
 set(LOWDER_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-set_property(TARGET Lowder PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${APP_OUTPUT_DIR}")
+#set_property(TARGET Lowder PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/${CMAKE_}")
 
 target_compile_definitions(Lowder PRIVATE
   LOW_MODULE_NAME="lowder"
@@ -53,5 +49,4 @@ target_link_libraries(Lowder PRIVATE
 
 target_link_libraries(Lowder PRIVATE
   LowEditor
-  MistedaPlugin
 )

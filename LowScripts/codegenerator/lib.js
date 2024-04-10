@@ -45,8 +45,11 @@ function format(p_FilePath, p_Content) {
   return l_Formatted;
 }
 
-function get_unused_type_id() {
+function get_unused_type_id(p_Project) {
   let id = 1;
+  if (p_Project) {
+    id = 30001;
+  }
 
   while (g_AllTypeIds.includes(id)) {
     id++;
@@ -55,8 +58,11 @@ function get_unused_type_id() {
   return id;
 }
 
-function get_unused_enum_id() {
+function get_unused_enum_id(p_Project) {
   let id = 1;
+  if (p_Project) {
+    id = 30001;
+  }
 
   while (g_AllEnumIds.includes(id)) {
     id++;
@@ -69,8 +75,13 @@ function read_file(p_FilePath) {
   return fs.readFileSync(p_FilePath, { encoding: "utf8", flag: "r" });
 }
 
-function process_enum_file(p_FileName) {
-  const l_FileContent = read_file(`${g_Directory}\\${p_FileName}`);
+function process_enum_file(p_Path, p_FileName, p_Project) {
+  let l_FilePath = `${p_Path}LowData/type_configs/${p_FileName}`;
+  if (p_Project) {
+    l_FilePath = `${p_Path}data/_internal/type_configs/${p_FileName}`;
+  }
+
+  const l_FileContent = read_file(l_FilePath);
 
   const l_Config = YAML.parse(l_FileContent);
 
@@ -112,7 +123,10 @@ function process_enum_file(p_FileName) {
       i_Enum.namespace_string += i_Enum.namespace[i];
     }
 
-    i_Enum.module_path = `${__dirname}\\..\\..\\${i_Enum.module}`;
+    i_Enum.module_path = `${p_Path}${i_Enum.module}`;
+    if (p_Project) {
+      i_Enum.module_path = `${p_Path}modules\\${i_Enum.module}`;
+    }
     i_Enum.header_file_name = `${i_Enum.prefix}${i_Enum.name}.h`;
     i_Enum.header_file_path = `${i_Enum.module_path}\\include\\${i_Enum.prefix}${i_Enum.name}.h`;
     i_Enum.source_file_name = `${i_Enum.prefix}${i_Enum.name}.cpp`;
@@ -128,8 +142,12 @@ function process_enum_file(p_FileName) {
   return l_Enums;
 }
 
-function process_file(p_FileName) {
-  const l_FileContent = read_file(`${g_Directory}\\${p_FileName}`);
+function process_file(p_Path, p_FileName, p_Project = false) {
+  let l_FilePath = `${p_Path}LowData\\type_configs\\${p_FileName}`;
+  if (p_Project) {
+    l_FilePath = `${p_Path}data\\_internal\\type_configs\\${p_FileName}`;
+  }
+  const l_FileContent = read_file(l_FilePath);
 
   const l_Config = YAML.parse(l_FileContent);
 
@@ -165,7 +183,7 @@ function process_file(p_FileName) {
     if (g_TypeIdMap[l_Config.module][i_TypeName]) {
       i_Type.typeId = g_TypeIdMap[l_Config.module][i_TypeName];
     } else {
-      i_Type.typeId = get_unused_type_id();
+      i_Type.typeId = get_unused_type_id(p_Project);
       g_AllTypeIds.push(i_Type.typeId);
       g_TypeIdMap[l_Config.module][i_TypeName] = i_Type.typeId;
     }
@@ -314,7 +332,10 @@ function process_file(p_FileName) {
       }
     }
 
-    i_Type.module_path = `${__dirname}\\..\\..\\${i_Type.module}`;
+    i_Type.module_path = `${p_Path}${i_Type.module}`;
+    if (p_Project) {
+      i_Type.module_path = `${p_Path}modules\\${i_Type.module}`;
+    }
     i_Type.header_file_name = `${i_Type.prefix}${i_Type.name}.h`;
     i_Type.header_file_path = `${i_Type.module_path}\\include\\${i_Type.prefix}${i_Type.name}.h`;
     i_Type.source_file_path = `${i_Type.module_path}\\src\\${i_Type.prefix}${i_Type.name}.cpp`;
@@ -471,11 +492,15 @@ function removeItemOnce(arr, value) {
   return arr;
 }
 
-function collect_enums_for(env) {
-  const l_FileList = fs.readdirSync(g_Directory);
+function collect_enums_for_project(p_Path) {
+  const l_TypeConfigsPath = `${p_Path}data/_internal/type_configs`;
+  const l_FileList = fs.readdirSync(l_TypeConfigsPath);
 
-  const l_EnumIdContent = read_file(`${g_Directory}/enumids.yaml`);
+  const l_EnumIdContent = read_file(`${l_TypeConfigsPath}/enumids.yaml`);
   g_EnumIdMap = YAML.parse(l_EnumIdContent);
+  if (!g_EnumIdMap) {
+    g_EnumIdMap = {};
+  }
 
   for (const [key, value] of Object.entries(g_EnumIdMap)) {
     for (const [k, v] of Object.entries(value)) {
@@ -494,20 +519,62 @@ function collect_enums_for(env) {
   }
 
   for (let i_FileName of l_EnumFiles) {
-    l_Enums.push(...process_enum_file(i_FileName));
+    l_Enums.push(...process_enum_file(p_Path, i_FileName, true));
   }
 
-  fs.writeFileSync(`${g_Directory}/enumids.yaml`, YAML.stringify(g_EnumIdMap));
+  if (Object.keys(g_EnumIdMap).length > 0)
+    fs.writeFileSync(
+      `${l_TypeConfigsPath}/enumids.yaml`,
+      YAML.stringify(g_EnumIdMap),
+    );
 
-  if (env !== "ALL") {
-    return l_Enums.filter((type) => type.module.startsWith(env));
+  return l_Enums;
+}
+
+function collect_enums_for_low(p_Path) {
+  const l_TypeConfigsPath = `${p_Path}LowData/type_configs`;
+  const l_FileList = fs.readdirSync(l_TypeConfigsPath);
+
+  const l_EnumIdContent = read_file(`${l_TypeConfigsPath}/enumids.yaml`);
+  g_EnumIdMap = YAML.parse(l_EnumIdContent);
+  if (!g_EnumIdMap) {
+    g_EnumIdMap = {};
+  }
+
+  for (const [key, value] of Object.entries(g_EnumIdMap)) {
+    for (const [k, v] of Object.entries(value)) {
+      g_AllEnumIds.push(v);
+    }
+  }
+
+  const l_Enums = [];
+
+  const l_EnumFiles = [];
+
+  for (let i_FileName of l_FileList) {
+    if (i_FileName.endsWith(".enums.yaml")) {
+      l_EnumFiles.push(i_FileName);
+    }
+  }
+
+  for (let i_FileName of l_EnumFiles) {
+    l_Enums.push(...process_enum_file(p_Path, i_FileName, false));
+  }
+
+  if (Object.keys(g_EnumIdMap).length > 0) {
+    fs.writeFileSync(
+      `${l_TypeConfigsPath}/enumids.yaml`,
+      YAML.stringify(g_EnumIdMap),
+    );
   }
 
   return l_Enums;
 }
 
-function collect_types_for(env) {
-  const l_TypeIdContent = read_file(`${g_Directory}/typeids.yaml`);
+function collect_types_for_low(p_Path) {
+  const l_TypeIdContent = read_file(
+    `${p_Path}LowData\\type_configs\\typeids.yaml`,
+  );
   g_TypeIdMap = YAML.parse(l_TypeIdContent);
   for (const [key, value] of Object.entries(g_TypeIdMap)) {
     for (const [k, v] of Object.entries(value)) {
@@ -515,19 +582,11 @@ function collect_types_for(env) {
     }
   }
 
-  const l_FileList = fs.readdirSync(g_Directory);
+  const l_FileList = fs.readdirSync(`${p_Path}LowData/type_configs`);
 
   const l_Types = [];
 
   const l_TypeFiles = [];
-
-  const l_Order = [
-    "lowrenderer_interface",
-    "lowrenderer_resources",
-    "lowrenderer",
-    "lowcore_base",
-    "lowcore_resources",
-  ];
 
   for (let i_FileName of l_FileList) {
     if (i_FileName.endsWith(".types.yaml")) {
@@ -535,31 +594,53 @@ function collect_types_for(env) {
     }
   }
 
-  for (let i_OrderItem of l_Order) {
-    for (let i_FileName of l_TypeFiles) {
-      if (i_FileName.endsWith(`${i_OrderItem}.types.yaml`)) {
-        l_Types.push(...process_file(i_FileName));
-        removeItemOnce(l_TypeFiles, i_FileName);
-        break;
-      }
-    }
-  }
-
   for (let i_FileName of l_TypeFiles) {
-    l_Types.push(...process_file(i_FileName));
+    l_Types.push(...process_file(p_Path, i_FileName, false));
   }
 
-  fs.writeFileSync(`${g_Directory}/typeids.yaml`, YAML.stringify(g_TypeIdMap));
-
-  if (env !== "ALL") {
-    return l_Types.filter((type) => type.module.startsWith(env));
-  }
+  fs.writeFileSync(
+    `${p_Path}LowData\\type_configs\\typeids.yaml`,
+    YAML.stringify(g_TypeIdMap),
+  );
 
   return l_Types;
 }
 
-function collect_types() {
-  return collect_types_for("ALL");
+function collect_types_for_project(p_Path) {
+  const l_TypeIdContent = read_file(
+    `${p_Path}data\\_internal\\type_configs\\typeids.yaml`,
+  );
+  g_TypeIdMap = YAML.parse(l_TypeIdContent);
+  for (const [key, value] of Object.entries(g_TypeIdMap)) {
+    for (const [k, v] of Object.entries(value)) {
+      g_AllTypeIds.push(v);
+    }
+  }
+
+  const l_FileList = fs.readdirSync(`${p_Path}data/_internal/type_configs`);
+
+  const l_Types = [];
+
+  const l_TypeFiles = [];
+
+  for (let i_FileName of l_FileList) {
+    if (i_FileName.endsWith(".types.yaml")) {
+      l_TypeFiles.push(i_FileName);
+    }
+  }
+
+  for (let i_FileName of l_TypeFiles) {
+    l_Types.push(...process_file(p_Path, i_FileName, true));
+  }
+
+  if (Object.keys(g_TypeIdMap) > 0) {
+    fs.writeFileSync(
+      `${p_Path}data\\_internal\\type_configs\\typeids.yaml`,
+      YAML.stringify(g_TypeIdMap),
+    );
+  }
+
+  return l_Types;
 }
 
 function save_file(p_FilePath, p_Content) {
@@ -610,9 +691,10 @@ function find_end_marker_end(p_Text, p_Name) {
 
 module.exports = {
   read_file,
-  collect_types,
-  collect_types_for,
-  collect_enums_for,
+  collect_types_for_project,
+  collect_types_for_low,
+  collect_enums_for_project,
+  collect_enums_for_low,
   get_plain_type,
   get_accessor_type,
   is_reference_type,

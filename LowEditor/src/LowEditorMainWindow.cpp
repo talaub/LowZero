@@ -26,6 +26,7 @@
 #include "LowEditorThemes.h"
 #include "LowEditorTypeManagerWidget.h"
 
+#include "LowUtil.h"
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 #include "LowUtilJobManager.h"
@@ -209,8 +210,8 @@ namespace Low {
       }
       l_Config["theme"] = theme_get_current_name().c_str();
 
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/../user.yaml";
+      Util::String l_Path =
+          Util::get_project().rootPath + "/user.yaml";
       Util::Yaml::write_file(l_Path.c_str(), l_Config);
     }
 
@@ -238,7 +239,7 @@ namespace Low {
             p_Path.find_last_of('\\') + 1,
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         ResourceProcessor::Image::process(
-            Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" +
+            Util::get_project().dataPath + "\\resources\\img2d\\" +
                 l_FileName,
             l_Image);
 
@@ -257,7 +258,7 @@ namespace Low {
             p_Path.find_last_of('\\') + 1,
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         bool l_HasAnimations = ResourceProcessor::Mesh::process(
-            p_Path.c_str(), Util::String(LOW_DATA_PATH) +
+            p_Path.c_str(), Util::get_project().dataPath +
                                 "\\resources\\meshes\\" + l_FileName +
                                 ".glb");
 
@@ -270,7 +271,7 @@ namespace Low {
         if (l_HasAnimations) {
           ResourceProcessor::Mesh::process_animations(
               p_Path.c_str(),
-              Util::String(LOW_DATA_PATH) +
+              Util::get_project().dataPath +
                   "\\resources\\skeletal_animations\\" + l_FileName +
                   ".glb");
 
@@ -492,7 +493,7 @@ namespace Low {
 
     static void initialize_spherical_billboard_materials()
     {
-      Util::String l_DataPath(LOW_DATA_PATH);
+      Util::String l_DataPath = Util::get_project().dataPath;
 
       g_SphericalBillboardMaterials.sun =
           Core::DebugGeometry::create_spherical_billboard_material(
@@ -672,10 +673,33 @@ namespace Low {
       }
     }
 
-    static inline void load_metadata()
+    static inline void load_project_metadata()
     {
-      Util::String l_TypeConfigPath = LOW_DATA_PATH;
-      l_TypeConfigPath += "/_internal/type_configs";
+      Util::String l_TypeConfigPath =
+          Util::get_project().dataPath + "/_internal/type_configs";
+
+      Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
+          (l_TypeConfigPath + "/typeids.yaml").c_str());
+
+      Util::List<Util::String> l_FilePaths;
+      Util::FileIO::list_directory(l_TypeConfigPath.c_str(),
+                                   l_FilePaths);
+
+      for (auto it = l_FilePaths.begin(); it != l_FilePaths.end();
+           ++it) {
+        if (!Util::StringHelper::ends_with(*it, ".types.yaml")) {
+          continue;
+        }
+
+        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
+        parse_metadata(i_Node, l_TypeIdsNode);
+      }
+    }
+
+    static inline void load_low_metadata()
+    {
+      Util::String l_TypeConfigPath =
+          Util::get_project().engineDataPath + "/type_configs";
 
       Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
           (l_TypeConfigPath + "/typeids.yaml").c_str());
@@ -697,8 +721,8 @@ namespace Low {
 
     static inline void load_user_settings()
     {
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/../user.yaml";
+      Util::String l_Path =
+          Util::get_project().rootPath + "/user.yaml";
 
       if (!Util::FileIO::file_exists_sync(l_Path.c_str())) {
         return;
@@ -738,10 +762,20 @@ namespace Low {
       }
     }
 
+    static void register_type_nodes(u16 p_TypeId)
+    {
+    }
+
+    static void register_type_nodes()
+    {
+      register_type_nodes(Core::Entity::TYPE_ID);
+    }
+
     void initialize()
     {
       themes_load();
-      load_metadata();
+      load_low_metadata();
+      load_project_metadata();
 
       initialize_billboard_materials();
 
@@ -752,6 +786,8 @@ namespace Low {
         Flode::SyntaxNodes::register_nodes();
         Flode::DebugNodes::register_nodes();
         Flode::CastNodes::register_nodes();
+
+        register_type_nodes();
       }
 
       g_MainViewportWidget = new EditingWidget();
@@ -776,8 +812,8 @@ namespace Low {
         }
       }
 
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/meshes";
+      Util::String l_Path =
+          Util::get_project().dataPath + "/assets/meshes";
 
       load_user_settings();
     }

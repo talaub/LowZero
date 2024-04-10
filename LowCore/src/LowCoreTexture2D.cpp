@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -529,7 +530,7 @@ namespace Low {
         }
       } while (!l_FoundIndex);
 
-      Util::String l_FullPath = Util::String(LOW_DATA_PATH) +
+      Util::String l_FullPath = Util::get_project().dataPath +
                                 "\\resources\\img2d\\" + get_path();
 
       set_renderer_texture(Renderer::reserve_texture(get_name()));

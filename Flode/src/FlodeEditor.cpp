@@ -3,6 +3,7 @@
 #include "utilities/drawing.h"
 #include "utilities/widgets.h"
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilString.h"
 
@@ -102,6 +103,13 @@ namespace Flode {
 
     ImGui::SameLine();
 
+    {
+      ImVec2 l_Region = ImGui::GetContentRegionAvail();
+      if (l_Region.x < 5 || l_Region.y < 5) {
+        return;
+      }
+    }
+
     NodeEd::SetCurrentEditor(m_Context);
     NodeEd::Begin("FlodeEditor", ImVec2(0.0, 0.0f));
 
@@ -109,7 +117,7 @@ namespace Flode {
 
     if (m_FirstRun) {
       m_FirstRun = false;
-      Low::Util::String l_Path = LOW_DATA_PATH;
+      Low::Util::String l_Path = Low::Util::get_project().dataPath;
       l_Path += "/assets/flode/" + LOW_TO_STRING(25) + ".flode.yaml";
 
       Low::Util::Yaml::Node l_Node =
@@ -159,7 +167,7 @@ namespace Flode {
       Low::Util::Yaml::Node l_Node;
       m_Graph->serialize(l_Node);
 
-      Low::Util::String l_Path = LOW_DATA_PATH;
+      Low::Util::String l_Path = Low::Util::get_project().dataPath;
       l_Path += "/assets/flode/" + LOW_TO_STRING(25) + ".flode.yaml";
 
       Low::Util::Yaml::write_file(l_Path.c_str(), l_Node);

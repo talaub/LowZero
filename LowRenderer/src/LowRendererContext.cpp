@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -14,6 +15,7 @@
 #include "LowUtilResource.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowUtil.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -633,7 +635,7 @@ namespace Low {
           {
             Util::Resource::Image2D l_Image;
             Util::Resource::load_image2d(
-                Util::String(LOW_DATA_PATH) +
+                Util::get_project().dataPath +
                     "/resources/img2d/default_texture.ktx",
                 l_Image);
 

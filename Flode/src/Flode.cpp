@@ -1,5 +1,6 @@
 #include "Flode.h"
 
+#include "LowUtil.h"
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilFileIO.h"
@@ -863,7 +864,7 @@ namespace Flode {
     l_Builder.append("}").endl();
     l_Builder.append("}").endl();
 
-    Low::Util::String l_Path = LOW_DATA_PATH;
+    Low::Util::String l_Path = Low::Util::get_project().dataPath;
     l_Path += "/scripts/" + LOW_TO_STRING(25) + "script.cpp";
 
     Low::Util::FileIO::File l_File = Low::Util::FileIO::open(

@@ -5,6 +5,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilName.h"
 #include "LowUtilYaml.h"
+#include "LowUtil.h"
 
 #include <string>
 
@@ -15,19 +16,21 @@ namespace Low {
 
       static void load_capacities()
       {
-        LOW_LOG_DEBUG << LOW_DATA_PATH << LOW_LOG_END;
-        std::string l_FilePath =
-            std::string(LOW_DATA_PATH) + "/_internal/type_capacities.yaml";
+        String l_FilePath = get_project().dataPath +
+                            "/_internal/type_capacities.yaml";
 
         Yaml::Node l_RootNode = Yaml::load_file(l_FilePath.c_str());
 
-        for (auto it = l_RootNode.begin(); it != l_RootNode.end(); ++it) {
-          Name i_ModuleName = LOW_NAME(it->first.as<std::string>().c_str());
+        for (auto it = l_RootNode.begin(); it != l_RootNode.end();
+             ++it) {
+          Name i_ModuleName =
+              LOW_NAME(it->first.as<std::string>().c_str());
           g_Capacities[i_ModuleName] = Map<Name, uint32_t>();
 
-          for (auto typeIt = it->second.begin(); typeIt != it->second.end();
-               ++typeIt) {
-            Name i_TypeName = LOW_NAME(typeIt->first.as<std::string>().c_str());
+          for (auto typeIt = it->second.begin();
+               typeIt != it->second.end(); ++typeIt) {
+            Name i_TypeName =
+                LOW_NAME(typeIt->first.as<std::string>().c_str());
             uint32_t i_Capacity = typeIt->second.as<uint32_t>();
             g_Capacities[i_ModuleName][i_TypeName] = i_Capacity;
           }

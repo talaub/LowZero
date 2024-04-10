@@ -56,7 +56,8 @@ static void setup_scene()
 
 int run_low()
 {
-  HINSTANCE hGetProcIDDLL = LoadLibrary("mistedaplugind.dll");
+  HINSTANCE hGetProcIDDLL = LoadLibrary(
+      "../../../misteda/build/Debug/app/mistedaplugind.dll");
 
   if (!hGetProcIDDLL) {
     std::cout << "could not load the dynamic library" << std::endl;

@@ -1,0 +1,192 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+  - UI
+dll_macro: LOW_CORE_API
+prefix: LowCoreUi
+types:
+  Element:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    name_editable: true
+    scripting_expose: true
+    unique_id: true
+    header_imports:
+      - LowCoreUiView.h
+    source_imports:
+      - LowCoreUiDisplay.h
+    properties:
+      components:
+        type: Util::Map<uint16_t, Util::Handle>
+        no_setter: true
+      view:
+        type: Low::Core::UI::View
+        handle: true
+        expose_scripting: true
+      click_passthrough:
+        type: bool
+        expose_scripting: true
+    functions:
+      make:
+        static: true
+        return_type: Element
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: view
+            type: Low::Core::UI::View
+            handle: true
+      get_component:
+        expose_scripting: true
+        return_type: uint64_t
+        constant: true
+        parameters:
+          - name: typeId
+            type: uint16_t
+      add_component:
+        expose_scripting: true
+        return_type: void
+        parameters:
+          - name: component
+            type: Low::Util::Handle
+      remove_component:
+        expose_scripting: true
+        return_type: void
+        parameters:
+          - name: componentType
+            type: uint16_t
+      has_component:
+        expose_scripting: true
+        return_type: bool
+        parameters:
+          - name: componentType
+            type: uint16_t
+      get_display:
+        expose_scripting: true
+        return_type: Low::Core::UI::Component::Display
+        return_handle: true
+        constant: true
+      serialize:
+        return_type: void
+        constant: true
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+          - name: addHandles
+            type: bool
+      serialize_hierarchy:
+        return_type: void
+        constant: true
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+          - name: addHandles
+            type: bool
+      deserialize_hierarchy:
+        return_type: UI::Element
+        return_handle: true
+        static: true
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+          - name: creator
+            type: Util::Handle
+            handle: true
+
+  View:
+    unique_id: true
+    name_editable: true
+    no_auto_duplicate: true
+    scripting_expose: true
+    header_imports:
+      - LowMath.h
+    source_imports:
+      - LowCoreUiElement.h
+      - LowCoreUiDisplay.h
+      - LowUtilFileIO.h
+    properties:
+      loaded:
+        type: bool
+        skip_serialization: true
+        skip_deserialization: true
+      elements:
+        type: Util::Set<Util::UniqueId>
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      internal:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      view_template:
+        type: bool
+        editor_editable: true
+      pixel_position:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        getter_name: pixel_position
+        setter_name: pixel_position
+        dirty_flag: transform_dirty
+      rotation:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        getter_name: rotation
+        setter_name: rotation
+        dirty_flag: transform_dirty
+      scale_multiplier:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        getter_name: scale_multiplier
+        setter_name: scale_multiplier
+        dirty_flag: transform_dirty
+      layer_offset:
+        type: uint32_t
+        editor_editable: true
+        expose_scripting: true
+        getter_name: layer_offset
+        setter_name: layer_offset
+        dirty_flag: transform_dirty
+
+    functions:
+      serialize_elements:
+        return_type: void
+        parameters:
+          - name: node
+            type: Util::Yaml::Node
+      add_element:
+       return_type: void 
+       parameters:
+         - name: element
+           type: Element
+           handle: true
+      remove_element:
+       return_type: void 
+       parameters:
+         - name: element
+           type: Element
+           handle: true
+      load_elements:
+        return_type: void
+      unload_elements:
+        return_type: void
+      spawn_instance:
+        return_type: Low::Core::UI::View
+        return_handle: true
+        expose_scripting: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+      find_element_by_name:
+        return_type: Low::Core::UI::Element
+        return_handle: true
+        expose_scripting: true
+        parameters:
+          - name: name
+            type: Low::Util::Name

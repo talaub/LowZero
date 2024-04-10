@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -858,7 +859,7 @@ namespace Low {
         set_loaded(true);
 
         Util::String l_Path =
-            Util::String(LOW_DATA_PATH) + "\\assets\\ui_views\\";
+            Util::get_project().dataPath + "\\assets\\ui_views\\";
         l_Path += std::to_string(get_unique_id()).c_str();
         l_Path += ".elements.yaml";
 

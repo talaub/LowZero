@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -536,7 +537,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
       LOW_ASSERT(is_alive(), "Cannot load dead font handle");
 
-      Util::String l_FullPath = Util::String(LOW_DATA_PATH) +
+      Util::String l_FullPath = Util::get_project().dataPath +
                                 "\\resources\\fonts\\" + get_path();
 
       FT_Face l_Face;

@@ -1,0 +1,178 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+  - UI
+  - Component
+dll_macro: LOW_CORE_API
+prefix: LowCoreUi
+types:
+  Display:
+    ui_component: true
+    scripting_expose: true
+    header_imports:
+      - LowMath.h
+    source_imports:
+      - LowMathQuaternionUtil.h
+    properties:
+      pixel_position:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        getter_name: pixel_position
+        setter_name: pixel_position
+        dirty_flag:
+          - dirty
+          - world_dirty
+      rotation:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        getter_name: rotation
+        setter_name: rotation
+        dirty_flag:
+          - dirty
+          - world_dirty
+      pixel_scale:
+        getter_name: pixel_scale
+        setter_name: pixel_scale
+        expose_scripting: true
+        type: Low::Math::Vector2
+        editor_editable: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      layer:
+        getter_name: layer
+        setter_name: layer
+        expose_scripting: true
+        type: uint32_t
+        editor_editable: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      parent:
+        type: uint64_t
+        expose_scripting: true
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      parent_uid:
+        type: uint64_t
+        private_setter: true
+        skip_duplication: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      children:
+        type: Low::Util::List<uint64_t>
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+      absolute_pixel_position:
+        type: Low::Math::Vector2
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      absolute_rotation:
+        type: float
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      absolute_pixel_scale:
+        type: Low::Math::Vector2
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      absolute_layer:
+        type: uint32_t
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      world_matrix:
+        type: Low::Math::Matrix4x4
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        private_setter: true
+        getter_no_const: true
+      world_updated:
+        type: bool
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+    functions:
+      recalculate_world_transform:
+        return_type: void
+      get_absolute_layer_float:
+        return_type: float
+      point_is_in_bounding_box:
+        return_type: bool
+        parameters:
+          - name: point
+            type: Low::Math::Vector2
+
+  Image:
+    ui_component: true
+    header_imports:
+      - LowCoreTexture2D.h
+      - LowRenderer.h
+    properties:
+      texture:
+        editor_editable: true
+        type: Low::Core::Texture2D
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      renderer_material:
+        editor_editable: false
+        type: Renderer::Material
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+        private_setter: true
+
+  Text:
+    ui_component: true
+    scripting_expose: true
+    header_imports:
+      - LowCoreTexture2D.h
+      - LowCoreFont.h
+      - LowRenderer.h
+    properties:
+      text:
+        editor_editable: true
+        type: Low::Util::String
+        expose_scripting: true
+      font:
+        editor_editable: true
+        type: Low::Core::Font
+        handle: true
+      color:
+        editor_editable: true
+        type: Low::Math::Color
+        expose_scripting: true
+      size:
+        editor_editable: true
+        type: float
+        expose_scripting: true
+      content_fit_approach:
+        type: TextContentFitOptions
+        no_ref: true

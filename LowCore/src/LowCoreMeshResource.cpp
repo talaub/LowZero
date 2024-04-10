@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -556,8 +557,8 @@ namespace Low {
         }
       } while (!l_FoundIndex);
 
-      std::string l_FullPath =
-          std::string(LOW_DATA_PATH) + "\\resources\\meshes\\";
+      Util::String l_FullPath =
+          Util::get_project().dataPath + "\\resources\\meshes\\";
       l_FullPath += get_path().c_str();
 
       MeshLoadSchedule &l_LoadSchedule =
@@ -569,8 +570,7 @@ namespace Low {
                          it != g_MeshLoadSchedules.end(); ++it) {
                       if (it->meshIndex == l_MeshIndex) {
                         Util::Resource::load_mesh(
-                            Util::String(l_FullPath.c_str()),
-                            g_Meshes[l_MeshIndex]);
+                            l_FullPath, g_Meshes[l_MeshIndex]);
                         break;
                       }
                     }

@@ -3,7 +3,7 @@ SET(LOW_PATH "P:\\")
 SET(LOW_DEPENDENCIES_DIR "${LOW_PATH}\\LowDependencies")
 SET(EASTL_ROOT_DIR "${LOW_PATH}\\LowDependencies\\EASTL")
 
-include_directories(
+target_include_directories(${PROJ_NAME} PRIVATE
   ${EASTL_ROOT_DIR}/include
   ${EASTL_ROOT_DIR}/test/packages/EAAssert/include
   ${EASTL_ROOT_DIR}/test/packages/EABase/include/Common
@@ -23,7 +23,12 @@ include_directories(
   $ENV{VK_SDK_PATH}/Include
 )
 
-include_directories(
+add_compile_definitions(
+  YAML_CPP_STATIC_DEFINE
+)
+
+
+target_include_directories(${PROJ_NAME} PRIVATE
   "${LOW_PATH}LowMath\\include"
   "${LOW_PATH}LowUtil\\include"
   "${LOW_PATH}LowRenderer\\include"
@@ -32,29 +37,91 @@ include_directories(
 
 target_link_directories(${PROJ_NAME} PRIVATE
   "${LOW_PATH}build\\Debug\\lib"
-  "${LOW_PATH}build\\LowDependencies\\EASTL\\build\\Debug"
-)
-
-#target_link_libraries(${PROJ_NAME} PRIVATE
-#"${LOW_PATH}build\\Debug\\app\\lowmathd.dll"
-#"${LOW_PATH}build\\Debug\\app\\lowutild.dll"
-#"${LOW_PATH}build\\Debug\\app\\lowrendererd.dll"
-#"${LOW_PATH}build\\Debug\\app\\lowcored.dll"
-#)
-
-target_link_libraries(${PROJ_NAME} PRIVATE
-  "D:\\projects\\lengine\\build\\Debug\\lib\\yaml-cppd.lib"
+  "${LOW_PATH}build\\LowDependencies\\EASTL\\build\\Release"
 )
 
 target_link_libraries(${PROJ_NAME} PRIVATE
-  lowmathd
-  lowutild
-  lowrendererd
-  lowcored
+)
+
+target_link_libraries(${PROJ_NAME} PRIVATE
+  lowmath
+  lowutil
+  lowrenderer
+  lowcore
   zlibstaticd
   EASTL
+  yaml-cpp
 )
 
-add_compile_definitions(
-  YAML_CPP_STATIC_DEFINE
+# ===============================================
+if(CMAKE_CONFIGURATION_TYPES)
+    foreach(CONFIG_TYPE ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${CONFIG_TYPE} CONFIG_TYPE_UPPER)
+
+        find_library(LowUtil_LIBRARY_${CONFIG_TYPE_UPPER}
+            NAMES lowutil
+            HINTS "${LOW_PATH}build/${CONFIG_TYPE}/lib"
+        )
+      find_library(LowMath_LIBRARY_${CONFIG_TYPE_UPPER}
+            NAMES lowmath
+            HINTS "${LOW_PATH}build/${CONFIG_TYPE}/lib"
+        )
+      find_library(LowRenderer_LIBRARY_${CONFIG_TYPE_UPPER}
+            NAMES lowrenderer
+            HINTS "${LOW_PATH}build/${CONFIG_TYPE}/lib"
+        )
+        find_library(LowCore_LIBRARY_${CONFIG_TYPE_UPPER}
+            NAMES lowcore
+            HINTS "${LOW_PATH}build/${CONFIG_TYPE}/lib"
+        )
+
+    endforeach()
+endif()
+
+find_path(LowUtil_INCLUDE_DIR
+  NAMES LowUtil.h
+  HINTS "${LOW_PATH}LowUtil/include"
 )
+find_path(LowMath_INCLUDE_DIR
+  NAMES LowMath.h
+  HINTS "${LOW_PATH}LowMath/include"
+)
+find_path(LowRenderer_INCLUDE_DIR
+  NAMES LowRenderer.h
+  HINTS "${LOW_PATH}LowRenderer/include"
+)
+find_path(LowCore_INCLUDE_DIR
+  NAMES LowCore.h
+  HINTS "${LOW_PATH}LowCore/include"
+)
+
+include_directories(${LowUtil_INCLUDE_DIR})
+include_directories(${LowMath_INCLUDE_DIR})
+include_directories(${LowRenderer_INCLUDE_DIR})
+include_directories(${LowCore_INCLUDE_DIR})
+
+add_dependencies(MistedaPlugin
+  #LowDependencies
+  #LowUtil
+  #LowMath
+  #LowRenderer
+  #LowCore
+  LowZero
+)
+
+#target_link_libraries(MistedaPlugin PUBLIC
+  #LowUtil
+  # LowMath
+  #  LowRenderer
+  #LowCore
+  #)
+
+ foreach(CONFIG_TYPE ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER ${CONFIG_TYPE} CONFIG_TYPE_UPPER)
+        target_link_libraries(MistedaPlugin 
+          ${LowUtil_LIBRARY_${CONFIG_TYPE_UPPER}} 
+          ${LowMath_LIBRARY_${CONFIG_TYPE_UPPER}} 
+          ${LowRenderer_LIBRARY_${CONFIG_TYPE_UPPER}} 
+          ${LowCore_LIBRARY_${CONFIG_TYPE_UPPER}} 
+          )
+    endforeach()

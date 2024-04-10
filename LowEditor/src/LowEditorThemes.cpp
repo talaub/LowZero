@@ -1,5 +1,6 @@
 #include "LowEditorThemes.h"
 
+#include "LowUtil.h"
 #include "LowUtilLogger.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilContainers.h"
@@ -185,8 +186,8 @@ namespace Low {
 
     void themes_load()
     {
-      Util::String l_ThemeDirectory = LOW_DATA_PATH;
-      l_ThemeDirectory += "/editor/themes";
+      Util::String l_ThemeDirectory =
+          Util::get_project().dataPath + "/editor/themes";
       Util::List<Util::String> l_FilePaths;
       Util::FileIO::list_directory(l_ThemeDirectory.c_str(),
                                    l_FilePaths);

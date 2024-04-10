@@ -1,0 +1,284 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+  - Component
+scripting_namespace:
+  - Low
+  - Component
+dll_macro: LOW_CORE_API
+types:
+  Transform:
+    component: true
+    scripting_expose: true
+    header_imports:
+      - LowMath.h
+    properties:
+      position:
+        type: Low::Math::Vector3
+        editor_editable: true
+        expose_scripting: true
+        getter_name: position
+        setter_name: position
+        dirty_flag:
+          - dirty
+          - world_dirty
+      rotation:
+        type: Low::Math::Quaternion
+        editor_editable: true
+        expose_scripting: true
+        getter_name: rotation
+        setter_name: rotation
+        dirty_flag:
+          - dirty
+          - world_dirty
+      scale:
+        getter_name: scale
+        setter_name: scale
+        expose_scripting: true
+        type: Low::Math::Vector3
+        editor_editable: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      parent:
+        type: uint64_t
+        expose_scripting: true
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      parent_uid:
+        type: uint64_t
+        private_setter: true
+        skip_duplication: true
+        dirty_flag:
+          - dirty
+          - world_dirty
+      children:
+        type: Low::Util::List<uint64_t>
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+      world_position:
+        type: Low::Math::Vector3
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      world_rotation:
+        type: Low::Math::Quaternion
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      world_scale:
+        type: Low::Math::Vector3
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        expose_scripting: true
+        private_setter: true
+        getter_no_const: true
+      world_matrix:
+        type: Low::Math::Matrix4x4
+        skip_serialization: true
+        skip_deserialization: true
+        skip_duplication: true
+        private_setter: true
+        getter_no_const: true
+      world_updated:
+        type: bool
+        skip_duplication: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      recalculate_world_transform:
+        return_type: void
+
+  MeshRenderer:
+    component: true
+    header_imports:
+      - LowCoreMeshAsset.h
+      - LowCoreMaterial.h
+    properties:
+      mesh:
+        editor_editable: true
+        type: Low::Core::MeshAsset
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+        expose_scripting: true
+      material:
+        editor_editable: true
+        type: Low::Core::Material
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+        expose_scripting: true
+
+  DirectionalLight:
+    component: true
+    scripting_expose: false
+    header_imports:
+      - LowMath.h
+    properties:
+      color:
+        editor_editable: true
+        type: Low::Math::ColorRGB
+        expose_scripting: true
+      intensity:
+        expose_scripting: true
+        editor_editable: true
+        type: float
+
+  PointLight:
+    component: true
+    scripting_expose: false
+    header_imports:
+      - LowMath.h
+    properties:
+      color:
+        editor_editable: true
+        expose_scripting: true
+        type: Low::Math::ColorRGB
+      intensity:
+        editor_editable: true
+        expose_scripting: true
+        type: float
+
+  Rigidbody:
+    component: true
+    scripting_expose: false
+    header_imports:
+      - LowMath.h
+      - LowCorePhysicsObjects.h
+    source_imports:
+      - LowCorePhysicsSystem.h
+      - LowCoreTransform.h
+    properties:
+      fixed:
+        type: bool
+        editor_editable: true
+      gravity:
+        type: bool
+        editor_editable: true
+      mass:
+        type: float
+        expose_scripting: true
+        editor_editable: true
+      initialized:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+        expose_scripting: true
+      rigid_dynamic:
+        type: PhysicsRigidDynamic
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      physics_shape:
+        type: PhysicsShape
+        private_getter: true
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      shape:
+        type: Math::Shape
+        editor_editable: true
+
+  PrefabInstance:
+    component: true
+    header_imports:
+      - LowCorePrefab.h
+    source_imports:
+      - LowCoreTransform.h
+      - LowUtilString.h
+    properties:
+      prefab:
+        type: Prefab
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      overrides:
+        type: Util::Map<uint16_t, Util::List<Util::Name>>
+    functions:
+      update_component_from_prefab:
+        return_type: void
+        private: true
+        parameters:
+          - name: componentType
+            type: uint16_t
+      update_from_prefab:
+        return_type: void
+      override:
+        return_type: void
+        parameters:
+          - name: componentType
+            type: uint16_t
+          - name: propertyName
+            type: Util::Name
+          - name: isOverride
+            type: bool
+        
+  NavmeshAgent:
+    component: true
+    scripting_expose: false
+    header_imports:
+      - LowMath.h
+    source_imports:
+      - LowCoreTransform.h
+      - LowCoreNavmeshSystem.h
+    properties:
+      speed:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+      height:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+      radius:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+      offset:
+        type: Low::Math::Vector3
+        editor_editable: true
+        expose_scripting: true
+      agent_index:
+        type: int
+        editor_editable: false
+    functions:
+      set_target_position:
+        return_type: void
+        parameters:
+          - name: targetPosition
+            type: Low::Math::Vector3
+
+  Camera:
+    component: true
+    scripting_expose: true
+    header_imports:
+      - LowMath.h
+    properties:
+      active:
+        type: bool
+        private_setter: true
+        expose_scripting: true
+      fov:
+        type: float
+        expose_scripting: true
+        editor_editable: true
+    functions:
+      activate:
+        return_type: void

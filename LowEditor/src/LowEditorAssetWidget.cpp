@@ -15,6 +15,7 @@
 #include "LowCoreMaterial.h"
 #include "LowCorePrefab.h"
 
+#include "LowUtil.h"
 #include "LowUtilString.h"
 #include "LowUtilFileIO.h"
 
@@ -45,9 +46,9 @@ namespace Low {
 
       Util::Yaml::Node l_Node;
       l_Asset.serialize(l_Node);
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/meshes/" +
-                LOW_TO_STRING(l_Asset.get_unique_id()) + ".mesh.yaml";
+      Util::String l_Path =
+          Util::get_project().dataPath + "/assets/meshes/" +
+          LOW_TO_STRING(l_Asset.get_unique_id()) + ".mesh.yaml";
 
       if (g_Paths.find(p_Handle) != g_Paths.end()) {
         l_Path = g_Paths[p_Handle];
@@ -65,10 +66,9 @@ namespace Low {
 
       Util::Yaml::Node l_Node;
       l_Asset.serialize(l_Node);
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/prefabs/" +
-                LOW_TO_STRING(l_Asset.get_unique_id()) +
-                ".prefab.yaml";
+      Util::String l_Path =
+          Util::get_project().dataPath + "/assets/prefabs/" +
+          LOW_TO_STRING(l_Asset.get_unique_id()) + ".prefab.yaml";
 
       if (g_Paths.find(p_Handle) != g_Paths.end()) {
         l_Path = g_Paths[p_Handle];
@@ -85,10 +85,9 @@ namespace Low {
       Core::Material l_Asset = p_Handle.get_id();
       Util::Yaml::Node l_Node;
       l_Asset.serialize(l_Node);
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/materials/" +
-                LOW_TO_STRING(l_Asset.get_unique_id()) +
-                ".material.yaml";
+      Util::String l_Path =
+          Util::get_project().dataPath + "/assets/materials/" +
+          LOW_TO_STRING(l_Asset.get_unique_id()) + ".material.yaml";
       Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
       LOW_LOG_INFO << "Saved material '" << l_Asset.get_name()

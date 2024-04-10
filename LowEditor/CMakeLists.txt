@@ -36,8 +36,6 @@ add_dependencies(LowEditor
   LowRenderer
   LowCore
   nativefiledialog
-  assimp
-  physx
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
