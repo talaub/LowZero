@@ -7,12 +7,14 @@
 #include "LowUtilAssert.h"
 #include "LowUtilString.h"
 
+#include "LowEditorBase.h"
+
 #include "FlodeMathNodes.h"
 
 #include "IconsFontAwesome5.h"
 
 namespace Flode {
-  Editor::Editor() : m_FirstRun(true)
+  Editor::Editor() : m_FirstRun(true), m_Graph(nullptr)
   {
     NodeEd::Config l_Config;
     m_Context = NodeEd::CreateEditor(&l_Config);
@@ -76,11 +78,129 @@ namespace Flode {
     // we can make it "docked" like we do it in the different managers
     l_Width = 300.0f;
 
+    Low::Util::List<PinType> l_Types = {
+        PinType::String, PinType::Number, PinType::Bool,
+        PinType::Handle};
+
+    struct Funcs
+    {
+      static bool PinTypeGetter(void *data, int n,
+                                const char **out_str)
+      {
+        PinType l_Type = ((PinType *)data)[n];
+        Low::Util::String l_Name = pin_type_to_string(l_Type);
+        *out_str = (char *)malloc(l_Name.size() + 1);
+        memcpy((void *)*out_str, l_Name.c_str(), l_Name.size());
+        (*(char **)out_str)[l_Name.size()] = '\0';
+        return true;
+      }
+    };
+
     ImGui::BeginChild(
         "Selection",
         ImVec2(l_Width, ImGui::GetContentRegionAvail().y), true, 0);
     if (m_SelectedNodes.size() == 1) {
       m_SelectedNodes[0]->render_data();
+    } else if (m_Graph) {
+      ImGui::PushID(638745);
+      ImGui::Text("Variables");
+      if (ImGui::Button("Add")) {
+        Variable *l_Variable = new Variable();
+        l_Variable->name = "NewVar";
+        l_Variable->type = PinType::Number;
+
+        m_Graph->m_Variables.push_back(l_Variable);
+      }
+
+      int i = 0;
+      for (auto it = m_Graph->m_Variables.begin();
+           it != m_Graph->m_Variables.end();) {
+        Variable *i_Variable = *it;
+        ImGui::PushID(i);
+        i++;
+        ImGui::PushItemWidth(120.0f);
+        Low::Editor::Base::StringEdit("##variablename",
+                                      &i_Variable->name);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::PushItemWidth(100.0f);
+
+        int l_CurrentValue = 0;
+        for (int i = 0; i < l_Types.size(); ++i) {
+          if (l_Types[i] == i_Variable->type) {
+            l_CurrentValue = i;
+            break;
+          }
+        }
+        bool l_Result = ImGui::Combo("##paramtype", &l_CurrentValue,
+                                     &Funcs::PinTypeGetter,
+                                     l_Types.data(), l_Types.size());
+
+        if (l_Result) {
+          // l_Changed = true;
+
+          i_Variable->type = l_Types[l_CurrentValue];
+        }
+
+        ImGui::SameLine();
+
+        bool i_Deleted = false;
+        if (ImGui::Button(ICON_FA_TRASH "")) {
+          it = m_Graph->m_Variables.erase(it);
+          i_Deleted = true;
+        } else {
+          it++;
+        }
+
+        if (!i_Deleted) {
+          if (i_Variable->type == PinType::Handle) {
+            ImGui::Dummy(ImVec2(120.0f, 0.0f));
+            ImGui::SameLine();
+
+            int i_CurrentTypeValue = 0;
+
+            for (; i_CurrentTypeValue < get_exposed_types().size();
+                 ++i_CurrentTypeValue) {
+              if (get_exposed_types()[i_CurrentTypeValue].typeId ==
+                  i_Variable->typeId) {
+                break;
+              }
+            }
+
+            bool i_TypeChanged = ImGui::Combo(
+                "##variableselector", &i_CurrentTypeValue,
+                [](void *data, int n, const char **out_str) {
+                  Low::Editor::TypeMetadata &l_Metadata =
+                      ((Low::Editor::TypeMetadata *)data)[n];
+                  Low::Util::String l_Name = l_Metadata.name.c_str();
+                  *out_str = (char *)malloc(l_Name.size() + 1);
+                  memcpy((void *)*out_str, l_Name.c_str(),
+                         l_Name.size());
+                  (*(char **)out_str)[l_Name.size()] = '\0';
+                  return true;
+                },
+                get_exposed_types().data(),
+                get_exposed_types().size());
+
+            if (i_TypeChanged) {
+              for (u32 i = 0; i < get_exposed_types().size(); ++i) {
+                if (i == i_CurrentTypeValue) {
+                  LOW_LOG_INFO << "SETTING TYPE "
+                               << get_exposed_types()[i].name
+                               << LOW_LOG_END;
+                  i_Variable->typeId = get_exposed_types()[i].typeId;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        ImGui::PopItemWidth();
+        ImGui::PopID();
+      }
+
+      ImGui::PopID();
     }
     ImGui::EndChild();
   }
@@ -165,6 +285,7 @@ namespace Flode {
 
     if (l_Save) {
       Low::Util::Yaml::Node l_Node;
+      m_Graph->clean_unconnected_links();
       m_Graph->serialize(l_Node);
 
       Low::Util::String l_Path = Low::Util::get_project().dataPath;

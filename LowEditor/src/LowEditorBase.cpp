@@ -30,6 +30,25 @@ namespace Low {
         return ImGui::DragInt(p_Label, p_Val, p_Step, p_Min, p_Max);
       }
 
+      bool StringEdit(const char *p_Label, Util::String *p_String)
+      {
+        Util::String l_String = *p_String;
+
+        char l_Buffer[255];
+        uint32_t l_StringLength = strlen(l_String.c_str());
+        memcpy(l_Buffer, l_String.c_str(), l_StringLength);
+        l_Buffer[l_StringLength] = '\0';
+
+        if (ImGui::InputText(p_Label, l_Buffer, 255,
+                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+          *p_String = l_Buffer;
+
+          return true;
+        }
+
+        return false;
+      }
+
       bool NameEdit(const char *p_Label, Util::Name *p_Name)
       {
         Util::Name l_Name = *p_Name;
@@ -49,6 +68,11 @@ namespace Low {
         return false;
       }
 
+      bool BoolEdit(const char *p_Label, bool *p_Bool)
+      {
+        return ImGui::Checkbox(p_Label, p_Bool);
+      }
+
       bool VariantEdit(const char *p_Label, Util::Variant &p_Variant)
       {
         switch (p_Variant.m_Type) {
@@ -56,6 +80,8 @@ namespace Low {
           return FloatEdit(p_Label, &p_Variant.m_Float);
         case (Util::VariantType::Int32):
           return IntEdit(p_Label, &p_Variant.m_Int32);
+        case (Util::VariantType::Bool):
+          return BoolEdit(p_Label, &p_Variant.m_Bool);
         case (Util::VariantType::Vector3):
           return Vector3Edit(p_Label, &p_Variant.m_Vector3);
         case (Util::VariantType::Name):

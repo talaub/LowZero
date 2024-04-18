@@ -143,6 +143,11 @@ namespace Low {
       m_Index = p_Name.m_Index;
     }
 
+    Name Name::from_string(String p_String)
+    {
+      return Name(p_String.c_str());
+    }
+
   } // namespace Util
 } // namespace Low
 

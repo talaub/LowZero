@@ -38,6 +38,7 @@ namespace Low {
     DetailsWidget *get_details_widget();
     EditingWidget *get_editing_widget();
 
+    Util::Map<u16, TypeMetadata> &get_type_metadata();
     TypeMetadata &get_type_metadata(uint16_t p_TypeId);
     EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName);
 

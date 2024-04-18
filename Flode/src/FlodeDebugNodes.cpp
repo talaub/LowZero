@@ -20,8 +20,8 @@ namespace Flode {
       create_pin(PinDirection::Input, "", PinType::Flow);
       create_pin(PinDirection::Output, "", PinType::Flow);
 
-      m_MessagePin =
-          create_pin(PinDirection::Input, "Message", PinType::String);
+      m_MessagePin = create_string_pin(PinDirection::Input, "Message",
+                                       PinStringType::String);
     }
 
     void LogNode::compile(Low::Util::StringBuilder &p_Builder) const
@@ -29,6 +29,8 @@ namespace Flode {
       p_Builder.append("LOW_LOG_DEBUG << ");
       compile_input_pin(p_Builder, m_MessagePin->id);
       p_Builder.append(" << LOW_LOG_END;").endl();
+
+      graph->continue_compilation(p_Builder, pins[1]);
     }
 
     Node *log_create_instance()

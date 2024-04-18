@@ -13,6 +13,8 @@ namespace Low {
                    int p_Min = LOW_INT_MIN, int p_Max = LOW_INT_MAX,
                    int p_Step = 1);
       bool NameEdit(const char *p_Label, Util::Name *p_Name);
+      bool StringEdit(const char *p_Label, Util::String *p_String);
+      bool BoolEdit(const char *p_Label, bool *p_Bool);
 
       bool VariantEdit(const char *p_Label, Util::Variant &p_Variant);
     } // namespace Base

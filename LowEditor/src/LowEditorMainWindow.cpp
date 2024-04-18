@@ -49,6 +49,7 @@
 #include "FlodeSyntaxNodes.h"
 #include "FlodeDebugNodes.h"
 #include "FlodeCastNodes.h"
+#include "FlodeHandleNodes.h"
 
 #include <chrono>
 #include <cstddef>
@@ -117,6 +118,11 @@ namespace Low {
     };
 
     Util::Queue<EditorJob> g_EditorJobQueue;
+
+    Util::Map<u16, TypeMetadata> &get_type_metadata()
+    {
+      return g_TypeMetadata;
+    }
 
     void register_editor_job(Util::String p_Title,
                              std::function<void()> p_Func)
@@ -587,6 +593,8 @@ namespace Low {
           l_Metadata.name = N(name);
           l_Metadata.editor = false;
           l_Metadata.enumType = false;
+          l_Metadata.getterName = "get_name";
+          l_Metadata.setterName = "set_name";
           if (p_Node["name_editable"]) {
             l_Metadata.editor = true;
           }
@@ -605,6 +613,11 @@ namespace Low {
             i_Metadata.editor =
                 it->second["editor_editable"].as<bool>();
           }
+          i_Metadata.scriptingExpose = false;
+          if (it->second["expose_scripting"]) {
+            i_Metadata.scriptingExpose =
+                it->second["expose_scripting"].as<bool>();
+          }
           i_Metadata.enumType = false;
           if (it->second["enum"]) {
             i_Metadata.enumType = it->second["enum"].as<bool>();
@@ -620,6 +633,19 @@ namespace Low {
                                     it->second["metadata"]);
           }
 
+          i_Metadata.getterName = "get_";
+          i_Metadata.getterName += i_Metadata.name.c_str();
+          if (it->second["getter_name"]) {
+            i_Metadata.getterName =
+                LOW_YAML_AS_STRING(it->second["getter_name"]);
+          }
+          i_Metadata.setterName = "set_";
+          i_Metadata.setterName += i_Metadata.name.c_str();
+          if (it->second["setter_name"]) {
+            i_Metadata.setterName =
+                LOW_YAML_AS_STRING(it->second["setter_name"]);
+          }
+
           p_Metadata.properties.push_back(i_Metadata);
         }
       }
@@ -631,6 +657,23 @@ namespace Low {
       Util::String l_ModuleString =
           LOW_YAML_AS_STRING(p_Node["module"]);
 
+      Util::String l_NamespaceString;
+      Util::List<Util::String> l_Namespaces;
+      int i = 0;
+      for (auto it = p_Node["namespace"].begin();
+           it != p_Node["namespace"].end(); ++it) {
+        Util::Yaml::Node &i_Node = *it;
+
+        Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
+        l_Namespaces.push_back(i_Namespace);
+
+        if (i) {
+          l_NamespaceString += "::";
+        }
+        l_NamespaceString += i_Namespace;
+        i++;
+      }
+
       for (auto it = p_Node["types"].begin();
            it != p_Node["types"].end(); ++it) {
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
@@ -640,6 +683,25 @@ namespace Low {
         i_Metadata.typeId =
             p_TypeIdsNode[l_ModuleString.c_str()][i_TypeName.c_str()]
                 .as<uint16_t>();
+
+        i_Metadata.namespaces = l_Namespaces;
+        i_Metadata.namespaceString = l_NamespaceString;
+        {
+          // Construct full name out of namespace path + name of the
+          // type. If there are namespaces we need to add an ::
+          // between the namespaces and the name of the type
+          i_Metadata.fullTypeString = l_NamespaceString;
+          if (!i_Metadata.fullTypeString.empty()) {
+            i_Metadata.fullTypeString += "::";
+          }
+          i_Metadata.fullTypeString += i_Metadata.name.c_str();
+        }
+
+        i_Metadata.scriptingExpose = false;
+        if (it->second["scripting_expose"]) {
+          i_Metadata.scriptingExpose =
+              it->second["scripting_expose"].as<bool>();
+        }
 
         parse_type_metadata(i_Metadata, it->second);
 
@@ -764,6 +826,71 @@ namespace Low {
 
     static void register_type_nodes(u16 p_TypeId)
     {
+      Util::String l_NodeNamePrefix = "Handle_";
+      l_NodeNamePrefix += LOW_TO_STRING(p_TypeId);
+      l_NodeNamePrefix += "_";
+
+      Util::RTTI::TypeInfo l_TypeInfo =
+          Util::Handle::get_type_info(p_TypeId);
+      TypeMetadata l_TypeMetadata = get_type_metadata(p_TypeId);
+
+      {
+        Util::Name l_NodeTypeName = LOW_NAME(
+            Util::String(l_NodeNamePrefix + "FindByName").c_str());
+        Flode::register_node(
+            l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+              return new Flode::HandleNodes::FindByNameNode(p_TypeId);
+            });
+
+        Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                   "Find by name", l_NodeTypeName);
+      }
+
+      {
+        for (auto it = l_TypeMetadata.properties.begin();
+             it != l_TypeMetadata.properties.end(); ++it) {
+          if (!it->scriptingExpose) {
+            continue;
+          }
+
+          Util::Name i_PropertyName = it->name;
+
+          {
+            Util::Name i_NodeTypeName =
+                LOW_NAME(Util::String(l_NodeNamePrefix + "Get" +
+                                      i_PropertyName.c_str())
+                             .c_str());
+            Flode::register_node(
+                i_NodeTypeName,
+                [p_TypeId, i_PropertyName]() -> Flode::Node * {
+                  return new Flode::HandleNodes::GetNode(
+                      p_TypeId, i_PropertyName);
+                });
+
+            Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                       Util::String("Get ") +
+                                           i_PropertyName.c_str(),
+                                       i_NodeTypeName);
+          }
+          {
+            Util::Name i_NodeTypeName =
+                LOW_NAME(Util::String(l_NodeNamePrefix + "Set" +
+                                      i_PropertyName.c_str())
+                             .c_str());
+            Flode::register_node(
+                i_NodeTypeName,
+                [p_TypeId, i_PropertyName]() -> Flode::Node * {
+                  return new Flode::HandleNodes::SetNode(
+                      p_TypeId, i_PropertyName);
+                });
+
+            Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                       Util::String("Set ") +
+                                           i_PropertyName.c_str(),
+                                       i_NodeTypeName);
+          }
+        }
+      }
     }
 
     static void register_type_nodes()
@@ -776,6 +903,8 @@ namespace Low {
       themes_load();
       load_low_metadata();
       load_project_metadata();
+
+      Flode::initialize();
 
       initialize_billboard_materials();
 

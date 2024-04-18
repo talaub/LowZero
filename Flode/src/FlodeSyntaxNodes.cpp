@@ -107,8 +107,9 @@ namespace Flode {
 
       int l_ParamCount = 0;
 
-      Low::Util::List<PinType> l_Types = {PinType::String,
-                                          PinType::Number};
+      Low::Util::List<PinType> l_Types = {
+          PinType::String, PinType::Number, PinType::Bool,
+          PinType::Handle};
 
       struct Funcs
       {
@@ -189,10 +190,10 @@ namespace Flode {
       switch (p_Type) {
       case PinType::String:
         return "Low::Util::String";
-        break;
       case PinType::Number:
         return "float";
-        break;
+      case PinType::Bool:
+        return "bool";
       }
 
       _LOW_ASSERT(false);
@@ -223,18 +224,7 @@ namespace Flode {
 
       p_Builder.append(") {\n");
 
-      NodeEd::PinId l_FlowOutputPinId = pins[0]->id;
-      if (graph->is_pin_connected(l_FlowOutputPinId)) {
-        NodeEd::PinId l_ConnectedFlowPinId =
-            graph->get_connected_pin(l_FlowOutputPinId);
-
-        Pin *l_ConnectedFlowPin =
-            graph->find_pin(l_ConnectedFlowPinId);
-        Node *l_ConnectedNode =
-            graph->find_node(l_ConnectedFlowPin->nodeId);
-
-        l_ConnectedNode->compile(p_Builder);
-      }
+      graph->continue_compilation(p_Builder, pins[0]);
 
       p_Builder.append("}\n");
     }
@@ -267,6 +257,231 @@ namespace Flode {
       return new FunctionNode;
     }
 
+    GetVariableNode::GetVariableNode() : m_Variable(nullptr)
+    {
+    }
+
+    Low::Util::String
+    GetVariableNode::get_name(NodeNameType p_Type) const
+    {
+      if (m_Variable) {
+        return m_Variable->name;
+      }
+      return "Get variable";
+    }
+
+    ImU32 GetVariableNode::get_color() const
+    {
+      return g_SyntaxColor;
+    }
+
+    void GetVariableNode::setup_default_pins()
+    {
+      create_dynamic_pins();
+    }
+
+    void GetVariableNode::create_dynamic_pins()
+    {
+      // Clear all pins
+      for (auto it = pins.begin(); it != pins.end();) {
+        Pin *i_Pin = *it;
+        it = pins.erase(it);
+        delete i_Pin;
+      }
+
+      if (m_Variable) {
+        create_pin(PinDirection::Output, "", m_Variable->type);
+      }
+
+      graph->clean_unconnected_links();
+    }
+
+    void
+    GetVariableNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      if (m_Variable) {
+        p_Node["variable"] = m_Variable->name.c_str();
+      }
+    }
+
+    void GetVariableNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    {
+      m_Variable = nullptr;
+      if (p_Node["variable"]) {
+        m_Variable = graph->find_variable(
+            LOW_YAML_AS_STRING(p_Node["variable"]));
+      }
+    }
+
+    void GetVariableNode::render_data()
+    {
+      ImGui::Text("Variable");
+      ImGui::PushItemWidth(200.0f);
+
+      int l_CurrentValue = 0;
+      for (; l_CurrentValue < graph->m_Variables.size();
+           ++l_CurrentValue) {
+        if (graph->m_Variables[l_CurrentValue] == m_Variable) {
+          break;
+        }
+      }
+
+      bool l_Result = ImGui::Combo(
+          "##variableselector", &l_CurrentValue,
+          [](void *data, int n, const char **out_str) {
+            Variable *l_Variable = ((Variable **)data)[n];
+            Low::Util::String l_Name = l_Variable->name;
+            *out_str = (char *)malloc(l_Name.size() + 1);
+            memcpy((void *)*out_str, l_Name.c_str(), l_Name.size());
+            (*(char **)out_str)[l_Name.size()] = '\0';
+            return true;
+          },
+          graph->m_Variables.data(), graph->m_Variables.size());
+
+      if (l_Result) {
+        m_Variable = graph->m_Variables[l_CurrentValue];
+        create_dynamic_pins();
+      }
+      ImGui::PopItemWidth();
+    }
+
+    void GetVariableNode::compile_output_pin(
+        Low::Util::StringBuilder &p_Builder,
+        NodeEd::PinId p_PinId) const
+    {
+      LOW_ASSERT(m_Variable, "No variable selected");
+
+      if (m_Variable) {
+        p_Builder.append(m_Variable->name);
+      }
+    }
+
+    Node *getvariable_create_instance()
+    {
+      return new GetVariableNode;
+    }
+
+    SetVariableNode::SetVariableNode() : m_Variable(nullptr)
+    {
+    }
+
+    Low::Util::String
+    SetVariableNode::get_name(NodeNameType p_Type) const
+    {
+      if (m_Variable) {
+        Low::Util::String l_Title = "Set ";
+        l_Title += m_Variable->name;
+        return l_Title;
+      }
+      return "Set variable";
+    }
+
+    ImU32 SetVariableNode::get_color() const
+    {
+      return g_SyntaxColor;
+    }
+
+    void SetVariableNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Output, "", PinType::Flow);
+
+      create_dynamic_pins();
+    }
+
+    void SetVariableNode::create_dynamic_pins()
+    {
+      int i = 0;
+      for (auto it = pins.begin(); it != pins.end();) {
+        // Skip the first two pins because they're the flow pins
+        if (i < 2) {
+          it++;
+          continue;
+        }
+        Pin *i_Pin = *it;
+        it = pins.erase(it);
+        delete i_Pin;
+      }
+
+      if (m_Variable) {
+        create_pin(PinDirection::Input, m_Variable->name,
+                   m_Variable->type);
+      }
+
+      graph->clean_unconnected_links();
+    }
+
+    void
+    SetVariableNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      if (m_Variable) {
+        p_Node["variable"] = m_Variable->name.c_str();
+      }
+    }
+
+    void SetVariableNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    {
+      m_Variable = nullptr;
+      if (p_Node["variable"]) {
+        m_Variable = graph->find_variable(
+            LOW_YAML_AS_STRING(p_Node["variable"]));
+      }
+    }
+
+    void SetVariableNode::render_data()
+    {
+      ImGui::Text("Variable");
+      ImGui::PushItemWidth(200.0f);
+
+      int l_CurrentValue = 0;
+      for (; l_CurrentValue < graph->m_Variables.size();
+           ++l_CurrentValue) {
+        if (graph->m_Variables[l_CurrentValue] == m_Variable) {
+          break;
+        }
+      }
+
+      bool l_Result = ImGui::Combo(
+          "##variableselector", &l_CurrentValue,
+          [](void *data, int n, const char **out_str) {
+            Variable *l_Variable = ((Variable **)data)[n];
+            Low::Util::String l_Name = l_Variable->name;
+            *out_str = (char *)malloc(l_Name.size() + 1);
+            memcpy((void *)*out_str, l_Name.c_str(), l_Name.size());
+            (*(char **)out_str)[l_Name.size()] = '\0';
+            return true;
+          },
+          graph->m_Variables.data(), graph->m_Variables.size());
+
+      if (l_Result) {
+        m_Variable = graph->m_Variables[l_CurrentValue];
+        create_dynamic_pins();
+      }
+      ImGui::PopItemWidth();
+    }
+
+    void SetVariableNode::compile(
+        Low::Util::StringBuilder &p_Builder) const
+    {
+      LOW_ASSERT(m_Variable,
+                 "Needs to have variable set on set variable node");
+
+      p_Builder.append(m_Variable->name);
+      p_Builder.append(" = ");
+      compile_input_pin(p_Builder,
+                        pins[2]->id); // Compile the value input pin
+      p_Builder.append(";").endl();
+
+      graph->continue_compilation(
+          p_Builder,
+          pins[1]); // Continue compilation at flow output pin
+    }
+
+    Node *setvariable_create_instance()
+    {
+      return new SetVariableNode;
+    }
+
     void register_nodes()
     {
       {
@@ -274,6 +489,18 @@ namespace Flode {
         register_node(l_TypeName, &function_create_instance);
 
         register_spawn_node("Syntax", "Function", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxGetVariable);
+        register_node(l_TypeName, &getvariable_create_instance);
+
+        register_spawn_node("Syntax", "Get variable", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxSetVariable);
+        register_node(l_TypeName, &setvariable_create_instance);
+
+        register_spawn_node("Syntax", "Set variable", l_TypeName);
       }
     }
 

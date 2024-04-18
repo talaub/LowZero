@@ -382,6 +382,9 @@ static void register_lowutil_name()
   CflatStructAddMethodReturn(l_Namespace, Name, char *, c_str);
   CflatStructAddMember(l_Namespace, Name, uint32_t, m_Index);
 
+  CflatStructAddStaticMethodReturnParams1(
+      l_Namespace, Name, Name, from_string, Low::Util::String);
+
   CflatStructAddMethodReturnParams1(l_Namespace, Name,
                                     bool, operator==, const Name &);
   CflatStructAddMethodReturnParams1(l_Namespace, Name,
@@ -1329,9 +1332,9 @@ static void setup_environment()
 {
   register_math();
   register_lowutil_enums();
+  register_lowutil_string();
   register_lowutil_name();
   register_lowutil_handle();
-  register_lowutil_string();
   register_lowutil_logger();
   register_lowutil_containers();
   preregister_types();

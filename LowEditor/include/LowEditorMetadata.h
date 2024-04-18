@@ -13,6 +13,10 @@ namespace Low {
       Util::RTTI::PropertyInfo propInfo;
       bool multiline;
       bool enumType;
+      bool scriptingExpose;
+
+      Util::String getterName;
+      Util::String setterName;
     };
 
     struct TypeEditorMetadata
@@ -25,10 +29,14 @@ namespace Low {
     {
       Util::Name name;
       Util::String module;
+      Util::List<Util::String> namespaces;
+      Util::String namespaceString;
+      Util::String fullTypeString;
       uint16_t typeId;
       Util::RTTI::TypeInfo typeInfo;
       Util::List<PropertyMetadata> properties;
       TypeEditorMetadata editor;
+      bool scriptingExpose;
     };
 
     struct EnumEntryMetadata
