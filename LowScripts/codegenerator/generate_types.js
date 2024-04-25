@@ -136,6 +136,9 @@ function get_property_type(p_Type) {
   if (p_Type.endsWith("Math::Quaternion")) {
     return "QUATERNION";
   }
+  if (p_Type.endsWith("Util::Handle")) {
+    return "HANDLE";
+  }
   if (p_Type.endsWith("Util::Name")) {
     return "NAME";
   }
@@ -145,11 +148,20 @@ function get_property_type(p_Type) {
   if (["float"].includes(p_Type)) {
     return "FLOAT";
   }
-  if (["uint32_t"].includes(p_Type)) {
+  if (["uint16_t", "u16"].includes(p_Type)) {
+    return "UINT16";
+  }
+  if (["uint32_t", "u32"].includes(p_Type)) {
     return "UINT32";
+  }
+  if (["uint64_t", "u64"].includes(p_Type)) {
+    return "UINT64";
   }
   if (["int"].includes(p_Type)) {
     return "INT";
+  }
+  if (["void"].includes(p_Type)) {
+    return "VOID";
   }
   if (p_Type.endsWith("Util::String")) {
     return "STRING";
@@ -1018,6 +1030,7 @@ function generate_source(p_Type) {
       t += line(
         `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Prop.plain_type)};`,
       );
+      t += line(`l_PropertyInfo.handleType = 0;`);
     }
     t += line(
       `l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`,
@@ -1046,6 +1059,66 @@ function generate_source(p_Type) {
     t += line(`};`);
     t += line(`l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;`);
     t += line(`}`);
+  }
+  if (p_Type.functions) {
+    for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
+      t += line("{");
+      t += line(`Low::Util::RTTI::FunctionInfo l_FunctionInfo;`);
+      t += line(`l_FunctionInfo.name = N(${i_FuncName});`);
+      if (i_Func.return_handle) {
+        t += line(
+          `l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`,
+        );
+        t += line(
+          `l_FunctionInfo.handleType = ${i_Func.return_type}::TYPE_ID;`,
+        );
+      } else if (i_Func.return_enum) {
+        t += line(`l_FunctionInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
+        t += line(
+          `l_FunctionInfo.handleType = ${i_Func.return_type}EnumHelper::get_enum_id();`,
+        );
+      } else {
+        t += line(
+          `l_FunctionInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Func.return_type)};`,
+        );
+        t += line(`l_FunctionInfo.handleType = 0;`);
+      }
+      if (i_Func.parameters) {
+        for (const i_Param of i_Func.parameters) {
+          t += line(`{`);
+          t += line(`Low::Util::RTTI::ParameterInfo l_ParameterInfo;`);
+          t += line(`l_ParameterInfo.name = N(${i_Param.name});`);
+          if (i_Param.handle) {
+            t += line(
+              `l_ParameterInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`,
+            );
+            if (i_Param.type.endsWith("Util::Handle")) {
+              t += line(`l_ParameterInfo.handleType = 0;`);
+            } else {
+              t += line(
+                `l_ParameterInfo.handleType = ${i_Param.type}::TYPE_ID;`,
+              );
+            }
+          } else if (i_Param.enum) {
+            t += line(
+              `l_ParameterInfo.type = Low::Util::RTTI::PropertyType::ENUM;`,
+            );
+            t += line(
+              `l_ParameterInfo.handleType = ${i_Param.type}EnumHelper::get_enum_id();`,
+            );
+          } else {
+            t += line(
+              `l_ParameterInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_Param.type)};`,
+            );
+            t += line(`l_ParameterInfo.handleType = 0;`);
+          }
+          t += line(`l_FunctionInfo.parameters.push_back(l_ParameterInfo);`);
+          t += line(`}`);
+        }
+      }
+      t += line(`l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;`);
+      t += line("}");
+    }
   }
   t += line(`Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);`);
   t += line("}");

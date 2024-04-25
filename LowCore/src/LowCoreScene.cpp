@@ -133,6 +133,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, regions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
@@ -151,6 +152,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
@@ -168,6 +170,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
@@ -185,6 +188,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
@@ -198,6 +202,34 @@ namespace Low {
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(load);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(unload);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(_load);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_loaded_scene);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Scene::TYPE_ID;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

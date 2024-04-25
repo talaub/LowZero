@@ -55,6 +55,7 @@
 #include <cstddef>
 #include <functional>
 #include <future>
+#include <ctype.h>
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -77,6 +78,9 @@ namespace Low {
 
     bool g_GizmosDragged = false;
 
+    float g_DirectoryUpdateTimer = 2.0f;
+    DirectoryWatchers g_DirectoryWatchers;
+
     ChangeList g_ChangeList;
 
     Util::Map<uint16_t, TypeMetadata> g_TypeMetadata;
@@ -95,6 +99,7 @@ namespace Low {
 
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
+    FlodeWidget *g_FlodeWidget;
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
@@ -591,6 +596,7 @@ namespace Low {
         if (!p_Node["component"]) {
           PropertyMetadata l_Metadata;
           l_Metadata.name = N(name);
+          l_Metadata.friendlyName = prettify_name(l_Metadata.name);
           l_Metadata.editor = false;
           l_Metadata.enumType = false;
           l_Metadata.getterName = "get_name";
@@ -608,6 +614,7 @@ namespace Low {
              it != p_Node[l_PropertiesName].end(); ++it) {
           PropertyMetadata i_Metadata;
           i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+          i_Metadata.friendlyName = prettify_name(i_Metadata.name);
           i_Metadata.editor = false;
           if (it->second["editor_editable"]) {
             i_Metadata.editor =
@@ -649,6 +656,59 @@ namespace Low {
           p_Metadata.properties.push_back(i_Metadata);
         }
       }
+      {
+        const char *l_FunctionsName = "functions";
+        const char *l_ParametersName = "parameters";
+
+        if (p_Node[l_FunctionsName]) {
+          for (auto it = p_Node[l_FunctionsName].begin();
+               it != p_Node[l_FunctionsName].end(); ++it) {
+            FunctionMetadata i_Func;
+            i_Func.name = LOW_YAML_AS_NAME(it->first);
+            i_Func.friendlyName = prettify_name(i_Func.name);
+            i_Func.functionInfo =
+                p_Metadata.typeInfo.functions[i_Func.name];
+
+            i_Func.scriptingExpose = false;
+            if (it->second["expose_scripting"]) {
+              i_Func.scriptingExpose =
+                  it->second["expose_scripting"].as<bool>();
+            }
+
+            i_Func.hideFlode = false;
+            if (it->second["flode_hide"]) {
+              i_Func.hideFlode = it->second["flode_hide"].as<bool>();
+            }
+
+            i_Func.isStatic = false;
+            if (it->second["static"]) {
+              i_Func.isStatic = it->second["static"].as<bool>();
+            }
+
+            i_Func.hasReturnValue = i_Func.functionInfo.type !=
+                                    Util::RTTI::PropertyType::VOID;
+
+            if (it->second[l_ParametersName]) {
+              int i = 0;
+              for (auto pit = it->second[l_ParametersName].begin();
+                   pit != it->second[l_ParametersName].end(); ++pit) {
+                Util::Yaml::Node &i_ParamNode = *pit;
+
+                ParameterMetadata i_Param;
+                i_Param.name = LOW_YAML_AS_NAME(i_ParamNode["name"]);
+                i_Param.friendlyName = prettify_name(i_Param.name);
+                i_Param.paramInfo = i_Func.functionInfo.parameters[i];
+
+                i_Func.parameters.push_back(i_Param);
+
+                i++;
+              }
+            }
+
+            p_Metadata.functions.push_back(i_Func);
+          }
+        }
+      }
     }
 
     static inline void parse_metadata(Util::Yaml::Node &p_Node,
@@ -679,6 +739,7 @@ namespace Low {
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
         TypeMetadata i_Metadata;
         i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+        i_Metadata.friendlyName = prettify_name(i_Metadata.name);
         i_Metadata.module = l_ModuleString;
         i_Metadata.typeId =
             p_TypeIdsNode[l_ModuleString.c_str()][i_TypeName.c_str()]
@@ -824,78 +885,14 @@ namespace Low {
       }
     }
 
-    static void register_type_nodes(u16 p_TypeId)
-    {
-      Util::String l_NodeNamePrefix = "Handle_";
-      l_NodeNamePrefix += LOW_TO_STRING(p_TypeId);
-      l_NodeNamePrefix += "_";
-
-      Util::RTTI::TypeInfo l_TypeInfo =
-          Util::Handle::get_type_info(p_TypeId);
-      TypeMetadata l_TypeMetadata = get_type_metadata(p_TypeId);
-
-      {
-        Util::Name l_NodeTypeName = LOW_NAME(
-            Util::String(l_NodeNamePrefix + "FindByName").c_str());
-        Flode::register_node(
-            l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
-              return new Flode::HandleNodes::FindByNameNode(p_TypeId);
-            });
-
-        Flode::register_spawn_node(l_TypeInfo.name.c_str(),
-                                   "Find by name", l_NodeTypeName);
-      }
-
-      {
-        for (auto it = l_TypeMetadata.properties.begin();
-             it != l_TypeMetadata.properties.end(); ++it) {
-          if (!it->scriptingExpose) {
-            continue;
-          }
-
-          Util::Name i_PropertyName = it->name;
-
-          {
-            Util::Name i_NodeTypeName =
-                LOW_NAME(Util::String(l_NodeNamePrefix + "Get" +
-                                      i_PropertyName.c_str())
-                             .c_str());
-            Flode::register_node(
-                i_NodeTypeName,
-                [p_TypeId, i_PropertyName]() -> Flode::Node * {
-                  return new Flode::HandleNodes::GetNode(
-                      p_TypeId, i_PropertyName);
-                });
-
-            Flode::register_spawn_node(l_TypeInfo.name.c_str(),
-                                       Util::String("Get ") +
-                                           i_PropertyName.c_str(),
-                                       i_NodeTypeName);
-          }
-          {
-            Util::Name i_NodeTypeName =
-                LOW_NAME(Util::String(l_NodeNamePrefix + "Set" +
-                                      i_PropertyName.c_str())
-                             .c_str());
-            Flode::register_node(
-                i_NodeTypeName,
-                [p_TypeId, i_PropertyName]() -> Flode::Node * {
-                  return new Flode::HandleNodes::SetNode(
-                      p_TypeId, i_PropertyName);
-                });
-
-            Flode::register_spawn_node(l_TypeInfo.name.c_str(),
-                                       Util::String("Set ") +
-                                           i_PropertyName.c_str(),
-                                       i_NodeTypeName);
-          }
-        }
-      }
-    }
-
     static void register_type_nodes()
     {
-      register_type_nodes(Core::Entity::TYPE_ID);
+      for (auto it = get_type_metadata().begin();
+           it != get_type_metadata().end(); ++it) {
+        if (it->second.scriptingExpose) {
+          Flode::register_nodes_for_type(it->second.typeId);
+        }
+      }
     }
 
     void initialize()
@@ -903,6 +900,16 @@ namespace Low {
       themes_load();
       load_low_metadata();
       load_project_metadata();
+
+      Util::String l_DataPath = Util::get_project().dataPath;
+
+      g_DirectoryWatchers.flodeDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/assets/flode",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                return (Util::Handle)0;
+              },
+              g_DirectoryUpdateTimer);
 
       Flode::initialize();
 
@@ -930,7 +937,8 @@ namespace Low {
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
       register_editor_widget("Resources", new ResourceWidget());
-      register_editor_widget("Flode", new FlodeWidget(), false);
+      g_FlodeWidget = new FlodeWidget();
+      register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("UI-Views", new UiWidget(), false);
 
       for (auto &it : g_TypeMetadata) {
@@ -1058,6 +1066,11 @@ namespace Low {
       return g_MainViewportWidget;
     }
 
+    FlodeWidget *get_flode_widget()
+    {
+      return g_FlodeWidget;
+    }
+
     TypeMetadata &get_type_metadata(uint16_t p_TypeId)
     {
       LOW_ASSERT(g_TypeMetadata.find(p_TypeId) !=
@@ -1091,6 +1104,40 @@ namespace Low {
     void set_gizmos_dragged(bool p_Dragged)
     {
       g_GizmosDragged = p_Dragged;
+    }
+
+    Util::String prettify_name(Util::String p_String)
+    {
+      Util::String l_String = p_String;
+      if (Util::StringHelper::begins_with(l_String, "p_")) {
+        l_String = l_String.substr(2);
+      }
+      l_String = Util::StringHelper::replace(p_String, '_', ' ');
+      l_String[0] = toupper(l_String[0]);
+      {
+        Util::String l_Friendly;
+        for (u32 i = 0; i < l_String.size(); ++i) {
+          if (i) {
+            if (islower(l_String[i - 1]) && !islower(l_String[i])) {
+              l_Friendly += " ";
+            }
+          }
+
+          l_Friendly += l_String[i];
+        }
+        l_String = l_Friendly;
+      }
+      return l_String;
+    }
+
+    Util::String prettify_name(Util::Name p_Name)
+    {
+      return prettify_name(Util::String(p_Name.c_str()));
+    }
+
+    DirectoryWatchers &get_directory_watchers()
+    {
+      return g_DirectoryWatchers;
     }
 
     namespace Helper {

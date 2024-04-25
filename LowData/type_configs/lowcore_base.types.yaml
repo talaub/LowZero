@@ -38,6 +38,7 @@ types:
         expose_scripting: true
         return_type: uint64_t
         constant: true
+        flode_hide: true
         parameters:
           - name: typeId
             type: uint16_t

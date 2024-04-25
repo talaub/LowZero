@@ -143,6 +143,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ContextData, context);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
@@ -162,6 +163,7 @@ namespace Low {
               offsetof(ContextData, renderpasses);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
@@ -241,6 +243,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
@@ -254,6 +257,174 @@ namespace Low {
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(make);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = Context::TYPE_ID;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Window);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_FramesInFlight);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ValidationEnabled);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::BOOL;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_frames_in_flight);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_image_count);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_current_frame_index);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_current_image_index);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_current_renderpass);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = Renderpass::TYPE_ID;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_dimensions);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_image_format);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_window);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_state);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(is_debug_enabled);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(wait_idle);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(prepare_frame);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(render_frame);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(begin_imgui_frame);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(render_imgui);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(update_dimensions);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name =
+              N(clear_committed_resource_signatures);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

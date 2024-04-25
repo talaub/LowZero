@@ -170,6 +170,7 @@ namespace Low {
               offsetof(TransformData, position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -192,6 +193,7 @@ namespace Low {
               offsetof(TransformData, rotation);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -213,6 +215,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -232,8 +235,8 @@ namespace Low {
           l_PropertyInfo.name = N(parent);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, parent);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -254,8 +257,8 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(TransformData, parent_uid);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -275,6 +278,7 @@ namespace Low {
               offsetof(TransformData, children);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -295,6 +299,7 @@ namespace Low {
               offsetof(TransformData, world_position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -315,6 +320,7 @@ namespace Low {
               offsetof(TransformData, world_rotation);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -335,6 +341,7 @@ namespace Low {
               offsetof(TransformData, world_scale);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -354,6 +361,7 @@ namespace Low {
               offsetof(TransformData, world_matrix);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -373,6 +381,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(TransformData, world_updated);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -415,6 +424,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(TransformData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -432,6 +442,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -453,6 +464,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(TransformData, world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
@@ -466,6 +478,13 @@ namespace Low {
             l_Handle.set_world_dirty(*(bool *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(recalculate_world_transform);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

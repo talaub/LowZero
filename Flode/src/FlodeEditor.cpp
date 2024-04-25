@@ -8,13 +8,16 @@
 #include "LowUtilString.h"
 
 #include "LowEditorBase.h"
+#include "LowEditorMainWindow.h"
+
+#include "LowRendererImGuiHelper.h"
 
 #include "FlodeMathNodes.h"
 
 #include "IconsFontAwesome5.h"
 
 namespace Flode {
-  Editor::Editor() : m_FirstRun(true), m_Graph(nullptr)
+  Editor::Editor() : m_LoadPath(""), m_Graph(nullptr)
   {
     NodeEd::Config l_Config;
     m_Context = NodeEd::CreateEditor(&l_Config);
@@ -22,10 +25,15 @@ namespace Flode {
 
   void Editor::load(Low::Util::String p_Path)
   {
+    m_LoadPath = p_Path;
   }
 
   void Editor::render_graph(float p_Delta)
   {
+    if (!m_Graph) {
+      return;
+    }
+
     // TODO: Collect connected pins on graph
     // collect_connected_pins();
 
@@ -42,23 +50,27 @@ namespace Flode {
   {
     ImGui::SetNextWindowSize(ImVec2(300, 200));
     if (ImGui::BeginPopup("Create Node")) {
-      auto l_Categories = get_node_types();
+      if (!m_Graph) {
+        ImGui::Text("No graph loaded");
+      } else {
+        auto l_Categories = get_node_types();
 
-      ImGui::Text("Create Node");
-      ImGui::Separator();
+        ImGui::Text("Create Node");
+        ImGui::Separator();
 
-      for (auto cit = l_Categories.begin(); cit != l_Categories.end();
-           ++cit) {
-        if (ImGui::TreeNode(cit->first.c_str())) {
-          for (auto it = cit->second.begin(); it != cit->second.end();
-               ++it) {
-            if (ImGui::MenuItem(it->first.c_str())) {
-              Node *i_Node = m_Graph->create_node(it->second);
-              NodeEd::SetNodePosition(i_Node->id,
-                                      m_StoredMousePosition);
+        for (auto cit = l_Categories.begin();
+             cit != l_Categories.end(); ++cit) {
+          if (ImGui::TreeNode(cit->first.c_str())) {
+            for (auto it = cit->second.begin();
+                 it != cit->second.end(); ++it) {
+              if (ImGui::MenuItem(it->first.c_str())) {
+                Node *i_Node = m_Graph->create_node(it->second);
+                NodeEd::SetNodePosition(i_Node->id,
+                                        m_StoredMousePosition);
+              }
             }
+            ImGui::TreePop();
           }
-          ImGui::TreePop();
         }
       }
       ImGui::EndPopup();
@@ -79,7 +91,8 @@ namespace Flode {
     l_Width = 300.0f;
 
     Low::Util::List<PinType> l_Types = {
-        PinType::String, PinType::Number, PinType::Bool,
+        PinType::String,  PinType::Number,  PinType::Bool,
+        PinType::Vector2, PinType::Vector3, PinType::Quaternion,
         PinType::Handle};
 
     struct Funcs
@@ -88,7 +101,8 @@ namespace Flode {
                                 const char **out_str)
       {
         PinType l_Type = ((PinType *)data)[n];
-        Low::Util::String l_Name = pin_type_to_string(l_Type);
+        Low::Util::String l_Name =
+            Low::Editor::prettify_name(pin_type_to_string(l_Type));
         *out_str = (char *)malloc(l_Name.size() + 1);
         memcpy((void *)*out_str, l_Name.c_str(), l_Name.size());
         (*(char **)out_str)[l_Name.size()] = '\0';
@@ -102,9 +116,55 @@ namespace Flode {
     if (m_SelectedNodes.size() == 1) {
       m_SelectedNodes[0]->render_data();
     } else if (m_Graph) {
+      ImGui::PushID(238392);
+      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
+      ImGui::Text("Graph");
+      ImGui::PopFont();
+      {
+        ImGui::PushItemWidth(100.0f);
+        ImGui::Text("Name");
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::PushItemWidth(120.0f);
+        ImGui::Text(m_Graph->m_Name.c_str());
+        ImGui::PopItemWidth();
+      }
+      {
+        ImGui::PushID(985927);
+        ImGui::PushItemWidth(100.0f);
+        ImGui::Text("Namespace");
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::PushItemWidth(120.0f);
+        if (ImGui::Button(ICON_FA_PLUS "")) {
+          m_Graph->m_Namespace.push_back(Low::Util::Name("ns"));
+        }
+        ImGui::PopItemWidth();
+        int i = 0;
+        for (auto it = m_Graph->m_Namespace.begin();
+             it != m_Graph->m_Namespace.end();) {
+          ImGui::PushID(i);
+          ImGui::PushItemWidth(120.0f);
+          Low::Editor::Base::NameEdit("##namespaceedit", &*it);
+          ImGui::PopItemWidth();
+          ImGui::SameLine();
+          if (ImGui::Button(ICON_FA_TRASH "")) {
+            it = m_Graph->m_Namespace.erase(it);
+          } else {
+            it++;
+          }
+          ImGui::PopID();
+          i++;
+        }
+        ImGui::PopID();
+      }
+      ImGui::Separator();
+      ImGui::PopID();
       ImGui::PushID(638745);
+      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
       ImGui::Text("Variables");
-      if (ImGui::Button("Add")) {
+      ImGui::PopFont();
+      if (ImGui::Button(ICON_FA_PLUS "")) {
         Variable *l_Variable = new Variable();
         l_Variable->name = "NewVar";
         l_Variable->type = PinType::Number;
@@ -185,9 +245,6 @@ namespace Flode {
             if (i_TypeChanged) {
               for (u32 i = 0; i < get_exposed_types().size(); ++i) {
                 if (i == i_CurrentTypeValue) {
-                  LOW_LOG_INFO << "SETTING TYPE "
-                               << get_exposed_types()[i].name
-                               << LOW_LOG_END;
                   i_Variable->typeId = get_exposed_types()[i].typeId;
                   break;
                 }
@@ -208,11 +265,11 @@ namespace Flode {
   void Editor::render(float p_Delta)
   {
     bool l_Save = false;
-    if (ImGui::Button(ICON_FA_SAVE " Save")) {
-      l_Save = true;
-    }
 
     if (m_Graph) {
+      if (ImGui::Button(ICON_FA_SAVE " Save")) {
+        l_Save = true;
+      }
       ImGui::SameLine();
       if (ImGui::Button(ICON_FA_COG " Compile")) {
         m_Graph->compile();
@@ -235,16 +292,18 @@ namespace Flode {
 
     m_StoredMousePosition = ImGui::GetMousePos();
 
-    if (m_FirstRun) {
-      m_FirstRun = false;
-      Low::Util::String l_Path = Low::Util::get_project().dataPath;
-      l_Path += "/assets/flode/" + LOW_TO_STRING(25) + ".flode.yaml";
+    if (!m_LoadPath.empty()) {
+      if (m_Graph) {
+        delete m_Graph;
+      }
 
       Low::Util::Yaml::Node l_Node =
-          Low::Util::Yaml::load_file(l_Path.c_str());
+          Low::Util::Yaml::load_file(m_LoadPath.c_str());
 
       m_Graph = new Graph;
       m_Graph->deserialize(l_Node);
+
+      m_LoadPath = "";
     }
 
     NodeEd::Suspend();
@@ -289,12 +348,13 @@ namespace Flode {
       m_Graph->serialize(l_Node);
 
       Low::Util::String l_Path = Low::Util::get_project().dataPath;
-      l_Path += "/assets/flode/" + LOW_TO_STRING(25) + ".flode.yaml";
+      l_Path += "/assets/flode/" +
+                Low::Util::String(m_Graph->m_Name.c_str()) +
+                ".flode.yaml";
 
       Low::Util::Yaml::write_file(l_Path.c_str(), l_Node);
 
-      LOW_LOG_INFO << "Saved flode graph '"
-                   << "test"
+      LOW_LOG_INFO << "Saved flode graph '" << m_Graph->m_Name
                    << "' to file." << LOW_LOG_END;
     }
 
@@ -394,6 +454,26 @@ namespace Flode {
 
         // You may reject link deletion by calling:
         // ed::RejectDeletedItem();
+      }
+
+      NodeEd::NodeId l_DeleteNodeId;
+      bool l_HasDeletedNode = false;
+      while (NodeEd::QueryDeletedNode(&l_DeleteNodeId)) {
+        // If you agree that node can be deleted, accept deletion.
+        if (NodeEd::AcceptDeletedItem()) {
+          l_HasDeletedNode = true;
+          // Then remove node from your data.
+          m_Graph->delete_node(l_DeleteNodeId);
+        }
+
+        // You may reject node deletion by calling:
+        // ed::RejectDeletedItem();
+      }
+
+      if (l_HasDeletedNode) {
+        // Clear the selected nodes in case they were deleted to not
+        // run into dangling pointers
+        m_SelectedNodes.clear();
       }
     }
     NodeEd::EndDelete(); // Wrap up deletion action

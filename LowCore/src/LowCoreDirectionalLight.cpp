@@ -148,6 +148,7 @@ namespace Low {
               offsetof(DirectionalLightData, color);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::COLORRGB;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
@@ -170,6 +171,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLightData, intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
@@ -214,6 +216,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLightData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();

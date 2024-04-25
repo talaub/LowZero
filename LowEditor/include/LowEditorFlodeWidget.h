@@ -13,7 +13,6 @@ namespace Low {
       FlodeWidget();
       void render(float p_Delta) override;
 
-    private:
       Flode::Editor *m_Editor;
     };
   } // namespace Editor

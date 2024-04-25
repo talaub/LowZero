@@ -9,6 +9,7 @@
 #include "LowEditorGui.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"
+#include "LowEditorFlodeWidget.h"
 
 #include "LowCore.h"
 #include "LowCoreMeshAsset.h"
@@ -29,8 +30,9 @@ namespace Low {
   namespace Editor {
     const Util::String g_CategoryLabels[] = {
         ICON_FA_CUBES " Meshes", ICON_FA_SPRAY_CAN " Materials",
-        ICON_FA_BOX_OPEN " Prefabs"};
-    const uint32_t g_CategoryCount = 3;
+        ICON_FA_BOX_OPEN " Prefabs",
+        ICON_FA_PROJECT_DIAGRAM " Flode"};
+    const uint32_t g_CategoryCount = 4;
 
     const float g_ElementSize = 128.0f;
 
@@ -39,6 +41,7 @@ namespace Low {
     void render_meshes(AssetTypeConfig &, ImRect);
     void render_materials(AssetTypeConfig &, ImRect);
     void render_prefabs(AssetTypeConfig &, ImRect);
+    void render_flodes(AssetTypeConfig &, ImRect);
 
     static void save_mesh_asset(Util::Handle p_Handle)
     {
@@ -161,6 +164,17 @@ namespace Low {
         l_Config.currentDirectoryWatchHandle =
             l_Config.rootDirectoryWatchHandle;
         l_Config.render = &render_prefabs;
+
+        m_TypeConfigs.push_back(l_Config);
+      }
+      {
+        AssetTypeConfig l_Config;
+        l_Config.typeId = 0;
+        l_Config.rootDirectoryWatchHandle =
+            get_directory_watchers().flodeDirectory;
+        l_Config.currentDirectoryWatchHandle =
+            l_Config.rootDirectoryWatchHandle;
+        l_Config.render = &render_flodes;
 
         m_TypeConfigs.push_back(l_Config);
       }
@@ -526,6 +540,106 @@ namespace Low {
                                             true);
           i_Section.render_footer = &render_material_details_footer;
           get_details_widget()->add_section(i_Section);
+        }
+        ImGui::NextColumn();
+      }
+
+      ImGui::Columns(1);
+    }
+
+    static void render_flodes(AssetTypeConfig &p_Config,
+                              ImRect p_Bounds)
+    {
+      uint32_t l_Id = 0;
+
+      Util::FileSystem::DirectoryWatcher &l_DirectoryWatcher =
+          Util::FileSystem::get_directory_watcher(
+              p_Config.currentDirectoryWatchHandle);
+
+      float l_ContentWidth = ImGui::GetContentRegionAvail().x;
+
+      int l_Columns =
+          LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
+      ImGui::Columns(l_Columns, NULL, false);
+
+      if (p_Config.rootDirectoryWatchHandle !=
+          p_Config.currentDirectoryWatchHandle) {
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_DirectoryWatcher.parentWatchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              l_DirectoryWatcher.parentWatchHandle;
+        }
+      } else {
+        if (render_element(l_Id++, ICON_FA_PLUS, "Create flode graph",
+                           false, 0, 0)) {
+          ImGui::OpenPopup("Create flode");
+        }
+
+        if (ImGui::BeginPopupModal("Create flode")) {
+          ImGui::Text(
+              "You are about to create a new flode graph. Please "
+              "select a name.");
+          static char l_NameBuffer[255];
+          ImGui::InputText("##name", l_NameBuffer, 255);
+
+          ImGui::Separator();
+          if (ImGui::Button("Cancel")) {
+            ImGui::CloseCurrentPopup();
+          }
+
+          bool l_IsEnter =
+              ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
+          ImGui::SameLine();
+          if (ImGui::Button("Create") || l_IsEnter) {
+            Util::Name l_Name = LOW_NAME(l_NameBuffer);
+
+            bool l_Ok = true;
+
+            if (l_Ok) {
+              Flode::Graph *l_Graph = new Flode::Graph;
+              l_Graph->m_Name = l_Name;
+              if (get_flode_widget()->m_Editor->m_Graph) {
+                delete get_flode_widget()->m_Editor->m_Graph;
+              }
+              get_flode_widget()->m_Editor->m_Graph = l_Graph;
+            }
+            ImGui::CloseCurrentPopup();
+          }
+
+          ImGui::EndPopup();
+        }
+      }
+
+      ImGui::NextColumn();
+
+      for (auto it = l_DirectoryWatcher.subdirectories.begin();
+           it != l_DirectoryWatcher.subdirectories.end(); ++it) {
+        Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
+            Util::FileSystem::get_directory_watcher(*it);
+        if (render_directory(
+                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                i_DirectoryWatcher.watchHandle, p_Config)) {
+          p_Config.currentDirectoryWatchHandle =
+              i_DirectoryWatcher.watchHandle;
+        }
+        ImGui::NextColumn();
+      }
+
+      for (auto it = l_DirectoryWatcher.files.begin();
+           it != l_DirectoryWatcher.files.end(); ++it) {
+        Util::FileSystem::FileWatcher &i_FileWatcher =
+            Util::FileSystem::get_file_watcher(*it);
+        if (!Util::StringHelper::ends_with(i_FileWatcher.path,
+                                           ".flode.yaml")) {
+          continue;
+        }
+        Util::String i_Name = i_FileWatcher.name.substr(
+            0, i_FileWatcher.name.size() - 11);
+        if (render_element(l_Id++, ICON_FA_PROJECT_DIAGRAM, i_Name,
+                           true, i_FileWatcher.handle,
+                           &l_DirectoryWatcher.update)) {
+          get_flode_widget()->m_Editor->load(i_FileWatcher.path);
         }
         ImGui::NextColumn();
       }

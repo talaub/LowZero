@@ -131,6 +131,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GameModeData, tick_function_name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
@@ -151,6 +152,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GameModeData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
@@ -168,6 +170,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(GameModeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();

@@ -167,6 +167,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, fixed);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -188,6 +189,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(RigidbodyData, gravity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -208,6 +210,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, mass);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -229,6 +232,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(RigidbodyData, initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -248,6 +252,7 @@ namespace Low {
               offsetof(RigidbodyData, rigid_dynamic);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -268,6 +273,7 @@ namespace Low {
               offsetof(RigidbodyData, physics_shape);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             return nullptr;
@@ -282,6 +288,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, shape);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::SHAPE;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -324,6 +331,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(RigidbodyData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();

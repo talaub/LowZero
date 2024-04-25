@@ -175,6 +175,7 @@ namespace Low {
               offsetof(ElementData, components);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
@@ -215,6 +216,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ElementData, click_passthrough);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
@@ -236,6 +238,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ElementData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
@@ -253,6 +256,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(ElementData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
@@ -266,6 +270,166 @@ namespace Low {
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(make);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = Element::TYPE_ID;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_View);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Low::Core::UI::View::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_component);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_TypeId);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT16;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(add_component);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Component);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(remove_component);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ComponentType);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT16;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(has_component);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ComponentType);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT16;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_display);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType =
+              Low::Core::UI::Component::Display::TYPE_ID;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(serialize);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Node);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_AddHandles);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::BOOL;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(serialize_hierarchy);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Node);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_AddHandles);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::BOOL;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(deserialize_hierarchy);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = UI::Element::TYPE_ID;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Node);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Creator);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

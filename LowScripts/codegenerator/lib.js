@@ -2,6 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const exec = require("child_process").execSync;
 const YAML = require("yaml");
+const { assert } = require("console");
 
 const g_Directory = `${__dirname}\\..\\..\\misteda\\data\\_internal\\type_configs`;
 
@@ -10,6 +11,11 @@ const g_AllTypeIds = [];
 
 let g_EnumIdMap = {};
 const g_AllEnumIds = [];
+
+function read_yaml_file(p_FilePath) {
+  const l_FileContent = read_file(p_FilePath);
+  return YAML.parse(l_FileContent);
+}
 
 function line(l, n = 0) {
   let t = "";
@@ -43,6 +49,80 @@ function format(p_FilePath, p_Content) {
   fs.unlinkSync(l_TmpPath);
 
   return l_Formatted;
+}
+
+function load_project_info(p_FullProjectPath) {
+  const l_ProjectModulesPath = `${p_FullProjectPath}\\modules`;
+  const l_ProjectConfigPath = `${p_FullProjectPath}\\project.yaml`;
+
+  console.log(`Looking for project at ${p_FullProjectPath}`);
+  assert(fs.existsSync(p_FullProjectPath), "Project directory does not exist");
+  assert(
+    fs.existsSync(l_ProjectConfigPath),
+    "Project config file does not exist",
+  );
+  assert(
+    fs.existsSync(l_ProjectModulesPath),
+    "Project's modules directory does not exist",
+  );
+
+  const l_ProjectConfig = read_yaml_file(l_ProjectConfigPath);
+  l_ProjectConfig.config_path = l_ProjectConfigPath;
+  l_ProjectConfig.modules_path = l_ProjectModulesPath;
+  l_ProjectConfig.full_path = p_FullProjectPath;
+
+  l_ProjectConfig.root_cmake_path = `${p_FullProjectPath}\\CMakeLists.txt`;
+
+  assert(
+    l_ProjectConfig.engine_root,
+    "No engine root defined in project config",
+  );
+
+  const l_ProjectModuleDirectories = fs
+    .readdirSync(l_ProjectModulesPath, { withFileTypes: true })
+    .filter((it) => it.isDirectory())
+    .map((it) => it.name);
+
+  const l_Modules = [];
+
+  for (const i_ModuleDirectory of l_ProjectModuleDirectories) {
+    const i_ModulePath = `${l_ProjectModulesPath}\\${i_ModuleDirectory}`;
+    assert(
+      fs.existsSync(i_ModulePath),
+      `Could not find module directory ${i_ModulePath}`,
+    );
+
+    const i_ModuleConfigPath = `${i_ModulePath}\\module.yaml`;
+
+    if (!fs.existsSync(i_ModulePath)) {
+      continue;
+    }
+
+    const i_ModuleConfig = read_yaml_file(i_ModuleConfigPath);
+
+    //console.log(`📂 Found module ${i_ModuleDirectory}`);
+    const i_ModuleSettings = {
+      name: i_ModuleDirectory,
+      path: i_ModulePath,
+      api_header_path: `${i_ModulePath}/include/${l_ProjectConfig.name}${i_ModuleDirectory}Api.h`,
+      cmake_path: `${i_ModulePath}\\CMakeLists.txt`,
+      exports_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_EXPORTS`,
+      static_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_BUILD_STATIC`,
+      project_name: l_ProjectConfig.name,
+      api_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_API`,
+      no_export_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_NO_EXPORT`,
+      deprecated_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_DEPRECATED`,
+      deprecated_export_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_DEPRECATED_EXPORT`,
+      deprecated_no_export_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_DEPRECATED_NO_EXPORT`,
+      ...i_ModuleConfig,
+    };
+
+    l_Modules.push(i_ModuleSettings);
+  }
+
+  l_ProjectConfig.modules = l_Modules;
+
+  return l_ProjectConfig;
 }
 
 function get_unused_type_id(p_Project) {
@@ -712,5 +792,6 @@ module.exports = {
   find_begin_marker_end,
   find_end_marker_start,
   find_end_marker_end,
+  load_project_info,
   g_Directory,
 };

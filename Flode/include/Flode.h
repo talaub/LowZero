@@ -24,7 +24,10 @@ namespace Flode {
     Number,
     String,
     Handle,
-    Bool
+    Bool,
+    Vector2,
+    Vector3,
+    Quaternion
   };
 
   enum class PinStringType
@@ -76,6 +79,8 @@ namespace Flode {
 
   struct FLODE_API Node
   {
+    ~Node();
+
     NodeEd::NodeId id;
     Low::Util::List<Pin *> pins;
 
@@ -101,6 +106,11 @@ namespace Flode {
     Pin *create_pin_from_property_info(
         PinDirection p_Direction, Low::Util::String p_Title,
         Low::Util::RTTI::PropertyInfo &, u64 p_PinId = 0);
+
+    Pin *create_pin_from_rtti(PinDirection p_Direction,
+                              Low::Util::String p_Title,
+                              u32 p_PropertyType, u16 p_TypeId,
+                              u64 p_PinId = 0);
 
     Pin *find_pin(NodeEd::PinId p_PinId) const;
     Pin *find_pin_checked(NodeEd::PinId p_PinId) const;
@@ -193,6 +203,9 @@ namespace Flode {
 
   struct FLODE_API Graph
   {
+    Low::Util::Name m_Name;
+    Low::Util::List<Low::Util::Name> m_Namespace;
+
     Low::Util::List<Node *> m_Nodes;
     Low::Util::List<Link *> m_Links;
 
@@ -216,6 +229,7 @@ namespace Flode {
                                NodeEd::PinId p_OutputPin);
 
     void delete_link(NodeEd::LinkId p_LinkId);
+    void delete_node(NodeEd::NodeId p_NodeId);
 
     void serialize(Low::Util::Yaml::Node &p_Node) const;
     void deserialize(Low::Util::Yaml::Node &p_Node);
@@ -231,6 +245,8 @@ namespace Flode {
     void continue_compilation(Low::Util::StringBuilder &p_Builder,
                               Pin *p_Pin) const;
   };
+
+  void register_nodes_for_type(u16 p_TypeId);
 
   void register_node(Low::Util::Name p_TypeName,
                      std::function<Node *()>);

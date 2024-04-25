@@ -166,6 +166,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, callbacks);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -188,6 +189,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -207,6 +209,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, dimensions_config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -226,6 +229,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -245,6 +249,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, rendertargets);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -264,6 +269,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(
             GraphicsStepConfigData, rendertargets_clearcolor);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -287,6 +293,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_rendertarget);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -310,6 +317,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, use_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -331,6 +339,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_clear);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -352,6 +361,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_test);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -373,6 +383,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_write);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -394,6 +405,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, depth_compare_operation);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -416,6 +428,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -439,6 +452,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStepConfigData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStepConfig l_Handle = p_Handle.get_id();
@@ -452,6 +466,28 @@ namespace Low {
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = GraphicsStepConfig::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Node);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

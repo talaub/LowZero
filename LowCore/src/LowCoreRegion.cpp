@@ -142,6 +142,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
@@ -163,6 +164,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RegionData, streaming_enabled);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
@@ -184,6 +186,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RegionData, streaming_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
@@ -205,6 +208,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RegionData, streaming_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
@@ -225,6 +229,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, entities);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
@@ -260,6 +265,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
@@ -277,6 +283,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(RegionData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
@@ -290,6 +297,65 @@ namespace Low {
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(serialize_entities);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Node);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(add_entity);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Entity);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = Entity::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(remove_entity);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Entity);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = Entity::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(load_entities);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(unload_entities);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

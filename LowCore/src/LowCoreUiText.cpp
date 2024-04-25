@@ -152,6 +152,7 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(TextData, text);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::STRING;
+            l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -197,6 +198,7 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(TextData, color);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -219,6 +221,7 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(TextData, size);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
+            l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -242,6 +245,7 @@ namespace Low {
                 offsetof(TextData, content_fit_approach);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -290,6 +294,7 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(TextData, unique_id);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
+            l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();

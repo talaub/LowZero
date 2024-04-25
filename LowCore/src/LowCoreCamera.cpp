@@ -136,6 +136,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(CameraData, active);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Camera l_Handle = p_Handle.get_id();
@@ -153,6 +154,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(CameraData, fov);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Camera l_Handle = p_Handle.get_id();
@@ -194,6 +196,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(CameraData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             Camera l_Handle = p_Handle.get_id();
@@ -204,6 +207,13 @@ namespace Low {
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(activate);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

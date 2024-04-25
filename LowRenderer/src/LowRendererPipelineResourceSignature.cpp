@@ -143,6 +143,7 @@ namespace Low {
               offsetof(PipelineResourceSignatureData, signature);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
@@ -162,6 +163,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PipelineResourceSignatureData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
@@ -176,6 +178,247 @@ namespace Low {
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(make);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType =
+              PipelineResourceSignature::TYPE_ID;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Context);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Context::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Binding);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ResourceDescriptions);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(commit);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_image_resource);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ArrayIndex);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Resource::Image::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_sampler_resource);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ArrayIndex);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Resource::Image::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_unbound_sampler_resource);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ArrayIndex);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Resource::Image::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_texture2d_resource);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ArrayIndex);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Resource::Image::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_constant_buffer_resource);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ArrayIndex);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Resource::Buffer::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(set_buffer_resource);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_ArrayIndex);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UINT32;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Value);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Resource::Buffer::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_binding);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

@@ -5,7 +5,8 @@
 namespace Low {
   namespace Editor {
     namespace Base {
-      bool Vector3Edit(const char *p_Label, Math::Vector3 *p_Vector3);
+      bool Vector3Edit(const char *p_Label, Math::Vector3 *p_Vector3,
+                       float p_MaxWidth = -1.0f);
       bool FloatEdit(const char *p_Label, float *p_Val,
                      float p_Min = -1000.0f, float p_Max = 1000.0f,
                      float p_Step = 0.1f);
