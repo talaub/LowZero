@@ -76,9 +76,8 @@ namespace Low {
 
           float param = 1.2f;
 
-          CflatVoidCall(
-              MtdScripts::StatusEffect::Ignite::test_function,
-              CflatArg(param));
+          CflatVoidCall(MtdScripts::StatusEffect::Ignite::tick,
+                        CflatArg(param));
         }
 
         MeshResource::update();

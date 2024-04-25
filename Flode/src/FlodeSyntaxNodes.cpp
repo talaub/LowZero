@@ -1,6 +1,8 @@
 #include "FlodeSyntaxNodes.h"
 #include <cstring>
 
+#include "LowEditorBase.h"
+
 #include "IconsFontAwesome5.h"
 
 namespace Flode {
@@ -11,7 +13,7 @@ namespace Flode {
     Low::Util::String
     FunctionNode::get_name(NodeNameType p_Type) const
     {
-      return "Function";
+      return Low::Util::String("Function ") + m_Name.c_str();
     }
 
     ImU32 FunctionNode::get_color() const
@@ -58,6 +60,7 @@ namespace Flode {
 
     void FunctionNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
+      p_Node["name"] = m_Name.c_str();
       for (auto it = m_Parameters.begin(); it != m_Parameters.end();
            ++it) {
         Low::Util::Yaml::Node i_ParamNode;
@@ -72,6 +75,11 @@ namespace Flode {
 
     void FunctionNode::deserialize(Low::Util::Yaml::Node &p_Node)
     {
+      m_Name = N(def_func);
+      if (p_Node["name"]) {
+        m_Name = LOW_YAML_AS_NAME(p_Node["name"]);
+      }
+
       if (p_Node["parameters"]) {
         for (auto it = p_Node["parameters"].begin();
              it != p_Node["parameters"].end(); ++it) {
@@ -90,6 +98,12 @@ namespace Flode {
 
     void FunctionNode::render_data()
     {
+      ImGui::Text("Name");
+      ImGui::SameLine();
+      ImGui::PushItemWidth(120.0f);
+      Low::Editor::Base::NameEdit("##nameedit", &m_Name);
+      ImGui::PopItemWidth();
+
       ImGui::Text("Parameters");
 
       bool l_Changed = false;
@@ -203,7 +217,7 @@ namespace Flode {
     FunctionNode::compile(Low::Util::StringBuilder &p_Builder) const
     {
       p_Builder.append("void ");
-      p_Builder.append("test_function");
+      p_Builder.append(m_Name);
       p_Builder.append("(");
 
       int l_ParameterCount = 0;

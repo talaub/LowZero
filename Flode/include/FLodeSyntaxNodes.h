@@ -37,6 +37,7 @@ namespace Flode {
 
     protected:
       Low::Util::List<FunctionNodeParameter> m_Parameters;
+      Low::Util::Name m_Name;
 
       void create_dynamic_pins();
     };
