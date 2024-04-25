@@ -19,6 +19,8 @@ namespace Flode {
 
     void load(Low::Util::String p_Path);
 
+    Graph *m_Graph;
+
   private:
     void render_graph(float p_Delta);
 
@@ -30,12 +32,10 @@ namespace Flode {
 
     NodeEd::EditorContext *m_Context;
 
-    Graph *m_Graph;
-
     ImVec2 m_StoredMousePosition;
 
-    bool m_FirstRun;
-
     Low::Util::List<Node *> m_SelectedNodes;
+
+    Low::Util::String m_LoadPath;
   };
 } // namespace Flode

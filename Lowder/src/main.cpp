@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include "imgui.h"
-
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
@@ -29,14 +27,11 @@
 
 #include <stdint.h>
 
-#include <microprofile.h>
-#include <vector>
-
 #include "LowEditorMainWindow.h"
 
-// #include "MtdPlugin.h"
-
 #include <windows.h>
+
+typedef int(__stdcall *f_funci)();
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -52,8 +47,6 @@ void *operator new[](size_t size, size_t alignment,
   return malloc(size);
 }
 
-typedef int(__stdcall *f_funci)();
-
 static void setup_scene()
 {
   Low::Core::Scene l_Scene =
@@ -63,7 +56,8 @@ static void setup_scene()
 
 int run_low()
 {
-  HINSTANCE hGetProcIDDLL = LoadLibrary("mistedaplugind.dll");
+  HINSTANCE hGetProcIDDLL =
+      LoadLibrary("../../../misteda/build/Debug/app/Gameplayd.dll");
 
   if (!hGetProcIDDLL) {
     std::cout << "could not load the dynamic library" << std::endl;

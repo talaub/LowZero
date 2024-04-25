@@ -1,3 +1,10 @@
+SET(BUILD_SHARED_LIBS OFF)
+
+SET(GLI_TEST_ENABLE OFF)
+SET(ASSIMP_BUILD_TESTS OFF)
+SET(YAML_CPP_BUILD_TOOLS OFF)
+SET(YAML_CPP_FORMAT_SOURCE OFF)
+
 add_subdirectory(glm)
 add_subdirectory(yaml-cpp)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -6,16 +13,37 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 add_subdirectory(gli)
 add_subdirectory(assimp)
+add_subdirectory(EASTL)
+set(FT_DISABLE_ZLIB ON)
+set(FT_DISABLE_BZIP2 ON)
+set(FT_DISABLE_PNG ON)
 add_subdirectory(freetype)
 add_subdirectory(SDL)
 add_subdirectory(vk-bootstrap)
+
+
+set_target_properties(EASTL PROPERTIES FOLDER "Dependencies")
+set_target_properties(gli_dummy PROPERTIES FOLDER "Dependencies")
+set_target_properties(assimp PROPERTIES FOLDER "Dependencies")
+set_target_properties(freetype PROPERTIES FOLDER "Dependencies")
+set_target_properties(uninstall PROPERTIES FOLDER "Dependencies")
+set_target_properties(zlibstatic PROPERTIES FOLDER "Dependencies")
+set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "Dependencies")
+
+set_target_properties(yaml-cpp PROPERTIES FOLDER "Dependencies")
+#set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies/yaml")
+#set_target_properties(yaml-cpp-read PROPERTIES FOLDER "Dependencies/yaml")
+#set_target_properties(yaml-cpp-sandbox PROPERTIES FOLDER "Dependencies/yaml")
+#set_target_properties(format PROPERTIES FOLDER "Dependencies/yaml")
 
 project(tlsf)
 
 add_library(tlsf STATIC "${CMAKE_CURRENT_SOURCE_DIR}/tlsf/tlsf.c")
 target_include_directories(tlsf PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/tlsf"
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tlsf>
+  $<INSTALL_INTERFACE:include>
 )
+set_target_properties(tlsf PROPERTIES FOLDER "Dependencies")
 cmake_minimum_required(VERSION 3.20)
 
 project(nativefiledialog)
@@ -29,6 +57,8 @@ target_include_directories(nativefiledialog PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/include"
   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src"
 )
+set_target_properties(nativefiledialog PROPERTIES FOLDER "Dependencies")
+
 
 project(RecastNavigation)
 
@@ -37,6 +67,12 @@ add_subdirectory(recastnavigation/Detour)
 add_subdirectory(recastnavigation/DetourCrowd)
 add_subdirectory(recastnavigation/DetourTileCache)
 add_subdirectory(recastnavigation/Recast)
+
+set_target_properties(Detour PROPERTIES FOLDER "Dependencies/navigation")
+set_target_properties(DetourTileCache PROPERTIES FOLDER "Dependencies/navigation")
+set_target_properties(DebugUtils PROPERTIES FOLDER "Dependencies/navigation")
+set_target_properties(DetourCrowd PROPERTIES FOLDER "Dependencies/navigation")
+set_target_properties(Recast PROPERTIES FOLDER "Dependencies/navigation")
 
 project(RecastDemo)
 
@@ -48,16 +84,9 @@ add_library(RecastDemo STATIC
 target_include_directories(RecastDemo PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Include"
 )
+set_target_properties(RecastDemo PROPERTIES FOLDER "Dependencies")
 
-project(cflat)
 
-add_library(cflat STATIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/Cflat/Cflat.cpp"
-)
-
-target_include_directories(cflat PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/Cflat"
-)
 
 project(physx)
 
@@ -115,3 +144,5 @@ target_include_directories(physx PRIVATE
   ${PHYSX_INCLUDE_DIRS}
   ${PHYSX_SOURCE_DIRS}
 )
+
+set_target_properties(physx PROPERTIES FOLDER "Dependencies")

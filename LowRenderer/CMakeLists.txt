@@ -1,3 +1,5 @@
+SET(CMAKE_CURRENT_BINARY_DIR "${LOW_BINARY_PATH}/LowRenderer")
+
 project(LowRenderer)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
@@ -54,17 +56,17 @@ target_compile_definitions(LowRenderer PRIVATE
 )
 
 target_include_directories(LowRenderer PUBLIC
-  ${LOWRENDERER_INCLUDE_DIRS}
-  $ENV{VK_SDK_PATH}/Include
-  "${IMGUI_PATH}"
-  "${IMGUI_PATH}/backends"
-  "${IMGUIZMO_PATH}"
-  "${ICON_PATH}"
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:$ENV{VK_SDK_PATH}/Include>
+  $<BUILD_INTERFACE:${IMGUI_PATH}>
+  $<BUILD_INTERFACE:${IMGUI_PATH}/backends>
+  $<BUILD_INTERFACE:${IMGUIZMO_PATH}>
+  $<BUILD_INTERFACE:${ICON_PATH}>
+  $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(LowRenderer PRIVATE
+target_link_libraries(LowRenderer PUBLIC
   LowUtil
-  LowMath
 )
 
 target_link_directories(LowRenderer PUBLIC

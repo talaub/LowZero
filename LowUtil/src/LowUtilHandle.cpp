@@ -4,6 +4,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilLogger.h"
 #include "LowUtilVariant.h"
+#include "LowUtilString.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -38,7 +39,7 @@ namespace Low {
 
     RTTI::EnumInfo &get_enum_info(u16 p_EnumId)
     {
-     LOW_ASSERT(g_EnumInfos.find(p_EnumId) != g_EnumInfos.end(),
+      LOW_ASSERT(g_EnumInfos.find(p_EnumId) != g_EnumInfos.end(),
                  "Enum info has not been registered for enum id");
 
       return g_EnumInfos[p_EnumId];

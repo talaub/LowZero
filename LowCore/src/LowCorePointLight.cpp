@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -140,6 +141,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(PointLightData, color);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::COLORRGB;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
@@ -161,6 +163,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLightData, intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
@@ -204,6 +207,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PointLightData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();

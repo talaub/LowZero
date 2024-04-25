@@ -96,9 +96,12 @@ namespace Low {
                                               p_Value, p_Width, true);
       }
 
-      bool Vector3Edit(Math::Vector3 &p_Vector)
+      bool Vector3Edit(Math::Vector3 &p_Vector, float p_MaxWidth)
       {
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        if (p_MaxWidth > 0.0f) {
+          l_FullWidth = p_MaxWidth;
+        }
         float l_Spacing = LOW_EDITOR_SPACING;
         float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 3.0f;
         bool l_Changed = false;

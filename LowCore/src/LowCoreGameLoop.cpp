@@ -41,6 +41,8 @@ namespace Low {
     namespace GameLoop {
       using namespace std::chrono;
 
+      float g_TestCounter = 0.0f;
+
       bool g_Running = false;
       uint32_t g_LastFps = 0u;
 
@@ -66,6 +68,17 @@ namespace Low {
         }
 
         Scripting::tick(p_Delta, get_engine_state());
+
+        g_TestCounter += p_Delta;
+
+        if (g_TestCounter > 1.0f) {
+          g_TestCounter = 0.0f;
+
+          float param = 1.2f;
+
+          CflatVoidCall(MtdScripts::StatusEffect::Ignite::tick,
+                        CflatArg(param));
+        }
 
         MeshResource::update();
         Texture2D::update();

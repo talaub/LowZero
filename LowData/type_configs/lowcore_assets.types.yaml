@@ -1,0 +1,134 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+dll_macro: LOW_CORE_API
+types:
+  MeshAsset:
+    header_imports:
+      - LowCoreMeshResource.h
+    source_imports:
+      - LowCoreTaskScheduler.h
+    unique_id: true
+    name_editable: true
+    properties:
+      lod0:
+        editor_editable: true
+        type: MeshResource
+        handle: true
+      reference_count:
+        skip_serialization: true
+        skip_deserialization: true
+        type: uint32_t
+        private_setter: true
+        private_getter: true
+    functions:
+      is_loaded:
+        return_type: bool
+      load:
+        return_type: void
+      unload:
+        return_type: void
+      _unload:
+        return_type: void
+        private: true
+  Material:
+    header_imports:
+      - LowCoreTexture2D.h
+      - LowRendererExposedObjects.h
+    source_imports:
+      - LowRenderer.h
+      - LowUtilSerialization.h
+    unique_id: true
+    name_editable: true
+    properties:
+      material_type:
+        type: Renderer::MaterialType
+        handle: true
+      renderer_material:
+        type: Renderer::Material
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      properties:
+        type: Util::Map<Util::Name, Util::Variant>
+        no_setter: true
+      reference_count:
+        skip_serialization: true
+        skip_deserialization: true
+        type: uint32_t
+        private_setter: true
+        private_getter: true
+    functions:
+      set_property:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Util::Variant
+      get_property:
+        return_type: Util::Variant
+        parameters:
+          - name: name
+            type: Util::Name
+      is_loaded:
+        return_type: bool
+      load:
+        return_type: void
+      unload:
+        return_type: void
+      _unload:
+        return_type: void
+        private: true
+  Prefab:
+    header_imports:
+      - LowCoreEntity.h
+      - LowUtilVariant.h
+    source_imports:
+      - LowCoreRegion.h
+      - LowCoreTransform.h
+      - LowCorePrefabInstance.h
+      - LowUtilString.h
+    unique_id: true
+    name_editable: true
+    properties:
+      parent:
+        type: Util::Handle
+        no_ref: true
+      children:
+        type: Util::List<Util::Handle>
+      components:
+        type: Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>
+    functions:
+      make:
+        static: true
+        return_type: Prefab
+        return_handle: true
+        parameters:
+          - name: entity
+            type: Entity
+      spawn:
+        return_type: Entity
+        return_handle: true
+        parameters:
+          - name: region
+            type: Region
+            handle: true
+      compare_property:
+        return_type: bool
+        parameters:
+          - name: component
+            type: Util::Handle
+            handle: true
+          - name: propertyName
+            type: Util::Name
+      apply:
+        return_type: void
+        parameters:
+          - name: component
+            type: Util::Handle
+            handle: true
+          - name: propertyName
+            type: Util::Name

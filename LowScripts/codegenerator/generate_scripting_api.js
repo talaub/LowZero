@@ -6,13 +6,14 @@ var CRC32 = require("crc-32");
 
 const {
   read_file,
-  collect_types,
-  collect_types_for,
+  collect_types_for_project,
+  collect_types_for_low,
   write,
   line,
   empty,
   format,
   save_file,
+  load_project_info,
   find_begin_marker_start,
   find_begin_marker_end,
   find_end_marker_start,
@@ -223,7 +224,19 @@ function generate_scripting_api(p_Type) {
   return t;
 }
 
-function generate_scripting_api_for(p_FilePath, p_Types) {
+function generate_scripting_api_for(p_FilePath, p_Types, p_ModuleConfig) {
+  if (p_ModuleConfig === undefined) {
+    console.log("ISLOW");
+  } else {
+    console.log("ISPROJECT");
+  }
+  console.log(p_FilePath);
+
+  for (const i_Type of p_Types) {
+    console.log(i_Type.name);
+  }
+
+  console.log("-----------------------");
   const l_OriginalContent = read_file(p_FilePath);
 
   const l_IncludeIndexStart = l_OriginalContent.indexOf(
@@ -305,14 +318,45 @@ function generate_scripting_api_for(p_FilePath, p_Types) {
 }
 
 function main() {
-  const l_Types = collect_types_for("Low");
-  const l_ProjectTypes = collect_types_for("Misteda");
+  let l_Path = `${__dirname}/../../`;
+  let l_Project = false;
+  if (process.argv.length > 2) {
+    l_Path = process.argv[2];
+    l_Project = true;
+  }
 
-  const l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`;
-  const l_ProjectFilePath = `../../MistedaPlugin/src/MtdCflatScripting.cpp`;
+  let l_Types = 0;
+  if (l_Project) {
+    let l_LocalPath = l_Path;
+    if (!l_LocalPath.endsWith("/") && !l_LocalPath.endsWith("\\")) {
+      l_LocalPath += "/";
+    }
+    l_Types = collect_types_for_project(l_LocalPath);
+  } else {
+    if (!l_Path.endsWith("/") && !l_Path.endsWith("\\")) {
+      l_Path += "/";
+    }
+    l_Types = collect_types_for_low(l_Path);
+  }
 
-  generate_scripting_api_for(l_FilePath, l_Types);
-  generate_scripting_api_for(l_ProjectFilePath, l_ProjectTypes);
+  let l_FilePath = "";
+  if (l_Project) {
+    const l_ProjectConfig = load_project_info(l_Path);
+    for (const i_Module of l_ProjectConfig.modules) {
+      if (!i_Module.scripting_api_file) {
+        continue;
+      }
+      l_FilePath = `${i_Module.path}/${i_Module.scripting_api_file}`;
+      generate_scripting_api_for(
+        l_FilePath,
+        l_Types.filter((it) => it.module === i_Module.name),
+        i_Module,
+      );
+    }
+  } else {
+    l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`;
+    generate_scripting_api_for(l_FilePath, l_Types, undefined);
+  }
 }
 
 main();

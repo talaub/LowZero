@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -131,6 +132,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimationData, duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
@@ -152,6 +154,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimationData, ticks_per_second);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
@@ -173,6 +176,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimationData, channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
@@ -192,6 +196,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(SkeletalAnimationData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();

@@ -8,6 +8,8 @@
 
 #include "LowCoreMeshAsset.h"
 
+#include "LowUtil.h"
+
 namespace Low {
   namespace Editor {
     static void save(const Util::Handle p_Handle,
@@ -24,9 +26,9 @@ namespace Low {
       Util::String l_NameString =
           ((Util::Name *)l_NamePropertyInfo.get(p_Handle))->c_str();
 
-      Util::String l_SavePath = LOW_DATA_PATH;
-      l_SavePath += "/assets/" + l_LowerCase + "/" + l_NameString +
-                    "." + l_LowerCase + ".yaml";
+      Util::String l_SavePath =
+          Util::get_project().dataPath + "/assets/" + l_LowerCase +
+          "/" + l_NameString + "." + l_LowerCase + ".yaml";
 
       Util::Yaml::Node l_Node;
       p_TypeInfo.serialize(p_Handle, l_Node);

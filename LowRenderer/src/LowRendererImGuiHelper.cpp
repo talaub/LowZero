@@ -2,6 +2,7 @@
 
 #include "IconsFontAwesome5.h"
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -15,7 +16,7 @@ namespace Low {
       void initialize()
       {
         Util::String l_BaseInternalFontPath =
-            Util::String(LOW_DATA_PATH) + "/_internal/assets/fonts/";
+            Util::get_project().dataPath + "/_internal/assets/fonts/";
 
         Util::String l_IconFontPath =
             l_BaseInternalFontPath + FONT_ICON_FILE_NAME_FAS;

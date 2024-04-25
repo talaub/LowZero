@@ -7,7 +7,8 @@ namespace Flode {
     {
       create_pin(PinDirection::Input, "", PinType::Number);
 
-      create_pin(PinDirection::Output, "", PinType::String);
+      create_string_pin(PinDirection::Output, "",
+                        PinStringType::String);
     }
 
     void CastNumberToString::compile_output_pin(

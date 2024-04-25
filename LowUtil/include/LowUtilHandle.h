@@ -63,6 +63,8 @@ namespace Low {
           QUATERNION,
           NAME,
           FLOAT,
+          UINT8,
+          UINT16,
           UINT32,
           UINT64,
           INT,
@@ -70,7 +72,8 @@ namespace Low {
           HANDLE,
           SHAPE,
           STRING,
-          ENUM
+          ENUM,
+          VOID
         };
       }
 
@@ -89,6 +92,21 @@ namespace Low {
         Variant get_variant(Handle);
       };
 
+      struct ParameterInfo
+      {
+        Name name;
+        uint32_t type;
+        uint16_t handleType;
+      };
+
+      struct FunctionInfo
+      {
+        Name name;
+        uint32_t type;
+        uint16_t handleType;
+        List<ParameterInfo> parameters;
+      };
+
       struct TypeInfo
       {
         Name name;
@@ -96,6 +114,7 @@ namespace Low {
         bool component;
         bool uiComponent;
         Map<Name, PropertyInfo> properties;
+        Map<Name, FunctionInfo> functions;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
         void (*serialize)(Handle, Yaml::Node &);
@@ -182,6 +201,5 @@ namespace Low {
     void LOW_EXPORT remove_unique_id(UniqueId p_UniqueId);
 
     Handle LOW_EXPORT find_handle_by_unique_id(UniqueId p_UniqueId);
-
   } // namespace Util
 } // namespace Low

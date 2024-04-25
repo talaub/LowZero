@@ -149,9 +149,19 @@ namespace Flode {
         register_spawn_node("Math", "Add", l_TypeName);
       }
       {
-        Low::Util::Name l_TypeName = N(FlodeMathAddNumbers);
-        register_node(l_TypeName, &addnumber_create_instance);
-        register_spawn_node("Math", "Add", l_TypeName);
+        Low::Util::Name l_TypeName = N(FlodeMathSubtractNumbers);
+        register_node(l_TypeName, &subtractnumber_create_instance);
+        register_spawn_node("Math", "Subtract", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeMathMultiplyNumbers);
+        register_node(l_TypeName, &multiplynumber_create_instance);
+        register_spawn_node("Math", "Multiply", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeMathDivideNumbers);
+        register_node(l_TypeName, &dividenumber_create_instance);
+        register_spawn_node("Math", "Divide", l_TypeName);
       }
     }
   } // namespace MathNodes

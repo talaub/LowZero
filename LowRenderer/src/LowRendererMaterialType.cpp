@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -133,6 +134,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialTypeData, gbuffer_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
@@ -156,6 +158,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialTypeData, depth_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
@@ -179,6 +182,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialTypeData, internal);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
@@ -200,6 +204,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(MaterialTypeData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
@@ -222,6 +227,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();

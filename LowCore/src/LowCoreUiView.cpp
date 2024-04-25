@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -170,6 +171,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ViewData, loaded);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -191,6 +193,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(ViewData, elements);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -208,6 +211,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ViewData, internal);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -226,6 +230,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ViewData, view_template);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -248,6 +253,7 @@ namespace Low {
               offsetof(ViewData, pixel_position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR2;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -268,6 +274,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(ViewData, rotation);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -289,6 +296,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ViewData, scale_multiplier);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -310,6 +318,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ViewData, layer_offset);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -330,6 +339,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ViewData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -348,6 +358,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ViewData, transform_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -368,6 +379,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(ViewData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
@@ -381,6 +393,95 @@ namespace Low {
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(serialize_elements);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Node);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(add_element);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Element);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Element::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(remove_element);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Element);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType = Element::TYPE_ID;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(load_elements);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(unload_elements);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(spawn_instance);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = Low::Core::UI::View::TYPE_ID;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        }
+        {
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(find_element_by_name);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = Low::Core::UI::Element::TYPE_ID;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Name);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::NAME;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
@@ -858,7 +959,7 @@ namespace Low {
         set_loaded(true);
 
         Util::String l_Path =
-            Util::String(LOW_DATA_PATH) + "\\assets\\ui_views\\";
+            Util::get_project().dataPath + "\\assets\\ui_views\\";
         l_Path += std::to_string(get_unique_id()).c_str();
         l_Path += ".elements.yaml";
 

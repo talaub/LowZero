@@ -1,3 +1,5 @@
+SET(CMAKE_CURRENT_BINARY_DIR "${LOW_BINARY_PATH}/LowMath")
+
 project(LowMath)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
@@ -22,7 +24,9 @@ target_compile_definitions(LowMath PRIVATE
 )
 
 target_include_directories(LowMath PUBLIC
-  ${LOWMATH_INCLUDE_DIRS}
+  #${LOWMATH_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 add_dependencies(LowMath glm)

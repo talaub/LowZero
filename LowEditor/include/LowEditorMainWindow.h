@@ -1,8 +1,11 @@
 #pragma once
 
+#include "LowEditorApi.h"
+
 #include "imgui.h"
 
 #include "LowUtilEnums.h"
+#include "LowUtilFileSystem.h"
 
 #include "LowCoreEntity.h"
 #include "LowCoreUiElement.h"
@@ -15,12 +18,19 @@ namespace Low {
   namespace Editor {
     struct DetailsWidget;
     struct EditingWidget;
+    struct FlodeWidget;
     struct TypeMetadata;
     struct EnumMetadata;
     struct Widget;
 
-    void initialize();
-    void tick(float p_Delta, Util::EngineState p_State);
+    struct DirectoryWatchers
+    {
+      Util::FileSystem::WatchHandle flodeDirectory;
+    };
+
+    void LOW_EDITOR_API initialize();
+    void LOW_EDITOR_API tick(float p_Delta,
+                             Util::EngineState p_State);
 
     void set_selected_entity(Core::Entity p_Entity);
     Core::Entity get_selected_entity();
@@ -34,7 +44,11 @@ namespace Low {
 
     DetailsWidget *get_details_widget();
     EditingWidget *get_editing_widget();
+    FlodeWidget *get_flode_widget();
 
+    DirectoryWatchers &get_directory_watchers();
+
+    Util::Map<u16, TypeMetadata> &get_type_metadata();
     TypeMetadata &get_type_metadata(uint16_t p_TypeId);
     EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName);
 
@@ -44,6 +58,9 @@ namespace Low {
 
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
+
+    Util::String prettify_name(Util::Name p_Name);
+    Util::String prettify_name(Util::String p_String);
 
     namespace Helper {
       struct SphericalBillboardMaterials

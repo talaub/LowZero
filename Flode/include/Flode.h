@@ -3,6 +3,8 @@
 
 #include <imgui_node_editor.h>
 
+#include "LowEditorMetadata.h"
+
 #include "LowUtilContainers.h"
 #include "LowUtilVariant.h"
 #include "LowUtilString.h"
@@ -20,7 +22,18 @@ namespace Flode {
   {
     Flow,
     Number,
-    String
+    String,
+    Handle,
+    Bool,
+    Vector2,
+    Vector3,
+    Quaternion
+  };
+
+  enum class PinStringType
+  {
+    String,
+    Name
   };
 
   enum class PinDirection
@@ -28,6 +41,10 @@ namespace Flode {
     Input,
     Output
   };
+
+  void initialize();
+
+  Low::Util::List<Low::Editor::TypeMetadata> &get_exposed_types();
 
   void setup_variant_for_pin_type(PinType p_PinType,
                                   Low::Util::Variant &p_Variant);
@@ -37,6 +54,10 @@ namespace Flode {
 
   PinType string_to_pin_type(Low::Util::String p_String);
 
+  PinType property_type_to_pin_type(u8 p_PropertyType);
+
+  PinStringType property_type_to_pin_string_type(u8 p_PropertyType);
+
   struct FLODE_API Pin
   {
     NodeEd::PinId id;
@@ -45,7 +66,11 @@ namespace Flode {
     PinDirection direction;
     NodeEd::NodeId nodeId;
 
+    u16 typeId;
+    PinStringType stringType;
+
     Low::Util::Variant defaultValue;
+    Low::Util::String defaultStringValue;
   };
 
   Low::Util::String get_pin_default_value_as_string(Pin *p_Pin);
@@ -54,6 +79,8 @@ namespace Flode {
 
   struct FLODE_API Node
   {
+    ~Node();
+
     NodeEd::NodeId id;
     Low::Util::List<Pin *> pins;
 
@@ -63,7 +90,27 @@ namespace Flode {
 
     Pin *create_pin(PinDirection p_Direction,
                     Low::Util::String p_Title, PinType p_Type,
+                    u16 p_TypeId, u64 p_PinId = 0);
+    Pin *create_pin(PinDirection p_Direction,
+                    Low::Util::String p_Title, PinType p_Type,
                     u64 p_PinId = 0);
+    Pin *create_handle_pin(PinDirection p_Direction,
+                           Low::Util::String p_Title, u16 p_TypeId,
+                           u64 p_PinId = 0);
+
+    Pin *create_string_pin(PinDirection p_Direction,
+                           Low::Util::String p_Title,
+                           PinStringType p_StringType,
+                           u64 p_PinId = 0);
+
+    Pin *create_pin_from_property_info(
+        PinDirection p_Direction, Low::Util::String p_Title,
+        Low::Util::RTTI::PropertyInfo &, u64 p_PinId = 0);
+
+    Pin *create_pin_from_rtti(PinDirection p_Direction,
+                              Low::Util::String p_Title,
+                              u32 p_PropertyType, u16 p_TypeId,
+                              u64 p_PinId = 0);
 
     Pin *find_pin(NodeEd::PinId p_PinId) const;
     Pin *find_pin_checked(NodeEd::PinId p_PinId) const;
@@ -147,10 +194,24 @@ namespace Flode {
     }
   };
 
+  struct FLODE_API Variable
+  {
+    Low::Util::String name;
+    PinType type;
+    u16 typeId;
+  };
+
   struct FLODE_API Graph
   {
+    Low::Util::Name m_Name;
+    Low::Util::List<Low::Util::Name> m_Namespace;
+
     Low::Util::List<Node *> m_Nodes;
     Low::Util::List<Link *> m_Links;
+
+    Low::Util::List<Variable *> m_Variables;
+
+    Variable *find_variable(Low::Util::String) const;
 
     u64 m_IdCounter = 1;
 
@@ -159,7 +220,7 @@ namespace Flode {
     bool can_create_link(NodeEd::PinId p_InputPin,
                          NodeEd::PinId p_OutputPin);
 
-    Pin *find_pin(NodeEd::PinId p_PinId);
+    Pin *find_pin(NodeEd::PinId p_PinId) const;
 
     Link *create_link(NodeEd::PinId p_InputPin,
                       NodeEd::PinId p_OutputPin);
@@ -168,6 +229,7 @@ namespace Flode {
                                NodeEd::PinId p_OutputPin);
 
     void delete_link(NodeEd::LinkId p_LinkId);
+    void delete_node(NodeEd::NodeId p_NodeId);
 
     void serialize(Low::Util::Yaml::Node &p_Node) const;
     void deserialize(Low::Util::Yaml::Node &p_Node);
@@ -180,12 +242,14 @@ namespace Flode {
     void clean_unconnected_links();
 
     void compile() const;
+    void continue_compilation(Low::Util::StringBuilder &p_Builder,
+                              Pin *p_Pin) const;
   };
 
-  typedef Node *(*create_node_callback)();
+  void register_nodes_for_type(u16 p_TypeId);
 
   void register_node(Low::Util::Name p_TypeName,
-                     create_node_callback p_Callback);
+                     std::function<Node *()>);
 
   void register_spawn_node(Low::Util::String p_Category,
                            Low::Util::String p_Title,

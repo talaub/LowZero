@@ -2,6 +2,8 @@
 
 #include "LowUtilApi.h"
 
+#include "LowUtilContainers.h"
+
 #include <stdint.h>
 
 #define LOW_NAME(x) Low::Util::Name(x)
@@ -31,6 +33,8 @@ namespace Low {
       static void cleanup();
 
       static uint32_t to_hash(const char *p_String);
+
+      static Name from_string(String p_String);
 
       uint32_t m_Index;
     };

@@ -1,8 +1,8 @@
 #include "LowCoreTexture2D.h"
 
 #include <algorithm>
-#include <future>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -156,6 +156,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
@@ -194,6 +195,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Texture2DData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
@@ -208,6 +210,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
@@ -228,6 +231,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
@@ -241,6 +245,56 @@ namespace Low {
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Texture2D::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(is_loaded);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(load);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(unload);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(_unload);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(update);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -530,7 +584,7 @@ namespace Low {
         }
       } while (!l_FoundIndex);
 
-      Util::String l_FullPath = Util::String(LOW_DATA_PATH) +
+      Util::String l_FullPath = Util::get_project().dataPath +
                                 "\\resources\\img2d\\" + get_path();
 
       set_renderer_texture(Renderer::reserve_texture(get_name()));

@@ -10,8 +10,16 @@
 
 namespace Low {
   namespace Util {
+    Project g_Project;
+
     void initialize()
     {
+      g_Project.dataPath = "P:/misteda/data";
+      g_Project.rootPath = "P:/misteda";
+
+      g_Project.engineRootPath = "P:";
+      g_Project.engineDataPath = "P:/LowData";
+
       Log::initialize();
       Memory::initialize();
       Name::initialize();
@@ -36,6 +44,11 @@ namespace Low {
 
       LOW_LOG_INFO << "Util shutdown" << LOW_LOG_END;
       Log::cleanup();
+    }
+
+    const Project &get_project()
+    {
+      return g_Project;
     }
   } // namespace Util
 } // namespace Low

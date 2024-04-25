@@ -10,6 +10,7 @@
 #include <thread>
 #include <sstream>
 
+#include "LowUtil.h"
 #include "LowUtilHandle.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilFileIO.h"
@@ -31,14 +32,14 @@ namespace Low {
       {
         g_ThreadPool = new JobManager::ThreadPool(1);
 
-        g_LogFilePath = LOW_DATA_PATH;
-        g_LogFilePath += "/../low.log";
+        g_LogFilePath = get_project().rootPath + "/low.log";
 
         // Clear log file
-        FileIO::File l_LogFile =
-            FileIO::open(g_LogFilePath.c_str(), FileIO::FileMode::WRITE);
+        FileIO::File l_LogFile = FileIO::open(
+            g_LogFilePath.c_str(), FileIO::FileMode::WRITE);
 
-        String l_HeaderString = "LowEngine log output\nEngine version: ";
+        String l_HeaderString =
+            "LowEngine log output\nEngine version: ";
         l_HeaderString += LOW_VERSION_YEAR;
         l_HeaderString += ".";
         l_HeaderString += LOW_VERSION_MAJOR;
@@ -158,8 +159,8 @@ namespace Low {
 
       static void log_to_file(LogEntry p_Entry)
       {
-        FileIO::File l_LogFile =
-            FileIO::open(g_LogFilePath.c_str(), FileIO::FileMode::APPEND);
+        FileIO::File l_LogFile = FileIO::open(
+            g_LogFilePath.c_str(), FileIO::FileMode::APPEND);
 
         struct tm *timeinfo;
         char buffer[80];
@@ -260,9 +261,11 @@ namespace Low {
       {
         RTTI::TypeInfo &l_TypeInfo =
             Handle::get_type_info(p_Message.get_type());
-        return *this << l_TypeInfo.name << "(Index: " << p_Message.get_index()
+        return *this << l_TypeInfo.name
+                     << "(Index: " << p_Message.get_index()
                      << ", Generation: " << p_Message.get_generation()
-                     << ", Alive: " << l_TypeInfo.is_alive(p_Message) << ")";
+                     << ", Alive: " << l_TypeInfo.is_alive(p_Message)
+                     << ")";
       }
 
       LogStream &LogStream::operator<<(int p_Message)
@@ -296,36 +299,38 @@ namespace Low {
 
       LogStream &LogStream::operator<<(Math::Vector2 &p_Vec)
       {
-        return *this << "Vector2(" << p_Vec.x << ", " << p_Vec.y << ")";
+        return *this << "Vector2(" << p_Vec.x << ", " << p_Vec.y
+                     << ")";
       }
 
       LogStream &LogStream::operator<<(Math::Vector3 &p_Vec)
       {
-        return *this << "Vector3(" << p_Vec.x << ", " << p_Vec.y << ", "
-                     << p_Vec.z << ")";
+        return *this << "Vector3(" << p_Vec.x << ", " << p_Vec.y
+                     << ", " << p_Vec.z << ")";
       }
 
       LogStream &LogStream::operator<<(Math::Vector4 &p_Vec)
       {
-        return *this << "Vector4(" << p_Vec.x << ", " << p_Vec.y << ", "
-                     << p_Vec.z << ", " << p_Vec.w << ")";
+        return *this << "Vector4(" << p_Vec.x << ", " << p_Vec.y
+                     << ", " << p_Vec.z << ", " << p_Vec.w << ")";
       }
 
       LogStream &LogStream::operator<<(Math::Quaternion &p_Quat)
       {
-        return *this << "Quaternion(" << p_Quat.x << ", " << p_Quat.y << ", "
-                     << p_Quat.z << ", " << p_Quat.w << ")";
+        return *this << "Quaternion(" << p_Quat.x << ", " << p_Quat.y
+                     << ", " << p_Quat.z << ", " << p_Quat.w << ")";
       }
 
       LogStream &LogStream::operator<<(Math::UVector2 &p_Vec)
       {
-        return *this << "UVector2(" << p_Vec.x << ", " << p_Vec.y << ")";
+        return *this << "UVector2(" << p_Vec.x << ", " << p_Vec.y
+                     << ")";
       }
 
       LogStream &LogStream::operator<<(Math::UVector3 &p_Vec)
       {
-        return *this << "UVector3(" << p_Vec.x << ", " << p_Vec.y << ", "
-                     << p_Vec.z << ")";
+        return *this << "UVector3(" << p_Vec.x << ", " << p_Vec.y
+                     << ", " << p_Vec.z << ")";
       }
     } // namespace Log
   }   // namespace Util

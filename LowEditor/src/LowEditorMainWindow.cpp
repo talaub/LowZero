@@ -26,6 +26,7 @@
 #include "LowEditorThemes.h"
 #include "LowEditorTypeManagerWidget.h"
 
+#include "LowUtil.h"
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 #include "LowUtilJobManager.h"
@@ -48,11 +49,27 @@
 #include "FlodeSyntaxNodes.h"
 #include "FlodeDebugNodes.h"
 #include "FlodeCastNodes.h"
+#include "FlodeHandleNodes.h"
 
 #include <chrono>
 #include <cstddef>
 #include <functional>
 #include <future>
+#include <ctype.h>
+
+void *operator new[](size_t size, const char *pName, int flags,
+                     unsigned debugFlags, const char *file, int line)
+{
+  return malloc(size);
+}
+
+void *operator new[](size_t size, size_t alignment,
+                     size_t alignmentOffset, const char *pName,
+                     int flags, unsigned debugFlags, const char *file,
+                     int line)
+{
+  return malloc(size);
+}
 
 namespace Low {
   namespace Editor {
@@ -60,6 +77,9 @@ namespace Low {
     bool g_CentralDockOpen = true;
 
     bool g_GizmosDragged = false;
+
+    float g_DirectoryUpdateTimer = 2.0f;
+    DirectoryWatchers g_DirectoryWatchers;
 
     ChangeList g_ChangeList;
 
@@ -79,6 +99,7 @@ namespace Low {
 
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
+    FlodeWidget *g_FlodeWidget;
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
@@ -102,6 +123,11 @@ namespace Low {
     };
 
     Util::Queue<EditorJob> g_EditorJobQueue;
+
+    Util::Map<u16, TypeMetadata> &get_type_metadata()
+    {
+      return g_TypeMetadata;
+    }
 
     void register_editor_job(Util::String p_Title,
                              std::function<void()> p_Func)
@@ -195,8 +221,8 @@ namespace Low {
       }
       l_Config["theme"] = theme_get_current_name().c_str();
 
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/../user.yaml";
+      Util::String l_Path =
+          Util::get_project().rootPath + "/user.yaml";
       Util::Yaml::write_file(l_Path.c_str(), l_Config);
     }
 
@@ -224,7 +250,7 @@ namespace Low {
             p_Path.find_last_of('\\') + 1,
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         ResourceProcessor::Image::process(
-            Util::String(LOW_DATA_PATH) + "\\resources\\img2d\\" +
+            Util::get_project().dataPath + "\\resources\\img2d\\" +
                 l_FileName,
             l_Image);
 
@@ -243,7 +269,7 @@ namespace Low {
             p_Path.find_last_of('\\') + 1,
             p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
         bool l_HasAnimations = ResourceProcessor::Mesh::process(
-            p_Path.c_str(), Util::String(LOW_DATA_PATH) +
+            p_Path.c_str(), Util::get_project().dataPath +
                                 "\\resources\\meshes\\" + l_FileName +
                                 ".glb");
 
@@ -256,7 +282,7 @@ namespace Low {
         if (l_HasAnimations) {
           ResourceProcessor::Mesh::process_animations(
               p_Path.c_str(),
-              Util::String(LOW_DATA_PATH) +
+              Util::get_project().dataPath +
                   "\\resources\\skeletal_animations\\" + l_FileName +
                   ".glb");
 
@@ -478,7 +504,7 @@ namespace Low {
 
     static void initialize_spherical_billboard_materials()
     {
-      Util::String l_DataPath(LOW_DATA_PATH);
+      Util::String l_DataPath = Util::get_project().dataPath;
 
       g_SphericalBillboardMaterials.sun =
           Core::DebugGeometry::create_spherical_billboard_material(
@@ -570,8 +596,11 @@ namespace Low {
         if (!p_Node["component"]) {
           PropertyMetadata l_Metadata;
           l_Metadata.name = N(name);
+          l_Metadata.friendlyName = prettify_name(l_Metadata.name);
           l_Metadata.editor = false;
           l_Metadata.enumType = false;
+          l_Metadata.getterName = "get_name";
+          l_Metadata.setterName = "set_name";
           if (p_Node["name_editable"]) {
             l_Metadata.editor = true;
           }
@@ -585,10 +614,16 @@ namespace Low {
              it != p_Node[l_PropertiesName].end(); ++it) {
           PropertyMetadata i_Metadata;
           i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+          i_Metadata.friendlyName = prettify_name(i_Metadata.name);
           i_Metadata.editor = false;
           if (it->second["editor_editable"]) {
             i_Metadata.editor =
                 it->second["editor_editable"].as<bool>();
+          }
+          i_Metadata.scriptingExpose = false;
+          if (it->second["expose_scripting"]) {
+            i_Metadata.scriptingExpose =
+                it->second["expose_scripting"].as<bool>();
           }
           i_Metadata.enumType = false;
           if (it->second["enum"]) {
@@ -605,7 +640,73 @@ namespace Low {
                                     it->second["metadata"]);
           }
 
+          i_Metadata.getterName = "get_";
+          i_Metadata.getterName += i_Metadata.name.c_str();
+          if (it->second["getter_name"]) {
+            i_Metadata.getterName =
+                LOW_YAML_AS_STRING(it->second["getter_name"]);
+          }
+          i_Metadata.setterName = "set_";
+          i_Metadata.setterName += i_Metadata.name.c_str();
+          if (it->second["setter_name"]) {
+            i_Metadata.setterName =
+                LOW_YAML_AS_STRING(it->second["setter_name"]);
+          }
+
           p_Metadata.properties.push_back(i_Metadata);
+        }
+      }
+      {
+        const char *l_FunctionsName = "functions";
+        const char *l_ParametersName = "parameters";
+
+        if (p_Node[l_FunctionsName]) {
+          for (auto it = p_Node[l_FunctionsName].begin();
+               it != p_Node[l_FunctionsName].end(); ++it) {
+            FunctionMetadata i_Func;
+            i_Func.name = LOW_YAML_AS_NAME(it->first);
+            i_Func.friendlyName = prettify_name(i_Func.name);
+            i_Func.functionInfo =
+                p_Metadata.typeInfo.functions[i_Func.name];
+
+            i_Func.scriptingExpose = false;
+            if (it->second["expose_scripting"]) {
+              i_Func.scriptingExpose =
+                  it->second["expose_scripting"].as<bool>();
+            }
+
+            i_Func.hideFlode = false;
+            if (it->second["flode_hide"]) {
+              i_Func.hideFlode = it->second["flode_hide"].as<bool>();
+            }
+
+            i_Func.isStatic = false;
+            if (it->second["static"]) {
+              i_Func.isStatic = it->second["static"].as<bool>();
+            }
+
+            i_Func.hasReturnValue = i_Func.functionInfo.type !=
+                                    Util::RTTI::PropertyType::VOID;
+
+            if (it->second[l_ParametersName]) {
+              int i = 0;
+              for (auto pit = it->second[l_ParametersName].begin();
+                   pit != it->second[l_ParametersName].end(); ++pit) {
+                Util::Yaml::Node &i_ParamNode = *pit;
+
+                ParameterMetadata i_Param;
+                i_Param.name = LOW_YAML_AS_NAME(i_ParamNode["name"]);
+                i_Param.friendlyName = prettify_name(i_Param.name);
+                i_Param.paramInfo = i_Func.functionInfo.parameters[i];
+
+                i_Func.parameters.push_back(i_Param);
+
+                i++;
+              }
+            }
+
+            p_Metadata.functions.push_back(i_Func);
+          }
         }
       }
     }
@@ -616,15 +717,52 @@ namespace Low {
       Util::String l_ModuleString =
           LOW_YAML_AS_STRING(p_Node["module"]);
 
+      Util::String l_NamespaceString;
+      Util::List<Util::String> l_Namespaces;
+      int i = 0;
+      for (auto it = p_Node["namespace"].begin();
+           it != p_Node["namespace"].end(); ++it) {
+        Util::Yaml::Node &i_Node = *it;
+
+        Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
+        l_Namespaces.push_back(i_Namespace);
+
+        if (i) {
+          l_NamespaceString += "::";
+        }
+        l_NamespaceString += i_Namespace;
+        i++;
+      }
+
       for (auto it = p_Node["types"].begin();
            it != p_Node["types"].end(); ++it) {
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
         TypeMetadata i_Metadata;
         i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+        i_Metadata.friendlyName = prettify_name(i_Metadata.name);
         i_Metadata.module = l_ModuleString;
         i_Metadata.typeId =
             p_TypeIdsNode[l_ModuleString.c_str()][i_TypeName.c_str()]
                 .as<uint16_t>();
+
+        i_Metadata.namespaces = l_Namespaces;
+        i_Metadata.namespaceString = l_NamespaceString;
+        {
+          // Construct full name out of namespace path + name of the
+          // type. If there are namespaces we need to add an ::
+          // between the namespaces and the name of the type
+          i_Metadata.fullTypeString = l_NamespaceString;
+          if (!i_Metadata.fullTypeString.empty()) {
+            i_Metadata.fullTypeString += "::";
+          }
+          i_Metadata.fullTypeString += i_Metadata.name.c_str();
+        }
+
+        i_Metadata.scriptingExpose = false;
+        if (it->second["scripting_expose"]) {
+          i_Metadata.scriptingExpose =
+              it->second["scripting_expose"].as<bool>();
+        }
 
         parse_type_metadata(i_Metadata, it->second);
 
@@ -658,10 +796,33 @@ namespace Low {
       }
     }
 
-    static inline void load_metadata()
+    static inline void load_project_metadata()
     {
-      Util::String l_TypeConfigPath = LOW_DATA_PATH;
-      l_TypeConfigPath += "/_internal/type_configs";
+      Util::String l_TypeConfigPath =
+          Util::get_project().dataPath + "/_internal/type_configs";
+
+      Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
+          (l_TypeConfigPath + "/typeids.yaml").c_str());
+
+      Util::List<Util::String> l_FilePaths;
+      Util::FileIO::list_directory(l_TypeConfigPath.c_str(),
+                                   l_FilePaths);
+
+      for (auto it = l_FilePaths.begin(); it != l_FilePaths.end();
+           ++it) {
+        if (!Util::StringHelper::ends_with(*it, ".types.yaml")) {
+          continue;
+        }
+
+        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
+        parse_metadata(i_Node, l_TypeIdsNode);
+      }
+    }
+
+    static inline void load_low_metadata()
+    {
+      Util::String l_TypeConfigPath =
+          Util::get_project().engineDataPath + "/type_configs";
 
       Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
           (l_TypeConfigPath + "/typeids.yaml").c_str());
@@ -683,8 +844,8 @@ namespace Low {
 
     static inline void load_user_settings()
     {
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/../user.yaml";
+      Util::String l_Path =
+          Util::get_project().rootPath + "/user.yaml";
 
       if (!Util::FileIO::file_exists_sync(l_Path.c_str())) {
         return;
@@ -724,10 +885,33 @@ namespace Low {
       }
     }
 
+    static void register_type_nodes()
+    {
+      for (auto it = get_type_metadata().begin();
+           it != get_type_metadata().end(); ++it) {
+        if (it->second.scriptingExpose) {
+          Flode::register_nodes_for_type(it->second.typeId);
+        }
+      }
+    }
+
     void initialize()
     {
       themes_load();
-      load_metadata();
+      load_low_metadata();
+      load_project_metadata();
+
+      Util::String l_DataPath = Util::get_project().dataPath;
+
+      g_DirectoryWatchers.flodeDirectory =
+          Util::FileSystem::watch_directory(
+              l_DataPath + "/assets/flode",
+              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
+                return (Util::Handle)0;
+              },
+              g_DirectoryUpdateTimer);
+
+      Flode::initialize();
 
       initialize_billboard_materials();
 
@@ -738,6 +922,8 @@ namespace Low {
         Flode::SyntaxNodes::register_nodes();
         Flode::DebugNodes::register_nodes();
         Flode::CastNodes::register_nodes();
+
+        register_type_nodes();
       }
 
       g_MainViewportWidget = new EditingWidget();
@@ -751,7 +937,8 @@ namespace Low {
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
       register_editor_widget("Resources", new ResourceWidget());
-      register_editor_widget("Flode", new FlodeWidget(), false);
+      g_FlodeWidget = new FlodeWidget();
+      register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("UI-Views", new UiWidget(), false);
 
       for (auto &it : g_TypeMetadata) {
@@ -762,8 +949,8 @@ namespace Low {
         }
       }
 
-      Util::String l_Path = LOW_DATA_PATH;
-      l_Path += "/assets/meshes";
+      Util::String l_Path =
+          Util::get_project().dataPath + "/assets/meshes";
 
       load_user_settings();
     }
@@ -879,6 +1066,11 @@ namespace Low {
       return g_MainViewportWidget;
     }
 
+    FlodeWidget *get_flode_widget()
+    {
+      return g_FlodeWidget;
+    }
+
     TypeMetadata &get_type_metadata(uint16_t p_TypeId)
     {
       LOW_ASSERT(g_TypeMetadata.find(p_TypeId) !=
@@ -912,6 +1104,40 @@ namespace Low {
     void set_gizmos_dragged(bool p_Dragged)
     {
       g_GizmosDragged = p_Dragged;
+    }
+
+    Util::String prettify_name(Util::String p_String)
+    {
+      Util::String l_String = p_String;
+      if (Util::StringHelper::begins_with(l_String, "p_")) {
+        l_String = l_String.substr(2);
+      }
+      l_String = Util::StringHelper::replace(p_String, '_', ' ');
+      l_String[0] = toupper(l_String[0]);
+      {
+        Util::String l_Friendly;
+        for (u32 i = 0; i < l_String.size(); ++i) {
+          if (i) {
+            if (islower(l_String[i - 1]) && !islower(l_String[i])) {
+              l_Friendly += " ";
+            }
+          }
+
+          l_Friendly += l_String[i];
+        }
+        l_String = l_Friendly;
+      }
+      return l_String;
+    }
+
+    Util::String prettify_name(Util::Name p_Name)
+    {
+      return prettify_name(Util::String(p_Name.c_str()));
+    }
+
+    DirectoryWatchers &get_directory_watchers()
+    {
+      return g_DirectoryWatchers;
     }
 
     namespace Helper {

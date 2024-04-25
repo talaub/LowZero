@@ -1,3 +1,5 @@
+SET(CMAKE_CURRENT_BINARY_DIR "${LOW_BINARY_PATH}/LowCore")
+
 project(LowCore)
 
 SET(CFLAT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/Cflat")
@@ -27,6 +29,7 @@ add_dependencies(LowCore
   RecastDemo
   Detour
   DetourCrowd
+  #assimp
   freetype
 )
 
@@ -40,12 +43,14 @@ target_compile_definitions(LowCore PRIVATE
   LOW_MODULE_NAME="lowcore"
 )
 
-include_directories(
-  ${LOWCORE_INCLUDE_DIRS}
-)
+#include_directories(
+#  ${LOWCORE_INCLUDE_DIRS}
+#)
 
 target_include_directories(LowCore PUBLIC
-  ${LOWCORE_INCLUDE_DIRS}
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${CFLAT_PATH}>
+  $<INSTALL_INTERFACE:include>
 )
 
 set_target_properties(LowCore PROPERTIES OUTPUT_NAME "lowcore")
@@ -53,13 +58,14 @@ set_target_properties(LowCore PROPERTIES OUTPUT_NAME "lowcore")
 set(WIN_PLATFORM_STRING "x64")
 
 target_link_libraries(LowCore PRIVATE
-  LowRenderer
+  freetype
   LowUtil
   LowMath
+  LowRenderer
   physx
   Recast
   RecastDemo
   Detour
   DetourCrowd
-  freetype
+  #assimp
 )

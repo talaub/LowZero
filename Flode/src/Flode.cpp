@@ -1,11 +1,15 @@
 #include "Flode.h"
 
+#include "FlodeHandleNodes.h"
+
+#include "LowUtil.h"
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilFileIO.h"
 
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorBase.h"
+#include "LowEditorMainWindow.h"
 
 #include "LowRendererImGuiHelper.h"
 
@@ -17,6 +21,8 @@ namespace Flode {
   ImVec4 g_NodePadding(4, 2, 4, 4);
   int m_PinIconSize = 20;
 
+  Low::Util::List<Low::Editor::TypeMetadata> g_ExposedTypes;
+
   Low::Util::Map<Low::Util::String,
                  Low::Util::Map<Low::Util::String, Low::Util::Name>>
       g_NodeTypes;
@@ -24,16 +30,70 @@ namespace Flode {
   Low::Util::Map<PinType, Low::Util::Map<PinType, Low::Util::Name>>
       g_CastNodes;
 
-  Low::Util::Map<Low::Util::Name, Flode::create_node_callback>
+  Low::Util::Map<Low::Util::Name, std::function<Node *()>>
       g_NodeTypeNames;
+
+  void initialize()
+  {
+    for (auto it = Low::Editor::get_type_metadata().begin();
+         it != Low::Editor::get_type_metadata().end(); ++it) {
+
+      if (it->second.scriptingExpose) {
+        g_ExposedTypes.push_back(it->second);
+      }
+    }
+  }
+
+  Low::Util::List<Low::Editor::TypeMetadata> &get_exposed_types()
+  {
+    return g_ExposedTypes;
+  }
 
   Low::Util::String get_pin_default_value_as_string(Pin *p_Pin)
   {
     switch (p_Pin->type) {
+    case PinType::Handle:
+      return "0ull";
     case PinType::Number:
       return (LOW_TO_STRING(p_Pin->defaultValue.m_Float) + "f");
-    case PinType::String:
-      return "\"\"";
+    case PinType::Bool:
+      return p_Pin->defaultValue.m_Bool ? "true" : "false";
+    case PinType::String: {
+      if (p_Pin->stringType == PinStringType::Name) {
+        return Low::Util::String("_LNAME(") +
+               Low::Util::Name(p_Pin->defaultValue.m_Uint32).c_str() +
+               ")";
+      }
+      return Low::Util::String("Low::Util::String(\"") +
+             p_Pin->defaultStringValue + "\")";
+    }
+    case PinType::Vector2: {
+      Low::Util::StringBuilder l_Builder;
+      Low::Math::Vector2 l_Vec = p_Pin->defaultValue.m_Vector2;
+      l_Builder.append("Low::Math::Vector2(");
+      l_Builder.append(l_Vec.x).append("f, ");
+      l_Builder.append(l_Vec.y).append("f)");
+      return l_Builder.get();
+    }
+    case PinType::Vector3: {
+      Low::Util::StringBuilder l_Builder;
+      Low::Math::Vector3 l_Vec = p_Pin->defaultValue.m_Vector3;
+      l_Builder.append("Low::Math::Vector3(");
+      l_Builder.append(l_Vec.x).append("f, ");
+      l_Builder.append(l_Vec.y).append("f, ");
+      l_Builder.append(l_Vec.z).append("f)");
+      return l_Builder.get();
+    }
+    case PinType::Quaternion: {
+      Low::Util::StringBuilder l_Builder;
+      Low::Math::Quaternion l_Quat = p_Pin->defaultValue.m_Quaternion;
+      l_Builder.append("Low::Math::Quaternion(");
+      l_Builder.append(l_Quat.x).append("f, ");
+      l_Builder.append(l_Quat.y).append("f, ");
+      l_Builder.append(l_Quat.z).append("f, ");
+      l_Builder.append(l_Quat.w).append("f)");
+      return l_Builder.get();
+    }
     default:
       break;
     }
@@ -41,18 +101,55 @@ namespace Flode {
     return "";
   }
 
-  void setup_variant_for_pin_type(PinType p_PinType,
-                                  Low::Util::Variant &p_Variant)
+  void setup_default_value_for_pin(Pin *p_Pin)
   {
-    switch (p_PinType) {
+    switch (p_Pin->type) {
     case PinType::Number: {
-      p_Variant.m_Type = Low::Util::VariantType::Float;
-      p_Variant.m_Float = 0.0f;
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::Float;
+      p_Pin->defaultValue.m_Float = 0.0f;
+      break;
+    }
+    case PinType::Bool: {
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::Bool;
+      p_Pin->defaultValue.m_Float = false;
+      break;
+    }
+    case PinType::Handle: {
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::Handle;
+      p_Pin->defaultValue.m_Uint64 = 0ull;
+      break;
+    }
+    case PinType::String: {
+      if (p_Pin->stringType == PinStringType::Name) {
+        p_Pin->defaultValue.m_Type = Low::Util::VariantType::Name;
+        p_Pin->defaultValue = LOW_NAME("");
+      } else {
+        p_Pin->defaultValue.m_Type = Low::Util::VariantType::String;
+        p_Pin->defaultValue.m_Int32 = 0;
+        p_Pin->defaultStringValue = "";
+      }
+      break;
+    }
+    case PinType::Vector2: {
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::Vector2;
+      p_Pin->defaultValue.m_Vector2 = Low::Math::Vector2(0.0f, 0.0f);
+      break;
+    }
+    case PinType::Vector3: {
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::Vector3;
+      p_Pin->defaultValue.m_Vector3 =
+          Low::Math::Vector3(0.0f, 0.0f, 0.0f);
+      break;
+    }
+    case PinType::Quaternion: {
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::Quaternion;
+      p_Pin->defaultValue.m_Quaternion =
+          Low::Math::Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
       break;
     }
     default: {
-      p_Variant.m_Type = Low::Util::VariantType::String;
-      p_Variant.m_Int32 = 0;
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::String;
+      p_Pin->defaultValue.m_Int32 = 0;
       break;
     }
     }
@@ -68,6 +165,7 @@ namespace Flode {
     }
 
     _LOW_ASSERT(false);
+    return "";
   }
 
   Low::Util::String pin_type_to_string(PinType p_Type)
@@ -77,11 +175,22 @@ namespace Flode {
       return "flow";
     case PinType::Number:
       return "number";
+    case PinType::Bool:
+      return "bool";
+    case PinType::Handle:
+      return "handle";
     case PinType::String:
       return "string";
+    case PinType::Vector2:
+      return "vector2";
+    case PinType::Vector3:
+      return "vector3";
+    case PinType::Quaternion:
+      return "quaternion";
     }
 
     _LOW_ASSERT(false);
+    return "";
   }
 
   PinType string_to_pin_type(Low::Util::String p_String)
@@ -92,15 +201,182 @@ namespace Flode {
     if (p_String == "number") {
       return PinType::Number;
     }
+    if (p_String == "bool") {
+      return PinType::Bool;
+    }
     if (p_String == "string") {
       return PinType::String;
+    }
+    if (p_String == "handle") {
+      return PinType::Handle;
+    }
+    if (p_String == "vector2") {
+      return PinType::Vector2;
+    }
+    if (p_String == "vector3") {
+      return PinType::Vector3;
+    }
+    if (p_String == "quaternion") {
+      return PinType::Quaternion;
     }
 
     _LOW_ASSERT(false);
   }
 
+  PinType property_type_to_pin_type(u8 p_PropertyType)
+  {
+    using namespace Low::Util::RTTI;
+
+    switch (p_PropertyType) {
+    case PropertyType::HANDLE:
+      return PinType::Handle;
+    case PropertyType::BOOL:
+      return PinType::Bool;
+    case PropertyType::UINT16:
+      return PinType::Number;
+    case PropertyType::INT:
+      return PinType::Number;
+    case PropertyType::UINT32:
+      return PinType::Number;
+    case PropertyType::FLOAT:
+      return PinType::Number;
+    case PropertyType::STRING:
+      return PinType::String;
+    case PropertyType::NAME:
+      return PinType::String;
+    case PropertyType::VECTOR2:
+      return PinType::Vector2;
+    case PropertyType::VECTOR3:
+      return PinType::Vector3;
+    default: {
+      LOW_ASSERT(false, "Unsupported property type");
+      return PinType::String;
+    }
+    }
+  }
+
+  PinStringType property_type_to_pin_string_type(u8 p_PropertyType)
+  {
+    using namespace Low::Util::RTTI;
+
+    switch (p_PropertyType) {
+    case PropertyType::STRING:
+      return PinStringType::String;
+    case PropertyType::NAME:
+      return PinStringType::Name;
+    default: {
+      LOW_ASSERT(false, "Unsupported property type for string");
+      return PinStringType::String;
+    }
+    }
+  }
+
+  void register_nodes_for_type(u16 p_TypeId)
+  {
+    Low::Util::String l_NodeNamePrefix = "Handle_";
+    l_NodeNamePrefix += LOW_TO_STRING(p_TypeId);
+    l_NodeNamePrefix += "_";
+
+    Low::Util::RTTI::TypeInfo l_TypeInfo =
+        Low::Util::Handle::get_type_info(p_TypeId);
+    Low::Editor::TypeMetadata l_TypeMetadata =
+        Low::Editor::get_type_metadata(p_TypeId);
+
+    {
+      Low::Util::Name l_NodeTypeName = LOW_NAME(
+          Low::Util::String(l_NodeNamePrefix + "TypeId").c_str());
+      Flode::register_node(
+          l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+            return new Flode::HandleNodes::TypeIdNode(p_TypeId);
+          });
+
+      Flode::register_spawn_node(l_TypeInfo.name.c_str(), "Type ID",
+                                 l_NodeTypeName);
+    }
+
+    {
+      Low::Util::Name l_NodeTypeName = LOW_NAME(
+          Low::Util::String(l_NodeNamePrefix + "FindByName").c_str());
+      Flode::register_node(
+          l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+            return new Flode::HandleNodes::FindByNameNode(p_TypeId);
+          });
+
+      Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                 "Find by name", l_NodeTypeName);
+    }
+
+    {
+      for (auto it = l_TypeMetadata.properties.begin();
+           it != l_TypeMetadata.properties.end(); ++it) {
+        if (!it->scriptingExpose) {
+          continue;
+        }
+
+        Low::Util::Name i_PropertyName = it->name;
+
+        {
+          Low::Util::Name i_NodeTypeName =
+              LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Get" +
+                                         i_PropertyName.c_str())
+                           .c_str());
+          Flode::register_node(
+              i_NodeTypeName,
+              [p_TypeId, i_PropertyName]() -> Flode::Node * {
+                return new Flode::HandleNodes::GetNode(
+                    p_TypeId, i_PropertyName);
+              });
+
+          Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                     Low::Util::String("Get ") +
+                                         i_PropertyName.c_str(),
+                                     i_NodeTypeName);
+        }
+        {
+          Low::Util::Name i_NodeTypeName =
+              LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Set" +
+                                         i_PropertyName.c_str())
+                           .c_str());
+          Flode::register_node(
+              i_NodeTypeName,
+              [p_TypeId, i_PropertyName]() -> Flode::Node * {
+                return new Flode::HandleNodes::SetNode(
+                    p_TypeId, i_PropertyName);
+              });
+
+          Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                     Low::Util::String("Set ") +
+                                         i_PropertyName.c_str(),
+                                     i_NodeTypeName);
+        }
+      }
+    }
+    {
+      for (auto it = l_TypeMetadata.functions.begin();
+           it != l_TypeMetadata.functions.end(); ++it) {
+        if (!it->scriptingExpose || it->hideFlode) {
+          continue;
+        }
+        Low::Util::Name i_FunctionName = it->name;
+        Low::Util::Name i_NodeTypeName =
+            LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Function" +
+                                       it->name.c_str())
+                         .c_str());
+        Flode::register_node(
+            i_NodeTypeName,
+            [p_TypeId, i_FunctionName]() -> Flode::Node * {
+              return new Flode::HandleNodes::FunctionNode(
+                  p_TypeId, i_FunctionName);
+            });
+
+        Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                   it->friendlyName, i_NodeTypeName);
+      }
+    }
+  }
+
   void register_node(Low::Util::Name p_TypeName,
-                     Flode::create_node_callback p_Callback)
+                     std::function<Node *()> p_Callback)
   {
     LOW_ASSERT(g_NodeTypeNames.find(p_TypeName) ==
                    g_NodeTypeNames.end(),
@@ -177,19 +453,21 @@ namespace Flode {
     default:
     case PinType::Flow:
       return ImColor(255, 255, 255);
-      /*
     case PinType::Bool:
       return ImColor(220, 48, 48);
-    case PinType::Int:
+    case PinType::Vector2:
+      return ImColor(68, 150, 126);
+    case PinType::Vector3:
       return ImColor(68, 201, 156);
-      */
+    case PinType::Quaternion:
+      return ImColor(201, 201, 156);
     case PinType::Number:
       return ImColor(147, 226, 74);
     case PinType::String:
       return ImColor(124, 21, 153);
-      /*
-    case PinType::Object:
+    case PinType::Handle:
       return ImColor(51, 150, 215);
+      /*
     case PinType::Function:
       return ImColor(218, 0, 183);
     case PinType::Delegate:
@@ -210,10 +488,19 @@ namespace Flode {
     case Flode::PinType::Flow:
       iconType = IconType::Flow;
       break;
-      /*
     case Flode::PinType::Bool:
       iconType = IconType::Circle;
       break;
+    case Flode::PinType::Vector2:
+      iconType = IconType::Circle;
+      break;
+    case Flode::PinType::Vector3:
+      iconType = IconType::Circle;
+      break;
+    case Flode::PinType::Quaternion:
+      iconType = IconType::Circle;
+      break;
+      /*
     case Flode::PinType::Int:
       iconType = IconType::Circle;
       break;
@@ -224,10 +511,10 @@ namespace Flode {
     case Flode::PinType::String:
       iconType = IconType::Circle;
       break;
-      /*
-    case Flode::PinType::Object:
+    case Flode::PinType::Handle:
       iconType = IconType::Circle;
       break;
+      /*
     case Flode::PinType::Function:
       iconType = IconType::Circle;
       break;
@@ -245,9 +532,50 @@ namespace Flode {
                       ImColor(32, 32, 32, alpha));
   };
 
+  Node::~Node()
+  {
+    for (auto it = pins.begin(); it != pins.end();) {
+      Pin *i_Pin = *it;
+
+      it = pins.erase(it);
+      delete i_Pin;
+    }
+  }
+
   Low::Util::String Node::get_name(NodeNameType p_Type) const
   {
     return "FlodeNode";
+  }
+
+  inline void compile_string_pin_connection_conversion(
+      Low::Util::StringBuilder &p_Builder, const Node *p_OutputNode,
+      Pin *p_OutputPin, const Node *p_InputNode, Pin *p_InputPin)
+  {
+    // No conversion needed
+    if (p_OutputPin->stringType == p_InputPin->stringType) {
+      p_OutputNode->compile_output_pin(p_Builder, p_OutputPin->id);
+      return;
+    }
+
+    // Convert from name to string
+    if (p_OutputPin->stringType == PinStringType::Name &&
+        p_InputPin->stringType == PinStringType::String) {
+      p_Builder.append("Low::Util::String(");
+      p_OutputNode->compile_output_pin(p_Builder, p_OutputPin->id);
+      p_Builder.append(".c_str())");
+      return;
+    }
+
+    // Convert from string to name
+    if (p_OutputPin->stringType == PinStringType::String &&
+        p_InputPin->stringType == PinStringType::Name) {
+      p_Builder.append("Low::Util::Name::from_string(");
+      p_OutputNode->compile_output_pin(p_Builder, p_OutputPin->id);
+      p_Builder.append(")");
+      return;
+    }
+
+    _LOW_ASSERT(false);
   }
 
   void Node::compile_input_pin(Low::Util::StringBuilder &p_Builder,
@@ -265,8 +593,13 @@ namespace Flode {
       Node *l_ConnectedNode =
           graph->find_node(l_ConnectedPin->nodeId);
 
-      l_ConnectedNode->compile_output_pin(p_Builder,
-                                          l_ConnectedPin->id);
+      if (l_Pin->type == PinType::String) {
+        compile_string_pin_connection_conversion(
+            p_Builder, l_ConnectedNode, l_ConnectedPin, this, l_Pin);
+      } else {
+        l_ConnectedNode->compile_output_pin(p_Builder,
+                                            l_ConnectedPin->id);
+      }
 
     } else {
       p_Builder.append(get_pin_default_value_as_string(l_Pin));
@@ -305,7 +638,7 @@ namespace Flode {
 
   Pin *Node::create_pin(PinDirection p_Direction,
                         Low::Util::String p_Title, PinType p_Type,
-                        u64 p_PinId)
+                        u16 p_TypeId, u64 p_PinId)
   {
     Pin *l_Pin = new Pin;
 
@@ -316,13 +649,74 @@ namespace Flode {
       l_Pin->id = p_PinId;
     }
     l_Pin->type = p_Type;
+    l_Pin->typeId = p_TypeId;
     l_Pin->direction = p_Direction;
     l_Pin->nodeId = id;
-    setup_variant_for_pin_type(p_Type, l_Pin->defaultValue);
+    setup_default_value_for_pin(l_Pin);
 
     pins.push_back(l_Pin);
 
     return l_Pin;
+  }
+
+  Pin *Node::create_pin(PinDirection p_Direction,
+                        Low::Util::String p_Title, PinType p_Type,
+                        u64 p_PinId)
+  {
+    return create_pin(p_Direction, p_Title, p_Type, 0, p_PinId);
+  }
+
+  Pin *Node::create_string_pin(PinDirection p_Direction,
+                               Low::Util::String p_Title,
+                               PinStringType p_StringType,
+                               u64 p_PinId)
+  {
+    Pin *l_Pin =
+        create_pin(p_Direction, p_Title, PinType::String, 0, p_PinId);
+    l_Pin->stringType = p_StringType;
+    setup_default_value_for_pin(l_Pin);
+
+    return l_Pin;
+  }
+
+  Pin *Node::create_handle_pin(PinDirection p_Direction,
+                               Low::Util::String p_Title,
+                               u16 p_TypeId, u64 p_PinId)
+  {
+    return create_pin(p_Direction, p_Title, PinType::Handle, p_TypeId,
+                      p_PinId);
+  }
+
+  Pin *Node::create_pin_from_rtti(PinDirection p_Direction,
+                                  Low::Util::String p_Title,
+                                  u32 p_PropertyType, u16 p_TypeId,
+                                  u64 p_PinId)
+  {
+    if (p_PropertyType == Low::Util::RTTI::PropertyType::HANDLE) {
+      return create_handle_pin(p_Direction, p_Title, p_TypeId,
+                               p_PinId);
+    }
+
+    PinType l_PinType = property_type_to_pin_type(p_PropertyType);
+
+    if (l_PinType == PinType::String) {
+      return create_string_pin(
+          p_Direction, p_Title,
+          property_type_to_pin_string_type(p_PropertyType), p_PinId);
+    }
+
+    return create_pin(p_Direction, p_Title,
+                      property_type_to_pin_type(p_PropertyType),
+                      p_PinId);
+  }
+
+  Pin *Node::create_pin_from_property_info(
+      PinDirection p_Direction, Low::Util::String p_Title,
+      Low::Util::RTTI::PropertyInfo &p_PropertyInfo, u64 p_PinId)
+  {
+    return create_pin_from_rtti(p_Direction, p_Title,
+                                p_PropertyInfo.type,
+                                p_PropertyInfo.handleType, p_PinId);
   }
 
   void Node::render_header()
@@ -349,6 +743,7 @@ namespace Flode {
         NodeEd::GetStyle().NodeBorderWidth * 0.5f;
 
     auto l_DrawList = NodeEd::GetNodeBackgroundDrawList(id);
+
     l_DrawList->AddRectFilled(
         m_HeaderMin - ImVec2(g_NodePadding.z - l_HalfBorderWidth,
                              g_NodePadding.y - l_HalfBorderWidth),
@@ -386,6 +781,24 @@ namespace Flode {
           ImGui::PushItemWidth(50.0f);
           Low::Editor::Base::VariantEdit("##editdefaultvalue",
                                          p_Pin->defaultValue);
+          ImGui::PopItemWidth();
+        } else if (p_Pin->type == PinType::Bool) {
+          Low::Editor::Base::VariantEdit("##editdefaultvalue",
+                                         p_Pin->defaultValue);
+        } else if (p_Pin->type == PinType::Vector3) {
+          Low::Editor::Base::Vector3Edit(
+              "##editdefaultvalue", &p_Pin->defaultValue.m_Vector3,
+              200.0f);
+        } else if (p_Pin->type == PinType::String) {
+          ImGui::PushItemWidth(50.0f);
+          if (p_Pin->stringType == PinStringType::Name) {
+            Low::Editor::Base::NameEdit(
+                "##editdefaultvalue",
+                (Low::Util::Name *)&p_Pin->defaultValue.m_Uint32);
+          } else {
+            Low::Editor::Base::StringEdit("##editdefaultvalue",
+                                          &p_Pin->defaultStringValue);
+          }
           ImGui::PopItemWidth();
         }
       }
@@ -480,9 +893,15 @@ namespace Flode {
     render_input_pins();
 
     ImGui::Spring(0);
-    ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_800);
-    ImGui::PushStyleColor(ImGuiCol_Text,
-                          ImVec4(0.9f, 0.9f, 0.9f, 0.5f));
+    if (pins.size() == 1) {
+      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
+      ImGui::PushStyleColor(ImGuiCol_Text,
+                            ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
+    } else {
+      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_800);
+      ImGui::PushStyleColor(ImGuiCol_Text,
+                            ImVec4(0.9f, 0.9f, 0.9f, 0.5f));
+    }
     ImGui::TextUnformatted(get_name(NodeNameType::Compact).c_str());
     ImGui::PopStyleColor();
     ImGui::PopFont();
@@ -569,6 +988,17 @@ namespace Flode {
     }
   }
 
+  Variable *Graph::find_variable(Low::Util::String p_Name) const
+  {
+    for (Variable *i_Variable : m_Variables) {
+      if (i_Variable->name == p_Name) {
+        return i_Variable;
+      }
+    }
+
+    return nullptr;
+  }
+
   Node *Graph::find_node(NodeEd::NodeId p_NodeId) const
   {
     for (Flode::Node *i_Node : m_Nodes) {
@@ -580,7 +1010,7 @@ namespace Flode {
     return nullptr;
   }
 
-  Pin *Graph::find_pin(NodeEd::PinId p_PinId)
+  Pin *Graph::find_pin(NodeEd::PinId p_PinId) const
   {
     for (Flode::Node *i_Node : m_Nodes) {
       Flode::Pin *i_Pin = i_Node->find_pin(p_PinId);
@@ -591,6 +1021,22 @@ namespace Flode {
     }
 
     return nullptr;
+  }
+
+  void Graph::delete_node(NodeEd::NodeId p_NodeId)
+  {
+    for (auto it = m_Nodes.begin(); it != m_Nodes.end();) {
+      Node *i_Node = *it;
+      if (i_Node->id == p_NodeId) {
+        it = m_Nodes.erase(it);
+
+        delete i_Node;
+      } else {
+        ++it;
+      }
+    }
+
+    clean_unconnected_links();
   }
 
   void Graph::delete_link(NodeEd::LinkId p_LinkId)
@@ -739,7 +1185,25 @@ namespace Flode {
 
   void Graph::serialize(Low::Util::Yaml::Node &p_Node) const
   {
+    p_Node["name"] = m_Name.c_str();
     p_Node["idcounter"] = m_IdCounter;
+
+    for (auto it = m_Namespace.begin(); it != m_Namespace.end();
+         ++it) {
+      // Low::Util::Yaml::Node i_Node;
+      p_Node["namespace"].push_back(it->c_str());
+    }
+
+    for (const Variable *i_Variable : m_Variables) {
+      Low::Util::Yaml::Node i_Yaml;
+
+      i_Yaml["name"] = i_Variable->name.c_str();
+      i_Yaml["type"] = pin_type_to_string(i_Variable->type).c_str();
+      i_Yaml["type_id"] = i_Variable->typeId;
+
+      p_Node["variables"].push_back(i_Yaml);
+    }
+
     for (const Node *i_Node : m_Nodes) {
       Low::Util::Yaml::Node i_Yaml;
 
@@ -752,11 +1216,19 @@ namespace Flode {
         i_PinYaml["direction"] =
             pin_direction_to_string(i_Pin->direction).c_str();
         i_PinYaml["type"] = pin_type_to_string(i_Pin->type).c_str();
+        i_PinYaml["type_id"] = i_Pin->typeId;
 
-        if (i_Pin->defaultValue.m_Type !=
-            Low::Util::VariantType::String) {
-          Low::Util::Serialization::serialize_variant(
-              i_PinYaml["default_value"], i_Pin->defaultValue);
+        if (i_Pin->type == PinType::String) {
+          i_PinYaml["default_string_value"] =
+              i_Pin->defaultStringValue.c_str();
+        } else {
+          if (i_Pin->defaultValue.m_Type !=
+                  Low::Util::VariantType::String &&
+              i_Pin->defaultValue.m_Type !=
+                  Low::Util::VariantType::Handle) {
+            Low::Util::Serialization::serialize_variant(
+                i_PinYaml["default_value"], i_Pin->defaultValue);
+          }
         }
 
         i_Yaml["pins"].push_back(i_PinYaml);
@@ -787,6 +1259,37 @@ namespace Flode {
 
   void Graph::deserialize(Low::Util::Yaml::Node &p_Node)
   {
+    m_Name = LOW_YAML_AS_NAME(p_Node["name"]);
+
+    const char *l_NamespaceName = "namespace";
+
+    if (p_Node[l_NamespaceName]) {
+      for (auto it = p_Node[l_NamespaceName].begin();
+           it != p_Node[l_NamespaceName].end(); ++it) {
+        Low::Util::Yaml::Node &i_Node = *it;
+        m_Namespace.push_back(LOW_YAML_AS_NAME(i_Node));
+      }
+    }
+
+    if (p_Node["variables"]) {
+      for (auto it = p_Node["variables"].begin();
+           it != p_Node["variables"].end(); ++it) {
+        Low::Util::Yaml::Node &i_VariableNode = *it;
+
+        Variable *i_Variable = new Variable;
+        i_Variable->name = LOW_YAML_AS_STRING(i_VariableNode["name"]);
+        i_Variable->type = string_to_pin_type(
+            LOW_YAML_AS_STRING(i_VariableNode["type"]));
+        if (i_VariableNode["type_id"]) {
+          i_Variable->typeId = i_VariableNode["type_id"].as<u16>();
+        } else {
+          i_Variable->typeId = 0;
+        }
+
+        m_Variables.push_back(i_Variable);
+      }
+    }
+
     if (p_Node["nodes"]) {
       for (auto it = p_Node["nodes"].begin();
            it != p_Node["nodes"].end(); ++it) {
@@ -812,6 +1315,18 @@ namespace Flode {
                 Low::Util::Serialization::deserialize_variant(
                     i_NodeNode["pins"][i]["default_value"]);
           }
+          if (i_NodeNode["pins"][i]["default_string_value"]) {
+            i_Node->pins[i]->defaultStringValue = LOW_YAML_AS_STRING(
+                i_NodeNode["pins"][i]["default_string_value"]);
+
+            if (i_Node->pins[i]->stringType == PinStringType::Name) {
+              // In case the pin is actually a name convert the read
+              // string default value to a name
+              i_Node->pins[i]->defaultValue =
+                  Low::Util::Name::from_string(
+                      i_Node->pins[i]->defaultStringValue);
+            }
+          }
         }
 
         Low::Math::Vector2 i_Position =
@@ -835,6 +1350,8 @@ namespace Flode {
       }
     }
 
+    // I think it is important to do that last so that all the ids are
+    // synced up again
     if (p_Node["idcounter"]) {
       m_IdCounter = p_Node["idcounter"].as<u64>();
     }
@@ -850,8 +1367,59 @@ namespace Flode {
     l_Builder.append("#include \"LowUtilContainers.h\"").endl();
     l_Builder.append("#include \"LowUtilLogger.h\"").endl();
     l_Builder.endl();
-    l_Builder.append("namespace MtdScripts {").endl();
-    l_Builder.append("namespace Test {").endl();
+    for (auto it = m_Namespace.begin(); it != m_Namespace.end();
+         ++it) {
+      l_Builder.append("namespace ").append(*it).append(" {").endl();
+    }
+
+    for (Variable *i_Variable : m_Variables) {
+      switch (i_Variable->type) {
+      case PinType::Number: {
+        l_Builder.append("float");
+        break;
+      }
+      case PinType::Bool: {
+        l_Builder.append("bool");
+        break;
+      }
+      case PinType::String: {
+        l_Builder.append("Low::Util::String");
+        break;
+      }
+      case PinType::Handle: {
+        if (i_Variable->typeId == 0) {
+          l_Builder.append("Low::Util::Handle");
+        } else {
+          Low::Editor::TypeMetadata &i_Metadata =
+              Low::Editor::get_type_metadata(i_Variable->typeId);
+          l_Builder.append(i_Metadata.fullTypeString);
+        }
+        break;
+      }
+      }
+
+      l_Builder.append(" ").append(i_Variable->name);
+      if (i_Variable->type == PinType::Handle) {
+        l_Builder.append("(0)");
+      } else {
+        l_Builder.append(" = ");
+        switch (i_Variable->type) {
+        case PinType::Number: {
+          l_Builder.append("0.0f");
+          break;
+        }
+        case PinType::Bool: {
+          l_Builder.append("false");
+          break;
+        }
+        case PinType::String: {
+          l_Builder.append("\"\"");
+          break;
+        }
+        }
+      }
+      l_Builder.append(";").endl();
+    }
 
     for (Node *i_Node : m_Nodes) {
       if (i_Node->typeName == N(FlodeSyntaxFunction)) {
@@ -859,11 +1427,14 @@ namespace Flode {
       }
     }
 
-    l_Builder.append("}").endl();
-    l_Builder.append("}").endl();
+    for (auto it = m_Namespace.begin(); it != m_Namespace.end();
+         ++it) {
+      l_Builder.append("}").endl();
+    }
 
-    Low::Util::String l_Path = LOW_DATA_PATH;
-    l_Path += "/scripts/" + LOW_TO_STRING(25) + "script.cpp";
+    Low::Util::String l_Path = Low::Util::get_project().dataPath;
+    l_Path +=
+        "/scripts/" + Low::Util::String(m_Name.c_str()) + ".cpp";
 
     Low::Util::FileIO::File l_File = Low::Util::FileIO::open(
         l_Path.c_str(), Low::Util::FileIO::FileMode::WRITE);
@@ -875,5 +1446,24 @@ namespace Flode {
     LOW_LOG_INFO << "Compiled flode graph '"
                  << "test"
                  << "' to file." << LOW_LOG_END;
+  }
+
+  void
+  Graph::continue_compilation(Low::Util::StringBuilder &p_Builder,
+                              Pin *p_Pin) const
+  {
+    _LOW_ASSERT(p_Pin);
+    _LOW_ASSERT(p_Pin->direction == PinDirection::Output);
+    _LOW_ASSERT(p_Pin->type == PinType::Flow);
+
+    if (is_pin_connected(p_Pin->id)) {
+      NodeEd::PinId l_ConnectedFlowPinId =
+          get_connected_pin(p_Pin->id);
+
+      Pin *l_ConnectedFlowPin = find_pin(l_ConnectedFlowPinId);
+      Node *l_ConnectedNode = find_node(l_ConnectedFlowPin->nodeId);
+
+      l_ConnectedNode->compile(p_Builder);
+    }
   }
 } // namespace Flode

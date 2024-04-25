@@ -1,5 +1,6 @@
 #include "LowRenderer.h"
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -35,10 +36,6 @@
 #include "LowRendererCustomRenderSteps.h"
 
 #include <stdint.h>
-
-#include <gli/gli.hpp>
-#include <gli/texture2d.hpp>
-#include <gli/load_ktx.hpp>
 
 #include "microprofile.h"
 
@@ -714,7 +711,7 @@ namespace Low {
     void initialize()
     {
       g_ConfigPath =
-          Util::String(LOW_DATA_PATH) + "/_internal/renderer_config";
+          Util::get_project().dataPath + "/_internal/renderer_config";
       g_MainRenderFlowName = N(test);
 
       Util::Globals::set(N(LOW_RENDERER_DRAWCALLS), (int)0);
@@ -985,8 +982,8 @@ namespace Low {
               Math::Vector3(0.0f, 0.0f, -1.0f)));
 
       {
-        Util::String l_BasePath = LOW_DATA_PATH;
-        l_BasePath += "/_internal/assets/meshes/";
+        Util::String l_BasePath = Util::get_project().dataPath +
+                                  "/_internal/assets/meshes/";
         {
           Util::Resource::Mesh l_Mesh;
           Util::Resource::load_mesh(l_BasePath + "plane.glb", l_Mesh);

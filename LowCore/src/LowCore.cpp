@@ -31,6 +31,7 @@
 
 #include "LowRenderer.h"
 
+#include "LowUtil.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilString.h"
 #include "LowUtilLogger.h"
@@ -65,7 +66,7 @@ namespace Low {
     {
 
       float l_UpdateTime = 8.0f;
-      Util::String l_DataPath = LOW_DATA_PATH;
+      Util::String l_DataPath = Util::get_project().dataPath;
       l_UpdateTime = 1.0f;
 
       g_FilesystemWatchers.scriptDirectory =
@@ -211,7 +212,7 @@ namespace Low {
     static void load_mesh_resources()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\resources\\meshes";
+          Util::get_project().dataPath + "\\resources\\meshes";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -229,7 +230,7 @@ namespace Low {
     static void load_texture2d_resources()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\resources\\img2d";
+          Util::get_project().dataPath + "\\resources\\img2d";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -283,7 +284,7 @@ namespace Low {
     static void load_mesh_assets()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\assets\\meshes";
+          Util::get_project().dataPath + "\\assets\\meshes";
 
       load_mesh_assets_from_directory(l_Path);
     }
@@ -291,7 +292,7 @@ namespace Low {
     static void load_materials()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\assets\\materials";
+          Util::get_project().dataPath + "\\assets\\materials";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -310,7 +311,7 @@ namespace Low {
     static void load_prefabs()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\assets\\prefabs";
+          Util::get_project().dataPath + "\\assets\\prefabs";
 
       load_prefabs_from_directory(l_Path);
     }
@@ -318,7 +319,7 @@ namespace Low {
     static void load_regions()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\assets\\regions";
+          Util::get_project().dataPath + "\\assets\\regions";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -337,7 +338,7 @@ namespace Low {
     static void load_scenes()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\assets\\scenes";
+          Util::get_project().dataPath + "\\assets\\scenes";
 
       Util::List<Util::String> l_FilePaths;
 
@@ -369,7 +370,7 @@ namespace Low {
     static void load_gamemodes()
     {
       Util::String l_Path =
-          Util::String(LOW_DATA_PATH) + "\\assets\\gamemodes";
+          Util::get_project().dataPath + "\\assets\\gamemodes";
 
       Util::List<Util::String> l_FilePaths;
 

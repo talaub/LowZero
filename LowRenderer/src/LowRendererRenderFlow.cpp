@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -176,6 +177,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -215,6 +217,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, steps);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -236,6 +239,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -295,6 +299,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, camera_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -316,6 +321,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, camera_direction);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -337,6 +343,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, camera_fov);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -358,6 +365,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, camera_near_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -379,6 +387,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, camera_far_plane);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -400,6 +409,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, projection_matrix);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -419,6 +429,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, view_matrix);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -437,6 +448,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, directional_light);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -459,6 +471,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlowData, point_lights);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -477,6 +490,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RenderFlowData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -490,6 +504,95 @@ namespace Low {
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = RenderFlow::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Context);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = Interface::Context::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Config);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(clear_renderbojects);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(execute);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(update_dimensions);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Dimensions);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(register_renderobject);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_RenderObject);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+      }
+      {
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_previous_output_image);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Resource::Image::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Step);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
