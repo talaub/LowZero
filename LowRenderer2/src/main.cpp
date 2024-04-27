@@ -41,6 +41,7 @@ Low::Math::UVector2 g_Dimensions{1700, 900};
 
 void draw()
 {
+  Low::Renderer::Vulkan::draw();
 }
 
 bool stop_rendering = false;

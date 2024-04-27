@@ -15,6 +15,8 @@ set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders
 
 set(IMGUIZMO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/ImGuizmo")
 
+set(VMA_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/VulkanMemoryAllocator")
+
 SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui.cpp"
   "${IMGUI_PATH}/imgui_draw.cpp"
@@ -68,6 +70,7 @@ target_compile_definitions(LowRenderer2 PRIVATE
 
 target_include_directories(LowRenderer2 PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include
+  "${VMA_PATH}/include"
 )
 
 target_include_directories(LowRenderer2 PUBLIC
