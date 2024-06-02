@@ -20,7 +20,8 @@ namespace Low {
     } // namespace Backend
 
     namespace Vulkan {
-      void initialize_callback(Backend::ApiBackendCallback &p_Callbacks);
+      void
+      initialize_callback(Backend::ApiBackendCallback &p_Callbacks);
 
       struct PipelineResourceSignatureInternal
       {
@@ -61,7 +62,8 @@ namespace Low {
         Backend::ImageResource *m_SwapchainRenderTargets;
 
         uint32_t m_PipelineResourceSignatureIndex;
-        PipelineResourceSignatureInternal *m_PipelineResourceSignatures;
+        PipelineResourceSignatureInternal
+            *m_PipelineResourceSignatures;
         uint32_t *m_CommittedPipelineResourceSignatures;
 
         VkDescriptorPool m_ImGuiDescriptorPool;

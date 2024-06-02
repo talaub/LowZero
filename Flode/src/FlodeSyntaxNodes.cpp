@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "LowEditorBase.h"
+#include "LowEditorMainWindow.h"
 
 #include "IconsFontAwesome5.h"
 
@@ -9,6 +10,11 @@ namespace Flode {
   namespace SyntaxNodes {
 
     ImU32 g_SyntaxColor = IM_COL32(138, 46, 119, 255);
+
+    FunctionNode::FunctionNode()
+    {
+      m_Name = N(FlodeFunc);
+    }
 
     Low::Util::String
     FunctionNode::get_name(NodeNameType p_Type) const
@@ -68,6 +74,7 @@ namespace Flode {
         i_ParamNode["name"] = it->name.c_str();
         i_ParamNode["type"] = pin_type_to_string(it->type).c_str();
         i_ParamNode["pin_id"] = it->pinId.Get();
+        i_ParamNode["type_id"] = it->typeId;
 
         p_Node["parameters"].push_back(i_ParamNode);
       }
@@ -90,6 +97,11 @@ namespace Flode {
           i_Param.type =
               string_to_pin_type(LOW_YAML_AS_STRING(i_Node["type"]));
           i_Param.pinId = i_Node["pin_id"].as<u64>();
+
+          i_Param.typeId = 0;
+          if (i_Node["type_id"]) {
+            i_Param.typeId = i_Node["type_id"].as<u16>();
+          }
 
           m_Parameters.push_back(i_Param);
         }
@@ -175,6 +187,8 @@ namespace Flode {
                                      l_Types.data(), l_Types.size());
         ImGui::PopItemWidth();
 
+        bool i_Deleted = false;
+
         if (l_Result) {
           l_Changed = true;
 
@@ -184,11 +198,61 @@ namespace Flode {
 
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_TRASH "")) {
-          it = m_Parameters.erase(it);
           l_Changed = true;
+          i_Deleted = true;
+        } else {
+        }
+
+        if (!i_Deleted) {
+          if (it->type == PinType::Handle) {
+            ImGui::Dummy(ImVec2(100.0f, 0.0f));
+            ImGui::SameLine();
+
+            int i_CurrentTypeValue = 0;
+
+            for (; i_CurrentTypeValue < get_exposed_types().size();
+                 ++i_CurrentTypeValue) {
+              if (get_exposed_types()[i_CurrentTypeValue].typeId ==
+                  it->typeId) {
+                break;
+              }
+            }
+
+            ImGui::PushItemWidth(100.0f);
+            bool i_TypeChanged = ImGui::Combo(
+                "##variableselector", &i_CurrentTypeValue,
+                [](void *data, int n, const char **out_str) {
+                  Low::Editor::TypeMetadata &l_Metadata =
+                      ((Low::Editor::TypeMetadata *)data)[n];
+                  Low::Util::String l_Name = l_Metadata.name.c_str();
+                  *out_str = (char *)malloc(l_Name.size() + 1);
+                  memcpy((void *)*out_str, l_Name.c_str(),
+                         l_Name.size());
+                  (*(char **)out_str)[l_Name.size()] = '\0';
+                  return true;
+                },
+                get_exposed_types().data(),
+                get_exposed_types().size());
+            ImGui::PopItemWidth();
+
+            if (i_TypeChanged) {
+              for (u32 i = 0; i < get_exposed_types().size(); ++i) {
+                if (i == i_CurrentTypeValue) {
+                  it->typeId = get_exposed_types()[i].typeId;
+                  l_Changed = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (i_Deleted) {
+          it = m_Parameters.erase(it);
         } else {
           it++;
         }
+
         l_ParamCount++;
 
         ImGui::PopID();
@@ -227,7 +291,17 @@ namespace Flode {
           p_Builder.append(", ");
         }
 
-        p_Builder.append(pin_type_to_cpp_string(it->type));
+        if (it->type == PinType::Handle) {
+          if (it->typeId == 0) {
+            p_Builder.append("Low::Util::Handle");
+          } else {
+            Low::Editor::TypeMetadata &i_Metadata =
+                Low::Editor::get_type_metadata(it->typeId);
+            p_Builder.append(i_Metadata.fullTypeString);
+          }
+        } else {
+          p_Builder.append(pin_type_to_cpp_string(it->type));
+        }
         p_Builder.append(" ");
 
         p_Builder.append("p_");
@@ -268,7 +342,8 @@ namespace Flode {
 
     Node *function_create_instance()
     {
-      return new FunctionNode;
+      FunctionNode *l_Node = new FunctionNode;
+      return l_Node;
     }
 
     GetVariableNode::GetVariableNode() : m_Variable(nullptr)

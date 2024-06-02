@@ -121,6 +121,15 @@ namespace Low {
 
           return true;
         }
+
+        bool destroy(const Context &p_Context, Image &p_Image)
+        {
+          vkDestroyImageView(p_Context.device, p_Image.imageView,
+                             nullptr);
+          vmaDestroyImage(p_Context.allocator, p_Image.image,
+                          p_Image.allocation);
+          return true;
+        }
       } // namespace ImageUtil
     }   // namespace Vulkan
   }     // namespace Renderer

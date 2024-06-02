@@ -10,7 +10,7 @@ file(GLOB_RECURSE INCLUDES "include/*.h")
 file(GLOB_RECURSE VULKAN_SOURCES "vulkan/src/*.cpp")
 file(GLOB_RECURSE VULKAN_INCLUDES "vulkan/include/*.h")
 
-set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui")
+set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui2")
 set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders")
 
 set(IMGUIZMO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/ImGuizmo")
@@ -23,8 +23,8 @@ SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui_demo.cpp"
   "${IMGUI_PATH}/imgui_tables.cpp"
   "${IMGUI_PATH}/imgui_widgets.cpp"
-  "${IMGUI_PATH}/imgui_stacklayout.cpp"
-  "${IMGUI_PATH}/backends/imgui_impl_glfw.cpp"
+  #"${IMGUI_PATH}/imgui_stacklayout.cpp"
+  "${IMGUI_PATH}/backends/imgui_impl_sdl2.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_vulkan.cpp"
 )
 
@@ -37,7 +37,7 @@ SET(IMGUIZMO_SOURCES
 )
   
 add_executable(LowRenderer2 
-  #${IMGUI_SOURCES}
+  ${IMGUI_SOURCES}
   #${IMGUIZMO_SOURCES}
   ${VULKAN_SOURCES}
   ${VULKAN_INCLUDES}
@@ -66,6 +66,7 @@ target_compile_definitions(LowRenderer2 PRIVATE
   LOW_MODULE_NAME="lowrenderer2"
   lowrenderer2_EXPORTS
   LOW_RENDERER_API_VULKAN
+  IMGUI_USER_CONFIG="${LOW_SOURCE_PATH}/LowRenderer2/include/LowRendererImguiConfig.h"
 )
 
 target_include_directories(LowRenderer2 PRIVATE

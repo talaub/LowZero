@@ -60,3 +60,6 @@
 [submodule "LowDependencies/vk-bootstrap"]
 	path = LowDependencies/vk-bootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap.git
+[submodule "LowDependencies/imgui2"]
+	path = LowDependencies/imgui2
+	url = https://github.com/ocornut/imgui.git

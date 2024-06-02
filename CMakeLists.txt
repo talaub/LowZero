@@ -71,7 +71,6 @@ add_compile_definitions(
   LOW_EDITOR_BUILD
   IMGUI_DEFINE_MATH_OPERATORS
   LOW_DATA_PATH="./data"
-  IMGUI_USER_CONFIG="${LOW_SOURCE_PATH}/LowRenderer/include/LowRendererImguiConfig.h"
   PX_PHYSX_STATIC_LIB
   DISABLE_CUDA_PHYSX
   PX_COOKING
@@ -84,7 +83,6 @@ add_compile_definitions(
   LOW_EDITOR_BUILD
   IMGUI_DEFINE_MATH_OPERATORS
   #LOW_DATA_PATH="../../../misteda/data"
-  IMGUI_USER_CONFIG="${LOW_SOURCE_PATH}/LowRenderer/include/LowRendererImguiConfig.h"
   #  LOW_RENDERER_COMPILE_SHADERS
   LOW_RENDERER_VALIDATION_ENABLED
   LOW_COLOR_LOG

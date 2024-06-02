@@ -184,6 +184,48 @@ namespace Low {
 
           return l_Info;
         }
+
+        VkRenderingAttachmentInfo
+        attachment_info(VkImageView p_View, VkClearValue *p_Clear,
+                        VkImageLayout p_Layout)
+        {
+          VkRenderingAttachmentInfo l_ColorAttachment{};
+          l_ColorAttachment.sType =
+              VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+          l_ColorAttachment.pNext = nullptr;
+
+          l_ColorAttachment.imageView = p_View;
+          l_ColorAttachment.imageLayout = p_Layout;
+          l_ColorAttachment.loadOp = p_Clear
+                                         ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                         : VK_ATTACHMENT_LOAD_OP_LOAD;
+          l_ColorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+          if (p_Clear) {
+            l_ColorAttachment.clearValue = *p_Clear;
+          }
+
+          return l_ColorAttachment;
+        }
+
+        VkRenderingInfo
+        rendering_info(VkExtent2D p_RenderExtent,
+                       VkRenderingAttachmentInfo *p_ColorAttachment,
+                       VkRenderingAttachmentInfo *p_DepthAttachment)
+        {
+          VkRenderingInfo l_RenderInfo{};
+          l_RenderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+          l_RenderInfo.pNext = nullptr;
+
+          l_RenderInfo.renderArea =
+              VkRect2D{VkOffset2D{0, 0}, p_RenderExtent};
+          l_RenderInfo.layerCount = 1;
+          l_RenderInfo.colorAttachmentCount = 1;
+          l_RenderInfo.pColorAttachments = p_ColorAttachment;
+          l_RenderInfo.pDepthAttachment = p_DepthAttachment;
+          l_RenderInfo.pStencilAttachment = nullptr;
+
+          return l_RenderInfo;
+        }
       } // namespace InitUtil
     }   // namespace Vulkan
   }     // namespace Renderer

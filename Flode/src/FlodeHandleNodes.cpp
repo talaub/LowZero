@@ -233,16 +233,15 @@ namespace Flode {
       u32 l_PinOffset = 2;
 
       if (m_FunctionMetadata.isStatic) {
-        p_Builder.append(m_TypeMetadata.fullTypeString);
+        p_Builder.append(m_TypeMetadata.fullTypeString).append("::");
       } else {
         compile_input_pin(p_Builder, pins[l_PinOffset]->id);
+        p_Builder.append(".");
 
         l_PinOffset += 1;
       }
 
-      p_Builder.append("::")
-          .append(m_FunctionMetadata.name)
-          .append("(");
+      p_Builder.append(m_FunctionMetadata.name).append("(");
 
       for (u32 i = 0; i < m_FunctionMetadata.parameters.size(); ++i) {
         if (i) {

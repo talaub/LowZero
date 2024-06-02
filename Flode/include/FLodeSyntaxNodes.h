@@ -13,7 +13,10 @@ namespace Flode {
         Low::Util::Name name;
         PinType type;
         NodeEd::PinId pinId;
+        u16 typeId;
       };
+
+      FunctionNode();
 
       Low::Util::String get_name(NodeNameType p_Type) const override;
 

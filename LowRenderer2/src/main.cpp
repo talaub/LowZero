@@ -9,8 +9,9 @@
 
 #include "LowRendererCompatibility.h"
 
-#include "LowRendererBackend.h"
-#include "LowRendererVulkanBase.h"
+#include "LowRenderer.h"
+
+#include "imgui_impl_sdl2.h"
 
 void *operator new[](size_t size, const char *pName, int flags,
                      unsigned debugFlags, const char *file, int line)
@@ -41,7 +42,7 @@ Low::Math::UVector2 g_Dimensions{1700, 900};
 
 void draw()
 {
-  Low::Renderer::Vulkan::draw();
+  Low::Renderer::tick(0.0f);
 }
 
 bool stop_rendering = false;
@@ -67,6 +68,8 @@ void run()
           stop_rendering = false;
         }
       }
+
+      ImGui_ImplSDL2_ProcessEvent(&e);
     }
 
     // do not draw if we are minimized
@@ -76,18 +79,20 @@ void run()
       continue;
     }
 
+    Low::Renderer::check_window_resize(0.0f);
+
     draw();
   }
 }
 
 void init()
 {
-  Low::Renderer::Vulkan::initialize(g_Dimensions);
+  Low::Renderer::initialize();
 }
 
 void cleanup()
 {
-  Low::Renderer::Vulkan::cleanup();
+  Low::Renderer::cleanup();
 }
 
 int main()
@@ -96,7 +101,8 @@ int main()
 
   SDL_Init(SDL_INIT_VIDEO);
 
-  SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN);
+  SDL_WindowFlags window_flags =
+      (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE);
 
   g_MainWindow.sdlwindow =
       SDL_CreateWindow("LowRenderer2", SDL_WINDOWPOS_UNDEFINED,

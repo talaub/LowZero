@@ -4,6 +4,8 @@
 
 #include "LowMath.h"
 
+#include "LowRendererVulkan.h"
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -20,6 +22,8 @@ namespace Low {
         bool cmd_clear_color(VkCommandBuffer p_Cmd, VkImage p_Image,
                              VkImageLayout p_ImageLayout,
                              Math::Color p_Color);
+
+        bool destroy(const Context &p_Context, Image &p_Image);
       } // namespace ImageUtil
     }   // namespace Vulkan
   }     // namespace Renderer

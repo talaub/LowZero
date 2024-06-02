@@ -98,6 +98,8 @@ namespace Low {
           printf("\x1B[33mWARN \033[0m\t");
         } else if (p_LogLevel == LogLevel::ERROR) {
           printf("\x1B[31mERROR \033[0m\t");
+        } else if (p_LogLevel == LogLevel::FATAL) {
+          printf("\x1B[31mFATAL \033[0m\t");
         } else if (p_LogLevel == LogLevel::PROFILE) {
           printf("\x1B[35mPRFLR\033[0m\t");
         }
@@ -110,6 +112,8 @@ namespace Low {
           printf("WARN \t");
         } else if (p_LogLevel == LogLevel::ERROR) {
           printf("ERROR \t");
+        } else if (p_LogLevel == LogLevel::FATAL) {
+          printf("FATAL \t");
         } else if (p_LogLevel == LogLevel::PROFILE) {
           printf("PRFLR\t");
         }
@@ -182,6 +186,8 @@ namespace Low {
           l_Content += "WARN \t";
         } else if (p_Entry.level == LogLevel::ERROR) {
           l_Content += "ERROR \t";
+        } else if (p_Entry.level == LogLevel::FATAL) {
+          l_Content += "FATAL \t";
         } else if (p_Entry.level == LogLevel::PROFILE) {
           l_Content += "PRFLR\t";
         }
