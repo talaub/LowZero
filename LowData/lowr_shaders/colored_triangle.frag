@@ -9,5 +9,5 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
 	//return red
-	outFragColor = vec4(inColor * 0.1,1.0);
+	outFragColor = vec4(inColor * 0.5,1.0);
 }

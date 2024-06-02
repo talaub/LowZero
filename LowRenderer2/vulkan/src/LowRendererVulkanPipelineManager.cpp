@@ -14,8 +14,31 @@ namespace Low {
 
         Util::Map<Util::String, u64> g_SourceTimes;
 
+        Util::Map<Util::String, Util::String> g_SourceOutMapping;
+
+        static bool compile_shader(Util::String p_SourcePath,
+                                   Util::String p_OutPath)
+        {
+          Util::String l_Command =
+              "glslc " + p_SourcePath + " -o " + p_OutPath;
+
+          Util::String l_Notice = "Compiling shader " + p_SourcePath;
+
+          LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
+          system(l_Command.c_str());
+
+          return true;
+        }
+
+        static bool compile_shader(Util::String p_SourcePath)
+        {
+          return compile_shader(p_SourcePath,
+                                g_SourceOutMapping[p_SourcePath]);
+        }
+
         bool compile_graphics_pipeline(Context &p_Context,
-                                       Pipeline p_Pipeline)
+                                       Pipeline p_Pipeline,
+                                       bool p_CompileShaders)
         {
           PipelineUtil::GraphicsPipelineBuilder &l_Builder =
               g_GraphicsPipelines[p_Pipeline];
@@ -25,27 +48,9 @@ namespace Low {
                             p_Pipeline.get_pipeline(), nullptr);
 
           // #if LOW_RENDERER_COMPILE_SHADERS
-          {
-            Util::String l_Command =
-                "glslc " + l_Builder.vertexShaderPath + " -o " +
-                l_Builder.vertexSpirvPath;
-
-            Util::String l_Notice =
-                "Compiling shader " + l_Builder.vertexShaderPath;
-
-            LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
-            system(l_Command.c_str());
-          }
-          {
-            Util::String l_Command =
-                "glslc " + l_Builder.fragmentShaderPath + " -o " +
-                l_Builder.fragmentSpirvPath;
-
-            Util::String l_Notice =
-                "Compiling shader " + l_Builder.fragmentShaderPath;
-
-            LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
-            system(l_Command.c_str());
+          if (p_CompileShaders) {
+            compile_shader(l_Builder.vertexShaderPath);
+            compile_shader(l_Builder.fragmentShaderPath);
           }
           // #endif
 
@@ -78,6 +83,11 @@ namespace Low {
               Util::FileIO::modified_sync(
                   p_Builder.fragmentShaderPath.c_str());
 
+          g_SourceOutMapping[p_Builder.vertexShaderPath] =
+              p_Builder.vertexSpirvPath;
+          g_SourceOutMapping[p_Builder.fragmentShaderPath] =
+              p_Builder.fragmentSpirvPath;
+
           compile_graphics_pipeline(p_Context, p_Pipeline);
 
           return true;
@@ -105,7 +115,9 @@ namespace Low {
             if (i_GraphicsSourcesEntry != g_GraphicsSources.end()) {
               Pipeline i_Pipeline = i_GraphicsSourcesEntry->second;
 
-              compile_graphics_pipeline(p_Context, i_Pipeline);
+              compile_shader(i_SourcePath);
+
+              compile_graphics_pipeline(p_Context, i_Pipeline, false);
             }
           }
 
