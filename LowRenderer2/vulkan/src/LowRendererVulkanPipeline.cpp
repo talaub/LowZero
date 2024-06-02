@@ -2,8 +2,10 @@
 
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanBase.h"
+#include "LowRendererVulkanPipelineManager.h"
 
 #include "LowUtilContainers.h"
+#include "LowUtil.h"
 
 #include <fstream>
 
@@ -92,7 +94,7 @@ namespace Low {
           return l_Info;
         }
 
-        void PipelineBuilder::clear()
+        void GraphicsPipelineBuilder::clear()
         {
           inputAssembly = {
               .sType =
@@ -121,8 +123,25 @@ namespace Low {
           shaderStages.clear();
         }
 
-        VkPipeline PipelineBuilder::build_pipeline(VkDevice p_Device)
+        Pipeline
+        GraphicsPipelineBuilder::register_pipeline(Context &p_Context)
         {
+          Pipeline l_Pipeline = Pipeline::make(p_Context);
+
+          l_Pipeline.set_layout(pipelineLayout);
+
+          PipelineManager::register_graphics_pipeline(
+              p_Context, l_Pipeline, *this);
+
+          return l_Pipeline;
+        }
+
+        VkPipeline
+        GraphicsPipelineBuilder::build_pipeline(VkDevice p_Device)
+        {
+          renderInfo.colorAttachmentCount = 1;
+          renderInfo.pColorAttachmentFormats = &colorAttachmentFormat;
+
           VkPipelineViewportStateCreateInfo l_ViewportState = {};
           l_ViewportState.sType =
               VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -183,15 +202,64 @@ namespace Low {
             LOW_LOG_ERROR << "Failed to create graphics pipeline"
                           << LOW_LOG_END;
 
+            clear_shader_modules(p_Device);
+
             return VK_NULL_HANDLE;
           } else {
+            clear_shader_modules(p_Device);
+
             return l_NewPipeline;
           }
         }
 
+        void GraphicsPipelineBuilder::clear_shader_modules(
+            VkDevice p_Device)
+        {
+          for (auto it = shaderStages.begin();
+               it != shaderStages.end(); ++it) {
+            vkDestroyShaderModule(p_Device, it->module, nullptr);
+          }
+
+          shaderStages.clear();
+        }
+
+        void GraphicsPipelineBuilder::set_shaders(
+            Context &p_Context, Util::String p_VertexShader,
+            Util::String p_FragmentShader, bool p_Project)
+        {
+          vertexShaderPath = Util::get_project().engineDataPath +
+                             "/lowr_shaders/" + p_VertexShader;
+          fragmentShaderPath = Util::get_project().engineDataPath +
+                               "/lowr_shaders/" + p_FragmentShader;
+
+          vertexSpirvPath = Util::get_project().engineDataPath +
+                            "/lowr_spirv/" + p_VertexShader + ".spv";
+          fragmentSpirvPath = Util::get_project().engineDataPath +
+                              "/lowr_spirv/" + p_FragmentShader +
+                              ".spv";
+        }
+
         void
-        PipelineBuilder::set_shaders(VkShaderModule p_VertexShader,
-                                     VkShaderModule p_FragmentShader)
+        GraphicsPipelineBuilder::update_shaders(Context &p_Context)
+        {
+          VkShaderModule l_FragShader;
+          LOW_ASSERT(PipelineUtil::load_shader_module(
+                         fragmentSpirvPath.c_str(), p_Context.device,
+                         &l_FragShader),
+                     "Failed to load fragment shader");
+
+          VkShaderModule l_VertShader;
+          LOW_ASSERT(PipelineUtil::load_shader_module(
+                         vertexSpirvPath.c_str(), p_Context.device,
+                         &l_VertShader),
+                     "Failed to load vertex shader");
+
+          set_shaders(l_VertShader, l_FragShader);
+        }
+
+        void GraphicsPipelineBuilder::set_shaders(
+            VkShaderModule p_VertexShader,
+            VkShaderModule p_FragmentShader)
         {
           shaderStages.clear();
 
@@ -204,7 +272,7 @@ namespace Low {
                   VK_SHADER_STAGE_FRAGMENT_BIT, p_FragmentShader));
         }
 
-        void PipelineBuilder::set_input_topology(
+        void GraphicsPipelineBuilder::set_input_topology(
             VkPrimitiveTopology p_Topology)
         {
           inputAssembly.topology = p_Topology;
@@ -212,22 +280,21 @@ namespace Low {
           inputAssembly.primitiveRestartEnable = VK_FALSE;
         }
 
-        void PipelineBuilder::set_polygon_mode(VkPolygonMode p_Mode,
-                                               float p_LineWidth)
+        void GraphicsPipelineBuilder::set_polygon_mode(
+            VkPolygonMode p_Mode, float p_LineWidth)
         {
           rasterizer.polygonMode = p_Mode;
           rasterizer.lineWidth = p_LineWidth;
         }
 
-        void
-        PipelineBuilder::set_cull_mode(VkCullModeFlags p_CullMode,
-                                       VkFrontFace p_FrontFace)
+        void GraphicsPipelineBuilder::set_cull_mode(
+            VkCullModeFlags p_CullMode, VkFrontFace p_FrontFace)
         {
           rasterizer.cullMode = p_CullMode;
           rasterizer.frontFace = p_FrontFace;
         }
 
-        void PipelineBuilder::set_multismapling_none()
+        void GraphicsPipelineBuilder::set_multismapling_none()
         {
           multisampling.sampleShadingEnable = false;
           multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -237,7 +304,7 @@ namespace Low {
           multisampling.alphaToOneEnable = VK_FALSE;
         }
 
-        void PipelineBuilder::disable_blending()
+        void GraphicsPipelineBuilder::disable_blending()
         {
           colorBlendAttachment.colorWriteMask =
               VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -245,7 +312,7 @@ namespace Low {
           colorBlendAttachment.blendEnable = VK_FALSE;
         }
 
-        void PipelineBuilder::set_color_attachment_format(
+        void GraphicsPipelineBuilder::set_color_attachment_format(
             VkFormat p_Format)
         {
           // TODO: Most likely revisit to allow drawing to multiple
@@ -255,12 +322,13 @@ namespace Low {
           renderInfo.pColorAttachmentFormats = &colorAttachmentFormat;
         }
 
-        void PipelineBuilder::set_depth_format(VkFormat p_Format)
+        void
+        GraphicsPipelineBuilder::set_depth_format(VkFormat p_Format)
         {
           renderInfo.depthAttachmentFormat = p_Format;
         }
 
-        void PipelineBuilder::disable_depth_test()
+        void GraphicsPipelineBuilder::disable_depth_test()
         {
           depthStencil.depthTestEnable = VK_FALSE;
           depthStencil.depthWriteEnable = VK_FALSE;

@@ -34,14 +34,6 @@ namespace Low {
         const bool g_ValidationEnabled = false;
 #endif
 
-        struct ComputePushConstants
-        {
-          Math::Vector4 data1;
-          Math::Vector4 data2;
-          Math::Vector4 data3;
-          Math::Vector4 data4;
-        };
-
         bool swapchain_cleanup(Swapchain &p_Swapchain);
 
         bool device_init(Context &p_Context)
@@ -353,138 +345,6 @@ namespace Low {
           return true;
         }
 
-        bool bg_pipelines_init(Context &p_Context)
-        {
-          VkPipelineLayoutCreateInfo l_ComputeLayout{};
-          l_ComputeLayout.sType =
-              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-          l_ComputeLayout.pNext = nullptr;
-          l_ComputeLayout.pSetLayouts =
-              &p_Context.drawImageDescriptorLayout;
-          l_ComputeLayout.setLayoutCount = 1;
-
-          VkPushConstantRange l_PushConstant{};
-          l_PushConstant.offset = 0;
-          l_PushConstant.size = sizeof(ComputePushConstants);
-          l_PushConstant.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-          l_ComputeLayout.pPushConstantRanges = &l_PushConstant;
-          l_ComputeLayout.pushConstantRangeCount = 1;
-
-          LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-              p_Context.device, &l_ComputeLayout, nullptr,
-              &p_Context.gradientPipelineLayout));
-
-          Util::String l_ComputeShaderPath =
-              Util::get_project().engineDataPath +
-              "/lowr_shaders/gradient_color.comp.spv";
-
-          VkShaderModule l_ComputeDrawShader;
-          if (!PipelineUtil::load_shader_module(
-                  l_ComputeShaderPath.c_str(), p_Context.device,
-                  &l_ComputeDrawShader)) {
-            LOW_LOG_ERROR << "Could not find shader file"
-                          << LOW_LOG_END;
-            return false;
-          }
-
-          VkPipelineShaderStageCreateInfo l_StageInfo{};
-          l_StageInfo.sType =
-              VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-          l_StageInfo.pNext = nullptr;
-          l_StageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-          l_StageInfo.module = l_ComputeDrawShader;
-          l_StageInfo.pName = "main";
-
-          VkComputePipelineCreateInfo l_ComputePipelineCreateInfo{};
-          l_ComputePipelineCreateInfo.sType =
-              VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-          l_ComputePipelineCreateInfo.pNext = nullptr;
-          l_ComputePipelineCreateInfo.layout =
-              p_Context.gradientPipelineLayout;
-          l_ComputePipelineCreateInfo.stage = l_StageInfo;
-
-          LOWR_VK_CHECK_RETURN(vkCreateComputePipelines(
-              p_Context.device, VK_NULL_HANDLE, 1,
-              &l_ComputePipelineCreateInfo, nullptr,
-              &p_Context.gradientPipeline));
-
-          // Destroying the shader module
-          vkDestroyShaderModule(p_Context.device, l_ComputeDrawShader,
-                                nullptr);
-
-          return true;
-        }
-
-        bool triangle_pipeline_init(Context &p_Context)
-        {
-          Util::String l_FragmentShaderPath =
-              Util::get_project().engineDataPath +
-              "/lowr_shaders/colored_triangle.frag.spv";
-          Util::String l_VertexShaderPath =
-              Util::get_project().engineDataPath +
-              "/lowr_shaders/colored_triangle.vert.spv";
-
-          VkShaderModule l_TriangleFragShader;
-          LOWR_VK_ASSERT_RETURN(PipelineUtil::load_shader_module(
-                                    l_FragmentShaderPath.c_str(),
-                                    p_Context.device,
-                                    &l_TriangleFragShader),
-                                "Failed to load fragment shader");
-
-          VkShaderModule l_TriangleVertShader;
-          LOWR_VK_ASSERT_RETURN(PipelineUtil::load_shader_module(
-                                    l_VertexShaderPath.c_str(),
-                                    p_Context.device,
-                                    &l_TriangleVertShader),
-                                "Failed to load vertex shader");
-
-          VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
-              PipelineUtil::layout_create_info();
-          LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
-              p_Context.device, &l_PipelineLayoutInfo, nullptr,
-              &p_Context.trianglePipelineLayout));
-
-          // Create pipeline
-          PipelineUtil::PipelineBuilder l_Builder;
-          l_Builder.pipelineLayout = p_Context.trianglePipelineLayout;
-          l_Builder.set_shaders(l_TriangleVertShader,
-                                l_TriangleFragShader);
-          l_Builder.set_input_topology(
-              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-          l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
-          l_Builder.set_cull_mode(VK_CULL_MODE_NONE,
-                                  VK_FRONT_FACE_CLOCKWISE);
-          l_Builder.set_multismapling_none();
-          l_Builder.disable_blending();
-          l_Builder.disable_depth_test();
-
-          l_Builder.set_color_attachment_format(
-              p_Context.swapchain.drawImage.format);
-          l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
-
-          p_Context.trianglePipeline =
-              l_Builder.build_pipeline(p_Context.device);
-
-          // Destroy shader modules
-          vkDestroyShaderModule(p_Context.device,
-                                l_TriangleFragShader, nullptr);
-          vkDestroyShaderModule(p_Context.device,
-                                l_TriangleVertShader, nullptr);
-
-          return true;
-        }
-
-        bool pipelines_init(Context &p_Context)
-        {
-          bool l_Result = bg_pipelines_init(p_Context);
-          if (l_Result) {
-            l_Result = triangle_pipeline_init(p_Context);
-          }
-
-          return l_Result;
-        }
-
         bool imgui_init(Context &p_Context)
         {
           VkDescriptorPoolSize l_PoolSizes[] = {
@@ -578,13 +438,6 @@ namespace Low {
           LOWR_VK_ASSERT(descriptors_init(p_Context),
                          "Could not initialize descriptors");
 
-          // TODO: Most likely temporary
-          // There may be quite a few global pipelines but they
-          // probably should not be initialized here. This is just for
-          // testing
-          LOWR_VK_ASSERT(pipelines_init(p_Context),
-                         "Could not initialize pipelines");
-
           LOWR_VK_ASSERT(imgui_init(p_Context),
                          "Could not initialize imgui");
         }
@@ -645,36 +498,6 @@ namespace Low {
           return true;
         }
 
-        bool bg_pipelines_cleanup(const Context &p_Context)
-        {
-          vkDestroyPipelineLayout(p_Context.device,
-                                  p_Context.gradientPipelineLayout,
-                                  nullptr);
-          vkDestroyPipeline(p_Context.device,
-                            p_Context.gradientPipeline, nullptr);
-
-          return true;
-        }
-
-        bool triangle_pipeline_cleanup(const Context &p_Context)
-        {
-          vkDestroyPipelineLayout(p_Context.device,
-                                  p_Context.trianglePipelineLayout,
-                                  nullptr);
-          vkDestroyPipeline(p_Context.device,
-                            p_Context.trianglePipeline, nullptr);
-
-          return true;
-        }
-
-        bool pipelines_cleanup(const Context &p_Context)
-        {
-          bg_pipelines_cleanup(p_Context);
-          triangle_pipeline_cleanup(p_Context);
-
-          return true;
-        }
-
         bool imgui_cleanup(const Context &p_Context)
         {
           ImGui_ImplVulkan_Shutdown();
@@ -701,9 +524,6 @@ namespace Low {
 
           LOWR_VK_ASSERT_RETURN(imgui_cleanup(p_Context),
                                 "Failed to cleanup imgui");
-
-          LOWR_VK_ASSERT_RETURN(pipelines_cleanup(p_Context),
-                                "Failed to cleanup pipelines");
 
           LOWR_VK_ASSERT_RETURN(descriptors_cleanup(p_Context),
                                 "Failed to cleanup descriptors");
@@ -745,56 +565,6 @@ namespace Low {
           return true;
         }
 
-        bool geometry_draw(Context &p_Context)
-        {
-          VkCommandBuffer l_Cmd =
-              p_Context.get_current_frame().mainCommandBuffer;
-
-          // begin a render pass  connected to our draw image
-          VkRenderingAttachmentInfo l_ColorAttachment =
-              InitUtil::attachment_info(
-                  p_Context.swapchain.drawImage.imageView, nullptr,
-                  VK_IMAGE_LAYOUT_GENERAL);
-
-          VkRenderingInfo l_RenderInfo =
-              InitUtil::rendering_info(p_Context.swapchain.drawExtent,
-                                       &l_ColorAttachment, nullptr);
-          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
-
-          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            p_Context.trianglePipeline);
-
-          // set dynamic viewport and scissor
-          VkViewport l_Viewport = {};
-          l_Viewport.x = 0;
-          l_Viewport.y = 0;
-          l_Viewport.width = static_cast<float>(
-              p_Context.swapchain.drawExtent.width);
-          l_Viewport.height = static_cast<float>(
-              p_Context.swapchain.drawExtent.height);
-          l_Viewport.minDepth = 0.f;
-          l_Viewport.maxDepth = 1.f;
-
-          vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
-
-          VkRect2D l_Scissor = {};
-          l_Scissor.offset.x = 0;
-          l_Scissor.offset.y = 0;
-          l_Scissor.extent.width =
-              p_Context.swapchain.drawExtent.width;
-          l_Scissor.extent.height =
-              p_Context.swapchain.drawExtent.height;
-
-          vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
-
-          // launch a draw command to draw 3 vertices
-          vkCmdDraw(l_Cmd, 3, 1, 0, 0);
-
-          vkCmdEndRendering(l_Cmd);
-
-          return true;
-        }
-
         bool imgui_draw(Context &p_Context,
                         VkImageView p_TargetImageView)
         {
@@ -819,8 +589,9 @@ namespace Low {
           return true;
         }
 
-        bool context_draw(Context &p_Context)
+        bool context_prepare_draw(Context &p_Context)
         {
+
           // Wait for fence and reset right after
           LOWR_VK_CHECK_RETURN(vkWaitForFences(
               p_Context.device, 1,
@@ -837,9 +608,11 @@ namespace Low {
               100000000,
               p_Context.get_current_frame().swapchainSemaphore,
               nullptr, &l_SwapchainImageIndex);
+          p_Context.swapchain.imageIndex = l_SwapchainImageIndex;
 
           if (l_Result == VK_ERROR_OUT_OF_DATE_KHR) {
             p_Context.requireResize = true;
+            LOW_LOG_DEBUG << "Require resize" << LOW_LOG_END;
             return false;
           }
 
@@ -865,78 +638,36 @@ namespace Low {
           LOWR_VK_CHECK_RETURN(
               vkBeginCommandBuffer(l_Cmd, &l_CmdBeginInfo));
 
-          ImageUtil::cmd_transition(
-              l_Cmd, p_Context.swapchain.drawImage.image,
-              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+          return true;
+        }
 
-#if 0
-        float l_Flash = abs(sin(p_Context.frameNumber / 120.f));
-        Math::Color l_ClearColor = {0.0f, 0.0f, l_Flash, 1.0f};
-
-        ImageUtil::cmd_clear_color(
-            l_Cmd, p_Context.swapchain.drawImage.image,
-            VK_IMAGE_LAYOUT_GENERAL, l_ClearColor);
-#else
-          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-                            p_Context.gradientPipeline);
-
-          vkCmdBindDescriptorSets(
-              l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
-              p_Context.gradientPipelineLayout, 0, 1,
-              &p_Context.drawImageDescriptors, 0, nullptr);
-
-          ComputePushConstants l_PushConstants;
-          l_PushConstants.data1 = Math::Vector4(1, 0, 0, 1);
-          l_PushConstants.data2 = Math::Vector4(0, 0, 1, 1);
-
-          vkCmdPushConstants(l_Cmd, p_Context.gradientPipelineLayout,
-                             VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                             sizeof(ComputePushConstants),
-                             &l_PushConstants);
-
-          vkCmdDispatch(
-              l_Cmd,
-              static_cast<u32>(std::ceil(l_DrawExtent.width / 16.0)),
-              static_cast<u32>(
-                  std::ceil(l_DrawExtent.height / 16.0f)),
-              1);
-#endif
-
-          ImageUtil::cmd_transition(
-              l_Cmd, p_Context.swapchain.drawImage.image,
-              VK_IMAGE_LAYOUT_GENERAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-          geometry_draw(p_Context);
-
-          ImageUtil::cmd_transition(
-              l_Cmd, p_Context.swapchain.drawImage.image,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-          ImageUtil::cmd_transition(
-              l_Cmd,
-              p_Context.swapchain.images[l_SwapchainImageIndex],
-              VK_IMAGE_LAYOUT_UNDEFINED,
-              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        bool context_present(Context &p_Context)
+        {
+          VkCommandBuffer l_Cmd =
+              p_Context.get_current_frame().mainCommandBuffer;
 
           ImageUtil::cmd_copy2D(
               l_Cmd, p_Context.swapchain.drawImage.image,
-              p_Context.swapchain.images[l_SwapchainImageIndex],
-              l_DrawExtent, p_Context.swapchain.extent);
+              p_Context.swapchain
+                  .images[p_Context.swapchain.imageIndex],
+              p_Context.swapchain.drawExtent,
+              p_Context.swapchain.extent);
 
           ImageUtil::cmd_transition(
               l_Cmd,
-              p_Context.swapchain.images[l_SwapchainImageIndex],
+              p_Context.swapchain
+                  .images[p_Context.swapchain.imageIndex],
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-          imgui_draw(
-              p_Context,
-              p_Context.swapchain.imageViews[l_SwapchainImageIndex]);
+          imgui_draw(p_Context,
+                     p_Context.swapchain
+                         .imageViews[p_Context.swapchain.imageIndex]);
 
           ImageUtil::cmd_transition(
               l_Cmd,
-              p_Context.swapchain.images[l_SwapchainImageIndex],
+              p_Context.swapchain
+                  .images[p_Context.swapchain.imageIndex],
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -971,25 +702,19 @@ namespace Low {
               &p_Context.get_current_frame().renderSemaphore;
           l_PresentInfo.waitSemaphoreCount = 1;
 
-          l_PresentInfo.pImageIndices = &l_SwapchainImageIndex;
+          l_PresentInfo.pImageIndices =
+              &p_Context.swapchain.imageIndex;
 
           VkResult l_PresentResult = vkQueuePresentKHR(
               p_Context.graphicsQueue, &l_PresentInfo);
 
           if (l_PresentResult == VK_ERROR_OUT_OF_DATE_KHR) {
+            LOW_LOG_DEBUG << "Require resize" << LOW_LOG_END;
             p_Context.requireResize = true;
           }
 
           // increase the number of frames drawn
           p_Context.frameNumber++;
-
-          return true;
-        }
-
-        bool draw(Context &p_Context)
-        {
-          LOWR_VK_ASSERT(context_draw(p_Context), "Failed to draw");
-          return true;
         }
       } // namespace Base
     }   // namespace Vulkan

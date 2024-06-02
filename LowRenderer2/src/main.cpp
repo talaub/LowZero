@@ -42,7 +42,7 @@ Low::Math::UVector2 g_Dimensions{1700, 900};
 
 void draw()
 {
-  Low::Renderer::tick(0.0f);
+  Low::Renderer::tick(0.1f);
 }
 
 bool stop_rendering = false;

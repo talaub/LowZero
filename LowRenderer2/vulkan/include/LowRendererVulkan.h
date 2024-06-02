@@ -49,6 +49,8 @@ namespace Low {
 
         Image drawImage;
         VkExtent2D drawExtent;
+
+        u32 imageIndex;
       };
 
       struct Context
@@ -88,16 +90,6 @@ namespace Low {
         // when the time comes
         VkDescriptorSet drawImageDescriptors;
         VkDescriptorSetLayout drawImageDescriptorLayout;
-
-        // TODO: They are very specific right now. Just for testing.
-        // Please remove at some point in the future
-        VkPipeline gradientPipeline;
-        VkPipelineLayout gradientPipelineLayout;
-
-        // TODO: They are very specific right now. Just for testing.
-        // Please remove at some point in the future
-        VkPipelineLayout trianglePipelineLayout;
-        VkPipeline trianglePipeline;
       };
 
       struct AllocatedBuffer

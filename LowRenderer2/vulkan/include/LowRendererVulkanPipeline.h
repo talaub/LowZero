@@ -4,6 +4,8 @@
 
 #include "LowUtilContainers.h"
 
+#include "LowRendererVkPipeline.h"
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -19,7 +21,7 @@ namespace Low {
                                  VkShaderModule p_ShaderModule,
                                  const char *p_Entry = "main");
 
-        struct PipelineBuilder
+        struct GraphicsPipelineBuilder
         {
           Util::List<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -32,7 +34,13 @@ namespace Low {
           VkPipelineRenderingCreateInfo renderInfo;
           VkFormat colorAttachmentFormat;
 
-          PipelineBuilder()
+          Util::String vertexShaderPath;
+          Util::String fragmentShaderPath;
+
+          Util::String vertexSpirvPath;
+          Util::String fragmentSpirvPath;
+
+          GraphicsPipelineBuilder()
           {
             clear();
           }
@@ -41,8 +49,8 @@ namespace Low {
 
           VkPipeline build_pipeline(VkDevice p_Device);
 
-          void set_shaders(VkShaderModule p_VertexShader,
-                           VkShaderModule p_FragmentShader);
+          Pipeline register_pipeline(Context &p_Context);
+
           void set_input_topology(VkPrimitiveTopology p_Topology);
           void set_polygon_mode(VkPolygonMode p_Mode,
                                 float p_LineWidth = 1.0f);
@@ -53,6 +61,19 @@ namespace Low {
           void set_color_attachment_format(VkFormat p_Format);
           void set_depth_format(VkFormat p_Format);
           void disable_depth_test();
+
+          void set_shaders(Context &p_Context,
+                           Util::String p_VertexShader,
+                           Util::String p_FragmentShader,
+                           bool p_Project = false);
+
+          void update_shaders(Context &p_Context);
+
+        private:
+          void set_shaders(VkShaderModule p_VertexShader,
+                           VkShaderModule p_FragmentShader);
+
+          void clear_shader_modules(VkDevice p_Device);
         };
       } // namespace PipelineUtil
     }   // namespace Vulkan

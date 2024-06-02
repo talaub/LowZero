@@ -61,19 +61,19 @@ namespace Low {
       Variant(Handle p_Value);
       Variant(Name p_Value);
 
-      Variant &Variant::operator=(const bool p_Value);
-      Variant &Variant::operator=(const float p_Value);
-      Variant &Variant::operator=(const int32_t p_Value);
-      Variant &Variant::operator=(const uint32_t p_Value);
-      Variant &Variant::operator=(const uint64_t p_Value);
-      Variant &Variant::operator=(const Math::UVector2 p_Value);
-      Variant &Variant::operator=(const Math::Vector2 p_Value);
-      Variant &Variant::operator=(const Math::Vector3 p_Value);
-      Variant &Variant::operator=(const Math::Vector4 p_Value);
-      Variant &Variant::operator=(const Math::Quaternion p_Value);
-      Variant &Variant::operator=(const Name p_Value);
-      Variant &Variant::operator=(const Handle p_Value);
-      Variant &Variant::operator=(const Variant &p_Value);
+      Variant &operator=(const bool p_Value);
+      Variant &operator=(const float p_Value);
+      Variant &operator=(const int32_t p_Value);
+      Variant &operator=(const uint32_t p_Value);
+      Variant &operator=(const uint64_t p_Value);
+      Variant &operator=(const Math::UVector2 p_Value);
+      Variant &operator=(const Math::Vector2 p_Value);
+      Variant &operator=(const Math::Vector3 p_Value);
+      Variant &operator=(const Math::Vector4 p_Value);
+      Variant &operator=(const Math::Quaternion p_Value);
+      Variant &operator=(const Name p_Value);
+      Variant &operator=(const Handle p_Value);
+      Variant &operator=(const Variant &p_Value);
 
       bool operator==(const Variant &p_Other) const;
       bool operator!=(const Variant &p_Other) const;

@@ -412,13 +412,26 @@ function process_file(p_Path, p_FileName, p_Project = false) {
       }
     }
 
+    if (!i_Type.source_path && l_Config.source_path) {
+      i_Type.source_path = l_Config.source_path;
+    }
+    if (!i_Type.header_path && l_Config.header_path) {
+      i_Type.header_path = l_Config.header_path;
+    }
+
     i_Type.module_path = `${p_Path}${i_Type.module}`;
     if (p_Project) {
       i_Type.module_path = `${p_Path}modules\\${i_Type.module}`;
     }
     i_Type.header_file_name = `${i_Type.prefix}${i_Type.name}.h`;
     i_Type.header_file_path = `${i_Type.module_path}\\include\\${i_Type.prefix}${i_Type.name}.h`;
+    if (i_Type.header_path) {
+      i_Type.header_file_path = `${i_Type.module_path}\\${i_Type.header_path}\\${i_Type.prefix}${i_Type.name}.h`;
+    }
     i_Type.source_file_path = `${i_Type.module_path}\\src\\${i_Type.prefix}${i_Type.name}.cpp`;
+    if (i_Type.source_path) {
+      i_Type.source_file_path = `${i_Type.module_path}\\${i_Type.source_path}\\${i_Type.prefix}${i_Type.name}.cpp`;
+    }
     i_Type.scripting_api_file_path = `${__dirname}\\..\\..\\LowScriptingApi\\${i_Type.prefix}${i_Type.name}.cs`;
     if (i_Type.module == "MistedaPlugin") {
       i_Type.scripting_api_file_path = `${__dirname}\\..\\..\\LowScriptingApi\\${i_Type.prefix}${i_Type.name}.cs`;

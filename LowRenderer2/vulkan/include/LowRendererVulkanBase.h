@@ -59,7 +59,8 @@ namespace Low {
 
         bool swapchain_resize(Context &p_Context);
 
-        bool draw(Context &p_Context);
+        bool context_prepare_draw(Context &p_Context);
+        bool context_present(Context &p_Context);
       } // namespace Base
     }   // namespace Vulkan
   }     // namespace Renderer

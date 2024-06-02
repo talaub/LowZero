@@ -1,0 +1,6 @@
+#ifndef LOW_RENDERER2_EXPORT_H
+#define LOW_RENDERER2_EXPORT_H
+
+#define LOW_RENDERER2_API
+
+#endif
