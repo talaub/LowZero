@@ -7,6 +7,7 @@
 #include "LowUtilSerialization.h"
 #include "LowUtilFileIO.h"
 
+#include "LowEditor.h"
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"

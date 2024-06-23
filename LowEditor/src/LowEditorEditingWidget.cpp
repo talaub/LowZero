@@ -1,5 +1,6 @@
 #include "LowEditorEditingWidget.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorCommonOperations.h"
 

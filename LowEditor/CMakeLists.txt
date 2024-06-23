@@ -49,6 +49,7 @@ set_property(TARGET LowEditor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${APP_OUTP
 
 target_compile_definitions(LowEditor PRIVATE
   loweditor_EXPORTS
+  flode_EXPORTS
   LOW_MODULE_NAME="lowed"
 )
 
@@ -71,4 +72,6 @@ target_link_libraries(LowEditor PRIVATE
 target_include_directories(LowEditor PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   "${CMAKE_CURRENT_SOURCE_DIR}/../Flode/include"
+  "${NODEGRAPH_PATH}"
+  "${NODEGRAPH_PATH}/examples/blueprints-example"
 )

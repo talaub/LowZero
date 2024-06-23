@@ -5,14 +5,11 @@
 #include "imgui.h"
 
 #include "LowUtilEnums.h"
-#include "LowUtilFileSystem.h"
 
 #include "LowCoreEntity.h"
 #include "LowCoreUiElement.h"
 
 #include "LowRendererMaterial.h"
-
-#include "LowEditorChangeList.h"
 
 namespace Low {
   namespace Editor {
@@ -23,44 +20,17 @@ namespace Low {
     struct EnumMetadata;
     struct Widget;
 
-    struct DirectoryWatchers
-    {
-      Util::FileSystem::WatchHandle flodeDirectory;
-    };
-
-    void LOW_EDITOR_API initialize();
-    void LOW_EDITOR_API tick(float p_Delta,
-                             Util::EngineState p_State);
-
-    void set_selected_entity(Core::Entity p_Entity);
-    Core::Entity get_selected_entity();
-    Util::Handle get_selected_handle();
-    void set_selected_handle(Util::Handle p_Handle);
-
-    void set_focused_widget(Widget *p_Widget);
-
-    void register_editor_job(Util::String p_Title,
-                             std::function<void()> p_Func);
+    void initialize_main_window();
+    void render_main_window(float p_Delta, Util::EngineState p_State);
 
     DetailsWidget *get_details_widget();
     EditingWidget *get_editing_widget();
     FlodeWidget *get_flode_widget();
 
-    DirectoryWatchers &get_directory_watchers();
-
-    Util::Map<u16, TypeMetadata> &get_type_metadata();
-    TypeMetadata &get_type_metadata(uint16_t p_TypeId);
-    EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName);
-
-    void duplicate(Util::List<Util::Handle> p_Handles);
-
-    ChangeList &get_global_changelist();
+    void set_widget_open(Util::Name p_Name, bool p_Open);
 
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
-
-    Util::String prettify_name(Util::Name p_Name);
-    Util::String prettify_name(Util::String p_String);
 
     namespace Helper {
       struct SphericalBillboardMaterials
@@ -73,8 +43,6 @@ namespace Low {
 
       SphericalBillboardMaterials get_spherical_billboard_materials();
 
-      Transaction create_handle_transaction(Util::Handle p_Handle);
-      Transaction destroy_handle_transaction(Util::Handle p_Handle);
     } // namespace Helper
   }   // namespace Editor
 } // namespace Low

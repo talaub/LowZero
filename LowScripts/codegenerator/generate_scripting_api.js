@@ -226,17 +226,12 @@ function generate_scripting_api(p_Type) {
 
 function generate_scripting_api_for(p_FilePath, p_Types, p_ModuleConfig) {
   if (p_ModuleConfig === undefined) {
-    console.log("ISLOW");
+    console.log("🚧 Type: LowEngine");
   } else {
-    console.log("ISPROJECT");
+    console.log("🚧 Type: Project");
   }
-  console.log(p_FilePath);
+  console.log(`📂 Scripting filepath: ${p_FilePath}`);
 
-  for (const i_Type of p_Types) {
-    console.log(i_Type.name);
-  }
-
-  console.log("-----------------------");
   const l_OriginalContent = read_file(p_FilePath);
 
   const l_IncludeIndexStart = l_OriginalContent.indexOf(
@@ -272,6 +267,8 @@ function generate_scripting_api_for(p_FilePath, p_Types, p_ModuleConfig) {
 
   for (const i_Type of p_Types) {
     if (i_Type.scripting_expose) {
+      console.log(`⚙️ Generating scripting API for: ${i_Type.name}`);
+
       l_IncludeCode += line(`#include "${i_Type.header_file_name}"`);
 
       l_RegisterCode += generate_scripting_api(i_Type);
@@ -315,6 +312,7 @@ function generate_scripting_api_for(p_FilePath, p_Types, p_ModuleConfig) {
 
   const l_Formatted = format(p_FilePath, l_FinalContent);
   save_file(p_FilePath, l_Formatted);
+  console.log("✔️ Finished generating scripting API");
 }
 
 function main() {

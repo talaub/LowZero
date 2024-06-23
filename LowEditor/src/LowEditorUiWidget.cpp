@@ -9,6 +9,7 @@
 #include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorSaveHelper.h"
 #include "LowEditorHandlePropertiesSection.h"

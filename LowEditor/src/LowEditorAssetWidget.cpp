@@ -6,6 +6,7 @@
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
 
+#include "LowEditor.h"
 #include "LowEditorGui.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"

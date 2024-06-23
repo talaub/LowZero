@@ -1814,6 +1814,8 @@ function main() {
     l_Path += "/";
   }
 
+  let l_GeneratedSomething = false;
+
   let l_Types = 0;
   if (l_Project) {
     l_Types = collect_types_for_project(l_Path);
@@ -1833,7 +1835,8 @@ function main() {
       if (changed_source) {
         change_string += "SOURCE";
       }
-      console.log(`${i_Type.name} -> ${change_string}`);
+      l_GeneratedSomething = true;
+      console.log(`⚙️ ${i_Type.name} -> ${change_string}`);
     }
   }
 
@@ -1856,8 +1859,15 @@ function main() {
       if (changed_source) {
         change_string += "SOURCE";
       }
-      console.log(`${i_Enum.name} -> ${change_string}`);
+      l_GeneratedSomething = true;
+      console.log(`⚙️ ${i_Enum.name} -> ${change_string}`);
     }
+  }
+
+  if (l_GeneratedSomething) {
+    console.log(`✔️ Finished generating type code`);
+  } else {
+    console.log(`👍 All type code files are up-to-date`);
   }
 }
 

@@ -55,7 +55,7 @@ function load_project_info(p_FullProjectPath) {
   const l_ProjectModulesPath = `${p_FullProjectPath}\\modules`;
   const l_ProjectConfigPath = `${p_FullProjectPath}\\project.yaml`;
 
-  console.log(`Looking for project at ${p_FullProjectPath}`);
+  console.log(`🔍 Looking for project at ${p_FullProjectPath}`);
   assert(fs.existsSync(p_FullProjectPath), "Project directory does not exist");
   assert(
     fs.existsSync(l_ProjectConfigPath),
@@ -109,6 +109,7 @@ function load_project_info(p_FullProjectPath) {
       exports_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_EXPORTS`,
       static_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_BUILD_STATIC`,
       project_name: l_ProjectConfig.name,
+      project_path: p_FullProjectPath,
       api_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_API`,
       no_export_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_NO_EXPORT`,
       deprecated_macro: `${l_ProjectConfig.name.toUpperCase()}_${i_ModuleDirectory.toUpperCase()}_DEPRECATED`,

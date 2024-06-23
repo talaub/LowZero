@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "IconsFontAwesome5.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorHandlePropertiesSection.h"
@@ -12,8 +13,9 @@
 
 namespace Low {
   namespace Editor {
-    void render_region_details_footer(Util::Handle p_Handle,
-                                      Util::RTTI::TypeInfo &p_TypeInfo)
+    void
+    render_region_details_footer(Util::Handle p_Handle,
+                                 Util::RTTI::TypeInfo &p_TypeInfo)
     {
       Core::Region l_Asset = p_Handle.get_id();
 
@@ -53,7 +55,8 @@ namespace Low {
         i_Label += " ";
         i_Label += it->get_name().c_str();
         if (ImGui::Selectable(i_Label.c_str(),
-                              it->get_id() == get_selected_handle().get_id())) {
+                              it->get_id() ==
+                                  get_selected_handle().get_id())) {
           set_selected_handle(*it);
           HandlePropertiesSection l_Section(*it, true);
           l_Section.render_footer = &render_region_details_footer;
@@ -80,8 +83,8 @@ namespace Low {
           if (ImGui::MenuItem("New Region")) {
             Core::Region l_Region = Core::Region::make(N(NewRegion));
             Core::Scene l_Scene = Core::Scene::get_loaded_scene();
-            LOW_LOG_DEBUG << "Creating region for scene " << l_Scene.get_name()
-                          << LOW_LOG_END;
+            LOW_LOG_DEBUG << "Creating region for scene "
+                          << l_Scene.get_name() << LOW_LOG_END;
             l_Region.set_scene(l_Scene);
 
             l_Region.set_loaded(true);

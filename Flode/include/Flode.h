@@ -246,17 +246,18 @@ namespace Flode {
                               Pin *p_Pin) const;
   };
 
-  void register_nodes_for_type(u16 p_TypeId);
+  FLODE_API void register_nodes_for_type(u16 p_TypeId);
 
-  void register_node(Low::Util::Name p_TypeName,
-                     std::function<Node *()>);
+  FLODE_API void register_node(Low::Util::Name p_TypeName,
+                               std::function<Node *()>);
 
-  void register_spawn_node(Low::Util::String p_Category,
-                           Low::Util::String p_Title,
-                           Low::Util::Name p_TypeName);
+  FLODE_API void register_spawn_node(Low::Util::String p_Category,
+                                     Low::Util::String p_Title,
+                                     Low::Util::Name p_TypeName);
 
-  void register_cast_node(PinType p_FromType, PinType p_ToType,
-                          Low::Util::Name p_TypeName);
+  FLODE_API void register_cast_node(PinType p_FromType,
+                                    PinType p_ToType,
+                                    Low::Util::Name p_TypeName);
 
   Low::Util::Map<Low::Util::String,
                  Low::Util::Map<Low::Util::String, Low::Util::Name>> &

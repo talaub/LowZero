@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
 #include "LowEditorCommonOperations.h"
@@ -43,8 +44,8 @@ namespace Low {
       return l_Result;
     }
 
-    static bool render_entity(Core::Entity p_Entity, bool *p_OpenedEntryPopup,
-                              float p_Delta)
+    static bool render_entity(Core::Entity p_Entity,
+                              bool *p_OpenedEntryPopup, float p_Delta)
     {
       bool l_Break = false;
 
@@ -63,7 +64,7 @@ namespace Low {
         }
         if (ImGui::MenuItem("Delete")) {
           get_global_changelist().add_entry(
-              Helper::destroy_handle_transaction(p_Entity));
+              History::destroy_handle_transaction(p_Entity));
           Core::Entity::destroy(p_Entity);
           l_Break = true;
         }
@@ -76,8 +77,8 @@ namespace Low {
           Core::Entity l_Entity = *(uint64_t *)l_Payload->Data;
           if (l_Entity.is_alive()) {
 
-            Math::Matrix4x4 l_InverseParentMatrix =
-                glm::inverse(p_Entity.get_transform().get_world_matrix());
+            Math::Matrix4x4 l_InverseParentMatrix = glm::inverse(
+                p_Entity.get_transform().get_world_matrix());
 
             Math::Matrix4x4 l_LocalMatrix =
                 l_InverseParentMatrix *
@@ -89,14 +90,15 @@ namespace Low {
 
             glm::vec3 skew;
             glm::vec4 perspective;
-            glm::decompose(l_LocalMatrix, scale, rotation, translation, skew,
-                           perspective);
+            glm::decompose(l_LocalMatrix, scale, rotation,
+                           translation, skew, perspective);
 
             Transaction l_Transaction("Parent entity");
             l_Transaction.add_operation(
                 new CommonOperations::PropertyEditOperation(
                     l_Entity.get_transform(), N(position),
-                    l_Entity.get_transform().position(), translation));
+                    l_Entity.get_transform().position(),
+                    translation));
             l_Transaction.add_operation(
                 new CommonOperations::PropertyEditOperation(
                     l_Entity.get_transform(), N(rotation),
@@ -110,7 +112,8 @@ namespace Low {
                     l_Entity.get_transform(), N(parent),
                     Util::Variant::from_handle(
                         l_Entity.get_transform().get_parent()),
-                    Util::Variant::from_handle(p_Entity.get_transform())));
+                    Util::Variant::from_handle(
+                        p_Entity.get_transform())));
 
             get_global_changelist().add_entry(l_Transaction);
 
@@ -129,7 +132,8 @@ namespace Low {
     }
 
     static bool render_entity_hierarchy(Core::Entity p_Entity,
-                                        bool *p_OpenedEntryPopup, float p_Delta)
+                                        bool *p_OpenedEntryPopup,
+                                        float p_Delta)
     {
       bool l_Break = false;
       if (!p_Entity.get_transform().get_children().empty()) {
@@ -137,18 +141,22 @@ namespace Low {
         l_IdString += p_Entity.get_id();
         bool l_Open = ImGui::TreeNode(l_IdString.c_str());
         ImGui::SameLine();
-        l_Break = render_entity(p_Entity, p_OpenedEntryPopup, p_Delta);
+        l_Break =
+            render_entity(p_Entity, p_OpenedEntryPopup, p_Delta);
 
         if (l_Open) {
-          for (auto it = p_Entity.get_transform().get_children().begin();
-               it != p_Entity.get_transform().get_children().end(); ++it) {
+          for (auto it =
+                   p_Entity.get_transform().get_children().begin();
+               it != p_Entity.get_transform().get_children().end();
+               ++it) {
             Core::Component::Transform i_Transform = *it;
             if (!i_Transform.is_alive()) {
               continue;
             }
 
-            bool i_Break = render_entity_hierarchy(i_Transform.get_entity(),
-                                                   p_OpenedEntryPopup, p_Delta);
+            bool i_Break =
+                render_entity_hierarchy(i_Transform.get_entity(),
+                                        p_OpenedEntryPopup, p_Delta);
             if (!l_Break) {
               l_Break = i_Break;
             }
@@ -156,7 +164,8 @@ namespace Low {
           ImGui::TreePop();
         }
       } else {
-        l_Break = render_entity(p_Entity, p_OpenedEntryPopup, p_Delta);
+        l_Break =
+            render_entity(p_Entity, p_OpenedEntryPopup, p_Delta);
       }
 
       return l_Break;
@@ -167,8 +176,9 @@ namespace Low {
       ImGui::Begin(ICON_FA_LIST_UL " Scene");
 
       ImVec2 l_Cursor = ImGui::GetCursorScreenPos();
-      ImRect l_Rect(l_Cursor, {l_Cursor.x + ImGui::GetWindowWidth(),
-                               l_Cursor.y + ImGui::GetWindowHeight()});
+      ImRect l_Rect(l_Cursor,
+                    {l_Cursor.x + ImGui::GetWindowWidth(),
+                     l_Cursor.y + ImGui::GetWindowHeight()});
 
       if (ImGui::BeginDragDropTargetCustom(l_Rect, 89023)) {
         if (const ImGuiPayload *l_Payload =
@@ -203,11 +213,13 @@ namespace Low {
 
       for (auto it = Core::Entity::ms_LivingInstances.begin();
            it != Core::Entity::ms_LivingInstances.end(); ++it) {
-        if (Core::Component::Transform(it->get_transform().get_parent())
+        if (Core::Component::Transform(
+                it->get_transform().get_parent())
                 .is_alive()) {
           continue;
         }
-        if (render_entity_hierarchy(*it, &l_OpenedEntryPopup, p_Delta)) {
+        if (render_entity_hierarchy(*it, &l_OpenedEntryPopup,
+                                    p_Delta)) {
           break;
         }
       }
@@ -223,13 +235,14 @@ namespace Low {
               Core::Component::Transform::make(l_Entity);
 
               get_global_changelist().add_entry(
-                  Helper::create_handle_transaction(l_Entity));
+                  History::create_handle_transaction(l_Entity));
 
               set_selected_entity(l_Entity);
             } else {
-              LOW_LOG_ERROR << "Could not create new entity. There is no "
-                               "suitable region in this scene."
-                            << LOW_LOG_END;
+              LOW_LOG_ERROR
+                  << "Could not create new entity. There is no "
+                     "suitable region in this scene."
+                  << LOW_LOG_END;
             }
           }
           ImGui::EndPopup();

@@ -1,5 +1,6 @@
 #include "FlodeHandleNodes.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorMetadata.h"
 

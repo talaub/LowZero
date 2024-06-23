@@ -9,6 +9,7 @@
 #include "LowCoreRigidbody.h"
 #include "LowCorePrefabInstance.h"
 
+#include "LowEditor.h"
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"

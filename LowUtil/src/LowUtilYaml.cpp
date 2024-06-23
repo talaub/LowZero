@@ -10,6 +10,11 @@ namespace Low {
         return YAML::LoadFile(p_Path);
       }
 
+      Node parse(const char *p_Yaml)
+      {
+        return YAML::Load(p_Yaml);
+      }
+
       void write_file(const char *p_Path, Node &p_Node)
       {
         std::ofstream l_Out(p_Path);

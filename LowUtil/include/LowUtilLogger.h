@@ -24,6 +24,9 @@
 #define LOW_LOG_PROFILE                                              \
   Low::Util::Log::begin_log(Low::Util::Log::LogLevel::PROFILE,       \
                             LOW_MODULE_NAME)
+#define LOW_LOG_FATAL                                                \
+  Low::Util::Log::begin_log(Low::Util::Log::LogLevel::FATAL,         \
+                            LOW_MODULE_NAME)
 
 #define LOW_LOG_END Low::Util::Log::LogLineEnd::LINE_END
 
@@ -38,7 +41,8 @@ namespace Low {
           DEBUG,
           WARN,
           ERROR,
-          PROFILE
+          PROFILE,
+          FATAL
         };
       }
 

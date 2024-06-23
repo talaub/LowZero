@@ -1,5 +1,6 @@
 #include "LowEditorTypeManagerWidget.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 
 #include "imgui.h"

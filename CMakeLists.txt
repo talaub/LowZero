@@ -78,6 +78,8 @@ add_compile_definitions(
   LOW_RENDERER_RENDEROBJECT_COUNT=1024
   LOW_SCRIPTS_PATH=./data/scripts
   CFLAT_ENABLED=1
+
+  GAME_DLL_PATH="./Gameplay.dll"
 )
 else()
 add_compile_definitions(
@@ -93,6 +95,8 @@ add_compile_definitions(
   PX_COOKING
   LOW_RENDERER_RENDEROBJECT_COUNT=1024
   CFLAT_ENABLED=1
+
+  GAME_DLL_PATH="../../../misteda/build/Debug/app/Gameplayd.dll"
 )
 endif()
 

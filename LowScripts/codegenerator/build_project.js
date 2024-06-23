@@ -1,4 +1,4 @@
-const g_FullProjectPath = "P:\\misteda";
+const g_FullProjectPath = "P:/misteda";
 
 const { assert } = require("console");
 const fs = require("fs");
@@ -79,8 +79,12 @@ function generate_module_cmake(p_Module) {
   t += "foreach (OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})\n";
   t += "  string(TOUPPER ${OUTPUTCONFIG} UOUTPUTCONFIG)\n";
   t += `  set_target_properties(${p_Module.name} PROPERTIES `;
+  /*
   t +=
     "RUNTIME_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/app)\n";
+    */
+  t +=
+    "RUNTIME_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_SOURCE_DIR}/bin/${OUTPUTCONFIG})\n";
   t += `  set_target_properties(${p_Module.name} PROPERTIES `;
   t +=
     "LIBRARY_OUTPUT_DIRECTORY_${UOUTPUTCONFIG} ${CMAKE_BINARY_DIR}/${OUTPUTCONFIG}/lib)\n";
@@ -112,7 +116,23 @@ function generate_module_cmake(p_Module) {
   t += `  LowMath\n`;
   t += `  LowRenderer\n`;
   t += `  LowCore\n`;
-  t += `)`;
+  t += `)\n\n`;
+
+  if (p_Module.public_dependencies) {
+    t += `add_dependencies(${p_Module.name}\n`;
+    for (const i_Entry of p_Module.public_dependencies) {
+      t += `  ${i_Entry}\n`;
+    }
+    t += `)\n\n`;
+  }
+
+  if (p_Module.public_dependencies) {
+    t += `target_link_libraries(${p_Module.name} PUBLIC\n`;
+    for (const i_Entry of p_Module.public_dependencies) {
+      t += `  ${i_Entry}\n`;
+    }
+    t += `)\n\n`;
+  }
 
   fs.writeFileSync(p_Module.cmake_path, t);
 }
@@ -134,6 +154,8 @@ function generate_root_cmake(p_ProjectConfig) {
 
   t += "add_subdirectory(${LOW_PATH} EXTERNAL)\n\n";
 
+  t += 'set(CMAKE_DEBUG_POSTFIX "")\n\n';
+
   t += 'set_target_properties(LowCore PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(LowUtil PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(LowRenderer PROPERTIES FOLDER "LowEngine")\n';
@@ -143,7 +165,23 @@ function generate_root_cmake(p_ProjectConfig) {
 
   for (const i_Module of p_ProjectConfig.modules) {
     t += `add_subdirectory(modules/${i_Module.name})\n`;
+    t += `set_target_properties(${i_Module.name} PROPERTIES FOLDER "${p_ProjectConfig.name}Modules")\n\n`;
   }
+
+  t += `add_custom_target(${p_ProjectConfig.name}Project)\n\n`;
+
+  t += `add_dependencies(${p_ProjectConfig.name}Project\n`;
+  for (const i_Module of p_ProjectConfig.modules) {
+    t += `  ${i_Module.name}\n`;
+  }
+  t += `  Lowder\n`;
+  t += `)\n\n`;
+
+  t += `set_target_properties(${p_ProjectConfig.name}Project PROPERTIES\n`;
+  t += '  VS_DEBUGGER_COMMAND "${LOW_PATH}/build/Debug/app/lowder.exe"\n';
+  t += `  VS_DEBUGGER_COMMAND_ARGUMENTS "${p_ProjectConfig.full_path}"\n`;
+  t += `  VS_DEBUGGER_WORKING_DIRECTORY "${p_ProjectConfig.full_path}"\n`;
+  t += `)\n\n`;
 
   fs.writeFileSync(p_ProjectConfig.root_cmake_path, t);
 }

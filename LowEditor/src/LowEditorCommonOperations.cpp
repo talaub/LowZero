@@ -1,5 +1,6 @@
 #include "LowEditorCommonOperations.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 
 #include "LowUtilLogger.h"
@@ -7,10 +8,9 @@
 namespace Low {
   namespace Editor {
     namespace CommonOperations {
-      PropertyEditOperation::PropertyEditOperation(Util::Handle p_Handle,
-                                                   Util::Name p_PropertyName,
-                                                   Util::Variant p_OldValue,
-                                                   Util::Variant p_NewValue)
+      PropertyEditOperation::PropertyEditOperation(
+          Util::Handle p_Handle, Util::Name p_PropertyName,
+          Util::Variant p_OldValue, Util::Variant p_NewValue)
           : m_Handle(p_Handle), m_PropertyName(p_PropertyName),
             m_OldValue(p_OldValue), m_NewValue(p_NewValue)
       {
@@ -27,21 +27,24 @@ namespace Low {
 
         if (l_TypeInfo.is_alive(m_Handle)) {
           if (m_NewValue.m_Type == Util::VariantType::Handle) {
-            m_NewValue.set_handle(p_ChangeList.get_mapping(m_NewValue));
+            m_NewValue.set_handle(
+                p_ChangeList.get_mapping(m_NewValue));
           }
-          l_TypeInfo.properties[m_PropertyName].set(m_Handle,
-                                                    &m_NewValue.m_Bool);
+          l_TypeInfo.properties[m_PropertyName].set(
+              m_Handle, &m_NewValue.m_Bool);
         }
       }
 
-      Operation *PropertyEditOperation::invert(ChangeList &p_ChangeList,
-                                               Transaction &p_Transaction)
+      Operation *
+      PropertyEditOperation::invert(ChangeList &p_ChangeList,
+                                    Transaction &p_Transaction)
       {
-        return new PropertyEditOperation(m_Handle, m_PropertyName, m_NewValue,
-                                         m_OldValue);
+        return new PropertyEditOperation(m_Handle, m_PropertyName,
+                                         m_NewValue, m_OldValue);
       }
 
-      HandleCreateOperation::HandleCreateOperation(Util::Handle p_Handle)
+      HandleCreateOperation::HandleCreateOperation(
+          Util::Handle p_Handle)
           : m_Handle(p_Handle)
       {
         Util::RTTI::TypeInfo &l_TypeInfo =
@@ -61,8 +64,9 @@ namespace Low {
       {
       }
 
-      static void create_mappings_from_entity_yaml(ChangeList &p_ChangeList,
-                                                   Util::Yaml::Node &p_Node)
+      static void
+      create_mappings_from_entity_yaml(ChangeList &p_ChangeList,
+                                       Util::Yaml::Node &p_Node)
       {
         p_ChangeList.set_mapping(p_Node["handle"].as<uint64_t>(),
                                  p_Node["_handle"].as<uint64_t>());
@@ -96,10 +100,11 @@ namespace Low {
         Util::Handle l_NewHandle = 0;
 
         if (m_Handle.get_type() == Core::Entity::TYPE_ID) {
-          l_NewHandle =
-              Core::Entity::deserialize_hierarchy(m_SerializedHandle, 0);
+          l_NewHandle = Core::Entity::deserialize_hierarchy(
+              m_SerializedHandle, 0);
 
-          create_mappings_from_entity_yaml(p_ChangeList, m_SerializedHandle);
+          create_mappings_from_entity_yaml(p_ChangeList,
+                                           m_SerializedHandle);
           p_ChangeList.set_mapping(m_Handle, l_NewHandle);
         } else {
           l_TypeInfo.deserialize(m_SerializedHandle, 0);
@@ -111,14 +116,16 @@ namespace Low {
         set_selected_handle(m_Handle);
       }
 
-      Operation *HandleCreateOperation::invert(ChangeList &p_ChangeList,
-                                               Transaction &p_Transaction)
+      Operation *
+      HandleCreateOperation::invert(ChangeList &p_ChangeList,
+                                    Transaction &p_Transaction)
       {
         m_Handle = p_ChangeList.get_mapping(m_Handle);
         return new HandleDestroyOperation(m_Handle);
       }
 
-      HandleDestroyOperation::HandleDestroyOperation(Util::Handle p_Handle)
+      HandleDestroyOperation::HandleDestroyOperation(
+          Util::Handle p_Handle)
           : m_Handle(p_Handle)
       {
         Util::RTTI::TypeInfo &l_TypeInfo =
@@ -143,10 +150,12 @@ namespace Low {
         l_TypeInfo.destroy(m_Handle);
       }
 
-      Operation *HandleDestroyOperation::invert(ChangeList &p_ChangeList,
-                                                Transaction &p_Transaction)
+      Operation *
+      HandleDestroyOperation::invert(ChangeList &p_ChangeList,
+                                     Transaction &p_Transaction)
       {
-        return new HandleCreateOperation(m_Handle, m_SerializedHandle);
+        return new HandleCreateOperation(m_Handle,
+                                         m_SerializedHandle);
       }
     } // namespace CommonOperations
   }   // namespace Editor

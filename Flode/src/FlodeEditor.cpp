@@ -7,6 +7,7 @@
 #include "LowUtilAssert.h"
 #include "LowUtilString.h"
 
+#include "LowEditor.h"
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"
 
