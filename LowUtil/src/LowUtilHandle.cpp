@@ -13,6 +13,7 @@
 namespace Low {
   namespace Util {
     Map<uint16_t, RTTI::EnumInfo> g_EnumInfos;
+    List<uint16_t> g_EnumIds;
     Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
     List<uint16_t> g_ComponentTypes;
     Map<UniqueId, Handle> g_UniqueIdRegistry;
@@ -35,6 +36,7 @@ namespace Low {
           "Enum info for this enum id has already been registered");
 
       g_EnumInfos[p_EnumId] = p_EnumInfo;
+      g_EnumIds.push_back(p_EnumId);
     }
 
     RTTI::EnumInfo &get_enum_info(u16 p_EnumId)
@@ -43,6 +45,11 @@ namespace Low {
                  "Enum info has not been registered for enum id");
 
       return g_EnumInfos[p_EnumId];
+    }
+
+    List<u16> &get_enum_ids()
+    {
+      return g_EnumIds;
     }
 
     UniqueId generate_unique_id(Handle p_Handle)

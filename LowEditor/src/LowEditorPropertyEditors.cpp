@@ -1,5 +1,6 @@
 #include "LowEditorPropertyEditors.h"
 
+#include "LowEditor.h"
 #include "LowEditorGui.h"
 
 #include "LowCore.h"
@@ -48,41 +49,107 @@ namespace Low {
             {l_Pos.x + l_LabelWidth + LOW_EDITOR_SPACING, l_Pos.y});
       }
 
+      bool render_enum_selector(u16 p_EnumId, u8 *p_Value,
+                                Util::String p_Label,
+                                bool p_RenderLabel)
+      {
+        return render_enum_selector(p_EnumId, p_Value, p_Label,
+                                    p_RenderLabel, Util::List<u8>());
+      }
+
+      bool render_enum_selector(u16 p_EnumId, u8 *p_Value,
+                                Util::String p_Label,
+                                bool p_RenderLabel,
+                                Util::List<u8> p_FilterList)
+      {
+        if (p_RenderLabel) {
+          render_label(p_Label);
+        }
+
+        Util::String l_Label = "##";
+        l_Label += p_Label.c_str();
+
+        Util::RTTI::EnumInfo &l_EnumInfo =
+            Util::get_enum_info(p_EnumId);
+
+        Util::List<Util::RTTI::EnumEntryInfo> l_FilteredEntries;
+
+        for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
+          bool i_Filtered = false;
+          for (u32 j = 0; j < p_FilterList.size(); ++j) {
+            if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
+              i_Filtered = true;
+              break;
+            }
+          }
+
+          if (!i_Filtered) {
+            l_FilteredEntries.push_back(l_EnumInfo.entries[i]);
+          }
+        }
+
+        u8 l_CurrentValue = *p_Value;
+
+        bool l_Result = false;
+
+        if (ImGui::BeginCombo(
+                l_Label.c_str(),
+                l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
+          for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
+            bool i_Disabled = false;
+            for (u32 j = 0; j < p_FilterList.size(); ++j) {
+              if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
+                i_Disabled = true;
+                break;
+              }
+            }
+
+            if (i_Disabled) {
+              ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
+                                  ImGui::GetStyle().Alpha * 0.5f);
+              ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            }
+
+            if (ImGui::Selectable(l_EnumInfo.entries[i].name.c_str(),
+                                  l_CurrentValue ==
+                                      l_EnumInfo.entries[i].value)) {
+              if (!i_Disabled) // Only allow selection if the item is
+                               // not disabled
+              {
+                l_CurrentValue = l_EnumInfo.entries[i].value;
+                l_Result = true;
+              }
+            }
+
+            if (i_Disabled) {
+              ImGui::PopItemFlag();
+              ImGui::PopStyleVar();
+            }
+
+            // Set the initial focus when opening the combo (scrolling
+            // + keyboard navigation focus)
+            if (l_CurrentValue == l_EnumInfo.entries[i].value) {
+              ImGui::SetItemDefaultFocus();
+            }
+          }
+          ImGui::EndCombo();
+        }
+
+        *p_Value = l_CurrentValue;
+
+        return l_Result;
+      }
+
       bool render_enum_selector(PropertyMetadata &p_Metadata,
                                 Util::Handle p_Handle)
       {
+        u8 l_CurrentValue = *(u8 *)p_Metadata.propInfo.get(p_Handle);
 
-        Util::String l_FriendlyLabel = p_Metadata.name.c_str();
-        render_label(l_FriendlyLabel);
+        bool l_Result = render_enum_selector(
+            p_Metadata.propInfo.handleType, &l_CurrentValue,
+            p_Metadata.name.c_str(), true);
 
-        struct Funcs
-        {
-          static bool EnumGetter(void *data, int n,
-                                 const char **out_str)
-          {
-            Util::RTTI::EnumEntryInfo l_EntryInfo =
-                ((Util::RTTI::EnumEntryInfo *)data)[n];
-            *out_str = l_EntryInfo.name.c_str();
-            return true;
-          }
-        };
-
-        Util::String l_Label = "##";
-        l_Label += p_Metadata.name.c_str();
-
-        Util::RTTI::EnumInfo &l_EnumInfo =
-            Util::get_enum_info(p_Metadata.propInfo.handleType);
-
-        int l_CurrentValue =
-            (int)*(u8 *)p_Metadata.propInfo.get(p_Handle);
-
-        bool l_Result = ImGui::Combo(
-            l_Label.c_str(), &l_CurrentValue, &Funcs::EnumGetter,
-            l_EnumInfo.entries.data(), l_EnumInfo.entries.size());
-
-        u8 l_CurrentValueU8 = l_CurrentValue;
-
-        p_Metadata.propInfo.set(p_Handle, &l_CurrentValueU8);
+        p_Metadata.propInfo.set(p_Handle, &l_CurrentValue);
 
         return l_Result;
       }
@@ -108,10 +175,9 @@ namespace Low {
         }
       }
 
-      void render_string_editor(PropertyMetadata &p_PropertyMetadata,
-                                Util::String &p_Label,
+      void render_string_editor(Util::String &p_Label,
                                 Util::String &p_String,
-                                bool p_RenderLabel)
+                                bool p_Multiline, bool p_RenderLabel)
       {
         if (p_RenderLabel) {
           render_label(p_Label);
@@ -125,7 +191,7 @@ namespace Low {
         Util::String l_Label = "##";
         l_Label += p_Label.c_str();
 
-        if (p_PropertyMetadata.multiline) {
+        if (p_Multiline) {
           if (ImGui::InputTextMultiline(
                   l_Label.c_str(), l_Buffer, 1024,
                   ImVec2(-FLT_MIN, 90),
@@ -140,6 +206,16 @@ namespace Low {
             p_String = l_Buffer;
           }
         }
+      }
+
+      void render_string_editor(PropertyMetadata &p_PropertyMetadata,
+                                Util::String &p_Label,
+                                Util::String &p_String,
+                                bool p_RenderLabel)
+      {
+        render_string_editor(p_Label, p_String,
+                             p_PropertyMetadata.multiline,
+                             p_RenderLabel);
       }
 
       bool render_quaternion_editor(Util::String p_Label,
@@ -699,27 +775,76 @@ namespace Low {
         }
       }
 
+      void render_editor(Util::Handle p_Handle,
+                         Util::Name p_PropertyName)
+      {
+        render_editor(p_Handle,
+                      get_type_metadata(p_Handle.get_type()),
+                      p_PropertyName);
+      }
+
+      void LOW_EDITOR_API render_editor(Util::Handle p_Handle,
+                                        TypeMetadata &p_Metadata,
+                                        Util::Name p_PropertyName)
+      {
+        for (int i = 0; i < p_Metadata.properties.size(); ++i) {
+          if (p_Metadata.properties[i].name == p_PropertyName) {
+            render_editor(
+                p_Metadata.properties[i], p_Handle,
+                p_Metadata.properties[i].propInfo.get(p_Handle));
+            return;
+          }
+        }
+      }
+
+      void render_editor_no_label(Util::Handle p_Handle,
+                                  Util::Name p_PropertyName)
+      {
+        render_editor_no_label(p_Handle,
+                               get_type_metadata(p_Handle.get_type()),
+                               p_PropertyName);
+      }
+
+      void render_editor_no_label(Util::Handle p_Handle,
+                                  TypeMetadata &p_Metadata,
+                                  Util::Name p_PropertyName)
+      {
+        for (int i = 0; i < p_Metadata.properties.size(); ++i) {
+          if (p_Metadata.properties[i].name == p_PropertyName) {
+            render_editor(
+                p_Metadata.properties[i], p_Handle,
+                p_Metadata.properties[i].propInfo.get(p_Handle),
+                false);
+            return;
+          }
+        }
+      }
+
       void render_editor(PropertyMetadata &p_PropertyMetadata,
-                         Util::Handle p_Handle, const void *p_DataPtr)
+                         Util::Handle p_Handle, const void *p_DataPtr,
+                         bool p_RenderLabel)
       {
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         if (p_PropertyMetadata.propInfo.type ==
-            Util::RTTI::PropertyType::NAME) {
+            Util::RTTI::PropertyType::ENUM) {
+          render_enum_selector(p_PropertyMetadata, p_Handle);
+        } else if (p_PropertyMetadata.propInfo.type ==
+                   Util::RTTI::PropertyType::NAME) {
           render_name_editor(
               Util::String(p_PropertyMetadata.name.c_str()),
-              *(Util::Name *)p_DataPtr, true);
+              *(Util::Name *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::STRING) {
           render_string_editor(
               p_PropertyMetadata,
               Util::String(p_PropertyMetadata.propInfo.name.c_str()),
-              *(Util::String *)p_DataPtr, true);
+              *(Util::String *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::VECTOR2) {
           Math::Vector2 l_Vec = *(Math::Vector2 *)p_DataPtr;
           render_vector2_editor(
               Util::String(p_PropertyMetadata.name.c_str()), l_Vec,
-              true);
+              p_RenderLabel);
 
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Vec);
         } else if (p_PropertyMetadata.propInfo.type ==
@@ -727,48 +852,56 @@ namespace Low {
           Math::Vector3 l_Vec = *(Math::Vector3 *)p_DataPtr;
           render_vector3_editor(
               Util::String(p_PropertyMetadata.name.c_str()), l_Vec,
-              true);
+              p_RenderLabel);
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Vec);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::QUATERNION) {
           Math::Quaternion l_Quat = *(Math::Quaternion *)p_DataPtr;
           render_quaternion_editor(
               Util::String(p_PropertyMetadata.name.c_str()), l_Quat,
-              true);
+              p_RenderLabel);
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Quat);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::COLORRGB) {
           render_colorrgb_editor(
               Util::String(p_PropertyMetadata.name.c_str()),
-              *(Math::ColorRGB *)p_DataPtr, true);
+              *(Math::ColorRGB *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::BOOL) {
           render_checkbox_bool_editor(
               Util::String(p_PropertyMetadata.name.c_str()),
-              *(bool *)p_DataPtr, true);
+              *(bool *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::FLOAT) {
           float l_Float = *(float *)p_DataPtr;
           render_float_editor(
               Util::String(p_PropertyMetadata.name.c_str()), l_Float,
-              true);
+              p_RenderLabel);
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Float);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::UINT32) {
           render_uint32_editor(
               Util::String(p_PropertyMetadata.name.c_str()),
-              *(u32 *)p_DataPtr, true);
+              *(u32 *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::SHAPE) {
           render_shape_editor(
               Util::String(p_PropertyMetadata.name.c_str()),
               p_PropertyMetadata.propInfo, p_Handle,
-              (Math::Shape *)p_DataPtr, true);
+              (Math::Shape *)p_DataPtr, p_RenderLabel);
         }
 
         ImGui::SetCursorScreenPos(
             l_Pos +
             ImVec2(0.0f, LOW_EDITOR_LABEL_HEIGHT_ABS + 12.0f));
+      }
+
+      void render_editor(Util::String p_Label,
+                         Util::Function<void()> p_Function)
+      {
+        render_label(p_Label);
+
+        p_Function();
       }
     } // namespace PropertyEditors
   }   // namespace Editor

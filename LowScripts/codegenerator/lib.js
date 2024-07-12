@@ -183,7 +183,7 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
     if (g_EnumIdMap[l_Config.module][i_EnumName]) {
       i_Enum.enumId = g_EnumIdMap[l_Config.module][i_EnumName];
     } else {
-      i_Enum.enumId = get_unused_enum_id();
+      i_Enum.enumId = get_unused_enum_id(p_Project);
       g_AllEnumIds.push(i_Enum.enumId);
       g_EnumIdMap[l_Config.module][i_EnumName] = i_Enum.enumId;
     }
@@ -692,10 +692,14 @@ function collect_types_for_project(p_Path) {
     `${p_Path}data\\_internal\\type_configs\\typeids.yaml`,
   );
   g_TypeIdMap = YAML.parse(l_TypeIdContent);
-  for (const [key, value] of Object.entries(g_TypeIdMap)) {
-    for (const [k, v] of Object.entries(value)) {
-      g_AllTypeIds.push(v);
+  if (g_TypeIdMap) {
+    for (const [key, value] of Object.entries(g_TypeIdMap)) {
+      for (const [k, v] of Object.entries(value)) {
+        g_AllTypeIds.push(v);
+      }
     }
+  } else {
+    g_TypeIdMap = {};
   }
 
   const l_FileList = fs.readdirSync(`${p_Path}data/_internal/type_configs`);
@@ -714,7 +718,7 @@ function collect_types_for_project(p_Path) {
     l_Types.push(...process_file(p_Path, i_FileName, true));
   }
 
-  if (Object.keys(g_TypeIdMap) > 0) {
+  if (Object.keys(g_TypeIdMap).length > 0) {
     fs.writeFileSync(
       `${p_Path}data\\_internal\\type_configs\\typeids.yaml`,
       YAML.stringify(g_TypeIdMap),

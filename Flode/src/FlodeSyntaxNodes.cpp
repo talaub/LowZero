@@ -1,6 +1,7 @@
 #include "FlodeSyntaxNodes.h"
 #include <cstring>
 
+#include "LowEditor.h"
 #include "LowEditorBase.h"
 
 #include "IconsFontAwesome5.h"
@@ -48,11 +49,19 @@ namespace Flode {
            ++it) {
         FunctionNodeParameter &i_Param = *it;
 
-        Pin *i_Pin =
-            create_pin(PinDirection::Output, i_Param.name.c_str(),
-                       i_Param.type, i_Param.pinId.Get());
+        if (i_Param.type == PinType::Handle) {
+          Pin *i_Pin = create_handle_pin(
+              PinDirection::Output, i_Param.name.c_str(),
+              i_Param.typeId, i_Param.pinId.Get());
 
-        i_Param.pinId = i_Pin->id;
+          i_Param.pinId = i_Pin->id;
+        } else {
+          Pin *i_Pin =
+              create_pin(PinDirection::Output, i_Param.name.c_str(),
+                         i_Param.type, i_Param.pinId.Get());
+
+          i_Param.pinId = i_Pin->id;
+        }
       }
 
       graph->clean_unconnected_links();
@@ -61,6 +70,13 @@ namespace Flode {
     void FunctionNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       p_Node["name"] = m_Name.c_str();
+      p_Node["editable"] = m_Editable;
+      p_Node["hasreturnvalue"] = m_HasReturnValue;
+      if (m_HasReturnValue) {
+        p_Node["returntype"] =
+            pin_type_to_string(m_ReturnType).c_str();
+        p_Node["returntypeid"] = m_ReturnTypeId;
+      }
       for (auto it = m_Parameters.begin(); it != m_Parameters.end();
            ++it) {
         Low::Util::Yaml::Node i_ParamNode;
@@ -68,6 +84,7 @@ namespace Flode {
         i_ParamNode["name"] = it->name.c_str();
         i_ParamNode["type"] = pin_type_to_string(it->type).c_str();
         i_ParamNode["pin_id"] = it->pinId.Get();
+        i_ParamNode["type_id"] = it->typeId;
 
         p_Node["parameters"].push_back(i_ParamNode);
       }
@@ -78,6 +95,26 @@ namespace Flode {
       m_Name = N(def_func);
       if (p_Node["name"]) {
         m_Name = LOW_YAML_AS_NAME(p_Node["name"]);
+      }
+
+      if (p_Node["editable"]) {
+        m_Editable = p_Node["editable"].as<bool>();
+      } else {
+        m_Editable = true;
+      }
+      m_HasReturnValue = false;
+      m_ReturnType = PinType::Number;
+      m_ReturnTypeId = 0;
+
+      if (p_Node["hasreturnvalue"]) {
+        m_HasReturnValue = p_Node["hasreturnvalue"].as<bool>();
+      }
+      if (p_Node["returntype"]) {
+        m_ReturnType = string_to_pin_type(
+            LOW_YAML_AS_STRING(p_Node["returntype"]));
+      }
+      if (p_Node["returntypeid"]) {
+        m_ReturnTypeId = p_Node["returntypeid"].as<u16>();
       }
 
       if (p_Node["parameters"]) {
@@ -91,6 +128,10 @@ namespace Flode {
               string_to_pin_type(LOW_YAML_AS_STRING(i_Node["type"]));
           i_Param.pinId = i_Node["pin_id"].as<u64>();
 
+          if (i_Node["type_id"]) {
+            i_Param.typeId = i_Node["type_id"].as<u16>();
+          }
+
           m_Parameters.push_back(i_Param);
         }
       }
@@ -98,6 +139,9 @@ namespace Flode {
 
     void FunctionNode::render_data()
     {
+      if (!m_Editable) {
+        return;
+      }
       ImGui::Text("Name");
       ImGui::SameLine();
       ImGui::PushItemWidth(120.0f);
@@ -216,7 +260,12 @@ namespace Flode {
     void
     FunctionNode::compile(Low::Util::StringBuilder &p_Builder) const
     {
-      p_Builder.append("void ");
+      if (!m_HasReturnValue) {
+        p_Builder.append("void ");
+      } else {
+        p_Builder.append(pin_type_to_cpp_string(m_ReturnType))
+            .append(" ");
+      }
       p_Builder.append(m_Name);
       p_Builder.append("(");
 
@@ -227,7 +276,22 @@ namespace Flode {
           p_Builder.append(", ");
         }
 
-        p_Builder.append(pin_type_to_cpp_string(it->type));
+        if (it->type == PinType::Handle) {
+          if (it->typeId == 0) {
+            p_Builder.append("Low::Util::Handle");
+          } else {
+            Low::Editor::TypeMetadata &i_Metadata =
+                Low::Editor::get_type_metadata(it->typeId);
+            p_Builder.append(i_Metadata.fullTypeString);
+          }
+        } else if (it->type == PinType::Enum) {
+          Low::Editor::EnumMetadata &i_Metadata =
+              Low::Editor::get_enum_metadata(
+                  Low::Util::get_enum_info(it->typeId).name);
+          p_Builder.append(i_Metadata.fullTypeString);
+        } else {
+          p_Builder.append(pin_type_to_cpp_string(it->type));
+        }
         p_Builder.append(" ");
 
         p_Builder.append("p_");
@@ -268,7 +332,10 @@ namespace Flode {
 
     Node *function_create_instance()
     {
-      return new FunctionNode;
+      FunctionNode *l_Node = new FunctionNode;
+      l_Node->m_Editable = true;
+      l_Node->m_HasReturnValue = false;
+      return l_Node;
     }
 
     GetVariableNode::GetVariableNode() : m_Variable(nullptr)
@@ -496,6 +563,41 @@ namespace Flode {
       return new SetVariableNode;
     }
 
+    ReturnNumberNode::ReturnNumberNode()
+    {
+    }
+
+    Low::Util::String
+    ReturnNumberNode::get_name(NodeNameType p_Type) const
+    {
+      return "Return";
+    }
+
+    ImU32 ReturnNumberNode::get_color() const
+    {
+      return g_SyntaxColor;
+    }
+
+    void ReturnNumberNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Input, "", PinType::Number);
+    }
+
+    void ReturnNumberNode::compile(
+        Low::Util::StringBuilder &p_Builder) const
+    {
+      p_Builder.append("return ");
+      compile_input_pin(p_Builder,
+                        pins[1]->id); // Compile the value input pin
+      p_Builder.append(";").endl();
+    }
+
+    Node *returnnumber_create_instance()
+    {
+      return new ReturnNumberNode;
+    }
+
     void register_nodes()
     {
       {
@@ -515,6 +617,12 @@ namespace Flode {
         register_node(l_TypeName, &setvariable_create_instance);
 
         register_spawn_node("Syntax", "Set variable", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxReturnNumber);
+        register_node(l_TypeName, &returnnumber_create_instance);
+
+        register_spawn_node("Syntax", "Return number", l_TypeName);
       }
     }
 

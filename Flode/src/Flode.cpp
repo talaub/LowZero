@@ -1,6 +1,7 @@
 #include "Flode.h"
 
 #include "FlodeHandleNodes.h"
+#include "FlodeHelpers.h"
 
 #include "LowUtil.h"
 #include "LowUtilLogger.h"
@@ -55,6 +56,8 @@ namespace Flode {
     switch (p_Pin->type) {
     case PinType::Handle:
       return "0ull";
+    case PinType::Enum:
+      return "0";
     case PinType::Number:
       return (LOW_TO_STRING(p_Pin->defaultValue.m_Float) + "f");
     case PinType::Bool:
@@ -112,12 +115,17 @@ namespace Flode {
     }
     case PinType::Bool: {
       p_Pin->defaultValue.m_Type = Low::Util::VariantType::Bool;
-      p_Pin->defaultValue.m_Float = false;
+      p_Pin->defaultValue.m_Bool = false;
       break;
     }
     case PinType::Handle: {
       p_Pin->defaultValue.m_Type = Low::Util::VariantType::Handle;
       p_Pin->defaultValue.m_Uint64 = 0ull;
+      break;
+    }
+    case PinType::Enum: {
+      p_Pin->defaultValue.m_Type = Low::Util::VariantType::UInt32;
+      p_Pin->defaultValue.m_Int32 = 0ull;
       break;
     }
     case PinType::String: {
@@ -180,6 +188,8 @@ namespace Flode {
       return "bool";
     case PinType::Handle:
       return "handle";
+    case PinType::Enum:
+      return "enum";
     case PinType::String:
       return "string";
     case PinType::Vector2:
@@ -211,6 +221,9 @@ namespace Flode {
     if (p_String == "handle") {
       return PinType::Handle;
     }
+    if (p_String == "enum") {
+      return PinType::Enum;
+    }
     if (p_String == "vector2") {
       return PinType::Vector2;
     }
@@ -231,6 +244,8 @@ namespace Flode {
     switch (p_PropertyType) {
     case PropertyType::HANDLE:
       return PinType::Handle;
+    case PropertyType::ENUM:
+      return PinType::Enum;
     case PropertyType::BOOL:
       return PinType::Bool;
     case PropertyType::UINT16:
@@ -468,6 +483,8 @@ namespace Flode {
       return ImColor(124, 21, 153);
     case PinType::Handle:
       return ImColor(51, 150, 215);
+    case PinType::Enum:
+      return ImColor(218, 0, 183);
       /*
     case PinType::Function:
       return ImColor(218, 0, 183);
@@ -513,6 +530,8 @@ namespace Flode {
       iconType = IconType::Circle;
       break;
     case Flode::PinType::Handle:
+      iconType = IconType::Circle;
+    case Flode::PinType::Enum:
       iconType = IconType::Circle;
       break;
       /*
@@ -645,10 +664,12 @@ namespace Flode {
 
     l_Pin->title = p_Title;
     if (p_PinId == 0) {
+
       l_Pin->id = graph->m_IdCounter++;
     } else {
       l_Pin->id = p_PinId;
     }
+    LOW_LOG_DEBUG << "Creating pin " << (u64)l_Pin->id << LOW_LOG_END;
     l_Pin->type = p_Type;
     l_Pin->typeId = p_TypeId;
     l_Pin->direction = p_Direction;
@@ -688,6 +709,14 @@ namespace Flode {
                       p_PinId);
   }
 
+  Pin *Node::create_enum_pin(PinDirection p_Direction,
+                             Low::Util::String p_Title, u16 p_EnumId,
+                             u64 p_PinId)
+  {
+    return create_pin(p_Direction, p_Title, PinType::Enum, p_EnumId,
+                      p_PinId);
+  }
+
   Pin *Node::create_pin_from_rtti(PinDirection p_Direction,
                                   Low::Util::String p_Title,
                                   u32 p_PropertyType, u16 p_TypeId,
@@ -696,6 +725,10 @@ namespace Flode {
     if (p_PropertyType == Low::Util::RTTI::PropertyType::HANDLE) {
       return create_handle_pin(p_Direction, p_Title, p_TypeId,
                                p_PinId);
+    }
+
+    if (p_PropertyType == Low::Util::RTTI::PropertyType::ENUM) {
+      return create_enum_pin(p_Direction, p_Title, p_TypeId, p_PinId);
     }
 
     PinType l_PinType = property_type_to_pin_type(p_PropertyType);
@@ -801,6 +834,37 @@ namespace Flode {
                                           &p_Pin->defaultStringValue);
           }
           ImGui::PopItemWidth();
+        } else if (p_Pin->type == PinType::Enum) {
+          // Unfortunately it is right now not easy to align the popup
+          // from the dropdown with the node. I'll leave that for the
+          // future
+          if (p_Pin->typeId != 0) {
+            ImGui::PushItemWidth(100.0f);
+
+            // Low::Editor::PropertyEditors::render_enum_selector(p_Pin->typeId,
+            //  (u8 *)&p_Pin->defaultValue.m_Uint32,
+            //  "##editdefaultvalue", false);
+
+            Low::Util::RTTI::EnumInfo &l_EnumInfo =
+                Low::Util::get_enum_info(p_Pin->typeId);
+
+            u8 l_EnumValue = p_Pin->defaultValue.m_Uint32;
+
+            if (Flode::Helper::BeginNodeCombo("##editdefaultvalue",
+                                              l_EnumInfo.entry_name(l_EnumValue).c_str())) {
+              for (auto it : l_EnumInfo.entries) {
+                if (ImGui::Selectable(it.name.c_str(),
+                                      l_EnumValue == it.value)) {
+                  l_EnumValue = it.value;
+                }
+              }
+
+              Flode::Helper::EndNodeCombo();
+            }
+
+            p_Pin->defaultValue.m_Uint32 = l_EnumValue;
+            ImGui::PopItemWidth();
+          }
         }
       }
     } else {
@@ -1083,13 +1147,21 @@ namespace Flode {
   Link *Graph::create_link(NodeEd::PinId p_InputPin,
                            NodeEd::PinId p_OutputPin)
   {
+    Pin *l_InputPin = find_pin(p_InputPin);
+    Pin *l_OutputPin = find_pin(p_OutputPin);
+
+    _LOW_ASSERT(l_InputPin->direction == PinDirection::Input);
+    _LOW_ASSERT(l_OutputPin->direction == PinDirection::Output);
+
     Link *l_Link = new Link(NodeEd::LinkId(m_IdCounter++), p_InputPin,
                             p_OutputPin);
     m_Links.push_back(l_Link);
 
     // Draw new link
+    /*
     NodeEd::Link(m_Links.back()->id, m_Links.back()->inputPinId,
                  m_Links.back()->outputPinId);
+                 */
 
     return m_Links.back();
   }
@@ -1121,14 +1193,18 @@ namespace Flode {
     return true;
   }
 
-  Node *Graph::create_node(Low::Util::Name p_TypeName)
+  Node *Graph::create_node(Low::Util::Name p_TypeName,
+                           bool p_SetupPins)
   {
     Node *l_Node = spawn_node_of_type(p_TypeName);
 
     l_Node->graph = this;
 
     l_Node->id = m_IdCounter++;
-    l_Node->setup_default_pins();
+
+    if (p_SetupPins) {
+      l_Node->setup_default_pins();
+    }
 
     m_Nodes.push_back(l_Node);
 
@@ -1184,10 +1260,12 @@ namespace Flode {
     }
   }
 
-  void Graph::serialize(Low::Util::Yaml::Node &p_Node) const
+  void Graph::serialize(Low::Util::Yaml::Node &p_Node,
+                        bool p_StoreNodePositions) const
   {
     p_Node["name"] = m_Name.c_str();
     p_Node["idcounter"] = m_IdCounter;
+    p_Node["internal"] = m_Internal;
 
     for (auto it = m_Namespace.begin(); it != m_Namespace.end();
          ++it) {
@@ -1236,9 +1314,14 @@ namespace Flode {
       }
 
       Low::Math::Vector2 i_Position;
-      ImVec2 i_ImPos = NodeEd::GetNodePosition(i_Node->id);
-      i_Position.x = i_ImPos.x;
-      i_Position.y = i_ImPos.y;
+      if (p_StoreNodePositions) {
+        ImVec2 i_ImPos = NodeEd::GetNodePosition(i_Node->id);
+        i_Position.x = i_ImPos.x;
+        i_Position.y = i_ImPos.y;
+      } else {
+        i_Position.x = 0.0f;
+        i_Position.y = 0.0f;
+      }
 
       Low::Util::Serialization::serialize(i_Yaml["position"],
                                           i_Position);
@@ -1264,12 +1347,18 @@ namespace Flode {
 
     const char *l_NamespaceName = "namespace";
 
+    u32 l_IdsAdded = 0;
+
     if (p_Node[l_NamespaceName]) {
       for (auto it = p_Node[l_NamespaceName].begin();
            it != p_Node[l_NamespaceName].end(); ++it) {
         Low::Util::Yaml::Node &i_Node = *it;
         m_Namespace.push_back(LOW_YAML_AS_NAME(i_Node));
       }
+    }
+
+    if (p_Node["internal"]) {
+      m_Internal = p_Node["internal"].as<bool>();
     }
 
     if (p_Node["variables"]) {
@@ -1310,7 +1399,15 @@ namespace Flode {
         i_Node->setup_default_pins();
 
         for (u32 i = 0; i < i_Node->pins.size(); ++i) {
-          i_Node->pins[i]->id = i_NodeNode["pins"][i]["id"].as<u64>();
+          if (i_NodeNode["pins"].size() > i) {
+            i_Node->pins[i]->id =
+                i_NodeNode["pins"][i]["id"].as<u64>();
+          }           
+          else {
+            i_Node->pins[i]->id =
+                p_Node["idcounter"].as<u64>() + l_IdsAdded;
+              l_IdsAdded++;
+          }
           if (i_NodeNode["pins"][i]["default_value"]) {
             i_Node->pins[i]->defaultValue =
                 Low::Util::Serialization::deserialize_variant(
@@ -1354,7 +1451,7 @@ namespace Flode {
     // I think it is important to do that last so that all the ids are
     // synced up again
     if (p_Node["idcounter"]) {
-      m_IdCounter = p_Node["idcounter"].as<u64>();
+      m_IdCounter = p_Node["idcounter"].as<u64>()+l_IdsAdded;
     }
   }
 

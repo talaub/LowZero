@@ -31,12 +31,13 @@ function generate_module_dll_api(p_Module) {
   t += `#define ${p_Module.no_export_macro}\n`;
   t += `#else\n`;
   t += `#ifndef ${p_Module.api_macro}\n`;
-  t += `#define ${p_Module.exports_marker}\n`;
+  t += `#ifdef ${p_Module.exports_marker}\n`;
   t += `/* We are building this library */\n`;
   t += `#define ${p_Module.api_macro} __declspec(dllexport)\n`;
   t += `#else\n`;
   t += `/* We are using this library */\n`;
   t += `#define ${p_Module.api_macro} __declspec(dllimport)\n`;
+  t += `#endif\n`;
   t += `#endif\n`;
   t += `#endif\n\n`;
 

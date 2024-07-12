@@ -167,9 +167,14 @@ namespace Low {
         }
       }
 
-      static void update_file(WatchHandle p_WatchHandle)
+      static bool update_file(WatchHandle p_WatchHandle)
       {
         FileWatcher &l_FileWatcher = g_Files[p_WatchHandle];
+
+        if (!Util::FileIO::file_exists_sync(
+                l_FileWatcher.path.c_str())) {
+          return false;
+        }
 
         // Resetting update timers
         l_FileWatcher.update = false;
@@ -179,6 +184,8 @@ namespace Low {
 
         l_FileWatcher.handle =
             l_FileWatcher.handleCallback(l_FileWatcher);
+
+        return true;
       }
 
       static void tick_files(float p_Delta)
@@ -186,7 +193,10 @@ namespace Low {
         for (auto it = g_Files.begin(); it != g_Files.end(); ++it) {
           if (it->second.update ||
               it->second.currentUpdateTimer <= 0.0f) {
-            update_file(it->first);
+            if (!update_file(it->first)) {
+              // Removes files that are deleted
+              it = g_Files.erase(it);
+            }
           } else {
             it->second.currentUpdateTimer -= p_Delta;
           }
@@ -266,6 +276,12 @@ namespace Low {
         LOW_ASSERT(l_Pos != g_Directories.end(),
                    "Cannot find directorywatcher by watchhandle");
         return l_Pos->second;
+      }
+
+      bool file_watcher_exists(WatchHandle p_WatchHandle)
+      {
+        auto l_Pos = g_Files.find(p_WatchHandle);
+        return l_Pos != g_Files.end();
       }
 
       FileWatcher &get_file_watcher(WatchHandle p_WatchHandle)

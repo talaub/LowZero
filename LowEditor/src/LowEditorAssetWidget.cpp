@@ -637,6 +637,9 @@ namespace Low {
         }
         Util::String i_Name = i_FileWatcher.name.substr(
             0, i_FileWatcher.name.size() - 11);
+        if (Util::StringHelper::begins_with(i_Name, "__")) {
+          continue;
+        }
         if (render_element(l_Id++, ICON_FA_PROJECT_DIAGRAM, i_Name,
                            true, i_FileWatcher.handle,
                            &l_DirectoryWatcher.update)) {

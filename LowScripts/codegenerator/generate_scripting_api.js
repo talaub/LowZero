@@ -8,6 +8,8 @@ const {
   read_file,
   collect_types_for_project,
   collect_types_for_low,
+  collect_enums_for_project,
+  collect_enums_for_low,
   write,
   line,
   empty,
@@ -97,6 +99,56 @@ function internal_set(p_Prop) {
   }
 
   return `Low.Internal.HandleHelper.SetIntValue`;
+}
+
+function generate_enum_scripting_api(p_Enum) {
+  let t = "";
+
+  const l_TypeString = `${p_Enum.namespace_string}::${p_Enum.name}`;
+
+  t += line(
+    `static void register_${p_Enum.module.toLowerCase()}_${p_Enum.name.toLowerCase()}(){`,
+  );
+  t += line(`using namespace Low;`);
+  t += line(`using namespace Low::Core;`);
+  if (!["Low::Core"].includes(p_Enum.namespace_string)) {
+    t += line(`using namespace ::${p_Enum.namespace_string};`);
+  }
+  t += empty();
+
+  t += line(
+    `Cflat::Namespace *l_Namespace = Low::Core::Scripting::get_environment()->requestNamespace("${p_Enum.namespace_string}");`,
+  );
+  t += empty();
+
+  /*
+    t += line(`CflatRegisterStruct(l_Namespace, ${p_Type.name});`)
+    t += line(`CflatStructAddBaseType(Scripting::get_environment(), ${l_TypeString}, Low::Util::Handle);`)
+    */
+  t += line(`CflatRegisterEnumClass(l_Namespace, ${p_Enum.name});`);
+  t += empty();
+
+  t += line("{");
+  t += line(
+    `Cflat::Namespace *l_UtilNamespace = Low::Core::Scripting::get_environment()->requestNamespace("Low::Util");`,
+  );
+  t += empty();
+  t += line(
+    `CflatRegisterSTLVectorCustom(Low::Core::Scripting::get_environment(), Low::Util::List, ${l_TypeString});`,
+  );
+  t += line("}");
+  t += empty();
+
+  for (let [i_Key, i_Option] of Object.entries(p_Enum.options)) {
+    t += line(
+      `CflatEnumClassAddValue(l_Namespace, ${p_Enum.name}, ${i_Option.uppercase});`,
+    );
+  }
+
+  t += line(`}`);
+  t += empty();
+
+  return t;
 }
 
 function generate_scripting_api(p_Type) {
@@ -224,7 +276,12 @@ function generate_scripting_api(p_Type) {
   return t;
 }
 
-function generate_scripting_api_for(p_FilePath, p_Types, p_ModuleConfig) {
+function generate_scripting_api_for(
+  p_FilePath,
+  p_Types,
+  p_Enums,
+  p_ModuleConfig,
+) {
   if (p_ModuleConfig === undefined) {
     console.log("🚧 Type: LowEngine");
   } else {
@@ -264,6 +321,17 @@ function generate_scripting_api_for(p_FilePath, p_Types, p_ModuleConfig) {
   let l_PreRegisterCode = line(`static void preregister_types() {`);
   l_PreRegisterCode += line(`using namespace Low::Core;`);
   l_PreRegisterCode += empty();
+
+  for (const i_Enum of p_Enums) {
+    console.log(`⚙️ Generating enum scripting API for: ${i_Enum.name}`);
+
+    l_IncludeCode += line(`#include "${i_Enum.header_file_name}"`);
+
+    l_EntryMethodCode += line(
+      `register_${i_Enum.module.toLowerCase()}_${i_Enum.name.toLowerCase()}();`,
+    );
+    l_RegisterCode += generate_enum_scripting_api(i_Enum);
+  }
 
   for (const i_Type of p_Types) {
     if (i_Type.scripting_expose) {
@@ -324,17 +392,20 @@ function main() {
   }
 
   let l_Types = 0;
+  let l_Enums = 0;
   if (l_Project) {
     let l_LocalPath = l_Path;
     if (!l_LocalPath.endsWith("/") && !l_LocalPath.endsWith("\\")) {
       l_LocalPath += "/";
     }
     l_Types = collect_types_for_project(l_LocalPath);
+    l_Enums = collect_enums_for_project(l_Path);
   } else {
     if (!l_Path.endsWith("/") && !l_Path.endsWith("\\")) {
       l_Path += "/";
     }
     l_Types = collect_types_for_low(l_Path);
+    l_Enums = collect_enums_for_low(l_Path);
   }
 
   let l_FilePath = "";
@@ -348,12 +419,13 @@ function main() {
       generate_scripting_api_for(
         l_FilePath,
         l_Types.filter((it) => it.module === i_Module.name),
+        l_Enums,
         i_Module,
       );
     }
   } else {
     l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`;
-    generate_scripting_api_for(l_FilePath, l_Types, undefined);
+    generate_scripting_api_for(l_FilePath, l_Types, l_Enums, undefined);
   }
 }
 

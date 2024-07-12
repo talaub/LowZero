@@ -75,7 +75,9 @@ namespace Low {
     struct EnumMetadata
     {
       Util::Name name;
-      Util::String fullTypeName;
+      Util::List<Util::String> namespaces;
+      Util::String namespaceString;
+      Util::String fullTypeString;
       Util::String module;
       Util::List<EnumEntryMetadata> options;
     };

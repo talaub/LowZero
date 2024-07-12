@@ -12,8 +12,11 @@
 #include "LowEditorCommonOperations.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorEditingWidget.h"
+#include "LowEditorTypeEditor.h"
+#include "LowEditorFlodeWidget.h"
 
 #include "Flode.h"
+#include "FlodeEditor.h"
 #include "FlodeMathNodes.h"
 #include "FlodeSyntaxNodes.h"
 #include "FlodeDebugNodes.h"
@@ -82,10 +85,10 @@ namespace Low {
       return g_TypeMetadata[p_TypeId];
     }
 
-    EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName)
+    EnumMetadata &get_enum_metadata(Util::Name p_EnumTypeName)
     {
       for (EnumMetadata &i_Metadata : g_EnumMetadata) {
-        if (i_Metadata.fullTypeName == p_EnumTypeName) {
+        if (i_Metadata.name == p_EnumTypeName) {
           return i_Metadata;
         }
       }
@@ -446,12 +449,42 @@ namespace Low {
       Util::String l_ModuleString =
           LOW_YAML_AS_STRING(p_Node["module"]);
 
+      Util::String l_NamespaceString;
+      Util::List<Util::String> l_Namespaces;
+      int i = 0;
+      for (auto it = p_Node["namespace"].begin();
+           it != p_Node["namespace"].end(); ++it) {
+        Util::Yaml::Node &i_Node = *it;
+
+        Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
+        l_Namespaces.push_back(i_Namespace);
+
+        if (i) {
+          l_NamespaceString += "::";
+        }
+        l_NamespaceString += i_Namespace;
+        i++;
+      }
+
       for (auto it = p_Node["enums"].begin();
            it != p_Node["enums"].end(); ++it) {
         Util::String i_EnumName = LOW_YAML_AS_STRING(it->first);
         EnumMetadata i_Metadata;
         i_Metadata.name = LOW_YAML_AS_NAME(it->first);
         i_Metadata.module = l_ModuleString;
+
+        i_Metadata.namespaces = l_Namespaces;
+        i_Metadata.namespaceString = l_NamespaceString;
+        {
+          // Construct full name out of namespace path + name of the
+          // type. If there are namespaces we need to add an ::
+          // between the namespaces and the name of the type
+          i_Metadata.fullTypeString = l_NamespaceString;
+          if (!i_Metadata.fullTypeString.empty()) {
+            i_Metadata.fullTypeString += "::";
+          }
+          i_Metadata.fullTypeString += i_Metadata.name.c_str();
+        }
 
         for (auto oit = it->second["options"].begin();
              oit != it->second["options"].end(); ++oit) {
@@ -487,6 +520,15 @@ namespace Low {
 
         Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
         parse_metadata(i_Node, l_TypeIdsNode);
+      }
+      for (auto it = l_FilePaths.begin(); it != l_FilePaths.end();
+           ++it) {
+        if (!Util::StringHelper::ends_with(*it, ".enums.yaml")) {
+          continue;
+        }
+
+        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
+        parse_enum_metadata(i_Node);
       }
     }
 
@@ -644,12 +686,17 @@ namespace Low {
              g_EditorJobQueue.front().submitted;
     }
 
-    Util::String LOW_EDITOR_API get_active_editor_job_name()
+    Util::String get_active_editor_job_name()
     {
       if (!is_editor_job_in_progress()) {
         return "";
       }
       return g_EditorJobQueue.front().title;
+    }
+
+    void open_flode_graph(Util::String p_Path)
+    {
+      get_flode_widget()->m_Editor->load(p_Path);
     }
 
     namespace History {

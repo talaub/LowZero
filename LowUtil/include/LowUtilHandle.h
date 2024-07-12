@@ -194,6 +194,7 @@ namespace Low {
     void LOW_EXPORT register_enum_info(u16 p_EnumId,
                                        RTTI::EnumInfo &p_EnumInfo);
     LOW_EXPORT RTTI::EnumInfo &get_enum_info(u16 p_EnumId);
+    LOW_EXPORT List<u16> &get_enum_ids();
 
     UniqueId LOW_EXPORT generate_unique_id(Handle p_Handle);
     void LOW_EXPORT register_unique_id(UniqueId p_UniqueId,

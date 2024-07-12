@@ -48,10 +48,12 @@ namespace Low {
 
     Util::Map<u16, TypeMetadata> &get_type_metadata();
     TypeMetadata &get_type_metadata(uint16_t p_TypeId);
-    EnumMetadata &get_enum_metadata(Util::String p_EnumTypeName);
+    EnumMetadata &get_enum_metadata(Util::Name p_EnumTypeName);
 
     bool LOW_EDITOR_API is_editor_job_in_progress();
     Util::String LOW_EDITOR_API get_active_editor_job_name();
+
+    void LOW_EDITOR_API open_flode_graph(Util::String p_Path);
 
     namespace History {
       Transaction LOW_EDITOR_API

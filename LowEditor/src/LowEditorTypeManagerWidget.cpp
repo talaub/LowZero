@@ -2,6 +2,7 @@
 
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
+#include "LowEditorTypeEditor.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -153,6 +154,9 @@ namespace Low {
                 m_TypeInfo.make_default(l_Name);
 
             save(l_NewHandle, m_TypeInfo);
+
+            TypeEditor::handle_after_add(l_NewHandle);
+
             select(l_NewHandle);
           }
           ImGui::CloseCurrentPopup();

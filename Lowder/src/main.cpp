@@ -68,6 +68,28 @@ static void setup_scene()
   l_Scene.load();
 };
 
+void print_last_error()
+{
+  DWORD errorMessageID = ::GetLastError();
+  if (errorMessageID == 0) {
+    return; // No error message has been recorded
+  }
+
+  LPSTR messageBuffer = nullptr;
+  size_t size = FormatMessageA(
+      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+          FORMAT_MESSAGE_IGNORE_INSERTS,
+      NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      (LPSTR)&messageBuffer, 0, NULL);
+
+  std::string message(messageBuffer, size);
+
+  // Free the buffer.
+  LocalFree(messageBuffer);
+
+  LOW_LOG_FATAL << message << LOW_LOG_END;
+}
+
 int load_module_dll(ModuleType p_ModuleType, Low::Util::String p_Path)
 {
 
@@ -79,7 +101,9 @@ int load_module_dll(ModuleType p_ModuleType, Low::Util::String p_Path)
   HINSTANCE hGetProcIDDLL = LoadLibrary(p_Path.c_str());
 
   if (!hGetProcIDDLL) {
-    std::cout << "could not load the dynamic library" << std::endl;
+    LOW_LOG_WARN << "could not load the dynamic library"
+                 << LOW_LOG_END;
+    print_last_error();
     return 1;
   }
 
@@ -87,15 +111,16 @@ int load_module_dll(ModuleType p_ModuleType, Low::Util::String p_Path)
   f_funci plugin_initialize =
       (f_funci)GetProcAddress(hGetProcIDDLL, "plugin_initialize");
   if (!plugin_initialize) {
-    std::cout << "could not locate the initialize function"
-              << std::endl;
+    LOW_LOG_WARN << "could not locate the initialize function"
+                 << LOW_LOG_END;
     return 1;
   }
 
   f_funci plugin_cleanup =
       (f_funci)GetProcAddress(hGetProcIDDLL, "plugin_cleanup");
   if (!plugin_cleanup) {
-    std::cout << "could not locate the cleanup function" << std::endl;
+    LOW_LOG_WARN << "could not locate the cleanup function"
+                 << LOW_LOG_END;
     return 1;
   }
 
@@ -177,6 +202,7 @@ void load_project(Low::Util::String p_ProjectPath)
 
   Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
 
+  /*
   for (int i = 0; i < l_FilePaths.size(); ++i) {
     if (!Util::FileIO::is_directory(l_FilePaths[i].c_str())) {
       continue;
@@ -189,6 +215,12 @@ void load_project(Low::Util::String p_ProjectPath)
 
     load_module(p_ProjectPath, l_FilePaths[i]);
   }
+  */
+
+  // TODO: We need some kind of dependency graph so we know which
+  // modules to load first
+  load_module(p_ProjectPath, "P:/misteda/modules/Gameplay");
+  load_module(p_ProjectPath, "P:/misteda/modules/Editor");
 }
 
 int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)

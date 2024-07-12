@@ -27,7 +27,8 @@ namespace Flode {
     Bool,
     Vector2,
     Vector3,
-    Quaternion
+    Quaternion,
+    Enum
   };
 
   enum class PinStringType
@@ -97,6 +98,9 @@ namespace Flode {
     Pin *create_handle_pin(PinDirection p_Direction,
                            Low::Util::String p_Title, u16 p_TypeId,
                            u64 p_PinId = 0);
+    Pin *Node::create_enum_pin(PinDirection p_Direction,
+                               Low::Util::String p_Title,
+                               u16 p_EnumId, u64 p_PinId = 0);
 
     Pin *create_string_pin(PinDirection p_Direction,
                            Low::Util::String p_Title,
@@ -206,6 +210,8 @@ namespace Flode {
     Low::Util::Name m_Name;
     Low::Util::List<Low::Util::Name> m_Namespace;
 
+    bool m_Internal;
+
     Low::Util::List<Node *> m_Nodes;
     Low::Util::List<Link *> m_Links;
 
@@ -231,10 +237,12 @@ namespace Flode {
     void delete_link(NodeEd::LinkId p_LinkId);
     void delete_node(NodeEd::NodeId p_NodeId);
 
-    void serialize(Low::Util::Yaml::Node &p_Node) const;
+    void serialize(Low::Util::Yaml::Node &p_Node,
+                   bool p_StoreNodePositions = true) const;
     void deserialize(Low::Util::Yaml::Node &p_Node);
 
-    Node *create_node(Low::Util::Name p_TypeName);
+    Node *create_node(Low::Util::Name p_TypeName,
+                      bool p_SetupPins = true);
 
     bool is_pin_connected(NodeEd::PinId p_PinId) const;
     NodeEd::PinId get_connected_pin(NodeEd::PinId p_PinId) const;

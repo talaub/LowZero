@@ -26,6 +26,7 @@ namespace Flode {
 
   void Editor::load(Low::Util::String p_Path)
   {
+    LOW_LOG_DEBUG << p_Path << LOW_LOG_END;
     m_LoadPath = p_Path;
   }
 
@@ -94,7 +95,7 @@ namespace Flode {
     Low::Util::List<PinType> l_Types = {
         PinType::String,  PinType::Number,  PinType::Bool,
         PinType::Vector2, PinType::Vector3, PinType::Quaternion,
-        PinType::Handle};
+        PinType::Handle,  PinType::Enum};
 
     struct Funcs
     {
@@ -121,43 +122,45 @@ namespace Flode {
       ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
       ImGui::Text("Graph");
       ImGui::PopFont();
-      {
-        ImGui::PushItemWidth(100.0f);
-        ImGui::Text("Name");
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-        ImGui::PushItemWidth(120.0f);
-        ImGui::Text(m_Graph->m_Name.c_str());
-        ImGui::PopItemWidth();
-      }
-      {
-        ImGui::PushID(985927);
-        ImGui::PushItemWidth(100.0f);
-        ImGui::Text("Namespace");
-        ImGui::PopItemWidth();
-        ImGui::SameLine();
-        ImGui::PushItemWidth(120.0f);
-        if (ImGui::Button(ICON_FA_PLUS "")) {
-          m_Graph->m_Namespace.push_back(Low::Util::Name("ns"));
-        }
-        ImGui::PopItemWidth();
-        int i = 0;
-        for (auto it = m_Graph->m_Namespace.begin();
-             it != m_Graph->m_Namespace.end();) {
-          ImGui::PushID(i);
-          ImGui::PushItemWidth(120.0f);
-          Low::Editor::Base::NameEdit("##namespaceedit", &*it);
+      if (!m_Graph->m_Internal) {
+        {
+          ImGui::PushItemWidth(100.0f);
+          ImGui::Text("Name");
           ImGui::PopItemWidth();
           ImGui::SameLine();
-          if (ImGui::Button(ICON_FA_TRASH "")) {
-            it = m_Graph->m_Namespace.erase(it);
-          } else {
-            it++;
+          ImGui::PushItemWidth(120.0f);
+          ImGui::Text(m_Graph->m_Name.c_str());
+          ImGui::PopItemWidth();
+        }
+        {
+          ImGui::PushID(985927);
+          ImGui::PushItemWidth(100.0f);
+          ImGui::Text("Namespace");
+          ImGui::PopItemWidth();
+          ImGui::SameLine();
+          ImGui::PushItemWidth(120.0f);
+          if (ImGui::Button(ICON_FA_PLUS "")) {
+            m_Graph->m_Namespace.push_back(Low::Util::Name("ns"));
+          }
+          ImGui::PopItemWidth();
+          int i = 0;
+          for (auto it = m_Graph->m_Namespace.begin();
+               it != m_Graph->m_Namespace.end();) {
+            ImGui::PushID(i);
+            ImGui::PushItemWidth(120.0f);
+            Low::Editor::Base::NameEdit("##namespaceedit", &*it);
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            if (ImGui::Button(ICON_FA_TRASH "")) {
+              it = m_Graph->m_Namespace.erase(it);
+            } else {
+              it++;
+            }
+            ImGui::PopID();
+            i++;
           }
           ImGui::PopID();
-          i++;
         }
-        ImGui::PopID();
       }
       ImGui::Separator();
       ImGui::PopID();
@@ -201,6 +204,9 @@ namespace Flode {
           // l_Changed = true;
 
           i_Variable->type = l_Types[l_CurrentValue];
+          if (i_Variable->type == PinType::Enum) {
+            i_Variable->typeId = Low::Util::get_enum_ids()[0];
+          }
         }
 
         ImGui::SameLine();
@@ -251,6 +257,32 @@ namespace Flode {
                 }
               }
             }
+          } else if (i_Variable->type == PinType::Enum) {
+            ImGui::Dummy(ImVec2(120.0f, 0.0f));
+            ImGui::SameLine();
+
+            bool i_TypeChanged = false;
+
+            Low::Util::List<u16> &i_EnumIds =
+                Low::Util::get_enum_ids();
+
+            if (ImGui::BeginCombo(
+                    "##enumtypeselector",
+                    Low::Util::get_enum_info(i_Variable->typeId)
+                        .name.c_str())) {
+              for (int j = 0; j < i_EnumIds.size(); ++j) {
+                if (ImGui::Selectable(
+                        Low::Util::get_enum_info(i_EnumIds[j])
+                            .name.c_str(),
+                        i_EnumIds[j] == i_Variable->typeId)) {
+                  i_Variable->typeId = i_EnumIds[j];
+                }
+              }
+              ImGui::EndCombo();
+            }
+
+            if (i_TypeChanged) {
+            }
           }
         }
 
@@ -266,6 +298,8 @@ namespace Flode {
   void Editor::render(float p_Delta)
   {
     bool l_Save = false;
+
+    auto &io = ImGui::GetIO();
 
     if (m_Graph) {
       if (ImGui::Button(ICON_FA_SAVE " Save")) {
@@ -293,8 +327,11 @@ namespace Flode {
 
     m_StoredMousePosition = ImGui::GetMousePos();
 
+    bool l_JustOpenedGraph = false;
+
     if (!m_LoadPath.empty()) {
       if (m_Graph) {
+        NodeEd::ClearSelection();
         delete m_Graph;
       }
 
@@ -303,6 +340,8 @@ namespace Flode {
 
       m_Graph = new Graph;
       m_Graph->deserialize(l_Node);
+
+      l_JustOpenedGraph = true;
 
       m_LoadPath = "";
     }
@@ -320,6 +359,10 @@ namespace Flode {
       ImGui::OpenPopup("Create Node");
     }
     NodeEd::Resume();
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F))) {
+      NodeEd::NavigateToSelection();
+    }
 
     NodeEd::Suspend();
     create_node_popup();
@@ -478,6 +521,10 @@ namespace Flode {
       }
     }
     NodeEd::EndDelete(); // Wrap up deletion action
+
+    if (l_JustOpenedGraph) {
+      NodeEd::NavigateToContent();
+    }
 
     NodeEd::End();
     NodeEd::SetCurrentEditor(nullptr);

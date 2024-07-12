@@ -12,6 +12,7 @@ namespace Flode {
       {
         Low::Util::Name name;
         PinType type;
+        u16 typeId;
         NodeEd::PinId pinId;
       };
 
@@ -35,9 +36,13 @@ namespace Flode {
       compile_output_pin(Low::Util::StringBuilder &p_Builder,
                          NodeEd::PinId p_PinId) const override;
 
-    protected:
       Low::Util::List<FunctionNodeParameter> m_Parameters;
       Low::Util::Name m_Name;
+      bool m_Editable;
+
+      bool m_HasReturnValue;
+      PinType m_ReturnType;
+      u16 m_ReturnTypeId;
 
       void create_dynamic_pins();
     };
@@ -98,6 +103,20 @@ namespace Flode {
       Variable *m_Variable;
 
       void create_dynamic_pins();
+    };
+
+    struct FLODE_API ReturnNumberNode : public Node
+    {
+      ReturnNumberNode();
+
+      Low::Util::String get_name(NodeNameType p_Type) const override;
+
+      virtual ImU32 get_color() const override;
+
+      virtual void setup_default_pins() override;
+
+      virtual void
+      compile(Low::Util::StringBuilder &p_Builder) const override;
     };
 
     FLODE_API void register_nodes();

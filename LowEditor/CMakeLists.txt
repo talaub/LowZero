@@ -55,6 +55,7 @@ target_compile_definitions(LowEditor PRIVATE
 
 include_directories(
   ${LOWEDITOR_INCLUDE_DIRS}
+  "${CMAKE_CURRENT_SOURCE_DIR}/private_include"
 )
 
 set_target_properties(LowEditor PROPERTIES OUTPUT_NAME "lowed")
@@ -74,4 +75,8 @@ target_include_directories(LowEditor PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/../Flode/include"
   "${NODEGRAPH_PATH}"
   "${NODEGRAPH_PATH}/examples/blueprints-example"
+)
+
+target_include_directories(LowEditor PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/private_include"
 )

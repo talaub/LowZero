@@ -95,6 +95,7 @@ namespace Low {
           Cflat::Identifier l_FunctionNameCflat(
               l_TickFunctionName.c_str());
 
+          /*
           Cflat::Function *l_Function =
               CflatGlobal::getEnvironment()->getFunction(
                   l_FunctionNameCflat);
@@ -112,6 +113,7 @@ namespace Low {
           l_Val.set(&p_Delta);
           l_Arguments.push_back(l_Val);
           l_Function->execute(l_Arguments, &l_ReturnValue);
+          */
         }
 
         System::MeshRenderer::tick(p_Delta, get_engine_state());

@@ -77,6 +77,9 @@ namespace Low {
 
         for (Util::FileSystem::WatchHandle i_WatchHandle :
              l_DirectoryWatcher.files) {
+          if (!Util::FileSystem::file_watcher_exists(i_WatchHandle)) {
+            continue;
+          }
           Util::FileSystem::FileWatcher &i_FileWatcher =
               Util::FileSystem::get_file_watcher(i_WatchHandle);
 

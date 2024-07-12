@@ -17,6 +17,7 @@
 #include "LowEditorChangeList.h"
 #include "LowEditorCommonOperations.h"
 #include "LowEditorAssetOperations.h"
+#include "LowEditorTypeEditor.h"
 
 #include "LowRendererExposedObjects.h"
 #include "LowRendererImGuiHelper.h"
@@ -272,96 +273,7 @@ namespace Low {
 
     bool HandlePropertiesSection::render_default(float p_Delta)
     {
-      uint32_t l_Id = 0;
-      Util::Name l_EntityName = N(entity);
-
-      for (auto it = m_Metadata.properties.begin();
-           it != m_Metadata.properties.end(); ++it) {
-        Util::String i_Id =
-            LOW_TO_STRING(l_Id) + LOW_TO_STRING(m_Metadata.typeId);
-        ImGui::PushID(std::stoul(i_Id.c_str()));
-
-        PropertyMetadata l_PropMetadata = *it;
-
-        l_Id++;
-        Util::RTTI::PropertyInfo &i_PropInfo = it->propInfo;
-
-        if (i_PropInfo.editorProperty) {
-          ImVec2 l_Pos = ImGui::GetCursorScreenPos();
-          float l_FullWidth = ImGui::GetContentRegionAvail().x;
-          float l_LabelWidth =
-              l_FullWidth * LOW_EDITOR_LABEL_WIDTH_REL;
-          float l_LabelHeight = 20.0f;
-
-          if (it->enumType) {
-            PropertyEditors::render_enum_selector(l_PropMetadata,
-                                                  m_Handle);
-          } else if (i_PropInfo.type ==
-                     Util::RTTI::PropertyType::HANDLE) {
-            PropertyEditors::render_handle_selector(i_PropInfo,
-                                                    m_Handle);
-          } else {
-            PropertyEditors::render_editor(l_PropMetadata, m_Handle,
-                                           i_PropInfo.get(m_Handle));
-          }
-          ImVec2 l_PosNew = ImGui::GetCursorScreenPos();
-
-          Util::String i_InvisButtonId = "IVB_";
-          i_InvisButtonId += i_PropInfo.name.c_str() + i_Id;
-
-          ImGui::SetCursorScreenPos(l_Pos);
-
-          ImGui::InvisibleButton(i_InvisButtonId.c_str(),
-                                 {l_LabelWidth, l_LabelHeight});
-          if (ImGui::BeginPopupContextItem(i_InvisButtonId.c_str())) {
-            if (m_Metadata.typeInfo.component) {
-              Core::Entity i_Entity =
-                  *(Core::Entity *)m_Metadata.typeInfo
-                       .properties[l_EntityName]
-                       .get(m_Handle);
-              if (i_Entity.has_component(
-                      Core::Component::PrefabInstance::TYPE_ID)) {
-                Core::Component::PrefabInstance i_Instance =
-                    i_Entity.get_component(
-                        Core::Component::PrefabInstance::TYPE_ID);
-                if (i_Instance.get_prefab().is_alive()) {
-                  if (i_Instance.get_overrides().find(
-                          m_Metadata.typeId) !=
-                      i_Instance.get_overrides().end()) {
-                    if (std::find(
-                            i_Instance
-                                .get_overrides()[m_Metadata.typeId]
-                                .begin(),
-                            i_Instance
-                                .get_overrides()[m_Metadata.typeId]
-                                .end(),
-                            i_PropInfo.name) !=
-                        i_Instance.get_overrides()[m_Metadata.typeId]
-                            .end()) {
-                      if (ImGui::MenuItem("Apply to prefab")) {
-                        i_Instance.get_prefab().apply(
-                            m_Handle, i_PropInfo.name);
-                        Core::Prefab i_Prefab =
-                            i_Instance.get_prefab();
-                        while (Core::Prefab(
-                                   i_Prefab.get_parent().get_id())
-                                   .is_alive()) {
-                          i_Prefab = i_Prefab.get_parent().get_id();
-                        }
-                        AssetWidget::save_prefab_asset(i_Prefab);
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            ImGui::EndPopup();
-          }
-          ImGui::SetCursorScreenPos(l_PosNew);
-        }
-        ImGui::PopID();
-      }
-
+      TypeEditor::show(m_Handle, m_Metadata);
       return false;
     }
 
