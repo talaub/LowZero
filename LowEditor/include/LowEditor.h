@@ -44,11 +44,16 @@ namespace Low {
     void register_editor_job(Util::String p_Title,
                              std::function<void()> p_Func);
 
+    void LOW_EDITOR_API register_widget(const char *p_Name,
+                                        Widget *p_Widget,
+                                        bool p_DefaultOpen = false);
+
     LOW_EDITOR_API DirectoryWatchers &get_directory_watchers();
 
     Util::Map<u16, TypeMetadata> &get_type_metadata();
     TypeMetadata &get_type_metadata(uint16_t p_TypeId);
     EnumMetadata &get_enum_metadata(Util::Name p_EnumTypeName);
+    EnumMetadata &get_enum_metadata(u16 p_EnumId);
 
     bool LOW_EDITOR_API is_editor_job_in_progress();
     Util::String LOW_EDITOR_API get_active_editor_job_name();

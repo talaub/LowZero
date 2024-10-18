@@ -38,6 +38,12 @@ namespace Low {
         WatchHandle l_WatchHandle = 0;
 
         if (l_HandlePos == g_Handles.end()) {
+            if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
+            LOW_LOG_WARN
+                << "Tried to watch directory that does not exist " << p_Path
+                << LOW_LOG_END;
+              return 0;
+          }
           DirectoryWatcher l_DirectoryWatcher;
           l_DirectoryWatcher.watchHandle = ++g_CurrentId;
           l_DirectoryWatcher.path = p_Path;

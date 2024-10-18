@@ -70,6 +70,7 @@ namespace Low {
         }
 
         static MeshRenderer find_by_index(uint32_t p_Index);
+        static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
 

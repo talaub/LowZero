@@ -120,6 +120,7 @@ namespace Low {
         l_TypeInfo.destroy = &Camera::destroy;
         l_TypeInfo.serialize = &Camera::serialize;
         l_TypeInfo.deserialize = &Camera::deserialize;
+        l_TypeInfo.find_by_index = &Camera::_find_by_index;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Camera::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -229,6 +230,11 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_Camera);
         LOW_PROFILE_FREE(type_slots_Camera);
+      }
+
+      Low::Util::Handle Camera::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       Camera Camera::find_by_index(uint32_t p_Index)

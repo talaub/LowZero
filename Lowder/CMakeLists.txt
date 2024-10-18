@@ -7,6 +7,9 @@ add_executable(Lowder ${SOURCES} ${INCLUDES})
 
 source_group("Header Files" FILES ${INCLUDES})
 
+set(WINDOWS_SDK_PATH "C:/Program Files (x86)/Windows Kits/10")
+set(DBGHELP_LIB_PATH "${WINDOWS_SDK_PATH}/Lib/10.0.22621.0/um/x64")
+
 add_dependencies(Lowder
   LowUtil
   LowMath
@@ -45,6 +48,7 @@ target_link_libraries(Lowder PRIVATE
   nativefiledialog
   assimp
   physx
+  "${DBGHELP_LIB_PATH}/Dbghelp.lib"
 )
 
 target_link_libraries(Lowder PRIVATE

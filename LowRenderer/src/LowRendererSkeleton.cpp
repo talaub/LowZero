@@ -110,6 +110,8 @@ namespace Low {
       l_TypeInfo.destroy = &Skeleton::destroy;
       l_TypeInfo.serialize = &Skeleton::serialize;
       l_TypeInfo.deserialize = &Skeleton::deserialize;
+      l_TypeInfo.find_by_index = &Skeleton::_find_by_index;
+      l_TypeInfo.find_by_name = &Skeleton::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Skeleton::_make;
       l_TypeInfo.duplicate_default = &Skeleton::_duplicate;
@@ -220,6 +222,11 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_Skeleton);
     }
 
+    Low::Util::Handle Skeleton::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     Skeleton Skeleton::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -243,6 +250,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle Skeleton::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     Skeleton Skeleton::find_by_name(Low::Util::Name p_Name)
     {
       for (auto it = ms_LivingInstances.begin();
@@ -251,6 +263,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     Skeleton Skeleton::duplicate(Low::Util::Name p_Name) const

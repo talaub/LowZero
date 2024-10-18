@@ -124,6 +124,7 @@ namespace Low {
         l_TypeInfo.destroy = &PointLight::destroy;
         l_TypeInfo.serialize = &PointLight::serialize;
         l_TypeInfo.deserialize = &PointLight::deserialize;
+        l_TypeInfo.find_by_index = &PointLight::_find_by_index;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &PointLight::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -233,6 +234,11 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_PointLight);
         LOW_PROFILE_FREE(type_slots_PointLight);
+      }
+
+      Low::Util::Handle PointLight::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       PointLight PointLight::find_by_index(uint32_t p_Index)

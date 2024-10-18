@@ -123,6 +123,10 @@ namespace Low {
         l_TypeInfo.serialize = &PipelineResourceSignature::serialize;
         l_TypeInfo.deserialize =
             &PipelineResourceSignature::deserialize;
+        l_TypeInfo.find_by_index =
+            &PipelineResourceSignature::_find_by_index;
+        l_TypeInfo.find_by_name =
+            &PipelineResourceSignature::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &PipelineResourceSignature::_make;
         l_TypeInfo.duplicate_default =
@@ -437,6 +441,12 @@ namespace Low {
         LOW_PROFILE_FREE(type_slots_PipelineResourceSignature);
       }
 
+      Low::Util::Handle
+      PipelineResourceSignature::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
+      }
+
       PipelineResourceSignature
       PipelineResourceSignature::find_by_index(uint32_t p_Index)
       {
@@ -462,6 +472,12 @@ namespace Low {
         return ms_Capacity;
       }
 
+      Low::Util::Handle
+      PipelineResourceSignature::_find_by_name(Low::Util::Name p_Name)
+      {
+        return find_by_name(p_Name).get_id();
+      }
+
       PipelineResourceSignature
       PipelineResourceSignature::find_by_name(Low::Util::Name p_Name)
       {
@@ -471,6 +487,7 @@ namespace Low {
             return *it;
           }
         }
+        return 0ull;
       }
 
       PipelineResourceSignature PipelineResourceSignature::duplicate(

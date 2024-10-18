@@ -14,11 +14,11 @@ namespace Low {
 
     void initialize()
     {
-      g_Project.dataPath = "P:/misteda/data";
-      g_Project.rootPath = "P:/misteda";
+      g_Project.dataPath = "./data";
+      g_Project.rootPath = "./";
 
-      g_Project.engineRootPath = "P:";
-      g_Project.engineDataPath = "P:/LowData";
+      g_Project.engineRootPath = "./";
+      g_Project.engineDataPath = "./LowData";
 
       Log::initialize();
       Memory::initialize();

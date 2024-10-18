@@ -115,6 +115,8 @@ namespace Low {
       l_TypeInfo.destroy = &SkeletalAnimation::destroy;
       l_TypeInfo.serialize = &SkeletalAnimation::serialize;
       l_TypeInfo.deserialize = &SkeletalAnimation::deserialize;
+      l_TypeInfo.find_by_index = &SkeletalAnimation::_find_by_index;
+      l_TypeInfo.find_by_name = &SkeletalAnimation::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &SkeletalAnimation::_make;
       l_TypeInfo.duplicate_default = &SkeletalAnimation::_duplicate;
@@ -228,6 +230,12 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_SkeletalAnimation);
     }
 
+    Low::Util::Handle
+    SkeletalAnimation::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     SkeletalAnimation
     SkeletalAnimation::find_by_index(uint32_t p_Index)
     {
@@ -252,6 +260,12 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle
+    SkeletalAnimation::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     SkeletalAnimation
     SkeletalAnimation::find_by_name(Low::Util::Name p_Name)
     {
@@ -261,6 +275,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     SkeletalAnimation

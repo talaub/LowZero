@@ -32,6 +32,10 @@
 #include "LowEditor.h"
 
 #include <windows.h>
+#include <dbghelp.h>
+#include <tchar.h>
+
+#define RELEASE_BUILD 0
 
 typedef int(__stdcall *f_funci)();
 
@@ -59,6 +63,47 @@ void *operator new[](size_t size, size_t alignment,
                      int line)
 {
   return malloc(size);
+}
+
+// Function to write the minidump
+void CreateMiniDump(EXCEPTION_POINTERS *pep)
+{
+  // Open a file to write the minidump
+  HANDLE hFile =
+      CreateFile(_T("minidump.dmp"), GENERIC_WRITE, 0, NULL,
+                 CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (hFile != INVALID_HANDLE_VALUE) {
+    // Initialize MINIDUMP_EXCEPTION_INFORMATION struct
+    MINIDUMP_EXCEPTION_INFORMATION mdei;
+    mdei.ThreadId = GetCurrentThreadId();
+    mdei.ExceptionPointers = pep;
+    mdei.ClientPointers = FALSE;
+
+    // Write the minidump
+    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
+                      hFile, MiniDumpNormal, pep ? &mdei : NULL, NULL,
+                      NULL);
+
+    // Close the file handle
+    CloseHandle(hFile);
+
+    std::cout << "Minidump created." << std::endl;
+  } else {
+    std::cerr << "Failed to create minidump file." << std::endl;
+  }
+}
+
+// Custom unhandled exception filter
+LONG WINAPI
+MyUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo)
+{
+  // Call the function to create the minidump
+  CreateMiniDump(pExceptionInfo);
+
+  // Pass exception to the default handler, so the application can
+  // terminate normally
+  return EXCEPTION_EXECUTE_HANDLER;
 }
 
 static void setup_scene()
@@ -202,25 +247,30 @@ void load_project(Low::Util::String p_ProjectPath)
 
   Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
 
-  /*
-  for (int i = 0; i < l_FilePaths.size(); ++i) {
-    if (!Util::FileIO::is_directory(l_FilePaths[i].c_str())) {
-      continue;
-    }
-    Util::String i_ModuleConfigPath =
-        l_FilePaths[i] + "\\module.yaml";
-    if (!Util::FileIO::file_exists_sync(i_ModuleConfigPath.c_str())) {
-      continue;
-    }
-
-    load_module(p_ProjectPath, l_FilePaths[i]);
+/*
+for (int i = 0; i < l_FilePaths.size(); ++i) {
+  if (!Util::FileIO::is_directory(l_FilePaths[i].c_str())) {
+    continue;
   }
-  */
+  Util::String i_ModuleConfigPath =
+      l_FilePaths[i] + "\\module.yaml";
+  if (!Util::FileIO::file_exists_sync(i_ModuleConfigPath.c_str())) {
+    continue;
+  }
 
-  // TODO: We need some kind of dependency graph so we know which
-  // modules to load first
+  load_module(p_ProjectPath, l_FilePaths[i]);
+}
+*/
+
+// TODO: We need some kind of dependency graph so we know which
+// modules to load first
+#if RELEASE_BUILD
+  load_module(p_ProjectPath, "./modules/Gameplay");
+  load_module(p_ProjectPath, "./modules/Editor");
+#else
   load_module(p_ProjectPath, "P:/misteda/modules/Gameplay");
   load_module(p_ProjectPath, "P:/misteda/modules/Editor");
+#endif
 }
 
 int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
@@ -232,9 +282,13 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   load_project(p_ProjectPath);
   // return 0;
 
+  std::cout << "Initializing renderer" << std::endl;
   Low::Renderer::initialize();
+  std::cout << "Renderer initialized" << std::endl;
 
+  std::cout << "Initializing core" << std::endl;
   Low::Core::initialize();
+  std::cout << "Core initialized" << std::endl;
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
@@ -274,6 +328,8 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 
 int main(int argc, char *argv[])
 {
+  SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+
   bool l_IsHost = false;
   Low::Util::String l_ProjectPath = "";
   if (argc > 1) {
@@ -283,5 +339,9 @@ int main(int argc, char *argv[])
     Low::Util::String l_Arg = argv[2];
     l_IsHost = l_Arg == "1";
   }
+#if RELEASE_BUILD
+  l_IsHost = true;
+  l_ProjectPath = "./";
+#endif
   return run_low(l_IsHost, l_ProjectPath);
 }

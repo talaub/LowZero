@@ -67,8 +67,11 @@ namespace Low {
 
       float l_UpdateTime = 8.0f;
       Util::String l_DataPath = Util::get_project().dataPath;
+      LOW_LOG_DEBUG << "Initializing filesystem watchers "
+                    << l_DataPath << LOW_LOG_END;
       l_UpdateTime = 1.0f;
 
+      LOW_LOG_DEBUG << "Watching scripts" << LOW_LOG_END;
       g_FilesystemWatchers.scriptDirectory =
           Util::FileSystem::watch_directory(
               l_DataPath + "/scripts",
@@ -77,6 +80,7 @@ namespace Low {
               },
               0.5f);
 
+      LOW_LOG_DEBUG << "Watching meshassets" << LOW_LOG_END;
       g_FilesystemWatchers.meshAssetDirectory =
           Util::FileSystem::watch_directory(
               l_DataPath + "/assets/meshes",
@@ -96,6 +100,7 @@ namespace Low {
       g_WatchHandles[MeshAsset::TYPE_ID] =
           g_FilesystemWatchers.meshAssetDirectory;
 
+      LOW_LOG_DEBUG << "Watching material assets" << LOW_LOG_END;
       g_FilesystemWatchers.materialAssetDirectory =
           Util::FileSystem::watch_directory(
               l_DataPath + "/assets/materials",
@@ -115,6 +120,7 @@ namespace Low {
       g_WatchHandles[Material::TYPE_ID] =
           g_FilesystemWatchers.materialAssetDirectory;
 
+      LOW_LOG_DEBUG << "Watching prefab assets" << LOW_LOG_END;
       g_FilesystemWatchers.prefabAssetDirectory =
           Util::FileSystem::watch_directory(
               l_DataPath + "/assets/prefabs",
@@ -134,6 +140,7 @@ namespace Low {
       g_WatchHandles[Prefab::TYPE_ID] =
           g_FilesystemWatchers.prefabAssetDirectory;
 
+      LOW_LOG_DEBUG << "Watching mesh ressources" << LOW_LOG_END;
       g_FilesystemWatchers.meshResourceDirectory =
           Util::FileSystem::watch_directory(
               l_DataPath + "/resources/meshes",
@@ -202,11 +209,17 @@ namespace Low {
 
     static void initialize_types()
     {
+      LOW_LOG_DEBUG << "init types" << LOW_LOG_END;
       initialize_resource_types();
+      LOW_LOG_DEBUG << "done resource types" << LOW_LOG_END;
       initialize_asset_types();
+      LOW_LOG_DEBUG << "done asset types" << LOW_LOG_END;
       initialize_base_types();
+      LOW_LOG_DEBUG << "done base types" << LOW_LOG_END;
       initialize_component_types();
+      LOW_LOG_DEBUG << "done component types" << LOW_LOG_END;
       initialize_ui_types();
+      LOW_LOG_DEBUG << "done ui types" << LOW_LOG_END;
     }
 
     static void load_mesh_resources()
@@ -402,7 +415,9 @@ namespace Low {
 
       initialize_types();
 
+      LOW_LOG_DEBUG << "init debug geometry" << LOW_LOG_END;
       DebugGeometry::initialize();
+      LOW_LOG_DEBUG << "done debug geometry" << LOW_LOG_END;
       GameLoop::initialize();
       Scripting::initialize();
 

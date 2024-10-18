@@ -122,6 +122,8 @@ namespace Low {
       l_TypeInfo.destroy = &ComputeStepConfig::destroy;
       l_TypeInfo.serialize = &ComputeStepConfig::serialize;
       l_TypeInfo.deserialize = &ComputeStepConfig::deserialize;
+      l_TypeInfo.find_by_index = &ComputeStepConfig::_find_by_index;
+      l_TypeInfo.find_by_name = &ComputeStepConfig::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &ComputeStepConfig::_make;
       l_TypeInfo.duplicate_default = &ComputeStepConfig::_duplicate;
@@ -280,6 +282,12 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_ComputeStepConfig);
     }
 
+    Low::Util::Handle
+    ComputeStepConfig::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     ComputeStepConfig
     ComputeStepConfig::find_by_index(uint32_t p_Index)
     {
@@ -304,6 +312,12 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle
+    ComputeStepConfig::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     ComputeStepConfig
     ComputeStepConfig::find_by_name(Low::Util::Name p_Name)
     {
@@ -313,6 +327,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     ComputeStepConfig

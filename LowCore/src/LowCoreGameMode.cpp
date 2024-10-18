@@ -114,6 +114,8 @@ namespace Low {
       l_TypeInfo.destroy = &GameMode::destroy;
       l_TypeInfo.serialize = &GameMode::serialize;
       l_TypeInfo.deserialize = &GameMode::deserialize;
+      l_TypeInfo.find_by_index = &GameMode::_find_by_index;
+      l_TypeInfo.find_by_name = &GameMode::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &GameMode::_make;
       l_TypeInfo.duplicate_default = &GameMode::_duplicate;
@@ -201,6 +203,11 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_GameMode);
     }
 
+    Low::Util::Handle GameMode::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     GameMode GameMode::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -224,6 +231,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle GameMode::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     GameMode GameMode::find_by_name(Low::Util::Name p_Name)
     {
       for (auto it = ms_LivingInstances.begin();
@@ -232,6 +244,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     GameMode GameMode::duplicate(Low::Util::Name p_Name) const

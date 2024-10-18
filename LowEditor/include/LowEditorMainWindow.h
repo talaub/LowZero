@@ -29,6 +29,9 @@ namespace Low {
 
     void set_widget_open(Util::Name p_Name, bool p_Open);
 
+    void register_editor_widget(const char *p_Name, Widget *p_Widget,
+                                bool p_DefaultOpen = false);
+
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
 

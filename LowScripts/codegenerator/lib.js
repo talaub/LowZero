@@ -405,7 +405,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
           for (let i_Param of i_Func.parameters) {
             i_Param.accessor_type = get_accessor_type(
               i_Param.type,
-              i_Param.handle,
+              i_Param.handle || i_Param.enum,
             );
             i_Param.name = `p_${capitalize_first_letter(i_Param.name)}`;
           }

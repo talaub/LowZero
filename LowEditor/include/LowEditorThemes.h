@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowEditorApi.h"
+
 #include "LowUtilName.h"
 #include "LowMath.h"
 
@@ -55,10 +57,10 @@ namespace Low {
     bool theme_exists(Util::Name p_Name);
     void theme_apply(Util::Name p_Name);
 
-    Theme &theme_get_current();
-    Util::Name theme_get_current_name();
+    LOW_EDITOR_API Theme &theme_get_current();
+    LOW_EDITOR_API Util::Name theme_get_current_name();
 
-    ImVec4 color_to_imvec4(Math::Color &p_Color);
-    ImColor color_to_imcolor(Math::Color &p_Color);
+    LOW_EDITOR_API ImVec4 color_to_imvec4(Math::Color &p_Color);
+    LOW_EDITOR_API ImColor color_to_imcolor(Math::Color &p_Color);
   } // namespace Editor
 } // namespace Low

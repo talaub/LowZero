@@ -126,6 +126,8 @@ namespace Low {
       l_TypeInfo.destroy = &Region::destroy;
       l_TypeInfo.serialize = &Region::serialize;
       l_TypeInfo.deserialize = &Region::deserialize;
+      l_TypeInfo.find_by_index = &Region::_find_by_index;
+      l_TypeInfo.find_by_name = &Region::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Region::_make;
       l_TypeInfo.duplicate_default = &Region::_duplicate;
@@ -373,6 +375,11 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_Region);
     }
 
+    Low::Util::Handle Region::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     Region Region::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -396,6 +403,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle Region::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     Region Region::find_by_name(Low::Util::Name p_Name)
     {
       for (auto it = ms_LivingInstances.begin();
@@ -404,6 +416,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     Region Region::duplicate(Low::Util::Name p_Name) const

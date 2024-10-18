@@ -134,6 +134,7 @@ namespace Low {
         l_TypeInfo.destroy = &NavmeshAgent::destroy;
         l_TypeInfo.serialize = &NavmeshAgent::serialize;
         l_TypeInfo.deserialize = &NavmeshAgent::deserialize;
+        l_TypeInfo.find_by_index = &NavmeshAgent::_find_by_index;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &NavmeshAgent::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -327,6 +328,11 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_NavmeshAgent);
         LOW_PROFILE_FREE(type_slots_NavmeshAgent);
+      }
+
+      Low::Util::Handle NavmeshAgent::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       NavmeshAgent NavmeshAgent::find_by_index(uint32_t p_Index)

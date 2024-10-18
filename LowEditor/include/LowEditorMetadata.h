@@ -80,6 +80,7 @@ namespace Low {
       Util::String fullTypeString;
       Util::String module;
       Util::List<EnumEntryMetadata> options;
+      u16 enumId;
     };
   } // namespace Editor
 } // namespace Low

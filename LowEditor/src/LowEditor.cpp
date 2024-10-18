@@ -22,6 +22,7 @@
 #include "FlodeDebugNodes.h"
 #include "FlodeCastNodes.h"
 #include "FlodeHandleNodes.h"
+#include "FlodeBoolNodes.h"
 
 namespace Low {
   namespace Editor {
@@ -83,6 +84,18 @@ namespace Low {
                      g_TypeMetadata.end(),
                  "Could not find type metadata");
       return g_TypeMetadata[p_TypeId];
+    }
+
+    EnumMetadata &get_enum_metadata(u16 p_EnumId)
+    {
+      for (EnumMetadata &i_Metadata : g_EnumMetadata) {
+        if (i_Metadata.enumId == p_EnumId) {
+          return i_Metadata;
+        }
+      }
+
+      LOW_ASSERT(false, "Could not find enum metadata");
+      return EnumMetadata();
     }
 
     EnumMetadata &get_enum_metadata(Util::Name p_EnumTypeName)
@@ -444,7 +457,9 @@ namespace Low {
       }
     }
 
-    static inline void parse_enum_metadata(Util::Yaml::Node &p_Node)
+    static inline void
+    parse_enum_metadata(Util::Yaml::Node &p_Node,
+                        Util::Yaml::Node &p_EnumIdsNode)
     {
       Util::String l_ModuleString =
           LOW_YAML_AS_STRING(p_Node["module"]);
@@ -472,6 +487,10 @@ namespace Low {
         EnumMetadata i_Metadata;
         i_Metadata.name = LOW_YAML_AS_NAME(it->first);
         i_Metadata.module = l_ModuleString;
+
+        i_Metadata.enumId =
+            p_EnumIdsNode[l_ModuleString.c_str()][i_EnumName.c_str()]
+                .as<uint16_t>();
 
         i_Metadata.namespaces = l_Namespaces;
         i_Metadata.namespaceString = l_NamespaceString;
@@ -507,6 +526,8 @@ namespace Low {
 
       Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
           (l_TypeConfigPath + "/typeids.yaml").c_str());
+      Util::Yaml::Node l_EnumIdsNode = Util::Yaml::load_file(
+          (l_TypeConfigPath + "/enumids.yaml").c_str());
 
       Util::List<Util::String> l_FilePaths;
       Util::FileIO::list_directory(l_TypeConfigPath.c_str(),
@@ -528,7 +549,7 @@ namespace Low {
         }
 
         Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
-        parse_enum_metadata(i_Node);
+        parse_enum_metadata(i_Node, l_EnumIdsNode);
       }
     }
 
@@ -579,6 +600,7 @@ namespace Low {
         Flode::SyntaxNodes::register_nodes();
         Flode::DebugNodes::register_nodes();
         Flode::CastNodes::register_nodes();
+        Flode::BoolNodes::register_nodes();
 
         register_type_nodes();
       }
@@ -684,6 +706,12 @@ namespace Low {
     {
       return !g_EditorJobQueue.empty() &&
              g_EditorJobQueue.front().submitted;
+    }
+
+    void register_widget(const char *p_Name, Widget *p_Widget,
+                         bool p_DefaultOpen)
+    {
+      register_editor_widget(p_Name, p_Widget, p_DefaultOpen);
     }
 
     Util::String get_active_editor_job_name()

@@ -280,7 +280,11 @@ namespace Low {
         const aiScene *l_AiScene = l_Importer.ReadFile(
             p_FilePath.c_str(), aiProcess_CalcTangentSpace);
 
-        LOW_ASSERT(l_AiScene, "Could not load mesh scene from file");
+        String l_ErrorMsg = "Could not load mesh scene from file '";
+        l_ErrorMsg += p_FilePath;
+        l_ErrorMsg += "'";
+
+        LOW_ASSERT(l_AiScene, p_FilePath.c_str());
 
         const aiNode *l_RootNode = l_AiScene->mRootNode;
 

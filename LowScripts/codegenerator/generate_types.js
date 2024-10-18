@@ -513,6 +513,7 @@ function generate_header(p_Type) {
   t += empty();
 
   t += line(`static ${p_Type.name} find_by_index(uint32_t p_Index);`);
+  t += line(`static Low::Util::Handle _find_by_index(uint32_t p_Index);`);
   t += empty();
 
   t += line(`bool is_alive() const;`, n);
@@ -553,6 +554,10 @@ function generate_header(p_Type) {
   t += empty();
   if (!p_Type.component && !p_Type.ui_component) {
     t += line(`static ${p_Type.name} find_by_name(Low::Util::Name p_Name);`, n);
+    t += line(
+      `static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);`,
+      n,
+    );
     t += empty();
   }
 
@@ -978,6 +983,7 @@ function generate_source(p_Type) {
   t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);
   t += line(`l_TypeInfo.serialize = &${p_Type.name}::serialize;`);
   t += line(`l_TypeInfo.deserialize = &${p_Type.name}::deserialize;`);
+  t += line(`l_TypeInfo.find_by_index = &${p_Type.name}::_find_by_index;`);
   if (p_Type.component) {
     t += line(`l_TypeInfo.make_default = nullptr;`);
     t += line(`l_TypeInfo.make_component = &${p_Type.name}::_make;`);
@@ -989,6 +995,7 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.duplicate_default = nullptr;`);
     t += line(`l_TypeInfo.duplicate_component = &${p_Type.name}::_duplicate;`);
   } else {
+    t += line(`l_TypeInfo.find_by_name = &${p_Type.name}::_find_by_name;`);
     t += line(`l_TypeInfo.make_component = nullptr;`);
     t += line(`l_TypeInfo.make_default = &${p_Type.name}::_make;`);
     t += line(`l_TypeInfo.duplicate_default = &${p_Type.name}::_duplicate;`);
@@ -1138,6 +1145,13 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
 
+  t += line(
+    `Low::Util::Handle ${p_Type.name}::_find_by_index(uint32_t p_Index) {`,
+  );
+  t += line(`return find_by_index(p_Index).get_id();`);
+  t += line("}");
+  t += empty();
+
   t += line(`${p_Type.name} ${p_Type.name}::find_by_index(uint32_t p_Index) {`);
   t += line(`LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");`);
   t += empty();
@@ -1163,6 +1177,14 @@ function generate_source(p_Type) {
   t += empty();
   if (!p_Type.component && !p_Type.ui_component) {
     t += line(
+      `Low::Util::Handle ${p_Type.name}::_find_by_name(Low::Util::Name p_Name) {`,
+      n,
+    );
+    t += line("return find_by_name(p_Name).get_id();");
+    t += line("}");
+    t += empty();
+
+    t += line(
       `${p_Type.name} ${p_Type.name}::find_by_name(Low::Util::Name p_Name) {`,
       n,
     );
@@ -1173,6 +1195,7 @@ function generate_source(p_Type) {
     t += line(`return *it;`);
     t += line("}");
     t += line("}");
+    t += line("return 0ull;");
     t += line("}");
   }
   t += empty();

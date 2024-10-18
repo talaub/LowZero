@@ -28,7 +28,8 @@ namespace Flode {
     Vector2,
     Vector3,
     Quaternion,
-    Enum
+    Enum,
+    Dynamic
   };
 
   enum class PinStringType
@@ -43,6 +44,10 @@ namespace Flode {
     Output
   };
 
+  struct CompileContext;
+
+  void ShowToolTip(const char *p_Label, ImColor p_Color);
+
   void initialize();
 
   Low::Util::List<Low::Editor::TypeMetadata> &get_exposed_types();
@@ -51,13 +56,15 @@ namespace Flode {
                                   Low::Util::Variant &p_Variant);
 
   Low::Util::String pin_direction_to_string(PinDirection p_Direction);
-  Low::Util::String pin_type_to_string(PinType p_Type);
+  Low::Util::String FLODE_API pin_type_to_string(PinType p_Type);
 
-  PinType string_to_pin_type(Low::Util::String p_String);
+  PinType FLODE_API string_to_pin_type(Low::Util::String p_String);
 
   PinType property_type_to_pin_type(u8 p_PropertyType);
 
   PinStringType property_type_to_pin_string_type(u8 p_PropertyType);
+
+  PinType variant_type_to_pin_type(u8 p_VariantType);
 
   struct FLODE_API Pin
   {
@@ -86,6 +93,10 @@ namespace Flode {
     Low::Util::List<Pin *> pins;
 
     Low::Util::Name typeName;
+
+    virtual void initialize()
+    {
+    }
 
     Graph *graph;
 
@@ -116,6 +127,11 @@ namespace Flode {
                               u32 p_PropertyType, u16 p_TypeId,
                               u64 p_PinId = 0);
 
+    Pin *create_pin_from_variant(PinDirection p_Direction,
+                                 Low::Util::String p_Title,
+                                 Low::Util::Variant &p_Variant,
+                                 u64 p_PinId = 0);
+
     Pin *find_pin(NodeEd::PinId p_PinId) const;
     Pin *find_pin_checked(NodeEd::PinId p_PinId) const;
 
@@ -127,8 +143,20 @@ namespace Flode {
     {
       return IM_COL32_BLACK;
     }
+
     virtual void setup_default_pins()
     {
+    }
+
+    virtual void on_pin_connected(Pin *p_Pin)
+    {
+    }
+
+    virtual bool
+    accept_dynamic_pin_connection(Pin *p_Pin,
+                                  Pin *p_ConnectedPin) const
+    {
+      return true;
     }
 
     virtual void render();
@@ -209,6 +237,11 @@ namespace Flode {
   {
     Low::Util::Name m_Name;
     Low::Util::List<Low::Util::Name> m_Namespace;
+
+    Low::Util::Handle m_ContextHandle;
+
+    bool has_context_handle() const;
+    u16 get_context_handle_type_id() const;
 
     bool m_Internal;
 

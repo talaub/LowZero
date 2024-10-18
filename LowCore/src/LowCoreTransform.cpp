@@ -152,6 +152,7 @@ namespace Low {
         l_TypeInfo.destroy = &Transform::destroy;
         l_TypeInfo.serialize = &Transform::serialize;
         l_TypeInfo.deserialize = &Transform::deserialize;
+        l_TypeInfo.find_by_index = &Transform::_find_by_index;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Transform::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -500,6 +501,11 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_Transform);
         LOW_PROFILE_FREE(type_slots_Transform);
+      }
+
+      Low::Util::Handle Transform::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       Transform Transform::find_by_index(uint32_t p_Index)

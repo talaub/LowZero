@@ -56,9 +56,16 @@ namespace Low {
         Util::Name l_Name = *p_Name;
 
         char l_Buffer[255];
-        uint32_t l_NameLength = strlen(l_Name.c_str());
-        memcpy(l_Buffer, l_Name.c_str(), l_NameLength);
-        l_Buffer[l_NameLength] = '\0';
+        if (l_Name.is_valid()) {
+          uint32_t l_NameLength = strlen(l_Name.c_str());
+          memcpy(l_Buffer, l_Name.c_str(), l_NameLength);
+          l_Buffer[l_NameLength] = '\0';
+        } else {
+          const char *l_Content = "None";
+          uint32_t l_NameLength = 4;
+          memcpy(l_Buffer, l_Content, l_NameLength);
+          l_Buffer[l_NameLength] = '\0';
+        }
 
         if (ImGui::InputText(p_Label, l_Buffer, 255,
                              ImGuiInputTextFlags_EnterReturnsTrue)) {

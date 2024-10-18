@@ -76,6 +76,7 @@ namespace Low {
         }
 
         static Context find_by_index(uint32_t p_Index);
+        static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
 
@@ -91,6 +92,8 @@ namespace Low {
                    Low::Util::Name p_Name);
 
         static Context find_by_name(Low::Util::Name p_Name);
+        static Low::Util::Handle
+        _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);

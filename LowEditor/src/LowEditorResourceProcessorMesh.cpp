@@ -87,8 +87,14 @@ namespace Low {
 
           const aiScene *l_AiScene = l_Importer.ReadFileFromMemory(
               l_Content.c_str(), l_Content.size(), 0);
+
+          Util::String l_ErrorMessage =
+              "Could not load mesh scene from file '";
+          l_ErrorMessage = p_FilePath;
+          l_ErrorMessage += "'";
+
           LOW_ASSERT(l_AiScene,
-                     "Could not load mesh scene from file");
+                     l_ErrorMessage.c_str());
 
           bool l_OriginalSceneHasAnimation =
               l_AiScene->HasAnimations();
@@ -123,8 +129,14 @@ namespace Low {
 
           const aiScene *l_AiScene =
               l_Importer.ReadFile(p_FilePath.c_str(), 0);
+
+          Util::String l_ErrorMessage =
+              "Could not load anim mesh scene from file '";
+          l_ErrorMessage = p_FilePath;
+          l_ErrorMessage += "'";
+
           LOW_ASSERT(l_AiScene,
-                     "Could not load mesh scene from file");
+                     l_ErrorMessage.c_str());
           LOW_ASSERT(
               l_AiScene->HasAnimations(),
               "Meshfile does not contain any animation information");

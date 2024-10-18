@@ -112,6 +112,8 @@ namespace Low {
         l_TypeInfo.destroy = &ImGuiImage::destroy;
         l_TypeInfo.serialize = &ImGuiImage::serialize;
         l_TypeInfo.deserialize = &ImGuiImage::deserialize;
+        l_TypeInfo.find_by_index = &ImGuiImage::_find_by_index;
+        l_TypeInfo.find_by_name = &ImGuiImage::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &ImGuiImage::_make;
         l_TypeInfo.duplicate_default = &ImGuiImage::_duplicate;
@@ -236,6 +238,11 @@ namespace Low {
         LOW_PROFILE_FREE(type_slots_ImGuiImage);
       }
 
+      Low::Util::Handle ImGuiImage::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
+      }
+
       ImGuiImage ImGuiImage::find_by_index(uint32_t p_Index)
       {
         LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -259,6 +266,12 @@ namespace Low {
         return ms_Capacity;
       }
 
+      Low::Util::Handle
+      ImGuiImage::_find_by_name(Low::Util::Name p_Name)
+      {
+        return find_by_name(p_Name).get_id();
+      }
+
       ImGuiImage ImGuiImage::find_by_name(Low::Util::Name p_Name)
       {
         for (auto it = ms_LivingInstances.begin();
@@ -267,6 +280,7 @@ namespace Low {
             return *it;
           }
         }
+        return 0ull;
       }
 
       ImGuiImage ImGuiImage::duplicate(Low::Util::Name p_Name) const

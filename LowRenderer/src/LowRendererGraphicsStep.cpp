@@ -159,6 +159,8 @@ namespace Low {
       l_TypeInfo.destroy = &GraphicsStep::destroy;
       l_TypeInfo.serialize = &GraphicsStep::serialize;
       l_TypeInfo.deserialize = &GraphicsStep::deserialize;
+      l_TypeInfo.find_by_index = &GraphicsStep::_find_by_index;
+      l_TypeInfo.find_by_name = &GraphicsStep::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &GraphicsStep::_make;
       l_TypeInfo.duplicate_default = &GraphicsStep::_duplicate;
@@ -737,6 +739,11 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_GraphicsStep);
     }
 
+    Low::Util::Handle GraphicsStep::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     GraphicsStep GraphicsStep::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -760,6 +767,12 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle
+    GraphicsStep::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     GraphicsStep GraphicsStep::find_by_name(Low::Util::Name p_Name)
     {
       for (auto it = ms_LivingInstances.begin();
@@ -768,6 +781,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     GraphicsStep GraphicsStep::duplicate(Low::Util::Name p_Name) const

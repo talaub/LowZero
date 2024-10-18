@@ -32,6 +32,9 @@ namespace Low {
       void LOW_EXPORT serialize(Yaml::Node &p_Node,
                                 Math::Cylinder &p_Value);
 
+      void LOW_EXPORT serialize_handle(Yaml::Node &p_Node,
+                                       Handle p_Handle);
+
       void LOW_EXPORT serialize_variant(Yaml::Node &p_Node,
                                         Variant p_Variant);
 
@@ -55,6 +58,8 @@ namespace Low {
       Variant LOW_EXPORT deserialize_variant(Yaml::Node &p_Node);
 
       u8 LOW_EXPORT deserialize_enum(Yaml::Node &p_Node);
+
+      Handle LOW_EXPORT deserialize_handle(Yaml::Node &p_Node);
     } // namespace Serialization
   }   // namespace Util
 } // namespace Low

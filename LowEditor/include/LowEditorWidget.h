@@ -1,10 +1,12 @@
 #pragma once
 
+#include "LowEditorApi.h"
+
 #include "LowUtilLogger.h"
 
 namespace Low {
   namespace Editor {
-    struct Widget
+    struct LOW_EDITOR_API Widget
     {
       virtual void render(float p_Delta)
       {

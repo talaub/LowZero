@@ -35,6 +35,29 @@ namespace Flode {
   Low::Util::Map<Low::Util::Name, std::function<Node *()>>
       g_NodeTypeNames;
 
+  void ShowToolTip(const char *p_Label, ImColor p_Color)
+  {
+    // ImGui::SetTooltip(p_Label);
+    // return;
+    ImGui::SetCursorPosY(ImGui::GetMousePos().y -
+                         ImGui::GetTextLineHeight() * 2);
+    auto l_Size = ImGui::CalcTextSize(p_Label);
+
+    auto l_Padding = ImGui::GetStyle().FramePadding;
+    auto l_Spacing = ImGui::GetStyle().ItemSpacing;
+
+    ImGui::SetCursorPos(ImGui::GetMousePos() +
+                        ImVec2(l_Spacing.x, -l_Spacing.y));
+
+    auto l_RectMin = ImGui::GetMousePos() - l_Padding;
+    auto l_RectMax = ImGui::GetMousePos() + l_Size + l_Padding;
+
+    auto l_DrawList = ImGui::GetWindowDrawList();
+    l_DrawList->AddRectFilled(l_RectMin, l_RectMax, p_Color,
+                              l_Size.y * 0.15f);
+    ImGui::TextUnformatted(p_Label);
+  }
+
   void initialize()
   {
     for (auto it = Low::Editor::get_type_metadata().begin();
@@ -56,8 +79,21 @@ namespace Flode {
     switch (p_Pin->type) {
     case PinType::Handle:
       return "0ull";
-    case PinType::Enum:
-      return "0";
+    case PinType::Enum: {
+      Low::Util::RTTI::EnumInfo l_EnumInfo =
+          Low::Util::get_enum_info(p_Pin->typeId);
+      Low::Editor::EnumMetadata &l_EnumMetadata =
+          Low::Editor::get_enum_metadata(p_Pin->typeId);
+      Low::Util::String l_EnumEntryString =
+          l_EnumInfo.entry_name(p_Pin->defaultValue.m_Uint32).c_str();
+      Low::Util::String l_EnumDefaultValue =
+          l_EnumMetadata.fullTypeString;
+      l_EnumEntryString.make_upper();
+      l_EnumDefaultValue += "::";
+      l_EnumDefaultValue += l_EnumEntryString;
+
+      return l_EnumDefaultValue;
+    }
     case PinType::Number:
       return (LOW_TO_STRING(p_Pin->defaultValue.m_Float) + "f");
     case PinType::Bool:
@@ -198,6 +234,8 @@ namespace Flode {
       return "vector3";
     case PinType::Quaternion:
       return "quaternion";
+    case PinType::Dynamic:
+      return "dynamic";
     }
 
     _LOW_ASSERT(false);
@@ -232,6 +270,9 @@ namespace Flode {
     }
     if (p_String == "quaternion") {
       return PinType::Quaternion;
+    }
+    if (p_String == "dynamic") {
+      return PinType::Dynamic;
     }
 
     _LOW_ASSERT(false);
@@ -283,6 +324,29 @@ namespace Flode {
     default: {
       LOW_ASSERT(false, "Unsupported property type for string");
       return PinStringType::String;
+    }
+    }
+  }
+
+  PinType variant_type_to_pin_type(u8 p_VariantType)
+  {
+    switch (p_VariantType) {
+    case Low::Util::VariantType::Bool:
+      return PinType::Bool;
+    case Low::Util::VariantType::Int32:
+      return PinType::Number;
+    case Low::Util::VariantType::UInt32:
+      return PinType::Number;
+    case Low::Util::VariantType::Vector2:
+      return PinType::Vector2;
+    case Low::Util::VariantType::Vector3:
+      return PinType::Vector3;
+    case Low::Util::VariantType::Float:
+      return PinType::Number;
+    default: {
+      LOW_ASSERT(false,
+                 "Unsupported variant type to pin type conversion");
+      return PinType::Bool;
     }
     }
   }
@@ -406,9 +470,10 @@ namespace Flode {
                            Low::Util::String p_Name,
                            Low::Util::Name p_TypeName)
   {
-    LOW_ASSERT(
-        g_NodeTypeNames.find(p_TypeName) != g_NodeTypeNames.end(),
-        "Node was not registered before added as a spawnable node.");
+    LOW_ASSERT(g_NodeTypeNames.find(p_TypeName) !=
+                   g_NodeTypeNames.end(),
+               "Node was not registered before added as a "
+               "spawnable node.");
     g_NodeTypes[p_Category][p_Name] = p_TypeName;
   }
 
@@ -485,6 +550,8 @@ namespace Flode {
       return ImColor(51, 150, 215);
     case PinType::Enum:
       return ImColor(218, 0, 183);
+    case PinType::Dynamic:
+      return ImColor(120, 120, 120);
       /*
     case PinType::Function:
       return ImColor(218, 0, 183);
@@ -516,6 +583,9 @@ namespace Flode {
       iconType = IconType::Circle;
       break;
     case Flode::PinType::Quaternion:
+      iconType = IconType::Circle;
+      break;
+    case Flode::PinType::Dynamic:
       iconType = IconType::Circle;
       break;
       /*
@@ -669,7 +739,7 @@ namespace Flode {
     } else {
       l_Pin->id = p_PinId;
     }
-    LOW_LOG_DEBUG << "Creating pin " << (u64)l_Pin->id << LOW_LOG_END;
+
     l_Pin->type = p_Type;
     l_Pin->typeId = p_TypeId;
     l_Pin->direction = p_Direction;
@@ -751,6 +821,32 @@ namespace Flode {
     return create_pin_from_rtti(p_Direction, p_Title,
                                 p_PropertyInfo.type,
                                 p_PropertyInfo.handleType, p_PinId);
+  }
+
+  Pin *Node::create_pin_from_variant(PinDirection p_Direction,
+                                     Low::Util::String p_Title,
+                                     Low::Util::Variant &p_Variant,
+                                     u64 p_PinId)
+  {
+    Pin *l_Pin = nullptr;
+    if (p_Variant.m_Type == Low::Util::VariantType::Handle) {
+      Low::Util::Handle l_Handle = p_Variant.m_Uint64;
+      l_Pin = create_handle_pin(p_Direction, p_Title,
+                                l_Handle.get_type(), p_PinId);
+    } else if (p_Variant.m_Type == Low::Util::VariantType::Name) {
+      l_Pin = create_string_pin(p_Direction, p_Title,
+                                PinStringType::Name, p_PinId);
+    } else {
+      l_Pin = create_pin(p_Direction, p_Title,
+                         variant_type_to_pin_type(p_Variant.m_Type),
+                         p_PinId);
+    }
+
+    if (l_Pin) {
+      l_Pin->defaultValue = p_Variant;
+    }
+
+    return l_Pin;
   }
 
   void Node::render_header()
@@ -835,9 +931,9 @@ namespace Flode {
           }
           ImGui::PopItemWidth();
         } else if (p_Pin->type == PinType::Enum) {
-          // Unfortunately it is right now not easy to align the popup
-          // from the dropdown with the node. I'll leave that for the
-          // future
+          // Unfortunately it is right now not easy to align the
+          // popup from the dropdown with the node. I'll leave that
+          // for the future
           if (p_Pin->typeId != 0) {
             ImGui::PushItemWidth(100.0f);
 
@@ -850,8 +946,9 @@ namespace Flode {
 
             u8 l_EnumValue = p_Pin->defaultValue.m_Uint32;
 
-            if (Flode::Helper::BeginNodeCombo("##editdefaultvalue",
-                                              l_EnumInfo.entry_name(l_EnumValue).c_str())) {
+            if (Flode::Helper::BeginNodeCombo(
+                    "##editdefaultvalue",
+                    l_EnumInfo.entry_name(l_EnumValue).c_str())) {
               for (auto it : l_EnumInfo.entries) {
                 if (ImGui::Selectable(it.name.c_str(),
                                       l_EnumValue == it.value)) {
@@ -1127,6 +1224,11 @@ namespace Flode {
     _LOW_ASSERT(l_InputPin->direction == PinDirection::Input);
     _LOW_ASSERT(l_OutputPin->direction == PinDirection::Output);
 
+    if (l_InputPin->type == PinType::Dynamic ||
+        l_OutputPin->type == PinType::Dynamic) {
+      return create_link(p_InputPin, p_OutputPin);
+    }
+
     if (l_InputPin->type == l_OutputPin->type) {
       return create_link(p_InputPin, p_OutputPin);
     }
@@ -1157,6 +1259,9 @@ namespace Flode {
                             p_OutputPin);
     m_Links.push_back(l_Link);
 
+    find_node(l_InputPin->nodeId)->on_pin_connected(l_InputPin);
+    find_node(l_OutputPin->nodeId)->on_pin_connected(l_OutputPin);
+
     // Draw new link
     /*
     NodeEd::Link(m_Links.back()->id, m_Links.back()->inputPinId,
@@ -1184,6 +1289,26 @@ namespace Flode {
       return false;
     }
 
+    // Both pins can't be dynamic
+    if (l_InputPin->type == PinType::Dynamic &&
+        l_OutputPin->type == PinType::Dynamic) {
+      return false;
+    }
+
+    if (l_InputPin->type == PinType::Dynamic) {
+      Node *l_Node = find_node(l_InputPin->nodeId);
+
+      return l_Node->accept_dynamic_pin_connection(l_InputPin,
+                                                   l_OutputPin);
+    }
+
+    if (l_OutputPin->type == PinType::Dynamic) {
+      Node *l_Node = find_node(l_OutputPin->nodeId);
+
+      return l_Node->accept_dynamic_pin_connection(l_OutputPin,
+                                                   l_InputPin);
+    }
+
     if (l_InputPin->type != l_OutputPin->type) {
       if (!can_cast(l_OutputPin->type, l_InputPin->type)) {
         return false;
@@ -1201,6 +1326,8 @@ namespace Flode {
     l_Node->graph = this;
 
     l_Node->id = m_IdCounter++;
+
+    l_Node->initialize();
 
     if (p_SetupPins) {
       l_Node->setup_default_pins();
@@ -1266,6 +1393,9 @@ namespace Flode {
     p_Node["name"] = m_Name.c_str();
     p_Node["idcounter"] = m_IdCounter;
     p_Node["internal"] = m_Internal;
+
+    Low::Util::Serialization::serialize_handle(
+        p_Node["contexthandle"], m_ContextHandle);
 
     for (auto it = m_Namespace.begin(); it != m_Namespace.end();
          ++it) {
@@ -1345,6 +1475,11 @@ namespace Flode {
   {
     m_Name = LOW_YAML_AS_NAME(p_Node["name"]);
 
+    if (p_Node["contexthandle"]) {
+      m_ContextHandle = Low::Util::Serialization::deserialize_handle(
+          p_Node["contexthandle"]);
+    }
+
     const char *l_NamespaceName = "namespace";
 
     u32 l_IdsAdded = 0;
@@ -1391,6 +1526,7 @@ namespace Flode {
         Node *i_Node = spawn_node_of_type(i_NodeTypeName);
         i_Node->id = i_NodeNode["id"].as<u64>();
         i_Node->graph = this;
+        i_Node->initialize();
 
         if (i_NodeNode["node_data"]) {
           i_Node->deserialize(i_NodeNode["node_data"]);
@@ -1402,11 +1538,10 @@ namespace Flode {
           if (i_NodeNode["pins"].size() > i) {
             i_Node->pins[i]->id =
                 i_NodeNode["pins"][i]["id"].as<u64>();
-          }           
-          else {
+          } else {
             i_Node->pins[i]->id =
                 p_Node["idcounter"].as<u64>() + l_IdsAdded;
-              l_IdsAdded++;
+            l_IdsAdded++;
           }
           if (i_NodeNode["pins"][i]["default_value"]) {
             i_Node->pins[i]->defaultValue =
@@ -1448,10 +1583,10 @@ namespace Flode {
       }
     }
 
-    // I think it is important to do that last so that all the ids are
-    // synced up again
+    // I think it is important to do that last so that all the ids
+    // are synced up again
     if (p_Node["idcounter"]) {
-      m_IdCounter = p_Node["idcounter"].as<u64>()+l_IdsAdded;
+      m_IdCounter = p_Node["idcounter"].as<u64>() + l_IdsAdded;
     }
   }
 
@@ -1511,7 +1646,7 @@ namespace Flode {
           break;
         }
         case PinType::String: {
-          l_Builder.append("\"\"");
+          l_Builder.append("Low::Util::String(\"\")");
           break;
         }
         }
@@ -1563,5 +1698,26 @@ namespace Flode {
 
       l_ConnectedNode->compile(p_Builder);
     }
+  }
+
+  bool Graph::has_context_handle() const
+  {
+    if (!m_ContextHandle.is_registered_type()) {
+      return false;
+    }
+
+    Low::Util::RTTI::TypeInfo &l_TypeInfo =
+        Low::Util::Handle::get_type_info(m_ContextHandle.get_type());
+
+    return l_TypeInfo.is_alive(m_ContextHandle);
+  }
+
+  u16 Graph::get_context_handle_type_id() const
+  {
+    if (!has_context_handle()) {
+      return 0;
+    }
+
+    return m_ContextHandle.get_type();
   }
 } // namespace Flode

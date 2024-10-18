@@ -151,6 +151,7 @@ namespace Low {
         l_TypeInfo.destroy = &Rigidbody::destroy;
         l_TypeInfo.serialize = &Rigidbody::serialize;
         l_TypeInfo.deserialize = &Rigidbody::deserialize;
+        l_TypeInfo.find_by_index = &Rigidbody::_find_by_index;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Rigidbody::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -357,6 +358,11 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_Rigidbody);
         LOW_PROFILE_FREE(type_slots_Rigidbody);
+      }
+
+      Low::Util::Handle Rigidbody::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       Rigidbody Rigidbody::find_by_index(uint32_t p_Index)

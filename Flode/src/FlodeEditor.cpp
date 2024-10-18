@@ -17,6 +17,9 @@
 
 #include "IconsFontAwesome5.h"
 
+#include "Cflat.h"
+#include "LowCoreCflatScripting.h"
+
 namespace Flode {
   Editor::Editor() : m_LoadPath(""), m_Graph(nullptr)
   {
@@ -45,6 +48,74 @@ namespace Flode {
 
     for (const Flode::Link *i_Link : m_Graph->m_Links) {
       render_link(p_Delta, i_Link);
+    }
+
+    Pin *l_HoveredPin = m_Graph->find_pin(NodeEd::GetHoveredPin());
+
+    if (l_HoveredPin) {
+      Low::Util::String l_ToolTip = "";
+      switch (l_HoveredPin->type) {
+      case PinType::Flow: {
+        l_ToolTip += "Flow";
+        break;
+      }
+      case PinType::Number: {
+        l_ToolTip += "Number";
+        break;
+      }
+      case PinType::String: {
+        l_ToolTip += "String";
+        break;
+      }
+      case PinType::Handle: {
+        l_ToolTip += "Handle";
+        if (l_HoveredPin->typeId) {
+          l_ToolTip += " (";
+          Low::Util::RTTI::TypeInfo l_TypeInfo =
+              Low::Util::Handle::get_type_info(l_HoveredPin->typeId);
+          l_ToolTip += l_TypeInfo.name.c_str();
+          l_ToolTip += ")";
+        }
+        break;
+      }
+      case PinType::Bool: {
+        l_ToolTip += "Boolean";
+        break;
+      }
+      case PinType::Vector2: {
+        l_ToolTip += "Vector 2D";
+        break;
+      }
+      case PinType::Vector3: {
+        l_ToolTip += "Vector 3D";
+        break;
+      }
+      case PinType::Quaternion: {
+        l_ToolTip += "Quaternion";
+        break;
+      }
+      case PinType::Enum: {
+        l_ToolTip += "Enum";
+        if (l_HoveredPin->typeId) {
+          l_ToolTip += " (";
+          Low::Util::RTTI::EnumInfo l_EnumInfo =
+              Low::Util::get_enum_info(l_HoveredPin->typeId);
+          l_ToolTip += l_EnumInfo.name.c_str();
+          l_ToolTip += ")";
+        }
+        break;
+      }
+      case PinType::Dynamic: {
+        l_ToolTip += "Dynamic (Wildcard)";
+        break;
+      }
+      default: {
+        l_ToolTip += "Unknown";
+        break;
+      }
+      }
+
+      ShowToolTip(l_ToolTip.c_str(), ImColor(32, 45, 32, 180));
     }
   }
 
@@ -297,6 +368,7 @@ namespace Flode {
 
   void Editor::render(float p_Delta)
   {
+    // return;
     bool l_Save = false;
 
     auto &io = ImGui::GetIO();
@@ -362,6 +434,37 @@ namespace Flode {
 
     if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F))) {
       NodeEd::NavigateToSelection();
+    }
+
+    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F3))) {
+      Cflat::Function *l_Function =
+          Low::Core::Scripting::get_environment()->getFunction(
+              "TestScript::TestFunction");
+
+      LOW_ASSERT(l_Function, "Could not find testfunction");
+
+      Cflat::Value l_ReturnValue;
+      CflatArgsVector(Cflat::Value) l_Arguments;
+
+      /*
+      Cflat::Value l_StatusEffectInstanceArgument;
+      l_StatusEffectInstanceArgument.initExternal(
+          kTypeUsageStatusEffectInstance);
+      l_StatusEffectInstanceArgument.set(&p_StatusEffectInstance);
+      l_Arguments.push_back(l_StatusEffectInstanceArgument);
+
+      Cflat::Value l_DamageAmountArgument;
+      l_DamageAmountArgument.initExternal(kTypeUsageFloat);
+      l_DamageAmountArgument.set(&p_DamageAmount);
+      l_Arguments.push_back(l_DamageAmountArgument);
+
+      Cflat::Value l_DamageTypeArgument;
+      l_DamageTypeArgument.initExternal(kTypeUsageDamageType);
+      l_DamageTypeArgument.set(&p_DamageType);
+      l_Arguments.push_back(l_DamageTypeArgument);
+      */
+
+      l_Function->execute(l_Arguments, &l_ReturnValue);
     }
 
     NodeEd::Suspend();

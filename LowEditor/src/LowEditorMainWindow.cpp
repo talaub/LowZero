@@ -89,9 +89,8 @@ namespace Low {
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
-    static void register_editor_widget(const char *p_Name,
-                                       Widget *p_Widget,
-                                       bool p_DefaultOpen = false)
+    void register_editor_widget(const char *p_Name, Widget *p_Widget,
+                                bool p_DefaultOpen)
     {
       g_Widgets.push_back({p_Widget, p_Name, p_DefaultOpen});
     }

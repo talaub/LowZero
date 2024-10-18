@@ -120,6 +120,54 @@ namespace Low {
             l_EnumInfo.entry_name(p_EnumValue).c_str();
       }
 
+      void serialize_handle(Yaml::Node &p_Node, Handle p_Handle)
+      {
+        if (!p_Handle.is_registered_type()) {
+          p_Node = false;
+        }
+
+        RTTI::TypeInfo &l_TypeInfo =
+            Handle::get_type_info(p_Handle.get_type());
+        if (l_TypeInfo.properties.find(N(unique_id)) !=
+            l_TypeInfo.properties.end()) {
+          // Type has unique id
+          p_Node["uniqueid"] =
+              *(UniqueId *)l_TypeInfo.properties[N(unique_id)].get(
+                  p_Handle);
+        } else if (l_TypeInfo.properties.find(N(name)) !=
+                   l_TypeInfo.properties.end()) {
+          p_Node["typeid"] = l_TypeInfo.typeId;
+          p_Node["name"] =
+              ((Name *)l_TypeInfo.properties[N(name)].get(p_Handle))
+                  ->c_str();
+        } else {
+          LOW_ASSERT(false, "The type does not have sufficient "
+                            "information to be serialized properly");
+        }
+      }
+
+      Handle deserialize_handle(Yaml::Node &p_Node)
+      {
+        if (p_Node["uniqueid"]) {
+          return find_handle_by_unique_id(
+              p_Node["uniqueid"].as<u64>());
+        } else if (p_Node["name"]) {
+          u16 l_TypeId = p_Node["typeid"].as<u16>();
+
+          if (Handle::is_registered_type(l_TypeId)) {
+            RTTI::TypeInfo &l_TypeInfo =
+                Handle::get_type_info(l_TypeId);
+
+            if (l_TypeInfo.find_by_name) {
+              return l_TypeInfo.find_by_name(
+                  LOW_YAML_AS_NAME(p_Node["name"]));
+            }
+          }
+        }
+
+        return 0ull;
+      }
+
       Math::Quaternion deserialize_quaternion(Yaml::Node &p_Node)
       {
         Math::Quaternion l_Result;

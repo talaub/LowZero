@@ -185,6 +185,11 @@ namespace Low {
       return get_id();
     }
 
+    bool Handle::is_registered_type() const
+    {
+      return Handle::is_registered_type(get_type());
+    }
+
     bool Handle::check_alive(Instances::Slot *p_Slots,
                              uint32_t p_Capacity) const
     {
@@ -209,6 +214,11 @@ namespace Low {
       if (p_TypeInfo.component) {
         g_ComponentTypes.push_back(p_TypeId);
       }
+    }
+
+    bool Handle::is_registered_type(uint16_t p_TypeId)
+    {
+      return g_TypeInfos.find(p_TypeId) != g_TypeInfos.end();
     }
 
     RTTI::TypeInfo &Handle::get_type_info(uint16_t p_TypeId)

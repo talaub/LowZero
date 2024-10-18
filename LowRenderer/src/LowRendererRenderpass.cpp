@@ -115,6 +115,8 @@ namespace Low {
         l_TypeInfo.destroy = &Renderpass::destroy;
         l_TypeInfo.serialize = &Renderpass::serialize;
         l_TypeInfo.deserialize = &Renderpass::deserialize;
+        l_TypeInfo.find_by_index = &Renderpass::_find_by_index;
+        l_TypeInfo.find_by_name = &Renderpass::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Renderpass::_make;
         l_TypeInfo.duplicate_default = &Renderpass::_duplicate;
@@ -231,6 +233,11 @@ namespace Low {
         LOW_PROFILE_FREE(type_slots_Renderpass);
       }
 
+      Low::Util::Handle Renderpass::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
+      }
+
       Renderpass Renderpass::find_by_index(uint32_t p_Index)
       {
         LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -254,6 +261,12 @@ namespace Low {
         return ms_Capacity;
       }
 
+      Low::Util::Handle
+      Renderpass::_find_by_name(Low::Util::Name p_Name)
+      {
+        return find_by_name(p_Name).get_id();
+      }
+
       Renderpass Renderpass::find_by_name(Low::Util::Name p_Name)
       {
         for (auto it = ms_LivingInstances.begin();
@@ -262,6 +275,7 @@ namespace Low {
             return *it;
           }
         }
+        return 0ull;
       }
 
       Renderpass Renderpass::duplicate(Low::Util::Name p_Name) const

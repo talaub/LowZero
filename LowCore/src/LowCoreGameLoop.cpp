@@ -173,6 +173,37 @@ namespace Low {
         }
 
         {
+          UI::View l_View = UI::View::make(N(InfoView));
+          l_View.set_view_template(false);
+          l_View.load_elements();
+
+          l_View.pixel_position(Math::Vector2(50.0f, 50.0f));
+          l_View.layer_offset(0);
+          l_View.scale_multiplier(1.0f);
+
+          {
+            UI::Element l_ResourceElement =
+                UI::Element::make(N(infoelement), l_View);
+            l_ResourceElement.set_click_passthrough(false);
+
+            UI::Component::Display l_Display =
+                UI::Component::Display::make(l_ResourceElement);
+
+            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
+            l_Display.rotation(0.0f);
+            l_Display.pixel_scale(Math::Vector2(100.0f, 30.0f));
+            l_Display.layer(3);
+
+            UI::Component::Text l_Text =
+                UI::Component::Text::make(l_ResourceElement);
+            l_Text.set_font(l_Font);
+            l_Text.set_text(Util::String("Test"));
+            l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
+            l_Text.set_size(1.5f);
+          }
+        }
+
+        {
           UI::View l_View = UI::View::make(N(Player_HP));
           l_View.set_view_template(false);
           l_View.load_elements();
@@ -441,6 +472,8 @@ namespace Low {
             if (l_Accumulator < l_TimeStep) {
               TaskScheduler::tick();
               continue;
+            } else if (l_Frames % 100 == 0) {
+              // TaskScheduler::tick();
             }
             LOW_PROFILE_CPU("Core", "Tick");
 

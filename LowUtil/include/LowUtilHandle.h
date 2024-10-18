@@ -123,6 +123,8 @@ namespace Low {
         Handle (*duplicate_component)(Handle, Handle);
         Handle (*make_default)(Name);
         Handle (*make_component)(Handle);
+        Handle (*find_by_index)(u32);
+        Handle (*find_by_name)(Name);
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
         uint32_t (*get_living_count)();
@@ -175,9 +177,12 @@ namespace Low {
       uint16_t get_generation() const;
       uint16_t get_type() const;
 
+      bool is_registered_type() const;
+
       bool check_alive(Instances::Slot *p_Slots,
                        uint32_t p_Capacity) const;
 
+      static bool is_registered_type(u16 p_TypeId);
       static RTTI::TypeInfo &get_type_info(uint16_t p_TypeId);
       static List<uint16_t> &get_component_types();
 

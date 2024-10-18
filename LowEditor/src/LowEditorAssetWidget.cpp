@@ -600,6 +600,7 @@ namespace Low {
             if (l_Ok) {
               Flode::Graph *l_Graph = new Flode::Graph;
               l_Graph->m_Name = l_Name;
+              l_Graph->m_Internal = false;
               if (get_flode_widget()->m_Editor->m_Graph) {
                 delete get_flode_widget()->m_Editor->m_Graph;
               }

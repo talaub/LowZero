@@ -140,6 +140,8 @@ namespace Low {
       l_TypeInfo.destroy = &Texture2D::destroy;
       l_TypeInfo.serialize = &Texture2D::serialize;
       l_TypeInfo.deserialize = &Texture2D::deserialize;
+      l_TypeInfo.find_by_index = &Texture2D::_find_by_index;
+      l_TypeInfo.find_by_name = &Texture2D::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Texture2D::_make;
       l_TypeInfo.duplicate_default = &Texture2D::_duplicate;
@@ -312,6 +314,11 @@ namespace Low {
       LOW_PROFILE_FREE(type_slots_Texture2D);
     }
 
+    Low::Util::Handle Texture2D::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
     Texture2D Texture2D::find_by_index(uint32_t p_Index)
     {
       LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
@@ -335,6 +342,11 @@ namespace Low {
       return ms_Capacity;
     }
 
+    Low::Util::Handle Texture2D::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
     Texture2D Texture2D::find_by_name(Low::Util::Name p_Name)
     {
       for (auto it = ms_LivingInstances.begin();
@@ -343,6 +355,7 @@ namespace Low {
           return *it;
         }
       }
+      return 0ull;
     }
 
     Texture2D Texture2D::duplicate(Low::Util::Name p_Name) const

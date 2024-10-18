@@ -80,6 +80,7 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${MICROPROFILE_PUBLIC_HEADERS}")
 
+
 find_package(PkgConfig QUIET)
 if (PKG_CONFIG_FOUND)
 	pkg_check_modules(stb QUIET IMPORTED_TARGET stb)

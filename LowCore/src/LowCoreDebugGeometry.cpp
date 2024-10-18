@@ -39,6 +39,7 @@ namespace Low {
 
       static void load_meshes()
       {
+        //Util::String l_BasePath = Util::get_project().dataPath;
         Util::String l_BasePath = "../../_internal/assets/meshes/";
 
         g_Meshes.cube = MeshResource::make(l_BasePath + "cube.glb");

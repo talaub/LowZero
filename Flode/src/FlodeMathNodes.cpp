@@ -7,8 +7,7 @@ namespace Flode {
 
     ImU32 g_MathColor = IM_COL32(65, 145, 146, 255);
 
-    Low::Util::String
-    AddNumberNode::get_name(NodeNameType p_Type) const
+    Low::Util::String AddNode::get_name(NodeNameType p_Type) const
     {
       if (p_Type == NodeNameType::Compact) {
         return ICON_FA_PLUS "";
@@ -17,22 +16,22 @@ namespace Flode {
       return "Add";
     }
 
-    ImU32 AddNumberNode::get_color() const
+    ImU32 AddNode::get_color() const
     {
       return g_MathColor;
     }
 
-    void AddNumberNode::setup_default_pins()
+    void AddNode::setup_default_pins()
     {
-      create_pin(PinDirection::Input, "", PinType::Number);
-      create_pin(PinDirection::Input, "", PinType::Number);
+      create_pin(PinDirection::Input, "", m_PinType);
+      create_pin(PinDirection::Input, "", m_PinType);
 
-      create_pin(PinDirection::Output, "", PinType::Number);
+      create_pin(PinDirection::Output, "", m_PinType);
     }
 
-    void AddNumberNode::compile_output_pin(
-        Low::Util::StringBuilder &p_Builder,
-        NodeEd::PinId p_PinId) const
+    void
+    AddNode::compile_output_pin(Low::Util::StringBuilder &p_Builder,
+                                NodeEd::PinId p_PinId) const
     {
       Pin *l_Pin = find_output_pin_checked(p_PinId);
 
@@ -43,40 +42,78 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    Node *addnumber_create_instance()
+    void AddNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
-      return new AddNumberNode;
+      p_Node["pintype"] =
+          Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    Node *multiplynumber_create_instance()
+    void AddNode::deserialize(Low::Util::Yaml::Node &p_Node)
     {
-      return new MultiplyNumberNode;
+      if (p_Node["pintype"]) {
+        m_PinType = Flode::string_to_pin_type(
+            LOW_YAML_AS_STRING(p_Node["pintype"]));
+      }
     }
 
-    Node *subtractnumber_create_instance()
+    void AddNode::on_pin_connected(Pin *p_Pin)
     {
-      return new SubtractNumberNode;
+      if (p_Pin->direction == PinDirection::Input) {
+        Pin *l_ConnectedPin =
+            graph->find_pin(graph->get_connected_pin(p_Pin->id));
+
+        m_PinType = l_ConnectedPin->type;
+
+        pins[0]->type = m_PinType;
+        pins[1]->type = m_PinType;
+        pins[2]->type = m_PinType;
+      }
     }
 
-    Node *dividenumber_create_instance()
+    bool
+    AddNode::accept_dynamic_pin_connection(Pin *p_Pin,
+                                           Pin *p_ConnectedPin) const
     {
-      return new DivideNumberNode;
+      return p_ConnectedPin->type == PinType::String ||
+             p_ConnectedPin->type == PinType::Number ||
+             p_ConnectedPin->type == PinType::Vector2 ||
+             p_ConnectedPin->type == PinType::Vector3;
     }
 
-    ImU32 SubtractNumberNode::get_color() const
+    Node *add_create_instance()
+    {
+      return new AddNode;
+    }
+
+    Node *multiply_create_instance()
+    {
+      return new MultiplyNode;
+    }
+
+    Node *subtract_create_instance()
+    {
+      return new SubtractNode;
+    }
+
+    Node *divide_create_instance()
+    {
+      return new DivideNode;
+    }
+
+    ImU32 SubtractNode::get_color() const
     {
       return g_MathColor;
     }
 
-    void SubtractNumberNode::setup_default_pins()
+    void SubtractNode::setup_default_pins()
     {
-      create_pin(PinDirection::Input, "", PinType::Number);
-      create_pin(PinDirection::Input, "", PinType::Number);
+      create_pin(PinDirection::Input, "", m_PinType);
+      create_pin(PinDirection::Input, "", m_PinType);
 
-      create_pin(PinDirection::Output, "", PinType::Number);
+      create_pin(PinDirection::Output, "", m_PinType);
     }
 
-    void SubtractNumberNode::compile_output_pin(
+    void SubtractNode::compile_output_pin(
         Low::Util::StringBuilder &p_Builder,
         NodeEd::PinId p_PinId) const
     {
@@ -89,20 +126,57 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    ImU32 MultiplyNumberNode::get_color() const
+    void SubtractNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["pintype"] =
+          Flode::pin_type_to_string(m_PinType).c_str();
+    }
+
+    void SubtractNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    {
+      if (p_Node["pintype"]) {
+        m_PinType = Flode::string_to_pin_type(
+            LOW_YAML_AS_STRING(p_Node["pintype"]));
+      }
+    }
+
+    void SubtractNode::on_pin_connected(Pin *p_Pin)
+    {
+      if (p_Pin->direction == PinDirection::Input) {
+        Pin *l_ConnectedPin =
+            graph->find_pin(graph->get_connected_pin(p_Pin->id));
+
+        m_PinType = l_ConnectedPin->type;
+
+        pins[0]->type = m_PinType;
+        pins[1]->type = m_PinType;
+        pins[2]->type = m_PinType;
+      }
+    }
+
+    bool SubtractNode::accept_dynamic_pin_connection(
+        Pin *p_Pin, Pin *p_ConnectedPin) const
+    {
+      return p_ConnectedPin->type == PinType::String ||
+             p_ConnectedPin->type == PinType::Number ||
+             p_ConnectedPin->type == PinType::Vector2 ||
+             p_ConnectedPin->type == PinType::Vector3;
+    }
+
+    ImU32 MultiplyNode::get_color() const
     {
       return g_MathColor;
     }
 
-    void MultiplyNumberNode::setup_default_pins()
+    void MultiplyNode::setup_default_pins()
     {
-      create_pin(PinDirection::Input, "", PinType::Number);
-      create_pin(PinDirection::Input, "", PinType::Number);
+      create_pin(PinDirection::Input, "", m_PinType);
+      create_pin(PinDirection::Input, "", m_PinType);
 
-      create_pin(PinDirection::Output, "", PinType::Number);
+      create_pin(PinDirection::Output, "", m_PinType);
     }
 
-    void MultiplyNumberNode::compile_output_pin(
+    void MultiplyNode::compile_output_pin(
         Low::Util::StringBuilder &p_Builder,
         NodeEd::PinId p_PinId) const
     {
@@ -115,20 +189,54 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    ImU32 DivideNumberNode::get_color() const
+    void MultiplyNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["pintype"] =
+          Flode::pin_type_to_string(m_PinType).c_str();
+    }
+
+    void MultiplyNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    {
+      if (p_Node["pintype"]) {
+        m_PinType = Flode::string_to_pin_type(
+            LOW_YAML_AS_STRING(p_Node["pintype"]));
+      }
+    }
+
+    void MultiplyNode::on_pin_connected(Pin *p_Pin)
+    {
+      if (p_Pin->direction == PinDirection::Input) {
+        Pin *l_ConnectedPin =
+            graph->find_pin(graph->get_connected_pin(p_Pin->id));
+
+        m_PinType = l_ConnectedPin->type;
+
+        pins[0]->type = m_PinType;
+        pins[1]->type = m_PinType;
+        pins[2]->type = m_PinType;
+      }
+    }
+
+    bool MultiplyNode::accept_dynamic_pin_connection(
+        Pin *p_Pin, Pin *p_ConnectedPin) const
+    {
+      return p_ConnectedPin->type == PinType::Number;
+    }
+
+    ImU32 DivideNode::get_color() const
     {
       return g_MathColor;
     }
 
-    void DivideNumberNode::setup_default_pins()
+    void DivideNode::setup_default_pins()
     {
-      create_pin(PinDirection::Input, "", PinType::Number);
-      create_pin(PinDirection::Input, "", PinType::Number);
+      create_pin(PinDirection::Input, "", m_PinType);
+      create_pin(PinDirection::Input, "", m_PinType);
 
-      create_pin(PinDirection::Output, "", PinType::Number);
+      create_pin(PinDirection::Output, "", m_PinType);
     }
 
-    void DivideNumberNode::compile_output_pin(
+    void DivideNode::compile_output_pin(
         Low::Util::StringBuilder &p_Builder,
         NodeEd::PinId p_PinId) const
     {
@@ -141,26 +249,60 @@ namespace Flode {
       p_Builder.append(")");
     }
 
+    void DivideNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      p_Node["pintype"] =
+          Flode::pin_type_to_string(m_PinType).c_str();
+    }
+
+    void DivideNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    {
+      if (p_Node["pintype"]) {
+        m_PinType = Flode::string_to_pin_type(
+            LOW_YAML_AS_STRING(p_Node["pintype"]));
+      }
+    }
+
+    void DivideNode::on_pin_connected(Pin *p_Pin)
+    {
+      if (p_Pin->direction == PinDirection::Input) {
+        Pin *l_ConnectedPin =
+            graph->find_pin(graph->get_connected_pin(p_Pin->id));
+
+        m_PinType = l_ConnectedPin->type;
+
+        pins[0]->type = m_PinType;
+        pins[1]->type = m_PinType;
+        pins[2]->type = m_PinType;
+      }
+    }
+
+    bool DivideNode::accept_dynamic_pin_connection(
+        Pin *p_Pin, Pin *p_ConnectedPin) const
+    {
+      return p_ConnectedPin->type == PinType::Number;
+    }
+
     void register_nodes()
     {
       {
-        Low::Util::Name l_TypeName = N(FlodeMathAddNumbers);
-        register_node(l_TypeName, &addnumber_create_instance);
+        Low::Util::Name l_TypeName = N(FlodeMathAdd);
+        register_node(l_TypeName, &add_create_instance);
         register_spawn_node("Math", "Add", l_TypeName);
       }
       {
-        Low::Util::Name l_TypeName = N(FlodeMathSubtractNumbers);
-        register_node(l_TypeName, &subtractnumber_create_instance);
+        Low::Util::Name l_TypeName = N(FlodeMathSubtract);
+        register_node(l_TypeName, &subtract_create_instance);
         register_spawn_node("Math", "Subtract", l_TypeName);
       }
       {
-        Low::Util::Name l_TypeName = N(FlodeMathMultiplyNumbers);
-        register_node(l_TypeName, &multiplynumber_create_instance);
+        Low::Util::Name l_TypeName = N(FlodeMathMultiply);
+        register_node(l_TypeName, &multiply_create_instance);
         register_spawn_node("Math", "Multiply", l_TypeName);
       }
       {
-        Low::Util::Name l_TypeName = N(FlodeMathDivideNumbers);
-        register_node(l_TypeName, &dividenumber_create_instance);
+        Low::Util::Name l_TypeName = N(FlodeMathDivide);
+        register_node(l_TypeName, &divide_create_instance);
         register_spawn_node("Math", "Divide", l_TypeName);
       }
     }

@@ -131,6 +131,7 @@ namespace Low {
         l_TypeInfo.destroy = &PrefabInstance::destroy;
         l_TypeInfo.serialize = &PrefabInstance::serialize;
         l_TypeInfo.deserialize = &PrefabInstance::deserialize;
+        l_TypeInfo.find_by_index = &PrefabInstance::_find_by_index;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &PrefabInstance::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -299,6 +300,12 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_PrefabInstance);
         LOW_PROFILE_FREE(type_slots_PrefabInstance);
+      }
+
+      Low::Util::Handle
+      PrefabInstance::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       PrefabInstance PrefabInstance::find_by_index(uint32_t p_Index)

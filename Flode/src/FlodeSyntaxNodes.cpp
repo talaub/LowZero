@@ -11,6 +11,11 @@ namespace Flode {
 
     ImU32 g_SyntaxColor = IM_COL32(138, 46, 119, 255);
 
+    FunctionNode::FunctionNode()
+    {
+      m_Name = N(FunctionName);
+    }
+
     Low::Util::String
     FunctionNode::get_name(NodeNameType p_Type) const
     {
@@ -371,7 +376,11 @@ namespace Flode {
       }
 
       if (m_Variable) {
-        create_pin(PinDirection::Output, "", m_Variable->type);
+        Pin *l_Pin =
+            create_pin(PinDirection::Output, "", m_Variable->type);
+        if (m_Variable->type == PinType::String) {
+          l_Pin->stringType = Flode::PinStringType::String;
+        }
       }
 
       graph->clean_unconnected_links();
@@ -598,6 +607,46 @@ namespace Flode {
       return new ReturnNumberNode;
     }
 
+    Low::Util::String IfNode::get_name(NodeNameType p_Type) const
+    {
+      return "if";
+    }
+
+    ImU32 IfNode::get_color() const
+    {
+      return g_SyntaxColor;
+    }
+
+    void IfNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Input, "", PinType::Bool);
+      create_pin(PinDirection::Output, "True", PinType::Flow);
+      create_pin(PinDirection::Output, "False", PinType::Flow);
+    }
+
+    void IfNode::compile(Low::Util::StringBuilder &p_Builder) const
+    {
+      if (graph->is_pin_connected(pins[2]->id)) {
+        p_Builder.append("if (");
+        compile_input_pin(p_Builder, pins[1]->id);
+        p_Builder.append(") {").endl();
+        graph->continue_compilation(p_Builder, pins[2]);
+        p_Builder.append("}").endl();
+        if (graph->is_pin_connected(pins[3]->id)) {
+          p_Builder.append("else {").endl();
+          graph->continue_compilation(p_Builder, pins[3]);
+          p_Builder.append("}").endl();
+        }
+      } else if (graph->is_pin_connected(pins[3]->id)) {
+        p_Builder.append("if (!(");
+        compile_input_pin(p_Builder, pins[1]->id);
+        p_Builder.append(")) {").endl();
+        graph->continue_compilation(p_Builder, pins[3]);
+        p_Builder.append("}").endl();
+      }
+    }
+
     void register_nodes()
     {
       {
@@ -623,6 +672,12 @@ namespace Flode {
         register_node(l_TypeName, &returnnumber_create_instance);
 
         register_spawn_node("Syntax", "Return number", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxIf);
+        register_node(l_TypeName, []() { return new IfNode; });
+
+        register_spawn_node("Syntax", "If", l_TypeName);
       }
     }
 
