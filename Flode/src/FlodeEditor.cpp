@@ -131,6 +131,53 @@ namespace Flode {
         ImGui::Text("Create Node");
         ImGui::Separator();
 
+        if (ImGui::IsWindowFocused(
+                ImGuiFocusedFlags_RootAndChildWindows) &&
+            !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+          ImGui::SetKeyboardFocusHere(0);
+        }
+        static char l_Search[128] = "";
+        ImGui::InputText("##searchinput", l_Search,
+                         IM_ARRAYSIZE(l_Search));
+
+        Low::Util::String l_SearchString = l_Search;
+        l_SearchString.make_lower();
+
+        if (!l_SearchString.empty()) {
+          for (auto cit = l_Categories.begin();
+               cit != l_Categories.end();) {
+
+            Low::Util::String i_CategoryName = cit->first;
+            i_CategoryName.make_lower();
+
+            if (Low::Util::StringHelper::contains(i_CategoryName,
+                                                  l_SearchString)) {
+              cit++;
+              continue;
+            }
+
+            bool i_CatHasEntry = false;
+            for (auto it = cit->second.begin();
+                 it != cit->second.end();) {
+              Low::Util::String i_EntryName = it->first;
+              i_EntryName.make_lower();
+              if (Low::Util::StringHelper::contains(i_EntryName,
+                                                    l_SearchString)) {
+                i_CatHasEntry = true;
+                it++;
+              } else {
+                it = cit->second.erase(it);
+              }
+            }
+
+            if (i_CatHasEntry) {
+              cit++;
+            } else {
+              cit = l_Categories.erase(cit);
+            }
+          }
+        }
+
         for (auto cit = l_Categories.begin();
              cit != l_Categories.end(); ++cit) {
           if (ImGui::TreeNode(cit->first.c_str())) {

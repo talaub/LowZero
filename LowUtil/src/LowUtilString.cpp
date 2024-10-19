@@ -6,6 +6,11 @@
 namespace Low {
   namespace Util {
     namespace StringHelper {
+      bool contains(String &p_Full, String p_Test)
+      {
+        return p_Full.find(p_Test) != eastl::string::npos;
+      }
+
       bool ends_with(String &p_Full, String p_Test)
       {
         if (p_Full.length() >= p_Test.length()) {
