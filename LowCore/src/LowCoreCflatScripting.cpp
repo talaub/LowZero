@@ -13,6 +13,8 @@
 
 #include "LowMathVectorUtil.h"
 
+#include <iostream>
+
 // REGISTER_CFLAT_INCLUDES_BEGIN
 #include "LowCoreEntity.h"
 #include "LowCoreTransform.h"
@@ -28,6 +30,10 @@ void setup_environment();
 namespace Low {
   namespace Core {
     namespace Scripting {
+      Util::List<ErrorCallback> g_GeneralErrorCallbacks;
+
+      Util::List<CompilationCallback> g_CompilationCallbacks;
+
       Util::Map<Util::String, uint64_t> g_SourceTimes;
 
       Util::Map<Util::String, Cflat::Struct *> g_CflatStructs;
@@ -69,6 +75,75 @@ namespace Low {
         return CflatGlobal::getEnvironment();
       }
 
+      void register_compilation_callback(
+          CompilationCallback p_CompilationCallback)
+      {
+        g_CompilationCallbacks.push_back(p_CompilationCallback);
+      }
+
+      void register_error_callback(ErrorCallback p_ErrorCallback)
+      {
+        g_GeneralErrorCallbacks.push_back(p_ErrorCallback);
+      }
+
+      static void parse_error(Error &p_Error, Util::String p_FilePath,
+                              Util::String p_FileName,
+                              Util::String p_Message)
+      {
+        // Example message
+        // [Compile Error] './data/scripts/__A001_Bleed_TurnEnd.cpp'
+        // -- Line 13: undefined type ('toast')
+        Util::String l_Message = p_Message;
+
+        p_Error.scriptName = p_FileName;
+        p_Error.scriptPath = p_FilePath;
+
+        // Cut out the [Compile Error] beginning
+        int l_ClosingBracketPos = l_Message.find(']');
+        l_Message = l_Message.substr(l_ClosingBracketPos);
+
+        // Cut out the filepath
+        for (int i = 0; i < 2; ++i) {
+          int i_Pos = l_Message.find('\'');
+          l_Message = l_Message.substr(i_Pos + 1);
+        }
+
+        // Cut out the '-- Line: '
+        l_Message = l_Message.substr(9);
+
+        // Find the line number and use the rest as message
+        {
+          int l_ColonPos = l_Message.find(':');
+          Util::String l_LineString = l_Message.substr(0, l_ColonPos);
+          p_Error.line = std::atoi(l_LineString.c_str());
+          p_Error.message = l_Message.substr(l_ColonPos + 2);
+        }
+      }
+
+      static void broadcast_compilation(Util::String p_FilePath,
+                                        Util::String p_FileName)
+      {
+        Compilation l_Compilation;
+        l_Compilation.scriptName = p_FileName;
+        l_Compilation.scriptPath = p_FilePath;
+
+        for (u32 i = 0; i < g_CompilationCallbacks.size(); ++i) {
+          g_CompilationCallbacks[i](l_Compilation);
+        }
+      }
+
+      static void broadcast_error(Util::String p_FilePath,
+                                  Util::String p_FileName,
+                                  Util::String p_Message)
+      {
+        Error l_Error;
+        parse_error(l_Error, p_FilePath, p_FileName, p_Message);
+
+        for (u32 i = 0; i < g_GeneralErrorCallbacks.size(); ++i) {
+          g_GeneralErrorCallbacks[i](l_Error);
+        }
+      }
+
       static void
       tick_directory(Util::FileSystem::WatchHandle p_WatchHandle)
       {
@@ -94,7 +169,17 @@ namespace Low {
               LOW_LOG_ERROR << "Failed Cflat compilation of file "
                             << i_FileWatcher.path << LOW_LOG_END;
 
-              LOW_ASSERT(false, get_environment()->getErrorMessage());
+              Util::String i_ErrorMessage =
+                  get_environment()->getErrorMessage();
+
+              broadcast_error(i_FileWatcher.path, i_FileWatcher.name,
+                              i_ErrorMessage);
+
+              // LOW_ASSERT(false,
+              // get_environment()->getErrorMessage());
+            } else {
+              broadcast_compilation(i_FileWatcher.path,
+                                    i_FileWatcher.name);
             }
             g_SourceTimes[i_FileWatcher.path] =
                 i_FileWatcher.modifiedTimestamp;

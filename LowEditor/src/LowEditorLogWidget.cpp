@@ -4,6 +4,7 @@
 
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
+#include "LowUtilString.h"
 
 #include "LowRendererImGuiHelper.h"
 
@@ -28,6 +29,8 @@ namespace Low {
         return ICON_FA_EXCLAMATION_TRIANGLE;
       case Util::Log::LogLevel::ERROR:
         return ICON_FA_EXCLAMATION_CIRCLE;
+      case Util::Log::LogLevel::FATAL:
+        return ICON_FA_EXCLAMATION_TRIANGLE;
       default:
         return ICON_FA_BUG;
       }
@@ -45,6 +48,8 @@ namespace Low {
       case Util::Log::LogLevel::WARN:
         return color_to_imcolor(theme_get_current().warning);
       case Util::Log::LogLevel::ERROR:
+        return color_to_imcolor(theme_get_current().error);
+      case Util::Log::LogLevel::FATAL:
         return color_to_imcolor(theme_get_current().error);
       default:
         return color_to_imcolor(theme_get_current().text);
@@ -143,9 +148,51 @@ namespace Low {
     {
       ImGui::Begin(ICON_FA_SCROLL " Log");
 
-      for (auto it = g_Entries.begin(); it != g_Entries.end(); ++it) {
-        render_log_entry(*it);
+      if (ImGui::Button("Clear")) {
+        g_Entries.clear();
       }
+      ImGui::SameLine();
+
+      static char l_Search[128] = "";
+      ImGui::InputText("##searchinput", l_Search,
+                       IM_ARRAYSIZE(l_Search));
+
+      Low::Util::String l_SearchString = l_Search;
+      l_SearchString.make_lower();
+
+      ImGui::BeginChild("ChildL",
+                        ImVec2(ImGui::GetContentRegionAvail().x,
+                               ImGui::GetContentRegionAvail().y),
+                        true, 0);
+
+      for (auto it = g_Entries.begin(); it != g_Entries.end(); ++it) {
+        Util::Log::LogEntry &i_Entry = *it;
+
+        if (!l_SearchString.empty()) {
+          Util::String i_EntryModule = get_module_label(i_Entry);
+          i_EntryModule.make_lower();
+
+          Util::String i_EntryMessage = i_Entry.message;
+          i_EntryMessage.make_lower();
+
+          bool i_Filtered = true;
+          if (Util::StringHelper::contains(i_EntryModule,
+                                           l_SearchString)) {
+            i_Filtered = false;
+          } else if (Util::StringHelper::contains(i_EntryMessage,
+                                                  l_SearchString)) {
+            i_Filtered = false;
+          }
+
+          if (i_Filtered) {
+            continue;
+          }
+        }
+
+        render_log_entry(i_Entry);
+      }
+
+      ImGui::EndChild();
 
       ImGui::End();
     }

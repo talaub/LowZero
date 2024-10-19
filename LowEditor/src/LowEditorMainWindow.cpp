@@ -25,6 +25,7 @@
 #include "LowEditorResourceWidget.h"
 #include "LowEditorThemes.h"
 #include "LowEditorTypeManagerWidget.h"
+#include "LowEditorScriptingErrorWidget.h"
 #include "LowEditor.h"
 
 #include "LowUtil.h"
@@ -439,6 +440,8 @@ namespace Low {
       g_FlodeWidget = new FlodeWidget();
       register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("UI-Views", new UiWidget(), false);
+      register_editor_widget("Scripting errors",
+                             new ScriptingErrorWidget, false);
 
       for (auto &it : get_type_metadata()) {
         if (it.second.editor.manager) {
