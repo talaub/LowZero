@@ -1252,6 +1252,15 @@ namespace Flode {
     Pin *l_InputPin = find_pin(p_InputPin);
     Pin *l_OutputPin = find_pin(p_OutputPin);
 
+    // Disconnect links already at those pins if one of the pins does
+    // not support multiple connections
+    if (l_InputPin->type != PinType::Flow) {
+      disconnect_pin(l_InputPin->id);
+    }
+    if (l_OutputPin->type == PinType::Flow) {
+      disconnect_pin(l_OutputPin->id);
+    }
+
     _LOW_ASSERT(l_InputPin->direction == PinDirection::Input);
     _LOW_ASSERT(l_OutputPin->direction == PinDirection::Output);
 
@@ -1352,6 +1361,26 @@ namespace Flode {
     _LOW_ASSERT(false);
 
     return 0;
+  }
+
+  void Graph::disconnect_pin(NodeEd::PinId p_PinId)
+  {
+    Low::Util::List<Link *> l_LinksToDelete;
+    for (Link *i_Link : m_Links) {
+      if (i_Link->inputPinId == p_PinId) {
+        l_LinksToDelete.push_back(i_Link);
+      }
+      if (i_Link->outputPinId == p_PinId) {
+        l_LinksToDelete.push_back(i_Link);
+      }
+    }
+
+    for (auto it = l_LinksToDelete.begin();
+         it != l_LinksToDelete.end();) {
+      Link *i_Link = *it;
+      delete_link(i_Link->id);
+      it = l_LinksToDelete.erase(it);
+    }
   }
 
   bool Graph::is_pin_connected(NodeEd::PinId p_PinId) const

@@ -35,8 +35,6 @@
 #include <dbghelp.h>
 #include <tchar.h>
 
-#define RELEASE_BUILD 0
-
 typedef int(__stdcall *f_funci)();
 
 enum class ModuleType
@@ -228,7 +226,7 @@ void load_module(Low::Util::String p_ProjectPath,
   Util::String l_DllPath = p_ProjectPath + "\\bin";
 
 #ifdef NDEBUG
-  l_DllPath += "\\Release\\";
+  l_DllPath += "\\RelWithDebInfo\\";
 #else
   l_DllPath += "\\Debug\\";
 #endif

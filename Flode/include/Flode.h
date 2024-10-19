@@ -277,6 +277,7 @@ namespace Flode {
     Node *create_node(Low::Util::Name p_TypeName,
                       bool p_SetupPins = true);
 
+    void disconnect_pin(NodeEd::PinId p_PinId);
     bool is_pin_connected(NodeEd::PinId p_PinId) const;
     NodeEd::PinId get_connected_pin(NodeEd::PinId p_PinId) const;
 

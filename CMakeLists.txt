@@ -1,6 +1,6 @@
 project(LowEngineZero)
 
-set(ENGINE_BUILD OFF)
+option(ENGINE_BUILD "Enable engine release build" OFF)
 
 cmake_minimum_required(VERSION 3.10)
 
@@ -40,7 +40,7 @@ ELSE()
   set(LOW_MINOR_VERSION "${LOW_MINOR_VERSION}-DEV")
 ENDIF()
 
-set(CMAKE_CONFIGURATION_TYPES "Debug" "Release")
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Supported configurations" FORCE)
 set(TARGET_BUILD_PLATFORM "windows")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -78,9 +78,12 @@ add_compile_definitions(
   LOW_RENDERER_RENDEROBJECT_COUNT=1024
   LOW_SCRIPTS_PATH=./data/scripts
   CFLAT_ENABLED=1
+  RELEASE_BUILD=1
 
   GAME_DLL_PATH="./Gameplay.dll"
 )
+message(AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA)
+message(Engine build)
 else()
 add_compile_definitions(
   LOW_EDITOR_BUILD
@@ -95,9 +98,12 @@ add_compile_definitions(
   PX_COOKING
   LOW_RENDERER_RENDEROBJECT_COUNT=1024
   CFLAT_ENABLED=1
+  RELEASE_BUILD=0
 
   GAME_DLL_PATH="../../../misteda/build/Debug/app/Gameplayd.dll"
 )
+message(BBBBBBBBBBBBBBBBBBBBBBBBBBBB)
+message(NOEngine build)
 endif()
 
 add_compile_definitions(
