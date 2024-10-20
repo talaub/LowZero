@@ -276,12 +276,6 @@ namespace Low {
         return;
       }
 
-      if (p_PropertyInfo.type == Util::RTTI::PropertyType::ENUM) {
-        // TODO: Handle Enums
-        // Currently enums are not managed in variants
-        return;
-      }
-
       p_Variants[p_PropertyInfo.name] =
           p_PropertyInfo.get_variant(p_Handle);
     }
@@ -326,6 +320,9 @@ namespace Low {
       }
       if (type == Util::RTTI::PropertyType::HANDLE) {
         return Variant::from_handle(*(uint64_t *)l_Ptr);
+      }
+      if (type == Util::RTTI::PropertyType::ENUM) {
+        return Variant(*(u8 *)l_Ptr);
       }
 
       LOW_ASSERT(
