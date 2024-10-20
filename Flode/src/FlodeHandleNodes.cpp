@@ -241,9 +241,13 @@ namespace Flode {
         l_PinOffset += 1;
       }
 
-      p_Builder.append("::")
-          .append(m_FunctionMetadata.name)
-          .append("(");
+      if (m_FunctionMetadata.isStatic) {
+        p_Builder.append("::");
+      } else {
+        p_Builder.append(".");
+      }
+
+      p_Builder.append(m_FunctionMetadata.name).append("(");
 
       for (u32 i = 0; i < m_FunctionMetadata.parameters.size(); ++i) {
         if (i) {
@@ -273,9 +277,13 @@ namespace Flode {
         l_PinOffset += 1;
       }
 
-      p_Builder.append("::")
-          .append(m_FunctionMetadata.name)
-          .append("(");
+      if (m_FunctionMetadata.isStatic) {
+        p_Builder.append("::");
+      } else {
+        p_Builder.append(".");
+      }
+
+      p_Builder.append(m_FunctionMetadata.name).append("(");
 
       for (u32 i = 0; i < m_FunctionMetadata.parameters.size(); ++i) {
         if (i) {

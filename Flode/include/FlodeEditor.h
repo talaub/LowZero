@@ -37,5 +37,9 @@ namespace Flode {
     Low::Util::List<Node *> m_SelectedNodes;
 
     Low::Util::String m_LoadPath;
+
+    bool m_NodeCreationPopupJustOpened;
+
+    char m_Search[128] = "";
   };
 } // namespace Flode

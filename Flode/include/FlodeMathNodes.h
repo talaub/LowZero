@@ -18,7 +18,7 @@ namespace Flode {
 
       virtual bool is_compact() const override
       {
-        return true;
+        return false;
       }
 
       virtual void

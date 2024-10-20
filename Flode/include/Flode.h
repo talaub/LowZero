@@ -44,7 +44,7 @@ namespace Flode {
     Output
   };
 
-  struct CompileContext;
+  struct Pin;
 
   void ShowToolTip(const char *p_Label, ImColor p_Color);
 
@@ -52,8 +52,7 @@ namespace Flode {
 
   Low::Util::List<Low::Editor::TypeMetadata> &get_exposed_types();
 
-  void setup_variant_for_pin_type(PinType p_PinType,
-                                  Low::Util::Variant &p_Variant);
+  void setup_default_value_for_pin(Pin *p_Pin);
 
   Low::Util::String pin_direction_to_string(PinDirection p_Direction);
   Low::Util::String FLODE_API pin_type_to_string(PinType p_Type);

@@ -1,5 +1,7 @@
 #include "FlodeMathNodes.h"
 
+#include "Flode.h"
+
 #include "IconsFontAwesome5.h"
 
 namespace Flode {
@@ -62,11 +64,17 @@ namespace Flode {
         Pin *l_ConnectedPin =
             graph->find_pin(graph->get_connected_pin(p_Pin->id));
 
-        m_PinType = l_ConnectedPin->type;
+        if (m_PinType != l_ConnectedPin->type) {
+          m_PinType = l_ConnectedPin->type;
 
-        pins[0]->type = m_PinType;
-        pins[1]->type = m_PinType;
-        pins[2]->type = m_PinType;
+          pins[0]->type = m_PinType;
+          pins[1]->type = m_PinType;
+          pins[2]->type = m_PinType;
+
+          setup_default_value_for_pin(pins[0]);
+          setup_default_value_for_pin(pins[1]);
+          setup_default_value_for_pin(pins[2]);
+        }
       }
     }
 
@@ -146,11 +154,17 @@ namespace Flode {
         Pin *l_ConnectedPin =
             graph->find_pin(graph->get_connected_pin(p_Pin->id));
 
-        m_PinType = l_ConnectedPin->type;
+        if (m_PinType != l_ConnectedPin->type) {
+          m_PinType = l_ConnectedPin->type;
 
-        pins[0]->type = m_PinType;
-        pins[1]->type = m_PinType;
-        pins[2]->type = m_PinType;
+          pins[0]->type = m_PinType;
+          pins[1]->type = m_PinType;
+          pins[2]->type = m_PinType;
+
+          setup_default_value_for_pin(pins[0]);
+          setup_default_value_for_pin(pins[1]);
+          setup_default_value_for_pin(pins[2]);
+        }
       }
     }
 
@@ -209,11 +223,17 @@ namespace Flode {
         Pin *l_ConnectedPin =
             graph->find_pin(graph->get_connected_pin(p_Pin->id));
 
-        m_PinType = l_ConnectedPin->type;
+        if (m_PinType != l_ConnectedPin->type) {
+          m_PinType = l_ConnectedPin->type;
 
-        pins[0]->type = m_PinType;
-        pins[1]->type = m_PinType;
-        pins[2]->type = m_PinType;
+          pins[0]->type = m_PinType;
+          pins[1]->type = m_PinType;
+          pins[2]->type = m_PinType;
+
+          setup_default_value_for_pin(pins[0]);
+          setup_default_value_for_pin(pins[1]);
+          setup_default_value_for_pin(pins[2]);
+        }
       }
     }
 
@@ -230,6 +250,7 @@ namespace Flode {
 
     void DivideNode::setup_default_pins()
     {
+      LOW_LOG_DEBUG << (int)m_PinType << LOW_LOG_END;
       create_pin(PinDirection::Input, "", m_PinType);
       create_pin(PinDirection::Input, "", m_PinType);
 
@@ -269,11 +290,17 @@ namespace Flode {
         Pin *l_ConnectedPin =
             graph->find_pin(graph->get_connected_pin(p_Pin->id));
 
-        m_PinType = l_ConnectedPin->type;
+        if (m_PinType != l_ConnectedPin->type) {
+          m_PinType = l_ConnectedPin->type;
 
-        pins[0]->type = m_PinType;
-        pins[1]->type = m_PinType;
-        pins[2]->type = m_PinType;
+          pins[0]->type = m_PinType;
+          pins[1]->type = m_PinType;
+          pins[2]->type = m_PinType;
+
+          setup_default_value_for_pin(pins[0]);
+          setup_default_value_for_pin(pins[1]);
+          setup_default_value_for_pin(pins[2]);
+        }
       }
     }
 

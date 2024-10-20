@@ -21,7 +21,9 @@
 #include "LowCoreCflatScripting.h"
 
 namespace Flode {
-  Editor::Editor() : m_LoadPath(""), m_Graph(nullptr)
+  Editor::Editor()
+      : m_LoadPath(""), m_Graph(nullptr),
+        m_NodeCreationPopupJustOpened(false)
   {
     NodeEd::Config l_Config;
     m_Context = NodeEd::CreateEditor(&l_Config);
@@ -131,16 +133,14 @@ namespace Flode {
         ImGui::Text("Create Node");
         ImGui::Separator();
 
-        if (ImGui::IsWindowFocused(
-                ImGuiFocusedFlags_RootAndChildWindows) &&
-            !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)) {
+        if (m_NodeCreationPopupJustOpened) {
           ImGui::SetKeyboardFocusHere(0);
+          m_NodeCreationPopupJustOpened = false;
         }
-        static char l_Search[128] = "";
-        ImGui::InputText("##searchinput", l_Search,
-                         IM_ARRAYSIZE(l_Search));
+        ImGui::InputText("##searchinput", m_Search,
+                         IM_ARRAYSIZE(m_Search));
 
-        Low::Util::String l_SearchString = l_Search;
+        Low::Util::String l_SearchString = m_Search;
         l_SearchString.make_lower();
 
         if (!l_SearchString.empty()) {
@@ -475,6 +475,8 @@ namespace Flode {
       ImGui::OpenPopup("Link Context Menu");
     else */
     if (NodeEd::ShowBackgroundContextMenu()) {
+      m_NodeCreationPopupJustOpened = true;
+      m_Search[0] = '\0';
       ImGui::OpenPopup("Create Node");
     }
     NodeEd::Resume();

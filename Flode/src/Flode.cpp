@@ -1457,8 +1457,13 @@ namespace Flode {
         i_PinYaml["type_id"] = i_Pin->typeId;
 
         if (i_Pin->type == PinType::String) {
-          i_PinYaml["default_string_value"] =
-              i_Pin->defaultStringValue.c_str();
+          if (i_Pin->stringType == PinStringType::Name) {
+            Low::Util::Name i_NameContent = i_Pin->defaultValue;
+            i_PinYaml["default_string_value"] = i_NameContent.c_str();
+          } else {
+            i_PinYaml["default_string_value"] =
+                i_Pin->defaultStringValue.c_str();
+          }
         } else {
           if (i_Pin->defaultValue.m_Type !=
                   Low::Util::VariantType::String &&
