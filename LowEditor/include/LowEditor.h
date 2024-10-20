@@ -60,6 +60,8 @@ namespace Low {
 
     void LOW_EDITOR_API open_flode_graph(Util::String p_Path);
 
+    void LOW_EDITOR_API close_widget(Widget *p_Widget);
+
     namespace History {
       Transaction LOW_EDITOR_API
       create_handle_transaction(Util::Handle p_Handle);

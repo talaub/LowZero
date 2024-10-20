@@ -16,6 +16,8 @@ namespace Low {
       {
         return false;
       }
+
+      void close();
     };
   } // namespace Editor
 } // namespace Low

@@ -35,6 +35,8 @@ namespace Low {
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
 
+    void close_editor_widget(Widget *p_Widget);
+
     namespace Helper {
       struct SphericalBillboardMaterials
       {

@@ -78,6 +78,11 @@ namespace Low {
       }
     }
 
+    void close_widget(Widget *p_Widget)
+    {
+      close_editor_widget(p_Widget);
+    }
+
     TypeMetadata &get_type_metadata(uint16_t p_TypeId)
     {
       LOW_ASSERT(g_TypeMetadata.find(p_TypeId) !=

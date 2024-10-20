@@ -115,6 +115,21 @@ namespace Low {
         ImGui::OpenPopup(l_CreateString.c_str());
       }
 
+      ImVec2 l_Cursor = ImGui::GetCursorPos();
+      float l_Margin = 68.0f;
+      float l_PointToAchieve =
+          ImGui::GetContentRegionAvail().x - l_Margin;
+      float l_CurrentMargin = l_Cursor.x;
+      float l_Spacing = l_PointToAchieve - l_CurrentMargin;
+
+      ImGui::SameLine();
+      ImGui::Dummy({l_Spacing, 0.0f});
+      ImGui::SameLine();
+
+      if (ImGui::Button(ICON_FA_TIMES)) {
+        close();
+      }
+
       if (ImGui::BeginPopupModal(l_CreateString.c_str())) {
         ImGui::Text(
             "You are about to create a new asset. Please select "

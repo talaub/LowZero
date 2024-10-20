@@ -90,12 +90,6 @@ namespace Low {
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
-    void register_editor_widget(const char *p_Name, Widget *p_Widget,
-                                bool p_DefaultOpen)
-    {
-      g_Widgets.push_back({p_Widget, p_Name, p_DefaultOpen});
-    }
-
     static void save_user_settings()
     {
       Util::Yaml::Node l_Config;
@@ -114,6 +108,23 @@ namespace Low {
       Util::String l_Path =
           Util::get_project().rootPath + "/user.yaml";
       Util::Yaml::write_file(l_Path.c_str(), l_Config);
+    }
+
+    void close_editor_widget(Widget *p_Widget)
+    {
+      for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+        if (it->widget == p_Widget) {
+          it->open = false;
+        }
+      }
+
+      save_user_settings();
+    }
+
+    void register_editor_widget(const char *p_Name, Widget *p_Widget,
+                                bool p_DefaultOpen)
+    {
+      g_Widgets.push_back({p_Widget, p_Name, p_DefaultOpen});
     }
 
     static void schedule_save_scene(Core::Scene p_Scene)
