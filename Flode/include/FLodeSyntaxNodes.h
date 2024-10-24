@@ -75,6 +75,8 @@ namespace Flode {
       compile_output_pin(Low::Util::StringBuilder &p_Builder,
                          NodeEd::PinId p_PinId) const override;
 
+      virtual void set_variable(Variable *p_Variable);
+
     protected:
       Variable *m_Variable;
 
@@ -100,6 +102,8 @@ namespace Flode {
 
       virtual void
       compile(Low::Util::StringBuilder &p_Builder) const override;
+
+      virtual void set_variable(Variable *p_Variable);
 
     protected:
       Variable *m_Variable;

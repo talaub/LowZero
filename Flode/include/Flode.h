@@ -269,6 +269,13 @@ namespace Flode {
     void delete_link(NodeEd::LinkId p_LinkId);
     void delete_node(NodeEd::NodeId p_NodeId);
 
+    void serialize_node(const Node *p_Node,
+                        Low::Util::Yaml::Node &p_Yaml,
+                        bool p_StoreNodePositions = true) const;
+
+    u64 deserialize_node(Low::Util::Yaml::Node &p_Yaml, Node **p_Node,
+                         u64 p_IdStartValue, bool p_UseIds = true);
+
     void serialize(Low::Util::Yaml::Node &p_Node,
                    bool p_StoreNodePositions = true) const;
     void deserialize(Low::Util::Yaml::Node &p_Node);

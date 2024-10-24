@@ -347,6 +347,12 @@ namespace Flode {
     {
     }
 
+    void GetVariableNode::set_variable(Variable *p_Variable)
+    {
+      m_Variable = p_Variable;
+      create_dynamic_pins();
+    }
+
     Low::Util::String
     GetVariableNode::get_name(NodeNameType p_Type) const
     {
@@ -469,6 +475,12 @@ namespace Flode {
     ImU32 SetVariableNode::get_color() const
     {
       return g_SyntaxColor;
+    }
+
+    void SetVariableNode::set_variable(Variable *p_Variable)
+    {
+      m_Variable = p_Variable;
+      create_dynamic_pins();
     }
 
     void SetVariableNode::setup_default_pins()

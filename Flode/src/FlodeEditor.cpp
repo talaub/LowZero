@@ -6,6 +6,7 @@
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilString.h"
+#include "LowUtilSerialization.h"
 
 #include "LowEditor.h"
 #include "LowEditorBase.h"
@@ -14,6 +15,7 @@
 #include "LowRendererImGuiHelper.h"
 
 #include "FlodeMathNodes.h"
+#include "FLodeSyntaxNodes.h"
 
 #include "IconsFontAwesome5.h"
 
@@ -174,6 +176,70 @@ namespace Flode {
               cit++;
             } else {
               cit = l_Categories.erase(cit);
+            }
+          }
+        }
+
+        if (!m_Graph->m_Variables.empty()) {
+          Low::Util::List<Variable *> l_FilteredVariables =
+              m_Graph->m_Variables;
+
+          if (!l_SearchString.empty()) {
+
+            if (!Low::Util::StringHelper::contains(
+                    Low::Util::String("variables"), l_SearchString)) {
+
+              for (auto it = l_FilteredVariables.begin();
+                   it != l_FilteredVariables.end();) {
+
+                Variable *i_Variable = *it;
+                Low::Util::String i_VariableName = i_Variable->name;
+                i_VariableName.make_lower();
+
+                if (!Low::Util::StringHelper::contains(
+                        i_VariableName, l_SearchString)) {
+                  it = l_FilteredVariables.erase(it);
+                } else {
+                  it++;
+                }
+              }
+            }
+          }
+
+          if (!l_FilteredVariables.empty()) {
+            if (ImGui::TreeNode("Variables")) {
+              for (auto it = l_FilteredVariables.begin();
+                   it != l_FilteredVariables.end(); ++it) {
+
+                Variable *i_Variable = *it;
+
+                Low::Util::String i_SetName = "Set ";
+                Low::Util::String i_GetName = "Get ";
+                i_SetName += i_Variable->name;
+                i_GetName += i_Variable->name;
+
+                Low::Util::String i_SetSearch = i_SetName;
+                Low::Util::String i_GetSearch = i_GetName;
+
+                if (ImGui::MenuItem(i_SetName.c_str())) {
+                  SyntaxNodes::SetVariableNode *i_Node =
+                      (SyntaxNodes::SetVariableNode *)m_Graph
+                          ->create_node(N(FlodeSyntaxSetVariable));
+                  NodeEd::SetNodePosition(i_Node->id,
+                                          m_StoredMousePosition);
+                  i_Node->set_variable(i_Variable);
+                }
+                if (ImGui::MenuItem(i_GetName.c_str())) {
+                  SyntaxNodes::GetVariableNode *i_Node =
+                      (SyntaxNodes::GetVariableNode *)m_Graph
+                          ->create_node(N(FlodeSyntaxGetVariable));
+                  NodeEd::SetNodePosition(i_Node->id,
+                                          m_StoredMousePosition);
+                  i_Node->set_variable(i_Variable);
+                }
+              }
+
+              ImGui::TreePop();
             }
           }
         }
@@ -533,6 +599,152 @@ namespace Flode {
       for (int i = 0; i < l_SelectedNodeCount; ++i) {
         m_SelectedNodes.push_back(
             m_Graph->find_node(l_SelectedNodeIds[i]));
+      }
+
+      if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C)) {
+        Low::Util::Yaml::Node l_Node;
+
+        for (auto it = m_SelectedNodes.begin();
+             it != m_SelectedNodes.end(); ++it) {
+          Low::Util::Yaml::Node i_Node;
+
+          m_Graph->serialize_node(*it, i_Node, true);
+
+          l_Node["nodes"].push_back(i_Node);
+        }
+
+        m_Graph->clean_unconnected_links();
+
+        if (m_SelectedNodes.size() > 1) {
+          for (auto it = m_Graph->m_Links.begin();
+               it != m_Graph->m_Links.end(); ++it) {
+            Link *i_Link = *it;
+
+            Pin *i_OutputPin = m_Graph->find_pin(i_Link->outputPinId);
+            Pin *i_InputPin = m_Graph->find_pin(i_Link->inputPinId);
+
+            bool i_InputPinNodePresent = false;
+            bool i_OutputPinNodePresent = false;
+
+            for (auto nit = m_SelectedNodes.begin();
+                 nit != m_SelectedNodes.end(); ++nit) {
+              Node *i_Node = *nit;
+
+              if (i_Node->id == i_OutputPin->nodeId) {
+                i_OutputPinNodePresent = true;
+              }
+              if (i_Node->id == i_InputPin->nodeId) {
+                i_InputPinNodePresent = true;
+              }
+
+              if (i_OutputPinNodePresent && i_InputPinNodePresent) {
+                break;
+              }
+            }
+
+            if (i_InputPinNodePresent && i_OutputPinNodePresent) {
+              Low::Util::Yaml::Node i_Yaml;
+              i_Yaml["inputpinid"] = i_Link->inputPinId.Get();
+              i_Yaml["outputpinid"] = i_Link->outputPinId.Get();
+
+              l_Node["links"].push_back(i_Yaml);
+            }
+          }
+        }
+
+        Low::Util::Yaml::Emitter l_Emitter;
+        l_Emitter << l_Node;
+        ImGui::SetClipboardText(l_Emitter.c_str());
+      }
+
+      if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_V)) {
+        Low::Util::Yaml::Node l_Clipboard =
+            Low::Util::Yaml::parse(ImGui::GetClipboardText());
+
+        Low::Util::List<Node *> l_Nodes;
+        Low::Math::Vector2 l_CenterPos(0.0f, 0.0f);
+
+        Low::Util::Map<u64, u64> l_PinMapping;
+
+        ImVec2 l_MousePos = ImGui::GetMousePos();
+
+        if (l_Clipboard["nodes"]) {
+          for (auto it = l_Clipboard["nodes"].begin();
+               it != l_Clipboard["nodes"].end(); ++it) {
+            Low::Util::Yaml::Node &i_Yaml = *it;
+            Node *i_Node = nullptr;
+            m_Graph->m_IdCounter += m_Graph->deserialize_node(
+                i_Yaml, &i_Node, m_Graph->m_IdCounter, false);
+
+            if (i_Node) {
+              l_Nodes.push_back(i_Node);
+              m_Graph->m_Nodes.push_back(i_Node);
+
+              if (i_Yaml["pins"]) {
+                for (int i = 0; i < i_Yaml["pins"].size(); ++i) {
+                  if (i_Node->pins.size() > i) {
+                    u64 i_OldPinId =
+                        i_Yaml["pins"][i]["id"].as<u64>();
+                    l_PinMapping[i_OldPinId] =
+                        i_Node->pins[i]->id.Get();
+                  }
+                }
+              }
+
+              i_Yaml["_created_node_id"] = i_Node->id.Get();
+
+              if (i_Yaml["position"]) {
+                l_CenterPos +=
+                    Low::Util::Serialization::deserialize_vector2(
+                        i_Yaml["position"]);
+              }
+            }
+          }
+
+          l_CenterPos /= l_Nodes.size();
+
+          for (auto it = l_Clipboard["nodes"].begin();
+               it != l_Clipboard["nodes"].end(); ++it) {
+            Low::Util::Yaml::Node &i_Yaml = *it;
+            if (!i_Yaml["_created_node_id"]) {
+              continue;
+            }
+            Node *i_Node = m_Graph->find_node(
+                i_Yaml["_created_node_id"].as<u64>());
+
+            if (!i_Node) {
+              continue;
+            }
+            Low::Math::Vector2 i_NodePos =
+                Low::Util::Serialization::deserialize_vector2(
+                    i_Yaml["position"]);
+
+            i_NodePos =
+                Low::Math::Vector2(l_MousePos.x, l_MousePos.y) +
+                (i_NodePos - l_CenterPos);
+
+            NodeEd::SetNodePosition(i_Node->id,
+                                    ImVec2(i_NodePos.x, i_NodePos.y));
+          }
+
+          if (l_Clipboard["links"]) {
+            for (auto it = l_Clipboard["links"].begin();
+                 it != l_Clipboard["links"].end(); ++it) {
+              Low::Util::Yaml::Node &i_Yaml = *it;
+              u64 i_OldInputPinId = i_Yaml["inputpinid"].as<u64>();
+              u64 i_OldOutputPinId = i_Yaml["outputpinid"].as<u64>();
+
+              auto i_InputPinPos = l_PinMapping.find(i_OldInputPinId);
+              auto i_OutputPinPos =
+                  l_PinMapping.find(i_OldOutputPinId);
+
+              if (i_InputPinPos != l_PinMapping.end() &&
+                  i_OutputPinPos != l_PinMapping.end()) {
+                m_Graph->create_link(i_InputPinPos->second, i_OutputPinPos->second);
+              }
+            }
+          }
+        }
       }
 
       render_graph(p_Delta);
