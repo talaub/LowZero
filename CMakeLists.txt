@@ -1,12 +1,12 @@
 project(LowEngineZero)
 
-option(ENGINE_BUILD "Enable engine release build" OFF)
+option(ENGINE_BUILD "Enable engine release build")
 
 cmake_minimum_required(VERSION 3.10)
 
 set(LOW_YEAR_VERSION 2024)
-set(LOW_MAJOR_VERSION 10)
-set(LOW_MINOR_VERSION 2)
+set(LOW_MAJOR_VERSION 11)
+set(LOW_MINOR_VERSION 1)
 
 SET(LOW_SOURCE_PATH ${CMAKE_SOURCE_DIR})
 SET(LOW_BINARY_PATH ${CMAKE_BINARY_DIR})
@@ -36,8 +36,10 @@ foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
 endforeach( OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 
 if (ENGINE_BUILD)
+  message("AAAAAAAAAAAA")
 ELSE()
   set(LOW_MINOR_VERSION "${LOW_MINOR_VERSION}-DEV")
+  message("BBBBBBBBBB")
 ENDIF()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Supported configurations" FORCE)

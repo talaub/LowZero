@@ -144,8 +144,8 @@ function generate_root_cmake(p_ProjectConfig) {
     "# THIS FILE HAS BEEN GENERATED AUTOMATICALLY BY THE LOWENGINE BUILD SYSTEM\n\n";
   t += `project(${p_ProjectConfig.name})\n\n`;
   t += `cmake_minimum_required(VERSION 3.10)\n\n`;
-  t += `option(RELEASE_BUILD "Enable release build" OFF)\n\n`;
-  t += `set(ENGINE_BUILD RELEASE_BUILD)\n\n`;
+  t += `option(RELEASE_BUILD "Enable release build")\n\n`;
+  t += 'set(ENGINE_BUILD "${RELEASE_BUILD}")\n\n';
   //t += `set(CMAKE_CONFIGURATION_TYPES "Debug" "Release" "RelWithDebInfo")\n`;
   t += `set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "Supported configurations" FORCE)\n`;
   t += `set(TARGET_BUILD_PLATFORM "windows")\n`;
@@ -204,7 +204,7 @@ function build_project(p_FullProjectPath) {
 
   process.chdir(p_FullProjectPath);
   console.log("⚙️ Running CMake...");
-  const child = spawnSync("cmake", ["-B", "build"]);
+  const child = spawnSync("cmake", ["-B", "build", "-DRELEASE_BUILD=OFF"]);
 
   const l_ErrorString = child.stderr.toString();
   if (l_ErrorString.includes("CMake Error")) {
