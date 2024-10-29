@@ -153,13 +153,18 @@ namespace Flode {
         Pin *l_ConnectedPin =
             graph->find_pin(graph->get_connected_pin(p_Pin->id));
 
-        m_PinType = l_ConnectedPin->type;
-        m_PinTypeId = l_ConnectedPin->typeId;
+        if (m_PinType != l_ConnectedPin->type) {
+          m_PinType = l_ConnectedPin->type;
+          m_PinTypeId = l_ConnectedPin->typeId;
 
-        pins[0]->type = m_PinType;
-        pins[0]->typeId = m_PinTypeId;
-        pins[1]->type = m_PinType;
-        pins[1]->typeId = m_PinTypeId;
+          pins[0]->type = m_PinType;
+          pins[0]->typeId = m_PinTypeId;
+          pins[1]->type = m_PinType;
+          pins[1]->typeId = m_PinTypeId;
+
+          setup_default_value_for_pin(pins[0]);
+          setup_default_value_for_pin(pins[1]);
+        }
       }
     }
 

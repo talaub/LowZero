@@ -12,12 +12,17 @@ namespace Low {
       {
       }
 
+      void show(float p_Delta);
+
       virtual bool handle_shortcuts(float p_Delta)
       {
         return false;
       }
 
       void close();
+
+    protected:
+      bool m_Open;
     };
   } // namespace Editor
 } // namespace Low

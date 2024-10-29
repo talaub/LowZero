@@ -18,6 +18,11 @@ namespace Low {
       {
       }
 
+      virtual void before_delete(Util::Handle p_Handle,
+                                 TypeMetadata &p_Metadata)
+      {
+      }
+
       static void show(Util::Handle p_Handle);
       static void show(Util::Handle p_Handle,
                        TypeMetadata &p_Metadata);
@@ -25,6 +30,10 @@ namespace Low {
       static void handle_after_add(Util::Handle p_Handle,
                                    TypeMetadata &p_Metadata);
       static void handle_after_add(Util::Handle p_Handle);
+
+      static void handle_before_delete(Util::Handle p_Handle,
+                                       TypeMetadata &p_Metadata);
+      static void handle_before_delete(Util::Handle p_Handle);
 
       static void register_for_type(u16 p_TypeId,
                                     TypeEditor *p_Editor);

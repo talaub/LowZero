@@ -9,6 +9,8 @@ namespace Low {
     namespace FileSystem {
       typedef uint64_t WatchHandle;
 
+      Util::String LOW_EXPORT get_cwd();
+
       struct FileWatcher
       {
         WatchHandle watchHandle;

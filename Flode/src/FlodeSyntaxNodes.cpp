@@ -19,7 +19,13 @@ namespace Flode {
     Low::Util::String
     FunctionNode::get_name(NodeNameType p_Type) const
     {
-      return Low::Util::String("Function ") + m_Name.c_str();
+      return m_Name.c_str();
+    }
+
+    Low::Util::String
+    FunctionNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return "Function";
     }
 
     ImU32 FunctionNode::get_color() const
@@ -659,6 +665,63 @@ namespace Flode {
       }
     }
 
+    Low::Util::String ForNode::get_name(NodeNameType p_Type) const
+    {
+      return "for";
+    }
+
+    ImU32 ForNode::get_color() const
+    {
+      return g_SyntaxColor;
+    }
+
+    void ForNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Input, "Start", PinType::Number);
+      create_pin(PinDirection::Input, "End", PinType::Number);
+      create_pin(PinDirection::Input, "Step", PinType::Number);
+      create_pin(PinDirection::Output, "", PinType::Flow);
+      create_pin(PinDirection::Output, "Loop", PinType::Flow);
+      create_pin(PinDirection::Output, "Index", PinType::Number);
+    }
+
+    void ForNode::compile(Low::Util::StringBuilder &p_Builder) const
+    {
+      Low::Util::StringBuilder l_IndexVariableName;
+      l_IndexVariableName.append("__for_index").append(id.Get());
+
+      p_Builder.append("for (int ")
+          .append(l_IndexVariableName.get())
+          .append(" = ");
+      compile_input_pin(p_Builder, pins[1]->id);
+      p_Builder.append("; ")
+          .append(l_IndexVariableName.get())
+          .append(" < ");
+      compile_input_pin(p_Builder, pins[2]->id);
+      p_Builder.append("; ")
+          .append(l_IndexVariableName.get())
+          .append(" += ");
+      compile_input_pin(p_Builder, pins[3]->id);
+      p_Builder.append(") {").endl();
+      graph->continue_compilation(p_Builder, pins[5]);
+      p_Builder.append("}").endl();
+
+      graph->continue_compilation(p_Builder, pins[4]);
+    }
+
+    void
+    ForNode::compile_output_pin(Low::Util::StringBuilder &p_Builder,
+                                NodeEd::PinId p_PinId) const
+    {
+      Pin *l_Pin = find_pin_checked(p_PinId);
+
+      LOW_ASSERT(l_Pin->direction == PinDirection::Output,
+                 "Pin is not an output pin");
+
+      p_Builder.append("__for_index").append(id.Get());
+    }
+
     void register_nodes()
     {
       {
@@ -690,6 +753,12 @@ namespace Flode {
         register_node(l_TypeName, []() { return new IfNode; });
 
         register_spawn_node("Syntax", "If", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxFor);
+        register_node(l_TypeName, []() { return new ForNode; });
+
+        register_spawn_node("Syntax", "For", l_TypeName);
       }
     }
 

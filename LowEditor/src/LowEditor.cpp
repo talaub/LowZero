@@ -4,6 +4,8 @@
 #include "LowUtil.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilLogger.h"
+#include "LowUtilFileSystem.h"
 
 #include "LowCorePrefabInstance.h"
 
@@ -730,6 +732,13 @@ namespace Low {
     void open_flode_graph(Util::String p_Path)
     {
       get_flode_widget()->m_Editor->load(p_Path);
+    }
+
+    void delete_file_if_exists(Low::Util::String p_Path)
+    {
+      if (Low::Util::FileIO::file_exists_sync(p_Path.c_str())) {
+        Low::Util::FileIO::delete_sync(p_Path.c_str());
+      }
     }
 
     namespace History {

@@ -7,6 +7,8 @@
 
 #include "LowMath.h"
 
+#include <filesystem>
+
 namespace Low {
   namespace Util {
     namespace FileSystem {
@@ -16,6 +18,16 @@ namespace Low {
 
       Map<WatchHandle, DirectoryWatcher> g_Directories;
       Map<WatchHandle, FileWatcher> g_Files;
+
+      Util::String get_cwd()
+      {
+        std::filesystem::path l_Cwd = std::filesystem::current_path();
+
+        StringBuilder l_Builder;
+        l_Builder.append(l_Cwd.string().c_str());
+
+        return l_Builder.get();
+      }
 
       void update_directory(WatchHandle p_WatchHandle);
 
@@ -38,11 +50,11 @@ namespace Low {
         WatchHandle l_WatchHandle = 0;
 
         if (l_HandlePos == g_Handles.end()) {
-            if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
+          if (!Util::FileIO::file_exists_sync(p_Path.c_str())) {
             LOW_LOG_WARN
-                << "Tried to watch directory that does not exist " << p_Path
-                << LOW_LOG_END;
-              return 0;
+                << "Tried to watch directory that does not exist "
+                << p_Path << LOW_LOG_END;
+            return 0;
           }
           DirectoryWatcher l_DirectoryWatcher;
           l_DirectoryWatcher.watchHandle = ++g_CurrentId;

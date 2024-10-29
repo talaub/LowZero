@@ -19,6 +19,8 @@ namespace Flode {
       FunctionNode();
 
       Low::Util::String get_name(NodeNameType p_Type) const override;
+      Low::Util::String
+      get_subtitle(NodeNameType p_Type) const override;
 
       virtual ImU32 get_color() const override;
 
@@ -135,6 +137,22 @@ namespace Flode {
 
       virtual void
       compile(Low::Util::StringBuilder &p_Builder) const override;
+    };
+
+    struct FLODE_API ForNode : public Node
+    {
+      Low::Util::String get_name(NodeNameType p_Type) const override;
+
+      virtual ImU32 get_color() const override;
+
+      virtual void setup_default_pins() override;
+
+      virtual void
+      compile(Low::Util::StringBuilder &p_Builder) const override;
+
+      virtual void
+      compile_output_pin(Low::Util::StringBuilder &p_Builder,
+                         NodeEd::PinId p_PinId) const override;
     };
 
     FLODE_API void register_nodes();

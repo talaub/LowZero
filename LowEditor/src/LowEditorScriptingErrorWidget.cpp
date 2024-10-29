@@ -10,7 +10,8 @@ namespace Low {
       ImGui::SetNextWindowSize(ImVec2(500, 400),
                                ImGuiCond_FirstUseEver);
 
-      ImGui::Begin(ICON_FA_BUG " Scripting errors");
+      ImGui::Begin(ICON_FA_BUG " Scripting errors", &m_Open);
+
       m_ErrorList.render(p_Delta);
       ImGui::End();
     }

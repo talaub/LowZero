@@ -488,6 +488,46 @@ static void register_lowutil_name()
                                             "Low::Util::Name(#x)");
 }
 
+#include "LowUtilVariant.h"
+static void register_lowutil_variant()
+{
+    using namespace Low;
+    using namespace Low::Core;
+    using namespace Low::Util;
+
+  Cflat::Namespace *l_Namespace =
+      Scripting::get_environment()->requestNamespace("Low::Util");
+
+  CflatRegisterClass(l_Namespace, Variant);
+  CflatClassAddConstructor(l_Namespace, Variant);
+  CflatClassAddCopyConstructor(l_Namespace, Variant);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const bool &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const float &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const int &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const uint32_t &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const uint8_t &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const Low::Math::Vector3 &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const Low::Math::Vector2 &);
+  CflatClassAddConstructorParams1(l_Namespace, Variant, const Low::Util::Name &);
+
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const bool &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const float &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const int &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const uint32_t &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const uint8_t &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const Math::Vector3 &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const Math::Vector2 &);
+  CflatClassAddMethodReturnParams1(l_Namespace, Variant, Variant, operator=,
+                                   const Low::Util::Name &);
+}
+
 #include "LowUtilContainers.h"
 static void register_lowutil_containers()
 {
@@ -514,6 +554,14 @@ static void register_lowutil_containers()
   CflatRegisterSTLVectorCustom(l_Namespace, List, Math::UVector2);
 
   CflatRegisterSTLVectorCustom(l_Namespace, List, Handle);
+
+  CflatRegisterSTLMapCustom(l_Namespace, Map, eastl::pair, Name,
+                            Variant);
+
+  /*
+  Scripting::get_environment()->defineMacro("LOW_NAME_VARIANT_MAP",
+                                            "Low::Util::Map<Low::Util::Name, Low::Util::Variant>");
+                                            */
 }
 
 static void register_lowutil_string()
@@ -1424,6 +1472,7 @@ static void setup_environment()
   register_lowutil_name();
   register_lowutil_handle();
   register_lowutil_logger();
+  register_lowutil_variant();
   register_lowutil_containers();
   preregister_types();
   register_types();

@@ -201,6 +201,13 @@ function generate_scripting_api(p_Type) {
   t += line(
     `CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, bool, is_alive);`,
   );
+  t += line(
+    `CflatStructAddStaticMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, ${l_TypeString}*, living_instances);`,
+  );
+
+  t += line(
+    `CflatStructAddStaticMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, uint32_t, living_count);`,
+  );
 
   t += line(
     `CflatStructAddMethodVoid(Low::Core::Scripting::get_environment(), ${l_TypeString}, void, destroy);`,

@@ -11,13 +11,15 @@
 #include "LowCoreMeshAsset.h"
 
 #include "LowUtil.h"
+#include "LowUtilString.h"
+#include "LowUtilFileIO.h"
 
 namespace Low {
   namespace Editor {
-    static void save(const Util::Handle p_Handle,
-                     Util::RTTI::TypeInfo &p_TypeInfo)
+    static Util::String
+    get_asset_path(const Util::Handle p_Handle,
+                   Util::RTTI::TypeInfo &p_TypeInfo)
     {
-      // Contains the name of the type in lowercase
       Util::String l_LowerCase = p_TypeInfo.name.c_str();
       l_LowerCase.make_lower();
 
@@ -32,11 +34,29 @@ namespace Low {
           Util::get_project().dataPath + "/assets/" + l_LowerCase +
           "/" + l_NameString + "." + l_LowerCase + ".yaml";
 
+      return l_SavePath;
+    }
+
+    static void save(const Util::Handle p_Handle,
+                     Util::RTTI::TypeInfo &p_TypeInfo)
+    {
+      // Contains the name of the type in lowercase
+      Util::String l_SavePath = get_asset_path(p_Handle, p_TypeInfo);
+
       Util::Yaml::Node l_Node;
       p_TypeInfo.serialize(p_Handle, l_Node);
 
       Util::Yaml::write_file(l_SavePath.c_str(), l_Node);
       LOW_LOG_INFO << "Saved " << p_TypeInfo.name << LOW_LOG_END;
+    }
+
+    static void delete_asset(const Util::Handle p_Handle,
+                             Util::RTTI::TypeInfo &p_TypeInfo)
+    {
+      // Contains the name of the type in lowercase
+      Util::String l_SavePath = get_asset_path(p_Handle, p_TypeInfo);
+
+      delete_file_if_exists(l_SavePath);
     }
 
     static void render_footer(const Util::Handle p_Handle,
@@ -84,6 +104,8 @@ namespace Low {
 
     void TypeManagerWidget::render_list(float p_Delta)
     {
+      Util::List<Util::Handle> l_HandlesToDelete;
+
       for (u32 i = 0; i < m_TypeInfo.get_living_count(); ++i) {
         Util::Handle i_Handle = m_TypeInfo.get_living_instances()[i];
         Util::Name i_Name =
@@ -94,6 +116,36 @@ namespace Low {
                                   m_Selected.get_id())) {
           select(i_Handle);
         }
+
+        if (ImGui::BeginPopupContextItem(
+                LOW_TO_STRING(i_Handle.get_id()).c_str())) {
+          select(i_Handle);
+          if (ImGui::MenuItem("Delete")) {
+            l_HandlesToDelete.push_back(i_Handle);
+          }
+          ImGui::EndPopup();
+        }
+      }
+
+      for (auto it = l_HandlesToDelete.begin();
+           it != l_HandlesToDelete.end();) {
+        Util::Handle i_Handle = *it;
+        if (!i_Handle.is_registered_type()) {
+          it = l_HandlesToDelete.erase(it);
+        }
+        Util::RTTI::TypeInfo &i_TypeInfo =
+            Util::Handle::get_type_info(i_Handle.get_type());
+
+        get_global_changelist().add_entry(
+            History::destroy_handle_transaction(i_Handle));
+
+        TypeEditor::handle_before_delete(i_Handle);
+
+        delete_asset(i_Handle, i_TypeInfo);
+
+        i_TypeInfo.destroy(i_Handle);
+
+        it = l_HandlesToDelete.erase(it);
       }
     }
 
@@ -105,7 +157,7 @@ namespace Low {
 
       ImGui::SetNextWindowSize(ImVec2(500, 400),
                                ImGuiCond_FirstUseEver);
-      ImGui::Begin(m_TypeInfo.name.c_str(), nullptr,
+      ImGui::Begin(m_TypeInfo.name.c_str(), &m_Open,
                    ImGuiWindowFlags_NoCollapse);
 
       Util::String l_CreateString = "Create ";
@@ -113,21 +165,6 @@ namespace Low {
 
       if (ImGui::Button("Add")) {
         ImGui::OpenPopup(l_CreateString.c_str());
-      }
-
-      ImVec2 l_Cursor = ImGui::GetCursorPos();
-      float l_Margin = 68.0f;
-      float l_PointToAchieve =
-          ImGui::GetContentRegionAvail().x - l_Margin;
-      float l_CurrentMargin = l_Cursor.x;
-      float l_Spacing = l_PointToAchieve - l_CurrentMargin;
-
-      ImGui::SameLine();
-      ImGui::Dummy({l_Spacing, 0.0f});
-      ImGui::SameLine();
-
-      if (ImGui::Button(ICON_FA_TIMES)) {
-        close();
       }
 
       if (ImGui::BeginPopupModal(l_CreateString.c_str())) {

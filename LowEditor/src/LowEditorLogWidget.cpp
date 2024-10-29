@@ -146,7 +146,7 @@ namespace Low {
 
     void LogWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_SCROLL " Log");
+      ImGui::Begin(ICON_FA_SCROLL " Log", &m_Open);
 
       if (ImGui::Button("Clear")) {
         g_Entries.clear();

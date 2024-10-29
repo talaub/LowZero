@@ -137,6 +137,7 @@ namespace Flode {
     Pin *find_output_pin_checked(NodeEd::PinId p_PinId) const;
 
     virtual Low::Util::String get_name(NodeNameType p_Type) const;
+    virtual Low::Util::String get_subtitle(NodeNameType p_Type) const;
 
     virtual ImU32 get_color() const
     {

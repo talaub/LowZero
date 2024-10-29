@@ -38,12 +38,85 @@ namespace Flode {
       p_Builder.append("::TYPE_ID");
     }
 
+    InstanceCountNode::InstanceCountNode(u16 p_TypeId)
+    {
+      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
+
+      m_CachedName = m_TypeMetadata.friendlyName + " instance count";
+    }
+
+    ImU32 InstanceCountNode::get_color() const
+    {
+      return g_HandleColor;
+    }
+
+    Low::Util::String
+    InstanceCountNode::get_name(NodeNameType p_Type) const
+    {
+      return m_CachedName;
+    }
+
+    void InstanceCountNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Output, "", PinType::Number);
+    }
+
+    void InstanceCountNode::compile_output_pin(
+        Low::Util::StringBuilder &p_Builder,
+        NodeEd::PinId p_PinId) const
+    {
+      p_Builder.append(m_TypeMetadata.fullTypeString);
+      p_Builder.append("::living_count()");
+    }
+
+    GetInstanceByIndexNode::GetInstanceByIndexNode(u16 p_TypeId)
+    {
+      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
+
+      m_CachedName = Low::Util::String("Get instance by index");
+    }
+
+    ImU32 GetInstanceByIndexNode::get_color() const
+    {
+      return g_HandleColor;
+    }
+
+    Low::Util::String
+    GetInstanceByIndexNode::get_name(NodeNameType p_Type) const
+    {
+      return m_CachedName;
+    }
+
+    Low::Util::String
+    GetInstanceByIndexNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
+    }
+
+    void GetInstanceByIndexNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "Index", PinType::Number);
+      create_handle_pin(PinDirection::Output, "",
+                        m_TypeMetadata.typeId);
+    }
+
+    void GetInstanceByIndexNode::compile_output_pin(
+        Low::Util::StringBuilder &p_Builder,
+        NodeEd::PinId p_PinId) const
+    {
+      Pin *l_InputPin = pins[0];
+
+      p_Builder.append(m_TypeMetadata.fullTypeString);
+      p_Builder.append("::living_instances()[");
+      compile_input_pin(p_Builder, l_InputPin->id);
+      p_Builder.append("]");
+    }
+
     FindByNameNode::FindByNameNode(u16 p_TypeId)
     {
       m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
 
-      m_CachedName = Low::Util::String("Find ") +
-                     m_TypeMetadata.friendlyName + " by name";
+      m_CachedName = Low::Util::String("Find by name");
     }
 
     ImU32 FindByNameNode::get_color() const
@@ -55,6 +128,12 @@ namespace Flode {
     FindByNameNode::get_name(NodeNameType p_Type) const
     {
       return m_CachedName;
+    }
+
+    Low::Util::String
+    FindByNameNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
     }
 
     void FindByNameNode::setup_default_pins()
@@ -83,9 +162,8 @@ namespace Flode {
       m_PropertyMetadata =
           m_TypeMetadata.find_property_by_name(p_PropertyName);
 
-      m_CachedName = Low::Util::String("Get ") +
-                     m_PropertyMetadata.friendlyName + " of " +
-                     m_TypeMetadata.friendlyName;
+      m_CachedName =
+          Low::Util::String("Get ") + m_PropertyMetadata.friendlyName;
     }
 
     ImU32 GetNode::get_color() const
@@ -96,6 +174,11 @@ namespace Flode {
     Low::Util::String GetNode::get_name(NodeNameType p_Type) const
     {
       return m_CachedName;
+    }
+
+    Low::Util::String GetNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
     }
 
     void GetNode::setup_default_pins()
@@ -126,9 +209,8 @@ namespace Flode {
       m_PropertyMetadata =
           m_TypeMetadata.find_property_by_name(p_PropertyName);
 
-      m_CachedName = Low::Util::String("Set ") +
-                     m_PropertyMetadata.friendlyName + " of " +
-                     m_TypeMetadata.friendlyName;
+      m_CachedName =
+          Low::Util::String("Set ") + m_PropertyMetadata.friendlyName;
     }
 
     ImU32 SetNode::get_color() const
@@ -139,6 +221,11 @@ namespace Flode {
     Low::Util::String SetNode::get_name(NodeNameType p_Type) const
     {
       return m_CachedName;
+    }
+
+    Low::Util::String SetNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
     }
 
     void SetNode::setup_default_pins()
@@ -195,6 +282,12 @@ namespace Flode {
     FunctionNode::get_name(NodeNameType p_Type) const
     {
       return m_CachedName;
+    }
+
+    Low::Util::String
+    FunctionNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
     }
 
     void FunctionNode::setup_default_pins()
@@ -293,6 +386,85 @@ namespace Flode {
       }
 
       p_Builder.append(")");
+    }
+
+    ForEachInstanceNode::ForEachInstanceNode(u16 p_TypeId)
+    {
+      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
+
+      m_CachedName = Low::Util::String("For each instance");
+    }
+
+    ImU32 ForEachInstanceNode::get_color() const
+    {
+      return g_HandleColor;
+    }
+
+    Low::Util::String
+    ForEachInstanceNode::get_name(NodeNameType p_Type) const
+    {
+      return m_CachedName;
+    }
+
+    Low::Util::String
+    ForEachInstanceNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
+    }
+
+    void ForEachInstanceNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Output, "", PinType::Flow);
+      create_pin(PinDirection::Output, "Loop", PinType::Flow);
+      create_handle_pin(PinDirection::Output, "Instance",
+                        m_TypeMetadata.typeId);
+    }
+
+    void ForEachInstanceNode::compile(
+        Low::Util::StringBuilder &p_Builder) const
+    {
+      Low::Util::StringBuilder l_IndexVariableName;
+      l_IndexVariableName.append("__foreach_index").append(id.Get());
+
+      Low::Util::StringBuilder l_InstanceVariableName;
+      l_InstanceVariableName.append("__foreach_instance")
+          .append(id.Get());
+
+      p_Builder.append("for (int ")
+          .append(l_IndexVariableName.get())
+          .append(" = 0; ")
+          .append(l_IndexVariableName.get())
+          .append(" < ")
+          .append(m_TypeMetadata.fullTypeString)
+          .append("::living_count(); ++")
+          .append(l_IndexVariableName.get());
+      p_Builder.append(") {").endl();
+      p_Builder.append(m_TypeMetadata.fullTypeString)
+          .append(" ")
+          .append(l_InstanceVariableName.get())
+          .append(" = ")
+          .append(m_TypeMetadata.fullTypeString)
+          .append("::living_instances()[")
+          .append(l_IndexVariableName.get())
+          .append("];")
+          .endl();
+      graph->continue_compilation(p_Builder, pins[2]);
+      p_Builder.append("}").endl();
+
+      graph->continue_compilation(p_Builder, pins[1]);
+    }
+
+    void ForEachInstanceNode::compile_output_pin(
+        Low::Util::StringBuilder &p_Builder,
+        NodeEd::PinId p_PinId) const
+    {
+      Pin *l_Pin = find_pin_checked(p_PinId);
+
+      LOW_ASSERT(l_Pin->direction == PinDirection::Output,
+                 "Pin is not an output pin");
+
+      p_Builder.append("__foreach_instance").append(id.Get());
     }
   } // namespace HandleNodes
 } // namespace Flode

@@ -60,7 +60,7 @@ namespace Low {
 
     void ChangeWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_CLOCK " History");
+      ImGui::Begin(ICON_FA_CLOCK " History", &m_Open);
 
       for (int i = get_global_changelist().m_Changelist.size();
            i-- > 0;) {

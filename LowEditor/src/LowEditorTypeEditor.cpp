@@ -96,6 +96,27 @@ namespace Low {
       handle_after_add(p_Handle, l_Metadata);
     }
 
+    void TypeEditor::handle_before_delete(Util::Handle p_Handle,
+                                          TypeMetadata &p_Metadata)
+    {
+      auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);
+
+      if (l_Entry != g_TypeEditors.end()) {
+        l_Entry->second->before_delete(p_Handle, p_Metadata);
+      } else {
+        TypeEditor l_Editor;
+        l_Editor.before_delete(p_Handle, p_Metadata);
+      }
+    }
+
+    void TypeEditor::handle_before_delete(Util::Handle p_Handle)
+    {
+      TypeMetadata l_Metadata =
+          get_type_metadata(p_Handle.get_type());
+
+      handle_before_delete(p_Handle, l_Metadata);
+    }
+
     void TypeEditor::render(Util::Handle p_Handle,
                             TypeMetadata &p_Metadata)
     {

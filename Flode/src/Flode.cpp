@@ -12,6 +12,7 @@
 #include "LowEditorPropertyEditors.h"
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"
+#include "LowEditorThemes.h"
 
 #include "LowRendererImGuiHelper.h"
 
@@ -376,6 +377,49 @@ namespace Flode {
 
     {
       Low::Util::Name l_NodeTypeName = LOW_NAME(
+          Low::Util::String(l_NodeNamePrefix + "instance count")
+              .c_str());
+      Flode::register_node(
+          l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+            return new Flode::HandleNodes::InstanceCountNode(
+                p_TypeId);
+          });
+
+      Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                 "Instance count", l_NodeTypeName);
+    }
+
+    {
+      Low::Util::Name l_NodeTypeName = LOW_NAME(
+          Low::Util::String(l_NodeNamePrefix + "GetInstanceByIndex")
+              .c_str());
+      Flode::register_node(
+          l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+            return new Flode::HandleNodes::GetInstanceByIndexNode(
+                p_TypeId);
+          });
+
+      Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                 "Get living instance by index",
+                                 l_NodeTypeName);
+    }
+
+    {
+      Low::Util::Name l_NodeTypeName = LOW_NAME(
+          Low::Util::String(l_NodeNamePrefix + "ForEachInstance")
+              .c_str());
+      Flode::register_node(
+          l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+            return new Flode::HandleNodes::ForEachInstanceNode(
+                p_TypeId);
+          });
+
+      Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                 "For each instance", l_NodeTypeName);
+    }
+
+    {
+      Low::Util::Name l_NodeTypeName = LOW_NAME(
           Low::Util::String(l_NodeNamePrefix + "FindByName").c_str());
       Flode::register_node(
           l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
@@ -637,6 +681,11 @@ namespace Flode {
     return "FlodeNode";
   }
 
+  Low::Util::String Node::get_subtitle(NodeNameType p_Type) const
+  {
+    return "";
+  }
+
   inline void compile_string_pin_connection_conversion(
       Low::Util::StringBuilder &p_Builder, const Node *p_OutputNode,
       Pin *p_OutputPin, const Node *p_InputNode, Pin *p_InputPin)
@@ -854,7 +903,16 @@ namespace Flode {
     ImGui::BeginHorizontal("header");
 
     ImGui::Spring(0);
+    ImGui::BeginVertical("headertitle");
     ImGui::TextUnformatted(get_name(NodeNameType::Full).c_str());
+    Low::Util::String l_Subtitle = get_subtitle(NodeNameType::Full);
+    if (!l_Subtitle.empty()) {
+      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_350);
+      ImGui::Text(l_Subtitle.c_str());
+      ImGui::PopFont();
+      ImGui::Dummy(ImVec2(0, 1));
+    }
+    ImGui::EndVertical();
     ImGui::Spring(1);
     ImGui::Dummy(ImVec2(0, 20));
     ImGui::Spring(0);
@@ -880,7 +938,7 @@ namespace Flode {
         ImVec2(l_Max.x - 4.0f, m_HeaderMax.y) +
             ImVec2(g_NodePadding.x - l_HalfBorderWidth, 0),
         get_color(), NodeEd::GetStyle().NodeRounding,
-        ImDrawFlags_RoundCornersTop);
+        ImDrawFlags_None);
   }
 
   void Node::render_pin(Flode::Pin *p_Pin)
@@ -1085,8 +1143,9 @@ namespace Flode {
 
   void Node::default_render()
   {
-    NodeEd::GetStyle().NodeBorderWidth = 0.0f;
+    NodeEd::GetStyle().NodeBorderWidth = 0.2f;
     NodeEd::GetStyle().NodePadding = g_NodePadding;
+    NodeEd::GetStyle().NodeRounding = 0.0f;
 
     /*
     NodeEd::PushStyleColor(

@@ -62,6 +62,9 @@ namespace Low {
 
     void LOW_EDITOR_API close_widget(Widget *p_Widget);
 
+    void LOW_EDITOR_API
+    delete_file_if_exists(Low::Util::String p_Path);
+
     namespace History {
       Transaction LOW_EDITOR_API
       create_handle_transaction(Util::Handle p_Handle);

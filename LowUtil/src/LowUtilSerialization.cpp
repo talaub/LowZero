@@ -124,6 +124,7 @@ namespace Low {
       {
         if (!p_Handle.is_registered_type()) {
           p_Node = false;
+          return;
         }
 
         RTTI::TypeInfo &l_TypeInfo =
@@ -148,6 +149,9 @@ namespace Low {
 
       Handle deserialize_handle(Yaml::Node &p_Node)
       {
+        if (!p_Node.IsMap()) {
+          return 0ull;
+        }
         if (p_Node["uniqueid"]) {
           return find_handle_by_unique_id(
               p_Node["uniqueid"].as<u64>());

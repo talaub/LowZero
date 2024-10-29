@@ -495,7 +495,7 @@ namespace Low {
 
       for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
         if (it->open) {
-          it->widget->render(p_Delta);
+          it->widget->show(p_Delta);
         }
       }
 
