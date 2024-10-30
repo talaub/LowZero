@@ -3,6 +3,7 @@
 #include "Flode.h"
 
 #include "IconsFontAwesome5.h"
+#include "IconsCodicons.h"
 
 namespace Flode {
   namespace MathNodes {
@@ -12,7 +13,7 @@ namespace Flode {
     Low::Util::String AddNode::get_name(NodeNameType p_Type) const
     {
       if (p_Type == NodeNameType::Compact) {
-        return ICON_FA_PLUS "";
+        return ICON_LC_PLUS "";
       }
 
       return "Add";

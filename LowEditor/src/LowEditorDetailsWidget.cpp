@@ -1,7 +1,7 @@
 #include "LowEditorDetailsWidget.h"
 
 #include "imgui.h"
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 namespace Low {
   namespace Editor {
@@ -9,7 +9,7 @@ namespace Low {
     {
       m_BreakRunning = false;
 
-      ImGui::Begin(ICON_FA_GLASSES " Details");
+      ImGui::Begin(ICON_LC_PENCIL_RULER " Details");
 
       for (auto it = m_Sections.begin(); it != m_Sections.end();
            ++it) {

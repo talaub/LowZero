@@ -1,7 +1,7 @@
 #include "LowEditorRegionWidget.h"
 
 #include "imgui.h"
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
@@ -39,7 +39,7 @@ namespace Low {
 
     void RegionWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_MAP_MARKER_ALT " Regions");
+      ImGui::Begin(ICON_LC_MAP_PIN " Regions");
 
       bool l_OpenedEntryPopup = false;
 
@@ -50,8 +50,8 @@ namespace Low {
         }
         bool i_Break = false;
 
-        Util::String i_Label(it->is_loaded() ? ICON_FA_MAP_MARKER_ALT
-                                             : ICON_FA_POWER_OFF);
+        Util::String i_Label(it->is_loaded() ? ICON_LC_MAP_PIN
+                                             : ICON_LC_MAP_PIN_OFF);
         i_Label += " ";
         i_Label += it->get_name().c_str();
         if (ImGui::Selectable(i_Label.c_str(),

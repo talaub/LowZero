@@ -17,6 +17,59 @@
 namespace Low {
   namespace Editor {
     namespace Gui {
+
+      static bool drag_float(const char *label, float *value,
+                             float width, float v_speed = 1.0f,
+                             float v_min = 0.0f, float v_max = 0.0f)
+      {
+        ImGui::PushID(
+            label); // Ensure unique ID if using this multiple times
+
+        // Get cursor position and input box size to draw the
+        // background behind it
+        ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+        ImVec2 widget_size = ImVec2(
+            width,
+            ImGui::GetFrameHeight()); // Customize width as needed
+
+        // Draw background with custom corner rounding
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImVec4 bg_color = color_to_imvec4(
+            theme_get_current().input); // Customize color here
+        draw_list->AddRectFilled(
+            cursor_pos,
+            ImVec2(cursor_pos.x + widget_size.x,
+                   cursor_pos.y + widget_size.y),
+            ImGui::GetColorU32(bg_color),
+            2.0f,                         // Rounding amount
+            ImDrawFlags_RoundCornersRight // Only round the right
+                                          // corners
+        );
+
+        // Style the input itself to remove its own rounding and
+        // padding
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,
+                            0.0f); // Remove rounding from input
+        ImGui::PushStyleColor(
+            ImGuiCol_FrameBg,
+            ImVec4(0, 0, 0,
+                   0)); // Make input box background transparent
+
+        // Draw the DragFloat on top of the custom background
+        ImGui::SetCursorScreenPos(
+            cursor_pos); // Reset cursor position
+        ImGui::PushItemWidth(width);
+        bool ret = ImGui::DragFloat("##value", value, v_speed, v_min,
+                                    v_max, "%.2f");
+        ImGui::PopItemWidth();
+
+        ImGui::PopStyleVar();   // Restore rounding
+        ImGui::PopStyleColor(); // Restore background color
+        ImGui::PopID();
+
+        return ret;
+      }
+
       static void draw_single_letter_label(Util::String p_Label,
                                            ImColor p_Color)
       {
@@ -34,7 +87,8 @@ namespace Low {
         */
 
         l_DrawList->AddRectFilled(l_Pos, l_Pos + ImVec2(16, 23),
-                                  p_Color);
+                                  p_Color, 2.0f,
+                                  ImDrawFlags_RoundCornersLeft);
 
         SetCursorScreenPos({l_Pos.x + 3.0f, l_Pos.y + 2.0f});
         Text(p_Label.c_str());
@@ -53,12 +107,11 @@ namespace Low {
         bool l_Changed = false;
 
         Util::String l_Label = "##" + p_Label;
-        PushItemWidth(p_Width - 16.0f);
-        if (DragFloat(l_Label.c_str(), p_Value, 0.2f, 0.0f, 0.0f,
-                      "%.2f")) {
+
+        if (drag_float(l_Label.c_str(), p_Value, (p_Width - 16.0f),
+                       0.2f, 0.0f, 0.0f)) {
           l_Changed = true;
         }
-        PopItemWidth();
 
         if (!p_Break) {
           SetCursorScreenPos({l_Pos.x + p_Width + p_Margin, l_Pos.y});

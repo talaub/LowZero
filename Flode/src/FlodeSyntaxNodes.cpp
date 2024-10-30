@@ -5,6 +5,7 @@
 #include "LowEditorBase.h"
 
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 namespace Flode {
   namespace SyntaxNodes {
@@ -163,7 +164,7 @@ namespace Flode {
 
       bool l_Changed = false;
 
-      if (ImGui::Button(ICON_FA_PLUS "")) {
+      if (ImGui::Button(ICON_LC_PLUS "")) {
         FunctionNodeParameter l_Param;
         l_Param.name = "new";
         l_Param.type = PinType::Number;
@@ -238,7 +239,7 @@ namespace Flode {
         }
 
         ImGui::SameLine();
-        if (ImGui::Button(ICON_FA_TRASH "")) {
+        if (ImGui::Button(ICON_LC_TRASH_2 "")) {
           it = m_Parameters.erase(it);
           l_Changed = true;
         } else {

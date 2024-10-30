@@ -8,7 +8,9 @@
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 #include "LowRenderer.h"
+#include "LowRendererImGuiHelper.h"
 
 #include "LowCore.h"
 #include "LowCoreDebugGeometry.h"
@@ -213,13 +215,13 @@ namespace Low {
                             ImGuiWindowFlags_NoSavedSettings |
                             ImGuiWindowFlags_NoDecoration);
       if (Core::get_engine_state() == Util::EngineState::EDITING) {
-        if (ImGui::Button(ICON_FA_PLAY)) {
+        if (ImGui::Button(ICON_LC_PLAY)) {
           set_selected_entity(0);
           Core::begin_playmode();
         }
       } else if (Core::get_engine_state() ==
                  Util::EngineState::PLAYING) {
-        if (ImGui::Button(ICON_FA_STOP)) {
+        if (ImGui::Button(ICON_LC_PAUSE)) {
           Core::exit_playmode();
         }
       }
@@ -256,7 +258,7 @@ namespace Low {
            p_RenderFlowWidget.get_widget_position().y +
                l_TopPadding});
 
-      ImGui::BeginChild("Tools", ImVec2(30, 200), false,
+      ImGui::BeginChild("Tools", ImVec2(50, 200), false,
                         ImGuiWindowFlags_NoBackground |
                             ImGuiWindowFlags_NoDocking |
                             ImGuiWindowFlags_NoCollapse |
@@ -264,17 +266,26 @@ namespace Low {
                             ImGuiWindowFlags_NoScrollWithMouse |
                             ImGuiWindowFlags_NoSavedSettings |
                             ImGuiWindowFlags_NoDecoration);
-      if (ImGui::Button(ICON_FA_ARROWS_ALT)) {
+
+      ImGui::PushFont(Renderer::ImGuiHelper::fonts().lucide_690);
+
+      int l_ButtonSize = 45;
+
+      if (ImGui::Button(ICON_LC_MOVE_3D,
+                        ImVec2(l_ButtonSize, l_ButtonSize))) {
         l_Operation = ImGuizmo::TRANSLATE;
       }
       // ImGui::SameLine();
-      if (ImGui::Button(ICON_FA_SYNC)) {
+      if (ImGui::Button(ICON_LC_ROTATE_3D,
+                        ImVec2(l_ButtonSize, l_ButtonSize))) {
         l_Operation = ImGuizmo::ROTATE;
       }
       // ImGui::SameLine();
-      if (ImGui::Button(ICON_FA_ARROWS_ALT_H)) {
+      if (ImGui::Button(ICON_LC_SCALE_3D,
+                        ImVec2(l_ButtonSize, l_ButtonSize))) {
         l_Operation = ImGuizmo::SCALE;
       }
+      ImGui::PopFont();
       ImGui::EndChild();
 
       ImGuizmo::SetDrawlist();
@@ -403,7 +414,7 @@ namespace Low {
     EditingWidget::EditingWidget() : m_CameraSpeed(3.5f)
     {
       m_RenderFlowWidget = new RenderFlowWidget(
-          ICON_FA_EYE " Viewport", Renderer::get_main_renderflow(),
+          ICON_LC_VIEW " Viewport", Renderer::get_main_renderflow(),
           &render_gizmos);
       m_LastPitchYaw = Math::Vector2(0.0f, -90.0f);
     }
@@ -440,6 +451,10 @@ namespace Low {
     bool EditingWidget::camera_movement(float p_Delta)
     {
       bool l_ReturnValue = false;
+
+      if (!m_RenderFlowWidget->is_focused()) {
+        return false;
+      }
 
       if (ImGui::GetIO().KeyCtrl) {
         return false;

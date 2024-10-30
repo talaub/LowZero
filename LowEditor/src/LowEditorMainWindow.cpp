@@ -447,7 +447,7 @@ namespace Low {
       register_editor_widget("Scene", new SceneWidget(), true);
       register_editor_widget("Regions", new RegionWidget(), true);
       register_editor_widget("History", new ChangeWidget());
-      register_editor_widget("Resources", new ResourceWidget());
+      // register_editor_widget("Resources", new ResourceWidget());
       g_FlodeWidget = new FlodeWidget();
       register_editor_widget("Flode", g_FlodeWidget, false);
       register_editor_widget("UI-Views", new UiWidget(), false);

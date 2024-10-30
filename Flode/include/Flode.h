@@ -9,6 +9,8 @@
 #include "LowUtilVariant.h"
 #include "LowUtilString.h"
 
+#include "IconsCodicons.h"
+
 namespace NodeEd = ax::NodeEditor;
 
 namespace Flode {
@@ -138,6 +140,7 @@ namespace Flode {
 
     virtual Low::Util::String get_name(NodeNameType p_Type) const;
     virtual Low::Util::String get_subtitle(NodeNameType p_Type) const;
+    virtual Low::Util::String get_icon() const;
 
     virtual ImU32 get_color() const
     {

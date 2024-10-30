@@ -2,7 +2,7 @@
 
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowUtilLogger.h"
 
@@ -103,7 +103,7 @@ namespace Low {
 
     void UiWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_WINDOW_RESTORE " UI-Views");
+      ImGui::Begin(ICON_LC_LAYOUT_TEMPLATE " UI-Views");
 
       bool l_Test = false;
 

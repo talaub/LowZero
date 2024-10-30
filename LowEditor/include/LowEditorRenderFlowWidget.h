@@ -30,6 +30,8 @@ namespace Low {
       Math::Vector2 get_widget_position();
       Math::UVector2 get_widget_dimensions();
 
+      bool is_focused() const;
+
     private:
       Util::String m_Title;
       Renderer::RenderFlow m_RenderFlow;
@@ -40,6 +42,8 @@ namespace Low {
       float m_SaveDimensionTicker = 0.0f;
       Math::Vector2 m_HoveredRelativePosition;
       Math::Vector2 m_WidgetPosition;
+
+      bool m_IsFocused;
 
       RenderFlowWidgetCallback m_Callback;
     };

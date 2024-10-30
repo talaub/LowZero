@@ -22,6 +22,11 @@ namespace Flode {
       Low::Util::String
       get_subtitle(NodeNameType p_Type) const override;
 
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_DEBUG_START;
+      }
+
       virtual ImU32 get_color() const override;
 
       virtual void setup_default_pins() override;
@@ -91,6 +96,17 @@ namespace Flode {
 
       Low::Util::String get_name(NodeNameType p_Type) const override;
 
+      Low::Util::String
+      get_subtitle(NodeNameType p_Type) const override
+      {
+        return "Variable";
+      }
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_SYMBOL_VARIABLE;
+      }
+
       virtual ImU32 get_color() const override;
 
       virtual void setup_default_pins() override;
@@ -131,6 +147,17 @@ namespace Flode {
     {
       Low::Util::String get_name(NodeNameType p_Type) const override;
 
+      Low::Util::String
+      get_subtitle(NodeNameType p_Type) const override
+      {
+        return "Branch";
+      }
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_GIT_BRANCH;
+      }
+
       virtual ImU32 get_color() const override;
 
       virtual void setup_default_pins() override;
@@ -142,6 +169,16 @@ namespace Flode {
     struct FLODE_API ForNode : public Node
     {
       Low::Util::String get_name(NodeNameType p_Type) const override;
+      Low::Util::String
+      get_subtitle(NodeNameType p_Type) const override
+      {
+        return "Loop";
+      }
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_DEBUG_RESTART;
+      }
 
       virtual ImU32 get_color() const override;
 

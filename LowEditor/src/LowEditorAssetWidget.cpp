@@ -5,6 +5,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
+#include "IconsCodicons.h"
 
 #include "LowEditor.h"
 #include "LowEditorGui.h"
@@ -30,9 +32,8 @@
 namespace Low {
   namespace Editor {
     const Util::String g_CategoryLabels[] = {
-        ICON_FA_CUBES " Meshes", ICON_FA_SPRAY_CAN " Materials",
-        ICON_FA_BOX_OPEN " Prefabs",
-        ICON_FA_PROJECT_DIAGRAM " Flode"};
+        ICON_LC_BOX " Meshes", ICON_LC_SPRAY_CAN " Materials",
+        ICON_LC_PACKAGE_OPEN " Prefabs", ICON_LC_WORKFLOW " Flode"};
     const uint32_t g_CategoryCount = 4;
 
     const float g_ElementSize = 128.0f;
@@ -220,7 +221,7 @@ namespace Low {
       float l_Padding = l_Style.WindowPadding.x;
 
       ImGui::PushID(p_Id);
-      ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
+      ImGui::PushFont(Renderer::ImGuiHelper::fonts().lucide_800);
       l_Result = ImGui::Button(p_Icon.c_str(),
                                ImVec2(g_ElementSize, g_ElementSize));
       if (p_Draggable && p_Handle.get_id() > 0) {
@@ -267,7 +268,7 @@ namespace Low {
 
     void AssetWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_FILE " Assets");
+      ImGui::Begin(ICON_LC_FILE " Assets");
 
       ImGui::BeginChild("Categories",
                         ImVec2(200, ImGui::GetContentRegionAvail().y),
@@ -320,7 +321,7 @@ namespace Low {
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create mesh asset",
+      if (render_element(l_Id++, ICON_LC_PLUS, "Create mesh asset",
                          false, 0, 0)) {
         ImGui::OpenPopup("Create mesh asset");
       }
@@ -378,7 +379,7 @@ namespace Low {
           p_Config.rootDirectoryWatchHandle) {
 
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_Id++, ICON_LC_FOLDER_OPEN, "back", false,
                 l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
@@ -392,7 +393,7 @@ namespace Low {
             Util::FileSystem::get_directory_watcher(*it);
 
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                l_Id++, ICON_LC_FOLDER, i_DirectoryWatcher.name, true,
                 i_DirectoryWatcher.watchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               i_DirectoryWatcher.watchHandle;
@@ -412,7 +413,7 @@ namespace Low {
 
         g_Paths[i_MeshAsset.get_id()] = i_FileWatcher.path;
 
-        if (render_element(l_Id++, ICON_FA_CUBE,
+        if (render_element(l_Id++, ICON_LC_BOX,
                            i_MeshAsset.get_name().c_str(), true,
                            i_MeshAsset, &l_DirectoryWatcher.update)) {
           set_selected_handle(i_MeshAsset);
@@ -441,7 +442,7 @@ namespace Low {
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_FA_PLUS, "Create material",
+      if (render_element(l_Id++, ICON_LC_PLUS, "Create material",
                          false, 0, 0)) {
         ImGui::OpenPopup("Create material");
       }
@@ -495,7 +496,7 @@ namespace Low {
           p_Config.currentDirectoryWatchHandle) {
 
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_Id++, ICON_LC_FOLDER_OPEN, "back", false,
                 l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
@@ -508,7 +509,7 @@ namespace Low {
         Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(*it);
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                l_Id++, ICON_LC_FOLDER, i_DirectoryWatcher.name, true,
                 i_DirectoryWatcher.watchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               i_DirectoryWatcher.watchHandle;
@@ -529,7 +530,7 @@ namespace Low {
 
         g_Paths[i_Material.get_id()] = i_FileWatcher.path;
 
-        if (render_element(l_Id++, ICON_FA_SPRAY_CAN,
+        if (render_element(l_Id++, ICON_LC_SPRAY_CAN,
                            i_Material.get_name().c_str(), true,
                            i_FileWatcher.handle,
                            &l_DirectoryWatcher.update)) {
@@ -566,13 +567,13 @@ namespace Low {
       if (p_Config.rootDirectoryWatchHandle !=
           p_Config.currentDirectoryWatchHandle) {
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_Id++, ICON_LC_FOLDER_OPEN, "back", false,
                 l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
         }
       } else {
-        if (render_element(l_Id++, ICON_FA_PLUS, "Create flode graph",
+        if (render_element(l_Id++, ICON_LC_PLUS, "Create flode graph",
                            false, 0, 0)) {
           ImGui::OpenPopup("Create flode");
         }
@@ -620,7 +621,7 @@ namespace Low {
         Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(*it);
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                l_Id++, ICON_LC_FOLDER, i_DirectoryWatcher.name, true,
                 i_DirectoryWatcher.watchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               i_DirectoryWatcher.watchHandle;
@@ -641,8 +642,8 @@ namespace Low {
         if (Util::StringHelper::begins_with(i_Name, "__")) {
           continue;
         }
-        if (render_element(l_Id++, ICON_FA_PROJECT_DIAGRAM, i_Name,
-                           true, i_FileWatcher.handle,
+        if (render_element(l_Id++, ICON_LC_WORKFLOW, i_Name, true,
+                           i_FileWatcher.handle,
                            &l_DirectoryWatcher.update)) {
           get_flode_widget()->m_Editor->load(i_FileWatcher.path);
         }
@@ -684,7 +685,7 @@ namespace Low {
       if (p_Config.rootDirectoryWatchHandle !=
           p_Config.currentDirectoryWatchHandle) {
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER_OPEN, "back", false,
+                l_Id++, ICON_LC_FOLDER_OPEN, "back", false,
                 l_DirectoryWatcher.parentWatchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               l_DirectoryWatcher.parentWatchHandle;
@@ -697,7 +698,7 @@ namespace Low {
         Util::FileSystem::DirectoryWatcher &i_DirectoryWatcher =
             Util::FileSystem::get_directory_watcher(*it);
         if (render_directory(
-                l_Id++, ICON_FA_FOLDER, i_DirectoryWatcher.name, true,
+                l_Id++, ICON_LC_FOLDER, i_DirectoryWatcher.name, true,
                 i_DirectoryWatcher.watchHandle, p_Config)) {
           p_Config.currentDirectoryWatchHandle =
               i_DirectoryWatcher.watchHandle;
@@ -717,7 +718,7 @@ namespace Low {
                  .is_alive()) {
 
           g_Paths[i_Prefab.get_id()] = i_FileWatcher.path;
-          if (render_element(l_Id++, ICON_FA_BOX_OPEN,
+          if (render_element(l_Id++, ICON_LC_PACKAGE_OPEN,
                              i_Prefab.get_name().c_str(), true,
                              i_FileWatcher.handle,
                              &l_DirectoryWatcher.update)) {

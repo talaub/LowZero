@@ -4,6 +4,9 @@
 
 #include "Flode.h"
 
+#include "IconsFontAwesome5.h"
+#include "IconsCodicons.h"
+
 #include "LowUtilHandle.h"
 
 namespace Flode {
@@ -88,6 +91,11 @@ namespace Flode {
       Low::Util::String
       get_subtitle(NodeNameType p_Type) const override;
 
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_SEARCH;
+      }
+
       virtual ImU32 get_color() const override;
 
       virtual void setup_default_pins() override;
@@ -109,6 +117,11 @@ namespace Flode {
       Low::Util::String get_name(NodeNameType p_Type) const override;
       Low::Util::String
       get_subtitle(NodeNameType p_Type) const override;
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_SYMBOL_FIELD;
+      }
 
       virtual ImU32 get_color() const override;
 
@@ -133,6 +146,11 @@ namespace Flode {
       Low::Util::String
       get_subtitle(NodeNameType p_Type) const override;
 
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_SYMBOL_FIELD;
+      }
+
       virtual ImU32 get_color() const override;
 
       virtual void setup_default_pins() override;
@@ -154,6 +172,11 @@ namespace Flode {
       Low::Util::String get_name(NodeNameType p_Type) const override;
       Low::Util::String
       get_subtitle(NodeNameType p_Type) const override;
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_SYMBOL_METHOD;
+      }
 
       virtual ImU32 get_color() const override;
 
@@ -179,6 +202,11 @@ namespace Flode {
       Low::Util::String get_name(NodeNameType p_Type) const override;
       Low::Util::String
       get_subtitle(NodeNameType p_Type) const override;
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_SYNC;
+      }
 
       virtual ImU32 get_color() const override;
 

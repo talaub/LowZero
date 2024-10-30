@@ -13,6 +13,7 @@
 #include "../../LowDependencies/VulkanMemoryAllocator/include/vk_mem_alloc.h"
 
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowRendererVulkan.h"
 
@@ -1294,20 +1295,22 @@ namespace Low {
           {
             float iconFontSize =
                 baseFontSize * 2.0f /
-                3.0f; // FontAwesome fonts need to have their sizes
+                2.0f; // FontAwesome fonts need to have their sizes
                       // reduced by 2.0f/3.0f in order to align
                       // correctly
 
             // merge in icons from Font Awesome
-            static const ImWchar icons_ranges[] = {ICON_MIN_FA,
-                                                   ICON_MAX_16_FA, 0};
+            static const ImWchar icons_ranges[] = {ICON_MIN_LC,
+                                                   ICON_MAX_16_LC, 0};
             ImFontConfig icons_config;
             icons_config.MergeMode = true;
             icons_config.PixelSnapH = true;
             icons_config.GlyphMinAdvanceX = iconFontSize;
+            // icons_config.GlyphExtraSpacing.y = 1.0f;
+            icons_config.GlyphOffset.y = 3.0f;
 
             Util::String l_FontPath =
-                l_BaseInternalFontPath + FONT_ICON_FILE_NAME_FAS;
+                l_BaseInternalFontPath + FONT_ICON_FILE_NAME_LC;
             io.Fonts->AddFontFromFileTTF(l_FontPath.c_str(),
                                          iconFontSize, &icons_config,
                                          icons_ranges);
@@ -1333,9 +1336,26 @@ namespace Low {
           // identical to regular ones.
           ImGuiStyle &style = ImGui::GetStyle();
           if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            style.WindowRounding = 0.0f;
+            style.WindowRounding = 2.0f;
+            style.ChildRounding = 2.0f;
+            style.FrameRounding = 2.0f;
+            style.PopupRounding = 2.0f;
+            style.ScrollbarRounding = 2.0f;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
           }
+
+          style.ChildRounding = 2.0f;
+          style.FrameRounding = 2.0f;
+          style.PopupRounding = 2.0f;
+          style.ScrollbarRounding = 2.0f;
+          style.GrabRounding = 2.0f;
+          style.TabRounding = 2.0f;
+
+          style.WindowPadding = ImVec2(8, 8);
+          style.FramePadding = ImVec2(5, 3);
+          style.ItemSpacing = ImVec2(10, 4);
+          style.ItemInnerSpacing = ImVec2(5, 3);
+
           {
             ImVec4 *colors = ImGui::GetStyle().Colors;
             colors[ImGuiCol_Text] =

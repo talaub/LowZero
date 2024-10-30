@@ -732,6 +732,7 @@ namespace Low {
     void open_flode_graph(Util::String p_Path)
     {
       get_flode_widget()->m_Editor->load(p_Path);
+      ImGui::SetWindowFocus(ICON_LC_WORKFLOW " Flode");
     }
 
     void delete_file_if_exists(Low::Util::String p_Path)

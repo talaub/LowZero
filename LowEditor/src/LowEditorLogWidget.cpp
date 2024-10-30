@@ -10,6 +10,8 @@
 
 #include "imgui.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
+#include "IconsCodicons.h"
 #include "LowEditorGui.h"
 
 namespace Low {
@@ -20,17 +22,17 @@ namespace Low {
     {
       switch (p_Level) {
       case Util::Log::LogLevel::DEBUG:
-        return ICON_FA_BUG;
+        return ICON_CI_BUG;
       case Util::Log::LogLevel::PROFILE:
-        return ICON_FA_STOPWATCH;
+        return ICON_LC_TIMER;
       case Util::Log::LogLevel::INFO:
-        return ICON_FA_INFO;
+        return ICON_CI_INFO;
       case Util::Log::LogLevel::WARN:
-        return ICON_FA_EXCLAMATION_TRIANGLE;
+        return ICON_CI_WARNING;
       case Util::Log::LogLevel::ERROR:
-        return ICON_FA_EXCLAMATION_CIRCLE;
+        return ICON_CI_ERROR;
       case Util::Log::LogLevel::FATAL:
-        return ICON_FA_EXCLAMATION_TRIANGLE;
+        return ICON_LC_SHIELD_ALERT;
       default:
         return ICON_FA_BUG;
       }
@@ -142,11 +144,20 @@ namespace Low {
     void LogWidget::initialize()
     {
       Util::Log::register_log_callback(&log_callback);
+
+      /*
+      LOW_LOG_DEBUG << "Test" << LOW_LOG_END;
+      LOW_LOG_PROFILE << "Test" << LOW_LOG_END;
+      LOW_LOG_INFO << "Test" << LOW_LOG_END;
+      LOW_LOG_WARN << "Test" << LOW_LOG_END;
+      LOW_LOG_ERROR << "Test" << LOW_LOG_END;
+      LOW_LOG_FATAL << "Test" << LOW_LOG_END;
+      */
     }
 
     void LogWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_SCROLL " Log", &m_Open);
+      ImGui::Begin(ICON_LC_MESSAGE_SQUARE_WARNING " Log", &m_Open);
 
       if (ImGui::Button("Clear")) {
         g_Entries.clear();

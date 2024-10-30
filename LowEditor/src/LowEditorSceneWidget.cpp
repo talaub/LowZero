@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
@@ -173,7 +174,7 @@ namespace Low {
 
     void SceneWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_LIST_UL " Scene");
+      ImGui::Begin(ICON_LC_LIST_TREE " Scene");
 
       ImVec2 l_Cursor = ImGui::GetCursorScreenPos();
       ImRect l_Rect(l_Cursor,

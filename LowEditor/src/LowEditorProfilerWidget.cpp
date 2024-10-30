@@ -1,7 +1,7 @@
 #include "LowEditorProfilerWidget.h"
 
 #include "imgui.h"
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 #include <string>
 
 #include "LowCoreGameLoop.h"
@@ -19,7 +19,7 @@ namespace Low {
 
     void ProfilerWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_STOPWATCH " Profiler");
+      ImGui::Begin(ICON_LC_TIMER " Profiler");
 
       ImGui::Text("FPS: ");
       ImGui::SameLine();

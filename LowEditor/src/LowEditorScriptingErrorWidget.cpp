@@ -1,7 +1,7 @@
 #include "LowEditorScriptingErrorWidget.h"
 
 #include "imgui.h"
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 namespace Low {
   namespace Editor {
@@ -10,7 +10,7 @@ namespace Low {
       ImGui::SetNextWindowSize(ImVec2(500, 400),
                                ImGuiCond_FirstUseEver);
 
-      ImGui::Begin(ICON_FA_BUG " Scripting errors", &m_Open);
+      ImGui::Begin(ICON_LC_BUG " Scripting errors", &m_Open);
 
       m_ErrorList.render(p_Delta);
       ImGui::End();

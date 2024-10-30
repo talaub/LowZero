@@ -1,7 +1,7 @@
 #include "LowEditorFlodeWidget.h"
 
 #include "imgui.h"
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"
@@ -23,7 +23,7 @@ namespace Low {
 
     void FlodeWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_PROJECT_DIAGRAM " Flode");
+      ImGui::Begin(ICON_LC_WORKFLOW " Flode");
 
       m_Editor->render(p_Delta);
 

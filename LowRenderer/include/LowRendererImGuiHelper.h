@@ -13,7 +13,23 @@ namespace Low {
         ImFont *common_350;
         ImFont *common_500;
         ImFont *common_800;
+
+        ImFont *icon_600;
+        ImFont *icon_700;
         ImFont *icon_800;
+
+        ImFont *fa_600;
+        ImFont *fa_700;
+        ImFont *fa_800;
+
+        ImFont *codicon_600;
+        ImFont *codicon_700;
+        ImFont *codicon_800;
+
+        ImFont *lucide_600;
+        ImFont *lucide_690;
+        ImFont *lucide_700;
+        ImFont *lucide_800;
       };
 
       void initialize();

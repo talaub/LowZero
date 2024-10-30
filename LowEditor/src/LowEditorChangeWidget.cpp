@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
+#include "IconsCodicons.h"
 
 #include "LowEditor.h"
 #include "LowEditorThemes.h"
@@ -27,16 +29,16 @@ namespace Low {
                                    bool p_IsCurrent)
     {
       ImGui::BeginGroup();
-      ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
+      ImGui::PushFont(Renderer::ImGuiHelper::fonts().lucide_800);
       if (p_IsCurrent) {
         ImGui::PushStyleColor(
             ImGuiCol_Text, color_to_imvec4(theme_get_current().info));
-        ImGui::Text(ICON_FA_ARROW_RIGHT);
+        ImGui::Text(ICON_LC_ARROW_RIGHT);
       } else {
         ImGui::PushStyleColor(
             ImGuiCol_Text,
             color_to_imvec4(theme_get_current().subtext));
-        ImGui::Text(ICON_FA_CLOCK);
+        ImGui::Text(ICON_LC_CLOCK);
       }
       ImGui::PopStyleColor();
       ImGui::PopFont();
@@ -60,7 +62,7 @@ namespace Low {
 
     void ChangeWidget::render(float p_Delta)
     {
-      ImGui::Begin(ICON_FA_CLOCK " History", &m_Open);
+      ImGui::Begin(ICON_LC_CLOCK " History", &m_Open);
 
       for (int i = get_global_changelist().m_Changelist.size();
            i-- > 0;) {

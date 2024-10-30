@@ -4,7 +4,8 @@
 
 #include "Flode.h"
 
-#include "IconsFontAwesome5.h"
+#include "IconsCodicons.h"
+#include "IconsLucide.h"
 
 namespace Flode {
   namespace MathNodes {
@@ -43,7 +44,7 @@ namespace Flode {
     {
       Low::Util::String get_name(NodeNameType p_Type) const override
       {
-        return ICON_FA_MINUS;
+        return ICON_LC_MINUS;
       }
 
       virtual ImU32 get_color() const override;
@@ -77,7 +78,7 @@ namespace Flode {
     {
       Low::Util::String get_name(NodeNameType p_Type) const override
       {
-        return ICON_FA_TIMES;
+        return ICON_LC_X;
       }
 
       virtual ImU32 get_color() const override;
@@ -111,7 +112,7 @@ namespace Flode {
     {
       Low::Util::String get_name(NodeNameType p_Type) const override
       {
-        return ICON_FA_DIVIDE;
+        return ICON_LC_DIVIDE;
       }
 
       virtual ImU32 get_color() const override;

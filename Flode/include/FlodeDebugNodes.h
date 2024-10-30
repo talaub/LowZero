@@ -9,6 +9,16 @@ namespace Flode {
     struct FLODE_API LogNode : public Node
     {
       Low::Util::String get_name(NodeNameType p_Type) const override;
+      Low::Util::String
+      get_subtitle(NodeNameType p_Type) const override
+      {
+        return "Debug";
+      }
+
+      Low::Util::String get_icon() const override
+      {
+        return ICON_CI_BUG;
+      }
 
       virtual ImU32 get_color() const override;
 

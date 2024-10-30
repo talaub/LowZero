@@ -17,7 +17,7 @@
 #include "FlodeMathNodes.h"
 #include "FLodeSyntaxNodes.h"
 
-#include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "Cflat.h"
 #include "LowCoreCflatScripting.h"
@@ -33,7 +33,6 @@ namespace Flode {
 
   void Editor::load(Low::Util::String p_Path)
   {
-    LOW_LOG_DEBUG << p_Path << LOW_LOG_END;
     m_LoadPath = p_Path;
   }
 
@@ -42,6 +41,10 @@ namespace Flode {
     if (!m_Graph) {
       return;
     }
+
+    NodeEd::GetStyle().LinkStrength = 30.0f;
+    // LOW_LOG_DEBUG << NodeEd::GetStyle().LinkStrength <<
+    // LOW_LOG_END;
 
     // TODO: Collect connected pins on graph
     // collect_connected_pins();
@@ -323,7 +326,7 @@ namespace Flode {
           ImGui::PopItemWidth();
           ImGui::SameLine();
           ImGui::PushItemWidth(120.0f);
-          if (ImGui::Button(ICON_FA_PLUS "")) {
+          if (ImGui::Button(ICON_LC_PLUS "")) {
             m_Graph->m_Namespace.push_back(Low::Util::Name("ns"));
           }
           ImGui::PopItemWidth();
@@ -335,7 +338,7 @@ namespace Flode {
             Low::Editor::Base::NameEdit("##namespaceedit", &*it);
             ImGui::PopItemWidth();
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_TRASH "")) {
+            if (ImGui::Button(ICON_LC_TRASH_2 "")) {
               it = m_Graph->m_Namespace.erase(it);
             } else {
               it++;
@@ -352,7 +355,7 @@ namespace Flode {
       ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
       ImGui::Text("Variables");
       ImGui::PopFont();
-      if (ImGui::Button(ICON_FA_PLUS "")) {
+      if (ImGui::Button(ICON_LC_PLUS "")) {
         Variable *l_Variable = new Variable();
         l_Variable->name = "NewVar";
         l_Variable->type = PinType::Number;
@@ -396,7 +399,7 @@ namespace Flode {
         ImGui::SameLine();
 
         bool i_Deleted = false;
-        if (ImGui::Button(ICON_FA_TRASH "")) {
+        if (ImGui::Button(ICON_LC_TRASH_2 "")) {
           it = m_Graph->m_Variables.erase(it);
           i_Deleted = true;
         } else {
@@ -487,11 +490,11 @@ namespace Flode {
     auto &io = ImGui::GetIO();
 
     if (m_Graph) {
-      if (ImGui::Button(ICON_FA_SAVE " Save")) {
+      if (ImGui::Button(ICON_LC_SAVE " Save")) {
         l_Save = true;
       }
       ImGui::SameLine();
-      if (ImGui::Button(ICON_FA_COG " Compile")) {
+      if (ImGui::Button(ICON_LC_SETTINGS " Compile")) {
         m_Graph->compile();
       }
     }
@@ -740,7 +743,8 @@ namespace Flode {
 
               if (i_InputPinPos != l_PinMapping.end() &&
                   i_OutputPinPos != l_PinMapping.end()) {
-                m_Graph->create_link(i_InputPinPos->second, i_OutputPinPos->second);
+                m_Graph->create_link(i_InputPinPos->second,
+                                     i_OutputPinPos->second);
               }
             }
           }

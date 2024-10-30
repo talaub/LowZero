@@ -10,6 +10,8 @@
 #include "LowRendererImGuiHelper.h"
 
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
+#include "IconsCodicons.h"
 
 namespace Low {
   namespace Editor {
@@ -128,7 +130,7 @@ namespace Low {
         ImGui::PushStyleColor(
             ImGuiCol_Text,
             color_to_imvec4(theme_get_current().error));
-        ImGui::Text(ICON_FA_EXCLAMATION_CIRCLE);
+        ImGui::Text(ICON_CI_ERROR);
         ImGui::PopStyleColor();
         ImGui::PopFont();
         ImGui::SameLine();

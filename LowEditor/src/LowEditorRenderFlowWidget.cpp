@@ -28,6 +28,8 @@ namespace Low {
                           ImVec2(0.0f, 0.0f));
       ImGui::Begin(m_Title.c_str());
 
+      m_IsFocused = ImGui::IsWindowFocused();
+
       Math::Vector2 l_HoverRelativePosition{2.0f, 2.0f};
 
       ImVec2 l_ViewportSize = ImGui::GetContentRegionAvail();
@@ -111,6 +113,11 @@ namespace Low {
     {
       return m_HoveredRelativePosition.x < 1.5f &&
              m_HoveredRelativePosition.y < 1.5f;
+    }
+
+    bool RenderFlowWidget::is_focused() const
+    {
+      return m_IsFocused;
     }
 
     Math::Vector2 RenderFlowWidget::get_relative_hover_position()
