@@ -740,6 +740,7 @@ namespace Low {
 
         void tick(float p_Delta, Util::EngineState p_State)
         {
+          return;
           LOW_PROFILE_CPU("Core", "Navmesh Tick");
           SYSTEM_ON_START(start);
 

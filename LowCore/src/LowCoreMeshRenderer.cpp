@@ -319,8 +319,12 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-        p_Node["mesh"] = get_mesh().get_unique_id();
-        p_Node["material"] = get_material().get_unique_id();
+        if (get_mesh().is_alive()) {
+          p_Node["mesh"] = get_mesh().get_unique_id();
+        }
+        if (get_material().is_alive()) {
+          p_Node["material"] = get_material().get_unique_id();
+        }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -351,12 +355,19 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-        l_Handle.set_mesh(Util::find_handle_by_unique_id(
-                              p_Node["mesh"].as<uint64_t>())
-                              .get_id());
-        l_Handle.set_material(Util::find_handle_by_unique_id(
-                                  p_Node["material"].as<uint64_t>())
-                                  .get_id());
+        l_Handle.set_mesh(0);
+        if (p_Node["mesh"]) {
+          l_Handle.set_mesh(Util::find_handle_by_unique_id(
+                                p_Node["mesh"].as<uint64_t>())
+                                .get_id());
+        }
+
+        l_Handle.set_material(0);
+        if (p_Node["material"]) {
+          l_Handle.set_material(Util::find_handle_by_unique_id(
+                                    p_Node["material"].as<uint64_t>())
+                                    .get_id());
+        }
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
