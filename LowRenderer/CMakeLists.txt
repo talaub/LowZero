@@ -55,6 +55,10 @@ target_compile_definitions(LowRenderer PRIVATE
   LOW_RENDERER_API_VULKAN
 )
 
+target_compile_definitions(LowRenderer PUBLIC
+  IMGUI_USER_CONFIG="${LOW_SOURCE_PATH}/LowRenderer/include/LowRendererImguiConfig.h"
+)
+
 target_include_directories(LowRenderer PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<BUILD_INTERFACE:$ENV{VK_SDK_PATH}/Include>

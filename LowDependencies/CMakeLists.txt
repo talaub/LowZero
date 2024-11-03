@@ -18,6 +18,8 @@ set(FT_DISABLE_ZLIB ON)
 set(FT_DISABLE_BZIP2 ON)
 set(FT_DISABLE_PNG ON)
 add_subdirectory(freetype)
+add_subdirectory(SDL)
+add_subdirectory(vk-bootstrap)
 
 
 set_target_properties(EASTL PROPERTIES FOLDER "Dependencies")

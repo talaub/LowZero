@@ -7,6 +7,7 @@
 #include <EASTL/optional.h>
 #include <EASTL/stack.h>
 #include <EASTL/queue.h>
+#include <EASTL/span.h>
 
 #include <EASTL/string.h>
 
@@ -33,6 +34,8 @@ namespace Low {
     template <typename T> using Deque = eastl::deque<T>;
 
     template <typename T> using Optional = eastl::optional<T>;
+
+    template <typename T> using Span = eastl::span<T>;
 
     typedef eastl::string String;
 

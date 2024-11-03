@@ -43,3 +43,6 @@ LowCore:
   Text: 42
   GameMode: 43
   Camera: 44
+LowRenderer2:
+  GraphicsPipeline: 32
+  Pipeline: 45

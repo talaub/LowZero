@@ -3,6 +3,7 @@
 
 #include "LowEditor.h"
 #include "LowEditorBase.h"
+#include "LowEditorMainWindow.h"
 
 #include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
@@ -139,7 +140,7 @@ namespace Flode {
           i_Param.type =
               string_to_pin_type(LOW_YAML_AS_STRING(i_Node["type"]));
           i_Param.pinId = i_Node["pin_id"].as<u64>();
-
+          i_Param.typeId = 0;
           if (i_Node["type_id"]) {
             i_Param.typeId = i_Node["type_id"].as<u16>();
           }
@@ -231,6 +232,8 @@ namespace Flode {
                                      l_Types.data(), l_Types.size());
         ImGui::PopItemWidth();
 
+        bool i_Deleted = false;
+
         if (l_Result) {
           l_Changed = true;
 
@@ -242,9 +245,60 @@ namespace Flode {
         if (ImGui::Button(ICON_LC_TRASH_2 "")) {
           it = m_Parameters.erase(it);
           l_Changed = true;
+          i_Deleted = true;
+        } else {
+        }
+
+        if (!i_Deleted) {
+          if (it->type == PinType::Handle) {
+            ImGui::Dummy(ImVec2(100.0f, 0.0f));
+            ImGui::SameLine();
+
+            int i_CurrentTypeValue = 0;
+
+            for (; i_CurrentTypeValue < get_exposed_types().size();
+                 ++i_CurrentTypeValue) {
+              if (get_exposed_types()[i_CurrentTypeValue].typeId ==
+                  it->typeId) {
+                break;
+              }
+            }
+
+            ImGui::PushItemWidth(100.0f);
+            bool i_TypeChanged = ImGui::Combo(
+                "##variableselector", &i_CurrentTypeValue,
+                [](void *data, int n, const char **out_str) {
+                  Low::Editor::TypeMetadata &l_Metadata =
+                      ((Low::Editor::TypeMetadata *)data)[n];
+                  Low::Util::String l_Name = l_Metadata.name.c_str();
+                  *out_str = (char *)malloc(l_Name.size() + 1);
+                  memcpy((void *)*out_str, l_Name.c_str(),
+                         l_Name.size());
+                  (*(char **)out_str)[l_Name.size()] = '\0';
+                  return true;
+                },
+                get_exposed_types().data(),
+                get_exposed_types().size());
+            ImGui::PopItemWidth();
+
+            if (i_TypeChanged) {
+              for (u32 i = 0; i < get_exposed_types().size(); ++i) {
+                if (i == i_CurrentTypeValue) {
+                  it->typeId = get_exposed_types()[i].typeId;
+                  l_Changed = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (i_Deleted) {
+          it = m_Parameters.erase(it);
         } else {
           it++;
         }
+
         l_ParamCount++;
 
         ImGui::PopID();
