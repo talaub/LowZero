@@ -95,7 +95,7 @@ void cleanup()
   Low::Renderer::cleanup();
 }
 
-int main()
+int main(int argc, char *argv[])
 {
   Low::Util::initialize();
 
@@ -110,6 +110,7 @@ int main()
                        g_Dimensions.y, window_flags);
 
   init();
+  LOW_LOG_DEBUG << "Test" << LOW_LOG_END;
 
   run();
 

@@ -19,6 +19,8 @@ set(FT_DISABLE_BZIP2 ON)
 set(FT_DISABLE_PNG ON)
 add_subdirectory(freetype)
 add_subdirectory(SDL)
+set(VK_BOOTSTRAP_TEST OFF)
+set(VK_BOOTSTRAP_INSTALL OFF)
 add_subdirectory(vk-bootstrap)
 
 

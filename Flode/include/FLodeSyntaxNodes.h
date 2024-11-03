@@ -14,7 +14,6 @@ namespace Flode {
         PinType type;
         u16 typeId;
         NodeEd::PinId pinId;
-        u16 typeId;
       };
 
       FunctionNode();

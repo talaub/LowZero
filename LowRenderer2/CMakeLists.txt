@@ -38,7 +38,7 @@ SET(IMGUIZMO_SOURCES
   
 add_executable(LowRenderer2 
   ${IMGUI_SOURCES}
-  #${IMGUIZMO_SOURCES}
+  ${IMGUIZMO_SOURCES}
   ${VULKAN_SOURCES}
   ${VULKAN_INCLUDES}
   ${SOURCES}
@@ -56,7 +56,16 @@ add_dependencies(LowRenderer2
 
 STRING(REGEX REPLACE "\\\\" "/" VULKAN_SDK_PATH $ENV{VK_SDK_PATH}) 
 
-set(LOWRENDERER_INCLUDE_DIRS
+target_link_directories(LowRenderer2 PUBLIC
+  ${VULKAN_SDK_PATH}/Lib
+)
+
+target_link_libraries(LowRenderer2 PUBLIC
+  SDL2-static
+  vulkan-1.lib
+)
+
+set(LOWRENDERER2_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
@@ -70,12 +79,12 @@ target_compile_definitions(LowRenderer2 PRIVATE
 )
 
 target_include_directories(LowRenderer2 PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include
+ ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include
   "${VMA_PATH}/include"
 )
 
 target_include_directories(LowRenderer2 PUBLIC
-  ${LOWRENDERER_INCLUDE_DIRS}
+  ${LOWRENDERER2_INCLUDE_DIRS}
   $ENV{VK_SDK_PATH}/Include
   "${IMGUI_PATH}"
   "${IMGUI_PATH}/backends"
@@ -87,13 +96,4 @@ target_link_libraries(LowRenderer2 PRIVATE
   LowUtil
   LowMath
   vk-bootstrap
-)
-
-target_link_directories(LowRenderer2 PUBLIC
-  ${VULKAN_SDK_PATH}/Lib
-)
-
-target_link_libraries(LowRenderer2 PUBLIC
-  SDL2-static
-  vulkan-1
 )
