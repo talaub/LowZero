@@ -258,7 +258,7 @@ namespace Low {
         return *this << String(p_Message.c_str());
       }
 
-      LogStream &LogStream::operator<<(Name &p_Name)
+      LogStream &LogStream::operator<<(Name p_Name)
       {
         return *this << p_Name.c_str();
       }

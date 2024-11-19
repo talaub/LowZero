@@ -17,11 +17,13 @@
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     struct RenderObjectShaderInfo
     {
       alignas(16) Math::Matrix4x4 mvp;
@@ -207,6 +209,7 @@ namespace Low {
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer

@@ -12,11 +12,13 @@
 #include "LowRendererTexture2D.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Material::TYPE_ID = 17;
@@ -64,6 +66,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -74,6 +77,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -93,6 +97,7 @@ namespace Low {
     void Material::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -299,6 +304,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -330,6 +336,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -362,6 +369,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -372,6 +380,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_type
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material_type
 
       return TYPE_SOA(Material, material_type, MaterialType);
@@ -381,12 +390,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_type
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_type
 
       // Set new value
       TYPE_SOA(Material, material_type, MaterialType) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_type
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_material_type
     }
 
@@ -395,6 +406,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
       return TYPE_SOA(Material, context, Interface::Context);
@@ -404,12 +416,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
       TYPE_SOA(Material, context, Interface::Context) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
     }
 
@@ -418,6 +432,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Material, name, Low::Util::Name);
@@ -427,12 +442,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Material, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -440,6 +457,7 @@ namespace Low {
                             Interface::Context p_Context)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       Material l_Material = Material::make(p_Name);
 
       l_Material.set_context(p_Context);
@@ -461,6 +479,7 @@ namespace Low {
                                 Util::Variant &p_Value)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property
+
       for (MaterialTypeProperty &i_MaterialTypeProperty :
            get_material_type().get_properties()) {
         if (p_PropertyName == i_MaterialTypeProperty.name) {
@@ -523,6 +542,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

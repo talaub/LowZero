@@ -97,7 +97,6 @@ namespace Low {
           return NameEdit(p_Label, (Util::Name *)&p_Variant.m_Uint32);
         }
       }
-
     } // namespace Base
   }   // namespace Editor
 } // namespace Low

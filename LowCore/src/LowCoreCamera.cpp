@@ -11,12 +11,14 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Camera::TYPE_ID = 44;
@@ -70,6 +72,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -80,6 +83,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         Low::Util::remove_unique_id(get_unique_id());
@@ -101,6 +105,7 @@ namespace Low {
       void Camera::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -269,6 +274,7 @@ namespace Low {
         l_Handle.set_fov(get_fov());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -297,6 +303,7 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -332,6 +339,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -342,6 +350,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_active
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_active
 
         return TYPE_SOA(Camera, active, bool);
@@ -351,12 +360,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_active
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_active
 
         // Set new value
         TYPE_SOA(Camera, active, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_active
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_active
       }
 
@@ -365,6 +376,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_fov
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_fov
 
         return TYPE_SOA(Camera, fov, float);
@@ -374,6 +386,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_fov
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_fov
 
         // Set new value
@@ -395,6 +408,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_fov
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_fov
       }
 
@@ -403,6 +417,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
         return TYPE_SOA(Camera, entity, Low::Core::Entity);
@@ -412,12 +427,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(Camera, entity, Low::Core::Entity) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
       }
 
@@ -426,6 +443,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(Camera, unique_id, Low::Util::UniqueId);
@@ -435,18 +453,21 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
         TYPE_SOA(Camera, unique_id, Low::Util::UniqueId) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
       void Camera::activate()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_activate
+
         for (Camera i_Camera : ms_LivingInstances) {
           i_Camera.set_active(false);
         }
@@ -535,6 +556,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component

@@ -10,11 +10,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Skeleton::TYPE_ID = 30;
@@ -62,6 +64,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -72,6 +75,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -91,6 +95,7 @@ namespace Low {
     void Skeleton::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -275,6 +280,7 @@ namespace Low {
       l_Handle.set_bone_count(get_bone_count());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -301,6 +307,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -329,6 +336,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -339,6 +347,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_root_bone
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_root_bone
 
       return TYPE_SOA(Skeleton, root_bone, Bone);
@@ -348,12 +357,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_root_bone
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_root_bone
 
       // Set new value
       TYPE_SOA(Skeleton, root_bone, Bone) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_root_bone
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_root_bone
     }
 
@@ -362,6 +373,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bone_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_bone_count
 
       return TYPE_SOA(Skeleton, bone_count, uint32_t);
@@ -371,12 +383,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bone_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_count
 
       // Set new value
       TYPE_SOA(Skeleton, bone_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_bone_count
     }
 
@@ -385,6 +399,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_animations
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_animations
 
       return TYPE_SOA(Skeleton, animations,
@@ -396,6 +411,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Skeleton, name, Low::Util::Name);
@@ -405,12 +421,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Skeleton, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -501,6 +519,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

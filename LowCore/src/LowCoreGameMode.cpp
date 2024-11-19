@@ -10,11 +10,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t GameMode::TYPE_ID = 43;
@@ -64,6 +66,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -74,6 +77,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       Low::Util::remove_unique_id(get_unique_id());
@@ -95,6 +99,7 @@ namespace Low {
     void GameMode::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -255,6 +260,7 @@ namespace Low {
       l_Handle.set_tick_function_name(get_tick_function_name());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -282,6 +288,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -318,6 +325,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -328,6 +336,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_tick_function_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_tick_function_name
 
       return TYPE_SOA(GameMode, tick_function_name, Util::String);
@@ -337,12 +346,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_tick_function_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_tick_function_name
 
       // Set new value
       TYPE_SOA(GameMode, tick_function_name, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_tick_function_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_tick_function_name
     }
 
@@ -351,6 +362,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(GameMode, unique_id, Low::Util::UniqueId);
@@ -360,12 +372,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(GameMode, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
@@ -374,6 +388,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(GameMode, name, Low::Util::Name);
@@ -383,12 +398,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(GameMode, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -468,6 +485,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

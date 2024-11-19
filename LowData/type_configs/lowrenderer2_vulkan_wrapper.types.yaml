@@ -9,23 +9,12 @@ namespace:
 dll_macro: LOW_RENDERER2_API
 types:
   Pipeline:
-    private_make: true
     properties:
       pipeline:
         type: VkPipeline
       layout:
         type: VkPipelineLayout
-      context:
-        type: Context*
-        private_setter: true
-        private_getter: true
-    functions:
-      make:
-        static: true
-        return_type: Pipeline
-        return_handle: true
-        parameters:
-          - name: context
-            type: Context
-
-
+  Image:
+    properties:
+      allocated_image:
+        type: AllocatedImage

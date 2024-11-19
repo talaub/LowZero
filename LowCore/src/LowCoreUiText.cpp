@@ -10,6 +10,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -17,6 +18,7 @@ namespace Low {
     namespace UI {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
         const uint16_t Text::TYPE_ID = 42;
@@ -81,6 +83,7 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -91,6 +94,7 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           if (get_font().is_alive()) {
             get_font().unload();
           }
@@ -116,6 +120,7 @@ namespace Low {
         void Text::initialize()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
           // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
           ms_Capacity =
@@ -368,6 +373,7 @@ namespace Low {
               get_content_fit_approach());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
           // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
           return l_Handle;
@@ -402,6 +408,7 @@ namespace Low {
           p_Node["unique_id"] = get_unique_id();
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
           // LOW_CODEGEN::END::CUSTOM:SERIALIZER
         }
 
@@ -450,6 +457,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
           // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
           return l_Handle;
@@ -460,6 +468,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_text
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_text
 
           return TYPE_SOA(Text, text, Low::Util::String);
@@ -469,12 +478,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_text
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_text
 
           // Set new value
           TYPE_SOA(Text, text, Low::Util::String) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_text
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_text
         }
 
@@ -483,6 +494,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_font
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_font
 
           return TYPE_SOA(Text, font, Low::Core::Font);
@@ -492,6 +504,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font
+
           if (get_font().is_alive()) {
             get_font().unload();
           }
@@ -504,6 +517,7 @@ namespace Low {
           TYPE_SOA(Text, font, Low::Core::Font) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_font
         }
 
@@ -512,6 +526,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
           return TYPE_SOA(Text, color, Low::Math::Color);
@@ -521,12 +536,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
           // Set new value
           TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_color
         }
 
@@ -535,6 +552,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_size
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_size
 
           return TYPE_SOA(Text, size, float);
@@ -544,12 +562,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_size
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_size
 
           // Set new value
           TYPE_SOA(Text, size, float) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_size
         }
 
@@ -558,6 +578,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_content_fit_approach
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_content_fit_approach
 
           return TYPE_SOA(Text, content_fit_approach,
@@ -569,6 +590,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_content_fit_approach
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_content_fit_approach
 
           // Set new value
@@ -576,6 +598,7 @@ namespace Low {
                    TextContentFitOptions) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content_fit_approach
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_content_fit_approach
         }
 
@@ -584,6 +607,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_element
 
           return TYPE_SOA(Text, element, Low::Core::UI::Element);
@@ -593,12 +617,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_element
 
           // Set new value
           TYPE_SOA(Text, element, Low::Core::UI::Element) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_element
         }
 
@@ -607,6 +633,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
           return TYPE_SOA(Text, unique_id, Low::Util::UniqueId);
@@ -616,12 +643,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
           // Set new value
           TYPE_SOA(Text, unique_id, Low::Util::UniqueId) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
         }
 
@@ -730,6 +759,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
       } // namespace Component

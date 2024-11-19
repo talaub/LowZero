@@ -12,12 +12,14 @@
 #include "LowCoreUiDisplay.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Element::TYPE_ID = 37;
@@ -74,6 +76,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -84,6 +87,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         Util::List<Element> l_Children;
         if (get_display().is_alive()) {
           for (Component::Display i_Child :
@@ -138,6 +142,7 @@ namespace Low {
       void Element::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -498,6 +503,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         Element l_Element = make(p_Name);
 
         for (auto it = get_components().begin();
@@ -550,6 +556,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         serialize(p_Node, false);
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
@@ -567,6 +574,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         View l_View = p_Creator.get_id();
 
         if (!l_View.is_alive()) {
@@ -619,6 +627,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_components
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_components
 
         return TYPE_SOA(
@@ -631,6 +640,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_view
 
         return TYPE_SOA(Element, view, Low::Core::UI::View);
@@ -640,12 +650,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view
 
         // Set new value
         TYPE_SOA(Element, view, Low::Core::UI::View) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view
+
         if (get_display().is_alive()) {
           // If a parent gets a new view assigned all children get
           // moved to that view as well
@@ -664,6 +676,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_click_passthrough
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_click_passthrough
 
         return TYPE_SOA(Element, click_passthrough, bool);
@@ -673,12 +686,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_click_passthrough
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_click_passthrough
 
         // Set new value
         TYPE_SOA(Element, click_passthrough, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_click_passthrough
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_click_passthrough
       }
 
@@ -687,6 +702,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(Element, unique_id, Low::Util::UniqueId);
@@ -696,12 +712,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
         TYPE_SOA(Element, unique_id, Low::Util::UniqueId) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
@@ -710,6 +728,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Element, name, Low::Util::Name);
@@ -719,12 +738,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Element, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -732,6 +753,7 @@ namespace Low {
                             Low::Core::UI::View p_View)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         Element l_Element = Element::make(p_Name);
         p_View.add_element(l_Element);
         return l_Element;
@@ -741,6 +763,7 @@ namespace Low {
       uint64_t Element::get_component(uint16_t p_TypeId) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_component
+
         if (get_components().find(p_TypeId) ==
             get_components().end()) {
           return ~0ull;
@@ -752,6 +775,7 @@ namespace Low {
       void Element::add_component(Low::Util::Handle &p_Component)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
+
         Util::Handle l_ExistingComponent =
             get_component(p_Component.get_type());
         Util::RTTI::TypeInfo l_ComponentTypeInfo =
@@ -774,6 +798,7 @@ namespace Low {
       void Element::remove_component(uint16_t p_ComponentType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_component
+
         LOW_ASSERT(has_component(p_ComponentType),
                    "Cannot remove component from element. This "
                    "element does not "
@@ -789,6 +814,7 @@ namespace Low {
       bool Element::has_component(uint16_t p_ComponentType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_component
+
         if (get_components().find(p_ComponentType) ==
             get_components().end()) {
           return false;
@@ -806,6 +832,7 @@ namespace Low {
       Low::Core::UI::Component::Display Element::get_display() const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_display
+
         _LOW_ASSERT(is_alive());
         return get_component(UI::Component::Display::TYPE_ID);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_display
@@ -815,6 +842,7 @@ namespace Low {
                               bool p_AddHandles) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize
+
         _LOW_ASSERT(is_alive());
 
         p_Node["name"] = get_name().c_str();
@@ -849,6 +877,7 @@ namespace Low {
                                         bool p_AddHandles) const
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_hierarchy
+
         serialize(p_Node, p_AddHandles);
 
         Component::Display l_Display = get_display();
@@ -871,6 +900,7 @@ namespace Low {
                                      Util::Handle p_Creator)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy
+
         Element l_Element =
             (Element)deserialize(p_Node, p_Creator).get_id();
 
@@ -981,6 +1011,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI

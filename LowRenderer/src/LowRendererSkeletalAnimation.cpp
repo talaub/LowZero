@@ -10,11 +10,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t SkeletalAnimation::TYPE_ID = 29;
@@ -67,6 +69,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -77,6 +80,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -96,6 +100,7 @@ namespace Low {
     void SkeletalAnimation::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
@@ -288,6 +293,7 @@ namespace Low {
       l_Handle.set_ticks_per_second(get_ticks_per_second());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -318,6 +324,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -349,6 +356,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -359,6 +367,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_duration
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_duration
 
       return TYPE_SOA(SkeletalAnimation, duration, float);
@@ -368,12 +377,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_duration
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_duration
 
       // Set new value
       TYPE_SOA(SkeletalAnimation, duration, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_duration
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_duration
     }
 
@@ -382,6 +393,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ticks_per_second
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ticks_per_second
 
       return TYPE_SOA(SkeletalAnimation, ticks_per_second, float);
@@ -391,12 +403,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ticks_per_second
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ticks_per_second
 
       // Set new value
       TYPE_SOA(SkeletalAnimation, ticks_per_second, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ticks_per_second
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_ticks_per_second
     }
 
@@ -406,6 +420,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_channels
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_channels
 
       return TYPE_SOA(SkeletalAnimation, channels,
@@ -417,6 +432,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(SkeletalAnimation, name, Low::Util::Name);
@@ -426,12 +442,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(SkeletalAnimation, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -528,6 +546,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

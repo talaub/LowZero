@@ -11,12 +11,14 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t MeshRenderer::TYPE_ID = 26;
@@ -77,6 +79,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -87,6 +90,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         if (get_material().is_alive() && get_material().is_loaded()) {
           get_material().unload();
         }
@@ -115,6 +119,7 @@ namespace Low {
       void MeshRenderer::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -291,6 +296,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -319,6 +325,7 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         if (get_mesh().is_alive()) {
           p_Node["mesh"] = get_mesh().get_unique_id();
         }
@@ -355,6 +362,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         l_Handle.set_mesh(0);
         if (p_Node["mesh"]) {
           l_Handle.set_mesh(Util::find_handle_by_unique_id(
@@ -378,6 +386,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
         return TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset);
@@ -387,6 +396,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+
         if (get_mesh().is_alive() && get_mesh().is_loaded()) {
           get_mesh().unload();
         }
@@ -411,6 +421,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+
         if (p_Value.is_alive()) {
           p_Value.load();
         }
@@ -422,6 +433,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
         return TYPE_SOA(MeshRenderer, material, Low::Core::Material);
@@ -431,6 +443,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
         if (get_material().is_alive() && get_material().is_loaded()) {
           get_material().unload();
         }
@@ -456,6 +469,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
         if (p_Value.is_alive()) {
           p_Value.load();
         }
@@ -467,6 +481,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
         return TYPE_SOA(MeshRenderer, entity, Low::Core::Entity);
@@ -476,12 +491,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(MeshRenderer, entity, Low::Core::Entity) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
       }
 
@@ -490,6 +507,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(MeshRenderer, unique_id, Low::Util::UniqueId);
@@ -499,6 +517,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
@@ -506,6 +525,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
@@ -592,6 +612,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component

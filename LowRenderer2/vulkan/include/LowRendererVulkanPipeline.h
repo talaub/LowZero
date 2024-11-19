@@ -49,7 +49,7 @@ namespace Low {
 
           VkPipeline build_pipeline(VkDevice p_Device);
 
-          Pipeline register_pipeline(Context &p_Context);
+          Pipeline register_pipeline();
 
           void set_input_topology(VkPrimitiveTopology p_Topology);
           void set_polygon_mode(VkPolygonMode p_Mode,
@@ -62,12 +62,12 @@ namespace Low {
           void set_depth_format(VkFormat p_Format);
           void disable_depth_test();
 
-          void set_shaders(Context &p_Context,
+          void set_shaders(
                            Util::String p_VertexShader,
                            Util::String p_FragmentShader,
                            bool p_Project = false);
 
-          void update_shaders(Context &p_Context);
+          void update_shaders();
 
         private:
           void set_shaders(VkShaderModule p_VertexShader,

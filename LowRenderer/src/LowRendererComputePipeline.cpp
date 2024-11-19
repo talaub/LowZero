@@ -12,12 +12,14 @@
 #include "LowRendererInterface.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t ComputePipeline::TYPE_ID = 4;
@@ -65,6 +67,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -75,6 +78,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         PipelineManager::delist_compute_pipeline(*this);
         Backend::callbacks().pipeline_cleanup(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -96,6 +100,7 @@ namespace Low {
       void ComputePipeline::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -295,6 +300,7 @@ namespace Low {
         ComputePipeline l_Handle = make(p_Name);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -323,6 +329,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -347,6 +354,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -357,6 +365,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipeline
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline
 
         return TYPE_SOA(ComputePipeline, pipeline, Backend::Pipeline);
@@ -367,6 +376,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(ComputePipeline, name, Low::Util::Name);
@@ -376,12 +386,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(ComputePipeline, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -390,6 +402,7 @@ namespace Low {
                             PipelineComputeCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         ComputePipeline l_Pipeline = ComputePipeline::make(p_Name);
 
         PipelineManager::register_compute_pipeline(l_Pipeline,
@@ -402,6 +415,7 @@ namespace Low {
       void ComputePipeline::bind()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind
+
         Backend::callbacks().pipeline_bind(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind
       }
@@ -410,6 +424,7 @@ namespace Low {
                                          void *p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_constant
+
         Backend::callbacks().pipeline_set_constant(get_pipeline(),
                                                    p_Name, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_constant
@@ -485,6 +500,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Interface

@@ -12,11 +12,13 @@
 #include "LowUtilResource.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Texture2D::TYPE_ID = 14;
@@ -64,6 +66,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -74,6 +77,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       get_context().wait_idle();
 
       if (get_image().is_alive()) {
@@ -105,6 +109,7 @@ namespace Low {
     void Texture2D::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -316,6 +321,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -348,6 +354,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -379,6 +386,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -389,6 +397,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_image
 
       return TYPE_SOA(Texture2D, image, Resource::Image);
@@ -398,12 +407,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
 
       // Set new value
       TYPE_SOA(Texture2D, image, Resource::Image) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_image
     }
 
@@ -412,6 +423,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
       return TYPE_SOA(Texture2D, context, Interface::Context);
@@ -421,12 +433,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
       TYPE_SOA(Texture2D, context, Interface::Context) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
     }
 
@@ -435,6 +449,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
@@ -444,12 +459,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Texture2D, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -458,6 +475,7 @@ namespace Low {
                               Util::Resource::Image2D &p_Image2d)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       Texture2D l_Texture2D = Texture2D::make(p_Name);
 
       l_Texture2D.assign_image(p_Context, p_Image2d);
@@ -470,6 +488,7 @@ namespace Low {
                                  Util::Resource::Image2D &p_Image2d)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_assign_image
+
       set_context(p_Context);
 
       Backend::ImageResourceCreateParams l_Params;
@@ -513,6 +532,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

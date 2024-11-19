@@ -10,11 +10,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t ComputeStep::TYPE_ID = 10;
@@ -84,6 +86,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -94,6 +97,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -113,6 +117,7 @@ namespace Low {
     void ComputeStep::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -533,6 +538,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -568,6 +574,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -611,6 +618,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -622,6 +630,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
       return TYPE_SOA(
@@ -634,6 +643,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_config
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_config
 
       return TYPE_SOA(ComputeStep, config, ComputeStepConfig);
@@ -643,12 +653,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_config
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
 
       // Set new value
       TYPE_SOA(ComputeStep, config, ComputeStepConfig) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_config
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_config
     }
 
@@ -658,6 +670,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipelines
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
 
       return TYPE_SOA(
@@ -674,6 +687,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signatures
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_signatures
 
       return TYPE_SOA(
@@ -689,6 +703,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
       return TYPE_SOA(ComputeStep, context, Interface::Context);
@@ -698,12 +713,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
       TYPE_SOA(ComputeStep, context, Interface::Context) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
     }
 
@@ -712,6 +729,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
       return TYPE_SOA(ComputeStep, output_image, Resource::Image);
@@ -721,12 +739,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
       TYPE_SOA(ComputeStep, output_image, Resource::Image) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
     }
 
@@ -735,6 +755,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(ComputeStep, name, Low::Util::Name);
@@ -744,12 +765,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(ComputeStep, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -758,6 +781,7 @@ namespace Low {
                                   ComputeStepConfig p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       ComputeStep l_Step = ComputeStep::make(p_Name);
 
       l_Step.set_config(p_Config);
@@ -770,6 +794,7 @@ namespace Low {
     void ComputeStep::prepare(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
+
       Util::Map<RenderFlow, ResourceRegistry> &l_Resources =
           get_resources();
       l_Resources[p_RenderFlow].initialize(
@@ -798,6 +823,7 @@ namespace Low {
     void ComputeStep::execute(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+
       LOW_ASSERT(get_resources().find(p_RenderFlow) !=
                      get_resources().end(),
                  "Step not prepared for renderflow");
@@ -827,6 +853,7 @@ namespace Low {
     void ComputeStep::update_dimensions(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+
       get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
 
       get_config().get_callbacks().populate_signatures(*this,
@@ -838,6 +865,7 @@ namespace Low {
                                        RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_pipelines
+
       for (uint32_t i = 0;
            i < p_Step.get_config().get_pipelines().size(); ++i) {
         ComputePipelineConfig &i_Config =
@@ -861,6 +889,7 @@ namespace Low {
                                         RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_signatures
+
       for (uint32_t i = 0;
            i < p_Step.get_config().get_pipelines().size(); ++i) {
         ComputePipelineConfig &i_Config =
@@ -933,6 +962,7 @@ namespace Low {
                                          RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_signatures
+
       Util::List<ComputePipelineConfig> &l_Configs =
           p_Step.get_config().get_pipelines();
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
@@ -1045,6 +1075,7 @@ namespace Low {
                                       RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
+
       Util::List<ComputePipelineConfig> &l_Configs =
           p_Step.get_config().get_pipelines();
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
@@ -1220,6 +1251,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

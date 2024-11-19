@@ -12,11 +12,13 @@
 #include "LowCoreRegion.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Scene::TYPE_ID = 20;
@@ -67,6 +69,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -77,6 +80,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       Low::Util::remove_unique_id(get_unique_id());
@@ -98,6 +102,7 @@ namespace Low {
     void Scene::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -301,6 +306,7 @@ namespace Low {
       l_Handle.set_loaded(is_loaded());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -323,6 +329,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node["name"] = get_name().c_str();
       p_Node["unique_id"] = get_unique_id();
 
@@ -346,6 +353,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       Scene l_Scene = Scene::make(LOW_YAML_AS_NAME(p_Node["name"]));
       l_Scene.set_unique_id(p_Node["unique_id"].as<Util::UniqueId>());
 
@@ -367,6 +375,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_regions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_regions
 
       return TYPE_SOA(Scene, regions, Low::Util::Set<Util::UniqueId>);
@@ -377,6 +386,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
       return TYPE_SOA(Scene, loaded, bool);
@@ -386,12 +396,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_loaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
       // Set new value
       TYPE_SOA(Scene, loaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
     }
 
@@ -400,6 +412,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Scene, unique_id, Low::Util::UniqueId);
@@ -409,12 +422,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Scene, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
@@ -423,6 +438,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Scene, name, Low::Util::Name);
@@ -432,18 +448,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Scene, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
     void Scene::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         it->unload();
@@ -456,6 +475,7 @@ namespace Low {
     void Scene::unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+
       set_loaded(false);
 
       for (auto it = get_regions().begin(); it != get_regions().end();
@@ -472,6 +492,7 @@ namespace Low {
     void Scene::_load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
+
       for (auto it = get_regions().begin(); it != get_regions().end();
            ++it) {
         Region i_Region =
@@ -489,6 +510,7 @@ namespace Low {
     Scene Scene::get_loaded_scene()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_loaded_scene
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->is_loaded()) {
@@ -585,6 +607,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

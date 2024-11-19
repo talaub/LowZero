@@ -15,12 +15,14 @@
 #include "ft2build.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include FT_FREETYPE_H
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     FT_Library g_FreeType;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -71,6 +73,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -81,6 +84,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -100,6 +104,7 @@ namespace Low {
     void Font::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       LOW_ASSERT(!FT_Init_FreeType(&g_FreeType),
                  "Failed to initialize FreeType");
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -375,6 +380,7 @@ namespace Low {
       l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -397,6 +403,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node = get_path().c_str();
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -413,6 +420,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       Font l_Font = Font::make(LOW_YAML_AS_STRING(p_Node));
       return l_Font;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -423,6 +431,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
       return TYPE_SOA(Font, path, Util::String);
@@ -432,12 +441,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
       TYPE_SOA(Font, path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
     }
 
@@ -446,6 +457,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_glyphs
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_glyphs
 
       return TYPE_SOA(Font, glyphs,
@@ -456,6 +468,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_glyphs
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_glyphs
 
       // Set new value
@@ -463,6 +476,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_glyphs
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_glyphs
     }
 
@@ -471,6 +485,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
       return TYPE_SOA(Font, reference_count, uint32_t);
@@ -480,12 +495,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
       TYPE_SOA(Font, reference_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
@@ -494,6 +511,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_font_size
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_font_size
 
       return TYPE_SOA(Font, font_size, float);
@@ -503,12 +521,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font_size
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_font_size
 
       // Set new value
       TYPE_SOA(Font, font_size, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font_size
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_font_size
     }
 
@@ -517,6 +537,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(Font, state, ResourceState);
@@ -526,12 +547,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
       TYPE_SOA(Font, state, ResourceState) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
     }
 
@@ -540,6 +563,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Font, name, Low::Util::Name);
@@ -549,18 +573,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Font, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
     Font Font::make(Util::String &p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
@@ -582,6 +609,7 @@ namespace Low {
     bool Font::is_loaded()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
+
       return get_state() == ResourceState::LOADED;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
     }
@@ -589,6 +617,7 @@ namespace Low {
     void Font::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+
       LOW_ASSERT(is_alive(), "Font was not alive on load");
 
       set_reference_count(get_reference_count() + 1);
@@ -611,6 +640,7 @@ namespace Low {
     void Font::_load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
+
       LOW_ASSERT(is_alive(), "Cannot load dead font handle");
 
       Util::String l_FullPath = Util::get_project().dataPath +
@@ -669,6 +699,7 @@ namespace Low {
     void Font::unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+
       set_reference_count(get_reference_count() - 1);
 
       LOW_ASSERT(get_reference_count() >= 0,
@@ -683,6 +714,7 @@ namespace Low {
     void Font::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+
       if (!is_loaded()) {
         return;
       }
@@ -702,6 +734,7 @@ namespace Low {
     void Font::update()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
+
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_update
     }
 
@@ -803,6 +836,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

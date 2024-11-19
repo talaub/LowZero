@@ -210,6 +210,13 @@ namespace Low {
         set_focused_widget(this);
       }
 
+      static char l_Search[128] = "";
+      Gui::SearchField("##searchinput", l_Search,
+                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      Low::Util::String l_SearchString = l_Search;
+      l_SearchString.make_lower();
+
       bool l_OpenedEntryPopup = false;
 
       for (auto it = Core::Entity::ms_LivingInstances.begin();
@@ -218,6 +225,14 @@ namespace Low {
                 it->get_transform().get_parent())
                 .is_alive()) {
           continue;
+        }
+        if (!l_SearchString.empty()) {
+          Util::String i_LowName = it->get_name().c_str();
+          i_LowName.make_lower();
+          if (!Util::StringHelper::contains(i_LowName,
+                                            l_SearchString)) {
+            continue;
+          }
         }
         if (render_entity_hierarchy(*it, &l_OpenedEntryPopup,
                                     p_Delta)) {

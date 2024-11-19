@@ -11,11 +11,13 @@
 #include "LowCoreResource.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     struct FontGlyph
     {
       Renderer::Texture2D rendererTexture;
@@ -145,6 +147,7 @@ namespace Low {
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Core

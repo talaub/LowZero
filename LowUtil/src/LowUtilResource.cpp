@@ -32,30 +32,53 @@ namespace Low {
             (double)from.d4);
       }
 
-      void load_image2d(String p_FilePath, Image2D &p_Image,
-                        uint8_t p_MipLevel)
+      static void load_mipmap(Image2D &p_Image,
+                              gli::texture2d p_Texture, u8 p_MipLevel)
       {
         LOW_ASSERT(p_MipLevel < 4, "Requested miplevel out of range");
 
         const uint32_t l_Channels = 4u;
+        p_Image.data.resize(p_Texture.levels());
 
+        p_Image.dimensions.x = p_Texture.extent(p_MipLevel).x;
+        p_Image.dimensions.y = p_Texture.extent(p_MipLevel).y;
+
+        p_Image.data.resize(p_Image.dimensions.x *
+                            p_Image.dimensions.y * l_Channels);
+        memcpy(p_Image.data.data(), p_Texture.data(0, 0, p_MipLevel),
+               p_Image.data.size());
+
+        p_Image.size = p_Image.data.size();
+
+        p_Image.format = Image2DFormat::RGBA8;
+        p_Image.miplevel = p_MipLevel;
+      }
+
+      void load_image_mipmaps(String p_FilePath,
+                              ImageMipMaps &p_Image)
+      {
         gli::texture2d l_Texture(gli::load(p_FilePath.c_str()));
         LOW_ASSERT(!l_Texture.empty(), "Could not load file");
 
         LOW_ASSERT(l_Texture.target() == gli::TARGET_2D,
                    "Expected Image2D data file");
 
-        p_Image.data.resize(l_Texture.levels());
+        load_mipmap(p_Image.mip0, l_Texture, 0);
+        load_mipmap(p_Image.mip1, l_Texture, 1);
+        load_mipmap(p_Image.mip2, l_Texture, 2);
+        load_mipmap(p_Image.mip3, l_Texture, 3);
+      }
 
-        p_Image.dimensions.x = l_Texture.extent(p_MipLevel).x;
-        p_Image.dimensions.y = l_Texture.extent(p_MipLevel).y;
+      void load_image2d(String p_FilePath, Image2D &p_Image,
+                        uint8_t p_MipLevel)
+      {
+        gli::texture2d l_Texture(gli::load(p_FilePath.c_str()));
+        LOW_ASSERT(!l_Texture.empty(), "Could not load file");
 
-        p_Image.data.resize(p_Image.dimensions.x *
-                            p_Image.dimensions.y * l_Channels);
-        memcpy(p_Image.data.data(), l_Texture.data(0, 0, p_MipLevel),
-               p_Image.data.size());
+        LOW_ASSERT(l_Texture.target() == gli::TARGET_2D,
+                   "Expected Image2D data file");
 
-        p_Image.format = Image2DFormat::RGBA8;
+        load_mipmap(p_Image, l_Texture, p_MipLevel);
       }
 
       static void parse_mesh(const aiMesh *p_AiMesh,

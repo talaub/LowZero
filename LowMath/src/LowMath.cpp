@@ -21,6 +21,11 @@ namespace Low {
         return pow(p_Base, p_Power);
       }
 
+      float floor(float p_Num)
+      {
+        return std::floor(p_Num);
+      }
+
       float abs(float p_Num)
       {
         return std::abs(p_Num);

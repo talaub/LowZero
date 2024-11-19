@@ -15,6 +15,7 @@
 #include "LowUtilResource.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowUtil.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -22,6 +23,7 @@ namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Context::TYPE_ID = 1;
@@ -77,6 +79,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -87,6 +90,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         Backend::callbacks().context_cleanup(get_context());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -107,6 +111,7 @@ namespace Low {
       void Context::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -505,6 +510,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -543,6 +549,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -586,6 +593,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -596,6 +604,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
         return TYPE_SOA(Context, context, Backend::Context);
@@ -606,6 +615,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpasses
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_renderpasses
 
         return TYPE_SOA(Context, renderpasses,
@@ -617,6 +627,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_global_signature
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_global_signature
 
         return TYPE_SOA(Context, global_signature,
@@ -628,6 +639,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_global_signature
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_global_signature
 
         // Set new value
@@ -635,6 +647,7 @@ namespace Low {
                  PipelineResourceSignature) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_global_signature
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_global_signature
       }
 
@@ -643,6 +656,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_info_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_frame_info_buffer
 
         return TYPE_SOA(Context, frame_info_buffer, Resource::Buffer);
@@ -652,6 +666,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
 
         // Set new value
@@ -659,6 +674,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
       }
 
@@ -667,6 +683,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_data_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_material_data_buffer
 
         return TYPE_SOA(Context, material_data_buffer,
@@ -677,6 +694,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_data_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_data_buffer
 
         // Set new value
@@ -684,6 +702,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_data_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_material_data_buffer
       }
 
@@ -692,6 +711,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Context, name, Low::Util::Name);
@@ -701,12 +721,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Context, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -715,6 +737,7 @@ namespace Low {
                             bool p_ValidationEnabled)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         Backend::ContextCreateParams l_Params;
         l_Params.window = p_Window;
         l_Params.validation_enabled = p_ValidationEnabled;
@@ -841,6 +864,7 @@ namespace Low {
       uint8_t Context::get_frames_in_flight()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_frames_in_flight
+
         return get_context().framesInFlight;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_frames_in_flight
       }
@@ -848,6 +872,7 @@ namespace Low {
       uint8_t Context::get_image_count()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_image_count
+
         return get_context().imageCount;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_image_count
       }
@@ -855,6 +880,7 @@ namespace Low {
       uint8_t Context::get_current_frame_index()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_frame_index
+
         return get_context().currentFrameIndex;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_current_frame_index
       }
@@ -862,6 +888,7 @@ namespace Low {
       uint8_t Context::get_current_image_index()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_image_index
+
         return get_context().currentImageIndex;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_current_image_index
       }
@@ -869,6 +896,7 @@ namespace Low {
       Renderpass Context::get_current_renderpass()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_renderpass
+
         return get_renderpasses()[get_current_image_index()];
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_current_renderpass
       }
@@ -876,6 +904,7 @@ namespace Low {
       Math::UVector2 &Context::get_dimensions()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_dimensions
+
         return get_context().dimensions;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_dimensions
       }
@@ -883,6 +912,7 @@ namespace Low {
       uint8_t Context::get_image_format()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_image_format
+
         return get_context().imageFormat;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_image_format
       }
@@ -890,6 +920,7 @@ namespace Low {
       Window &Context::get_window()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_window
+
         return get_context().window;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_window
       }
@@ -897,6 +928,7 @@ namespace Low {
       uint8_t Context::get_state()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_state
+
         return get_context().state;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_state
       }
@@ -904,6 +936,7 @@ namespace Low {
       bool Context::is_debug_enabled()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_debug_enabled
+
         return get_context().debugEnabled;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_debug_enabled
       }
@@ -911,6 +944,7 @@ namespace Low {
       void Context::wait_idle()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_wait_idle
+
         Backend::callbacks().context_wait_idle(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_wait_idle
       }
@@ -918,6 +952,7 @@ namespace Low {
       uint8_t Context::prepare_frame()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare_frame
+
         LOW_PROFILE_CPU("Renderer", "Prepare frame");
         return Backend::callbacks().frame_prepare(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare_frame
@@ -926,6 +961,7 @@ namespace Low {
       void Context::render_frame()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_frame
+
         LOW_PROFILE_CPU("Renderer", "Render frame");
         Backend::callbacks().frame_render(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_render_frame
@@ -934,6 +970,7 @@ namespace Low {
       void Context::begin_imgui_frame()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_begin_imgui_frame
+
         Backend::callbacks().imgui_prepare_frame(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_begin_imgui_frame
       }
@@ -941,6 +978,7 @@ namespace Low {
       void Context::render_imgui()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render_imgui
+
         Backend::callbacks().imgui_render(get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_render_imgui
       }
@@ -948,6 +986,7 @@ namespace Low {
       void Context::update_dimensions()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+
         Backend::callbacks().context_wait_idle(get_context());
         Backend::callbacks().context_update_dimensions(get_context());
 
@@ -969,6 +1008,7 @@ namespace Low {
       void Context::clear_committed_resource_signatures()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_committed_resource_signatures
+
         Backend::callbacks().pipeline_resource_signature_commit_clear(
             get_context());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_clear_committed_resource_signatures
@@ -1079,6 +1119,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Interface

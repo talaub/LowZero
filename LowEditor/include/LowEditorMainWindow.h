@@ -20,6 +20,15 @@ namespace Low {
     struct EnumMetadata;
     struct Widget;
 
+    struct EditorWidget
+    {
+      Widget *widget;
+      const char *name;
+      bool open;
+    };
+
+    Util::List<EditorWidget> &get_editor_widgets();
+
     void initialize_main_window();
     void render_main_window(float p_Delta, Util::EngineState p_State);
 

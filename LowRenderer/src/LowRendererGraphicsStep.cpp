@@ -12,11 +12,13 @@
 #include "LowRenderer.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t GraphicsStep::TYPE_ID = 13;
@@ -111,6 +113,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -121,6 +124,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -140,6 +144,7 @@ namespace Low {
     void GraphicsStep::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -801,6 +806,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -836,6 +842,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -887,6 +894,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -898,6 +906,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
       return TYPE_SOA(
@@ -910,6 +919,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_config
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_config
 
       return TYPE_SOA(GraphicsStep, config, GraphicsStepConfig);
@@ -919,12 +929,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_config
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
 
       // Set new value
       TYPE_SOA(GraphicsStep, config, GraphicsStepConfig) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_config
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_config
     }
 
@@ -934,6 +946,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipelines
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
 
       return TYPE_SOA(
@@ -949,6 +962,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderobjects
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderobjects
 
       return TYPE_SOA(
@@ -964,6 +978,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skinned_renderobjects
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_skinned_renderobjects
 
       return TYPE_SOA(
@@ -978,6 +993,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpasses
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderpasses
 
       return TYPE_SOA(
@@ -990,6 +1006,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
       return TYPE_SOA(GraphicsStep, context, Interface::Context);
@@ -999,12 +1016,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
       TYPE_SOA(GraphicsStep, context, Interface::Context) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
     }
 
@@ -1015,6 +1034,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipeline_signatures
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline_signatures
 
       return TYPE_SOA(
@@ -1032,6 +1052,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pipeline_signatures
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_pipeline_signatures
 
       // Set new value
@@ -1044,6 +1065,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pipeline_signatures
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_pipeline_signatures
     }
 
@@ -1053,6 +1075,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signatures
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_signatures
 
       return TYPE_SOA(
@@ -1067,6 +1090,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
       return TYPE_SOA(GraphicsStep, output_image, Resource::Image);
@@ -1076,12 +1100,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
       TYPE_SOA(GraphicsStep, output_image, Resource::Image) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
     }
 
@@ -1090,6 +1116,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(GraphicsStep, name, Low::Util::Name);
@@ -1099,12 +1126,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(GraphicsStep, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -1113,6 +1142,7 @@ namespace Low {
                                     GraphicsStepConfig p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       GraphicsStep l_Step = GraphicsStep::make(p_Name);
       l_Step.set_config(p_Config);
       l_Step.set_context(p_Context);
@@ -1124,6 +1154,7 @@ namespace Low {
     void GraphicsStep::clear_renderobjects()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_renderobjects
+
       get_renderobjects().clear();
       get_skinned_renderobjects().clear();
 
@@ -1133,6 +1164,7 @@ namespace Low {
     void GraphicsStep::prepare(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
+
       Util::Map<RenderFlow, ResourceRegistry> &l_Resources =
           get_resources();
       l_Resources[p_RenderFlow].initialize(
@@ -1164,6 +1196,7 @@ namespace Low {
                                Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+
       Util::String l_ProfileString = get_name().c_str();
       l_ProfileString += " (GraphicsStep execute)";
       LOW_PROFILE_CPU("Renderer", l_ProfileString.c_str());
@@ -1196,6 +1229,7 @@ namespace Low {
     GraphicsStep::register_renderobject(RenderObject &p_RenderObject)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
+
       MaterialType l_MaterialType =
           p_RenderObject.material.get_material_type();
 
@@ -1232,6 +1266,7 @@ namespace Low {
     void GraphicsStep::update_dimensions(RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+
       get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
 
       // Recreate renderpass
@@ -1250,6 +1285,7 @@ namespace Low {
                                            RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_pipeline_signatures
+
       Util::List<GraphicsPipelineConfig> &l_Configs =
           p_Step.get_config().get_pipelines();
       for (uint32_t i = 0; i < l_Configs.size(); ++i) {
@@ -1367,6 +1403,7 @@ namespace Low {
                                         RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_signature
+
       Util::List<Backend::PipelineResourceDescription>
           l_ResourceDescriptions;
 
@@ -1477,6 +1514,7 @@ namespace Low {
                                          RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_renderpass
+
       Interface::RenderpassCreateParams l_Params;
       l_Params.context = p_Step.get_context();
       apply_dimensions_config(
@@ -1548,6 +1586,7 @@ namespace Low {
                                         bool p_UpdateExisting)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_create_pipelines
+
       Math::UVector2 l_Dimensions;
       apply_dimensions_config(
           p_Step.get_context(), p_RenderFlow,
@@ -1657,6 +1696,7 @@ namespace Low {
                                   Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute
+
       RenderObjectShaderInfo
           l_ObjectShaderInfos[LOW_RENDERER_RENDEROBJECT_COUNT];
       Math::Vector4 l_Colors[LOW_RENDERER_RENDEROBJECT_COUNT];
@@ -1766,6 +1806,7 @@ namespace Low {
         Math::Matrix4x4 &p_ViewMatrix)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_default_execute_fullscreen_triangle
+
       uint32_t l_PipelineIndex = 0;
 
       for (auto pit = p_Step.get_pipelines()[p_RenderFlow].begin();
@@ -1799,6 +1840,7 @@ namespace Low {
                                           RenderFlow p_RenderFlow)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_draw_renderobjects
+
       uint32_t l_InstanceId = 0;
 
       LOW_PROFILE_CPU("Renderer", "Draw renderobjects");
@@ -2053,6 +2095,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

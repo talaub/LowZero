@@ -14,12 +14,14 @@
 #include "LowCoreTransform.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Rigidbody::TYPE_ID = 31;
@@ -84,6 +86,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         {
           Math::Shape l_Shape;
           l_Shape.type = Math::ShapeType::BOX;
@@ -107,6 +110,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         System::Physics::remove_rigid_dynamic(get_rigid_dynamic());
         get_rigid_dynamic().destroy();
         get_physics_shape().destroy();
@@ -132,6 +136,7 @@ namespace Low {
       void Rigidbody::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -400,6 +405,7 @@ namespace Low {
         l_Handle.set_shape(get_shape());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -432,6 +438,7 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -475,6 +482,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -485,6 +493,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_fixed
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_fixed
 
         return TYPE_SOA(Rigidbody, fixed, bool);
@@ -494,6 +503,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_fixed
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_fixed
 
         // Set new value
@@ -515,6 +525,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_fixed
+
         get_rigid_dynamic().set_fixed(p_Value);
         // LOW_CODEGEN::END::CUSTOM:SETTER_fixed
       }
@@ -524,6 +535,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gravity
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_gravity
 
         return TYPE_SOA(Rigidbody, gravity, bool);
@@ -533,6 +545,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gravity
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_gravity
 
         // Set new value
@@ -554,6 +567,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gravity
+
         get_rigid_dynamic().set_gravity(p_Value);
         // LOW_CODEGEN::END::CUSTOM:SETTER_gravity
       }
@@ -563,6 +577,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mass
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_mass
 
         return TYPE_SOA(Rigidbody, mass, float);
@@ -572,6 +587,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mass
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mass
 
         // Set new value
@@ -593,6 +609,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mass
+
         get_rigid_dynamic().set_mass(p_Value);
         // LOW_CODEGEN::END::CUSTOM:SETTER_mass
       }
@@ -602,6 +619,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
         return TYPE_SOA(Rigidbody, initialized, bool);
@@ -611,12 +629,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
         TYPE_SOA(Rigidbody, initialized, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
       }
 
@@ -625,6 +645,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rigid_dynamic
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_rigid_dynamic
 
         return TYPE_SOA(Rigidbody, rigid_dynamic,
@@ -636,6 +657,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_physics_shape
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_physics_shape
 
         return TYPE_SOA(Rigidbody, physics_shape, PhysicsShape);
@@ -646,6 +668,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shape
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_shape
 
         return TYPE_SOA(Rigidbody, shape, Math::Shape);
@@ -655,6 +678,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shape
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_shape
 
         // Set new value
@@ -676,6 +700,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_shape
+
         if (!is_initialized()) {
           Component::Transform l_Transform =
               get_entity().get_transform();
@@ -708,6 +733,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
         return TYPE_SOA(Rigidbody, entity, Low::Core::Entity);
@@ -717,12 +743,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(Rigidbody, entity, Low::Core::Entity) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
       }
 
@@ -731,6 +759,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId);
@@ -740,12 +769,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
         TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
@@ -867,6 +898,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component

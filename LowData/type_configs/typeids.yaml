@@ -46,3 +46,7 @@ LowCore:
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45
+  Mesh: 46
+  MeshResource: 47
+  ImageResource: 48
+  Image: 49

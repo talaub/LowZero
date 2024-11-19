@@ -10,11 +10,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Mesh::TYPE_ID = 15;
@@ -56,6 +58,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -66,6 +69,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -85,6 +89,7 @@ namespace Low {
     void Mesh::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -341,6 +346,7 @@ namespace Low {
       l_Handle.set_vertexweight_count(get_vertexweight_count());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -372,6 +378,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -416,6 +423,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -426,6 +434,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_buffer_start
 
       return TYPE_SOA(Mesh, vertex_buffer_start, uint32_t);
@@ -435,12 +444,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_buffer_start
 
       // Set new value
       TYPE_SOA(Mesh, vertex_buffer_start, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_buffer_start
     }
 
@@ -449,6 +460,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_count
 
       return TYPE_SOA(Mesh, vertex_count, uint32_t);
@@ -458,12 +470,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
 
       // Set new value
       TYPE_SOA(Mesh, vertex_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_count
     }
 
@@ -472,6 +486,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_index_buffer_start
 
       return TYPE_SOA(Mesh, index_buffer_start, uint32_t);
@@ -481,12 +496,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_buffer_start
 
       // Set new value
       TYPE_SOA(Mesh, index_buffer_start, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_buffer_start
     }
 
@@ -495,6 +512,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_index_count
 
       return TYPE_SOA(Mesh, index_count, uint32_t);
@@ -504,12 +522,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_count
 
       // Set new value
       TYPE_SOA(Mesh, index_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_count
     }
 
@@ -518,6 +538,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertexweight_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertexweight_buffer_start
 
       return TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t);
@@ -527,12 +548,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertexweight_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertexweight_buffer_start
 
       // Set new value
       TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_buffer_start
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertexweight_buffer_start
     }
 
@@ -541,6 +564,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertexweight_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertexweight_count
 
       return TYPE_SOA(Mesh, vertexweight_count, uint32_t);
@@ -550,12 +574,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertexweight_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertexweight_count
 
       // Set new value
       TYPE_SOA(Mesh, vertexweight_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertexweight_count
     }
 
@@ -564,6 +590,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Mesh, name, Low::Util::Name);
@@ -573,12 +600,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Mesh, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -686,6 +715,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

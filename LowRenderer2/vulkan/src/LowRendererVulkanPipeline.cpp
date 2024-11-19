@@ -124,14 +124,14 @@ namespace Low {
         }
 
         Pipeline
-        GraphicsPipelineBuilder::register_pipeline(Context &p_Context)
+        GraphicsPipelineBuilder::register_pipeline()
         {
-          Pipeline l_Pipeline = Pipeline::make(p_Context);
+          Pipeline l_Pipeline = Pipeline::make(N(Pipeline));
 
           l_Pipeline.set_layout(pipelineLayout);
 
           PipelineManager::register_graphics_pipeline(
-              p_Context, l_Pipeline, *this);
+               l_Pipeline, *this);
 
           return l_Pipeline;
         }
@@ -224,7 +224,7 @@ namespace Low {
         }
 
         void GraphicsPipelineBuilder::set_shaders(
-            Context &p_Context, Util::String p_VertexShader,
+             Util::String p_VertexShader,
             Util::String p_FragmentShader, bool p_Project)
         {
           vertexShaderPath = Util::get_project().engineDataPath +
@@ -240,17 +240,19 @@ namespace Low {
         }
 
         void
-        GraphicsPipelineBuilder::update_shaders(Context &p_Context)
+        GraphicsPipelineBuilder::update_shaders()
         {
           VkShaderModule l_FragShader;
           LOW_ASSERT(PipelineUtil::load_shader_module(
-                         fragmentSpirvPath.c_str(), p_Context.device,
+                         fragmentSpirvPath.c_str(),
+                         Global::get_device(),
                          &l_FragShader),
                      "Failed to load fragment shader");
 
           VkShaderModule l_VertShader;
           LOW_ASSERT(PipelineUtil::load_shader_module(
-                         vertexSpirvPath.c_str(), p_Context.device,
+                         vertexSpirvPath.c_str(),
+                         Global::get_device(),
                          &l_VertShader),
                      "Failed to load vertex shader");
 

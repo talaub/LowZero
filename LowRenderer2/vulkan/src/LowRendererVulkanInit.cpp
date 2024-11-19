@@ -1,5 +1,7 @@
 #include "LowRendererVulkanInit.h"
 
+#include "LowRendererGlobals.h"
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -144,9 +146,97 @@ namespace Low {
           l_Info.format = p_Format;
           l_Info.extent = p_Extent;
 
-          // TODO: Change
-          // Most likely dynamic
           l_Info.mipLevels = 1;
+          l_Info.arrayLayers = 1;
+
+          // MSAA
+          l_Info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+          // TODO: Check that again and learn what it does
+          // May have to be dynamic (change based on input params)
+          l_Info.tiling = VK_IMAGE_TILING_OPTIMAL;
+          l_Info.usage = p_UsageFlags;
+
+          return l_Info;
+        }
+
+        VkImageCreateInfo
+        image_create_info_mipmapped(VkFormat p_Format,
+                                    VkImageUsageFlags p_UsageFlags,
+                                    VkExtent3D p_Extent)
+        {
+          VkImageCreateInfo l_Info = {};
+          l_Info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+          l_Info.pNext = nullptr;
+
+          // TODO: Probabaly change
+          // This probably has to be dynamic
+          l_Info.imageType = VK_IMAGE_TYPE_2D;
+
+          l_Info.format = p_Format;
+          l_Info.extent = p_Extent;
+
+          l_Info.mipLevels = IMAGE_MIPMAP_COUNT;
+          l_Info.arrayLayers = 1;
+
+          // MSAA
+          l_Info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+          // TODO: Check that again and learn what it does
+          // May have to be dynamic (change based on input params)
+          l_Info.tiling = VK_IMAGE_TILING_OPTIMAL;
+          l_Info.usage = p_UsageFlags;
+
+          return l_Info;
+        }
+
+        VkImageCreateInfo
+        cubemap_create_info(VkFormat p_Format,
+                            VkImageUsageFlags p_UsageFlags,
+                            VkExtent3D p_Extent)
+        {
+          VkImageCreateInfo l_Info = {};
+          l_Info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+          l_Info.pNext = nullptr;
+
+          // TODO: Probabaly change
+          // This probably has to be dynamic
+          l_Info.imageType = VK_IMAGE_TYPE_2D;
+
+          l_Info.format = p_Format;
+          l_Info.extent = p_Extent;
+
+          l_Info.mipLevels = 1;
+          l_Info.arrayLayers = 6;
+
+          // MSAA
+          l_Info.samples = VK_SAMPLE_COUNT_1_BIT;
+
+          // TODO: Check that again and learn what it does
+          // May have to be dynamic (change based on input params)
+          l_Info.tiling = VK_IMAGE_TILING_OPTIMAL;
+          l_Info.usage = p_UsageFlags;
+
+          return l_Info;
+        }
+
+        VkImageCreateInfo
+        cubemap_create_info_mipmapped(VkFormat p_Format,
+                                      VkImageUsageFlags p_UsageFlags,
+                                      VkExtent3D p_Extent)
+        {
+          VkImageCreateInfo l_Info = {};
+          l_Info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+          l_Info.pNext = nullptr;
+
+          // TODO: Probabaly change
+          // This probably has to be dynamic
+          l_Info.imageType = VK_IMAGE_TYPE_2D;
+
+          l_Info.format = p_Format;
+          l_Info.extent = p_Extent;
+
+          l_Info.mipLevels = IMAGE_MIPMAP_COUNT;
           l_Info.arrayLayers = 1;
 
           // MSAA

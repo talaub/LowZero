@@ -10,6 +10,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -17,6 +18,7 @@ namespace Low {
     namespace UI {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
         const uint16_t Image::TYPE_ID = 40;
@@ -75,6 +77,7 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
           l_Handle.set_renderer_material(Renderer::create_material(
               p_Element.get_name(),
               Renderer::MaterialType::find_by_name(N(ui_base))));
@@ -88,6 +91,7 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           bool l_DeleteMaterial = true;
           if (get_element().get_view().is_alive()) {
             l_DeleteMaterial =
@@ -121,6 +125,7 @@ namespace Low {
         void Image::initialize()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
           // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
           ms_Capacity =
@@ -299,6 +304,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
           // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
           return l_Handle;
@@ -326,6 +332,7 @@ namespace Low {
           p_Node["unique_id"] = get_unique_id();
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
           // LOW_CODEGEN::END::CUSTOM:SERIALIZER
         }
 
@@ -356,6 +363,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
           // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
           return l_Handle;
@@ -366,6 +374,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_texture
 
           return TYPE_SOA(Image, texture, Low::Core::Texture2D);
@@ -375,6 +384,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+
           Core::Texture2D l_OldTexture =
               TYPE_SOA(Image, texture, Core::Texture2D);
           if (l_OldTexture.is_alive()) {
@@ -386,6 +396,7 @@ namespace Low {
           TYPE_SOA(Image, texture, Low::Core::Texture2D) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+
           if (p_Value.is_alive()) {
             p_Value.load();
 
@@ -404,6 +415,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_material
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_material
 
           return TYPE_SOA(Image, renderer_material,
@@ -414,6 +426,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_material
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_material
 
           // Set new value
@@ -421,6 +434,7 @@ namespace Low {
               p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_material
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_material
         }
 
@@ -429,6 +443,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_element
 
           return TYPE_SOA(Image, element, Low::Core::UI::Element);
@@ -438,12 +453,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_element
 
           // Set new value
           TYPE_SOA(Image, element, Low::Core::UI::Element) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_element
         }
 
@@ -452,6 +469,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
           return TYPE_SOA(Image, unique_id, Low::Util::UniqueId);
@@ -461,12 +479,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
           // Set new value
           TYPE_SOA(Image, unique_id, Low::Util::UniqueId) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
         }
 
@@ -553,6 +573,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
       } // namespace Component

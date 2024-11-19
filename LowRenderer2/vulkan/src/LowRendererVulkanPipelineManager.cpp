@@ -36,15 +36,14 @@ namespace Low {
                                 g_SourceOutMapping[p_SourcePath]);
         }
 
-        bool compile_graphics_pipeline(Context &p_Context,
-                                       Pipeline p_Pipeline,
+        bool compile_graphics_pipeline(Pipeline p_Pipeline,
                                        bool p_CompileShaders)
         {
           PipelineUtil::GraphicsPipelineBuilder &l_Builder =
               g_GraphicsPipelines[p_Pipeline];
 
           // Destroy old pipeline
-          vkDestroyPipeline(p_Context.device,
+          vkDestroyPipeline(Global::get_device(),
                             p_Pipeline.get_pipeline(), nullptr);
 
           // #if LOW_RENDERER_COMPILE_SHADERS
@@ -55,10 +54,10 @@ namespace Low {
           // #endif
 
           // Update shaders in builder
-          l_Builder.update_shaders(p_Context);
+          l_Builder.update_shaders();
 
           VkPipeline l_VkPipeline =
-              l_Builder.build_pipeline(p_Context.device);
+              l_Builder.build_pipeline(Global::get_device());
 
           // Create new pipeline and assign
           p_Pipeline.set_pipeline(l_VkPipeline);
@@ -67,7 +66,7 @@ namespace Low {
         }
 
         bool register_graphics_pipeline(
-            Context &p_Context, Pipeline p_Pipeline,
+            Pipeline p_Pipeline,
             PipelineUtil::GraphicsPipelineBuilder p_Builder)
         {
           g_GraphicsPipelines[p_Pipeline] = p_Builder;
@@ -88,12 +87,12 @@ namespace Low {
           g_SourceOutMapping[p_Builder.fragmentShaderPath] =
               p_Builder.fragmentSpirvPath;
 
-          compile_graphics_pipeline(p_Context, p_Pipeline);
+          compile_graphics_pipeline(p_Pipeline);
 
           return true;
         }
 
-        bool do_tick(Context &p_Context, float p_Delta)
+        bool do_tick(float p_Delta)
         {
           for (auto it = g_SourceTimes.begin();
                it != g_SourceTimes.end(); ++it) {
@@ -106,7 +105,7 @@ namespace Low {
               continue;
             }
 
-            vkDeviceWaitIdle(p_Context.device);
+            vkDeviceWaitIdle(Global::get_device());
 
             g_SourceTimes[i_SourcePath] = i_Modified;
 
@@ -117,20 +116,20 @@ namespace Low {
 
               compile_shader(i_SourcePath);
 
-              compile_graphics_pipeline(p_Context, i_Pipeline, false);
+              compile_graphics_pipeline(i_Pipeline, false);
             }
           }
 
           return true;
         }
 
-        bool tick(Context &p_Context, float p_Delta)
+        bool tick(float p_Delta)
         {
           // LOW_PROFILE_CPU("Renderer", "Pipeline manager");
           // #if LOW_RENDERER_COMPILE_SHADERS
           static float l_Count = 100.0f;
           if (l_Count > 1.0f) {
-            do_tick(p_Context, p_Delta);
+            do_tick(p_Delta);
             l_Count = 0.0f;
           }
           l_Count += p_Delta;

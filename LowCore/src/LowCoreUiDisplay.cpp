@@ -12,6 +12,7 @@
 #include "LowMathQuaternionUtil.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -19,6 +20,7 @@ namespace Low {
     namespace UI {
       namespace Component {
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
         const uint16_t Display::TYPE_ID = 39;
@@ -99,6 +101,7 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -109,6 +112,7 @@ namespace Low {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // Doing this to remove the transform from the list of
           // children
           set_parent(0);
@@ -134,6 +138,7 @@ namespace Low {
         void Display::initialize()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
           // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
           ms_Capacity =
@@ -640,6 +645,7 @@ namespace Low {
           l_Handle.set_world_dirty(is_world_dirty());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
           return 0;
           // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
@@ -675,6 +681,7 @@ namespace Low {
           p_Node["unique_id"] = get_unique_id();
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
           // LOW_CODEGEN::END::CUSTOM:SERIALIZER
         }
 
@@ -725,6 +732,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
           // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
           return l_Handle;
@@ -735,6 +743,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
           return TYPE_SOA(Display, pixel_position,
@@ -745,6 +754,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_position
 
           if (pixel_position() != p_Value) {
@@ -757,6 +767,7 @@ namespace Low {
                 p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
+
             // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
           }
         }
@@ -766,6 +777,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
           return TYPE_SOA(Display, rotation, float);
@@ -775,6 +787,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
 
           if (rotation() != p_Value) {
@@ -786,6 +799,7 @@ namespace Low {
             TYPE_SOA(Display, rotation, float) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+
             // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
           }
         }
@@ -795,6 +809,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_scale
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_scale
 
           return TYPE_SOA(Display, pixel_scale, Low::Math::Vector2);
@@ -804,6 +819,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_scale
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_scale
 
           if (pixel_scale() != p_Value) {
@@ -816,6 +832,7 @@ namespace Low {
                 p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
+
             // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_scale
           }
         }
@@ -825,6 +842,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layer
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_layer
 
           return TYPE_SOA(Display, layer, uint32_t);
@@ -834,6 +852,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layer
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_layer
 
           if (layer() != p_Value) {
@@ -845,6 +864,7 @@ namespace Low {
             TYPE_SOA(Display, layer, uint32_t) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer
+
             // LOW_CODEGEN::END::CUSTOM:SETTER_layer
           }
         }
@@ -854,6 +874,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
           return TYPE_SOA(Display, parent, uint64_t);
@@ -863,6 +884,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
+
           Display l_Parent = get_parent();
           if (l_Parent.is_alive()) {
             for (auto it = l_Parent.get_children().begin();
@@ -885,6 +907,7 @@ namespace Low {
             TYPE_SOA(Display, parent, uint64_t) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
+
             Display l_Parent(p_Value);
             if (l_Parent.is_alive()) {
               set_parent_uid(l_Parent.get_unique_id());
@@ -901,6 +924,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_uid
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
 
           return TYPE_SOA(Display, parent_uid, uint64_t);
@@ -910,6 +934,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_uid
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_uid
 
           if (get_parent_uid() != p_Value) {
@@ -921,6 +946,7 @@ namespace Low {
             TYPE_SOA(Display, parent_uid, uint64_t) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
+
             // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
           }
         }
@@ -930,6 +956,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
           return TYPE_SOA(Display, children,
@@ -941,6 +968,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_pixel_position
+
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_position
 
@@ -953,6 +981,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_pixel_position
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_position
 
           // Set new value
@@ -960,6 +989,7 @@ namespace Low {
                    Low::Math::Vector2) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_position
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_position
         }
 
@@ -968,6 +998,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_rotation
+
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_rotation
 
@@ -978,12 +1009,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_rotation
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_rotation
 
           // Set new value
           TYPE_SOA(Display, absolute_rotation, float) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_rotation
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_rotation
         }
 
@@ -992,6 +1025,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_pixel_scale
+
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_scale
 
@@ -1004,6 +1038,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_pixel_scale
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_scale
 
           // Set new value
@@ -1011,6 +1046,7 @@ namespace Low {
                    Low::Math::Vector2) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_scale
         }
 
@@ -1019,6 +1055,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_layer
+
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_layer
 
@@ -1029,12 +1066,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_layer
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_layer
 
           // Set new value
           TYPE_SOA(Display, absolute_layer, uint32_t) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_layer
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_layer
         }
 
@@ -1043,6 +1082,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_matrix
+
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
@@ -1054,6 +1094,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_matrix
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
           // Set new value
@@ -1061,6 +1102,7 @@ namespace Low {
               p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
         }
 
@@ -1069,6 +1111,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_updated
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
 
           return TYPE_SOA(Display, world_updated, bool);
@@ -1078,12 +1121,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_updated
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
 
           // Set new value
           TYPE_SOA(Display, world_updated, bool) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_updated
         }
 
@@ -1092,6 +1137,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_element
 
           return TYPE_SOA(Display, element, Low::Core::UI::Element);
@@ -1101,6 +1147,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_element
 
           // Set new value
@@ -1108,6 +1155,7 @@ namespace Low {
               p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_element
         }
 
@@ -1116,6 +1164,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
           return TYPE_SOA(Display, unique_id, Low::Util::UniqueId);
@@ -1125,12 +1174,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
           // Set new value
           TYPE_SOA(Display, unique_id, Low::Util::UniqueId) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
         }
 
@@ -1139,6 +1190,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
           return TYPE_SOA(Display, dirty, bool);
@@ -1148,12 +1200,14 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
           TYPE_SOA(Display, dirty, bool) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
         }
 
@@ -1162,6 +1216,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
+
           if (get_element().get_view().is_alive() &&
               get_element().get_view().is_transform_dirty()) {
             return true;
@@ -1186,18 +1241,21 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
           // Set new value
           TYPE_SOA(Display, world_dirty, bool) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
         }
 
         void Display::recalculate_world_transform()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
+
           LOW_ASSERT(is_alive(), "Cannot calculate world position of "
                                  "dead ui display");
 
@@ -1275,6 +1333,7 @@ namespace Low {
         float Display::get_absolute_layer_float()
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_absolute_layer_float
+
           float l_AbsoluteLayer =
               (float)TYPE_SOA(Display, absolute_layer, uint32_t);
           return l_AbsoluteLayer * 0.1f;
@@ -1285,6 +1344,7 @@ namespace Low {
         Display::point_is_in_bounding_box(Low::Math::Vector2 &p_Point)
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_point_is_in_bounding_box
+
           Math::Vector2 l_Position = get_absolute_pixel_position();
           Math::Vector2 l_Size = get_absolute_pixel_scale();
 
@@ -1491,6 +1551,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
       } // namespace Component

@@ -15,11 +15,13 @@
 #include "LowUtilString.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     static void
     read_component_property(Prefab p_Prefab, Util::Handle p_Handle,
                             Util::RTTI::PropertyInfo &p_PropertyInfo)
@@ -111,6 +113,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -121,6 +124,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       Low::Util::remove_unique_id(get_unique_id());
@@ -142,6 +146,7 @@ namespace Low {
     void Prefab::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -425,6 +430,7 @@ namespace Low {
       l_Handle.set_components(get_components());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -450,6 +456,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       Prefab l_Parent(get_parent().get_id());
       p_Node["parent"] = 0;
       if (l_Parent.is_alive()) {
@@ -515,6 +522,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       Prefab l_Parent(p_Creator.get_id());
       if (l_Parent.is_alive()) {
         l_Handle.set_parent(p_Creator.get_id());
@@ -549,6 +557,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
       return TYPE_SOA(Prefab, parent, Util::Handle);
@@ -558,12 +567,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent
 
       // Set new value
       TYPE_SOA(Prefab, parent, Util::Handle) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_parent
     }
 
@@ -572,6 +583,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
       return TYPE_SOA(Prefab, children, Util::List<Util::Handle>);
@@ -581,12 +593,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_children
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_children
 
       // Set new value
       TYPE_SOA(Prefab, children, Util::List<Util::Handle>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_children
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_children
     }
 
@@ -596,6 +610,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_components
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_components
 
       return TYPE_SOA(
@@ -611,6 +626,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_components
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_components
 
       // Set new value
@@ -621,6 +637,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_components
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_components
     }
 
@@ -629,6 +646,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Prefab, unique_id, Low::Util::UniqueId);
@@ -638,12 +656,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Prefab, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
@@ -652,6 +672,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Prefab, name, Low::Util::Name);
@@ -661,18 +682,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Prefab, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
     Prefab Prefab::make(Entity &p_Entity)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       Prefab l_Prefab = Prefab::make(p_Entity.get_name());
       populate_prefab(l_Prefab, p_Entity);
 
@@ -704,6 +728,7 @@ namespace Low {
     Entity Prefab::spawn(Region p_Region)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn
+
       Util::String l_Name = get_name().c_str();
       l_Name += " (Instance)";
       Entity l_Entity =
@@ -779,6 +804,7 @@ namespace Low {
                                   Util::Name p_PropertyName)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_compare_property
+
       Util::RTTI::TypeInfo &l_TypeInfo =
           Util::Handle::get_type_info(p_Component.get_type());
 
@@ -802,6 +828,7 @@ namespace Low {
                        Util::Name p_PropertyName)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_apply
+
       Util::RTTI::TypeInfo &l_TypeInfo =
           Util::Handle::get_type_info(p_Component.get_type());
       Util::RTTI::PropertyInfo &l_PropertyInfo =
@@ -937,6 +964,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

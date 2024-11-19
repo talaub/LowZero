@@ -14,12 +14,14 @@
 #include "LowCoreNavmeshSystem.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t NavmeshAgent::TYPE_ID = 35;
@@ -83,6 +85,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_agent_index(-1);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -94,6 +97,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         Low::Util::remove_unique_id(get_unique_id());
@@ -115,6 +119,7 @@ namespace Low {
       void NavmeshAgent::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -371,6 +376,7 @@ namespace Low {
         l_Handle.set_agent_index(get_agent_index());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -405,6 +411,7 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -452,6 +459,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -462,6 +470,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_speed
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_speed
 
         return TYPE_SOA(NavmeshAgent, speed, float);
@@ -471,6 +480,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_speed
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_speed
 
         // Set new value
@@ -492,6 +502,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_speed
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_speed
       }
 
@@ -500,6 +511,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_height
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_height
 
         return TYPE_SOA(NavmeshAgent, height, float);
@@ -509,6 +521,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_height
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_height
 
         // Set new value
@@ -530,6 +543,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_height
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_height
       }
 
@@ -538,6 +552,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_radius
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_radius
 
         return TYPE_SOA(NavmeshAgent, radius, float);
@@ -547,6 +562,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_radius
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_radius
 
         // Set new value
@@ -568,6 +584,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_radius
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_radius
       }
 
@@ -576,6 +593,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_offset
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_offset
 
         return TYPE_SOA(NavmeshAgent, offset, Low::Math::Vector3);
@@ -585,6 +603,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_offset
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_offset
 
         // Set new value
@@ -606,6 +625,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_offset
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_offset
       }
 
@@ -614,6 +634,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_agent_index
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_agent_index
 
         return TYPE_SOA(NavmeshAgent, agent_index, int);
@@ -623,12 +644,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_agent_index
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_agent_index
 
         // Set new value
         TYPE_SOA(NavmeshAgent, agent_index, int) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_agent_index
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_agent_index
       }
 
@@ -637,6 +660,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
         return TYPE_SOA(NavmeshAgent, entity, Low::Core::Entity);
@@ -646,12 +670,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(NavmeshAgent, entity, Low::Core::Entity) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
       }
 
@@ -660,6 +686,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(NavmeshAgent, unique_id, Low::Util::UniqueId);
@@ -669,6 +696,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
@@ -676,6 +704,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
@@ -683,6 +712,7 @@ namespace Low {
           Low::Math::Vector3 &p_TargetPosition)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_target_position
+
         System::Navmesh::set_agent_target_position(get_id(),
                                                    p_TargetPosition);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_target_position
@@ -793,6 +823,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component

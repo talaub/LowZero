@@ -14,12 +14,14 @@
 #include "LowUtilFileIO.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t View::TYPE_ID = 38;
@@ -81,6 +83,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_internal(false);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -92,6 +95,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         Util::List<Element> l_ElementsToDelete;
         for (u64 i_ElementId : get_elements()) {
           Element i_Element =
@@ -136,6 +140,7 @@ namespace Low {
       void View::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -550,6 +555,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT(is_loaded(), "Cannot duplicate unloaded view");
 
         View l_ClonedView = make(p_Name);
@@ -609,6 +615,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -661,6 +668,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -671,6 +679,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
         return TYPE_SOA(View, loaded, bool);
@@ -680,12 +689,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_loaded
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
         // Set new value
         TYPE_SOA(View, loaded, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
       }
 
@@ -694,6 +705,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_elements
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_elements
 
         return TYPE_SOA(View, elements, Util::Set<Util::UniqueId>);
@@ -704,6 +716,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_internal
 
         return TYPE_SOA(View, internal, bool);
@@ -713,12 +726,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
 
         // Set new value
         TYPE_SOA(View, internal, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_internal
       }
 
@@ -727,6 +742,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_template
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_template
 
         return TYPE_SOA(View, view_template, bool);
@@ -736,12 +752,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_template
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_template
 
         // Set new value
         TYPE_SOA(View, view_template, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_template
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_template
       }
 
@@ -750,6 +768,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
         return TYPE_SOA(View, pixel_position, Low::Math::Vector2);
@@ -759,6 +778,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_position
 
         if (pixel_position() != p_Value) {
@@ -770,6 +790,7 @@ namespace Low {
               p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
         }
       }
@@ -779,6 +800,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
         return TYPE_SOA(View, rotation, float);
@@ -788,6 +810,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
 
         if (rotation() != p_Value) {
@@ -798,6 +821,7 @@ namespace Low {
           TYPE_SOA(View, rotation, float) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
         }
       }
@@ -807,6 +831,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale_multiplier
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_scale_multiplier
 
         return TYPE_SOA(View, scale_multiplier, float);
@@ -816,6 +841,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale_multiplier
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale_multiplier
 
         if (scale_multiplier() != p_Value) {
@@ -826,6 +852,7 @@ namespace Low {
           TYPE_SOA(View, scale_multiplier, float) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_multiplier
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_scale_multiplier
         }
       }
@@ -835,6 +862,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layer_offset
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_layer_offset
 
         return TYPE_SOA(View, layer_offset, uint32_t);
@@ -844,6 +872,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layer_offset
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_layer_offset
 
         if (layer_offset() != p_Value) {
@@ -854,6 +883,7 @@ namespace Low {
           TYPE_SOA(View, layer_offset, uint32_t) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer_offset
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_layer_offset
         }
       }
@@ -863,6 +893,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(View, unique_id, Low::Util::UniqueId);
@@ -872,12 +903,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
         TYPE_SOA(View, unique_id, Low::Util::UniqueId) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
@@ -886,6 +919,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transform_dirty
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_transform_dirty
 
         return TYPE_SOA(View, transform_dirty, bool);
@@ -895,12 +929,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transform_dirty
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_transform_dirty
 
         // Set new value
         TYPE_SOA(View, transform_dirty, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform_dirty
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_transform_dirty
       }
 
@@ -909,6 +945,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(View, name, Low::Util::Name);
@@ -918,18 +955,21 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(View, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
       void View::serialize_elements(Util::Yaml::Node &p_Node)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_elements
+
         for (auto it = get_elements().begin();
              it != get_elements().end(); ++it) {
           Element i_Element =
@@ -946,6 +986,7 @@ namespace Low {
       void View::add_element(Element p_Element)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_element
+
         if (p_Element.get_view().is_alive()) {
           p_Element.get_view().remove_element(p_Element);
         }
@@ -958,6 +999,7 @@ namespace Low {
       void View::remove_element(Element p_Element)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_element
+
         p_Element.set_view(0);
         get_elements().erase(p_Element.get_unique_id());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_remove_element
@@ -966,6 +1008,7 @@ namespace Low {
       void View::load_elements()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load_elements
+
         LOW_ASSERT(is_alive(), "Cannot load dead view");
         LOW_ASSERT(!is_loaded(), "View is already loaded");
 
@@ -996,6 +1039,7 @@ namespace Low {
       void View::unload_elements()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload_elements
+
         LOW_ASSERT(is_alive(), "Cannot unload dead view");
         LOW_ASSERT(is_loaded(),
                    "Cannot unload view that is not loaded");
@@ -1014,6 +1058,7 @@ namespace Low {
       Low::Core::UI::View View::spawn_instance(Low::Util::Name p_Name)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
+
         _LOW_ASSERT(is_alive());
         LOW_ASSERT(is_view_template(),
                    "Cannot spawn instances of UI-Views that are not "
@@ -1032,6 +1077,7 @@ namespace Low {
       View::find_element_by_name(Low::Util::Name p_Name)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_element_by_name
+
         _LOW_ASSERT(is_alive());
         _LOW_ASSERT(is_loaded());
 
@@ -1182,6 +1228,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI

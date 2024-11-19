@@ -5,115 +5,42 @@
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVulkanPipeline.h"
+#include "LowRendererVulkanBuffer.h"
 
 #include "VkBootstrap.h"
 
 #include "LowUtilAssert.h"
 #include "LowUtil.h"
 
-#include "imgui.h"
-#include "imgui_impl_sdl2.h"
-#include "imgui_impl_vulkan.h"
-
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
 #include "SDL_vulkan.h"
 
-#define VK_FRAME_OVERLAP 2
-
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
+
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_vulkan.h"
+
+#define FRAME_STAGING_BUFFER_SIZE 30000u
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace Base {
-#ifdef LOW_RENDERER_VALIDATION_ENABLED
-        const bool g_ValidationEnabled = true;
-#else
-        const bool g_ValidationEnabled = false;
-#endif
 
         bool swapchain_cleanup(Swapchain &p_Swapchain);
-
-        bool device_init(Context &p_Context)
-        {
-          // Begin initialize instance
-          vkb::InstanceBuilder l_InstanceBuilder;
-
-          vkb::Result<vkb::Instance> l_InstanceReturn =
-              l_InstanceBuilder.set_app_name("LowEngine")
-                  .request_validation_layers(g_ValidationEnabled)
-                  .use_default_debug_messenger()
-                  .require_api_version(1, 3, 0)
-                  .build();
-
-          if (!l_InstanceReturn) {
-            LOW_LOG_ERROR << l_InstanceReturn.full_error()
-                                 .type.message()
-                                 .c_str()
-                          << LOW_LOG_END;
-          }
-          LOWR_VK_ASSERT(l_InstanceReturn,
-                         "Failed to initialize vulkan instance");
-          vkb::Instance l_VkbInstance = l_InstanceReturn.value();
-
-          p_Context.instance = l_VkbInstance.instance;
-          p_Context.debugMessenger = l_VkbInstance.debug_messenger;
-          // End initialize instance
-
-          // Begin initialize surface
-          SDL_Vulkan_CreateSurface(Util::Window::get_main_window()
-                                       .get_main_window()
-                                       .sdlwindow,
-                                   p_Context.instance,
-                                   &p_Context.surface);
-          // End initialize surface
-
-          // Begin initialize gpu
-          // vulkan 1.3 features
-          VkPhysicalDeviceVulkan13Features l_Features{};
-          l_Features.dynamicRendering = true;
-          l_Features.synchronization2 = true;
-
-          // vulkan 1.2 features
-          VkPhysicalDeviceVulkan12Features l_Features12{};
-          l_Features12.bufferDeviceAddress = true;
-          l_Features12.descriptorIndexing = true;
-
-          // use vkbootstrap to select a gpu.
-          // We want a gpu that can write to the SDL surface and
-          // supports vulkan 1.3 with the correct features
-          vkb::PhysicalDeviceSelector l_GpuSelector{l_VkbInstance};
-          vkb::PhysicalDevice l_VkbGpu =
-              l_GpuSelector.set_minimum_version(1, 3)
-                  .set_required_features_13(l_Features)
-                  .set_required_features_12(l_Features12)
-                  .set_surface(p_Context.surface)
-                  .select()
-                  .value();
-
-          p_Context.gpu = l_VkbGpu.physical_device;
-          // End initialize gpu
-
-          // Begin initialize device
-          vkb::DeviceBuilder l_DeviceBuilder{l_VkbGpu};
-          p_Context.vkbDevice = l_DeviceBuilder.build().value();
-
-          p_Context.device = p_Context.vkbDevice.device;
-          // End initialize device
-
-          return true;
-        }
 
         bool swapchain_create(Context &p_Context,
                               Swapchain &p_Swapchain,
                               Math::UVector2 p_Dimensions)
         {
           vkb::SwapchainBuilder l_SwapchainBuilder{
-              p_Context.gpu, p_Context.device, p_Context.surface};
+              Global::get_physical_device(), Global::get_device(),
+              Global::get_surface()};
 
-          p_Swapchain.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+          p_Swapchain.imageFormat = Global::get_swapchain_format();
 
           vkb::Swapchain l_VkbSwapchain =
               l_SwapchainBuilder
@@ -181,8 +108,8 @@ namespace Low {
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
             vmaCreateImage(
-                p_Context.allocator, &l_ImageInfo, &l_ImgAllocInfo,
-                &p_Swapchain.drawImage.image,
+                Global::get_allocator(), &l_ImageInfo,
+                &l_ImgAllocInfo, &p_Swapchain.drawImage.image,
                 &p_Swapchain.drawImage.allocation, nullptr);
 
             VkImageViewCreateInfo l_ImgViewInfo =
@@ -192,7 +119,7 @@ namespace Low {
                     VK_IMAGE_ASPECT_COLOR_BIT);
 
             LOWR_VK_CHECK_RETURN(vkCreateImageView(
-                p_Context.device, &l_ImgViewInfo, nullptr,
+                Global::get_device(), &l_ImgViewInfo, nullptr,
                 &p_Swapchain.drawImage.imageView));
           }
 
@@ -205,7 +132,7 @@ namespace Low {
             return true;
           }
 
-          vkDeviceWaitIdle(p_Context.device);
+          vkDeviceWaitIdle(Global::get_device());
 
           swapchain_cleanup(p_Context.swapchain);
 
@@ -223,47 +150,6 @@ namespace Low {
           return true;
         }
 
-        bool graphics_queue_init(Context &p_Context)
-        {
-          p_Context.graphicsQueue =
-              p_Context.vkbDevice.get_queue(vkb::QueueType::graphics)
-                  .value();
-          p_Context.graphicsQueueFamily =
-              p_Context.vkbDevice
-                  .get_queue_index(vkb::QueueType::graphics)
-                  .value();
-
-          return true;
-        }
-
-        bool framedata_init(Context &p_Context)
-        {
-          p_Context.frameOverlap = VK_FRAME_OVERLAP;
-          p_Context.frameNumber = 0;
-
-          VkCommandPoolCreateInfo l_CommandPoolInfo =
-              InitUtil::command_pool_create_info(
-                  p_Context.graphicsQueueFamily,
-                  VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-          p_Context.frames = (FrameData *)malloc(
-              sizeof(FrameData) * p_Context.frameOverlap);
-
-          for (u32 i = 0; i < p_Context.frameOverlap; ++i) {
-            LOWR_VK_CHECK_RETURN(vkCreateCommandPool(
-                p_Context.device, &l_CommandPoolInfo, nullptr,
-                &p_Context.frames[i].commandPool));
-
-            VkCommandBufferAllocateInfo l_CmdAllocInfo =
-                InitUtil::command_buffer_allocate_info(
-                    p_Context.frames[i].commandPool);
-
-            LOWR_VK_CHECK_RETURN(vkAllocateCommandBuffers(
-                p_Context.device, &l_CmdAllocInfo,
-                &p_Context.frames[i].mainCommandBuffer));
-          }
-        }
-
         bool sync_structures_init(Context &p_Context)
         {
           VkFenceCreateInfo l_FenceCreateInfo =
@@ -272,31 +158,18 @@ namespace Low {
           VkSemaphoreCreateInfo l_SemaphoreCreateInfo =
               InitUtil::semaphore_create_info();
 
-          for (u32 i = 0; i < p_Context.frameOverlap; ++i) {
+          for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
             LOWR_VK_CHECK_RETURN(vkCreateFence(
-                p_Context.device, &l_FenceCreateInfo, nullptr,
+                Global::get_device(), &l_FenceCreateInfo, nullptr,
                 &p_Context.frames[i].renderFence));
 
             LOWR_VK_CHECK_RETURN(vkCreateSemaphore(
-                p_Context.device, &l_SemaphoreCreateInfo, nullptr,
+                Global::get_device(), &l_SemaphoreCreateInfo, nullptr,
                 &p_Context.frames[i].swapchainSemaphore));
             LOWR_VK_CHECK_RETURN(vkCreateSemaphore(
-                p_Context.device, &l_SemaphoreCreateInfo, nullptr,
+                Global::get_device(), &l_SemaphoreCreateInfo, nullptr,
                 &p_Context.frames[i].renderSemaphore));
           }
-        }
-
-        bool allocator_init(Context &p_Context)
-        {
-          VmaAllocatorCreateInfo l_AllocatorInfo = {};
-          l_AllocatorInfo.physicalDevice = p_Context.gpu;
-          l_AllocatorInfo.device = p_Context.device;
-          l_AllocatorInfo.instance = p_Context.instance;
-          l_AllocatorInfo.flags =
-              VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-          vmaCreateAllocator(&l_AllocatorInfo, &p_Context.allocator);
-
-          return true;
         }
 
         // TODO: Most likely temporary
@@ -306,13 +179,6 @@ namespace Low {
         // hardocded things so maaaaybe we need to check that
         bool descriptors_init(Context &p_Context)
         {
-          Util::List<
-              DescriptorUtil::DescriptorAllocator::PoolSizeRatio>
-              l_Sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
-
-          p_Context.globalDescriptorAllocator.init_pool(
-              p_Context.device, 10, l_Sizes);
-
           // Creates the descriptor layout for the compute draw
           // TODO: this part is definitely hardcoded for the current
           // use case
@@ -321,13 +187,13 @@ namespace Low {
             l_Builder.add_binding(0,
                                   VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
             p_Context.drawImageDescriptorLayout = l_Builder.build(
-                p_Context.device, VK_SHADER_STAGE_COMPUTE_BIT);
+                Global::get_device(), VK_SHADER_STAGE_COMPUTE_BIT);
           }
 
           // Allocate new descriptor for the drawimage
           p_Context.drawImageDescriptors =
-              p_Context.globalDescriptorAllocator.allocate(
-                  p_Context.device,
+              Global::get_global_descriptor_allocator().allocate(
+                  Global::get_device(),
                   p_Context.drawImageDescriptorLayout);
 
           // This part assignes the drawImage to the descriptor set
@@ -338,72 +204,30 @@ namespace Low {
                 VK_NULL_HANDLE, VK_IMAGE_LAYOUT_GENERAL,
                 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
 
-            l_Writer.update_set(p_Context.device,
+            l_Writer.update_set(Global::get_device(),
                                 p_Context.drawImageDescriptors);
           }
 
           return true;
         }
 
-        bool imgui_init(Context &p_Context)
+        static bool framedata_init(Context &p_Context)
         {
-          VkDescriptorPoolSize l_PoolSizes[] = {
-              {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-              {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-              {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-              {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-              {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-              {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+          p_Context.frames = (FrameData *)malloc(
+              sizeof(FrameData) * Global::get_frame_overlap());
 
-          VkDescriptorPoolCreateInfo l_PoolInfo = {};
-          l_PoolInfo.sType =
-              VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-          l_PoolInfo.flags =
-              VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-          l_PoolInfo.maxSets = 1000;
-          l_PoolInfo.poolSizeCount = (uint32_t)std::size(l_PoolSizes);
-          l_PoolInfo.pPoolSizes = l_PoolSizes;
-
-          LOWR_VK_CHECK_RETURN(
-              vkCreateDescriptorPool(p_Context.device, &l_PoolInfo,
-                                     nullptr, &p_Context.imguiPool));
-
-          ImGui::CreateContext();
-
-          ImGui_ImplSDL2_InitForVulkan(
-              Util::Window::get_main_window().sdlwindow);
-
-          // this initializes imgui for Vulkan
-          ImGui_ImplVulkan_InitInfo l_InitInfo = {};
-          l_InitInfo.Instance = p_Context.instance;
-          l_InitInfo.PhysicalDevice = p_Context.gpu;
-          l_InitInfo.Device = p_Context.device;
-          l_InitInfo.Queue = p_Context.graphicsQueue;
-          l_InitInfo.DescriptorPool = p_Context.imguiPool;
-          l_InitInfo.MinImageCount = 3;
-          l_InitInfo.ImageCount = 3;
-          l_InitInfo.UseDynamicRendering = true;
-
-          // dynamic rendering parameters for imgui to use
-          l_InitInfo.PipelineRenderingCreateInfo = {
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
-          l_InitInfo.PipelineRenderingCreateInfo
-              .colorAttachmentCount = 1;
-          l_InitInfo.PipelineRenderingCreateInfo
-              .pColorAttachmentFormats =
-              &p_Context.swapchain.imageFormat;
-
-          l_InitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-
-          ImGui_ImplVulkan_Init(&l_InitInfo);
-
-          ImGui_ImplVulkan_CreateFontsTexture();
+          for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+            {
+              p_Context.frames[i].frameStagingBuffer.buffer =
+                  BufferUtil::create_buffer(
+                      FRAME_STAGING_BUFFER_SIZE,
+                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                      VMA_MEMORY_USAGE_CPU_TO_GPU);
+              p_Context.frames[i].frameStagingBuffer.size =
+                  FRAME_STAGING_BUFFER_SIZE;
+              p_Context.frames[i].frameStagingBuffer.occupied = 0u;
+            }
+          }
 
           return true;
         }
@@ -413,19 +237,10 @@ namespace Low {
         {
           p_Context.requireResize = false;
 
-          LOWR_VK_ASSERT(device_init(p_Context),
-                         "Could not initialize device");
-
-          LOWR_VK_ASSERT(allocator_init(p_Context),
-                         "Could not initialize allocator");
-
           LOWR_VK_ASSERT(swapchain_init(p_Context,
                                         p_Context.swapchain,
                                         p_Dimensions),
                          "Could not initialize swapchain");
-
-          LOWR_VK_ASSERT(graphics_queue_init(p_Context),
-                         "Could not initialize graphics queue");
 
           LOWR_VK_ASSERT(framedata_init(p_Context),
                          "Could not initialize frame data");
@@ -437,13 +252,10 @@ namespace Low {
           // Please read the comment on the function itself
           LOWR_VK_ASSERT(descriptors_init(p_Context),
                          "Could not initialize descriptors");
-
-          LOWR_VK_ASSERT(imgui_init(p_Context),
-                         "Could not initialize imgui");
         }
 
-        bool initialize(Context &p_Context,
-                        Math::UVector2 p_Dimensions)
+        bool context_initialize(Context &p_Context,
+                                Math::UVector2 p_Dimensions)
         {
           LOWR_VK_ASSERT(context_init(p_Context, p_Dimensions),
                          "Failed to initialize context");
@@ -451,16 +263,21 @@ namespace Low {
           return true;
         }
 
+        bool initialize()
+        {
+          return Global::initialize();
+        }
+
         bool swapchain_cleanup(Swapchain &p_Swapchain)
         {
 
-          vkDestroySwapchainKHR(p_Swapchain.context->device,
+          vkDestroySwapchainKHR(Global::get_device(),
                                 p_Swapchain.vkhandle, nullptr);
 
           // destroy swapchain resources
           for (int i = 0; i < p_Swapchain.imageViews.size(); i++) {
 
-            vkDestroyImageView(p_Swapchain.context->device,
+            vkDestroyImageView(Global::get_device(),
                                p_Swapchain.imageViews[i], nullptr);
           }
 
@@ -469,14 +286,10 @@ namespace Low {
 
         bool framedata_cleanup(Context &p_Context)
         {
-          for (u32 i = 0; i < p_Context.frameOverlap; ++i) {
-            vkFreeCommandBuffers(
-                p_Context.device, p_Context.frames[i].commandPool, 1,
-                &p_Context.frames[i].mainCommandBuffer);
-
-            vkDestroyCommandPool(p_Context.device,
-                                 p_Context.frames[i].commandPool,
-                                 nullptr);
+          for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+            BufferUtil::destroy_buffer(
+                p_Context.frames[i].frameStagingBuffer.buffer);
+            p_Context.frames[i].frameStagingBuffer.size = 0;
           }
 
           return true;
@@ -484,13 +297,13 @@ namespace Low {
 
         bool sync_structures_cleanup(const Context &p_Context)
         {
-          for (u32 i = 0; i < p_Context.frameOverlap; ++i) {
-            vkDestroyFence(p_Context.device,
+          for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+            vkDestroyFence(Global::get_device(),
                            p_Context.frames[i].renderFence, nullptr);
-            vkDestroySemaphore(p_Context.device,
+            vkDestroySemaphore(Global::get_device(),
                                p_Context.frames[i].renderSemaphore,
                                nullptr);
-            vkDestroySemaphore(p_Context.device,
+            vkDestroySemaphore(Global::get_device(),
                                p_Context.frames[i].swapchainSemaphore,
                                nullptr);
           }
@@ -500,9 +313,6 @@ namespace Low {
 
         bool imgui_cleanup(const Context &p_Context)
         {
-          ImGui_ImplVulkan_Shutdown();
-          vkDestroyDescriptorPool(p_Context.device,
-                                  p_Context.imguiPool, nullptr);
 
           return true;
         }
@@ -510,17 +320,23 @@ namespace Low {
         bool descriptors_cleanup(Context &p_Context)
         {
           vkDestroyDescriptorSetLayout(
-              p_Context.device, p_Context.drawImageDescriptorLayout,
-              nullptr);
+              Global::get_device(),
+              p_Context.drawImageDescriptorLayout, nullptr);
 
-          p_Context.globalDescriptorAllocator.destroy_pool(
-              p_Context.device);
+          Global::get_global_descriptor_allocator().destroy_pool(
+              Global::get_device());
           return true;
         }
 
         bool context_cleanup(Context &p_Context)
         {
-          vkDeviceWaitIdle(p_Context.device);
+          vkDeviceWaitIdle(Global::get_device());
+
+          // Destroy drawimage
+          ImageUtil::destroy(p_Context.swapchain.drawImage);
+
+          LOWR_VK_ASSERT(swapchain_cleanup(p_Context.swapchain),
+                         "Failed to cleanup swapchain");
 
           LOWR_VK_ASSERT_RETURN(imgui_cleanup(p_Context),
                                 "Failed to cleanup imgui");
@@ -533,43 +349,18 @@ namespace Low {
 
           LOWR_VK_ASSERT_RETURN(sync_structures_cleanup(p_Context),
                                 "Failed to cleanup sync structures");
-
-          vkDestroySurfaceKHR(p_Context.instance, p_Context.surface,
-                              nullptr);
-
-          vmaDestroyAllocator(p_Context.allocator);
-
-          vkDestroyDevice(p_Context.device, nullptr);
-
-          vkb::destroy_debug_utils_messenger(
-              p_Context.instance, p_Context.debugMessenger);
-          vkDestroyInstance(p_Context.instance, nullptr);
-
-          return true;
         }
 
-        bool cleanup(Context &p_Context)
+        bool cleanup()
         {
-          vkDeviceWaitIdle(p_Context.device);
-
-          // Destroy drawimage
-          ImageUtil::destroy(p_Context,
-                             p_Context.swapchain.drawImage);
-
-          LOWR_VK_ASSERT(swapchain_cleanup(p_Context.swapchain),
-                         "Failed to cleanup swapchain");
-
-          LOWR_VK_ASSERT(context_cleanup(p_Context),
-                         "Failed to cleanup context");
-
-          return true;
+          return Global::cleanup();
         }
 
         bool imgui_draw(Context &p_Context,
                         VkImageView p_TargetImageView)
         {
           VkCommandBuffer l_Cmd =
-              p_Context.get_current_frame().mainCommandBuffer;
+              Global::get_current_command_buffer();
 
           VkRenderingAttachmentInfo l_ColorAttachment =
               InitUtil::attachment_info(
@@ -594,17 +385,17 @@ namespace Low {
 
           // Wait for fence and reset right after
           LOWR_VK_CHECK_RETURN(vkWaitForFences(
-              p_Context.device, 1,
+              Global::get_device(), 1,
               &p_Context.get_current_frame().renderFence, true,
               1000000000));
           LOWR_VK_CHECK_RETURN(vkResetFences(
-              p_Context.device, 1,
+              Global::get_device(), 1,
               &p_Context.get_current_frame().renderFence));
 
           // Acquire next swapchain image
           u32 l_SwapchainImageIndex;
           VkResult l_Result = vkAcquireNextImageKHR(
-              p_Context.device, p_Context.swapchain.vkhandle,
+              Global::get_device(), p_Context.swapchain.vkhandle,
               100000000,
               p_Context.get_current_frame().swapchainSemaphore,
               nullptr, &l_SwapchainImageIndex);
@@ -617,7 +408,7 @@ namespace Low {
           }
 
           VkCommandBuffer l_Cmd =
-              p_Context.get_current_frame().mainCommandBuffer;
+              Global::get_current_command_buffer();
 
           VkExtent2D l_DrawExtent;
           l_DrawExtent.width =
@@ -644,7 +435,7 @@ namespace Low {
         bool context_present(Context &p_Context)
         {
           VkCommandBuffer l_Cmd =
-              p_Context.get_current_frame().mainCommandBuffer;
+              Global::get_current_command_buffer();
 
           ImageUtil::cmd_copy2D(
               l_Cmd, p_Context.swapchain.drawImage.image,
@@ -689,7 +480,7 @@ namespace Low {
               &l_CmdInfo, &l_SignalInfo, &l_WaitInfo);
 
           LOWR_VK_CHECK_RETURN(vkQueueSubmit2(
-              p_Context.graphicsQueue, 1, &l_SubmitInfo,
+              Global::get_graphics_queue(), 1, &l_SubmitInfo,
               p_Context.get_current_frame().renderFence));
 
           VkPresentInfoKHR l_PresentInfo = {};
@@ -706,15 +497,12 @@ namespace Low {
               &p_Context.swapchain.imageIndex;
 
           VkResult l_PresentResult = vkQueuePresentKHR(
-              p_Context.graphicsQueue, &l_PresentInfo);
+              Global::get_graphics_queue(), &l_PresentInfo);
 
           if (l_PresentResult == VK_ERROR_OUT_OF_DATE_KHR) {
             LOW_LOG_DEBUG << "Require resize" << LOW_LOG_END;
             p_Context.requireResize = true;
           }
-
-          // increase the number of frames drawn
-          p_Context.frameNumber++;
         }
       } // namespace Base
     }   // namespace Vulkan

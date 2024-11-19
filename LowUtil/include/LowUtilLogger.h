@@ -91,7 +91,7 @@ namespace Low {
         LogStream &operator<<(Math::UVector2 &p_Vec);
         LogStream &operator<<(Math::UVector3 &p_Vec);
 
-        LogStream &operator<<(Name &p_Name);
+        LogStream &operator<<(Name p_Name);
         LogStream &operator<<(Handle &p_Message);
 
       private:

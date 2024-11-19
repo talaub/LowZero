@@ -13,11 +13,13 @@
 #include "LowUtilFileIO.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Region::TYPE_ID = 19;
@@ -76,6 +78,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -86,6 +89,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       Low::Util::remove_unique_id(get_unique_id());
@@ -107,6 +111,7 @@ namespace Low {
     void Region::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -433,6 +438,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -462,6 +468,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -507,6 +514,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -517,6 +525,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
       return TYPE_SOA(Region, loaded, bool);
@@ -526,12 +535,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_loaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
       // Set new value
       TYPE_SOA(Region, loaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
     }
 
@@ -540,6 +551,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_streaming_enabled
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_enabled
 
       return TYPE_SOA(Region, streaming_enabled, bool);
@@ -549,12 +561,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_streaming_enabled
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_enabled
 
       // Set new value
       TYPE_SOA(Region, streaming_enabled, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_enabled
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_enabled
     }
 
@@ -563,6 +577,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_streaming_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_position
 
       return TYPE_SOA(Region, streaming_position, Math::Vector3);
@@ -572,12 +587,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_streaming_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_position
 
       // Set new value
       TYPE_SOA(Region, streaming_position, Math::Vector3) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_position
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_position
     }
 
@@ -586,6 +603,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_streaming_radius
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_radius
 
       return TYPE_SOA(Region, streaming_radius, float);
@@ -595,12 +613,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_streaming_radius
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_radius
 
       // Set new value
       TYPE_SOA(Region, streaming_radius, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_radius
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_radius
     }
 
@@ -609,6 +629,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entities
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_entities
 
       return TYPE_SOA(Region, entities, Util::Set<Util::UniqueId>);
@@ -619,6 +640,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scene
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_scene
 
       return TYPE_SOA(Region, scene, Scene);
@@ -628,12 +650,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scene
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_scene
 
       // Set new value
       TYPE_SOA(Region, scene, Scene) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scene
+
       p_Value.get_regions().insert(get_unique_id());
       // LOW_CODEGEN::END::CUSTOM:SETTER_scene
     }
@@ -643,6 +667,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Region, unique_id, Low::Util::UniqueId);
@@ -652,12 +677,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Region, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
@@ -666,6 +693,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Region, name, Low::Util::Name);
@@ -675,18 +703,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Region, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
     void Region::serialize_entities(Util::Yaml::Node &p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_entities
+
       for (auto it = get_entities().begin();
            it != get_entities().end(); ++it) {
         Core::Entity i_Entity =
@@ -703,6 +734,7 @@ namespace Low {
     void Region::add_entity(Entity p_Entity)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_entity
+
       if (p_Entity.get_region().is_alive()) {
         p_Entity.get_region().remove_entity(p_Entity);
       }
@@ -715,6 +747,7 @@ namespace Low {
     void Region::remove_entity(Entity p_Entity)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_entity
+
       p_Entity.set_region(0);
       get_entities().erase(p_Entity.get_unique_id());
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_remove_entity
@@ -723,6 +756,7 @@ namespace Low {
     void Region::load_entities()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load_entities
+
       LOW_ASSERT(is_alive(), "Cannot load dead region");
       LOW_ASSERT(!is_loaded(), "Region is already loaded");
 
@@ -753,6 +787,7 @@ namespace Low {
     void Region::unload_entities()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload_entities
+
       LOW_ASSERT(is_alive(), "Cannot unload dead region");
       LOW_ASSERT(is_loaded(),
                  "Cannot unload region that is not loaded");
@@ -881,6 +916,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

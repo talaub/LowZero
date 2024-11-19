@@ -11,12 +11,14 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace Component {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Transform::TYPE_ID = 25;
@@ -98,6 +100,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.scale(Math::Vector3(1.0f));
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -109,6 +112,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // Doing this to remove the transform from the list of
         // children
         set_parent(0);
@@ -133,6 +137,7 @@ namespace Low {
       void Transform::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -543,6 +548,7 @@ namespace Low {
         l_Handle.set_world_dirty(is_world_dirty());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
@@ -577,6 +583,7 @@ namespace Low {
         p_Node["unique_id"] = get_unique_id();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -625,6 +632,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -635,6 +643,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_position
 
         return TYPE_SOA(Transform, position, Low::Math::Vector3);
@@ -644,6 +653,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
 
         if (position() != p_Value) {
@@ -670,6 +680,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
+
           set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_position
         }
@@ -680,6 +691,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
         return TYPE_SOA(Transform, rotation, Low::Math::Quaternion);
@@ -689,6 +701,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
 
         if (rotation() != p_Value) {
@@ -716,6 +729,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+
           set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
         }
@@ -726,6 +740,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_scale
 
         return TYPE_SOA(Transform, scale, Low::Math::Vector3);
@@ -735,6 +750,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_scale
 
         if (scale() != p_Value) {
@@ -761,6 +777,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale
+
           set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_scale
         }
@@ -771,6 +788,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
         return TYPE_SOA(Transform, parent, uint64_t);
@@ -780,6 +798,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
+
         Transform l_Parent = get_parent();
         if (l_Parent.is_alive()) {
           for (auto it = l_Parent.get_children().begin();
@@ -802,6 +821,7 @@ namespace Low {
           TYPE_SOA(Transform, parent, uint64_t) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
+
           Transform l_Parent(p_Value);
           if (l_Parent.is_alive()) {
             set_parent_uid(l_Parent.get_unique_id());
@@ -818,6 +838,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_uid
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
 
         return TYPE_SOA(Transform, parent_uid, uint64_t);
@@ -827,6 +848,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_uid
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_uid
 
         if (get_parent_uid() != p_Value) {
@@ -838,6 +860,7 @@ namespace Low {
           TYPE_SOA(Transform, parent_uid, uint64_t) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
         }
       }
@@ -847,6 +870,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
         return TYPE_SOA(Transform, children,
@@ -858,6 +882,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_position
+
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_position
 
@@ -869,6 +894,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_position
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
 
         // Set new value
@@ -876,6 +902,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_position
       }
 
@@ -884,6 +911,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_rotation
+
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_rotation
 
@@ -896,6 +924,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_rotation
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_rotation
 
         // Set new value
@@ -903,6 +932,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_rotation
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_rotation
       }
 
@@ -911,6 +941,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_scale
+
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_scale
 
@@ -921,6 +952,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_scale
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_scale
 
         // Set new value
@@ -928,6 +960,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_scale
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_scale
       }
 
@@ -936,6 +969,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_matrix
+
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
@@ -947,6 +981,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_matrix
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
         // Set new value
@@ -954,6 +989,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
       }
 
@@ -962,6 +998,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_updated
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
 
         return TYPE_SOA(Transform, world_updated, bool);
@@ -971,12 +1008,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_updated
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
 
         // Set new value
         TYPE_SOA(Transform, world_updated, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_updated
       }
 
@@ -985,6 +1024,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
         return TYPE_SOA(Transform, entity, Low::Core::Entity);
@@ -994,12 +1034,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
         TYPE_SOA(Transform, entity, Low::Core::Entity) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
       }
 
@@ -1008,6 +1050,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(Transform, unique_id, Low::Util::UniqueId);
@@ -1017,12 +1060,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
         TYPE_SOA(Transform, unique_id, Low::Util::UniqueId) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
       }
 
@@ -1031,6 +1076,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
         return TYPE_SOA(Transform, dirty, bool);
@@ -1040,12 +1086,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
         // Set new value
         TYPE_SOA(Transform, dirty, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
       }
 
@@ -1054,6 +1102,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
+
         if (TYPE_SOA(Transform, world_dirty, bool)) {
           return TYPE_SOA(Transform, world_dirty, bool);
         }
@@ -1073,18 +1122,21 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
         // Set new value
         TYPE_SOA(Transform, world_dirty, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
       }
 
       void Transform::recalculate_world_transform()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
+
         LOW_ASSERT(is_alive(), "Cannot calculate world "
                                "position of dead transform");
 
@@ -1316,6 +1368,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Component

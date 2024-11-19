@@ -52,10 +52,13 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace Base {
-        bool initialize(Context &p_Context,
-                        Math::UVector2 p_Dimensions);
+        bool initialize();
+        bool cleanup();
 
-        bool cleanup(Context &p_Context);
+        bool context_initialize(Context &p_Context,
+                                Math::UVector2 p_Dimensions);
+
+        bool context_cleanup(Context &p_Context);
 
         bool swapchain_resize(Context &p_Context);
 

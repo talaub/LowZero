@@ -88,6 +88,12 @@ void run()
 void init()
 {
   Low::Renderer::initialize();
+  {
+    Low::Util::String l_BasePath = Low::Util::get_project().dataPath;
+    l_BasePath += "/_internal/assets/meshes/cube.glb";
+
+    Low::Renderer::load_mesh(l_BasePath);
+  }
 }
 
 void cleanup()

@@ -44,6 +44,18 @@ namespace Low {
         image_create_info(VkFormat p_Format,
                           VkImageUsageFlags p_UsageFlags,
                           VkExtent3D p_Extent);
+        VkImageCreateInfo
+        image_create_info_mipmapped(VkFormat p_Format,
+                                    VkImageUsageFlags p_UsageFlags,
+                                    VkExtent3D p_Extent);
+        VkImageCreateInfo
+        cubemap_create_info(VkFormat p_Format,
+                            VkImageUsageFlags p_UsageFlags,
+                            VkExtent3D p_Extent);
+        VkImageCreateInfo
+        cubemap_create_info_mipmapped(VkFormat p_Format,
+                                      VkImageUsageFlags p_UsageFlags,
+                                      VkExtent3D p_Extent);
 
         VkImageViewCreateInfo
         imageview_create_info(VkFormat p_Format, VkImage p_Image,

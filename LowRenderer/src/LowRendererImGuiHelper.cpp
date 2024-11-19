@@ -154,6 +154,19 @@ namespace Low {
                 l_FontPathLucide.c_str(), l_FontSize, &l_Config,
                 l_IconRangeLucide);
           }
+
+          {
+            float l_FontSize = 15.0f;
+
+            ImFontConfig l_Config;
+            l_Config.PixelSnapH = true;
+            l_Config.GlyphMinAdvanceX = l_FontSize;
+            l_Config.GlyphOffset.y = -2.0f;
+
+            g_Fonts.lucide_400 = io.Fonts->AddFontFromFileTTF(
+                l_FontPathLucide.c_str(), l_FontSize, &l_Config,
+                l_IconRangeLucide);
+          }
         }
 
         {

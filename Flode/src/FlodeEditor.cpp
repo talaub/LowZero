@@ -11,6 +11,7 @@
 #include "LowEditor.h"
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"
+#include "LowEditorGui.h"
 
 #include "LowRendererImGuiHelper.h"
 
@@ -142,8 +143,9 @@ namespace Flode {
           ImGui::SetKeyboardFocusHere(0);
           m_NodeCreationPopupJustOpened = false;
         }
-        ImGui::InputText("##searchinput", m_Search,
-                         IM_ARRAYSIZE(m_Search));
+        Low::Editor::Gui::SearchField("##searchinput", m_Search,
+                                      IM_ARRAYSIZE(m_Search),
+                                      {0.0f, 3.0f});
 
         Low::Util::String l_SearchString = m_Search;
         l_SearchString.make_lower();

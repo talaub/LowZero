@@ -1,0 +1,25 @@
+module: LowRenderer2
+prefix: LowRenderer
+namespace:
+  - Low
+  - Renderer
+dll_macro: LOW_RENDERER2_API
+enums:
+  MeshResourceState:
+    options:
+      - name: Unknown
+      - name: Unloaded
+      - name: ScheduledToLoad
+      - name: LoadingToMemory
+      - name: MemoryLoaded
+      - name: UploadingToGpu
+      - name: Loaded
+  ImageResourceState:
+    options:
+      - name: Unknown
+      - name: Unloaded
+      - name: ScheduledToLoad
+      - name: LoadingToMemory
+      - name: MemoryLoaded
+      - name: UploadingToGpu
+      - name: Loaded

@@ -14,11 +14,13 @@
 #include "LowRenderer.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
-// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
 #define MESH_COUNT 50
     Util::List<bool> g_MeshSlots;
     Util::List<Util::Resource::Mesh> g_Meshes;
@@ -89,6 +91,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_reference_count(0);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -100,6 +103,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -119,6 +123,7 @@ namespace Low {
     void MeshResource::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       g_Meshes.resize(MESH_COUNT);
       g_MeshSlots.resize(MESH_COUNT);
       for (uint32_t i = 0; i < MESH_COUNT; ++i) {
@@ -408,6 +413,7 @@ namespace Low {
       l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -432,6 +438,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node = get_path().c_str();
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -449,6 +456,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       MeshResource l_Resource =
           MeshResource::make(LOW_YAML_AS_STRING(p_Node));
 
@@ -461,6 +469,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
       return TYPE_SOA(MeshResource, path, Util::String);
@@ -470,12 +479,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
       TYPE_SOA(MeshResource, path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
     }
 
@@ -484,6 +495,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submeshes
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_submeshes
 
       return TYPE_SOA(MeshResource, submeshes, Util::List<Submesh>);
@@ -494,6 +506,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
       return TYPE_SOA(MeshResource, reference_count, uint32_t);
@@ -503,12 +516,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
       TYPE_SOA(MeshResource, reference_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
@@ -517,6 +532,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_skeleton
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_skeleton
 
       return TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton);
@@ -526,12 +542,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_skeleton
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_skeleton
 
       // Set new value
       TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skeleton
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_skeleton
     }
 
@@ -540,6 +558,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(MeshResource, state, ResourceState);
@@ -549,12 +568,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
       TYPE_SOA(MeshResource, state, ResourceState) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
     }
 
@@ -563,6 +584,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
@@ -572,12 +594,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MeshResource, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -604,6 +628,7 @@ namespace Low {
     bool MeshResource::is_loaded()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
+
       return get_state() == ResourceState::LOADED;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
     }
@@ -611,6 +636,7 @@ namespace Low {
     void MeshResource::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+
       LOW_ASSERT(is_alive(), "Mesh resource was not alive on load");
 
       set_reference_count(get_reference_count() + 1);
@@ -667,6 +693,7 @@ namespace Low {
     void MeshResource::_load(uint32_t p_MeshIndex)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
+
       Util::Resource::Mesh &l_Mesh = g_Meshes[p_MeshIndex];
 
       for (uint32_t i = 0u; i < l_Mesh.submeshes.size(); ++i) {
@@ -693,6 +720,7 @@ namespace Low {
     void MeshResource::unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+
       set_reference_count(get_reference_count() - 1);
 
       LOW_ASSERT(get_reference_count() >= 0,
@@ -708,6 +736,7 @@ namespace Low {
     void MeshResource::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+
       if (!is_loaded()) {
         return;
       }
@@ -728,6 +757,7 @@ namespace Low {
     void MeshResource::update()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
+
       LOW_PROFILE_CPU("Core", "Update MeshResource");
       for (auto it = g_MeshLoadSchedules.begin();
            it != g_MeshLoadSchedules.end();) {
@@ -847,6 +877,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

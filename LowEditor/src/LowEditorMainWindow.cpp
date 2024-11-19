@@ -73,13 +73,6 @@ namespace Low {
 
     bool g_GizmosDragged = false;
 
-    struct EditorWidget
-    {
-      Widget *widget;
-      const char *name;
-      bool open;
-    };
-
     Util::List<EditorWidget> g_Widgets;
 
     Widget *g_FocusedWidget;
@@ -90,24 +83,9 @@ namespace Low {
 
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
-    static void save_user_settings()
+    Util::List<EditorWidget> &get_editor_widgets()
     {
-      Util::Yaml::Node l_Config;
-      l_Config["loaded_scene"] =
-          Core::Scene::get_loaded_scene().get_name().c_str();
-
-      for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
-        Util::Yaml::Node i_Widget;
-        i_Widget["name"] = it->name;
-        i_Widget["open"] = it->open;
-
-        l_Config["widgets"].push_back(i_Widget);
-      }
-      l_Config["theme"] = theme_get_current_name().c_str();
-
-      Util::String l_Path =
-          Util::get_project().rootPath + "/user.yaml";
-      Util::Yaml::write_file(l_Path.c_str(), l_Config);
+      return g_Widgets;
     }
 
     void close_editor_widget(Widget *p_Widget)
@@ -129,7 +107,6 @@ namespace Low {
 
     static void schedule_save_scene(Core::Scene p_Scene)
     {
-
       uint64_t l_SceneId = p_Scene.get_id();
 
       Util::String l_JobTitle = "Saving scene ";

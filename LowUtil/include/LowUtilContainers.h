@@ -8,6 +8,7 @@
 #include <EASTL/stack.h>
 #include <EASTL/queue.h>
 #include <EASTL/span.h>
+#include <EASTL/priority_queue.h>
 
 #include <EASTL/string.h>
 
@@ -32,6 +33,11 @@ namespace Low {
     template <typename T> using Stack = eastl::stack<T>;
     template <typename T> using Queue = eastl::queue<T>;
     template <typename T> using Deque = eastl::deque<T>;
+
+    template <typename T,
+              class _Pr = eastl::less<typename eastl::vector<T>::value_type>>
+    using PriorityQueue =
+        eastl::priority_queue<T, eastl::vector<T>, _Pr>;
 
     template <typename T> using Optional = eastl::optional<T>;
 

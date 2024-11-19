@@ -26,6 +26,7 @@ namespace Low {
         ImFont *codicon_700;
         ImFont *codicon_800;
 
+        ImFont *lucide_400;
         ImFont *lucide_600;
         ImFont *lucide_690;
         ImFont *lucide_700;

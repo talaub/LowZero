@@ -10,12 +10,14 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Resource {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Buffer::TYPE_ID = 8;
@@ -59,6 +61,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -69,6 +72,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         Backend::callbacks().buffer_cleanup(get_buffer());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -89,6 +93,7 @@ namespace Low {
       void Buffer::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -353,6 +358,7 @@ namespace Low {
         l_Handle.set_buffer(get_buffer());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -378,6 +384,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -401,6 +408,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -411,6 +419,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_buffer
 
         return TYPE_SOA(Buffer, buffer, Backend::Buffer);
@@ -420,12 +429,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_buffer
 
         // Set new value
         TYPE_SOA(Buffer, buffer, Backend::Buffer) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_buffer
       }
 
@@ -434,6 +445,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Buffer, name, Low::Util::Name);
@@ -443,12 +455,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Buffer, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -456,6 +470,7 @@ namespace Low {
                           Backend::BufferCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         Buffer l_Buffer = Buffer::make(p_Name);
 
         Backend::callbacks().buffer_create(l_Buffer.get_buffer(),
@@ -468,6 +483,7 @@ namespace Low {
       void Buffer::set(void *p_Data)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set
+
         Backend::callbacks().buffer_set(get_buffer(), p_Data);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set
       }
@@ -476,6 +492,7 @@ namespace Low {
                          uint32_t p_Start)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write
+
         Backend::callbacks().buffer_write(get_buffer(), p_Data,
                                           p_DataSize, p_Start);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_write
@@ -485,6 +502,7 @@ namespace Low {
                         uint32_t p_Start)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_read
+
         Backend::callbacks().buffer_read(get_buffer(), p_Data,
                                          p_DataSize, p_Start);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_read
@@ -493,6 +511,7 @@ namespace Low {
       void Buffer::bind_vertex()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_vertex
+
         Backend::callbacks().buffer_bind_vertex(get_buffer());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_vertex
       }
@@ -500,6 +519,7 @@ namespace Low {
       void Buffer::bind_index(uint8_t p_BindType)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_bind_index
+
         Backend::callbacks().buffer_bind_index(get_buffer(),
                                                p_BindType);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_bind_index
@@ -573,6 +593,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Resource

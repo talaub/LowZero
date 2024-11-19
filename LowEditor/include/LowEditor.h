@@ -34,6 +34,12 @@ namespace Low {
     void LOW_EDITOR_API tick(float p_Delta,
                              Util::EngineState p_State);
 
+    void LOW_EDITOR_API set_user_setting(Util::Name p_Name,
+                                         Util::Variant p_Variant);
+    Util::Variant LOW_EDITOR_API get_user_setting(Util::Name p_Name);
+
+    void LOW_EDITOR_API save_user_settings();
+
     Util::String LOW_EDITOR_API prettify_name(Util::Name p_Name);
     Util::String LOW_EDITOR_API prettify_name(Util::String p_String);
 

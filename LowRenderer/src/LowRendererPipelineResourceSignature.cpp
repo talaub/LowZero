@@ -12,12 +12,14 @@
 #include "LowRendererInterface.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t PipelineResourceSignature::TYPE_ID = 3;
@@ -72,6 +74,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -82,6 +85,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -102,6 +106,7 @@ namespace Low {
       void PipelineResourceSignature::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -498,6 +503,7 @@ namespace Low {
         PipelineResourceSignature l_Handle = make(p_Name);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -525,6 +531,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -550,6 +557,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -561,6 +569,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signature
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_signature
 
         return TYPE_SOA(PipelineResourceSignature, signature,
@@ -572,6 +581,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(PipelineResourceSignature, name,
@@ -583,6 +593,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
@@ -590,6 +601,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -599,6 +611,7 @@ namespace Low {
               &p_ResourceDescriptions)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         PipelineResourceSignature l_Signature =
             PipelineResourceSignature::make(p_Name);
 
@@ -619,6 +632,7 @@ namespace Low {
       void PipelineResourceSignature::commit()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_commit
+
         Backend::callbacks().pipeline_resource_signature_commit(
             get_signature());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_commit
@@ -629,6 +643,7 @@ namespace Low {
           Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_image_resource
+
         Backend::callbacks().pipeline_resource_signature_set_image(
             get_signature(), p_Name, p_ArrayIndex, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_image_resource
@@ -639,6 +654,7 @@ namespace Low {
           Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_sampler_resource
+
         Backend::callbacks().pipeline_resource_signature_set_sampler(
             get_signature(), p_Name, p_ArrayIndex, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_sampler_resource
@@ -649,6 +665,7 @@ namespace Low {
           Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_unbound_sampler_resource
+
         Backend::callbacks()
             .pipeline_resource_signature_set_unbound_sampler(
                 get_signature(), p_Name, p_ArrayIndex, p_Value);
@@ -660,6 +677,7 @@ namespace Low {
           Resource::Image p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_texture2d_resource
+
         Backend::callbacks()
             .pipeline_resource_signature_set_texture2d(
                 get_signature(), p_Name, p_ArrayIndex, p_Value);
@@ -671,6 +689,7 @@ namespace Low {
           Resource::Buffer p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_constant_buffer_resource
+
         Backend::callbacks()
             .pipeline_resource_signature_set_constant_buffer(
                 get_signature(), p_Name, p_ArrayIndex, p_Value);
@@ -682,6 +701,7 @@ namespace Low {
           Resource::Buffer p_Value)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_buffer_resource
+
         Backend::callbacks().pipeline_resource_signature_set_buffer(
             get_signature(), p_Name, p_ArrayIndex, p_Value);
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_buffer_resource
@@ -690,6 +710,7 @@ namespace Low {
       uint8_t PipelineResourceSignature::get_binding()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_binding
+
         return get_signature().binding;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_binding
       }
@@ -769,6 +790,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Interface

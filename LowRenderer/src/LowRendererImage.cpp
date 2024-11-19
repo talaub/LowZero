@@ -10,12 +10,14 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Resource {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Image::TYPE_ID = 7;
@@ -60,6 +62,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -70,6 +73,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         Backend::callbacks().imageresource_cleanup(get_image());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -90,6 +94,7 @@ namespace Low {
       void Image::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -270,6 +275,7 @@ namespace Low {
         l_Handle.set_image(get_image());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -294,6 +300,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -317,6 +324,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -327,6 +335,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_image
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_image
 
         return TYPE_SOA(Image, image, Backend::ImageResource);
@@ -336,12 +345,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_image
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
 
         // Set new value
         TYPE_SOA(Image, image, Backend::ImageResource) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_image
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_image
       }
 
@@ -350,6 +361,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Image, name, Low::Util::Name);
@@ -359,12 +371,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Image, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -372,6 +386,7 @@ namespace Low {
                         Backend::ImageResourceCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
         Image l_Image = Image::make(p_Name);
 
         Backend::callbacks().imageresource_create(l_Image.get_image(),
@@ -387,6 +402,7 @@ namespace Low {
           Backend::ImageResourceCreateParams &p_Params)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_reinitialize
+
         Backend::callbacks().imageresource_cleanup(get_image());
 
         Backend::callbacks().imageresource_create(get_image(),
@@ -464,6 +480,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Resource

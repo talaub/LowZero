@@ -406,10 +406,10 @@ namespace Low {
         if (ImGui::BeginPopup(l_PopupName.c_str())) {
 #define SEARCH_BUFFER_SIZE 255
           static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
-          ImGui::InputText("##search", l_SearchBuffer,
-                           SEARCH_BUFFER_SIZE);
+          Gui::SearchField("##search", l_SearchBuffer,
+                           SEARCH_BUFFER_SIZE, {0.0f, 3.0f});
 
-#undef SEARCH_BUFFER_SIZE;
+#undef SEARCH_BUFFER_SIZE
 
           Util::Handle *l_Handles = p_TypeInfo.get_living_instances();
 

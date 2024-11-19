@@ -13,11 +13,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Material::TYPE_ID = 24;
@@ -75,6 +77,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       for (auto it =
                Renderer::MaterialType::ms_LivingInstances.begin();
            it != Renderer::MaterialType::ms_LivingInstances.end();
@@ -98,6 +101,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       _unload();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -120,6 +124,7 @@ namespace Low {
     void Material::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -408,6 +413,7 @@ namespace Low {
       l_Handle.set_reference_count(get_reference_count());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -437,6 +443,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       Util::Yaml::Node l_Properties;
       for (auto it = get_material_type().get_properties().begin();
            it != get_material_type().get_properties().end(); ++it) {
@@ -495,6 +502,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       for (auto it =
                l_Handle.get_material_type().get_properties().begin();
            it != l_Handle.get_material_type().get_properties().end();
@@ -526,6 +534,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_type
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material_type
 
       return TYPE_SOA(Material, material_type,
@@ -536,6 +545,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_type
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_type
 
       // Set new value
@@ -543,6 +553,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_type
+
       get_properties().clear();
       // LOW_CODEGEN::END::CUSTOM:SETTER_material_type
     }
@@ -552,6 +563,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_material
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_material
 
       return TYPE_SOA(Material, renderer_material,
@@ -562,6 +574,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_material
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_material
 
       // Set new value
@@ -569,6 +582,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_material
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_material
     }
 
@@ -578,6 +592,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_properties
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_properties
 
       return TYPE_SOA(
@@ -590,6 +605,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
       return TYPE_SOA(Material, reference_count, uint32_t);
@@ -599,12 +615,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
       TYPE_SOA(Material, reference_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
@@ -613,6 +631,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Material, unique_id, Low::Util::UniqueId);
@@ -622,12 +641,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Material, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
@@ -636,6 +657,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Material, name, Low::Util::Name);
@@ -645,12 +667,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Material, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -658,6 +682,7 @@ namespace Low {
                                 Util::Variant &p_Value)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property
+
       if (is_loaded()) {
         uint8_t l_PropertyType =
             Renderer::MaterialTypePropertyType::VECTOR3;
@@ -703,6 +728,7 @@ namespace Low {
     Util::Variant &Material::get_property(Util::Name p_Name)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_property
+
       return get_properties()[p_Name];
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_property
     }
@@ -710,6 +736,7 @@ namespace Low {
     bool Material::is_loaded()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
+
       return get_renderer_material().is_alive();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
     }
@@ -717,6 +744,7 @@ namespace Low {
     void Material::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+
       set_reference_count(get_reference_count() + 1);
 
       LOW_ASSERT(get_reference_count() > 0,
@@ -753,6 +781,7 @@ namespace Low {
     void Material::unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+
       set_reference_count(get_reference_count() - 1);
 
       LOW_ASSERT(get_reference_count() >= 0,
@@ -768,6 +797,7 @@ namespace Low {
     void Material::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+
       for (auto it = get_material_type().get_properties().begin();
            it != get_material_type().get_properties().end(); ++it) {
         if (it->type ==
@@ -888,6 +918,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

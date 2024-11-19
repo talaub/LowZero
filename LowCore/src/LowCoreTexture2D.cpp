@@ -14,11 +14,13 @@
 #include "LowRenderer.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
-// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
 #define TEXTURE_COUNT 50
     Util::List<bool> g_TextureSlots;
     Util::List<Util::Resource::Image2D> g_Image2Ds;
@@ -87,6 +89,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -97,6 +100,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -116,6 +120,7 @@ namespace Low {
     void Texture2D::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       g_Image2Ds.resize(TEXTURE_COUNT);
       g_TextureSlots.resize(TEXTURE_COUNT);
       for (uint32_t i = 0; i < TEXTURE_COUNT; ++i) {
@@ -371,6 +376,7 @@ namespace Low {
       l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -395,6 +401,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node = get_path().c_str();
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -412,6 +419,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       Texture2D l_Texture =
           Texture2D::make(LOW_YAML_AS_STRING(p_Node));
       return l_Texture;
@@ -423,6 +431,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
       return TYPE_SOA(Texture2D, path, Util::String);
@@ -432,12 +441,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
       TYPE_SOA(Texture2D, path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
     }
 
@@ -446,6 +457,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_texture
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_texture
 
       return TYPE_SOA(Texture2D, renderer_texture,
@@ -456,6 +468,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_texture
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_texture
 
       // Set new value
@@ -463,6 +476,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_texture
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_texture
     }
 
@@ -471,6 +485,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
       return TYPE_SOA(Texture2D, reference_count, uint32_t);
@@ -480,12 +495,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
       TYPE_SOA(Texture2D, reference_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
     }
 
@@ -494,6 +511,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(Texture2D, state, ResourceState);
@@ -503,12 +521,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
       TYPE_SOA(Texture2D, state, ResourceState) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
     }
 
@@ -517,6 +537,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
@@ -526,18 +547,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Texture2D, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
     Texture2D Texture2D::make(Util::String &p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
@@ -560,6 +584,7 @@ namespace Low {
     bool Texture2D::is_loaded()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
+
       return get_state() == ResourceState::LOADED;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_loaded
     }
@@ -567,6 +592,7 @@ namespace Low {
     void Texture2D::load()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
+
       LOW_ASSERT(is_alive(), "Texture2D was not alive on load");
 
       set_reference_count(get_reference_count() + 1);
@@ -627,6 +653,7 @@ namespace Low {
     void Texture2D::unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+
       set_reference_count(get_reference_count() - 1);
 
       LOW_ASSERT(get_reference_count() >= 0,
@@ -642,6 +669,7 @@ namespace Low {
     void Texture2D::_unload()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
+
       if (!is_loaded()) {
         return;
       }
@@ -655,6 +683,7 @@ namespace Low {
     void Texture2D::update()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update
+
       LOW_PROFILE_CPU("Core", "Update Texture2D");
       for (auto it = g_TextureLoadSchedules.begin();
            it != g_TextureLoadSchedules.end();) {
@@ -768,6 +797,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

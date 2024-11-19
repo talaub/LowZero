@@ -1,0 +1,63 @@
+module: LowRenderer2
+source_path: src
+header_path: include
+prefix: LowRenderer
+namespace:
+  - Low
+  - Renderer
+dll_macro: LOW_RENDERER2_API
+types:
+  MeshResource:
+    private_make: true
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+      resource_mesh:
+        type: Util::Resource::Mesh
+        no_setter: true
+      state:
+        type: MeshResourceState
+        enum: true
+    functions:
+      make:
+        static: true
+        return_type: MeshResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+  ImageResource:
+    private_make: true
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+      resource_image:
+        type: Util::Resource::ImageMipMaps
+        no_setter: true
+      state:
+        type: ImageResourceState
+        enum: true
+      data_handle:
+        type: uint64_t
+      loaded_mips:
+        type: Low::Util::List<uint8_t>
+        getter_name: loaded_mips
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: ImageResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String

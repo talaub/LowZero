@@ -1,6 +1,7 @@
 #include "LowEditorScriptingErrorList.h"
 
 #include "LowEditorThemes.h"
+#include "LowEditorGui.h"
 
 #include "imgui.h"
 
@@ -91,7 +92,7 @@ namespace Low {
       ImGui::SameLine();
 
       static char l_Search[128] = "";
-      ImGui::InputText("##searchinput", l_Search,
+      Gui::SearchField("##searchinput", l_Search,
                        IM_ARRAYSIZE(l_Search));
 
       Low::Util::String l_SearchString = l_Search;

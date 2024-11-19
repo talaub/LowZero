@@ -11,6 +11,7 @@
 #include "LowRendererContext.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 namespace Low {
   namespace Util {
     namespace Resource {
@@ -23,6 +24,7 @@ namespace Low {
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER_API Texture2DData
@@ -128,6 +130,7 @@ namespace Low {
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer

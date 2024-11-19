@@ -22,6 +22,15 @@ namespace Low {
         Math::UVector2 dimensions;
         uint8_t miplevel;
         Image2DFormat format;
+        u64 size;
+      };
+
+      struct ImageMipMaps
+      {
+        Image2D mip0;
+        Image2D mip1;
+        Image2D mip2;
+        Image2D mip3;
       };
 
       struct Vertex
@@ -108,6 +117,9 @@ namespace Low {
       LOW_EXPORT void load_image2d(String p_FilePath,
                                    Image2D &p_Image,
                                    uint8_t p_MipLevel = 0);
+
+      LOW_EXPORT void load_image_mipmaps(String p_FilePath,
+                                         ImageMipMaps &p_Image);
 
       LOW_EXPORT void load_mesh(String p_FilePath, Mesh &p_Mesh);
     } // namespace Resource

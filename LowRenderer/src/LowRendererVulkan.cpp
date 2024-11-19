@@ -4534,6 +4534,7 @@ namespace Low {
                                  "/shader/dst/spv/" + p_Path + ".spv";
 
 #if LOW_RENDERER_COMPILE_SHADERS
+        /*
         Util::String l_SourcePath = get_source_path_vk_glsl(p_Path);
 
         Util::String l_Command =
@@ -4543,6 +4544,7 @@ namespace Low {
 
         LOW_LOG_DEBUG << l_Notice << LOW_LOG_END;
         system(l_Command.c_str());
+        */
 #endif
 
         return l_OutPath;

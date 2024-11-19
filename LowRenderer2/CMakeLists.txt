@@ -6,6 +6,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
+file(GLOB_RECURSE PRIVATE_INCLUDES "private_include/*.h")
 
 file(GLOB_RECURSE VULKAN_SOURCES "vulkan/src/*.cpp")
 file(GLOB_RECURSE VULKAN_INCLUDES "vulkan/include/*.h")
@@ -43,6 +44,7 @@ add_executable(LowRenderer2
   ${VULKAN_INCLUDES}
   ${SOURCES}
   ${INCLUDES}
+  ${PRIVATE_INCLUDES}
 )
 
 source_group("Header Files" FILES "${INCLUDES}")
@@ -81,6 +83,10 @@ target_compile_definitions(LowRenderer2 PRIVATE
 target_include_directories(LowRenderer2 PRIVATE
  ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/include
   "${VMA_PATH}/include"
+)
+
+target_include_directories(LowRenderer2 PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/private_include
 )
 
 target_include_directories(LowRenderer2 PUBLIC

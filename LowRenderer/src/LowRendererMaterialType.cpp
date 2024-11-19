@@ -10,11 +10,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MaterialType::TYPE_ID = 16;
@@ -69,6 +71,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -79,6 +82,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -98,6 +102,7 @@ namespace Low {
     void MaterialType::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -316,6 +321,7 @@ namespace Low {
       l_Handle.set_properties(get_properties());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -340,6 +346,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node = get_name().c_str();
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -357,6 +364,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return MaterialType::find_by_name(LOW_YAML_AS_NAME(p_Node))
           .get_id();
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -367,6 +375,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_pipeline
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_pipeline
 
       return TYPE_SOA(MaterialType, gbuffer_pipeline,
@@ -378,6 +387,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_pipeline
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_pipeline
 
       // Set new value
@@ -385,6 +395,7 @@ namespace Low {
                GraphicsPipelineConfig) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_pipeline
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_pipeline
     }
 
@@ -393,6 +404,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline
 
       return TYPE_SOA(MaterialType, depth_pipeline,
@@ -404,6 +416,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_pipeline
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_pipeline
 
       // Set new value
@@ -411,6 +424,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_pipeline
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline
     }
 
@@ -419,6 +433,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_internal
 
       return TYPE_SOA(MaterialType, internal, bool);
@@ -428,12 +443,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
 
       // Set new value
       TYPE_SOA(MaterialType, internal, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_internal
     }
 
@@ -443,6 +460,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_properties
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_properties
 
       return TYPE_SOA(MaterialType, properties,
@@ -454,6 +472,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_properties
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_properties
 
       // Set new value
@@ -461,6 +480,7 @@ namespace Low {
                Util::List<MaterialTypeProperty>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_properties
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_properties
     }
 
@@ -469,6 +489,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(MaterialType, name, Low::Util::Name);
@@ -478,12 +499,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MaterialType, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -586,6 +609,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

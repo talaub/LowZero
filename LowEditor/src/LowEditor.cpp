@@ -6,6 +6,7 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilLogger.h"
 #include "LowUtilFileSystem.h"
+#include "LowUtilSerialization.h"
 
 #include "LowCorePrefabInstance.h"
 
@@ -35,6 +36,8 @@ namespace Low {
 
     Util::Map<uint16_t, TypeMetadata> g_TypeMetadata;
     Util::List<EnumMetadata> g_EnumMetadata;
+
+    Util::Map<Util::Name, Util::Variant> g_UserSettings;
 
     struct EditorJob
     {
@@ -230,6 +233,17 @@ namespace Low {
       } else if (theme_exists(N(dracula))) {
         theme_apply(N(dracula));
       }
+
+      if (l_Root["custom"]) {
+        for (auto it = l_Root["custom"].begin();
+             it != l_Root["custom"].end(); ++it) {
+          g_UserSettings[LOW_YAML_AS_NAME(it->first)] =
+              Util::Serialization::deserialize_variant(it->second);
+        }
+      }
+
+      g_UserSettings[N(theme)] = theme_get_current_name();
+      g_UserSettings[N(loaded_scene)] = l_Scene.get_name();
     }
 
     static void register_type_nodes()
@@ -740,6 +754,51 @@ namespace Low {
       if (Low::Util::FileIO::file_exists_sync(p_Path.c_str())) {
         Low::Util::FileIO::delete_sync(p_Path.c_str());
       }
+    }
+
+    void set_user_setting(Util::Name p_Name, Util::Variant p_Variant)
+    {
+      g_UserSettings[p_Name] = p_Variant;
+      save_user_settings();
+    }
+
+    Util::Variant get_user_setting(Util::Name p_Name)
+    {
+      return g_UserSettings[p_Name];
+    }
+
+    void save_user_settings()
+    {
+      Util::Yaml::Node l_Config;
+      l_Config["loaded_scene"] =
+          Core::Scene::get_loaded_scene().get_name().c_str();
+
+      Util::List<EditorWidget> &l_Widgets = get_editor_widgets();
+
+      for (auto it = l_Widgets.begin(); it != l_Widgets.end(); ++it) {
+        Util::Yaml::Node i_Widget;
+        i_Widget["name"] = it->name;
+        i_Widget["open"] = it->open;
+
+        l_Config["widgets"].push_back(i_Widget);
+      }
+      l_Config["theme"] = theme_get_current_name().c_str();
+
+      Util::Yaml::Node l_CustomSettings;
+
+      for (auto it = g_UserSettings.begin();
+           it != g_UserSettings.end(); ++it) {
+        const char *i_Name = it->first.c_str();
+        Util::Yaml::Node i_Node;
+        Util::Serialization::serialize_variant(i_Node, it->second);
+        l_CustomSettings[i_Name] = i_Node;
+      }
+
+      l_Config["custom"] = l_CustomSettings;
+
+      Util::String l_Path =
+          Util::get_project().rootPath + "/user.yaml";
+      Util::Yaml::write_file(l_Path.c_str(), l_Config);
     }
 
     namespace History {

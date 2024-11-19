@@ -13,12 +13,14 @@
 #include "LowRendererImage.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Interface {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Renderpass::TYPE_ID = 2;
@@ -64,6 +66,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -74,6 +77,7 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         if (!get_renderpass().swapchainRenderpass) {
           Backend::callbacks().renderpass_cleanup(get_renderpass());
         }
@@ -96,6 +100,7 @@ namespace Low {
       void Renderpass::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -286,6 +291,7 @@ namespace Low {
         l_Handle.set_renderpass(get_renderpass());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -312,6 +318,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -335,6 +342,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -345,6 +353,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderpass
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_renderpass
 
         return TYPE_SOA(Renderpass, renderpass, Backend::Renderpass);
@@ -354,6 +363,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderpass
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderpass
 
         // Set new value
@@ -361,6 +371,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderpass
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_renderpass
       }
 
@@ -369,6 +380,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Renderpass, name, Low::Util::Name);
@@ -378,12 +390,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Renderpass, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
       }
 
@@ -429,6 +443,7 @@ namespace Low {
       Math::UVector2 &Renderpass::get_dimensions()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_dimensions
+
         return get_renderpass().dimensions;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_dimensions
       }
@@ -436,6 +451,7 @@ namespace Low {
       void Renderpass::begin()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_begin
+
         Backend::callbacks().renderpass_begin(get_renderpass());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_begin
       }
@@ -443,6 +459,7 @@ namespace Low {
       void Renderpass::end()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_end
+
         Backend::callbacks().renderpass_end(get_renderpass());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_end
       }
@@ -516,6 +533,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Interface

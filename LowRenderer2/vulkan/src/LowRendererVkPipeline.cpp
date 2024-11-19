@@ -10,12 +10,14 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Pipeline::TYPE_ID = 45;
@@ -62,6 +64,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -72,9 +75,10 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-        vkDestroyPipelineLayout(get_context()->device, get_layout(),
+
+        vkDestroyPipelineLayout(Global::get_device(), get_layout(),
                                 nullptr);
-        vkDestroyPipeline(get_context()->device, get_pipeline(),
+        vkDestroyPipeline(Global::get_device(), get_pipeline(),
                           nullptr);
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -95,6 +99,7 @@ namespace Low {
       void Pipeline::initialize()
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -114,6 +119,8 @@ namespace Low {
         l_TypeInfo.destroy = &Pipeline::destroy;
         l_TypeInfo.serialize = &Pipeline::serialize;
         l_TypeInfo.deserialize = &Pipeline::deserialize;
+        l_TypeInfo.find_by_index = &Pipeline::_find_by_index;
+        l_TypeInfo.find_by_name = &Pipeline::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Pipeline::_make;
         l_TypeInfo.duplicate_default = &Pipeline::_duplicate;
@@ -171,22 +178,6 @@ namespace Low {
         }
         {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(context);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(PipelineData, context);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            return nullptr;
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {};
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        }
-        {
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(PipelineData, name);
@@ -206,21 +197,6 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         }
-        {
-          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-          l_FunctionInfo.name = N(make);
-          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_FunctionInfo.handleType = Pipeline::TYPE_ID;
-          {
-            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_Context);
-            l_ParameterInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
-            l_ParameterInfo.handleType = 0;
-            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-          }
-          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-        }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
@@ -235,6 +211,11 @@ namespace Low {
 
         LOW_PROFILE_FREE(type_buffer_Pipeline);
         LOW_PROFILE_FREE(type_slots_Pipeline);
+      }
+
+      Low::Util::Handle Pipeline::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
       }
 
       Pipeline Pipeline::find_by_index(uint32_t p_Index)
@@ -260,6 +241,12 @@ namespace Low {
         return ms_Capacity;
       }
 
+      Low::Util::Handle
+      Pipeline::_find_by_name(Low::Util::Name p_Name)
+      {
+        return find_by_name(p_Name).get_id();
+      }
+
       Pipeline Pipeline::find_by_name(Low::Util::Name p_Name)
       {
         for (auto it = ms_LivingInstances.begin();
@@ -268,6 +255,7 @@ namespace Low {
             return *it;
           }
         }
+        return 0ull;
       }
 
       Pipeline Pipeline::duplicate(Low::Util::Name p_Name) const
@@ -277,9 +265,9 @@ namespace Low {
         Pipeline l_Handle = make(p_Name);
         l_Handle.set_pipeline(get_pipeline());
         l_Handle.set_layout(get_layout());
-        l_Handle.set_context(get_context());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -306,6 +294,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -326,13 +315,12 @@ namespace Low {
         }
         if (p_Node["layout"]) {
         }
-        if (p_Node["context"]) {
-        }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -343,6 +331,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipeline
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline
 
         return TYPE_SOA(Pipeline, pipeline, VkPipeline);
@@ -352,12 +341,14 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pipeline
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_pipeline
 
         // Set new value
         TYPE_SOA(Pipeline, pipeline, VkPipeline) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pipeline
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_pipeline
       }
 
@@ -366,6 +357,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layout
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_layout
 
         return TYPE_SOA(Pipeline, layout, VkPipelineLayout);
@@ -375,36 +367,15 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layout
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_layout
 
         // Set new value
         TYPE_SOA(Pipeline, layout, VkPipelineLayout) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layout
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_layout
-      }
-
-      Context *Pipeline::get_context() const
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
-        // LOW_CODEGEN::END::CUSTOM:GETTER_context
-
-        return TYPE_SOA(Pipeline, context, Context *);
-      }
-      void Pipeline::set_context(Context *p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
-
-        // Set new value
-        TYPE_SOA(Pipeline, context, Context *) = p_Value;
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
-        // LOW_CODEGEN::END::CUSTOM:SETTER_context
       }
 
       Low::Util::Name Pipeline::get_name() const
@@ -412,6 +383,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Pipeline, name, Low::Util::Name);
@@ -421,23 +393,15 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Pipeline, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
-      }
-
-      Pipeline Pipeline::make(Context &p_Context)
-      {
-        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-        Pipeline l_Handle = Pipeline::make(N(Pipeline));
-        l_Handle.set_context(&p_Context);
-
-        return l_Handle;
-        // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
       uint32_t Pipeline::create_instance()
@@ -491,13 +455,6 @@ namespace Low {
                  l_Capacity * sizeof(VkPipelineLayout));
         }
         {
-          memcpy(&l_NewBuffer[offsetof(PipelineData, context) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PipelineData, context) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Context *));
-        }
-        {
           memcpy(
               &l_NewBuffer[offsetof(PipelineData, name) *
                            (l_Capacity + l_CapacityIncrease)],
@@ -522,6 +479,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan

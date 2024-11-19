@@ -1,11 +1,33 @@
 #include "LowRendererVulkanImage.h"
 
 #include "LowRendererVulkanInit.h"
+#include "LowRendererVulkanBase.h"
+
+#include <vulkan/vulkan_core.h>
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace ImageUtil {
+        bool cmd_transition(VkCommandBuffer p_Cmd,
+                            AllocatedImage &p_AllocatedImage,
+                            VkImageLayout p_NewLayout)
+        {
+          // Early out if the layouts already match
+          if (p_AllocatedImage.layout == p_NewLayout) {
+            return true;
+          }
+
+          bool l_Result =
+              cmd_transition(p_Cmd, p_AllocatedImage.image,
+                             p_AllocatedImage.layout, p_NewLayout);
+
+          if (l_Result) {
+            p_AllocatedImage.layout = p_NewLayout;
+          }
+          return l_Result;
+        }
+
         bool cmd_transition(VkCommandBuffer p_Cmd, VkImage p_Image,
                             VkImageLayout p_CurrentLayout,
                             VkImageLayout p_NewLayout)
@@ -122,11 +144,59 @@ namespace Low {
           return true;
         }
 
-        bool destroy(const Context &p_Context, Image &p_Image)
+        AllocatedImage create(VkExtent3D p_Size, VkFormat p_Format,
+                              VkImageUsageFlags p_Usage,
+                              bool p_Mipmapped)
         {
-          vkDestroyImageView(p_Context.device, p_Image.imageView,
+          AllocatedImage l_Image;
+          l_Image.format = p_Format;
+          l_Image.extent = p_Size;
+          l_Image.layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+          VkImageCreateInfo l_ImgInfo = InitUtil::image_create_info(
+              p_Format,
+              p_Usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+              p_Size);
+          if (p_Mipmapped) {
+            l_ImgInfo.mipLevels = 4;
+          }
+
+          VmaAllocationCreateInfo l_AllocInfo = {};
+          l_AllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+          l_AllocInfo.requiredFlags = VkMemoryPropertyFlags(
+              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+          LOWR_VK_CHECK(vmaCreateImage(Global::get_allocator(),
+                                       &l_ImgInfo, &l_AllocInfo,
+                                       &l_Image.image,
+                                       &l_Image.allocation, nullptr),
+                        "Failed to create vulkan image");
+
+          VkImageAspectFlags l_AspectFlag = VK_IMAGE_ASPECT_COLOR_BIT;
+          if (p_Format == VK_FORMAT_D32_SFLOAT) {
+            l_AspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+          }
+
+          VkImageViewCreateInfo l_ViewInfo =
+              InitUtil::imageview_create_info(p_Format, l_Image.image,
+                                              l_AspectFlag);
+          l_ViewInfo.subresourceRange.levelCount =
+              l_ImgInfo.mipLevels;
+
+          LOWR_VK_CHECK(vkCreateImageView(Global::get_device(),
+                                          &l_ViewInfo, nullptr,
+                                          &l_Image.imageView),
+                        "Failed to create vulkan imageview");
+
+          return l_Image;
+        }
+
+        bool destroy(AllocatedImage &p_Image)
+        {
+          vkDestroyImageView(Global::get_device(), p_Image.imageView,
                              nullptr);
-          vmaDestroyImage(p_Context.allocator, p_Image.image,
+          vmaDestroyImage(Global::get_allocator(), p_Image.image,
                           p_Image.allocation);
           return true;
         }

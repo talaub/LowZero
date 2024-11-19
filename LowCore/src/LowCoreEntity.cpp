@@ -13,11 +13,13 @@
 #include "LowCorePrefabInstance.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Entity::TYPE_ID = 18;
@@ -70,6 +72,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -80,6 +83,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       Util::List<uint16_t> l_ComponentTypes;
       for (auto it = get_components().begin();
            it != get_components().end(); ++it) {
@@ -122,6 +126,7 @@ namespace Low {
     void Entity::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -454,6 +459,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       Entity l_Entity = make(p_Name);
 
       for (auto it = get_components().begin();
@@ -502,6 +508,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       serialize(p_Node, false);
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -519,6 +526,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       Region l_Region = p_Creator.get_id();
 
       if (!l_Region.is_alive()) {
@@ -577,6 +585,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_components
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_components
 
       return TYPE_SOA(Entity, components,
@@ -588,6 +597,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_region
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_region
 
       return TYPE_SOA(Entity, region, Region);
@@ -597,12 +607,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_region
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_region
 
       // Set new value
       TYPE_SOA(Entity, region, Region) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_region
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_region
     }
 
@@ -611,6 +623,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Entity, unique_id, Low::Util::UniqueId);
@@ -620,12 +633,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Entity, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
     }
 
@@ -634,6 +649,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Entity, name, Low::Util::Name);
@@ -643,18 +659,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Entity, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
     Entity Entity::make(Util::Name p_Name, Region p_Region)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       Entity l_Entity = Entity::make(p_Name);
       p_Region.add_entity(l_Entity);
       return l_Entity;
@@ -664,6 +683,7 @@ namespace Low {
     uint64_t Entity::get_component(uint16_t p_TypeId) const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_component
+
       if (get_components().find(p_TypeId) == get_components().end()) {
         return ~0ull;
       }
@@ -674,6 +694,7 @@ namespace Low {
     void Entity::add_component(Low::Util::Handle &p_Component)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_component
+
       Util::Handle l_ExistingComponent =
           get_component(p_Component.get_type());
       Util::RTTI::TypeInfo l_ComponentTypeInfo =
@@ -695,6 +716,7 @@ namespace Low {
     void Entity::remove_component(uint16_t p_ComponentType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_component
+
       LOW_ASSERT(has_component(p_ComponentType),
                  "Cannot remove component from entity. This "
                  "entity does not "
@@ -710,6 +732,7 @@ namespace Low {
     bool Entity::has_component(uint16_t p_ComponentType)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_component
+
       if (get_components().find(p_ComponentType) ==
           get_components().end()) {
         return false;
@@ -727,6 +750,7 @@ namespace Low {
     Low::Core::Component::Transform Entity::get_transform() const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
+
       _LOW_ASSERT(is_alive());
       return get_component(Component::Transform::TYPE_ID);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
@@ -736,6 +760,7 @@ namespace Low {
                            bool p_AddHandles) const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize
+
       _LOW_ASSERT(is_alive());
 
       p_Node["name"] = get_name().c_str();
@@ -770,6 +795,7 @@ namespace Low {
                                      bool p_AddHandles) const
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_hierarchy
+
       serialize(p_Node, p_AddHandles);
 
       Component::Transform l_Transform = get_transform();
@@ -791,6 +817,7 @@ namespace Low {
                                           Low::Util::Handle p_Creator)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy
+
       Entity l_Entity =
           (Entity)deserialize(p_Node, p_Creator).get_id();
 
@@ -892,6 +919,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Core

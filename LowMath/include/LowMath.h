@@ -131,6 +131,8 @@ namespace Low {
       LOW_EXPORT uint32_t clamp(uint32_t p_Num, uint32_t p_Low,
                                 uint32_t p_High);
 
+      LOW_EXPORT float floor(float p_Num);
+
       LOW_EXPORT float asin(float p_Value);
       LOW_EXPORT float atan2(float p_Value0, float p_Value1);
     } // namespace Util

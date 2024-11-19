@@ -8,6 +8,7 @@
 #include "LowUtilYaml.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include <vulkan/vulkan.h>
 #include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -16,13 +17,13 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       struct LOW_RENDERER2_API PipelineData
       {
         VkPipeline pipeline;
         VkPipelineLayout layout;
-        Context *context;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -45,11 +46,8 @@ namespace Low {
         Pipeline(uint64_t p_Id);
         Pipeline(Pipeline &p_Copy);
 
-      private:
         static Pipeline make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-      public:
         explicit Pipeline(const Pipeline &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -70,6 +68,7 @@ namespace Low {
         }
 
         static Pipeline find_by_index(uint32_t p_Index);
+        static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
 
@@ -85,6 +84,8 @@ namespace Low {
                    Low::Util::Name p_Name);
 
         static Pipeline find_by_name(Low::Util::Name p_Name);
+        static Low::Util::Handle
+        _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
                               Low::Util::Yaml::Node &p_Node);
@@ -113,17 +114,14 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static Pipeline make(Context &p_Context);
-
       private:
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
-        Context *get_context() const;
-        void set_context(Context *p_Value);
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Vulkan

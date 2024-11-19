@@ -13,6 +13,7 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorFlodeWidget.h"
+#include "LowEditorBase.h"
 
 #include "LowCore.h"
 #include "LowCoreMeshAsset.h"
@@ -317,6 +318,13 @@ namespace Low {
           Util::FileSystem::get_directory_watcher(
               p_Config.currentDirectoryWatchHandle);
 
+      static char l_Search[128] = "";
+      Gui::SearchField("##searchinput", l_Search,
+                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      Low::Util::String l_SearchString = l_Search;
+      l_SearchString.make_lower();
+
       int l_Columns =
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
@@ -413,6 +421,15 @@ namespace Low {
 
         g_Paths[i_MeshAsset.get_id()] = i_FileWatcher.path;
 
+        if (!l_SearchString.empty()) {
+          Util::String i_LowName = i_MeshAsset.get_name().c_str();
+          i_LowName.make_lower();
+          if (!Util::StringHelper::contains(i_LowName,
+                                            l_SearchString)) {
+            continue;
+          }
+        }
+
         if (render_element(l_Id++, ICON_LC_BOX,
                            i_MeshAsset.get_name().c_str(), true,
                            i_MeshAsset, &l_DirectoryWatcher.update)) {
@@ -437,6 +454,13 @@ namespace Low {
               p_Config.currentDirectoryWatchHandle);
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
+
+      static char l_Search[128] = "";
+      Gui::SearchField("##searchinput", l_Search,
+                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      Low::Util::String l_SearchString = l_Search;
+      l_SearchString.make_lower();
 
       int l_Columns =
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
@@ -530,6 +554,15 @@ namespace Low {
 
         g_Paths[i_Material.get_id()] = i_FileWatcher.path;
 
+        if (!l_SearchString.empty()) {
+          Util::String i_LowName = i_Material.get_name().c_str();
+          i_LowName.make_lower();
+          if (!Util::StringHelper::contains(i_LowName,
+                                            l_SearchString)) {
+            continue;
+          }
+        }
+
         if (render_element(l_Id++, ICON_LC_SPRAY_CAN,
                            i_Material.get_name().c_str(), true,
                            i_FileWatcher.handle,
@@ -559,6 +592,19 @@ namespace Low {
               p_Config.currentDirectoryWatchHandle);
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
+
+      static bool l_Hidden = false;
+
+      Base::BoolEdit("Hidden", &l_Hidden);
+
+      ImGui::SameLine();
+
+      static char l_Search[128] = "";
+      Gui::SearchField("##searchinput", l_Search,
+                       IM_ARRAYSIZE(l_Search));
+
+      Low::Util::String l_SearchString = l_Search;
+      l_SearchString.make_lower();
 
       int l_Columns =
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
@@ -639,7 +685,17 @@ namespace Low {
         }
         Util::String i_Name = i_FileWatcher.name.substr(
             0, i_FileWatcher.name.size() - 11);
-        if (Util::StringHelper::begins_with(i_Name, "__")) {
+
+        if (!l_SearchString.empty()) {
+          Util::String i_LowName = i_Name;
+          i_LowName.make_lower();
+          if (!Util::StringHelper::contains(i_LowName,
+                                            l_SearchString)) {
+            continue;
+          }
+        }
+        if (!l_Hidden &&
+            Util::StringHelper::begins_with(i_Name, "__")) {
           continue;
         }
         if (render_element(l_Id++, ICON_LC_WORKFLOW, i_Name, true,
@@ -678,6 +734,13 @@ namespace Low {
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
 
+      static char l_Search[128] = "";
+      Gui::SearchField("##searchinput", l_Search,
+                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      Low::Util::String l_SearchString = l_Search;
+      l_SearchString.make_lower();
+
       int l_Columns =
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
@@ -714,8 +777,18 @@ namespace Low {
         if (!i_Prefab.is_alive()) {
           continue;
         }
+
         if (!Core::Prefab(i_Prefab.get_parent().get_id())
                  .is_alive()) {
+
+          if (!l_SearchString.empty()) {
+            Util::String i_LowName = i_Prefab.get_name().c_str();
+            i_LowName.make_lower();
+            if (!Util::StringHelper::contains(i_LowName,
+                                              l_SearchString)) {
+              continue;
+            }
+          }
 
           g_Paths[i_Prefab.get_id()] = i_FileWatcher.path;
           if (render_element(l_Id++, ICON_LC_PACKAGE_OPEN,

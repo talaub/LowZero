@@ -4,7 +4,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace BufferUtil {
-        AllocatedBuffer create_buffer(Context &p_Context,
+        AllocatedBuffer create_buffer(
                                       size_t p_AllocSize,
                                       VkBufferUsageFlags p_Usage,
                                       VmaMemoryUsage p_MemoryUsage)
@@ -22,17 +22,17 @@ namespace Low {
           AllocatedBuffer l_NewBuffer;
 
           LOWR_VK_CHECK(vmaCreateBuffer(
-              p_Context.allocator, &l_BufferInfo, &l_VmaAllocInfo,
+              Global::get_allocator(), &l_BufferInfo, &l_VmaAllocInfo,
               &l_NewBuffer.buffer, &l_NewBuffer.allocation,
               &l_NewBuffer.info));
 
           return l_NewBuffer;
         }
 
-        void destroy_buffer(const Context &p_Context,
+        void destroy_buffer(
                             const AllocatedBuffer &p_Buffer)
         {
-          vmaDestroyBuffer(p_Context.allocator, p_Buffer.buffer,
+          vmaDestroyBuffer(Global::get_allocator(), p_Buffer.buffer,
                            p_Buffer.allocation);
         }
       } // namespace BufferUtil

@@ -3,6 +3,8 @@
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorCommonOperations.h"
+#include "LowEditorGui.h"
+#include "LowEditorBase.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -258,7 +260,7 @@ namespace Low {
            p_RenderFlowWidget.get_widget_position().y +
                l_TopPadding});
 
-      ImGui::BeginChild("Tools", ImVec2(50, 200), false,
+      ImGui::BeginChild("Tools", ImVec2(50, 280), false,
                         ImGuiWindowFlags_NoBackground |
                             ImGuiWindowFlags_NoDocking |
                             ImGuiWindowFlags_NoCollapse |
@@ -285,7 +287,66 @@ namespace Low {
                         ImVec2(l_ButtonSize, l_ButtonSize))) {
         l_Operation = ImGuizmo::SCALE;
       }
+
+      ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+      if (ImGui::Button(ICON_LC_MAGNET,
+                        ImVec2(l_ButtonSize, l_ButtonSize))) {
+        ImGui::OpenPopup("snap_settings_popup");
+      }
+
       ImGui::PopFont();
+
+      if (ImGui::IsPopupOpen("snap_settings_popup")) {
+        ImGui::SetNextWindowSize(ImVec2(300, 200));
+      }
+
+      if (ImGui::BeginPopup("snap_settings_popup")) {
+        ImGui::Text("Snap Settings");
+        bool l_SnapTranslation =
+            get_user_setting(N(snap_translation));
+        bool l_SnapRotation = get_user_setting(N(snap_rotation));
+        bool l_SnapScale = get_user_setting(N(snap_scale));
+
+        Math::Vector3 l_SnapTranslationAmount =
+            get_user_setting(N(snap_translation_amount));
+        Math::Vector3 l_SnapRotationAmount =
+            get_user_setting(N(snap_rotation_amount));
+        Math::Vector3 l_SnapScaleAmount =
+            get_user_setting(N(snap_scale_amount));
+
+        ImGui::PushID("translation_snap");
+        if (Base::BoolEdit("Translation", &l_SnapTranslation)) {
+          set_user_setting(N(snap_translation), l_SnapTranslation);
+        }
+        if (Base::Vector3Edit("Amount", &l_SnapTranslationAmount)) {
+          set_user_setting(N(snap_translation_amount),
+                           l_SnapTranslationAmount);
+        }
+        ImGui::PopID();
+
+        ImGui::PushID("rotation_snap");
+        if (Base::BoolEdit("Rotation", &l_SnapRotation)) {
+          set_user_setting(N(snap_rotation), l_SnapRotation);
+        }
+        if (Base::Vector3Edit("Amount", &l_SnapRotationAmount)) {
+          set_user_setting(N(snap_rotation_amount),
+                           l_SnapRotationAmount);
+        }
+        ImGui::PopID();
+
+        ImGui::PushID("scale_snap");
+        if (Base::BoolEdit("Scale", &l_SnapScale)) {
+          set_user_setting(N(snap_scale), l_SnapScale);
+        }
+        if (Base::Vector3Edit("Amount", &l_SnapScaleAmount)) {
+          set_user_setting(N(snap_scale_amount), l_SnapScaleAmount);
+        }
+        ImGui::PopID();
+
+        ImGui::EndPopup();
+      }
+
       ImGui::EndChild();
 
       ImGuizmo::SetDrawlist();
@@ -322,11 +383,31 @@ namespace Low {
         // glm::toMat4(l_Transform.get_world_rotation()) *
         // glm::scale(glm::mat4(1.0f), l_Transform.get_world_scale());
 
-        if (ImGuizmo::Manipulate((float *)&l_ViewMatrix,
-                                 (float *)&l_ProjectionMatrix,
-                                 l_Operation, ImGuizmo::LOCAL,
-                                 (float *)&l_TransformMatrix, NULL,
-                                 NULL, NULL, NULL)) {
+        Math::Vector3 l_Snap(0.0f);
+
+        if (l_Operation == ImGuizmo::TRANSLATE) {
+          bool l_ShouldSnap = get_user_setting(N(snap_translation));
+          if (l_ShouldSnap) {
+            l_Snap = get_user_setting(N(snap_translation_amount));
+          }
+        }
+        if (l_Operation == ImGuizmo::ROTATE) {
+          bool l_ShouldSnap = get_user_setting(N(snap_rotation));
+          if (l_ShouldSnap) {
+            l_Snap = get_user_setting(N(snap_rotation_amount));
+          }
+        }
+        if (l_Operation == ImGuizmo::SCALE) {
+          bool l_ShouldSnap = get_user_setting(N(snap_scale));
+          if (l_ShouldSnap) {
+            l_Snap = get_user_setting(N(snap_scale_amount));
+          }
+        }
+
+        if (ImGuizmo::Manipulate(
+                (float *)&l_ViewMatrix, (float *)&l_ProjectionMatrix,
+                l_Operation, ImGuizmo::LOCAL,
+                (float *)&l_TransformMatrix, NULL, &l_Snap.x)) {
 
           bool l_IsFirst = false;
           if (!get_gizmos_dragged()) {
@@ -411,7 +492,11 @@ namespace Low {
       }
     }
 
-    EditingWidget::EditingWidget() : m_CameraSpeed(3.5f)
+    EditingWidget::EditingWidget()
+        : m_CameraSpeed(3.5f), m_SnapTranslation(false),
+          m_SnapRotation(false), m_SnapScale(false),
+          m_SnapTranslationAmount(0.0f), m_SnapRotationAmount(0.0f),
+          m_SnapScaleAmount(0.0f)
     {
       m_RenderFlowWidget = new RenderFlowWidget(
           ICON_LC_VIEW " Viewport", Renderer::get_main_renderflow(),

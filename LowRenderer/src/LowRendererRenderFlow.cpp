@@ -13,11 +13,13 @@
 #include "LowRendererGraphicsStep.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t RenderFlow::TYPE_ID = 9;
@@ -97,6 +99,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -107,6 +110,7 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -126,6 +130,7 @@ namespace Low {
     void RenderFlow::initialize()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
@@ -685,6 +690,7 @@ namespace Low {
       l_Handle.set_directional_light(get_directional_light());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -732,6 +738,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -811,6 +818,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -821,6 +829,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
       return TYPE_SOA(RenderFlow, context, Interface::Context);
@@ -830,12 +839,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
       TYPE_SOA(RenderFlow, context, Interface::Context) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
     }
 
@@ -844,6 +855,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
 
       return TYPE_SOA(RenderFlow, dimensions, Math::UVector2);
@@ -854,6 +866,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
       return TYPE_SOA(RenderFlow, output_image, Resource::Image);
@@ -863,12 +876,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
       TYPE_SOA(RenderFlow, output_image, Resource::Image) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
     }
 
@@ -877,6 +892,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_steps
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_steps
 
       return TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>);
@@ -886,12 +902,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_steps
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_steps
 
       // Set new value
       TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_steps
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_steps
     }
 
@@ -900,6 +918,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
       return TYPE_SOA(RenderFlow, resources, ResourceRegistry);
@@ -910,6 +929,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_info_buffer
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_frame_info_buffer
 
       return TYPE_SOA(RenderFlow, frame_info_buffer,
@@ -920,6 +940,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_info_buffer
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
 
       // Set new value
@@ -927,6 +948,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
     }
 
@@ -936,6 +958,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource_signature
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resource_signature
 
       return TYPE_SOA(RenderFlow, resource_signature,
@@ -947,6 +970,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource_signature
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource_signature
 
       // Set new value
@@ -954,6 +978,7 @@ namespace Low {
                Interface::PipelineResourceSignature) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource_signature
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_resource_signature
     }
 
@@ -962,6 +987,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_position
 
       return TYPE_SOA(RenderFlow, camera_position, Math::Vector3);
@@ -971,12 +997,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_position
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_position, Math::Vector3) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_position
     }
 
@@ -985,6 +1013,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_direction
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_direction
 
       return TYPE_SOA(RenderFlow, camera_direction, Math::Vector3);
@@ -994,12 +1023,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_direction
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_direction
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_direction, Math::Vector3) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_direction
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_direction
     }
 
@@ -1008,6 +1039,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_fov
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_fov
 
       return TYPE_SOA(RenderFlow, camera_fov, float);
@@ -1017,12 +1049,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_fov
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_fov
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_fov, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_fov
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_fov
     }
 
@@ -1031,6 +1065,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_near_plane
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_near_plane
 
       return TYPE_SOA(RenderFlow, camera_near_plane, float);
@@ -1040,12 +1075,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_near_plane
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_near_plane
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_near_plane, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_near_plane
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_near_plane
     }
 
@@ -1054,6 +1091,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_far_plane
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_far_plane
 
       return TYPE_SOA(RenderFlow, camera_far_plane, float);
@@ -1063,12 +1101,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_far_plane
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_far_plane
 
       // Set new value
       TYPE_SOA(RenderFlow, camera_far_plane, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_far_plane
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_far_plane
     }
 
@@ -1077,6 +1117,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_projection_matrix
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_projection_matrix
 
       return TYPE_SOA(RenderFlow, projection_matrix, Math::Matrix4x4);
@@ -1086,6 +1127,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_projection_matrix
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_projection_matrix
 
       // Set new value
@@ -1093,6 +1135,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_projection_matrix
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_projection_matrix
     }
 
@@ -1101,6 +1144,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_matrix
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_view_matrix
 
       return TYPE_SOA(RenderFlow, view_matrix, Math::Matrix4x4);
@@ -1110,12 +1154,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_matrix
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_matrix
 
       // Set new value
       TYPE_SOA(RenderFlow, view_matrix, Math::Matrix4x4) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_matrix
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_view_matrix
     }
 
@@ -1124,6 +1170,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light
 
       return TYPE_SOA(RenderFlow, directional_light,
@@ -1134,6 +1181,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light
 
       // Set new value
@@ -1141,6 +1189,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light
     }
 
@@ -1149,6 +1198,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_lights
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_point_lights
 
       return TYPE_SOA(RenderFlow, point_lights,
@@ -1160,6 +1210,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(RenderFlow, name, Low::Util::Name);
@@ -1169,12 +1220,14 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(RenderFlow, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
@@ -1183,6 +1236,7 @@ namespace Low {
                                 Util::Yaml::Node &p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       RenderFlow l_RenderFlow = RenderFlow::make(p_Name);
       l_RenderFlow.get_dimensions() = p_Context.get_dimensions();
       l_RenderFlow.set_context(p_Context);
@@ -1404,6 +1458,7 @@ namespace Low {
     void RenderFlow::clear_renderbojects()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_clear_renderbojects
+
       for (Util::Handle i_Step : get_steps()) {
         if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
           GraphicsStep i_GraphicsStep = i_Step.get_id();
@@ -1416,6 +1471,7 @@ namespace Low {
     void RenderFlow::execute()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+
       Util::String l_ProfileString = get_name().c_str();
       l_ProfileString += " (RenderFlow execute)";
       LOW_PROFILE_CPU("Renderer", l_ProfileString.c_str());
@@ -1482,6 +1538,7 @@ namespace Low {
     void RenderFlow::update_dimensions(Math::UVector2 &p_Dimensions)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
+
       get_dimensions() = p_Dimensions;
 
       get_resources().update_dimensions(*this);
@@ -1504,6 +1561,7 @@ namespace Low {
     RenderFlow::register_renderobject(RenderObject &p_RenderObject)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_register_renderobject
+
       for (Util::Handle i_Step : get_steps()) {
         if (i_Step.get_type() == GraphicsStep::TYPE_ID) {
           GraphicsStep i_GraphicsStep = i_Step.get_id();
@@ -1517,6 +1575,7 @@ namespace Low {
     RenderFlow::get_previous_output_image(Util::Handle p_Step)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_previous_output_image
+
       for (uint32_t i = 0u; i < get_steps().size(); ++i) {
         if (p_Step.get_id() == get_steps()[i].get_id()) {
           if (i == 0u) {
@@ -1743,6 +1802,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

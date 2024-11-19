@@ -9,7 +9,10 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 #include <string.h>
+
+#include "LowRendererImGuiHelper.h"
 
 #include <algorithm>
 #include <nfd.h>
@@ -70,12 +73,62 @@ namespace Low {
         return ret;
       }
 
-      static void draw_single_letter_label(Util::String p_Label,
-                                           ImColor p_Color)
+      static bool input_text(const char *label, char *value,
+                             int valuelength)
+      {
+        ImGui::PushID(
+            label); // Ensure unique ID if using this multiple times
+
+        // Get cursor position and input box size to draw the
+        // background behind it
+        ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+        ImVec2 widget_size = ImVec2(
+            200.0f,
+            ImGui::GetFrameHeight()); // Customize width as needed
+
+        // Draw background with custom corner rounding
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImVec4 bg_color = color_to_imvec4(
+            theme_get_current().input); // Customize color here
+        draw_list->AddRectFilled(
+            cursor_pos,
+            ImVec2(cursor_pos.x + widget_size.x,
+                   cursor_pos.y + widget_size.y),
+            ImGui::GetColorU32(bg_color),
+            2.0f,                         // Rounding amount
+            ImDrawFlags_RoundCornersRight // Only round the right
+                                          // corners
+        );
+
+        // Style the input itself to remove its own rounding and
+        // padding
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,
+                            0.0f); // Remove rounding from input
+        ImGui::PushStyleColor(
+            ImGuiCol_FrameBg,
+            ImVec4(0, 0, 0,
+                   0)); // Make input box background transparent
+
+        // Draw the DragFloat on top of the custom background
+        ImGui::SetCursorScreenPos(
+            cursor_pos); // Reset cursor position
+        // ImGui::PushItemWidth(width);
+        bool ret = ImGui::InputText("##value", value, valuelength);
+        // ImGui::PopItemWidth();
+
+        ImGui::PopStyleVar();   // Restore rounding
+        ImGui::PopStyleColor(); // Restore background color
+        ImGui::PopID();
+
+        return ret;
+      }
+
+      static void draw_single_letter_label(
+          Util::String p_Label, ImColor p_Color,
+          float p_Width = 16.0f,
+          ImVec2 p_IconOffset = ImVec2(0.0f, 0.0f))
       {
         using namespace ImGui;
-
-        float l_CircleSize = 10.0f;
 
         ImDrawList *l_DrawList = GetWindowDrawList();
         ImVec2 l_Pos = GetCursorScreenPos();
@@ -86,13 +139,14 @@ namespace Low {
            + 5.0f}, l_CircleSize, p_Color);
         */
 
-        l_DrawList->AddRectFilled(l_Pos, l_Pos + ImVec2(16, 23),
+        l_DrawList->AddRectFilled(l_Pos, l_Pos + ImVec2(p_Width, 23),
                                   p_Color, 2.0f,
                                   ImDrawFlags_RoundCornersLeft);
 
-        SetCursorScreenPos({l_Pos.x + 3.0f, l_Pos.y + 2.0f});
+        SetCursorScreenPos({l_Pos.x + 3.0f + p_IconOffset.x, l_Pos.y + 2.0f + p_IconOffset.y} 
+                           );
         Text(p_Label.c_str());
-        SetCursorScreenPos({l_Pos.x + 15, l_Pos.y});
+        SetCursorScreenPos({l_Pos.x + p_Width - 1.0f, l_Pos.y});
       }
 
       static bool draw_single_coefficient_editor(
@@ -292,6 +346,45 @@ namespace Low {
 
           ImGui::EndDragDropSource();
         }
+      }
+
+      static bool draw_text_field_with_icon(
+          Util::String p_Label, Util::String p_Icon, ImColor p_Color,
+          char *p_Value, int p_Length, ImVec2 p_IconOffset)
+      {
+        using namespace ImGui;
+
+        ImVec2 l_Pos = GetCursorScreenPos();
+        ImGui::PushFont(Renderer::ImGuiHelper::fonts().lucide_400);
+        draw_single_letter_label(p_Icon, p_Color, 22.0f,
+                                 p_IconOffset);
+        ImGui::PopFont();
+
+        bool l_Changed = false;
+
+        Util::String l_Label = "##" + p_Label;
+
+        if (input_text(l_Label.c_str(), p_Value, p_Length)) {
+          l_Changed = true;
+        }
+
+        // if (!p_Break) {
+        // SetCursorScreenPos({l_Pos.x + p_Width + p_Margin,
+        // l_Pos.y});
+        //}
+
+        return l_Changed;
+      }
+
+      bool SearchField(Util::String p_Label, char *p_SearchString,
+                       int p_Length, ImVec2 p_IconOffset)
+      {
+        Theme &l_Theme = theme_get_current();
+
+        return draw_text_field_with_icon(
+            p_Label, ICON_LC_SEARCH,
+            color_to_imcolor(l_Theme.buttonHover), p_SearchString,
+            p_Length, p_IconOffset);
       }
     } // namespace Gui
   }   // namespace Editor
