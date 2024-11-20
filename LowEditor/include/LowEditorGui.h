@@ -25,6 +25,26 @@ namespace Low {
       bool LOW_EDITOR_API SearchField(
           Util::String p_Label, char *p_SearchString, int p_Length,
           ImVec2 p_IconOffset = ImVec2(0.0f, 0.0f));
+
+      bool Checkbox(const char *label, bool *v);
+
+      bool LOW_EDITOR_API DragFloatWithButtons(
+          const char *label, float *value, float speed = 1.0f,
+          float min = 0.0f, float max = 0.0f,
+          const char *format = "%.3f");
+
+      bool LOW_EDITOR_API DragIntWithButtons(const char *label,
+                                             int *value,
+                                             int speed = 1,
+                                             int min = -50000,
+                                             int max = 50000);
+
+      bool LOW_EDITOR_API ButtonRounding(const char *p_Text,
+                                         u32 p_Flags);
+      bool LOW_EDITOR_API ButtonNoRounding(const char *p_Text);
+
+      bool LOW_EDITOR_API CollapsingHeaderButton(
+          const char *label, u32 p_Flags, const char *button_label);
     } // namespace Gui
   }   // namespace Editor
 } // namespace Low

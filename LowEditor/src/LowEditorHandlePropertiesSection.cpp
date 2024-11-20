@@ -31,6 +31,7 @@
 #include <string>
 #include <vcruntime_string.h>
 #include <algorithm>
+#include "IconsLucide.h"
 
 namespace Low {
   namespace Editor {
@@ -83,7 +84,7 @@ namespace Low {
         ImGui::SameLine();
         {
           Util::String l_PopupName = "region_selector";
-          if (ImGui::Button("Choose...")) {
+          if (ImGui::Button(ICON_LC_CIRCLE_DOT)) {
             ImGui::OpenPopup(l_PopupName.c_str());
           }
 
@@ -115,7 +116,7 @@ namespace Low {
         ImGui::PopStyleColor();
       }
 
-      if (ImGui::Button("Add component")) {
+      if (ImGui::Button(ICON_LC_PLUS " Add component")) {
         ImGui::OpenPopup("add_component_popup");
       }
 
@@ -283,8 +284,24 @@ namespace Low {
         return;
       }
 
-      if (ImGui::CollapsingHeader(
+      /*
+      if (Gui::CollapsingHeaderButton(
               m_Metadata.name.c_str(),
+              m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen : 0,
+              ICON_LC_COG)) {
+              */
+
+      Util::String title = m_Metadata.name.c_str();
+      const char *t = title.c_str();
+      Util::String l_HeaderTitle = "";
+      if (m_Metadata.editor.hasIcon) {
+        l_HeaderTitle += m_Metadata.editor.icon;
+        l_HeaderTitle += " ";
+      }
+      l_HeaderTitle += m_Metadata.name.c_str();
+
+      if (ImGui::CollapsingHeader(
+              l_HeaderTitle.c_str(),
               m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {
 
         Util::StoredHandle l_StoredHandle;

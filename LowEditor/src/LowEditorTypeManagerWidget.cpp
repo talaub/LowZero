@@ -3,10 +3,12 @@
 #include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorTypeEditor.h"
+#include "LowEditorGui.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowCoreMeshAsset.h"
 
@@ -66,7 +68,7 @@ namespace Low {
           get_type_metadata(p_TypeInfo.typeId);
 
       if (l_TypeMetadata.editor.saveable) {
-        if (ImGui::Button("Save")) {
+        if (ImGui::Button(ICON_LC_SAVE " Save")) {
           save(p_Handle, p_TypeInfo);
         }
       }
@@ -106,10 +108,25 @@ namespace Low {
     {
       Util::List<Util::Handle> l_HandlesToDelete;
 
+      Gui::SearchField("##searchinput", m_Search,
+                       IM_ARRAYSIZE(m_Search), {0.0f, 3.0f});
+
+      Low::Util::String l_SearchString = m_Search;
+      l_SearchString.make_lower();
+
       for (u32 i = 0; i < m_TypeInfo.get_living_count(); ++i) {
         Util::Handle i_Handle = m_TypeInfo.get_living_instances()[i];
         Util::Name i_Name =
             *(Util::Name *)m_NamePropertyInfo.get(i_Handle);
+
+        if (!l_SearchString.empty()) {
+          Util::String i_LowName = i_Name.c_str();
+          i_LowName.make_lower();
+          if (!Util::StringHelper::contains(i_LowName,
+                                            l_SearchString)) {
+            continue;
+          }
+        }
 
         if (ImGui::Selectable(i_Name.c_str(),
                               i_Handle.get_id() ==
@@ -163,7 +180,7 @@ namespace Low {
       Util::String l_CreateString = "Create ";
       l_CreateString += l_TypeName.c_str();
 
-      if (ImGui::Button("Add")) {
+      if (ImGui::Button(ICON_LC_PLUS " Add")) {
         ImGui::OpenPopup(l_CreateString.c_str());
       }
 

@@ -11,6 +11,8 @@ types:
     name_editable: true
     scripting_expose: true
     unique_id: true
+    editor:
+      icon: cylinder
     header_imports:
       - LowCoreRegion.h
     source_imports:

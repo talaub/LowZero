@@ -147,7 +147,7 @@ namespace Low {
                                                   p_Handle);
           } else if (i_PropInfo.type ==
                      Util::RTTI::PropertyType::HANDLE) {
-            PropertyEditors::render_handle_selector(i_PropInfo,
+            PropertyEditors::render_handle_selector(l_PropMetadata,
                                                     p_Handle);
           } else {
             PropertyEditors::render_editor(l_PropMetadata, p_Handle,

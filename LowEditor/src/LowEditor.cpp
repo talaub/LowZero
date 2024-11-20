@@ -17,6 +17,7 @@
 #include "LowEditorEditingWidget.h"
 #include "LowEditorTypeEditor.h"
 #include "LowEditorFlodeWidget.h"
+#include "LowEditorIcons.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -272,6 +273,12 @@ namespace Low {
       if (p_Node["saveable"]) {
         p_Metadata.saveable = p_Node["saveable"].as<bool>();
       }
+      p_Metadata.hasIcon = false;
+      if (p_Node["icon"]) {
+        p_Metadata.hasIcon = true;
+        p_Metadata.iconName = LOW_YAML_AS_NAME(p_Node["icon"]);
+        p_Metadata.icon = get_icon_by_name(p_Metadata.iconName);
+      }
     }
 
     static void parse_property_metadata(PropertyMetadata &p_Metadata,
@@ -285,16 +292,26 @@ namespace Low {
     static void parse_type_metadata(TypeMetadata &p_Metadata,
                                     Util::Yaml::Node &p_Node)
     {
-      p_Metadata.typeInfo =
-          Util::Handle::get_type_info(p_Metadata.typeId);
+      if (Util::Handle::is_registered_type(p_Metadata.typeId)) {
+        p_Metadata.hasTypeInfo = true;
+        p_Metadata.typeInfo =
+            Util::Handle::get_type_info(p_Metadata.typeId);
+      } else {
+        p_Metadata.hasTypeInfo = false;
+        LOW_LOG_WARN << "Could not find type info for type "
+                     << p_Metadata.name << " (" << p_Metadata.typeId
+                     << ")" << LOW_LOG_END;
+      }
 
       {
         // Initializing the editor part of the metadata
         p_Metadata.editor.manager = false;
         p_Metadata.editor.saveable = false;
+        p_Metadata.editor.hasIcon = false;
       }
 
       if (p_Node["editor"]) {
+        const char *t = p_Metadata.name.c_str();
         parse_editor_type_metadata(p_Metadata.editor,
                                    p_Node["editor"]);
       }
@@ -405,7 +422,10 @@ namespace Low {
                 ParameterMetadata i_Param;
                 i_Param.name = LOW_YAML_AS_NAME(i_ParamNode["name"]);
                 i_Param.friendlyName = prettify_name(i_Param.name);
-                i_Param.paramInfo = i_Func.functionInfo.parameters[i];
+                if (p_Metadata.hasTypeInfo) {
+                  i_Param.paramInfo =
+                      i_Func.functionInfo.parameters[i];
+                }
 
                 i_Func.parameters.push_back(i_Param);
 

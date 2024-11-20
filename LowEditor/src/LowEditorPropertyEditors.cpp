@@ -2,18 +2,25 @@
 
 #include "LowEditor.h"
 #include "LowEditorGui.h"
+#include "LowEditorThemes.h"
+#include "LowEditorBase.h"
 
 #include "LowCore.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 #include <string.h>
 
 #include <algorithm>
 #include <vcruntime_string.h>
 
 #define DISPLAY_LABEL(s) std::replace(s.begin(), s.end(), '_', ' ')
+
+#define HANDLE_SELECTOR_NAME_OFFSET_X 4.0f
+#define HANDLE_SELECTOR_NAME_OFFSET_Y 2.0f
+#define HANDLE_SELECTOR_BUTTON_WIDTH 35.0f
 
 namespace Low {
   namespace Editor {
@@ -147,7 +154,7 @@ namespace Low {
 
         bool l_Result = render_enum_selector(
             p_Metadata.propInfo.handleType, &l_CurrentValue,
-            p_Metadata.name.c_str(), true);
+            p_Metadata.friendlyName.c_str(), true);
 
         p_Metadata.propInfo.set(p_Handle, &l_CurrentValue);
 
@@ -291,7 +298,7 @@ namespace Low {
         Util::String l_Label = "##";
         l_Label += p_Label.c_str();
 
-        ImGui::Checkbox(l_Label.c_str(), &p_Bool);
+        Base::BoolEdit(l_Label.c_str(), &p_Bool);
       }
 
       void render_float_editor(Util::String &p_Label, float &p_Float,
@@ -304,7 +311,8 @@ namespace Low {
         Util::String l_Label = "##";
         l_Label += p_Label.c_str();
 
-        ImGui::DragFloat(l_Label.c_str(), &p_Float);
+        // ImGui::DragFloat(l_Label.c_str(), &p_Float);
+        Gui::DragFloatWithButtons(l_Label.c_str(), &p_Float);
       }
 
       void render_uint32_editor(Util::String &p_Label, u32 &p_Value,
@@ -319,8 +327,8 @@ namespace Low {
         Util::String l_Label = "##";
         l_Label += p_Label.c_str();
 
-        if (ImGui::DragInt(l_Label.c_str(), &l_LocalValue, 1.0f, 0.0f,
-                           500000.0f)) {
+        if (Gui::DragIntWithButtons(l_Label.c_str(), &l_LocalValue, 1,
+                                    0, 50000)) {
           p_Value = l_LocalValue;
         }
       }
@@ -344,7 +352,7 @@ namespace Low {
 
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_ButtonWidth = 80.0f;
+        float l_ButtonWidth = HANDLE_SELECTOR_BUTTON_WIDTH;
         float l_NameWidth =
             l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
 
@@ -375,17 +383,38 @@ namespace Low {
         }
         int l_NameLength = strlen(l_DisplayName);
 
+        ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+        ImVec2 widget_size = ImVec2(
+            l_NameWidth + 2.0f,
+            ImGui::GetFrameHeight()); // Customize width as needed
+
+        // Draw background with custom corner rounding
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImVec4 bg_color = color_to_imvec4(
+            theme_get_current().input); // Customize color here
+        draw_list->AddRectFilled(cursor_pos,
+                                 ImVec2(cursor_pos.x + widget_size.x,
+                                        cursor_pos.y + widget_size.y),
+                                 ImGui::GetColorU32(bg_color),
+                                 2.0f, // Rounding amount
+                                 ImDrawFlags_RoundCornersLeft
+                                 // corners
+        );
+
+        ImGui::SetCursorScreenPos(cursor_pos); // Reset cursor
+                                               // position
         ImGui::RenderTextEllipsis(
-            ImGui::GetWindowDrawList(), l_Pos,
+            ImGui::GetWindowDrawList(),
+            l_Pos + ImVec2(HANDLE_SELECTOR_NAME_OFFSET_X,
+                           HANDLE_SELECTOR_NAME_OFFSET_Y),
             l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
             l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING,
             l_Pos.x + l_NameWidth, l_DisplayName,
             l_DisplayName + l_NameLength, nullptr);
 
-        ImGui::SetCursorScreenPos(
-            l_Pos + ImVec2(l_NameWidth + LOW_EDITOR_SPACING, 0.0f));
+        ImGui::SetCursorScreenPos(l_Pos + ImVec2(l_NameWidth, 0.0f));
 
-        if (ImGui::Button("Choose...")) {
+        if (ImGui::Button(ICON_LC_CIRCLE_DOT)) {
           ImGui::OpenPopup(l_PopupName.c_str());
         }
 
@@ -510,7 +539,7 @@ namespace Low {
 
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_ButtonWidth = 80.0f;
+        float l_ButtonWidth = HANDLE_SELECTOR_BUTTON_WIDTH;
         float l_NameWidth =
             l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
 
@@ -541,17 +570,39 @@ namespace Low {
         }
         int l_NameLength = strlen(l_DisplayName);
 
+        ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+        ImVec2 widget_size = ImVec2(
+            l_NameWidth + 3.0f,
+            ImGui::GetFrameHeight()); // Customize width as needed
+
+        // Draw background with custom corner rounding
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImVec4 bg_color = color_to_imvec4(
+            theme_get_current().input); // Customize color here
+        draw_list->AddRectFilled(cursor_pos,
+                                 ImVec2(cursor_pos.x + widget_size.x,
+                                        cursor_pos.y + widget_size.y),
+                                 ImGui::GetColorU32(bg_color),
+                                 2.0f, // Rounding amount
+                                 ImDrawFlags_RoundCornersLeft
+                                 // corners
+        );
+
+        ImGui::SetCursorScreenPos(cursor_pos); // Reset cursor
+                                               // position
+
         ImGui::RenderTextEllipsis(
-            ImGui::GetWindowDrawList(), l_Pos,
+            ImGui::GetWindowDrawList(),
+            l_Pos + ImVec2(HANDLE_SELECTOR_NAME_OFFSET_X,
+                           HANDLE_SELECTOR_NAME_OFFSET_Y),
             l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
             l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING,
             l_Pos.x + l_NameWidth, l_DisplayName,
             l_DisplayName + l_NameLength, nullptr);
 
-        ImGui::SetCursorScreenPos(
-            l_Pos + ImVec2(l_NameWidth + LOW_EDITOR_SPACING, 0.0f));
+        ImGui::SetCursorScreenPos(l_Pos + ImVec2(l_NameWidth, 0.0f));
 
-        if (ImGui::Button("Choose...")) {
+        if (ImGui::Button(ICON_LC_CIRCLE_DOT)) {
           ImGui::OpenPopup(l_PopupName.c_str());
         }
 
@@ -671,13 +722,49 @@ namespace Low {
         }
       }
 
+      void
+      render_handle_selector(PropertyMetadata &p_PropertyMetadata,
+                             Util::Handle p_Handle)
+      {
+        Util::RTTI::PropertyInfo &l_PropertyInfo =
+            p_PropertyMetadata.propInfo;
+
+        Util::String l_Label =
+            p_PropertyMetadata.friendlyName.c_str();
+
+        Util::RTTI::TypeInfo &l_PropTypeInfo =
+            Util::Handle::get_type_info(l_PropertyInfo.handleType);
+
+        uint64_t l_CurrentValue =
+            *(uint64_t *)l_PropertyInfo.get(p_Handle);
+
+        Util::FileSystem::WatchHandle l_WatchHandle =
+            Core::get_filesystem_watcher(l_PropertyInfo.handleType);
+
+        if (l_WatchHandle) {
+          if (render_fs_handle_selector(l_Label, l_PropTypeInfo,
+                                        &l_CurrentValue)) {
+            l_PropertyInfo.set(p_Handle, &l_CurrentValue);
+          }
+        } else {
+          if (render_handle_selector(l_Label, l_PropTypeInfo,
+                                     &l_CurrentValue)) {
+            l_PropertyInfo.set(p_Handle, &l_CurrentValue);
+          }
+        }
+      }
+
       bool render_color_selector(Util::String p_Label,
                                  Math::Color *p_Color)
       {
         render_label(p_Label);
 
-        return ImGui::ColorEdit4(
-            (Util::String("##") + p_Label).c_str(), (float *)p_Color);
+        bool l_Edited = ImGui::ColorEdit4(
+            (Util::String("##") + p_Label).c_str(), (float *)p_Color,
+            ImGuiColorEditFlags_NoInputs |
+                ImGuiColorEditFlags_NoLabel);
+
+        return l_Edited;
         /*
               return ImGui::ColorPicker4((Util::String("##") +
            p_Label).c_str(), (float *)p_Color);
@@ -697,7 +784,9 @@ namespace Low {
 
         Math::ColorRGB l_Color = p_Color;
 
-        if (ImGui::ColorEdit3(l_Label.c_str(), (float *)&l_Color)) {
+        if (ImGui::ColorEdit3(l_Label.c_str(), (float *)&l_Color,
+                              ImGuiColorEditFlags_NoInputs |
+                                  ImGuiColorEditFlags_NoLabel)) {
           p_Color = l_Color;
         }
       }
@@ -831,13 +920,13 @@ namespace Low {
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::NAME) {
           render_name_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
               *(Util::Name *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::STRING) {
           render_string_editor(
               p_PropertyMetadata,
-              Util::String(p_PropertyMetadata.propInfo.name.c_str()),
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
               *(Util::String *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::VECTOR2) {
@@ -851,42 +940,42 @@ namespace Low {
                    Util::RTTI::PropertyType::VECTOR3) {
           Math::Vector3 l_Vec = *(Math::Vector3 *)p_DataPtr;
           render_vector3_editor(
-              Util::String(p_PropertyMetadata.name.c_str()), l_Vec,
-              p_RenderLabel);
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
+              l_Vec, p_RenderLabel);
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Vec);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::QUATERNION) {
           Math::Quaternion l_Quat = *(Math::Quaternion *)p_DataPtr;
           render_quaternion_editor(
-              Util::String(p_PropertyMetadata.name.c_str()), l_Quat,
-              p_RenderLabel);
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
+              l_Quat, p_RenderLabel);
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Quat);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::COLORRGB) {
           render_colorrgb_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
               *(Math::ColorRGB *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::BOOL) {
           render_checkbox_bool_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
               *(bool *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::FLOAT) {
           float l_Float = *(float *)p_DataPtr;
           render_float_editor(
-              Util::String(p_PropertyMetadata.name.c_str()), l_Float,
-              p_RenderLabel);
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
+              l_Float, p_RenderLabel);
           p_PropertyMetadata.propInfo.set(p_Handle, &l_Float);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::UINT32) {
           render_uint32_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
               *(u32 *)p_DataPtr, p_RenderLabel);
         } else if (p_PropertyMetadata.propInfo.type ==
                    Util::RTTI::PropertyType::SHAPE) {
           render_shape_editor(
-              Util::String(p_PropertyMetadata.name.c_str()),
+              Util::String(p_PropertyMetadata.friendlyName.c_str()),
               p_PropertyMetadata.propInfo, p_Handle,
               (Math::Shape *)p_DataPtr, p_RenderLabel);
         }

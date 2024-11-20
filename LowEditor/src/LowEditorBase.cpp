@@ -19,11 +19,18 @@ namespace Low {
         return l_Edited;
       }
 
-      bool FloatEdit(const char *p_Label, float *p_Val, float p_Min,
-                     float p_Max, float p_Step)
+      bool ConciseFloatEdit(const char *p_Label, float *p_Val,
+                            float p_Min, float p_Max, float p_Step)
       {
         return ImGui::DragFloat(p_Label, p_Val, p_Step, p_Min, p_Max,
                                 "%.1f");
+      }
+
+      bool FloatEdit(const char *p_Label, float *p_Val, float p_Min,
+                     float p_Max, float p_Step)
+      {
+        return Gui::DragFloatWithButtons(p_Label, p_Val, p_Step,
+                                         p_Min, p_Max, "%.1f");
       }
 
       bool IntEdit(const char *p_Label, int *p_Val, int p_Min,
@@ -79,16 +86,23 @@ namespace Low {
 
       bool BoolEdit(const char *p_Label, bool *p_Bool)
       {
-        return ImGui::Checkbox(p_Label, p_Bool);
+        return Gui::Checkbox(p_Label, p_Bool);
       }
 
-      bool VariantEdit(const char *p_Label, Util::Variant &p_Variant)
+      bool VariantEdit(const char *p_Label, Util::Variant &p_Variant,
+                       bool p_Concise)
       {
         switch (p_Variant.m_Type) {
-        case (Util::VariantType::Float):
-          return FloatEdit(p_Label, &p_Variant.m_Float);
-        case (Util::VariantType::Int32):
+        case (Util::VariantType::Float): {
+          if (p_Concise) {
+            return ConciseFloatEdit(p_Label, &p_Variant.m_Float);
+          } else {
+            return FloatEdit(p_Label, &p_Variant.m_Float);
+          }
+        }
+        case (Util::VariantType::Int32): {
           return IntEdit(p_Label, &p_Variant.m_Int32);
+        }
         case (Util::VariantType::Bool):
           return BoolEdit(p_Label, &p_Variant.m_Bool);
         case (Util::VariantType::Vector3):

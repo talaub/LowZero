@@ -14,6 +14,11 @@ namespace Low {
                                     float p_Min = -1000.0f,
                                     float p_Max = 1000.0f,
                                     float p_Step = 0.1f);
+      bool LOW_EDITOR_API ConciseFloatEdit(const char *p_Label,
+                                           float *p_Val,
+                                           float p_Min = -1000.0f,
+                                           float p_Max = 1000.0f,
+                                           float p_Step = 0.1f);
       bool LOW_EDITOR_API IntEdit(const char *p_Label, int *p_Val,
                                   int p_Min = LOW_INT_MIN,
                                   int p_Max = LOW_INT_MAX,
@@ -25,7 +30,8 @@ namespace Low {
       bool LOW_EDITOR_API BoolEdit(const char *p_Label, bool *p_Bool);
 
       bool LOW_EDITOR_API VariantEdit(const char *p_Label,
-                                      Util::Variant &p_Variant);
+                                      Util::Variant &p_Variant,
+                                      bool p_Concise = false);
     } // namespace Base
   }   // namespace Editor
 } // namespace Low

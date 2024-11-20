@@ -46,6 +46,9 @@ namespace Low {
     {
       bool manager;
       bool saveable;
+      bool hasIcon;
+      Util::Name iconName;
+      Util::String icon;
     };
 
     struct TypeMetadata
@@ -61,6 +64,7 @@ namespace Low {
       TypeEditorMetadata editor;
       bool scriptingExpose;
       Util::List<FunctionMetadata> functions;
+      bool hasTypeInfo;
 
       Util::String friendlyName;
 

@@ -160,7 +160,7 @@ namespace Low {
     {
       ImGui::Begin(ICON_LC_MESSAGE_SQUARE_WARNING " Log", &m_Open);
 
-      if (ImGui::Button("Clear")) {
+      if (ImGui::Button(ICON_LC_ERASER " Clear")) {
         g_Entries.clear();
       }
       ImGui::SameLine();

@@ -11,6 +11,8 @@ types:
   Transform:
     component: true
     scripting_expose: true
+    editor:
+      icon: position
     header_imports:
       - LowMath.h
     properties:
@@ -106,6 +108,8 @@ types:
 
   MeshRenderer:
     component: true
+    editor:
+      icon: cube
     header_imports:
       - LowCoreMeshAsset.h
       - LowCoreMaterial.h
@@ -128,6 +132,8 @@ types:
   DirectionalLight:
     component: true
     scripting_expose: false
+    editor:
+      icon: sun
     header_imports:
       - LowMath.h
     properties:
@@ -143,6 +149,8 @@ types:
   PointLight:
     component: true
     scripting_expose: false
+    editor:
+      icon: bulb
     header_imports:
       - LowMath.h
     properties:
@@ -158,6 +166,8 @@ types:
   Rigidbody:
     component: true
     scripting_expose: false
+    editor:
+      icon: physics
     header_imports:
       - LowMath.h
       - LowCorePhysicsObjects.h

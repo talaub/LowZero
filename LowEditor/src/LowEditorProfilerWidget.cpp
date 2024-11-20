@@ -50,7 +50,7 @@ namespace Low {
       ImGui::SameLine();
       ImGui::Text(std::to_string(l_ComputeDispatches).c_str());
 
-      if (ImGui::Button("Open profiler")) {
+      if (ImGui::Button("Open profiler " ICON_LC_EXTERNAL_LINK)) {
         ShellExecute(0, 0, "http://localhost:1338", 0, 0, SW_SHOW);
       }
 

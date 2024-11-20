@@ -47,6 +47,10 @@ namespace Low {
       void LOW_EDITOR_API render_editor(Util::Handle p_Handle,
                                         Util::Name p_PropertyName);
 
+      void LOW_EDITOR_API
+      render_handle_selector(PropertyMetadata &p_PropertyMetadata,
+                             Util::Handle p_Handle);
+
       void LOW_EDITOR_API render_editor_no_label(
           Util::Handle p_Handle, TypeMetadata &p_Metadata,
           Util::Name p_PropertyName);

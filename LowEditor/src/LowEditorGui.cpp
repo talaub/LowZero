@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <nfd.h>
 
+#define DRAG_BUTTON_WIDTH 27.0f
+
 namespace Low {
   namespace Editor {
     namespace Gui {
@@ -143,8 +145,8 @@ namespace Low {
                                   p_Color, 2.0f,
                                   ImDrawFlags_RoundCornersLeft);
 
-        SetCursorScreenPos({l_Pos.x + 3.0f + p_IconOffset.x, l_Pos.y + 2.0f + p_IconOffset.y} 
-                           );
+        SetCursorScreenPos({l_Pos.x + 3.0f + p_IconOffset.x,
+                            l_Pos.y + 2.0f + p_IconOffset.y});
         Text(p_Label.c_str());
         SetCursorScreenPos({l_Pos.x + p_Width - 1.0f, l_Pos.y});
       }
@@ -382,10 +384,313 @@ namespace Low {
         Theme &l_Theme = theme_get_current();
 
         return draw_text_field_with_icon(
-            p_Label, ICON_LC_SEARCH,
-            color_to_imcolor(l_Theme.buttonHover), p_SearchString,
-            p_Length, p_IconOffset);
+            p_Label, ICON_LC_SEARCH, color_to_imcolor(l_Theme.input),
+            p_SearchString, p_Length, p_IconOffset);
       }
+
+      bool Checkbox(const char *label, bool *v)
+      {
+        using namespace ImGui;
+
+        ImGuiWindow *window = GetCurrentWindow();
+        if (window->SkipItems)
+          return false;
+
+        ImGuiContext &g = *GImGui;
+        const ImGuiStyle &style = g.Style;
+        const ImGuiID id = window->GetID(label);
+        const ImVec2 label_size = CalcTextSize(label, NULL, true);
+
+        const ImRect check_bb(
+            window->DC.CursorPos,
+            window->DC.CursorPos +
+                ImVec2(label_size.y + style.FramePadding.y * 0.5,
+                       label_size.y + style.FramePadding.y * 0.5));
+        ItemSize(check_bb, style.FramePadding.y);
+
+        ImRect total_bb = check_bb;
+        if (label_size.x > 0)
+          SameLine(0, style.ItemInnerSpacing.x);
+        const ImRect text_bb(
+            window->DC.CursorPos + ImVec2(0, style.FramePadding.y) -
+                ImVec2(0, 2),
+            window->DC.CursorPos + ImVec2(0, style.FramePadding.y) +
+                label_size);
+        if (label_size.x > 0) {
+          ItemSize(ImVec2(text_bb.GetWidth(), check_bb.GetHeight()),
+                   style.FramePadding.y);
+          total_bb = ImRect(ImMin(check_bb.Min, text_bb.Min),
+                            ImMax(check_bb.Max, text_bb.Max));
+        }
+
+        if (!ItemAdd(total_bb, id))
+          return false;
+
+        bool hovered, held;
+        bool pressed = ButtonBehavior(total_bb, id, &hovered, &held);
+        if (pressed)
+          *v = !(*v);
+
+        RenderFrame(check_bb.Min, check_bb.Max,
+                    GetColorU32((held && hovered)
+                                    ? ImGuiCol_FrameBgActive
+                                : hovered ? ImGuiCol_FrameBgHovered
+                                          : ImGuiCol_FrameBg),
+                    true, style.FrameRounding);
+        if (*v) {
+          const float check_sz =
+              ImMin(check_bb.GetWidth(), check_bb.GetHeight());
+          const float pad =
+              ImMax(1.0f, (float)(int)(check_sz / 6.0f));
+          const ImVec2 pts[] = {
+              ImVec2{check_bb.Min.x + pad,
+                     check_bb.Min.y +
+                         ((check_bb.Max.y - check_bb.Min.y) / 2)},
+              ImVec2{check_bb.Min.x +
+                         ((check_bb.Max.x - check_bb.Min.x) / 3),
+                     check_bb.Max.y - pad * 1.5f},
+              ImVec2{check_bb.Max.x - pad, check_bb.Min.y + pad}};
+          window->DrawList->AddPolyline(
+              pts, 3, GetColorU32(ImGuiCol_CheckMark), false, 2.0f);
+        }
+
+        if (label_size.x > 0.0f)
+          RenderText(text_bb.GetTL(), label);
+
+        return pressed;
+      }
+
+      bool DragIntWithButtons(const char *label, int *value,
+                              int speed, int min, int max)
+      {
+        // Start a new horizontal group
+        ImGui::BeginGroup();
+
+        bool l_Edited = false;
+
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_ButtonWidth = DRAG_BUTTON_WIDTH;
+        float l_DragWidth = l_FullWidth - (l_ButtonWidth * 3.0f);
+
+        ImVec2 l_CursorStart = ImGui::GetCursorPos();
+
+        // DragFloat for the main value control
+        ImGui::PushID(label);
+        ImGui::PushItemWidth(l_DragWidth + 3.0f);
+        if (ImGui::DragInt("##Drag", value, speed, min, max)) {
+          // Ensure value stays clamped to min/max bounds (if
+          // provided)
+          if (min < max) {
+            *value = ImClamp(*value, min, max);
+          }
+          l_Edited = true;
+        }
+        ImGui::PopItemWidth();
+
+        ImGui::SetCursorPos(l_CursorStart +
+                            ImVec2(l_DragWidth, 0.0f));
+
+        if (ButtonNoRounding(ICON_LC_PLUS)) {
+          *value += 1.0f; // Increase by 1.0
+          if (min < max) {
+            *value = ImClamp(*value, min, max);
+          }
+          l_Edited = true;
+        }
+
+        ImGui::SetCursorPos(
+            l_CursorStart +
+            ImVec2(l_DragWidth + l_ButtonWidth, 0.0f));
+
+        if (ButtonRounding(ICON_LC_MINUS,
+                           ImDrawFlags_RoundCornersRight)) {
+          *value -= 1.0f; // Decrease by 1.0
+          if (min < max) {
+            *value = ImClamp(*value, min, max);
+          }
+          l_Edited = true;
+        }
+
+        // End horizontal group
+        ImGui::PopID();
+        ImGui::EndGroup();
+
+        return l_Edited;
+      }
+
+      bool DragFloatWithButtons(const char *label, float *value,
+                                float speed, float min, float max,
+                                const char *format)
+      {
+        // Start a new horizontal group
+        ImGui::BeginGroup();
+
+        bool l_Edited = false;
+
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        float l_ButtonWidth = DRAG_BUTTON_WIDTH;
+        float l_DragWidth = l_FullWidth - (l_ButtonWidth * 3.0f);
+
+        ImVec2 l_CursorStart = ImGui::GetCursorPos();
+
+        // DragFloat for the main value control
+        ImGui::PushID(label);
+        ImGui::PushItemWidth(l_DragWidth + 3.0f);
+        if (ImGui::DragFloat("##Drag", value, speed, min, max,
+                             format)) {
+          // Ensure value stays clamped to min/max bounds (if
+          // provided)
+          if (min < max) {
+            *value = ImClamp(*value, min, max);
+          }
+          l_Edited = true;
+        }
+        ImGui::PopItemWidth();
+
+        ImGui::SetCursorPos(l_CursorStart +
+                            ImVec2(l_DragWidth, 0.0f));
+
+        if (ButtonNoRounding(ICON_LC_PLUS)) {
+          *value += 1.0f; // Increase by 1.0
+          if (min < max) {
+            *value = ImClamp(*value, min, max);
+          }
+          l_Edited = true;
+        }
+
+        ImGui::SetCursorPos(
+            l_CursorStart +
+            ImVec2(l_DragWidth + l_ButtonWidth, 0.0f));
+
+        if (ButtonRounding(ICON_LC_MINUS,
+                           ImDrawFlags_RoundCornersRight)) {
+          *value -= 1.0f; // Decrease by 1.0
+          if (min < max) {
+            *value = ImClamp(*value, min, max);
+          }
+          l_Edited = true;
+        }
+
+        // End horizontal group
+        ImGui::PopID();
+        ImGui::EndGroup();
+
+        return l_Edited;
+      }
+
+      bool ButtonNoRounding(const char *p_Text)
+      {
+        ImGuiStyle &style = ImGui::GetStyle();
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+        ImVec2 button_pos = ImGui::GetCursorScreenPos();
+        ImVec2 button_size =
+            ImVec2(ImGui::CalcTextSize(p_Text).x + 10.0f,
+                   ImGui::GetFrameHeight());
+        ImRect rect(button_pos, ImVec2(button_pos.x + button_size.x,
+                                       button_pos.y + button_size.y));
+
+        Util::String l_Label = "##";
+        l_Label += p_Text;
+
+        // Draw the button itself
+        bool l_Pressed =
+            ImGui::InvisibleButton(l_Label.c_str(), button_size);
+
+        ImU32 l_ButtonColor = ImGui::GetColorU32(ImGuiCol_Button);
+        if (ImGui::IsItemHovered()) {
+          l_ButtonColor = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
+        }
+
+        // Draw the background
+        draw_list->AddRectFilled(rect.Min, rect.Max, l_ButtonColor,
+                                 0.0f);
+
+        // Draw the text
+        draw_list->AddText(
+            ImVec2(button_pos.x + 5.0f,
+                   button_pos.y + style.FramePadding.y),
+            ImGui::GetColorU32(ImGuiCol_Text), p_Text);
+
+        return l_Pressed;
+      }
+
+      bool ButtonRounding(const char *p_Text, u32 p_Flags)
+      {
+        ImGuiStyle &style = ImGui::GetStyle();
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+        float original_rounding = style.FrameRounding;
+
+        ImVec2 button_pos = ImGui::GetCursorScreenPos();
+        ImVec2 button_size =
+            ImVec2(ImGui::CalcTextSize(p_Text).x + 10.0f,
+                   ImGui::GetFrameHeight());
+        ImRect rect(button_pos, ImVec2(button_pos.x + button_size.x,
+                                       button_pos.y + button_size.y));
+
+        Util::String l_Label = "##";
+        l_Label += p_Text;
+
+        // Draw the button itself
+        bool l_Pressed =
+            ImGui::InvisibleButton(l_Label.c_str(), button_size);
+
+        ImU32 l_ButtonColor = ImGui::GetColorU32(ImGuiCol_Button);
+        if (ImGui::IsItemHovered()) {
+          l_ButtonColor = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
+        }
+
+        // Draw the background
+        draw_list->AddRectFilled(rect.Min, rect.Max, l_ButtonColor,
+                                 original_rounding, p_Flags);
+
+        // Draw the text
+        draw_list->AddText(
+            ImVec2(button_pos.x + 5.0f,
+                   button_pos.y + style.FramePadding.y),
+            ImGui::GetColorU32(ImGuiCol_Text), p_Text);
+
+        return l_Pressed;
+      }
+
+      bool CollapsingHeaderButton(const char *label, u32 p_Flags,
+                                  const char *button_label)
+      {
+        ImGui::PushID(label); // Scope to avoid ID conflicts
+        bool is_open = ImGui::CollapsingHeader(label, p_Flags);
+
+        // Calculate header dimensions
+        ImVec2 header_min = ImGui::GetItemRectMin();
+        ImVec2 header_max = ImGui::GetItemRectMax();
+        ImVec2 header_size = ImVec2(header_max.x - header_min.x,
+                                    header_max.y - header_min.y);
+
+        // Button size and positioning
+        float button_width = ImGui::CalcTextSize(button_label).x +
+                             10.0f; // Add padding
+        float button_height = ImGui::GetFrameHeight();
+        ImVec2 button_pos =
+            ImVec2(header_max.x - button_width -
+                       ImGui::GetStyle().FramePadding.x,
+                   header_min.y);
+
+        // Push clipping rectangle to keep the button inside the
+        // header
+        ImGui::PushClipRect(header_min, header_max, true);
+
+        // Position and draw the button
+        ImGui::SetCursorScreenPos(button_pos);
+        if (ImGui::Button(button_label,
+                          ImVec2(button_width, button_height))) {
+        }
+
+        ImGui::PopClipRect(); // Restore clipping
+        ImGui::PopID();
+
+        return is_open;
+      }
+
     } // namespace Gui
   }   // namespace Editor
 } // namespace Low

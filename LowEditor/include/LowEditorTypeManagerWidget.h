@@ -28,6 +28,8 @@ namespace Low {
       void render_info(float p_Delta);
 
       void select(Util::Handle p_Handle);
+
+      char m_Search[128] = "";
     };
   } // namespace Editor
 } // namespace Low

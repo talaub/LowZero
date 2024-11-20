@@ -1284,11 +1284,11 @@ namespace Flode {
         if (p_Pin->type == PinType::Number) {
           ImGui::PushItemWidth(50.0f);
           Low::Editor::Base::VariantEdit("##editdefaultvalue",
-                                         p_Pin->defaultValue);
+                                         p_Pin->defaultValue, true);
           ImGui::PopItemWidth();
         } else if (p_Pin->type == PinType::Bool) {
           Low::Editor::Base::VariantEdit("##editdefaultvalue",
-                                         p_Pin->defaultValue);
+                                         p_Pin->defaultValue, true);
         } else if (p_Pin->type == PinType::Vector3) {
           Low::Editor::Base::Vector3Edit(
               "##editdefaultvalue", &p_Pin->defaultValue.m_Vector3,

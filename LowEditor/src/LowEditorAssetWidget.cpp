@@ -701,7 +701,8 @@ namespace Low {
         if (render_element(l_Id++, ICON_LC_WORKFLOW, i_Name, true,
                            i_FileWatcher.handle,
                            &l_DirectoryWatcher.update)) {
-          get_flode_widget()->m_Editor->load(i_FileWatcher.path);
+          open_flode_graph(i_FileWatcher.path);
+          // get_flode_widget()->m_Editor->load(i_FileWatcher.path);
         }
         ImGui::NextColumn();
       }

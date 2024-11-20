@@ -86,7 +86,7 @@ namespace Low {
 
     void ScriptingErrorList::render(float p_Delta)
     {
-      if (ImGui::Button("Clear")) {
+      if (ImGui::Button(ICON_LC_ERASER " Clear")) {
         m_Errors.clear();
       }
       ImGui::SameLine();
