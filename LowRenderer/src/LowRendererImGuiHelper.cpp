@@ -243,7 +243,7 @@ namespace Low {
         }
 
         {
-          float l_FontSize = 25.0f;
+          float l_FontSize = 20.0f;
 
           ImFontConfig l_Config;
           l_Config.PixelSnapH = true;
