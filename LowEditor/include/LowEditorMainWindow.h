@@ -22,12 +22,13 @@ namespace Low {
 
     struct EditorWidget
     {
+      Util::String path;
       Widget *widget;
-      const char *name;
+      Util::String name;
       bool open;
     };
 
-    Util::List<EditorWidget> &get_editor_widgets();
+    Util::Map<Util::String, EditorWidget> &get_editor_widgets();
 
     void initialize_main_window();
     void render_main_window(float p_Delta, Util::EngineState p_State);
@@ -36,15 +37,17 @@ namespace Low {
     EditingWidget *get_editing_widget();
     FlodeWidget *get_flode_widget();
 
-    void set_widget_open(Util::Name p_Name, bool p_Open);
+    void set_widget_open(Util::String p_Path, bool p_Open);
 
-    void register_editor_widget(const char *p_Name, Widget *p_Widget,
+    void register_editor_widget(Util::String p_Path, Widget *p_Widget,
                                 bool p_DefaultOpen = false);
 
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
 
     void close_editor_widget(Widget *p_Widget);
+
+    void _set_focused_widget(Widget *p_Widget);
 
     namespace Helper {
       struct SphericalBillboardMaterials

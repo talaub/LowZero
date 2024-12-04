@@ -156,6 +156,9 @@ namespace Low {
         void set_global_signature(PipelineResourceSignature p_Value);
         void set_frame_info_buffer(Resource::Buffer p_Value);
         void set_material_data_buffer(Resource::Buffer p_Value);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+        // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

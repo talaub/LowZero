@@ -261,9 +261,9 @@ namespace Low {
               FileWatcher &l_bf = get_file_watcher(b);
 
               String aName =
-                  ((Name *)l_Pos->second.get(l_af.handle))->c_str();
+                  ((Name *)l_Pos->second.get_return(l_af.handle))->c_str();
               String bName =
-                  ((Name *)l_Pos->second.get(l_bf.handle))->c_str();
+                  ((Name *)l_Pos->second.get_return(l_bf.handle))->c_str();
 
               std::transform(
                   aName.begin(), aName.end(), aName.begin(),

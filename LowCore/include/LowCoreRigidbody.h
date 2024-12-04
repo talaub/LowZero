@@ -138,6 +138,9 @@ namespace Low {
         void set_initialized(bool p_Value);
         PhysicsShape &get_physics_shape() const;
         void set_unique_id(Low::Util::UniqueId p_Value);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+        // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

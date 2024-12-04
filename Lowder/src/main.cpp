@@ -66,6 +66,7 @@ void *operator new[](size_t size, size_t alignment,
 // Function to write the minidump
 void CreateMiniDump(EXCEPTION_POINTERS *pep)
 {
+  return;
   // Open a file to write the minidump
   HANDLE hFile =
       CreateFile(_T("minidump.dmp"), GENERIC_WRITE, 0, NULL,
@@ -303,6 +304,8 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   for (int i = 0; i < g_EditorModuleInitialize.size(); ++i) {
     g_EditorModuleInitialize[i]();
   }
+
+  Low::Editor::load_user_settings();
 
   Low::Core::GameLoop::start();
 

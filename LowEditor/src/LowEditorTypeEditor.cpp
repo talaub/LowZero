@@ -13,6 +13,25 @@
 #include "LowCorePrefab.h"
 #include "LowCorePrefabInstance.h"
 
+#define HANDLE_TYPE_MANAGER_EVENT_METHODS(eventname)                 \
+  void TypeEditor::handle_##eventname##(Util::Handle p_Handle,       \
+                                        TypeMetadata & p_Metadata)   \
+  {                                                                  \
+    auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);            \
+    if (l_Entry != g_TypeEditors.end()) {                            \
+      l_Entry->second->eventname(p_Handle, p_Metadata);              \
+    } else {                                                         \
+      TypeEditor l_Editor;                                           \
+      l_Editor.##eventname##(p_Handle, p_Metadata);                  \
+    }                                                                \
+  }                                                                  \
+  void TypeEditor::handle_##eventname##(Util::Handle p_Handle)       \
+  {                                                                  \
+    TypeMetadata l_Metadata =                                        \
+        get_type_metadata(p_Handle.get_type());                      \
+    handle_##eventname##(p_Handle, l_Metadata);                      \
+  }
+
 namespace Low {
   namespace Editor {
     Util::Map<u16, TypeEditor *> g_TypeEditors;
@@ -75,47 +94,10 @@ namespace Low {
       }
     }
 
-    void TypeEditor::handle_after_add(Util::Handle p_Handle,
-                                      TypeMetadata &p_Metadata)
-    {
-      auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);
-
-      if (l_Entry != g_TypeEditors.end()) {
-        l_Entry->second->after_add(p_Handle, p_Metadata);
-      } else {
-        TypeEditor l_Editor;
-        l_Editor.after_add(p_Handle, p_Metadata);
-      }
-    }
-
-    void TypeEditor::handle_after_add(Util::Handle p_Handle)
-    {
-      TypeMetadata l_Metadata =
-          get_type_metadata(p_Handle.get_type());
-
-      handle_after_add(p_Handle, l_Metadata);
-    }
-
-    void TypeEditor::handle_before_delete(Util::Handle p_Handle,
-                                          TypeMetadata &p_Metadata)
-    {
-      auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);
-
-      if (l_Entry != g_TypeEditors.end()) {
-        l_Entry->second->before_delete(p_Handle, p_Metadata);
-      } else {
-        TypeEditor l_Editor;
-        l_Editor.before_delete(p_Handle, p_Metadata);
-      }
-    }
-
-    void TypeEditor::handle_before_delete(Util::Handle p_Handle)
-    {
-      TypeMetadata l_Metadata =
-          get_type_metadata(p_Handle.get_type());
-
-      handle_before_delete(p_Handle, l_Metadata);
-    }
+    HANDLE_TYPE_MANAGER_EVENT_METHODS(before_save)
+    HANDLE_TYPE_MANAGER_EVENT_METHODS(after_save)
+    HANDLE_TYPE_MANAGER_EVENT_METHODS(before_delete)
+    HANDLE_TYPE_MANAGER_EVENT_METHODS(after_add)
 
     void TypeEditor::render(Util::Handle p_Handle,
                             TypeMetadata &p_Metadata)
@@ -151,7 +133,7 @@ namespace Low {
                                                     p_Handle);
           } else {
             PropertyEditors::render_editor(l_PropMetadata, p_Handle,
-                                           i_PropInfo.get(p_Handle));
+                                           i_PropInfo.get_return(p_Handle));
           }
           ImVec2 l_PosNew = ImGui::GetCursorScreenPos();
 
@@ -164,10 +146,10 @@ namespace Low {
                                  {l_LabelWidth, l_LabelHeight});
           if (ImGui::BeginPopupContextItem(i_InvisButtonId.c_str())) {
             if (p_Metadata.typeInfo.component) {
-              Core::Entity i_Entity =
-                  *(Core::Entity *)p_Metadata.typeInfo
-                       .properties[l_EntityName]
-                       .get(p_Handle);
+              Core::Entity i_Entity;
+			  p_Metadata.typeInfo
+				   .properties[l_EntityName]
+				   .get(p_Handle, &i_Entity);
               if (i_Entity.has_component(
                       Core::Component::PrefabInstance::TYPE_ID)) {
                 Core::Component::PrefabInstance i_Instance =

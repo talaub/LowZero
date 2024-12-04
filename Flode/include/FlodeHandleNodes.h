@@ -9,6 +9,8 @@
 
 #include "LowUtilHandle.h"
 
+#include "LowEditorIcons.h"
+
 namespace Flode {
   namespace HandleNodes {
     struct FLODE_API TypeIdNode : public Node
@@ -83,6 +85,32 @@ namespace Flode {
       Low::Util::String m_CachedName;
     };
 
+    struct FLODE_API DestroyNode : public Node
+    {
+      DestroyNode(u16 p_TypeId);
+
+      Low::Util::String get_name(NodeNameType p_Type) const override;
+      Low::Util::String
+      get_subtitle(NodeNameType p_Type) const override;
+
+      Low::Util::String get_icon() const override
+      {
+        return LOW_EDITOR_ICON_TRASH;
+      }
+
+      virtual ImU32 get_color() const override;
+
+      virtual void setup_default_pins() override;
+
+      virtual void
+      compile(Low::Util::StringBuilder &p_Builder) const override;
+
+    protected:
+      Low::Editor::TypeMetadata m_TypeMetadata;
+
+      Low::Util::String m_CachedName;
+    };
+
     struct FLODE_API FindByNameNode : public Node
     {
       FindByNameNode(u16 p_TypeId);
@@ -133,7 +161,7 @@ namespace Flode {
 
     protected:
       Low::Editor::TypeMetadata m_TypeMetadata;
-      Low::Editor::PropertyMetadata m_PropertyMetadata;
+      Low::Editor::PropertyMetadataBase m_PropertyMetadata;
 
       Low::Util::String m_CachedName;
     };
@@ -160,7 +188,7 @@ namespace Flode {
 
     protected:
       Low::Editor::TypeMetadata m_TypeMetadata;
-      Low::Editor::PropertyMetadata m_PropertyMetadata;
+      Low::Editor::PropertyMetadataBase m_PropertyMetadata;
 
       Low::Util::String m_CachedName;
     };

@@ -30,8 +30,10 @@
 #define LOW_NAVMESH_POLYFLAG_WALK 1
 
 // CONSTANTS
-#define LOW_NAVMESH_MAX_TRIMESH_AREAS 500
-#define LOW_NAVMESH_MAX_PATH_SIZE 500
+#define LOW_NAVMESH_MAX_TRIMESH_AREAS 700
+#define LOW_NAVMESH_MAX_PATH_SIZE 800
+#define LOW_NAVMESH_MAX_CHUNKS_ID 2048
+#define LOW_NAVMESH_MAX_TRIS_PER_CHUNK 1024
 
 namespace Low {
   namespace Core {
@@ -49,19 +51,26 @@ namespace Low {
 
         Util::List<float> g_VerticesList;
 
+#if 1
+        Math::Vector3 g_Origin(-1.0f, 0.0f, 3.0f);
+        Math::Vector3 g_HalfExtents(4.0f, 1.0f, 4.0f);
+#else
         Math::Vector3 g_Origin(0.0f, 1.0f, -7.0f);
         Math::Vector3 g_HalfExtents(4.0f, 1.0f, 4.0f);
+#endif
 
         namespace Debug {
-          static void draw_triangle(Math::Vector3 p_V0, Math::Vector3 p_V1,
+          static void draw_triangle(Math::Vector3 p_V0,
+                                    Math::Vector3 p_V1,
                                     Math::Vector3 p_V2)
           {
-            DebugGeometry::render_triangle(p_V0, p_V1, p_V2, Math::Vector4(),
-                                           true, false);
+            DebugGeometry::render_triangle(
+                p_V0, p_V1, p_V2, Math::Vector4(), true, false);
           }
 
-          static void draw_box(float p_MinX, float p_MinY, float p_MinZ,
-                               float p_MaxX, float p_MaxY, float p_MaxZ,
+          static void draw_box(float p_MinX, float p_MinY,
+                               float p_MinZ, float p_MaxX,
+                               float p_MaxY, float p_MaxZ,
                                Math::Color p_Color)
           {
             // Define vertices of the box
@@ -77,24 +86,25 @@ namespace Low {
             };
 
             // Define triangles using vertices
-            std::vector<std::vector<int>> l_Triangles = {// Front face
-                                                         {0, 1, 2},
-                                                         {0, 2, 3},
-                                                         // Back face
-                                                         {4, 5, 6},
-                                                         {4, 6, 7},
-                                                         // Left face
-                                                         {0, 4, 7},
-                                                         {0, 7, 3},
-                                                         // Right face
-                                                         {1, 5, 6},
-                                                         {1, 6, 2},
-                                                         // Top face
-                                                         {3, 2, 6},
-                                                         {3, 6, 7},
-                                                         // Bottom face
-                                                         {0, 1, 5},
-                                                         {0, 5, 4}};
+            std::vector<std::vector<int>> l_Triangles = {
+                // Front face
+                {0, 1, 2},
+                {0, 2, 3},
+                // Back face
+                {4, 5, 6},
+                {4, 6, 7},
+                // Left face
+                {0, 4, 7},
+                {0, 7, 3},
+                // Right face
+                {1, 5, 6},
+                {1, 6, 2},
+                // Top face
+                {3, 2, 6},
+                {3, 6, 7},
+                // Bottom face
+                {0, 1, 5},
+                {0, 5, 4}};
 
             // Draw each triangle
             for (const auto &i_Triangle : l_Triangles) {
@@ -110,10 +120,12 @@ namespace Low {
             Math::Sphere l_Sphere;
             l_Sphere.position = p_Point;
             l_Sphere.radius = 0.2f;
-            DebugGeometry::render_sphere(l_Sphere, p_Color, true, false);
+            DebugGeometry::render_sphere(l_Sphere, p_Color, true,
+                                         false);
           }
 
-          void draw_heightfield_walkable(const rcHeightfield &p_Heightfield)
+          void draw_heightfield_walkable(
+              const rcHeightfield &p_Heightfield)
           {
 
             const float *l_Origin = p_Heightfield.bmin;
@@ -130,16 +142,20 @@ namespace Low {
               for (int i_X = 0; i_X < l_Width; ++i_X) {
                 float i_FX = l_Origin[0] + i_X * l_CellSize;
                 float i_FZ = l_Origin[2] + i_Y * l_CellSize;
-                const rcSpan *i_Span = p_Heightfield.spans[i_X + i_Y * l_Width];
+                const rcSpan *i_Span =
+                    p_Heightfield.spans[i_X + i_Y * l_Width];
                 while (i_Span) {
                   if (i_Span->area == RC_WALKABLE_AREA)
-                    l_Color = Math::Color(64.0f / 255.0f, 128.0f / 255.0f,
-                                          160.0f / 255.0f, 255.0f / 255.0f);
+                    l_Color =
+                        Math::Color(64.0f / 255.0f, 128.0f / 255.0f,
+                                    160.0f / 255.0f, 255.0f / 255.0f);
                   else if (i_Span->area == RC_NULL_AREA)
-                    l_Color = Math::Color(64.0f / 255.0f, 64.0f / 255.0f,
-                                          64.0f / 255.0f, 255.0f / 255.0f);
+                    l_Color =
+                        Math::Color(64.0f / 255.0f, 64.0f / 255.0f,
+                                    64.0f / 255.0f, 255.0f / 255.0f);
 
-                  draw_box(i_FX, l_Origin[1] + i_Span->smin * l_CellHeight,
+                  draw_box(i_FX,
+                           l_Origin[1] + i_Span->smin * l_CellHeight,
                            i_FZ, i_FX + l_CellSize,
                            l_Origin[1] + i_Span->smax * l_CellHeight,
                            i_FZ + l_CellSize, l_Color);
@@ -149,10 +165,11 @@ namespace Low {
             }
           }
 
-          static void draw_navmesh_tile(const dtNavMesh &p_Navmesh,
-                                        const dtNavMeshQuery *p_NavQuery,
-                                        const dtMeshTile *p_Tile,
-                                        unsigned char p_Flags)
+          static void
+          draw_navmesh_tile(const dtNavMesh &p_Navmesh,
+                            const dtNavMeshQuery *p_NavQuery,
+                            const dtMeshTile *p_Tile,
+                            unsigned char p_Flags)
           {
             dtPolyRef l_Base = p_Navmesh.getPolyRefBase(p_Tile);
 
@@ -163,14 +180,17 @@ namespace Low {
             for (int i = 0; i < p_Tile->header->polyCount; ++i) {
               const dtPoly *i_Poly = &p_Tile->polys[i];
               if (i_Poly->getType() ==
-                  DT_POLYTYPE_OFFMESH_CONNECTION) // Skip off-mesh links.
+                  DT_POLYTYPE_OFFMESH_CONNECTION) // Skip off-mesh
+                                                  // links.
                 continue;
 
-              const dtPolyDetail *i_PolyDetail = &p_Tile->detailMeshes[i];
+              const dtPolyDetail *i_PolyDetail =
+                  &p_Tile->detailMeshes[i];
 
               for (int j = 0; j < i_PolyDetail->triCount; ++j) {
                 const unsigned char *i_Tri =
-                    &p_Tile->detailTris[(i_PolyDetail->triBase + j) * 4];
+                    &p_Tile->detailTris[(i_PolyDetail->triBase + j) *
+                                        4];
                 for (int k = 0; k < 3; ++k) {
                   if (i_Tri[k] < i_Poly->vertCount)
                     l_Vertices.push_back(
@@ -179,7 +199,8 @@ namespace Low {
                   else
                     l_Vertices.push_back(
                         *(Math::Vector3 *)&p_Tile
-                             ->detailVerts[(i_PolyDetail->vertBase + i_Tri[k] -
+                             ->detailVerts[(i_PolyDetail->vertBase +
+                                            i_Tri[k] -
                                             i_Poly->vertCount) *
                                            3]);
                 }
@@ -209,22 +230,26 @@ namespace Low {
             }
           }
 
-          void
-          draw_poly_mesh_detail(const struct rcPolyMeshDetail &p_PolyMeshDetail)
+          void draw_poly_mesh_detail(
+              const struct rcPolyMeshDetail &p_PolyMeshDetail)
           {
             for (int i = 0; i < p_PolyMeshDetail.nmeshes; ++i) {
-              const unsigned int *i_Meshes = &p_PolyMeshDetail.meshes[i * 4];
+              const unsigned int *i_Meshes =
+                  &p_PolyMeshDetail.meshes[i * 4];
               const unsigned int i_BVerts = i_Meshes[0];
               const unsigned int i_BTris = i_Meshes[2];
               const int i_NTris = (int)i_Meshes[3];
-              const float *i_Verts = &p_PolyMeshDetail.verts[i_BVerts * 3];
-              const unsigned char *i_Tris = &p_PolyMeshDetail.tris[i_BTris * 4];
+              const float *i_Verts =
+                  &p_PolyMeshDetail.verts[i_BVerts * 3];
+              const unsigned char *i_Tris =
+                  &p_PolyMeshDetail.tris[i_BTris * 4];
 
               for (int j = 0; j < i_NTris; ++j) {
                 draw_triangle(
                     *(Math::Vector3 *)&i_Verts[i_Tris[j * 4 + 0] * 3],
                     *(Math::Vector3 *)&i_Verts[i_Tris[j * 4 + 1] * 3],
-                    *(Math::Vector3 *)&i_Verts[i_Tris[j * 4 + 2] * 3]);
+                    *(Math::Vector3
+                          *)&i_Verts[i_Tris[j * 4 + 2] * 3]);
               }
             }
           }
@@ -239,7 +264,8 @@ namespace Low {
             Util::List<Math::Vector3> l_Vertices;
 
             for (int i = 0; i < p_PolyMesh.npolys; ++i) {
-              const unsigned short *i_Poly = &p_PolyMesh.polys[i * l_Nvp * 2];
+              const unsigned short *i_Poly =
+                  &p_PolyMesh.polys[i * l_Nvp * 2];
               const unsigned char i_Area = p_PolyMesh.areas[i];
 
               unsigned short i_Vi[3];
@@ -250,9 +276,11 @@ namespace Low {
                 i_Vi[1] = i_Poly[j - 1];
                 i_Vi[2] = i_Poly[j];
                 for (int k = 0; k < 3; ++k) {
-                  const unsigned short *i_V = &p_PolyMesh.verts[i_Vi[k] * 3];
+                  const unsigned short *i_V =
+                      &p_PolyMesh.verts[i_Vi[k] * 3];
                   const float i_X = l_Origin[0] + i_V[0] * l_CellSize;
-                  const float i_Y = l_Origin[1] + (i_V[1] + 1) * l_CellHeight;
+                  const float i_Y =
+                      l_Origin[1] + (i_V[1] + 1) * l_CellHeight;
                   const float i_Z = l_Origin[2] + i_V[2] * l_CellSize;
                   l_Vertices.push_back({i_X, i_Y, i_Z});
                 }
@@ -270,10 +298,34 @@ namespace Low {
               const float i_Y =
                   l_Origin[1] + (i_V[1] + 1) * l_CellHeight + 0.1f;
               const float i_Z = l_Origin[2] + i_V[2] * l_CellSize;
-              draw_point({i_X, i_Y, i_Z}, Math::Color(0.0f, 1.0f, 0.0f, 1.0f));
+              draw_point({i_X, i_Y, i_Z},
+                         Math::Color(0.0f, 1.0f, 0.0f, 1.0f));
             }
           }
         } // namespace Debug
+
+        int count_walkable_spans(const rcCompactHeightfield &chf)
+        {
+          int walkableSpanCount = 0;
+
+          // Loop through each cell in the heightfield grid
+          for (int z = 0; z < chf.height; ++z) {
+            for (int x = 0; x < chf.width; ++x) {
+              // Get the index of the first span in the cell
+              const int idx = x + z * chf.width;
+              for (int s = chf.cells[idx].index;
+                   s < chf.cells[idx].index + chf.cells[idx].count;
+                   ++s) {
+                // Check if the span is walkable
+                if (chf.areas[s] == RC_WALKABLE_AREA) {
+                  walkableSpanCount++;
+                }
+              }
+            }
+          }
+
+          return walkableSpanCount;
+        }
 
         static void gather_geometry(const Math::Vector3 &p_Origin,
                                     const Math::Vector3 &p_HalfExtent,
@@ -285,28 +337,30 @@ namespace Low {
           Math::Vector3 l_HalfExtent = p_HalfExtent;
 
           Util::List<Math::Vector3> l_Vertices;
-          Math::Quaternion l_Quat = Math::QuaternionUtil::get_identity();
+          Math::Quaternion l_Quat =
+              Math::QuaternionUtil::get_identity();
           // TODO: Cleanup
           uint32_t l_CollisionMask = 0; //(1u << 0u) | (1u << 8u);
           Core::Physics::get_overlapping_mesh_with_box(
-              l_PhysicsScene, l_HalfExtent, l_Origin, l_Quat, l_CollisionMask,
-              l_Vertices, 0);
+              l_PhysicsScene, l_HalfExtent, l_Origin, l_Quat,
+              l_CollisionMask, l_Vertices, 0);
 
           Util::List<Core::Physics::OverlapResult> l_OverlapResults;
 
-          Core::Physics::overlap_box(l_PhysicsScene, l_HalfExtent, l_Origin,
-                                     l_Quat, l_OverlapResults, l_CollisionMask,
-                                     0);
+          Core::Physics::overlap_box(
+              l_PhysicsScene, l_HalfExtent, l_Origin, l_Quat,
+              l_OverlapResults, l_CollisionMask, 0);
 
           Util::List<Math::Vector3> l_ShapeVertices;
 
           for (size_t i = 0; i < l_OverlapResults.size(); ++i) {
             void *i_UserData = l_OverlapResults[i].actor->userData;
 
-            Util::Handle i_Handle =
-                Util::find_handle_by_unique_id(*(Util::UniqueId *)i_UserData);
+            Util::Handle i_Handle = Util::find_handle_by_unique_id(
+                *(Util::UniqueId *)i_UserData);
 
-            if (i_Handle.get_type() != Component::Rigidbody::TYPE_ID) {
+            if (i_Handle.get_type() !=
+                Component::Rigidbody::TYPE_ID) {
               continue;
             }
 
@@ -317,15 +371,19 @@ namespace Low {
             }
 
             // Currently only box shapes are supported
-            if (i_Rigidbody.get_shape().type != Math::ShapeType::BOX) {
+            if (i_Rigidbody.get_shape().type !=
+                Math::ShapeType::BOX) {
               continue;
             }
 
             Entity i_Entity = i_Rigidbody.get_entity();
-            Component::Transform i_Transform = i_Entity.get_transform();
+            Component::Transform i_Transform =
+                i_Entity.get_transform();
 
-            Math::Vector3 i_Position = i_Transform.get_world_position();
-            Math::Quaternion i_Rotation = i_Transform.get_world_rotation();
+            Math::Vector3 i_Position =
+                i_Transform.get_world_position();
+            Math::Quaternion i_Rotation =
+                i_Transform.get_world_rotation();
             Math::Vector3 i_Scale = i_Transform.get_world_scale();
             Math::Vector3 i_HalfExtents =
                 i_Rigidbody.get_shape().box.halfExtents;
@@ -336,56 +394,75 @@ namespace Low {
 
             Math::Vector3 i_BottomXZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, -i_OffsetY, i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(i_OffsetX, -i_OffsetY, i_OffsetZ));
             Math::Vector3 i_BottomMinXZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(-i_OffsetX, -i_OffsetY, i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(-i_OffsetX, -i_OffsetY, i_OffsetZ));
             Math::Vector3 i_BottomXMinZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, -i_OffsetY, -i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(i_OffsetX, -i_OffsetY, -i_OffsetZ));
             Math::Vector3 i_BottomMinXMinZ =
-                i_Position + (i_Rotation * Math::Vector3(-i_OffsetX, -i_OffsetY,
-                                                         -i_OffsetZ));
+                i_Position +
+                (i_Rotation *
+                 Math::Vector3(-i_OffsetX, -i_OffsetY, -i_OffsetZ));
             Math::Vector3 i_TopXZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, i_OffsetY, i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(i_OffsetX, i_OffsetY, i_OffsetZ));
             Math::Vector3 i_TopMinXZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(-i_OffsetX, i_OffsetY, i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(-i_OffsetX, i_OffsetY, i_OffsetZ));
             Math::Vector3 i_TopXMinZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(i_OffsetX, i_OffsetY, -i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(i_OffsetX, i_OffsetY, -i_OffsetZ));
             Math::Vector3 i_TopMinXMinZ =
                 i_Position +
-                (i_Rotation * Math::Vector3(-i_OffsetX, i_OffsetY, -i_OffsetZ));
+                (i_Rotation *
+                 Math::Vector3(-i_OffsetX, i_OffsetY, -i_OffsetZ));
 
             {
               using namespace physx;
 
               PxBoxGeometry i_BoxGeometry;
               // Get the dimensions of the box
-              i_Rigidbody.get_rigid_dynamic().get_physx_shape()->getBoxGeometry(
-                  i_BoxGeometry);
+              i_Rigidbody.get_rigid_dynamic()
+                  .get_physx_shape()
+                  ->getBoxGeometry(i_BoxGeometry);
 
               PxVec3 i_Dimensions = i_BoxGeometry.halfExtents;
 
               // Calculate the corner vertices in local space
               PxVec3 i_CornersLocal[8] = {
-                  PxVec3(-i_Dimensions.x, -i_Dimensions.y, -i_Dimensions.z),
-                  PxVec3(i_Dimensions.x, -i_Dimensions.y, -i_Dimensions.z),
-                  PxVec3(i_Dimensions.x, i_Dimensions.y, -i_Dimensions.z),
-                  PxVec3(-i_Dimensions.x, i_Dimensions.y, -i_Dimensions.z),
-                  PxVec3(-i_Dimensions.x, -i_Dimensions.y, i_Dimensions.z),
-                  PxVec3(i_Dimensions.x, -i_Dimensions.y, i_Dimensions.z),
-                  PxVec3(i_Dimensions.x, i_Dimensions.y, i_Dimensions.z),
-                  PxVec3(-i_Dimensions.x, i_Dimensions.y, i_Dimensions.z)};
+                  PxVec3(-i_Dimensions.x, -i_Dimensions.y,
+                         -i_Dimensions.z),
+                  PxVec3(i_Dimensions.x, -i_Dimensions.y,
+                         -i_Dimensions.z),
+                  PxVec3(i_Dimensions.x, i_Dimensions.y,
+                         -i_Dimensions.z),
+                  PxVec3(-i_Dimensions.x, i_Dimensions.y,
+                         -i_Dimensions.z),
+                  PxVec3(-i_Dimensions.x, -i_Dimensions.y,
+                         i_Dimensions.z),
+                  PxVec3(i_Dimensions.x, -i_Dimensions.y,
+                         i_Dimensions.z),
+                  PxVec3(i_Dimensions.x, i_Dimensions.y,
+                         i_Dimensions.z),
+                  PxVec3(-i_Dimensions.x, i_Dimensions.y,
+                         i_Dimensions.z)};
 
               // Transform the local space vertices to global space
               PxTransform i_Transform =
-                  i_Rigidbody.get_rigid_dynamic().get_physx_transform();
+                  i_Rigidbody.get_rigid_dynamic()
+                      .get_physx_transform();
               PxVec3 i_CornersGlobal[8];
               for (int i = 0; i < 8; ++i) {
-                i_CornersGlobal[i] = i_Transform.transform(i_CornersLocal[i]);
+                i_CornersGlobal[i] =
+                    i_Transform.transform(i_CornersLocal[i]);
               }
 
 #if 1
@@ -412,16 +489,19 @@ namespace Low {
 
               // Create a list of triangles
               for (int i = 0; i < 12; ++i) {
-                PxVec3 i_Vertex0 = i_CornersGlobal[i_FaceIndices[i][0]];
-                PxVec3 i_Vertex1 = i_CornersGlobal[i_FaceIndices[i][1]];
-                PxVec3 i_Vertex2 = i_CornersGlobal[i_FaceIndices[i][2]];
+                PxVec3 i_Vertex0 =
+                    i_CornersGlobal[i_FaceIndices[i][0]];
+                PxVec3 i_Vertex1 =
+                    i_CornersGlobal[i_FaceIndices[i][1]];
+                PxVec3 i_Vertex2 =
+                    i_CornersGlobal[i_FaceIndices[i][2]];
 
-                l_ShapeVertices.push_back(
-                    Math::Vector3(i_Vertex0.x, i_Vertex0.y, i_Vertex0.z));
-                l_ShapeVertices.push_back(
-                    Math::Vector3(i_Vertex1.x, i_Vertex1.y, i_Vertex1.z));
-                l_ShapeVertices.push_back(
-                    Math::Vector3(i_Vertex2.x, i_Vertex2.y, i_Vertex2.z));
+                l_ShapeVertices.push_back(Math::Vector3(
+                    i_Vertex0.x, i_Vertex0.y, i_Vertex0.z));
+                l_ShapeVertices.push_back(Math::Vector3(
+                    i_Vertex1.x, i_Vertex1.y, i_Vertex1.z));
+                l_ShapeVertices.push_back(Math::Vector3(
+                    i_Vertex2.x, i_Vertex2.y, i_Vertex2.z));
               }
             }
           }
@@ -449,20 +529,25 @@ namespace Low {
           Util::List<float> l_Geometry;
           gather_geometry(g_Origin, g_HalfExtents, l_Geometry);
 
+          LOW_LOG_DEBUG << "Geometry: " << l_Geometry.size()
+                        << LOW_LOG_END;
+
           uint32_t l_TriangleIndex = 0;
           Util::List<int> l_Indices;
           for (uint32_t i = 0; i < l_Geometry.size(); i = i + 3) {
             l_Indices.push_back(l_TriangleIndex++);
           }
 
-          // Assuming you have a list of triangles in the form of vertices
-          // Create a bounding box for the geometry
-          float l_BoundingMin[3] = {g_Origin.x - (g_HalfExtents.x * 2.0f),
-                                    g_Origin.y - (g_HalfExtents.y * 2.0f),
-                                    g_Origin.z - (g_HalfExtents.z * 2.0f)};
-          float l_BoundingMax[3] = {g_Origin.x + (g_HalfExtents.x * 2.0f),
-                                    g_Origin.y + (g_HalfExtents.y * 2.0f),
-                                    g_Origin.z + (g_HalfExtents.z * 2.0f)};
+          // Assuming you have a list of triangles in the form of
+          // vertices Create a bounding box for the geometry
+          float l_BoundingMin[3] = {
+              g_Origin.x - (g_HalfExtents.x * 2.0f),
+              g_Origin.y - (g_HalfExtents.y * 2.0f),
+              g_Origin.z - (g_HalfExtents.z * 2.0f)};
+          float l_BoundingMax[3] = {
+              g_Origin.x + (g_HalfExtents.x * 2.0f),
+              g_Origin.y + (g_HalfExtents.y * 2.0f),
+              g_Origin.z + (g_HalfExtents.z * 2.0f)};
 
           g_RecastConfig.bmin[0] = l_BoundingMin[0];
           g_RecastConfig.bmin[1] = l_BoundingMin[1];
@@ -474,7 +559,7 @@ namespace Low {
 
           g_RecastConfig.maxEdgeLen =
               static_cast<int>(2.0f / g_RecastConfig.cs);
-          g_RecastConfig.maxEdgeLen = 20;
+          g_RecastConfig.maxEdgeLen = 40;
           g_RecastConfig.maxSimplificationError = 1;
 
           g_RecastConfig.minRegionArea = 1;
@@ -489,52 +574,62 @@ namespace Low {
 
           rcChunkyTriMesh *l_ChunkyMesh = new rcChunkyTriMesh;
           rcCreateChunkyTriMesh(l_Geometry.data(), l_Indices.data(),
-                                l_Indices.size() / 3, 512, l_ChunkyMesh);
+                                l_Indices.size() / 3,
+                                LOW_NAVMESH_MAX_TRIS_PER_CHUNK,
+                                l_ChunkyMesh);
 
           // Initialize a heightfield
           rcHeightfield *l_Heightfield = rcAllocHeightfield();
           LOW_ASSERT(rcCreateHeightfield(
-                         &g_RecastContext, *l_Heightfield, g_RecastConfig.width,
-                         g_RecastConfig.height, l_BoundingMin, l_BoundingMax,
+                         &g_RecastContext, *l_Heightfield,
+                         g_RecastConfig.width, g_RecastConfig.height,
+                         l_BoundingMin, l_BoundingMax,
                          g_RecastConfig.cs, g_RecastConfig.ch),
                      "Failed to create heightfield");
 
           unsigned char *l_Triareas =
               new unsigned char[LOW_NAVMESH_MAX_TRIMESH_AREAS];
 
-          // Find triangles which are walkable based on their slope and
-          // rasterize them. If your input data is multiple meshes, you can
-          // transform them here, calculate the are type for each of the
-          // meshes and rasterize them.
+          // Find triangles which are walkable based on their slope
+          // and rasterize them. If your input data is multiple
+          // meshes, you can transform them here, calculate the are
+          // type for each of the meshes and rasterize them.
           memset(l_Triareas, 0,
-                 LOW_NAVMESH_MAX_TRIMESH_AREAS * sizeof(unsigned char));
+                 LOW_NAVMESH_MAX_TRIMESH_AREAS *
+                     sizeof(unsigned char));
           float tbmin[2], tbmax[2];
           tbmin[0] = g_RecastConfig.bmin[0];
           tbmin[1] = g_RecastConfig.bmin[2];
           tbmax[0] = g_RecastConfig.bmax[0];
           tbmax[1] = g_RecastConfig.bmax[2];
-          int cid[1024]; // TODO: Make grow when returning too many items.
-          const int ncid =
-              rcGetChunksOverlappingRect(l_ChunkyMesh, tbmin, tbmax, cid, 1024);
+          int cid[LOW_NAVMESH_MAX_CHUNKS_ID]; // TODO: Make grow when
+                                              // returning too many
+                                              // items.
+          const int ncid = rcGetChunksOverlappingRect(
+              l_ChunkyMesh, tbmin, tbmax, cid,
+              LOW_NAVMESH_MAX_CHUNKS_ID);
 
           _LOW_ASSERT(ncid);
 
           for (int i = 0; i < ncid; ++i) {
-            const rcChunkyTriMeshNode &node = l_ChunkyMesh->nodes[cid[i]];
+            const rcChunkyTriMeshNode &node =
+                l_ChunkyMesh->nodes[cid[i]];
             const int *ctris = &l_ChunkyMesh->tris[node.i * 3];
             const int nctris = node.n;
 
-            rcMarkWalkableTriangles(&p_Ctx, g_RecastConfig.walkableSlopeAngle,
-                                    l_Geometry.data(), l_Geometry.size(), ctris,
-                                    nctris, l_Triareas);
+            rcMarkWalkableTriangles(
+                &p_Ctx, g_RecastConfig.walkableSlopeAngle,
+                l_Geometry.data(), l_Geometry.size(), ctris, nctris,
+                l_Triareas);
 
             _LOW_ASSERT(rcRasterizeTriangles(
-                &g_RecastContext, l_Geometry.data(), l_Geometry.size(), ctris,
-                l_Triareas, nctris, *l_Heightfield,
-                g_RecastConfig.walkableClimb));
+                &g_RecastContext, l_Geometry.data(),
+                l_Geometry.size(), ctris, l_Triareas, nctris,
+                *l_Heightfield, g_RecastConfig.walkableClimb));
           }
 
-          int l_SpanCount = rcGetHeightFieldSpanCount(&p_Ctx, *l_Heightfield);
+          int l_SpanCount =
+              rcGetHeightFieldSpanCount(&p_Ctx, *l_Heightfield);
 
           rcFilterLowHangingWalkableObstacles(
               &p_Ctx, g_RecastConfig.walkableClimb, *l_Heightfield);
@@ -545,21 +640,28 @@ namespace Low {
                      "Could not allocator compact heightfield");
 
           LOW_ASSERT(rcBuildCompactHeightfield(
-                         &g_RecastContext, g_RecastConfig.walkableHeight,
+                         &g_RecastContext,
+                         g_RecastConfig.walkableHeight,
                          g_RecastConfig.walkableClimb, *l_Heightfield,
                          *l_CompactHeightField),
                      "Could not build compact heightfield");
 
-          LOW_ASSERT(rcErodeWalkableArea(&g_RecastContext,
-                                         g_RecastConfig.walkableRadius,
-                                         *l_CompactHeightField),
-                     "Failed to erode walkable areas");
+          LOW_LOG_DEBUG << "Walkableareas: "
+                        << count_walkable_spans(*l_CompactHeightField)
+                        << LOW_LOG_END;
 
           LOW_ASSERT(
-              rcBuildDistanceField(&g_RecastContext, *l_CompactHeightField),
-              "Failed to build distance field");
+              rcErodeWalkableArea(&g_RecastContext,
+                                  g_RecastConfig.walkableRadius,
+                                  *l_CompactHeightField),
+              "Failed to erode walkable areas");
 
-          LOW_ASSERT(rcBuildRegions(&g_RecastContext, *l_CompactHeightField,
+          LOW_ASSERT(rcBuildDistanceField(&g_RecastContext,
+                                          *l_CompactHeightField),
+                     "Failed to build distance field");
+
+          LOW_ASSERT(rcBuildRegions(&g_RecastContext,
+                                    *l_CompactHeightField,
                                     g_RecastConfig.borderSize,
                                     g_RecastConfig.minRegionArea,
                                     g_RecastConfig.mergeRegionArea),
@@ -568,12 +670,14 @@ namespace Low {
           rcContourSet *l_ContourSet = rcAllocContourSet();
           _LOW_ASSERT(l_ContourSet);
 
-          LOW_ASSERT(rcBuildContours(&g_RecastContext, *l_CompactHeightField,
-                                     g_RecastConfig.maxSimplificationError,
-                                     g_RecastConfig.maxEdgeLen, *l_ContourSet),
+          LOW_ASSERT(rcBuildContours(
+                         &g_RecastContext, *l_CompactHeightField,
+                         g_RecastConfig.maxSimplificationError,
+                         g_RecastConfig.maxEdgeLen, *l_ContourSet),
                      "Failed to build recast contour set");
 
-          LOW_ASSERT(l_ContourSet->nconts, "Recast contourset is empty");
+          LOW_ASSERT(l_ContourSet->nconts,
+                     "Recast contourset is empty");
 
           rcPolyMesh *l_PolyMesh = rcAllocPolyMesh();
           _LOW_ASSERT(l_PolyMesh);
@@ -587,9 +691,11 @@ namespace Low {
           _LOW_ASSERT(l_DetailMesh);
 
           LOW_ASSERT(rcBuildPolyMeshDetail(
-                         &g_RecastContext, *l_PolyMesh, *l_CompactHeightField,
+                         &g_RecastContext, *l_PolyMesh,
+                         *l_CompactHeightField,
                          g_RecastConfig.detailSampleDist,
-                         g_RecastConfig.detailSampleMaxError, *l_DetailMesh),
+                         g_RecastConfig.detailSampleMaxError,
+                         *l_DetailMesh),
                      "Failed to build recast detail mesh");
 
           for (int i = 0; i < l_PolyMesh->npolys; ++i) {
@@ -631,26 +737,31 @@ namespace Low {
           unsigned char *l_NavData;
           int l_NavDataSize = 0;
 
-          LOW_ASSERT(dtCreateNavMeshData(&params, &l_NavData, &l_NavDataSize),
+          LOW_ASSERT(dtCreateNavMeshData(&params, &l_NavData,
+                                         &l_NavDataSize),
                      "Could not create navmesh data");
 
           g_NavMesh = dtAllocNavMesh();
 
           g_NavQuery = dtAllocNavMeshQuery();
-          LOW_ASSERT(dtStatusSucceed(g_NavQuery->init(g_NavMesh, 2048)),
-                     "Failed to initialize navmesh query");
+          LOW_ASSERT(
+              dtStatusSucceed(g_NavQuery->init(g_NavMesh, 2048)),
+              "Failed to initialize navmesh query");
 
-          g_NavMesh->init(l_NavData, l_NavDataSize, DT_TILE_FREE_DATA);
+          g_NavMesh->init(l_NavData, l_NavDataSize,
+                          DT_TILE_FREE_DATA);
           // MARK
         }
 
-        int add_agent(Math::Vector3 &p_Position, dtCrowdAgentParams *p_Params)
+        int add_agent(Math::Vector3 &p_Position,
+                      dtCrowdAgentParams *p_Params)
         {
           return g_Crowd->addAgent((float *)&p_Position, p_Params);
         }
 
-        void set_agent_target_position(Component::NavmeshAgent p_Agent,
-                                       Math::Vector3 &p_Position)
+        void
+        set_agent_target_position(Component::NavmeshAgent p_Agent,
+                                  Math::Vector3 &p_Position)
         {
 
           const dtQueryFilter *l_Filter = g_Crowd->getFilter(0);
@@ -662,36 +773,41 @@ namespace Low {
           dtPolyRef startPoly = 0;
           dtPolyRef endPoly = 0;
 
-          Math::Vector3 l_AgentWorldPos =
-              p_Agent.get_entity().get_transform().get_world_position();
+          Math::Vector3 l_AgentWorldPos = p_Agent.get_entity()
+                                              .get_transform()
+                                              .get_world_position();
 
           {
             dtStatus status = g_NavQuery->findNearestPoly(
-                (float *)&l_AgentWorldPos, l_HalfExtents, l_Filter, &startPoly,
-                (float *)&l_NearestStartPoint);
+                (float *)&l_AgentWorldPos, l_HalfExtents, l_Filter,
+                &startPoly, (float *)&l_NearestStartPoint);
 
-            LOW_ASSERT(dtStatusSucceed(status),
-                       "Failed finding nearest polygon to start position");
+            LOW_ASSERT(
+                dtStatusSucceed(status),
+                "Failed finding nearest polygon to start position");
           }
           {
             dtStatus status = g_NavQuery->findNearestPoly(
-                (float *)&p_Position, l_HalfExtents, l_Filter, &endPoly,
-                (float *)&l_NearestTargetPoint);
+                (float *)&p_Position, l_HalfExtents, l_Filter,
+                &endPoly, (float *)&l_NearestTargetPoint);
 
-            LOW_ASSERT(dtStatusSucceed(status),
-                       "Failed finding nearest polygon to target position");
+            LOW_ASSERT(
+                dtStatusSucceed(status),
+                "Failed finding nearest polygon to target position");
           }
 
           dtPolyRef path[LOW_NAVMESH_MAX_PATH_SIZE];
           int pathCount;
-          g_NavQuery->findPath(startPoly, endPoly, (float *)&l_AgentWorldPos,
-                               (float *)&l_NearestTargetPoint, l_Filter, path,
-                               &pathCount, LOW_NAVMESH_MAX_PATH_SIZE);
+          g_NavQuery->findPath(
+              startPoly, endPoly, (float *)&l_AgentWorldPos,
+              (float *)&l_NearestTargetPoint, l_Filter, path,
+              &pathCount, LOW_NAVMESH_MAX_PATH_SIZE);
 
           const dtCrowdAgent *l_Agent =
               g_Crowd->getAgent(p_Agent.get_agent_index());
 
-          g_Crowd->requestMoveTarget(p_Agent.get_agent_index(), endPoly,
+          g_Crowd->requestMoveTarget(p_Agent.get_agent_index(),
+                                     endPoly,
                                      (float *)&l_NearestTargetPoint);
         }
 
@@ -703,7 +819,7 @@ namespace Low {
 
 #if 1
           g_RecastConfig.cs = 0.3f;
-          g_RecastConfig.ch = 0.5f;
+          g_RecastConfig.ch = 0.2f;
 #else
           g_RecastConfig.cs = 1.0f;
           g_RecastConfig.ch = 1.0f;
@@ -713,17 +829,19 @@ namespace Low {
 
           g_RecastConfig.tileSize = 32;
 
-          // Other parameters you may want to customize based on your specific
-          // needs
+          // Other parameters you may want to customize based on your
+          // specific needs
           g_RecastConfig.detailSampleDist = 1.0f;
           g_RecastConfig.detailSampleMaxError = 0.1f;
 
-          // Set the height of the un-walkable areas (e.g., cliffs, walls)
-          g_RecastConfig.walkableHeight = static_cast<int>(
-              ceilf(3.0f / g_RecastConfig.ch)); // 3 meters in world units
+          // Set the height of the un-walkable areas (e.g., cliffs,
+          // walls)
+          g_RecastConfig.walkableHeight = static_cast<int>(ceilf(
+              3.0f / g_RecastConfig.ch)); // 3 meters in world units
           g_RecastConfig.walkableHeight = 3;
           g_RecastConfig.walkableClimb = static_cast<int>(
-              floorf(0.05f / g_RecastConfig.ch)); // 0.9 meters in world units
+              floorf(0.05f /
+                     g_RecastConfig.ch)); // 0.9 meters in world units
           g_RecastConfig.walkableClimb = 2;
 
           g_RecastContext.enableLog(true);
@@ -740,7 +858,6 @@ namespace Low {
 
         void tick(float p_Delta, Util::EngineState p_State)
         {
-          return;
           LOW_PROFILE_CPU("Core", "Navmesh Tick");
           SYSTEM_ON_START(start);
 
@@ -760,11 +877,12 @@ namespace Low {
           const dtQueryFilter *l_Filter = g_Crowd->getFilter(0);
           const float *l_HalfExtents = g_Crowd->getQueryHalfExtents();
 
-          for (uint32_t i = 0u; i < Component::NavmeshAgent::living_count();
-               ++i) {
+          for (uint32_t i = 0u;
+               i < Component::NavmeshAgent::living_count(); ++i) {
             Component::NavmeshAgent i_Agent = l_Agents[i];
             Entity i_Entity = i_Agent.get_entity();
-            Component::Transform i_Transform = i_Entity.get_transform();
+            Component::Transform i_Transform =
+                i_Entity.get_transform();
 
             // If agent has not been initialized
             if (i_Agent.get_agent_index() < 0) {
@@ -774,28 +892,31 @@ namespace Low {
               Math::Vector3 i_NearestNavmeshPoint;
 
               Math::Vector3 i_AgentWorldPos =
-                  i_Transform.get_world_position() + i_Agent.get_offset();
+                  i_Transform.get_world_position() +
+                  i_Agent.get_offset();
 
               {
                 dtStatus i_Status = g_NavQuery->findNearestPoly(
-                    (float *)&i_AgentWorldPos, l_HalfExtents, l_Filter,
-                    &i_ClosestPoly, (float *)&i_NearestNavmeshPoint);
+                    (float *)&i_AgentWorldPos, l_HalfExtents,
+                    l_Filter, &i_ClosestPoly,
+                    (float *)&i_NearestNavmeshPoint);
 
                 LOW_ASSERT(dtStatusSucceed(i_Status),
-                           "Failed finding nearest polygon to start position");
+                           "Failed finding nearest polygon to start "
+                           "position");
               }
 
               dtCrowdAgentParams i_Params;
               i_Params.radius = i_Agent.get_radius();
               i_Params.height = i_Agent.get_height();
               i_Params.maxAcceleration = 1.0f;
-              i_Params.maxSpeed = 2.0f;
+              i_Params.maxSpeed = i_Agent.get_speed();
               i_Params.collisionQueryRange = 0.1f;
               i_Params.pathOptimizationRange = 0.2f;
               i_Params.queryFilterType = 0;
 
-              int i_AgentIndex =
-                  System::Navmesh::add_agent(i_NearestNavmeshPoint, &i_Params);
+              int i_AgentIndex = System::Navmesh::add_agent(
+                  i_NearestNavmeshPoint, &i_Params);
 
               i_Agent.set_agent_index(i_AgentIndex);
             }
@@ -803,8 +924,10 @@ namespace Low {
             const dtCrowdAgent *i_NavAgent =
                 g_Crowd->getAgent(i_Agent.get_agent_index());
 
-            Math::Vector3 i_TargetPos = *(Math::Vector3 *)i_NavAgent->targetPos;
-            Math::Vector3 i_WorldPosition = *(Math::Vector3 *)i_NavAgent->npos;
+            Math::Vector3 i_TargetPos =
+                *(Math::Vector3 *)i_NavAgent->targetPos;
+            Math::Vector3 i_WorldPosition =
+                *(Math::Vector3 *)i_NavAgent->npos;
             i_WorldPosition -= i_Agent.get_offset();
             Math::Vector3 i_LocalPosition = i_WorldPosition;
 
@@ -815,6 +938,16 @@ namespace Low {
                   glm::inverse(i_Parent.get_world_matrix()) *
                   Math::Vector4(i_LocalPosition.x, i_LocalPosition.y,
                                 i_LocalPosition.z, 1.0f);
+            }
+
+            if (Low::Math::VectorUtil::distance_squared(
+                    i_LocalPosition, i_Transform.position()) > 0.0f) {
+              Low::Math::Quaternion i_Rotation =
+                  Low::Math::VectorUtil::from_direction(
+                      i_Transform.position() - i_LocalPosition,
+                      LOW_VECTOR3_UP * -1.0f);
+
+              // i_Transform.rotation(i_Rotation);
             }
 
             i_Transform.position(i_LocalPosition);

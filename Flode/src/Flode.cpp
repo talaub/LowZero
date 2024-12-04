@@ -437,8 +437,65 @@ namespace Flode {
     }
 
     {
+      Low::Util::Name l_NodeTypeName = LOW_NAME(
+          Low::Util::String(l_NodeNamePrefix + "Destroy").c_str());
+      Flode::register_node(
+          l_NodeTypeName, [p_TypeId]() -> Flode::Node * {
+            return new Flode::HandleNodes::DestroyNode(p_TypeId);
+          });
+
+      Flode::register_spawn_node(l_TypeInfo.name.c_str(), "Destroy",
+                                 l_NodeTypeName);
+    }
+
+    {
       for (auto it = l_TypeMetadata.properties.begin();
            it != l_TypeMetadata.properties.end(); ++it) {
+        if (!it->scriptingExpose) {
+          continue;
+        }
+
+        Low::Util::Name i_PropertyName = it->name;
+
+        {
+          Low::Util::Name i_NodeTypeName =
+              LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Get" +
+                                         i_PropertyName.c_str())
+                           .c_str());
+          Flode::register_node(
+              i_NodeTypeName,
+              [p_TypeId, i_PropertyName]() -> Flode::Node * {
+                return new Flode::HandleNodes::GetNode(
+                    p_TypeId, i_PropertyName);
+              });
+
+          Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                     Low::Util::String("Get ") +
+                                         i_PropertyName.c_str(),
+                                     i_NodeTypeName);
+        }
+        {
+          Low::Util::Name i_NodeTypeName =
+              LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Set" +
+                                         i_PropertyName.c_str())
+                           .c_str());
+          Flode::register_node(
+              i_NodeTypeName,
+              [p_TypeId, i_PropertyName]() -> Flode::Node * {
+                return new Flode::HandleNodes::SetNode(
+                    p_TypeId, i_PropertyName);
+              });
+
+          Flode::register_spawn_node(l_TypeInfo.name.c_str(),
+                                     Low::Util::String("Set ") +
+                                         i_PropertyName.c_str(),
+                                     i_NodeTypeName);
+        }
+      }
+    }
+    {
+      for (auto it = l_TypeMetadata.virtualProperties.begin();
+           it != l_TypeMetadata.virtualProperties.end(); ++it) {
         if (!it->scriptingExpose) {
           continue;
         }
@@ -1132,13 +1189,21 @@ namespace Flode {
                       p_PinId);
   }
 
-  Pin *Node::create_pin_from_property_info(
+  Pin *Node::create_pin_from_property_info_base(
       PinDirection p_Direction, Low::Util::String p_Title,
-      Low::Util::RTTI::PropertyInfo &p_PropertyInfo, u64 p_PinId)
+      Low::Util::RTTI::PropertyInfoBase &p_PropertyInfo, u64 p_PinId)
   {
     return create_pin_from_rtti(p_Direction, p_Title,
                                 p_PropertyInfo.type,
                                 p_PropertyInfo.handleType, p_PinId);
+  }
+
+  Pin *Node::create_pin_from_property_info(
+      PinDirection p_Direction, Low::Util::String p_Title,
+      Low::Util::RTTI::PropertyInfo &p_PropertyInfo, u64 p_PinId)
+  {
+    return create_pin_from_property_info_base(
+        p_Direction, p_Title, p_PropertyInfo, p_PinId);
   }
 
   Pin *Node::create_pin_from_variant(PinDirection p_Direction,
@@ -1593,19 +1658,34 @@ namespace Flode {
   Link *Graph::create_link_castable(NodeEd::PinId p_InputPin,
                                     NodeEd::PinId p_OutputPin)
   {
+    NodeEd::PinId l_InputPinId = p_InputPin;
+    NodeEd::PinId l_OutputPinId = p_OutputPin;
     Pin *l_InputPin = find_pin(p_InputPin);
     Pin *l_OutputPin = find_pin(p_OutputPin);
+
+    // In case the pins are for whatever reason switched we try to
+    // switch them back to avoid a crash
+    if (l_InputPin->direction == PinDirection::Output &&
+        l_OutputPin->direction == PinDirection::Input) {
+      Pin *l_Stored = l_InputPin;
+      l_InputPin = l_OutputPin;
+      l_OutputPin = l_Stored;
+
+      NodeEd::PinId l_StoredId = l_InputPinId;
+      l_InputPinId = l_OutputPinId;
+      l_OutputPinId = l_StoredId;
+    }
 
     _LOW_ASSERT(l_InputPin->direction == PinDirection::Input);
     _LOW_ASSERT(l_OutputPin->direction == PinDirection::Output);
 
     if (l_InputPin->type == PinType::Dynamic ||
         l_OutputPin->type == PinType::Dynamic) {
-      return create_link(p_InputPin, p_OutputPin);
+      return create_link(l_InputPinId, l_OutputPinId);
     }
 
     if (l_InputPin->type == l_OutputPin->type) {
-      return create_link(p_InputPin, p_OutputPin);
+      return create_link(l_InputPinId, l_OutputPinId);
     }
 
     LOW_ASSERT(can_cast(l_OutputPin->type, l_InputPin->type),
@@ -1616,9 +1696,9 @@ namespace Flode {
 
     Node *l_CastNode = create_node(l_CastTypeName);
 
-    create_link(p_InputPin, l_CastNode->pins[1]->id);
+    create_link(l_InputPinId, l_CastNode->pins[1]->id);
 
-    return create_link(l_CastNode->pins[0]->id, p_OutputPin);
+    return create_link(l_CastNode->pins[0]->id, l_OutputPinId);
   }
 
   Link *Graph::create_link(NodeEd::PinId p_InputPin,
@@ -2163,5 +2243,14 @@ namespace Flode {
     }
 
     return m_ContextHandle.get_type();
+  }
+
+  Low::Util::RTTI::TypeInfo &
+  Graph::get_context_handle_type_info() const
+  {
+    _LOW_ASSERT(has_context_handle());
+
+    return Low::Util::Handle::get_type_info(
+        m_ContextHandle.get_type());
   }
 } // namespace Flode

@@ -159,13 +159,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: components
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(components);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EntityData, components);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_components();
@@ -175,16 +176,24 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Entity l_Handle = p_Handle.get_id();
+          *((Util::Map<uint16_t, Util::Handle> *)p_Data) =
+              l_Handle.get_components();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: components
       }
       {
+        // Property: region
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(region);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EntityData, region);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Region::TYPE_ID;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_region();
@@ -196,16 +205,23 @@ namespace Low {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.set_region(*(Region *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Entity l_Handle = p_Handle.get_id();
+          *((Region *)p_Data) = l_Handle.get_region();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: region
       }
       {
+        // Property: unique_id
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(EntityData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
@@ -214,16 +230,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Entity l_Handle = p_Handle.get_id();
+          *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: unique_id
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(EntityData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -235,9 +258,16 @@ namespace Low {
           Entity l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Entity l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: make
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -258,8 +288,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       {
+        // Function: get_component
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_component);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UINT64;
@@ -273,8 +305,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_component
       }
       {
+        // Function: add_component
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(add_component);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -288,8 +322,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: add_component
       }
       {
+        // Function: remove_component
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(remove_component);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -303,8 +339,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: remove_component
       }
       {
+        // Function: has_component
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(has_component);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -318,16 +356,20 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: has_component
       }
       {
+        // Function: get_transform
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_transform);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_FunctionInfo.handleType =
             Low::Core::Component::Transform::TYPE_ID;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_transform
       }
       {
+        // Function: serialize
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(serialize);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -348,8 +390,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: serialize
       }
       {
+        // Function: serialize_hierarchy
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(serialize_hierarchy);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -370,8 +414,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: serialize_hierarchy
       }
       {
+        // Function: deserialize_hierarchy
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(deserialize_hierarchy);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
@@ -393,6 +439,7 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: deserialize_hierarchy
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

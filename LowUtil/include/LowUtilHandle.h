@@ -79,15 +79,23 @@ namespace Low {
 
       typedef Util::Handle *(*LivingInstancesGetter)();
 
-      struct LOW_EXPORT PropertyInfo
+      struct PropertyInfoBase
       {
         Util::Name name;
-        uint32_t dataOffset;
         uint32_t type;
         uint16_t handleType;
         bool editorProperty;
-        void const *(*get)(Handle);
+        void (*get)(Handle, void *);
         void (*set)(Handle, const void *);
+      };
+
+      struct VirtualPropertyInfo : public PropertyInfoBase
+      {};
+
+      struct PropertyInfo : public PropertyInfoBase
+      {
+        uint32_t dataOffset;
+        void const *(*get_return)(Handle);
 
         Variant get_variant(Handle);
       };
@@ -114,6 +122,7 @@ namespace Low {
         bool component;
         bool uiComponent;
         Map<Name, PropertyInfo> properties;
+        Map<Name, VirtualPropertyInfo> virtualProperties;
         Map<Name, FunctionInfo> functions;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
@@ -190,6 +199,8 @@ namespace Low {
       fill_variants(Util::Handle p_Handle,
                     Util::RTTI::PropertyInfo &p_PropertyInfo,
                     Util::Map<Util::Name, Util::Variant> &p_Variants);
+
+      const static u64 DEAD;
 
     protected:
       static void register_type_info(uint16_t p_TypeId,

@@ -135,13 +135,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: regions
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(regions);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, regions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_regions();
@@ -151,16 +152,24 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Scene l_Handle = p_Handle.get_id();
+          *((Low::Util::Set<Util::UniqueId> *)p_Data) =
+              l_Handle.get_regions();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: regions
       }
       {
+        // Property: loaded
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(loaded);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.is_loaded();
@@ -169,16 +178,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Scene l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_loaded();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: loaded
       }
       {
+        // Property: unique_id
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
@@ -187,16 +203,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Scene l_Handle = p_Handle.get_id();
+          *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: unique_id
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SceneData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -208,35 +231,49 @@ namespace Low {
           Scene l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Scene l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: load
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(load);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: load
       }
       {
+        // Function: unload
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(unload);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: unload
       }
       {
+        // Function: _load
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(_load);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: _load
       }
       {
+        // Function: get_loaded_scene
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_loaded_scene);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_FunctionInfo.handleType = Scene::TYPE_ID;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_loaded_scene
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

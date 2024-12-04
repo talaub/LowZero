@@ -144,13 +144,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: loaded
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(loaded);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, loaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.is_loaded();
@@ -162,9 +163,16 @@ namespace Low {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_loaded(*(bool *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_loaded();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: loaded
       }
       {
+        // Property: streaming_enabled
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(streaming_enabled);
         l_PropertyInfo.editorProperty = true;
@@ -172,7 +180,7 @@ namespace Low {
             offsetof(RegionData, streaming_enabled);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.is_streaming_enabled();
@@ -184,9 +192,16 @@ namespace Low {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_streaming_enabled(*(bool *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_streaming_enabled();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: streaming_enabled
       }
       {
+        // Property: streaming_position
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(streaming_position);
         l_PropertyInfo.editorProperty = true;
@@ -194,7 +209,7 @@ namespace Low {
             offsetof(RegionData, streaming_position);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_streaming_position();
@@ -206,9 +221,17 @@ namespace Low {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_streaming_position(*(Math::Vector3 *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((Math::Vector3 *)p_Data) =
+              l_Handle.get_streaming_position();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: streaming_position
       }
       {
+        // Property: streaming_radius
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(streaming_radius);
         l_PropertyInfo.editorProperty = true;
@@ -216,7 +239,7 @@ namespace Low {
             offsetof(RegionData, streaming_radius);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_streaming_radius();
@@ -228,31 +251,42 @@ namespace Low {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_streaming_radius(*(float *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((float *)p_Data) = l_Handle.get_streaming_radius();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: streaming_radius
       }
       {
+        // Property: entities
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(entities);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, entities);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: entities
       }
       {
+        // Property: scene
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(scene);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, scene);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Scene::TYPE_ID;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_scene();
@@ -264,16 +298,23 @@ namespace Low {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_scene(*(Scene *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((Scene *)p_Data) = l_Handle.get_scene();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: scene
       }
       {
+        // Property: unique_id
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(RegionData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
@@ -282,16 +323,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: unique_id
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(RegionData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Region l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -303,9 +351,16 @@ namespace Low {
           Region l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Region l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: serialize_entities
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(serialize_entities);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -319,8 +374,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: serialize_entities
       }
       {
+        // Function: add_entity
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(add_entity);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -334,8 +391,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: add_entity
       }
       {
+        // Function: remove_entity
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(remove_entity);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -349,20 +408,25 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: remove_entity
       }
       {
+        // Function: load_entities
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(load_entities);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: load_entities
       }
       {
+        // Function: unload_entities
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(unload_entities);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: unload_entities
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

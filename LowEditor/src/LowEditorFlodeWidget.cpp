@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "IconsLucide.h"
 
+#include "LowEditor.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorHandlePropertiesSection.h"
@@ -24,10 +25,18 @@ namespace Low {
     void FlodeWidget::render(float p_Delta)
     {
       ImGui::Begin(ICON_LC_WORKFLOW " Flode");
+      if (ImGui::IsWindowFocused()) {
+        set_focused_widget(this);
+      }
 
       m_Editor->render(p_Delta);
 
       ImGui::End();
+    }
+
+    bool FlodeWidget::handle_shortcuts(float p_Delta)
+    {
+      return true;
     }
   } // namespace Editor
 } // namespace Low

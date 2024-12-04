@@ -9,6 +9,7 @@ namespace Flode {
   namespace MathNodes {
 
     ImU32 g_MathColor = IM_COL32(65, 145, 146, 255);
+    ImU32 g_RandomColor = IM_COL32(200, 100, 100, 255);
 
     Low::Util::String AddNode::get_name(NodeNameType p_Type) const
     {
@@ -251,7 +252,6 @@ namespace Flode {
 
     void DivideNode::setup_default_pins()
     {
-      LOW_LOG_DEBUG << (int)m_PinType << LOW_LOG_END;
       create_pin(PinDirection::Input, "", m_PinType);
       create_pin(PinDirection::Input, "", m_PinType);
 
@@ -311,6 +311,32 @@ namespace Flode {
       return p_ConnectedPin->type == PinType::Number;
     }
 
+    ImU32 PercentChanceNode::get_color() const
+    {
+      return g_RandomColor;
+    }
+
+    void PercentChanceNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "Percent", PinType::Number);
+
+      create_pin(PinDirection::Output, "Success", PinType::Bool);
+    }
+
+    void PercentChanceNode::compile_output_pin(
+        Low::Util::StringBuilder &p_Builder,
+        NodeEd::PinId p_PinId) const
+    {
+      p_Builder.append("Low::Math::Util::random_percent((uint8_t)");
+      compile_input_pin(p_Builder, pins[0]->id);
+      p_Builder.append(")");
+    }
+
+    Node *percentchance_create_instance()
+    {
+      return new PercentChanceNode;
+    }
+
     void register_nodes()
     {
       {
@@ -332,6 +358,12 @@ namespace Flode {
         Low::Util::Name l_TypeName = N(FlodeMathDivide);
         register_node(l_TypeName, &divide_create_instance);
         register_spawn_node("Math", "Divide", l_TypeName);
+      }
+
+      {
+        Low::Util::Name l_TypeName = N(FlodeRandomPercentChance);
+        register_node(l_TypeName, &percentchance_create_instance);
+        register_spawn_node("Random", "Percent chance", l_TypeName);
       }
     }
   } // namespace MathNodes

@@ -6,6 +6,15 @@
 
 #include "LowUtilHandle.h"
 
+#define TYPE_MANAGER_EVENT(eventname)                                \
+  virtual void eventname(Util::Handle p_Handle,                      \
+                         TypeMetadata &p_Metadata)                   \
+  {                                                                  \
+  }                                                                  \
+  static void handle_##eventname##(Util::Handle p_Handle,            \
+                                   TypeMetadata & p_Metadata);       \
+  static void handle_##eventname##(Util::Handle p_Handle);
+
 namespace Low {
   namespace Editor {
     struct LOW_EDITOR_API TypeEditor
@@ -13,27 +22,14 @@ namespace Low {
       virtual void render(Util::Handle p_Handle,
                           TypeMetadata &p_Metadata);
 
-      virtual void after_add(Util::Handle p_Handle,
-                             TypeMetadata &p_Metadata)
-      {
-      }
-
-      virtual void before_delete(Util::Handle p_Handle,
-                                 TypeMetadata &p_Metadata)
-      {
-      }
-
       static void show(Util::Handle p_Handle);
       static void show(Util::Handle p_Handle,
                        TypeMetadata &p_Metadata);
 
-      static void handle_after_add(Util::Handle p_Handle,
-                                   TypeMetadata &p_Metadata);
-      static void handle_after_add(Util::Handle p_Handle);
-
-      static void handle_before_delete(Util::Handle p_Handle,
-                                       TypeMetadata &p_Metadata);
-      static void handle_before_delete(Util::Handle p_Handle);
+      TYPE_MANAGER_EVENT(after_add)
+      TYPE_MANAGER_EVENT(before_delete)
+      TYPE_MANAGER_EVENT(after_save)
+      TYPE_MANAGER_EVENT(before_save)
 
       static void register_for_type(u16 p_TypeId,
                                     TypeEditor *p_Editor);
@@ -49,3 +45,5 @@ namespace Low {
     };
   } // namespace Editor
 } // namespace Low
+
+#undef TYPE_MANAGER_EVENT

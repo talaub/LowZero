@@ -127,6 +127,9 @@ namespace Low {
         static void increase_budget();
         void set_unique_id(Low::Util::UniqueId p_Value);
         void update_component_from_prefab(uint16_t p_ComponentType);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+        // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

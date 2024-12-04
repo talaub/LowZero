@@ -94,6 +94,13 @@ namespace Low {
       operator Math::Quaternion() const;
       operator Handle() const;
       operator Name() const;
+
+      bool as_bool() const;
+      float as_float() const;
+      u32 as_u32() const;
+      u64 as_u64() const;
+      Math::Vector3 as_vector3() const;
+      Name as_name() const;
     };
   } // namespace Util
 } // namespace Low

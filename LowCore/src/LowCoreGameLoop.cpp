@@ -15,6 +15,7 @@
 #include "LowCoreMeshResource.h"
 #include "LowCoreTexture2D.h"
 #include "LowCoreFont.h"
+#include "LowCoreInput.h"
 
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
@@ -59,7 +60,6 @@ namespace Low {
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::View::tick(p_Delta, get_engine_state());
         UI::System::Display::tick(p_Delta, get_engine_state());
-        System::Light::tick(p_Delta, get_engine_state());
         System::Region::tick(p_Delta, get_engine_state());
         System::Camera::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
@@ -116,6 +116,7 @@ namespace Low {
           */
         }
 
+        System::Light::tick(p_Delta, get_engine_state());
         System::MeshRenderer::tick(p_Delta, get_engine_state());
         UI::System::Image::tick(p_Delta, get_engine_state());
         UI::System::Text::tick(p_Delta, get_engine_state());
@@ -131,6 +132,7 @@ namespace Low {
         }
         System::Transform::late_tick(p_Delta, get_engine_state());
 
+        Input::late_tick(p_Delta);
         Renderer::late_tick(p_Delta, get_engine_state());
         l_FirstRun = false;
       }
@@ -140,6 +142,37 @@ namespace Low {
 
         Util::String l_Path = "arial.ttf";
         Font l_Font = Font::make(l_Path);
+
+        {
+          UI::View l_View = UI::View::make(N(StartCombatView));
+          l_View.set_view_template(false);
+          l_View.load_elements();
+
+          l_View.pixel_position(Math::Vector2(-50.0f, -50.0f));
+          l_View.layer_offset(0);
+          l_View.scale_multiplier(1.0f);
+
+          {
+            UI::Element l_ResourceElement =
+                UI::Element::make(N(interactortext), l_View);
+            l_ResourceElement.set_click_passthrough(false);
+
+            UI::Component::Display l_Display =
+                UI::Component::Display::make(l_ResourceElement);
+
+            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
+            l_Display.rotation(0.0f);
+            l_Display.pixel_scale(Math::Vector2(100.0f, 30.0f));
+            l_Display.layer(3);
+
+            UI::Component::Text l_Text =
+                UI::Component::Text::make(l_ResourceElement);
+            l_Text.set_font(l_Font);
+            l_Text.set_text(Util::String("Press F to start combat"));
+            l_Text.set_color(Math::Color(1.0f, 0.2f, 0.2f, 1.0f));
+            l_Text.set_size(0.9f);
+          }
+        }
 
         {
           UI::View l_View = UI::View::make(N(EndTurnView));
@@ -201,6 +234,26 @@ namespace Low {
             l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
             l_Text.set_size(1.5f);
           }
+        }
+
+        {
+          UI::View l_View = UI::View::make(N(NotificationView));
+          l_View.set_view_template(false);
+          l_View.load_elements();
+
+          l_View.pixel_position(Math::Vector2(50.0f, 20.0f));
+          l_View.layer_offset(0);
+          l_View.scale_multiplier(1.0f);
+        }
+
+        {
+          UI::View l_View = UI::View::make(N(EnemyPlayedView));
+          l_View.set_view_template(false);
+          l_View.load_elements();
+
+          l_View.pixel_position(Math::Vector2(50.0f, 20.0f));
+          l_View.layer_offset(0);
+          l_View.scale_multiplier(1.0f);
         }
 
         {

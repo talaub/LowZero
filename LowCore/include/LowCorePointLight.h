@@ -120,6 +120,9 @@ namespace Low {
         static uint32_t create_instance();
         static void increase_budget();
         void set_unique_id(Low::Util::UniqueId p_Value);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+        // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

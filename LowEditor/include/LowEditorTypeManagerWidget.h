@@ -30,6 +30,8 @@ namespace Low {
       void select(Util::Handle p_Handle);
 
       char m_Search[128] = "";
+
+      bool handle_shortcuts(float p_Delta) override;
     };
   } // namespace Editor
 } // namespace Low

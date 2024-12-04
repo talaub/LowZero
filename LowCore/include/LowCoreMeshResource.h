@@ -143,6 +143,9 @@ namespace Low {
       void set_reference_count(uint32_t p_Value);
       void set_skeleton(Renderer::Skeleton p_Value);
       void _unload();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+      // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

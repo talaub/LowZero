@@ -133,6 +133,7 @@ namespace Low {
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: renderpass
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(renderpass);
           l_PropertyInfo.editorProperty = false;
@@ -141,7 +142,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.get_renderpass();
@@ -154,16 +155,24 @@ namespace Low {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.set_renderpass(*(Backend::Renderpass *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Renderpass l_Handle = p_Handle.get_id();
+            *((Backend::Renderpass *)p_Data) =
+                l_Handle.get_renderpass();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: renderpass
         }
         {
+          // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(RenderpassData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.get_name();
@@ -175,9 +184,16 @@ namespace Low {
             Renderpass l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Renderpass l_Handle = p_Handle.get_id();
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
         }
         {
+          // Function: make
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -199,28 +215,35 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: make
         }
         {
+          // Function: get_dimensions
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_dimensions);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_dimensions
         }
         {
+          // Function: begin
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(begin);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: begin
         }
         {
+          // Function: end
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(end);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: end
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

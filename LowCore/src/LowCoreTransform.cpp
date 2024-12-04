@@ -169,6 +169,7 @@ namespace Low {
         l_TypeInfo.component = true;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: position
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(position);
           l_PropertyInfo.editorProperty = true;
@@ -177,7 +178,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.position();
@@ -189,9 +190,16 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.position(*(Low::Math::Vector3 *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) = l_Handle.position();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: position
         }
         {
+          // Property: rotation
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(rotation);
           l_PropertyInfo.editorProperty = true;
@@ -200,7 +208,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.rotation();
@@ -212,9 +220,16 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.rotation(*(Low::Math::Quaternion *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Quaternion *)p_Data) = l_Handle.rotation();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: rotation
         }
         {
+          // Property: scale
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(scale);
           l_PropertyInfo.editorProperty = true;
@@ -222,7 +237,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.scale();
@@ -234,16 +249,23 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.scale(*(Low::Math::Vector3 *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) = l_Handle.scale();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: scale
         }
         {
+          // Property: parent
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(parent);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, parent);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_parent();
@@ -255,9 +277,16 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.set_parent(*(uint64_t *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((uint64_t *)p_Data) = l_Handle.get_parent();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: parent
         }
         {
+          // Property: parent_uid
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(parent_uid);
           l_PropertyInfo.editorProperty = false;
@@ -265,7 +294,7 @@ namespace Low {
               offsetof(TransformData, parent_uid);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_parent_uid();
@@ -274,9 +303,16 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((uint64_t *)p_Data) = l_Handle.get_parent_uid();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: parent_uid
         }
         {
+          // Property: children
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(children);
           l_PropertyInfo.editorProperty = false;
@@ -285,7 +321,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_children();
@@ -295,9 +331,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Util::List<uint64_t> *)p_Data) =
+                l_Handle.get_children();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: children
         }
         {
+          // Property: world_position
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_position);
           l_PropertyInfo.editorProperty = false;
@@ -306,7 +350,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_position();
@@ -316,9 +360,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) =
+                l_Handle.get_world_position();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: world_position
         }
         {
+          // Property: world_rotation
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_rotation);
           l_PropertyInfo.editorProperty = false;
@@ -327,7 +379,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_rotation();
@@ -337,9 +389,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Quaternion *)p_Data) =
+                l_Handle.get_world_rotation();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: world_rotation
         }
         {
+          // Property: world_scale
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_scale);
           l_PropertyInfo.editorProperty = false;
@@ -348,7 +408,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_scale();
@@ -357,9 +417,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) =
+                l_Handle.get_world_scale();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: world_scale
         }
         {
+          // Property: world_matrix
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_matrix);
           l_PropertyInfo.editorProperty = false;
@@ -368,7 +436,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_world_matrix();
@@ -378,9 +446,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Math::Matrix4x4 *)p_Data) =
+                l_Handle.get_world_matrix();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: world_matrix
         }
         {
+          // Property: world_updated
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_updated);
           l_PropertyInfo.editorProperty = false;
@@ -388,7 +464,7 @@ namespace Low {
               offsetof(TransformData, world_updated);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.is_world_updated();
@@ -400,16 +476,23 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.set_world_updated(*(bool *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_world_updated();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: world_updated
         }
         {
+          // Property: entity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
@@ -421,9 +504,16 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: entity
         }
         {
+          // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
@@ -431,7 +521,7 @@ namespace Low {
               offsetof(TransformData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
@@ -440,16 +530,24 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((Low::Util::UniqueId *)p_Data) =
+                l_Handle.get_unique_id();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: unique_id
         }
         {
+          // Property: dirty
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(dirty);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.is_dirty();
@@ -461,9 +559,16 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.set_dirty(*(bool *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_dirty();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: dirty
         }
         {
+          // Property: world_dirty
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(world_dirty);
           l_PropertyInfo.editorProperty = false;
@@ -471,7 +576,7 @@ namespace Low {
               offsetof(TransformData, world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.is_world_dirty();
@@ -483,14 +588,22 @@ namespace Low {
             Transform l_Handle = p_Handle.get_id();
             l_Handle.set_world_dirty(*(bool *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Transform l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_world_dirty();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: world_dirty
         }
         {
+          // Function: recalculate_world_transform
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(recalculate_world_transform);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: recalculate_world_transform
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

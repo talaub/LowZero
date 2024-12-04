@@ -334,14 +334,13 @@ namespace Low {
               Util::Handle::get_type_info(p_Handle.get_type());
 
           if (l_TypeInfo.component) {
-            Core::Entity l_Entity =
-                *(uint64_t *)l_TypeInfo.properties[N(entity)].get(
-                    p_Handle);
+            Core::Entity l_Entity;
+			l_TypeInfo.properties[N(entity)].get(
+				p_Handle, &l_Entity);
             l_Name = l_Entity.get_name();
           } else {
-            l_Name =
-                *(Util::Name *)l_TypeInfo.properties[N(name)].get(
-                    p_Handle);
+			l_TypeInfo.properties[N(name)].get(
+				p_Handle, &l_Name);
           }
 
           ImGui::Text(l_Name.c_str());

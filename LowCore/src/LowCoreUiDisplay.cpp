@@ -170,6 +170,7 @@ namespace Low {
           l_TypeInfo.component = false;
           l_TypeInfo.uiComponent = true;
           {
+            // Property: pixel_position
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(pixel_position);
             l_PropertyInfo.editorProperty = true;
@@ -178,7 +179,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.pixel_position();
@@ -191,10 +192,18 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.pixel_position(*(Low::Math::Vector2 *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Math::Vector2 *)p_Data) =
+                  l_Handle.pixel_position();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: pixel_position
           }
           {
+            // Property: rotation
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(rotation);
             l_PropertyInfo.editorProperty = true;
@@ -203,7 +212,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.rotation();
@@ -215,10 +224,17 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.rotation(*(float *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((float *)p_Data) = l_Handle.rotation();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: rotation
           }
           {
+            // Property: pixel_scale
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(pixel_scale);
             l_PropertyInfo.editorProperty = true;
@@ -227,7 +243,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.pixel_scale();
@@ -239,10 +255,18 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.pixel_scale(*(Low::Math::Vector2 *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Math::Vector2 *)p_Data) =
+                  l_Handle.pixel_scale();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: pixel_scale
           }
           {
+            // Property: layer
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(layer);
             l_PropertyInfo.editorProperty = true;
@@ -250,7 +274,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT32;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.layer();
@@ -262,10 +286,17 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.layer(*(uint32_t *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((uint32_t *)p_Data) = l_Handle.layer();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: layer
           }
           {
+            // Property: parent
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(parent);
             l_PropertyInfo.editorProperty = false;
@@ -273,7 +304,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_parent();
@@ -285,10 +316,17 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.set_parent(*(uint64_t *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((uint64_t *)p_Data) = l_Handle.get_parent();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: parent
           }
           {
+            // Property: parent_uid
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(parent_uid);
             l_PropertyInfo.editorProperty = false;
@@ -297,7 +335,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_parent_uid();
@@ -306,10 +344,17 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((uint64_t *)p_Data) = l_Handle.get_parent_uid();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: parent_uid
           }
           {
+            // Property: children
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(children);
             l_PropertyInfo.editorProperty = false;
@@ -318,7 +363,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_children();
@@ -328,10 +373,18 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Util::List<uint64_t> *)p_Data) =
+                  l_Handle.get_children();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: children
           }
           {
+            // Property: absolute_pixel_position
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(absolute_pixel_position);
             l_PropertyInfo.editorProperty = false;
@@ -340,7 +393,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_absolute_pixel_position();
@@ -350,10 +403,18 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Math::Vector2 *)p_Data) =
+                  l_Handle.get_absolute_pixel_position();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: absolute_pixel_position
           }
           {
+            // Property: absolute_rotation
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(absolute_rotation);
             l_PropertyInfo.editorProperty = false;
@@ -362,7 +423,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_absolute_rotation();
@@ -371,10 +432,17 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((float *)p_Data) = l_Handle.get_absolute_rotation();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: absolute_rotation
           }
           {
+            // Property: absolute_pixel_scale
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(absolute_pixel_scale);
             l_PropertyInfo.editorProperty = false;
@@ -383,7 +451,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_absolute_pixel_scale();
@@ -393,10 +461,18 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Math::Vector2 *)p_Data) =
+                  l_Handle.get_absolute_pixel_scale();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: absolute_pixel_scale
           }
           {
+            // Property: absolute_layer
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(absolute_layer);
             l_PropertyInfo.editorProperty = false;
@@ -405,7 +481,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT32;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_absolute_layer();
@@ -414,10 +490,17 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((uint32_t *)p_Data) = l_Handle.get_absolute_layer();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: absolute_layer
           }
           {
+            // Property: world_matrix
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(world_matrix);
             l_PropertyInfo.editorProperty = false;
@@ -426,7 +509,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_world_matrix();
@@ -436,10 +519,18 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Math::Matrix4x4 *)p_Data) =
+                  l_Handle.get_world_matrix();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: world_matrix
           }
           {
+            // Property: world_updated
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(world_updated);
             l_PropertyInfo.editorProperty = false;
@@ -447,7 +538,7 @@ namespace Low {
                 offsetof(DisplayData, world_updated);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.is_world_updated();
@@ -459,10 +550,17 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.set_world_updated(*(bool *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((bool *)p_Data) = l_Handle.is_world_updated();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: world_updated
           }
           {
+            // Property: element
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(element);
             l_PropertyInfo.editorProperty = false;
@@ -472,7 +570,7 @@ namespace Low {
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
                 Low::Core::UI::Element::TYPE_ID;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_element();
@@ -484,10 +582,18 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.set_element(*(Low::Core::UI::Element *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Core::UI::Element *)p_Data) =
+                  l_Handle.get_element();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: element
           }
           {
+            // Property: unique_id
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(unique_id);
             l_PropertyInfo.editorProperty = false;
@@ -496,7 +602,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.get_unique_id();
@@ -505,17 +611,25 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((Low::Util::UniqueId *)p_Data) =
+                  l_Handle.get_unique_id();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: unique_id
           }
           {
+            // Property: dirty
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(dirty);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset = offsetof(DisplayData, dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.is_dirty();
@@ -527,10 +641,17 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.set_dirty(*(bool *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((bool *)p_Data) = l_Handle.is_dirty();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: dirty
           }
           {
+            // Property: world_dirty
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(world_dirty);
             l_PropertyInfo.editorProperty = false;
@@ -538,7 +659,7 @@ namespace Low {
                 offsetof(DisplayData, world_dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               l_Handle.is_world_dirty();
@@ -550,18 +671,27 @@ namespace Low {
               Display l_Handle = p_Handle.get_id();
               l_Handle.set_world_dirty(*(bool *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Display l_Handle = p_Handle.get_id();
+              *((bool *)p_Data) = l_Handle.is_world_dirty();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: world_dirty
           }
           {
+            // Function: recalculate_world_transform
             Low::Util::RTTI::FunctionInfo l_FunctionInfo;
             l_FunctionInfo.name = N(recalculate_world_transform);
             l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
             l_FunctionInfo.handleType = 0;
             l_TypeInfo.functions[l_FunctionInfo.name] =
                 l_FunctionInfo;
+            // End function: recalculate_world_transform
           }
           {
+            // Function: get_absolute_layer_float
             Low::Util::RTTI::FunctionInfo l_FunctionInfo;
             l_FunctionInfo.name = N(get_absolute_layer_float);
             l_FunctionInfo.type =
@@ -569,8 +699,10 @@ namespace Low {
             l_FunctionInfo.handleType = 0;
             l_TypeInfo.functions[l_FunctionInfo.name] =
                 l_FunctionInfo;
+            // End function: get_absolute_layer_float
           }
           {
+            // Function: point_is_in_bounding_box
             Low::Util::RTTI::FunctionInfo l_FunctionInfo;
             l_FunctionInfo.name = N(point_is_in_bounding_box);
             l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -585,6 +717,7 @@ namespace Low {
             }
             l_TypeInfo.functions[l_FunctionInfo.name] =
                 l_FunctionInfo;
+            // End function: point_is_in_bounding_box
           }
           Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
         }

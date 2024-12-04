@@ -135,6 +135,7 @@ namespace Low {
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: pipeline
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(pipeline);
           l_PropertyInfo.editorProperty = false;
@@ -143,7 +144,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             GraphicsPipeline l_Handle = p_Handle.get_id();
             l_Handle.get_pipeline();
@@ -153,9 +154,16 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            GraphicsPipeline l_Handle = p_Handle.get_id();
+            *((Backend::Pipeline *)p_Data) = l_Handle.get_pipeline();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: pipeline
         }
         {
+          // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
@@ -163,7 +171,7 @@ namespace Low {
               offsetof(GraphicsPipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             GraphicsPipeline l_Handle = p_Handle.get_id();
             l_Handle.get_name();
@@ -175,9 +183,16 @@ namespace Low {
             GraphicsPipeline l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            GraphicsPipeline l_Handle = p_Handle.get_id();
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
         }
         {
+          // Function: make
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -199,13 +214,16 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: make
         }
         {
+          // Function: bind
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(bind);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: bind
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

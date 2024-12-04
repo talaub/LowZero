@@ -132,6 +132,7 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: tick_function_name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(tick_function_name);
         l_PropertyInfo.editorProperty = true;
@@ -139,7 +140,7 @@ namespace Low {
             offsetof(GameModeData, tick_function_name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
           l_Handle.get_tick_function_name();
@@ -151,16 +152,24 @@ namespace Low {
           GameMode l_Handle = p_Handle.get_id();
           l_Handle.set_tick_function_name(*(Util::String *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GameMode l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) =
+              l_Handle.get_tick_function_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: tick_function_name
       }
       {
+        // Property: unique_id
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(GameModeData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
@@ -169,16 +178,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GameMode l_Handle = p_Handle.get_id();
+          *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: unique_id
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(GameModeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GameMode l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -190,7 +206,13 @@ namespace Low {
           GameMode l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          GameMode l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

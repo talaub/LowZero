@@ -61,10 +61,15 @@ namespace Low {
       void LOW_EDITOR_API render_editor(
           Util::String p_Label, Util::Function<void()> p_Function);
 
-      void LOW_EDITOR_API render_string_editor(Util::String &p_Label,
+      bool LOW_EDITOR_API render_string_editor(Util::String &p_Label,
                                                Util::String &p_String,
                                                bool p_Multiline,
                                                bool p_RenderLabel);
+
+      void
+      render_editor(Util::String p_Label, Util::Handle p_Handle,
+                    Util::RTTI::PropertyInfoBase p_PropertyInfoBase,
+                    bool p_RenderLabel = true);
     } // namespace PropertyEditors
   }   // namespace Editor
 } // namespace Low

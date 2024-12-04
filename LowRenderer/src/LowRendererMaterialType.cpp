@@ -135,6 +135,7 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: gbuffer_pipeline
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(gbuffer_pipeline);
         l_PropertyInfo.editorProperty = false;
@@ -142,7 +143,7 @@ namespace Low {
             offsetof(MaterialTypeData, gbuffer_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_gbuffer_pipeline();
@@ -156,9 +157,17 @@ namespace Low {
           l_Handle.set_gbuffer_pipeline(
               *(GraphicsPipelineConfig *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((GraphicsPipelineConfig *)p_Data) =
+              l_Handle.get_gbuffer_pipeline();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: gbuffer_pipeline
       }
       {
+        // Property: depth_pipeline
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(depth_pipeline);
         l_PropertyInfo.editorProperty = false;
@@ -166,7 +175,7 @@ namespace Low {
             offsetof(MaterialTypeData, depth_pipeline);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_depth_pipeline();
@@ -180,9 +189,17 @@ namespace Low {
           l_Handle.set_depth_pipeline(
               *(GraphicsPipelineConfig *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((GraphicsPipelineConfig *)p_Data) =
+              l_Handle.get_depth_pipeline();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: depth_pipeline
       }
       {
+        // Property: internal
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(internal);
         l_PropertyInfo.editorProperty = false;
@@ -190,7 +207,7 @@ namespace Low {
             offsetof(MaterialTypeData, internal);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.is_internal();
@@ -202,9 +219,16 @@ namespace Low {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.set_internal(*(bool *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_internal();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: internal
       }
       {
+        // Property: properties
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(properties);
         l_PropertyInfo.editorProperty = false;
@@ -212,7 +236,7 @@ namespace Low {
             offsetof(MaterialTypeData, properties);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_properties();
@@ -226,16 +250,24 @@ namespace Low {
           l_Handle.set_properties(
               *(Util::List<MaterialTypeProperty> *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Util::List<MaterialTypeProperty> *)p_Data) =
+              l_Handle.get_properties();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: properties
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -247,7 +279,13 @@ namespace Low {
           MaterialType l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

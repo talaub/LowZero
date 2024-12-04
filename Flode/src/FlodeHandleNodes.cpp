@@ -156,11 +156,51 @@ namespace Flode {
       p_Builder.append(")");
     }
 
+    DestroyNode::DestroyNode(u16 p_TypeId)
+    {
+      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
+
+      m_CachedName = Low::Util::String("Destroy");
+    }
+
+    ImU32 DestroyNode::get_color() const
+    {
+      return g_HandleColor;
+    }
+
+    Low::Util::String DestroyNode::get_name(NodeNameType p_Type) const
+    {
+      return m_CachedName;
+    }
+
+    Low::Util::String
+    DestroyNode::get_subtitle(NodeNameType p_Type) const
+    {
+      return m_TypeMetadata.friendlyName;
+    }
+
+    void DestroyNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Output, "", PinType::Flow);
+
+      create_handle_pin(PinDirection::Input, "",
+                        m_TypeMetadata.typeId);
+    }
+
+    void
+    DestroyNode::compile(Low::Util::StringBuilder &p_Builder) const
+    {
+      compile_input_pin(p_Builder, pins[2]->id);
+      p_Builder.append(".destroy();");
+      graph->continue_compilation(p_Builder, pins[1]);
+    }
+
     GetNode::GetNode(u16 p_TypeId, Low::Util::Name p_PropertyName)
     {
       m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
       m_PropertyMetadata =
-          m_TypeMetadata.find_property_by_name(p_PropertyName);
+          m_TypeMetadata.find_property_base_by_name(p_PropertyName);
 
       m_CachedName =
           Low::Util::String("Get ") + m_PropertyMetadata.friendlyName;
@@ -186,8 +226,8 @@ namespace Flode {
       create_handle_pin(PinDirection::Input,
                         m_TypeMetadata.friendlyName,
                         m_TypeMetadata.typeId);
-      create_pin_from_property_info(PinDirection::Output, "",
-                                    m_PropertyMetadata.propInfo);
+      create_pin_from_property_info_base(
+          PinDirection::Output, "", m_PropertyMetadata.propInfoBase);
     }
 
     void
@@ -207,7 +247,7 @@ namespace Flode {
     {
       m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
       m_PropertyMetadata =
-          m_TypeMetadata.find_property_by_name(p_PropertyName);
+          m_TypeMetadata.find_property_base_by_name(p_PropertyName);
 
       m_CachedName =
           Low::Util::String("Set ") + m_PropertyMetadata.friendlyName;
@@ -236,14 +276,14 @@ namespace Flode {
       create_handle_pin(PinDirection::Input,
                         m_TypeMetadata.friendlyName,
                         m_TypeMetadata.typeId);
-      create_pin_from_property_info(PinDirection::Input,
-                                    m_PropertyMetadata.friendlyName,
-                                    m_PropertyMetadata.propInfo);
+      create_pin_from_property_info_base(
+          PinDirection::Input, m_PropertyMetadata.friendlyName,
+          m_PropertyMetadata.propInfoBase);
     }
 
     void SetNode::compile(Low::Util::StringBuilder &p_Builder) const
     {
-      Pin *l_InputPin = pins[0];
+      Pin *l_InputPin = pins[2];
 
       compile_input_pin(p_Builder, l_InputPin->id);
       p_Builder.append(".");

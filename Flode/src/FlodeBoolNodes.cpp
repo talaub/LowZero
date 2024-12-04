@@ -122,11 +122,19 @@ namespace Flode {
     {
       Pin *l_Pin = find_output_pin_checked(p_PinId);
 
-      p_Builder.append("(");
-      compile_input_pin(p_Builder, pins[0]->id);
-      p_Builder.append(" == ");
-      compile_input_pin(p_Builder, pins[1]->id);
-      p_Builder.append(")");
+      if (m_PinType == PinType::Handle) {
+        p_Builder.append("(");
+        compile_input_pin(p_Builder, pins[0]->id);
+        p_Builder.append(".get_id() == ");
+        compile_input_pin(p_Builder, pins[1]->id);
+        p_Builder.append(".get_id())");
+      } else {
+        p_Builder.append("(");
+        compile_input_pin(p_Builder, pins[0]->id);
+        p_Builder.append(" == ");
+        compile_input_pin(p_Builder, pins[1]->id);
+        p_Builder.append(")");
+      }
     }
 
     void EqualsNode::serialize(Low::Util::Yaml::Node &p_Node) const
@@ -156,6 +164,8 @@ namespace Flode {
         if (m_PinType != l_ConnectedPin->type) {
           m_PinType = l_ConnectedPin->type;
           m_PinTypeId = l_ConnectedPin->typeId;
+
+          LOW_LOG_DEBUG << m_PinTypeId << LOW_LOG_END;
 
           pins[0]->type = m_PinType;
           pins[0]->typeId = m_PinTypeId;

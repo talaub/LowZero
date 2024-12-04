@@ -263,5 +263,30 @@ namespace Low {
       LOW_ASSERT(false, "Unknown variant type on == comparison");
       return false;
     }
+
+    bool Variant::as_bool() const
+    {
+      return m_Bool;
+    }
+    float Variant::as_float() const
+    {
+      return m_Float;
+    }
+    u32 Variant::as_u32() const
+    {
+      return m_Uint32;
+    }
+    u64 Variant::as_u64() const
+    {
+      return m_Uint64;
+    }
+    Math::Vector3 Variant::as_vector3() const
+    {
+      return m_Vector3;
+    }
+    Name Variant::as_name() const
+    {
+      return (Name)m_Uint32;
+    }
   } // namespace Util
 } // namespace Low

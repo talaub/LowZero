@@ -1,7 +1,9 @@
 #include "LowMath.h"
 
+#include <cstdlib>
 #include <math.h>
 #include <cmath>
+#include <random>
 
 namespace Low {
   namespace Math {
@@ -62,6 +64,49 @@ namespace Low {
       {
         return std::atan2(p_Value0, p_Value1);
       }
+
+      float random()
+      {
+        static std::random_device
+            rd; // Seed for the random number generator
+        static std::mt19937 gen(rd()); // Mersenne Twister generator
+        static std::uniform_real_distribution<float> dist(
+            0.0f, 1.0f); // Distribution in [0, 1)
+
+        return dist(gen); // Generate a random number in [0.0, 1.0)
+      }
+
+      float random_range(float p_Min, float p_Max)
+      {
+        // Ensure min <= max to avoid logic errors
+        if (p_Min > p_Max) {
+          std::swap(p_Min, p_Max);
+        }
+
+        return p_Min + random() * (p_Max - p_Min);
+      }
+
+      float random_range_int(int p_Min, int p_Max)
+      {
+        // Ensure min <= max to avoid logic errors
+        if (p_Min > p_Max) {
+          std::swap(p_Min, p_Max);
+        }
+
+        return p_Min + static_cast<int>(
+                           floor(random() * (p_Max - p_Min + 1)));
+      }
+
+      bool random_percent(u8 p_Percent)
+      {
+        return random_percent(((float)p_Percent) / 100.0f);
+      }
+
+      bool random_percent(float p_Percent)
+      {
+        return random() <= p_Percent;
+      }
+
     } // namespace Util
   }   // namespace Math
 } // namespace Low

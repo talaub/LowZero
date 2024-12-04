@@ -123,6 +123,10 @@ namespace Flode {
         PinDirection p_Direction, Low::Util::String p_Title,
         Low::Util::RTTI::PropertyInfo &, u64 p_PinId = 0);
 
+    Pin *create_pin_from_property_info_base(
+        PinDirection p_Direction, Low::Util::String p_Title,
+        Low::Util::RTTI::PropertyInfoBase &, u64 p_PinId = 0);
+
     Pin *create_pin_from_rtti(PinDirection p_Direction,
                               Low::Util::String p_Title,
                               u32 p_PropertyType, u16 p_TypeId,
@@ -245,6 +249,7 @@ namespace Flode {
 
     bool has_context_handle() const;
     u16 get_context_handle_type_id() const;
+    Low::Util::RTTI::TypeInfo &get_context_handle_type_info() const;
 
     bool m_Internal;
 

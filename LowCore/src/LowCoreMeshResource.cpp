@@ -161,13 +161,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: path
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_path();
@@ -176,9 +177,16 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) = l_Handle.get_path();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: path
       }
       {
+        // Property: submeshes
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(submeshes);
         l_PropertyInfo.editorProperty = false;
@@ -186,7 +194,7 @@ namespace Low {
             offsetof(MeshResourceData, submeshes);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_submeshes();
@@ -195,9 +203,16 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Util::List<Submesh> *)p_Data) = l_Handle.get_submeshes();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: submeshes
       }
       {
+        // Property: reference_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(reference_count);
         l_PropertyInfo.editorProperty = false;
@@ -205,15 +220,19 @@ namespace Low {
             offsetof(MeshResourceData, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {};
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: reference_count
       }
       {
+        // Property: skeleton
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(skeleton);
         l_PropertyInfo.editorProperty = false;
@@ -221,7 +240,7 @@ namespace Low {
             offsetof(MeshResourceData, skeleton);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Skeleton::TYPE_ID;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_skeleton();
@@ -230,16 +249,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Renderer::Skeleton *)p_Data) = l_Handle.get_skeleton();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: skeleton
       }
       {
+        // Property: state
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_state();
@@ -251,16 +277,23 @@ namespace Low {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.set_state(*(ResourceState *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((ResourceState *)p_Data) = l_Handle.get_state();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: state
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshResourceData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -272,9 +305,16 @@ namespace Low {
           MeshResource l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: make
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -288,22 +328,28 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       {
+        // Function: is_loaded
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(is_loaded);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: is_loaded
       }
       {
+        // Function: load
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(load);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: load
       }
       {
+        // Function: _load
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(_load);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -317,27 +363,34 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: _load
       }
       {
+        // Function: unload
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(unload);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: unload
       }
       {
+        // Function: _unload
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(_unload);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: _unload
       }
       {
+        // Function: update
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(update);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
         l_FunctionInfo.handleType = 0;
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: update
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

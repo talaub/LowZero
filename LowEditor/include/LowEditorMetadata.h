@@ -6,11 +6,11 @@
 
 namespace Low {
   namespace Editor {
-    struct PropertyMetadata
+    struct PropertyMetadataBase
     {
       Util::Name name;
       bool editor;
-      Util::RTTI::PropertyInfo propInfo;
+      Util::RTTI::PropertyInfoBase propInfoBase;
       bool multiline;
       bool enumType;
       bool scriptingExpose;
@@ -19,6 +19,15 @@ namespace Low {
 
       Util::String getterName;
       Util::String setterName;
+    };
+    struct PropertyMetadata : public PropertyMetadataBase
+    {
+      Util::RTTI::PropertyInfo propInfo;
+    };
+
+    struct VirtualPropertyMetadata : public PropertyMetadataBase
+    {
+      Util::RTTI::VirtualPropertyInfo virtPropInfo;
     };
 
     struct ParameterMetadata
@@ -49,6 +58,7 @@ namespace Low {
       bool hasIcon;
       Util::Name iconName;
       Util::String icon;
+      Util::String managerWidgetPath;
     };
 
     struct TypeMetadata
@@ -61,6 +71,7 @@ namespace Low {
       uint16_t typeId;
       Util::RTTI::TypeInfo typeInfo;
       Util::List<PropertyMetadata> properties;
+      Util::List<VirtualPropertyMetadata> virtualProperties;
       TypeEditorMetadata editor;
       bool scriptingExpose;
       Util::List<FunctionMetadata> functions;
@@ -69,6 +80,8 @@ namespace Low {
       Util::String friendlyName;
 
       PropertyMetadata find_property_by_name(Util::Name p_Name) const;
+      PropertyMetadataBase
+      find_property_base_by_name(Util::Name p_Name) const;
     };
 
     struct EnumEntryMetadata

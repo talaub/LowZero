@@ -1,5 +1,7 @@
 #include "LowEditorMainWindow.h"
 
+#include <iostream>
+
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -73,17 +75,26 @@ namespace Low {
 
     bool g_GizmosDragged = false;
 
-    Util::List<EditorWidget> g_Widgets;
-
     Widget *g_FocusedWidget;
 
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
     FlodeWidget *g_FlodeWidget;
 
+    Low::Util::Map<Util::String, EditorWidget> g_Widgets;
+
+    struct MenuEntry
+    {
+      Low::Util::String title;
+      Low::Util::List<MenuEntry> submenus;
+      Low::Util::List<Util::String> widgets;
+    };
+
+    Low::Util::List<MenuEntry> g_MenuEntries;
+
     Helper::SphericalBillboardMaterials g_SphericalBillboardMaterials;
 
-    Util::List<EditorWidget> &get_editor_widgets()
+    Util::Map<Util::String, EditorWidget> &get_editor_widgets()
     {
       return g_Widgets;
     }
@@ -91,18 +102,101 @@ namespace Low {
     void close_editor_widget(Widget *p_Widget)
     {
       for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
-        if (it->widget == p_Widget) {
-          it->open = false;
+        if (it->second.widget == p_Widget) {
+          it->second.open = false;
         }
       }
 
       save_user_settings();
     }
 
-    void register_editor_widget(const char *p_Name, Widget *p_Widget,
-                                bool p_DefaultOpen)
+    static MenuEntry *
+    find_menu_entry(Util::List<Util::String> p_Parts,
+                    MenuEntry *p_MenuEntry, bool p_Create = false)
     {
-      g_Widgets.push_back({p_Widget, p_Name, p_DefaultOpen});
+      if (p_Parts.empty() && !p_MenuEntry) {
+        return nullptr;
+      }
+
+      if (p_Parts.empty() && p_MenuEntry) {
+        return p_MenuEntry;
+      }
+
+      Util::String l_Title = p_Parts.front();
+      p_Parts.erase(p_Parts.begin());
+
+      if (!p_MenuEntry) {
+        for (u32 i = 0; i < g_MenuEntries.size(); ++i) {
+          if (g_MenuEntries[i].title == l_Title) {
+            return find_menu_entry(p_Parts, &g_MenuEntries[i]);
+          }
+        }
+        MenuEntry l_MenuEntry;
+        l_MenuEntry.title = l_Title;
+        g_MenuEntries.push_back(l_MenuEntry);
+        return find_menu_entry(p_Parts, &g_MenuEntries.back());
+      }
+
+      for (u32 i = 0; i < p_MenuEntry->submenus.size(); ++i) {
+        if (p_MenuEntry->submenus[i].title == l_Title) {
+          return find_menu_entry(p_Parts, &p_MenuEntry->submenus[i]);
+        }
+      }
+
+      MenuEntry l_MenuEntry;
+      l_MenuEntry.title = l_Title;
+      p_MenuEntry->submenus.push_back(l_MenuEntry);
+      return find_menu_entry(p_Parts, &p_MenuEntry->submenus.back());
+    }
+
+    static MenuEntry *find_menu_entry(Util::String p_Path,
+                                      MenuEntry *p_MenuEntry,
+                                      bool p_Create = false)
+    {
+      Util::List<Util::String> l_Parts;
+      Util::StringHelper::split(p_Path, '/', l_Parts);
+
+      return find_menu_entry(l_Parts, p_MenuEntry, p_Create);
+    }
+
+    void register_editor_widget(Low::Util::String p_Path,
+                                Widget *p_Widget, bool p_DefaultOpen)
+    {
+      Util::List<Util::String> l_Parts;
+      Util::StringHelper::split(p_Path, '/', l_Parts);
+
+      EditorWidget l_Widget;
+      l_Widget.path = p_Path;
+      l_Widget.name = l_Parts.back().c_str();
+      l_Widget.open = p_DefaultOpen;
+      l_Widget.widget = p_Widget;
+
+      g_Widgets[p_Path] = l_Widget;
+
+      l_Parts.pop_back();
+
+      MenuEntry *l_MenuEntry =
+          find_menu_entry(l_Parts, nullptr, true);
+      if (l_MenuEntry) {
+        l_MenuEntry->widgets.push_back(l_Widget.path);
+        return;
+      }
+
+      bool l_Exists = false;
+      for (u32 i = 0; i < g_MenuEntries.size(); ++i) {
+        if (g_MenuEntries[i].title == "Widgets") {
+          l_Exists = true;
+          g_MenuEntries[i].widgets.push_back(l_Widget.path);
+          break;
+        }
+      }
+
+      if (!l_Exists) {
+        MenuEntry l_MenuEntry;
+        l_MenuEntry.title = "Widgets";
+        l_MenuEntry.widgets.push_back(l_Widget.path);
+        g_MenuEntries.push_back(l_MenuEntry);
+      }
     }
 
     static void schedule_save_scene(Core::Scene p_Scene)
@@ -171,6 +265,26 @@ namespace Low {
       });
     }
 
+    static void render_menu_entry(MenuEntry &p_MenuEntry)
+    {
+      if (ImGui::BeginMenu(p_MenuEntry.title.c_str())) {
+        for (auto it = p_MenuEntry.widgets.begin();
+             it != p_MenuEntry.widgets.end(); ++it) {
+          EditorWidget &i_Widget = g_Widgets[*it];
+          if (ImGui::MenuItem(i_Widget.name.c_str(), nullptr,
+                              i_Widget.open)) {
+            i_Widget.open = !i_Widget.open;
+            save_user_settings();
+          }
+        }
+        for (auto it = p_MenuEntry.submenus.begin();
+             it != p_MenuEntry.submenus.end(); ++it) {
+          render_menu_entry(*it);
+        }
+        ImGui::EndMenu();
+      }
+    }
+
     static void render_menu_bar(float p_Delta)
     {
       bool l_CreateScene = false;
@@ -187,14 +301,6 @@ namespace Low {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
-          for (auto it = g_Widgets.begin(); it != g_Widgets.end();
-               ++it) {
-            if (ImGui::MenuItem(it->name, nullptr, it->open)) {
-              it->open = !it->open;
-              save_user_settings();
-            }
-          }
-          ImGui::Separator();
           if (ImGui::BeginMenu("Themes")) {
             if (themes_render_menu()) {
               save_user_settings();
@@ -241,6 +347,11 @@ namespace Low {
           }
 
           ImGui::EndMenu();
+        }
+
+        for (auto it = g_MenuEntries.begin();
+             it != g_MenuEntries.end(); ++it) {
+          render_menu_entry(*it);
         }
 
         Util::String l_VersionString = "";
@@ -433,9 +544,12 @@ namespace Low {
 
       for (auto &it : get_type_metadata()) {
         if (it.second.editor.manager) {
+          Util::String i_Path = it.second.name.c_str();
+          if (!it.second.editor.managerWidgetPath.empty()) {
+            i_Path = it.second.editor.managerWidgetPath;
+          }
           register_editor_widget(
-              it.second.name.c_str(),
-              new TypeManagerWidget(it.second.typeId));
+              i_Path, new TypeManagerWidget(it.second.typeId));
         }
       }
     }
@@ -471,8 +585,8 @@ namespace Low {
       static bool l_DisplayVersion = true;
 
       for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
-        if (it->open) {
-          it->widget->show(p_Delta);
+        if (it->second.open) {
+          it->second.widget->show(p_Delta);
         }
       }
 
@@ -498,7 +612,7 @@ namespace Low {
       return g_FlodeWidget;
     }
 
-    void set_focused_widget(Widget *p_Widget)
+    void _set_focused_widget(Widget *p_Widget)
     {
       g_FocusedWidget = p_Widget;
     }
@@ -513,11 +627,11 @@ namespace Low {
       g_GizmosDragged = p_Dragged;
     }
 
-    void set_widget_open(Util::Name p_Name, bool p_Open)
+    void set_widget_open(Util::String p_Path, bool p_Open)
     {
       for (auto &it : g_Widgets) {
-        if (Util::Name(it.name) == p_Name) {
-          it.open = p_Open;
+        if (it.first == p_Path) {
+          it.second.open = p_Open;
         }
       }
     }

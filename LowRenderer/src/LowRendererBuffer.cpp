@@ -126,6 +126,7 @@ namespace Low {
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: buffer
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(buffer);
           l_PropertyInfo.editorProperty = false;
@@ -133,7 +134,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.get_buffer();
@@ -145,16 +146,23 @@ namespace Low {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.set_buffer(*(Backend::Buffer *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Buffer l_Handle = p_Handle.get_id();
+            *((Backend::Buffer *)p_Data) = l_Handle.get_buffer();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: buffer
         }
         {
+          // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(BufferData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.get_name();
@@ -166,9 +174,16 @@ namespace Low {
             Buffer l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Buffer l_Handle = p_Handle.get_id();
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
         }
         {
+          // Function: make
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -190,8 +205,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: make
         }
         {
+          // Function: set
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -205,8 +222,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set
         }
         {
+          // Function: write
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(write);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -236,8 +255,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: write
         }
         {
+          // Function: read
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(read);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -267,15 +288,19 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: read
         }
         {
+          // Function: bind_vertex
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(bind_vertex);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: bind_vertex
         }
         {
+          // Function: bind_index
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(bind_index);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -289,6 +314,7 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: bind_index
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

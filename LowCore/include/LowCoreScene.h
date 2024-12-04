@@ -120,6 +120,9 @@ namespace Low {
       void set_loaded(bool p_Value);
       void set_unique_id(Low::Util::UniqueId p_Value);
       void _load();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+      // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

@@ -18,6 +18,8 @@ namespace Low {
     List<uint16_t> g_ComponentTypes;
     Map<UniqueId, Handle> g_UniqueIdRegistry;
 
+    const u64 Handle::DEAD = 0ull;
+
     union UniqueIdCombination
     {
       UniqueId id;
@@ -75,7 +77,7 @@ namespace Low {
 
         l_HandleForName =
             *(Handle *)l_TypeInfo.properties[l_EntityPropertyName]
-                 .get(p_Handle);
+                 .get_return(p_Handle);
 
         l_TypeInfoForName =
             Handle::get_type_info(l_HandleForName.get_type());
@@ -89,7 +91,7 @@ namespace Low {
 
         l_HandleForName =
             *(Handle *)l_TypeInfo.properties[l_ElementPropertyName]
-                 .get(p_Handle);
+                 .get_return(p_Handle);
 
         l_TypeInfoForName =
             Handle::get_type_info(l_HandleForName.get_type());
@@ -101,7 +103,7 @@ namespace Low {
           "Could not find name property for unique id generation");
 
       l_Combinator.data.nameHash =
-          ((Name *)l_TypeInfoForName.properties[l_NameName].get(
+          ((Name *)l_TypeInfoForName.properties[l_NameName].get_return(
                l_HandleForName))
               ->m_Index;
       l_Combinator.data.type = p_Handle.get_type();
@@ -243,8 +245,9 @@ namespace Low {
         return;
       }
       if (p_PropertyInfo.type == Util::RTTI::PropertyType::SHAPE) {
-        Math::Shape l_Shape =
-            *(Math::Shape *)p_PropertyInfo.get(p_Handle);
+        Math::Shape l_Shape;
+        p_PropertyInfo.get(p_Handle, &l_Shape);
+
         Util::String l_BaseString = p_PropertyInfo.name.c_str();
         l_BaseString += "__";
 
@@ -282,7 +285,7 @@ namespace Low {
 
     Variant RTTI::PropertyInfo::get_variant(Handle p_Handle)
     {
-      void const *l_Ptr = get(p_Handle);
+      void const *l_Ptr = get_return(p_Handle);
 
       if (!l_Ptr) {
         return Variant(0);

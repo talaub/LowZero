@@ -13,6 +13,8 @@ namespace Low {
       FlodeWidget();
       void render(float p_Delta) override;
 
+      bool handle_shortcuts(float p_Delta) override;
+
       Flode::Editor *m_Editor;
     };
   } // namespace Editor

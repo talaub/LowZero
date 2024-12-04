@@ -29,8 +29,9 @@ namespace Low {
           p_TypeInfo.properties[N(name)];
 
       // Read name from handle and convert to string
-      Util::String l_NameString =
-          ((Util::Name *)l_NamePropertyInfo.get(p_Handle))->c_str();
+      Util::Name l_Name;
+      l_NamePropertyInfo.get(p_Handle, &l_Name);
+      Util::String l_NameString = l_Name.c_str();
 
       Util::String l_SavePath =
           Util::get_project().dataPath + "/assets/" + l_LowerCase +
@@ -42,6 +43,8 @@ namespace Low {
     static void save(const Util::Handle p_Handle,
                      Util::RTTI::TypeInfo &p_TypeInfo)
     {
+      TypeEditor::handle_before_save(p_Handle);
+
       // Contains the name of the type in lowercase
       Util::String l_SavePath = get_asset_path(p_Handle, p_TypeInfo);
 
@@ -49,7 +52,10 @@ namespace Low {
       p_TypeInfo.serialize(p_Handle, l_Node);
 
       Util::Yaml::write_file(l_SavePath.c_str(), l_Node);
+
       LOW_LOG_INFO << "Saved " << p_TypeInfo.name << LOW_LOG_END;
+
+      TypeEditor::handle_after_save(p_Handle);
     }
 
     static void delete_asset(const Util::Handle p_Handle,
@@ -116,8 +122,8 @@ namespace Low {
 
       for (u32 i = 0; i < m_TypeInfo.get_living_count(); ++i) {
         Util::Handle i_Handle = m_TypeInfo.get_living_instances()[i];
-        Util::Name i_Name =
-            *(Util::Name *)m_NamePropertyInfo.get(i_Handle);
+        Util::Name i_Name;
+        m_NamePropertyInfo.get(i_Handle, &i_Name);
 
         if (!l_SearchString.empty()) {
           Util::String i_LowName = i_Name.c_str();
@@ -176,6 +182,10 @@ namespace Low {
                                ImGuiCond_FirstUseEver);
       ImGui::Begin(m_TypeInfo.name.c_str(), &m_Open,
                    ImGuiWindowFlags_NoCollapse);
+
+      if (ImGui::IsWindowFocused()) {
+        set_focused_widget(this);
+      }
 
       Util::String l_CreateString = "Create ";
       l_CreateString += l_TypeName.c_str();
@@ -263,14 +273,33 @@ namespace Low {
           ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
 
       ImGui::Begin(m_ListWindowName.c_str(), nullptr, l_WindowFlags);
+      if (ImGui::IsWindowFocused()) {
+        set_focused_widget(this);
+      }
       render_list(p_Delta);
       ImGui::End();
 
       ImGui::Begin(m_InfoWindowName.c_str(), nullptr, l_WindowFlags);
+      if (ImGui::IsWindowFocused()) {
+        set_focused_widget(this);
+      }
       render_info(p_Delta);
       ImGui::End();
 
       ImGui::PopID();
+    }
+
+    bool TypeManagerWidget::handle_shortcuts(float p_Delta)
+    {
+      if (ImGui::GetIO().KeyCtrl) {
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S))) {
+          if (m_TypeInfo.is_alive(m_Selected)) {
+            save(m_Selected, m_TypeInfo);
+            return true;
+          }
+        }
+      }
+      return false;
     }
   } // namespace Editor
 } // namespace Low

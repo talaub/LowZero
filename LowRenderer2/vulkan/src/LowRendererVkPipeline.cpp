@@ -132,6 +132,7 @@ namespace Low {
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: pipeline
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(pipeline);
           l_PropertyInfo.editorProperty = false;
@@ -140,7 +141,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Pipeline l_Handle = p_Handle.get_id();
             l_Handle.get_pipeline();
@@ -152,9 +153,16 @@ namespace Low {
             Pipeline l_Handle = p_Handle.get_id();
             l_Handle.set_pipeline(*(VkPipeline *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Pipeline l_Handle = p_Handle.get_id();
+            *((VkPipeline *)p_Data) = l_Handle.get_pipeline();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: pipeline
         }
         {
+          // Property: layout
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(layout);
           l_PropertyInfo.editorProperty = false;
@@ -162,7 +170,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Pipeline l_Handle = p_Handle.get_id();
             l_Handle.get_layout();
@@ -174,16 +182,23 @@ namespace Low {
             Pipeline l_Handle = p_Handle.get_id();
             l_Handle.set_layout(*(VkPipelineLayout *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Pipeline l_Handle = p_Handle.get_id();
+            *((VkPipelineLayout *)p_Data) = l_Handle.get_layout();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: layout
         }
         {
+          // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(PipelineData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Pipeline l_Handle = p_Handle.get_id();
             l_Handle.get_name();
@@ -195,7 +210,13 @@ namespace Low {
             Pipeline l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Pipeline l_Handle = p_Handle.get_id();
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

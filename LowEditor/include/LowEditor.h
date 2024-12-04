@@ -34,6 +34,8 @@ namespace Low {
     void LOW_EDITOR_API tick(float p_Delta,
                              Util::EngineState p_State);
 
+    void LOW_EDITOR_API load_user_settings();
+
     void LOW_EDITOR_API set_user_setting(Util::Name p_Name,
                                          Util::Variant p_Variant);
     Util::Variant LOW_EDITOR_API get_user_setting(Util::Name p_Name);
@@ -50,7 +52,7 @@ namespace Low {
     void register_editor_job(Util::String p_Title,
                              std::function<void()> p_Func);
 
-    void LOW_EDITOR_API register_widget(const char *p_Name,
+    void LOW_EDITOR_API register_widget(Low::Util::String p_Path,
                                         Widget *p_Widget,
                                         bool p_DefaultOpen = false);
 

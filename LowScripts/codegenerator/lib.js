@@ -413,6 +413,72 @@ function process_file(p_Path, p_FileName, p_Project = false) {
       }
     }
 
+    if (i_Type.virtual_properties) {
+      for (let [i_VPropName, i_VProp] of Object.entries(
+        i_Type.virtual_properties,
+      )) {
+        if (i_VProp.enum) {
+          i_VProp.no_ref = true;
+        }
+
+        if (!i_VProp.getter_name) {
+          i_VProp.getter_name = `get_${i_VPropName}`;
+
+          if (["bool", "boolean"].includes(i_VProp.type)) {
+            i_VProp.getter_name = `is_${i_VPropName}`;
+          }
+        }
+
+        if (!i_VProp.setter_name) {
+          i_VProp.setter_name = `set_${i_VPropName}`;
+        }
+        i_VProp.accessor_type = get_accessor_type(i_VProp.type, i_VProp.handle);
+        i_VProp.name = i_VPropName;
+
+        i_VProp.plain_type = get_plain_type(i_VProp.type);
+        i_VProp.soa_type = i_VProp.plain_type;
+        i_VProp.cs_type = get_cs_type(i_VProp);
+        i_VProp.cs_name = get_cs_field_name(i_VProp.name);
+        if (i_VProp.soa_type.includes(",")) {
+          i_VProp.soa_type = `SINGLE_ARG(${i_VProp.soa_type})`;
+        }
+        i_VProp.accessor_type = get_accessor_type(i_VProp.type, i_VProp.handle);
+        if (i_VProp.no_ref) {
+          i_VProp.accessor_type = i_VProp.plain_type;
+        }
+
+        if (!i_Type.functions) {
+          i_Type.functions = {};
+        }
+
+        i_Type.functions[i_VProp.getter_name] = {
+          name: i_VProp.getter_name,
+          return_type: i_VProp.plain_type,
+          return_handle: i_VProp.handle,
+          accessor_type: i_VProp.accessor_type,
+          expose_scripting: i_VProp.expose_scripting,
+          hide_flode: i_VProp.hide_flode,
+        };
+
+        i_Type.functions[i_VProp.setter_name] = {
+          name: i_VProp.setter_name,
+          return_type: "void",
+          return_handle: false,
+          accessor_type: "void",
+          expose_scripting: i_VProp.expose_scripting,
+          hide_flode: i_VProp.hide_flode,
+          parameters: [
+            {
+              name: "p_Value",
+              type: i_VProp.plain_type,
+              handle: i_VProp.handle,
+              accessor_type: i_VProp.accessor_type,
+            },
+          ],
+        };
+      }
+    }
+
     if (!i_Type.source_path && l_Config.source_path) {
       i_Type.source_path = l_Config.source_path;
     }
@@ -446,6 +512,15 @@ function process_file(p_Path, p_FileName, p_Project = false) {
 }
 
 function get_plain_type(p_Type) {
+  if (p_Type == "u32") {
+    return "uint32_t";
+  } else if (p_Type == "u64") {
+    return "uint64_t";
+  } else if (p_Type == "u16") {
+    return "uint16_t";
+  } else if (p_Type == "u8") {
+    return "uint8_t";
+  }
   return p_Type;
 }
 

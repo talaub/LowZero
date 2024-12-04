@@ -148,6 +148,7 @@ namespace Low {
         l_TypeInfo.component = true;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: prefab
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(prefab);
           l_PropertyInfo.editorProperty = false;
@@ -155,7 +156,7 @@ namespace Low {
               offsetof(PrefabInstanceData, prefab);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Prefab::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_prefab();
@@ -167,9 +168,16 @@ namespace Low {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.set_prefab(*(Prefab *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PrefabInstance l_Handle = p_Handle.get_id();
+            *((Prefab *)p_Data) = l_Handle.get_prefab();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: prefab
         }
         {
+          // Property: overrides
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(overrides);
           l_PropertyInfo.editorProperty = false;
@@ -178,7 +186,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_overrides();
@@ -193,9 +201,17 @@ namespace Low {
             l_Handle.set_overrides(*(
                 Util::Map<uint16_t, Util::List<Util::Name>> *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PrefabInstance l_Handle = p_Handle.get_id();
+            *((Util::Map<uint16_t, Util::List<Util::Name>> *)p_Data) =
+                l_Handle.get_overrides();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: overrides
         }
         {
+          // Property: entity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
@@ -203,7 +219,7 @@ namespace Low {
               offsetof(PrefabInstanceData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
@@ -215,9 +231,16 @@ namespace Low {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PrefabInstance l_Handle = p_Handle.get_id();
+            *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: entity
         }
         {
+          // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
@@ -225,7 +248,7 @@ namespace Low {
               offsetof(PrefabInstanceData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
@@ -235,9 +258,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PrefabInstance l_Handle = p_Handle.get_id();
+            *((Low::Util::UniqueId *)p_Data) =
+                l_Handle.get_unique_id();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: unique_id
         }
         {
+          // Function: update_component_from_prefab
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(update_component_from_prefab);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -251,15 +282,19 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: update_component_from_prefab
         }
         {
+          // Function: update_from_prefab
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(update_from_prefab);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: update_from_prefab
         }
         {
+          // Function: override
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(override);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -289,6 +324,7 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: override
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

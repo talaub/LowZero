@@ -27,6 +27,7 @@
 #include "FlodeCastNodes.h"
 #include "FlodeHandleNodes.h"
 #include "FlodeBoolNodes.h"
+#include "FlodeOperatorNodes.h"
 
 namespace Low {
   namespace Editor {
@@ -198,7 +199,7 @@ namespace Low {
       return g_SelectedHandle;
     }
 
-    static inline void load_user_settings()
+    void load_user_settings()
     {
       Util::String l_Path =
           Util::get_project().rootPath + "/user.yaml";
@@ -223,9 +224,11 @@ namespace Low {
 
       if (l_Root["widgets"]) {
         for (uint32_t i = 0; i < l_Root["widgets"].size(); ++i) {
-          set_widget_open(
-              LOW_YAML_AS_NAME(l_Root["widgets"][i]["name"]),
-              l_Root["widgets"][i]["open"].as<bool>());
+          if (l_Root["widgets"][i]["path"]) {
+            set_widget_open(
+                LOW_YAML_AS_STRING(l_Root["widgets"][i]["path"]),
+                l_Root["widgets"][i]["open"].as<bool>());
+          }
         }
       }
 
@@ -279,6 +282,11 @@ namespace Low {
         p_Metadata.iconName = LOW_YAML_AS_NAME(p_Node["icon"]);
         p_Metadata.icon = get_icon_by_name(p_Metadata.iconName);
       }
+      p_Metadata.managerWidgetPath = "";
+      if (p_Node["manager_widget_path"]) {
+        p_Metadata.managerWidgetPath =
+            LOW_YAML_AS_STRING(p_Node["manager_widget_path"]);
+      }
     }
 
     static void parse_property_metadata(PropertyMetadata &p_Metadata,
@@ -317,6 +325,7 @@ namespace Low {
       }
 
       const char *l_PropertiesName = "properties";
+      const char *l_VirtualPropertiesName = "virtual_properties";
 
       if (p_Node[l_PropertiesName]) {
         if (!p_Node["component"]) {
@@ -332,6 +341,7 @@ namespace Low {
           }
           l_Metadata.propInfo =
               p_Metadata.typeInfo.properties[l_Metadata.name];
+          l_Metadata.propInfoBase = l_Metadata.propInfo;
 
           p_Metadata.properties.push_back(l_Metadata);
         }
@@ -378,7 +388,61 @@ namespace Low {
                 LOW_YAML_AS_STRING(it->second["setter_name"]);
           }
 
+          i_Metadata.propInfoBase = i_Metadata.propInfo;
+
           p_Metadata.properties.push_back(i_Metadata);
+        }
+      }
+
+      if (p_Node[l_VirtualPropertiesName]) {
+        for (auto it = p_Node[l_VirtualPropertiesName].begin();
+             it != p_Node[l_VirtualPropertiesName].end(); ++it) {
+          VirtualPropertyMetadata i_Metadata;
+          i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+          i_Metadata.friendlyName = prettify_name(i_Metadata.name);
+          i_Metadata.editor = false;
+          if (it->second["editor_editable"]) {
+            i_Metadata.editor =
+                it->second["editor_editable"].as<bool>();
+          }
+          i_Metadata.scriptingExpose = false;
+          if (it->second["expose_scripting"]) {
+            i_Metadata.scriptingExpose =
+                it->second["expose_scripting"].as<bool>();
+          }
+          i_Metadata.enumType = false;
+          if (it->second["enum"]) {
+            i_Metadata.enumType = it->second["enum"].as<bool>();
+          }
+          i_Metadata.virtPropInfo =
+              p_Metadata.typeInfo.virtualProperties[i_Metadata.name];
+
+          {
+            i_Metadata.multiline = false;
+          }
+          /*
+          if (it->second["metadata"]) {
+            parse_property_metadata(i_Metadata,
+                                    it->second["metadata"]);
+          }
+          */
+
+          i_Metadata.getterName = "get_";
+          i_Metadata.getterName += i_Metadata.name.c_str();
+          if (it->second["getter_name"]) {
+            i_Metadata.getterName =
+                LOW_YAML_AS_STRING(it->second["getter_name"]);
+          }
+          i_Metadata.setterName = "set_";
+          i_Metadata.setterName += i_Metadata.name.c_str();
+          if (it->second["setter_name"]) {
+            i_Metadata.setterName =
+                LOW_YAML_AS_STRING(it->second["setter_name"]);
+          }
+
+          i_Metadata.propInfoBase = i_Metadata.virtPropInfo;
+
+          p_Metadata.virtualProperties.push_back(i_Metadata);
         }
       }
       {
@@ -642,11 +706,10 @@ namespace Low {
         Flode::DebugNodes::register_nodes();
         Flode::CastNodes::register_nodes();
         Flode::BoolNodes::register_nodes();
+        Flode::OperatorNodes::register_nodes();
 
         register_type_nodes();
       }
-
-      load_user_settings();
     }
 
     void tick(float p_Delta, Util::EngineState p_State)
@@ -749,10 +812,10 @@ namespace Low {
              g_EditorJobQueue.front().submitted;
     }
 
-    void register_widget(const char *p_Name, Widget *p_Widget,
+    void register_widget(Low::Util::String p_Path, Widget *p_Widget,
                          bool p_DefaultOpen)
     {
-      register_editor_widget(p_Name, p_Widget, p_DefaultOpen);
+      register_editor_widget(p_Path, p_Widget, p_DefaultOpen);
     }
 
     Util::String get_active_editor_job_name()
@@ -793,12 +856,13 @@ namespace Low {
       l_Config["loaded_scene"] =
           Core::Scene::get_loaded_scene().get_name().c_str();
 
-      Util::List<EditorWidget> &l_Widgets = get_editor_widgets();
+      Util::Map<Util::String, EditorWidget> &l_Widgets =
+          get_editor_widgets();
 
       for (auto it = l_Widgets.begin(); it != l_Widgets.end(); ++it) {
         Util::Yaml::Node i_Widget;
-        i_Widget["name"] = it->name;
-        i_Widget["open"] = it->open;
+        i_Widget["path"] = it->first.c_str();
+        i_Widget["open"] = it->second.open;
 
         l_Config["widgets"].push_back(i_Widget);
       }
@@ -819,6 +883,11 @@ namespace Low {
       Util::String l_Path =
           Util::get_project().rootPath + "/user.yaml";
       Util::Yaml::write_file(l_Path.c_str(), l_Config);
+    }
+
+    void set_focused_widget(Widget *p_Widget)
+    {
+      _set_focused_widget(p_Widget);
     }
 
     namespace History {

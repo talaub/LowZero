@@ -150,7 +150,11 @@ namespace Low {
         g_LogStream.m_Entry = LogEntry();
 
         g_LogStream.m_Entry.terminate = p_Terminate;
-        g_LogStream.m_Entry.level = p_LogLevel;
+        if (p_LogLevel == LogLevel::ERR) {
+          g_LogStream.m_Entry.level = LogLevel::ERROR;
+        } else {
+          g_LogStream.m_Entry.level = p_LogLevel;
+        }
         g_LogStream.m_Entry.module = p_Module;
         time(&g_LogStream.m_Entry.time);
 

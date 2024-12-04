@@ -68,6 +68,12 @@ namespace Flode {
               i_Param.typeId, i_Param.pinId.Get());
 
           i_Param.pinId = i_Pin->id;
+        } else if (i_Param.type == PinType::Enum) {
+          Pin *i_Pin = create_enum_pin(
+              PinDirection::Output, i_Param.name.c_str(),
+              i_Param.typeId, i_Param.pinId.Get());
+
+          i_Param.pinId = i_Pin->id;
         } else {
           Pin *i_Pin =
               create_pin(PinDirection::Output, i_Param.name.c_str(),

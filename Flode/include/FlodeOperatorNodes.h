@@ -8,8 +8,8 @@
 #include "IconsLucide.h"
 
 namespace Flode {
-  namespace MathNodes {
-    struct FLODE_API AddNode : public Node
+  namespace OperatorNodes {
+    struct FLODE_API GreaterEqualsNode : public Node
     {
       Low::Util::String get_name(NodeNameType p_Type) const override;
 
@@ -40,12 +40,9 @@ namespace Flode {
       PinType m_PinType = PinType::Dynamic;
     };
 
-    struct FLODE_API SubtractNode : public Node
+    struct FLODE_API LessEqualsNode : public Node
     {
-      Low::Util::String get_name(NodeNameType p_Type) const override
-      {
-        return ICON_LC_MINUS;
-      }
+      Low::Util::String get_name(NodeNameType p_Type) const override;
 
       virtual ImU32 get_color() const override;
 
@@ -74,12 +71,9 @@ namespace Flode {
       PinType m_PinType = PinType::Dynamic;
     };
 
-    struct FLODE_API MultiplyNode : public Node
+    struct FLODE_API LessNode : public Node
     {
-      Low::Util::String get_name(NodeNameType p_Type) const override
-      {
-        return ICON_LC_X;
-      }
+      Low::Util::String get_name(NodeNameType p_Type) const override;
 
       virtual ImU32 get_color() const override;
 
@@ -108,12 +102,9 @@ namespace Flode {
       PinType m_PinType = PinType::Dynamic;
     };
 
-    struct FLODE_API DivideNode : public Node
+    struct FLODE_API GreaterNode : public Node
     {
-      Low::Util::String get_name(NodeNameType p_Type) const override
-      {
-        return ICON_LC_DIVIDE;
-      }
+      Low::Util::String get_name(NodeNameType p_Type) const override;
 
       virtual ImU32 get_color() const override;
 
@@ -140,35 +131,8 @@ namespace Flode {
 
     protected:
       PinType m_PinType = PinType::Dynamic;
-    };
-
-    struct FLODE_API PercentChanceNode : public Node
-    {
-      Low::Util::String get_name(NodeNameType p_Type) const override
-      {
-        return "Percent chance";
-      }
-
-      Low::Util::String
-      get_subtitle(NodeNameType p_Type) const override
-      {
-        return "Random";
-      }
-
-      Low::Util::String get_icon() const override
-      {
-        return ICON_LC_DICES;
-      }
-
-      virtual ImU32 get_color() const override;
-
-      virtual void setup_default_pins() override;
-
-      virtual void
-      compile_output_pin(Low::Util::StringBuilder &p_Builder,
-                         NodeEd::PinId p_PinId) const override;
     };
 
     FLODE_API void register_nodes();
-  } // namespace MathNodes
+  } // namespace OperatorNodes
 } // namespace Flode

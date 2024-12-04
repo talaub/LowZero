@@ -206,6 +206,9 @@ namespace Low {
           Interface::PipelineResourceSignature p_Value);
       void set_projection_matrix(Math::Matrix4x4 &p_Value);
       void set_view_matrix(Math::Matrix4x4 &p_Value);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+      // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

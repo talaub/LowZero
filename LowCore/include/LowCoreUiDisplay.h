@@ -177,6 +177,9 @@ namespace Low {
           void set_absolute_layer(uint32_t p_Value);
           void set_world_matrix(Low::Math::Matrix4x4 &p_Value);
           void set_unique_id(Low::Util::UniqueId p_Value);
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+          // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
         };
 
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

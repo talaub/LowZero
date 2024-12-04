@@ -29,6 +29,7 @@ namespace Flode {
         m_NodeCreationPopupJustOpened(false)
   {
     NodeEd::Config l_Config;
+    l_Config.SettingsFile = nullptr;
     m_Context = NodeEd::CreateEditor(&l_Config);
   }
 
@@ -606,6 +607,10 @@ namespace Flode {
             m_Graph->find_node(l_SelectedNodeIds[i]));
       }
 
+      if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_S)) {
+        l_Save = true;
+      }
+
       if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C)) {
         Low::Util::Yaml::Node l_Node;
 
@@ -673,7 +678,7 @@ namespace Flode {
 
         ImVec2 l_MousePos = ImGui::GetMousePos();
 
-        if (l_Clipboard["nodes"]) {
+        if (l_Clipboard.IsDefined() && l_Clipboard["nodes"]) {
           for (auto it = l_Clipboard["nodes"].begin();
                it != l_Clipboard["nodes"].end(); ++it) {
             Low::Util::Yaml::Node &i_Yaml = *it;

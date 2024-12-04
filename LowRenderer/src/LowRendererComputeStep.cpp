@@ -150,6 +150,7 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: resources
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resources);
         l_PropertyInfo.editorProperty = false;
@@ -157,7 +158,7 @@ namespace Low {
             offsetof(ComputeStepData, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_resources();
@@ -167,16 +168,24 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((Util::Map<RenderFlow, ResourceRegistry> *)p_Data) =
+              l_Handle.get_resources();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: resources
       }
       {
+        // Property: config
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(config);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = ComputeStepConfig::TYPE_ID;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_config();
@@ -185,9 +194,16 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((ComputeStepConfig *)p_Data) = l_Handle.get_config();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: config
       }
       {
+        // Property: pipelines
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(pipelines);
         l_PropertyInfo.editorProperty = false;
@@ -195,7 +211,7 @@ namespace Low {
             offsetof(ComputeStepData, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_pipelines();
@@ -207,9 +223,18 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((Util::Map<RenderFlow,
+                       Util::List<Interface::ComputePipeline>> *)
+                p_Data) = l_Handle.get_pipelines();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: pipelines
       }
       {
+        // Property: signatures
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(signatures);
         l_PropertyInfo.editorProperty = false;
@@ -217,7 +242,7 @@ namespace Low {
             offsetof(ComputeStepData, signatures);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_signatures();
@@ -230,9 +255,19 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((Util::Map<
+              RenderFlow,
+              Util::List<Interface::PipelineResourceSignature>> *)
+                p_Data) = l_Handle.get_signatures();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: signatures
       }
       {
+        // Property: context
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(context);
         l_PropertyInfo.editorProperty = false;
@@ -240,7 +275,7 @@ namespace Low {
             offsetof(ComputeStepData, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_context();
@@ -249,9 +284,16 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((Interface::Context *)p_Data) = l_Handle.get_context();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: context
       }
       {
+        // Property: output_image
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(output_image);
         l_PropertyInfo.editorProperty = false;
@@ -259,7 +301,7 @@ namespace Low {
             offsetof(ComputeStepData, output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_output_image();
@@ -271,16 +313,23 @@ namespace Low {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.set_output_image(*(Resource::Image *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((Resource::Image *)p_Data) = l_Handle.get_output_image();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: output_image
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(ComputeStepData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -292,9 +341,16 @@ namespace Low {
           ComputeStep l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ComputeStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: make
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -323,8 +379,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       {
+        // Function: prepare
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(prepare);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -338,8 +396,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: prepare
       }
       {
+        // Function: execute
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(execute);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -353,8 +413,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: execute
       }
       {
+        // Function: update_dimensions
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(update_dimensions);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -368,8 +430,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: update_dimensions
       }
       {
+        // Function: create_pipelines
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(create_pipelines);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -391,8 +455,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: create_pipelines
       }
       {
+        // Function: create_signatures
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(create_signatures);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -414,8 +480,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: create_signatures
       }
       {
+        // Function: prepare_signatures
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(prepare_signatures);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -437,8 +505,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: prepare_signatures
       }
       {
+        // Function: default_execute
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(default_execute);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -460,6 +530,7 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: default_execute
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

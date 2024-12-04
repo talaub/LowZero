@@ -256,6 +256,22 @@ function generate_scripting_api(p_Type) {
       }
 
       if (i_Func.static) {
+        t += write(
+          `CflatStructAddStaticMethod${i_Func.return_type == "void" ? "Void" : "Return"}`,
+        );
+        if (i_Func.parameters) {
+          t += write(`Params${i_Func.parameters.length}`);
+        }
+        t += write("(");
+        t += write(
+          `Low::Core::Scripting::get_environment(), ${l_TypeString}, ${i_Func.return_type}, ${i_FuncName}`,
+        );
+        if (i_Func.parameters) {
+          for (let i_Param of i_Func.parameters) {
+            t += write(`, ${i_Param.type}`);
+          }
+        }
+        t += write(");\n");
       } else {
         t += write(
           `CflatStructAddMethod${i_Func.return_type == "void" ? "Void" : "Return"}`,

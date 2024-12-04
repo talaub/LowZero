@@ -179,13 +179,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: parent
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(parent);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(PrefabData, parent);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_parent();
@@ -197,16 +198,23 @@ namespace Low {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.set_parent(*(Util::Handle *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Prefab l_Handle = p_Handle.get_id();
+          *((Util::Handle *)p_Data) = l_Handle.get_parent();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: parent
       }
       {
+        // Property: children
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(children);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(PrefabData, children);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_children();
@@ -218,16 +226,24 @@ namespace Low {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.set_children(*(Util::List<Util::Handle> *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Prefab l_Handle = p_Handle.get_id();
+          *((Util::List<Util::Handle> *)p_Data) =
+              l_Handle.get_children();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: children
       }
       {
+        // Property: components
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(components);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(PrefabData, components);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_components();
@@ -245,16 +261,24 @@ namespace Low {
                           Util::Map<Util::Name, Util::Variant>> *)
                   p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Prefab l_Handle = p_Handle.get_id();
+          *((Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>
+                 *)p_Data) = l_Handle.get_components();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: components
       }
       {
+        // Property: unique_id
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(unique_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(PrefabData, unique_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_unique_id();
@@ -263,16 +287,23 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Prefab l_Handle = p_Handle.get_id();
+          *((Low::Util::UniqueId *)p_Data) = l_Handle.get_unique_id();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: unique_id
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = true;
         l_PropertyInfo.dataOffset = offsetof(PrefabData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -284,9 +315,16 @@ namespace Low {
           Prefab l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Prefab l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: make
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -300,8 +338,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       {
+        // Function: spawn
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(spawn);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -315,8 +355,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: spawn
       }
       {
+        // Function: compare_property
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(compare_property);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
@@ -337,8 +379,10 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: compare_property
       }
       {
+        // Function: apply
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(apply);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -359,6 +403,7 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: apply
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -851,9 +896,8 @@ namespace Low {
         }
       }
 
-      Entity l_Entity =
-          *(Entity *)l_TypeInfo.properties[N(entity)].get(
-              p_Component);
+      Entity l_Entity;
+      l_TypeInfo.properties[N(entity)].get(p_Component, &l_Entity);
       Component::PrefabInstance l_PrefabInstance =
           l_Entity.get_component(Component::PrefabInstance::TYPE_ID);
 

@@ -128,13 +128,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: root_bone
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(root_bone);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, root_bone);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_root_bone();
@@ -146,9 +147,16 @@ namespace Low {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.set_root_bone(*(Bone *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Skeleton l_Handle = p_Handle.get_id();
+          *((Bone *)p_Data) = l_Handle.get_root_bone();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: root_bone
       }
       {
+        // Property: bone_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(bone_count);
         l_PropertyInfo.editorProperty = false;
@@ -156,7 +164,7 @@ namespace Low {
             offsetof(SkeletonData, bone_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_bone_count();
@@ -168,9 +176,16 @@ namespace Low {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.set_bone_count(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Skeleton l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_bone_count();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: bone_count
       }
       {
+        // Property: animations
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(animations);
         l_PropertyInfo.editorProperty = false;
@@ -178,7 +193,7 @@ namespace Low {
             offsetof(SkeletonData, animations);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_animations();
@@ -188,16 +203,24 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Skeleton l_Handle = p_Handle.get_id();
+          *((Util::List<SkeletalAnimation> *)p_Data) =
+              l_Handle.get_animations();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: animations
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(SkeletonData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -209,7 +232,13 @@ namespace Low {
           Skeleton l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Skeleton l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

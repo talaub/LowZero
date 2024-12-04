@@ -36,7 +36,15 @@ namespace Low {
       bool IntEdit(const char *p_Label, int *p_Val, int p_Min,
                    int p_Max, int p_Step)
       {
-        return ImGui::DragInt(p_Label, p_Val, p_Step, p_Min, p_Max);
+        return Gui::DragIntWithButtons(p_Label, p_Val, p_Step, p_Min,
+                                       p_Max);
+      }
+
+      bool UInt32Edit(const char *p_Label, u32 *p_Val, u32 p_Max,
+                      u32 p_Step)
+      {
+        return Gui::DragIntWithButtons(p_Label, (int *)p_Val, p_Step,
+                                       0, p_Max);
       }
 
       bool StringEdit(const char *p_Label, Util::String *p_String)
@@ -102,6 +110,9 @@ namespace Low {
         }
         case (Util::VariantType::Int32): {
           return IntEdit(p_Label, &p_Variant.m_Int32);
+        }
+        case (Util::VariantType::UInt32): {
+          return UInt32Edit(p_Label, &p_Variant.m_Uint32);
         }
         case (Util::VariantType::Bool):
           return BoolEdit(p_Label, &p_Variant.m_Bool);

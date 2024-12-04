@@ -168,13 +168,14 @@ namespace Low {
         l_TypeInfo.component = true;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: fixed
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(fixed);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, fixed);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.is_fixed();
@@ -186,9 +187,16 @@ namespace Low {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.set_fixed(*(bool *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_fixed();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: fixed
         }
         {
+          // Property: gravity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(gravity);
           l_PropertyInfo.editorProperty = true;
@@ -196,7 +204,7 @@ namespace Low {
               offsetof(RigidbodyData, gravity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.is_gravity();
@@ -208,16 +216,23 @@ namespace Low {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.set_gravity(*(bool *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_gravity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: gravity
         }
         {
+          // Property: mass
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(mass);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, mass);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_mass();
@@ -229,9 +244,16 @@ namespace Low {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.set_mass(*(float *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((float *)p_Data) = l_Handle.get_mass();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: mass
         }
         {
+          // Property: initialized
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(initialized);
           l_PropertyInfo.editorProperty = false;
@@ -239,7 +261,7 @@ namespace Low {
               offsetof(RigidbodyData, initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.is_initialized();
@@ -248,9 +270,16 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_initialized();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: initialized
         }
         {
+          // Property: rigid_dynamic
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(rigid_dynamic);
           l_PropertyInfo.editorProperty = false;
@@ -259,7 +288,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_rigid_dynamic();
@@ -269,9 +298,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((PhysicsRigidDynamic *)p_Data) =
+                l_Handle.get_rigid_dynamic();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: rigid_dynamic
         }
         {
+          // Property: physics_shape
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(physics_shape);
           l_PropertyInfo.editorProperty = false;
@@ -280,22 +317,26 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             return nullptr;
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {};
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: physics_shape
         }
         {
+          // Property: shape
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(shape);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, shape);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::SHAPE;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_shape();
@@ -307,16 +348,23 @@ namespace Low {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.set_shape(*(Math::Shape *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((Math::Shape *)p_Data) = l_Handle.get_shape();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: shape
         }
         {
+          // Property: entity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(RigidbodyData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
@@ -328,9 +376,16 @@ namespace Low {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: entity
         }
         {
+          // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
@@ -338,7 +393,7 @@ namespace Low {
               offsetof(RigidbodyData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
@@ -347,7 +402,14 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Rigidbody l_Handle = p_Handle.get_id();
+            *((Low::Util::UniqueId *)p_Data) =
+                l_Handle.get_unique_id();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: unique_id
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

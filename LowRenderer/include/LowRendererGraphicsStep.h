@@ -206,6 +206,9 @@ namespace Low {
       void set_context(Interface::Context p_Value);
       static void fill_pipeline_signatures(GraphicsStep p_Step,
                                            RenderFlow p_RenderFlow);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+      // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

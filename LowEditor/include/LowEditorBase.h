@@ -23,6 +23,9 @@ namespace Low {
                                   int p_Min = LOW_INT_MIN,
                                   int p_Max = LOW_INT_MAX,
                                   int p_Step = 1);
+      bool LOW_EDITOR_API UInt32Edit(const char *p_Label, u32 *p_Val,
+                                     u32 p_Max = LOW_INT_MAX,
+                                     u32 p_Step = 1);
       bool LOW_EDITOR_API NameEdit(const char *p_Label,
                                    Util::Name *p_Name);
       bool LOW_EDITOR_API StringEdit(const char *p_Label,

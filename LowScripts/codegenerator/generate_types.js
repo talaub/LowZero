@@ -648,6 +648,28 @@ function generate_header(p_Type) {
     }
   }
 
+  if (true) {
+    t += empty();
+    const l_MarkerName = `CUSTOM:STRUCT_END_CODE`;
+
+    const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+    const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+    const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+    let l_CustomCode = "";
+
+    if (l_BeginMarkerIndex >= 0) {
+      const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+      l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+    }
+    t += line(l_CustomBeginMarker);
+    t += l_CustomCode;
+    t += line(l_CustomEndMarker);
+    t += empty();
+  }
+
   t += line("};", --n);
 
   if (true) {
@@ -1017,6 +1039,7 @@ function generate_source(p_Type) {
   }
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     t += line(`{`);
+    t += line(`// Property: ${i_PropName}`);
     t += line(`Low::Util::RTTI::PropertyInfo l_PropertyInfo;`);
     t += line(`l_PropertyInfo.name = N(${i_PropName});`);
     t += line(
@@ -1040,7 +1063,7 @@ function generate_source(p_Type) {
       t += line(`l_PropertyInfo.handleType = 0;`);
     }
     t += line(
-      `l_PropertyInfo.get = [](Low::Util::Handle p_Handle) -> void const* {`,
+      `l_PropertyInfo.get_return = [](Low::Util::Handle p_Handle) -> void const* {`,
     );
     if (!i_Prop.no_getter && !i_Prop.private_getter) {
       t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
@@ -1064,12 +1087,90 @@ function generate_source(p_Type) {
       );
     }
     t += line(`};`);
+    t += line(
+      `l_PropertyInfo.get = [](Low::Util::Handle p_Handle, void* p_Data) {`,
+    );
+    if (!i_Prop.no_getter && !i_Prop.private_getter) {
+      t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
+      t += line(
+        `*((${i_Prop.plain_type}*) p_Data) = l_Handle.${i_Prop.getter_name}();`,
+      );
+      //t += line(`memcpy(p_Data, &l_Data, sizeof(${i_Prop.plain_type}));`);
+      /*
+       */
+    }
+    t += line(`};`);
     t += line(`l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;`);
+    t += line(`// End property: ${i_PropName}`);
     t += line(`}`);
   }
+
+  if (p_Type.virtual_properties) {
+    for (let [i_VPropName, i_VProp] of Object.entries(
+      p_Type.virtual_properties,
+    )) {
+      t += line(`{`);
+      t += line(`// Virtual property: ${i_VPropName}`);
+      t += line(`Low::Util::RTTI::VirtualPropertyInfo l_PropertyInfo;`);
+      t += line(`l_PropertyInfo.name = N(${i_VPropName});`);
+      t += line(
+        `l_PropertyInfo.editorProperty = ${i_VProp.editor_editable ? "true" : "false"};`,
+      );
+      if (i_VProp.handle) {
+        t += line(
+          `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`,
+        );
+        t += line(
+          `l_PropertyInfo.handleType = ${i_VProp.plain_type}::TYPE_ID;`,
+        );
+      } else if (i_VProp.enum) {
+        t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
+        t += line(
+          `l_PropertyInfo.handleType = ${i_VProp.plain_type}EnumHelper::get_enum_id();`,
+        );
+      } else {
+        t += line(
+          `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::${get_property_type(i_VProp.plain_type)};`,
+        );
+        t += line(`l_PropertyInfo.handleType = 0;`);
+      }
+      t += line(
+        `l_PropertyInfo.get = [](Low::Util::Handle p_Handle, void* p_Data) {`,
+      );
+      if (!i_VProp.no_getter && !i_VProp.private_getter) {
+        t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
+        t += line(
+          `${i_VProp.plain_type} l_Data = l_Handle.${i_VProp.getter_name}();`,
+        );
+        t += line(`memcpy(p_Data, &l_Data, sizeof(${i_VProp.plain_type}));`);
+        /*
+         */
+      } else {
+        t += line(`return nullptr;`);
+      }
+      t += line(`};`);
+      t += line(
+        `l_PropertyInfo.set = [](Low::Util::Handle p_Handle, const void* p_Data) -> void {`,
+      );
+      if (!i_VProp.no_setter && !i_VProp.private_setter) {
+        t += line(`${p_Type.name} l_Handle = p_Handle.get_id();`);
+        t += line(
+          `l_Handle.${i_VProp.setter_name}(*(${i_VProp.plain_type}*)p_Data);`,
+        );
+      }
+      t += line(`};`);
+      t += line(
+        `l_TypeInfo.virtualProperties[l_PropertyInfo.name] = l_PropertyInfo;`,
+      );
+      t += line(`// End virtual property: ${i_VPropName}`);
+      t += line(`}`);
+    }
+  }
+
   if (p_Type.functions) {
     for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
       t += line("{");
+      t += line(`// Function: ${i_FuncName}`);
       t += line(`Low::Util::RTTI::FunctionInfo l_FunctionInfo;`);
       t += line(`l_FunctionInfo.name = N(${i_FuncName});`);
       if (i_Func.return_handle) {
@@ -1124,6 +1225,7 @@ function generate_source(p_Type) {
         }
       }
       t += line(`l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;`);
+      t += line(`// End function: ${i_FuncName}`);
       t += line("}");
     }
   }
@@ -1363,7 +1465,12 @@ function generate_source(p_Type) {
       if (i_Prop.skip_serialization) {
         continue;
       }
-      if (
+
+      if (i_Prop.plain_type.endsWith("Variant")) {
+        t += line(
+          `Low::Util::Serialization::serialize_variant(p_Node["${i_PropName}"], ${i_Prop.getter_name}());`,
+        );
+      } else if (
         is_name_type(i_Prop.plain_type) ||
         is_string_type(i_Prop.plain_type)
       ) {
@@ -1473,7 +1580,11 @@ function generate_source(p_Type) {
 
       t += line(`if (p_Node["${i_PropName}"]) {`);
 
-      if (is_name_type(i_Prop.plain_type)) {
+      if (i_Prop.plain_type.endsWith("Variant")) {
+        t += line(
+          `l_Handle.${i_Prop.setter_name}(Low::Util::Serialization::deserialize_variant(p_Node["${i_PropName}"]));`,
+        );
+      } else if (is_name_type(i_Prop.plain_type)) {
         t += line(
           `l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_NAME(p_Node["${i_PropName}"]));`,
         );

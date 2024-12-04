@@ -103,9 +103,10 @@ namespace Low {
                      "unique_id");
 
           p_Node["type"] = "Handle";
-          p_Node["value"] =
-              *(UniqueId *)l_TypeInfo.properties[N(unique_id)].get(
-                  l_Handle);
+          UniqueId l_UniqueId;
+              l_TypeInfo.properties[N(unique_id)].get(
+                  l_Handle, &l_UniqueId);
+          p_Node["value"] = l_UniqueId;
         } else {
           LOW_ASSERT(false, "Cannot serialize variant of this type");
         }
@@ -132,14 +133,16 @@ namespace Low {
         if (l_TypeInfo.properties.find(N(unique_id)) !=
             l_TypeInfo.properties.end()) {
           // Type has unique id
-          p_Node["uniqueid"] =
-              *(UniqueId *)l_TypeInfo.properties[N(unique_id)].get(
-                  p_Handle);
+          UniqueId l_UniqueId;
+		  l_TypeInfo.properties[N(unique_id)].get(
+			  p_Handle, &l_UniqueId);
+
+          p_Node["uniqueid"] = l_UniqueId;
         } else if (l_TypeInfo.properties.find(N(name)) !=
                    l_TypeInfo.properties.end()) {
           p_Node["typeid"] = l_TypeInfo.typeId;
           p_Node["name"] =
-              ((Name *)l_TypeInfo.properties[N(name)].get(p_Handle))
+              ((Name *)l_TypeInfo.properties[N(name)].get_return(p_Handle))
                   ->c_str();
         } else {
           LOW_ASSERT(false, "The type does not have sufficient "

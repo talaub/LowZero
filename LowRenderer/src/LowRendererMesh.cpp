@@ -122,6 +122,7 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: vertex_buffer_start
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_buffer_start);
         l_PropertyInfo.editorProperty = false;
@@ -129,7 +130,7 @@ namespace Low {
             offsetof(MeshData, vertex_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertex_buffer_start();
@@ -141,16 +142,23 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_vertex_buffer_start(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_vertex_buffer_start();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: vertex_buffer_start
       }
       {
+        // Property: vertex_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertex_count);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, vertex_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertex_count();
@@ -162,9 +170,16 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_vertex_count(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_vertex_count();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: vertex_count
       }
       {
+        // Property: index_buffer_start
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_buffer_start);
         l_PropertyInfo.editorProperty = false;
@@ -172,7 +187,7 @@ namespace Low {
             offsetof(MeshData, index_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_index_buffer_start();
@@ -184,16 +199,23 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_index_buffer_start(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_index_buffer_start();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: index_buffer_start
       }
       {
+        // Property: index_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(index_count);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, index_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_index_count();
@@ -205,9 +227,16 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_index_count(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_index_count();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: index_count
       }
       {
+        // Property: vertexweight_buffer_start
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertexweight_buffer_start);
         l_PropertyInfo.editorProperty = false;
@@ -215,7 +244,7 @@ namespace Low {
             offsetof(MeshData, vertexweight_buffer_start);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertexweight_buffer_start();
@@ -227,9 +256,17 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_vertexweight_buffer_start(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) =
+              l_Handle.get_vertexweight_buffer_start();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: vertexweight_buffer_start
       }
       {
+        // Property: vertexweight_count
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(vertexweight_count);
         l_PropertyInfo.editorProperty = false;
@@ -237,7 +274,7 @@ namespace Low {
             offsetof(MeshData, vertexweight_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_vertexweight_count();
@@ -249,16 +286,23 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_vertexweight_count(*(uint32_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_vertexweight_count();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: vertexweight_count
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(MeshData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -270,7 +314,13 @@ namespace Low {
           Mesh l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

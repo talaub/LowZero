@@ -152,6 +152,7 @@ namespace Low {
           l_TypeInfo.component = false;
           l_TypeInfo.uiComponent = true;
           {
+            // Property: text
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(text);
             l_PropertyInfo.editorProperty = true;
@@ -159,7 +160,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::STRING;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_text();
@@ -171,10 +172,17 @@ namespace Low {
               Text l_Handle = p_Handle.get_id();
               l_Handle.set_text(*(Low::Util::String *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((Low::Util::String *)p_Data) = l_Handle.get_text();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: text
           }
           {
+            // Property: font
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(font);
             l_PropertyInfo.editorProperty = true;
@@ -182,7 +190,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType = Low::Core::Font::TYPE_ID;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_font();
@@ -194,10 +202,17 @@ namespace Low {
               Text l_Handle = p_Handle.get_id();
               l_Handle.set_font(*(Low::Core::Font *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((Low::Core::Font *)p_Data) = l_Handle.get_font();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: font
           }
           {
+            // Property: color
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(color);
             l_PropertyInfo.editorProperty = true;
@@ -205,7 +220,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_color();
@@ -217,10 +232,17 @@ namespace Low {
               Text l_Handle = p_Handle.get_id();
               l_Handle.set_color(*(Low::Math::Color *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((Low::Math::Color *)p_Data) = l_Handle.get_color();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: color
           }
           {
+            // Property: size
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(size);
             l_PropertyInfo.editorProperty = true;
@@ -228,7 +250,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_size();
@@ -240,10 +262,17 @@ namespace Low {
               Text l_Handle = p_Handle.get_id();
               l_Handle.set_size(*(float *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((float *)p_Data) = l_Handle.get_size();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: size
           }
           {
+            // Property: content_fit_approach
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(content_fit_approach);
             l_PropertyInfo.editorProperty = false;
@@ -252,7 +281,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_content_fit_approach();
@@ -266,10 +295,18 @@ namespace Low {
               l_Handle.set_content_fit_approach(
                   *(TextContentFitOptions *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((TextContentFitOptions *)p_Data) =
+                  l_Handle.get_content_fit_approach();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: content_fit_approach
           }
           {
+            // Property: element
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(element);
             l_PropertyInfo.editorProperty = false;
@@ -278,7 +315,7 @@ namespace Low {
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
                 Low::Core::UI::Element::TYPE_ID;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_element();
@@ -290,10 +327,18 @@ namespace Low {
               Text l_Handle = p_Handle.get_id();
               l_Handle.set_element(*(Low::Core::UI::Element *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((Low::Core::UI::Element *)p_Data) =
+                  l_Handle.get_element();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: element
           }
           {
+            // Property: unique_id
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(unique_id);
             l_PropertyInfo.editorProperty = false;
@@ -301,7 +346,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               l_Handle.get_unique_id();
@@ -310,8 +355,15 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              *((Low::Util::UniqueId *)p_Data) =
+                  l_Handle.get_unique_id();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: unique_id
           }
           Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
         }
@@ -543,6 +595,13 @@ namespace Low {
           TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+
+          if (p_Value.a < 0.0f) {
+            Low::Math::Color l_Color = p_Value;
+            p_Value.a = 0.0f;
+
+            TYPE_SOA(Text, color, Low::Math::Color) = l_Color;
+          }
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_color
         }

@@ -133,6 +133,7 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: duration
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(duration);
         l_PropertyInfo.editorProperty = false;
@@ -140,7 +141,7 @@ namespace Low {
             offsetof(SkeletalAnimationData, duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_duration();
@@ -152,9 +153,16 @@ namespace Low {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.set_duration(*(float *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          *((float *)p_Data) = l_Handle.get_duration();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: duration
       }
       {
+        // Property: ticks_per_second
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(ticks_per_second);
         l_PropertyInfo.editorProperty = false;
@@ -162,7 +170,7 @@ namespace Low {
             offsetof(SkeletalAnimationData, ticks_per_second);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_ticks_per_second();
@@ -174,9 +182,16 @@ namespace Low {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.set_ticks_per_second(*(float *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          *((float *)p_Data) = l_Handle.get_ticks_per_second();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ticks_per_second
       }
       {
+        // Property: channels
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(channels);
         l_PropertyInfo.editorProperty = false;
@@ -184,7 +199,7 @@ namespace Low {
             offsetof(SkeletalAnimationData, channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_channels();
@@ -194,9 +209,17 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          *((Util::List<Util::Resource::AnimationChannel> *)p_Data) =
+              l_Handle.get_channels();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: channels
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
@@ -204,7 +227,7 @@ namespace Low {
             offsetof(SkeletalAnimationData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -216,7 +239,13 @@ namespace Low {
           SkeletalAnimation l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SkeletalAnimation l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

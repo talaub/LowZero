@@ -141,6 +141,7 @@ namespace Low {
         l_TypeInfo.component = true;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: color
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(color);
           l_PropertyInfo.editorProperty = true;
@@ -148,7 +149,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_color();
@@ -160,9 +161,16 @@ namespace Low {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.set_color(*(Low::Math::ColorRGB *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PointLight l_Handle = p_Handle.get_id();
+            *((Low::Math::ColorRGB *)p_Data) = l_Handle.get_color();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: color
         }
         {
+          // Property: intensity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(intensity);
           l_PropertyInfo.editorProperty = true;
@@ -170,7 +178,7 @@ namespace Low {
               offsetof(PointLightData, intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_intensity();
@@ -182,9 +190,16 @@ namespace Low {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.set_intensity(*(float *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PointLight l_Handle = p_Handle.get_id();
+            *((float *)p_Data) = l_Handle.get_intensity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: intensity
         }
         {
+          // Property: entity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
@@ -192,7 +207,7 @@ namespace Low {
               offsetof(PointLightData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
@@ -204,9 +219,16 @@ namespace Low {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PointLight l_Handle = p_Handle.get_id();
+            *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: entity
         }
         {
+          // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
@@ -214,7 +236,7 @@ namespace Low {
               offsetof(PointLightData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
@@ -223,7 +245,14 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PointLight l_Handle = p_Handle.get_id();
+            *((Low::Util::UniqueId *)p_Data) =
+                l_Handle.get_unique_id();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: unique_id
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

@@ -151,6 +151,7 @@ namespace Low {
         l_TypeInfo.component = true;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: speed
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(speed);
           l_PropertyInfo.editorProperty = true;
@@ -158,7 +159,7 @@ namespace Low {
               offsetof(NavmeshAgentData, speed);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_speed();
@@ -170,9 +171,16 @@ namespace Low {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.set_speed(*(float *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((float *)p_Data) = l_Handle.get_speed();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: speed
         }
         {
+          // Property: height
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(height);
           l_PropertyInfo.editorProperty = true;
@@ -180,7 +188,7 @@ namespace Low {
               offsetof(NavmeshAgentData, height);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_height();
@@ -192,9 +200,16 @@ namespace Low {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.set_height(*(float *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((float *)p_Data) = l_Handle.get_height();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: height
         }
         {
+          // Property: radius
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(radius);
           l_PropertyInfo.editorProperty = true;
@@ -202,7 +217,7 @@ namespace Low {
               offsetof(NavmeshAgentData, radius);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_radius();
@@ -214,9 +229,16 @@ namespace Low {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.set_radius(*(float *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((float *)p_Data) = l_Handle.get_radius();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: radius
         }
         {
+          // Property: offset
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(offset);
           l_PropertyInfo.editorProperty = true;
@@ -225,7 +247,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_offset();
@@ -237,9 +259,16 @@ namespace Low {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.set_offset(*(Low::Math::Vector3 *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((Low::Math::Vector3 *)p_Data) = l_Handle.get_offset();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: offset
         }
         {
+          // Property: agent_index
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(agent_index);
           l_PropertyInfo.editorProperty = false;
@@ -247,7 +276,7 @@ namespace Low {
               offsetof(NavmeshAgentData, agent_index);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::INT;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_agent_index();
@@ -259,9 +288,16 @@ namespace Low {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.set_agent_index(*(int *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((int *)p_Data) = l_Handle.get_agent_index();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: agent_index
         }
         {
+          // Property: entity
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
@@ -269,7 +305,7 @@ namespace Low {
               offsetof(NavmeshAgentData, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_entity();
@@ -281,9 +317,16 @@ namespace Low {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.set_entity(*(Low::Core::Entity *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: entity
         }
         {
+          // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
@@ -291,7 +334,7 @@ namespace Low {
               offsetof(NavmeshAgentData, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             NavmeshAgent l_Handle = p_Handle.get_id();
             l_Handle.get_unique_id();
@@ -301,9 +344,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            NavmeshAgent l_Handle = p_Handle.get_id();
+            *((Low::Util::UniqueId *)p_Data) =
+                l_Handle.get_unique_id();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: unique_id
         }
         {
+          // Function: set_target_position
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_target_position);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -317,6 +368,7 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_target_position
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

@@ -157,6 +157,7 @@ namespace Low {
           l_TypeInfo.component = false;
           l_TypeInfo.uiComponent = true;
           {
+            // Property: texture
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(texture);
             l_PropertyInfo.editorProperty = true;
@@ -164,7 +165,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType = Low::Core::Texture2D::TYPE_ID;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
               l_Handle.get_texture();
@@ -176,10 +177,18 @@ namespace Low {
               Image l_Handle = p_Handle.get_id();
               l_Handle.set_texture(*(Low::Core::Texture2D *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Image l_Handle = p_Handle.get_id();
+              *((Low::Core::Texture2D *)p_Data) =
+                  l_Handle.get_texture();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: texture
           }
           {
+            // Property: renderer_material
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(renderer_material);
             l_PropertyInfo.editorProperty = false;
@@ -188,7 +197,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType = Renderer::Material::TYPE_ID;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
               l_Handle.get_renderer_material();
@@ -198,10 +207,18 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Image l_Handle = p_Handle.get_id();
+              *((Renderer::Material *)p_Data) =
+                  l_Handle.get_renderer_material();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: renderer_material
           }
           {
+            // Property: element
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(element);
             l_PropertyInfo.editorProperty = false;
@@ -210,7 +227,7 @@ namespace Low {
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
                 Low::Core::UI::Element::TYPE_ID;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
               l_Handle.get_element();
@@ -222,10 +239,18 @@ namespace Low {
               Image l_Handle = p_Handle.get_id();
               l_Handle.set_element(*(Low::Core::UI::Element *)p_Data);
             };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Image l_Handle = p_Handle.get_id();
+              *((Low::Core::UI::Element *)p_Data) =
+                  l_Handle.get_element();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: element
           }
           {
+            // Property: unique_id
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(unique_id);
             l_PropertyInfo.editorProperty = false;
@@ -234,7 +259,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get =
+            l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
               l_Handle.get_unique_id();
@@ -243,8 +268,15 @@ namespace Low {
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Image l_Handle = p_Handle.get_id();
+              *((Low::Util::UniqueId *)p_Data) =
+                  l_Handle.get_unique_id();
+            };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
+            // End property: unique_id
           }
           Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
         }

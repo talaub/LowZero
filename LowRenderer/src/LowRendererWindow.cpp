@@ -103,6 +103,8 @@ namespace Low {
           return GLFW_KEY_S;
         case Util::KeyboardButton::D:
           return GLFW_KEY_D;
+        case Util::KeyboardButton::F:
+          return GLFW_KEY_F;
         default:
           LOW_ASSERT(false, "Unknown keyboard button");
         }

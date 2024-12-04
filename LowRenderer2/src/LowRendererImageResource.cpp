@@ -131,13 +131,14 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: path
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(ImageResourceData, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.get_path();
@@ -146,9 +147,16 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ImageResource l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) = l_Handle.get_path();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: path
       }
       {
+        // Property: resource_image
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(resource_image);
         l_PropertyInfo.editorProperty = false;
@@ -156,7 +164,7 @@ namespace Low {
             offsetof(ImageResourceData, resource_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.get_resource_image();
@@ -166,9 +174,17 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ImageResource l_Handle = p_Handle.get_id();
+          *((Util::Resource::ImageMipMaps *)p_Data) =
+              l_Handle.get_resource_image();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: resource_image
       }
       {
+        // Property: state
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
@@ -177,7 +193,7 @@ namespace Low {
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             ImageResourceStateEnumHelper::get_enum_id();
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.get_state();
@@ -189,9 +205,16 @@ namespace Low {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.set_state(*(ImageResourceState *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ImageResource l_Handle = p_Handle.get_id();
+          *((ImageResourceState *)p_Data) = l_Handle.get_state();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: state
       }
       {
+        // Property: data_handle
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(data_handle);
         l_PropertyInfo.editorProperty = false;
@@ -199,7 +222,7 @@ namespace Low {
             offsetof(ImageResourceData, data_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.get_data_handle();
@@ -211,9 +234,16 @@ namespace Low {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.set_data_handle(*(uint64_t *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ImageResource l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_data_handle();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: data_handle
       }
       {
+        // Property: loaded_mips
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(loaded_mips);
         l_PropertyInfo.editorProperty = false;
@@ -221,7 +251,7 @@ namespace Low {
             offsetof(ImageResourceData, loaded_mips);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.loaded_mips();
@@ -231,16 +261,24 @@ namespace Low {
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ImageResource l_Handle = p_Handle.get_id();
+          *((Low::Util::List<uint8_t> *)p_Data) =
+              l_Handle.loaded_mips();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: loaded_mips
       }
       {
+        // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(ImageResourceData, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get =
+        l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.get_name();
@@ -252,9 +290,16 @@ namespace Low {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.set_name(*(Low::Util::Name *)p_Data);
         };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          ImageResource l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
       }
       {
+        // Function: make
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -268,6 +313,7 @@ namespace Low {
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }

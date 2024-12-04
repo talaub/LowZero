@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#define LOW_MATH_EPSILON 1e-6f
+
 #define LOW_UINT64_MAX std::numeric_limits<uint64_t>::max()
 #define LOW_UINT64_MIN 0ull
 #define LOW_UINT32_MAX std::numeric_limits<uint32_t>::max()
@@ -135,6 +137,12 @@ namespace Low {
 
       LOW_EXPORT float asin(float p_Value);
       LOW_EXPORT float atan2(float p_Value0, float p_Value1);
+
+      LOW_EXPORT float random();
+      LOW_EXPORT float random_range(float p_Min, float p_Max);
+      LOW_EXPORT float random_range_int(int p_Min, int p_Max);
+      LOW_EXPORT bool random_percent(u8 p_Percent);
+      LOW_EXPORT bool random_percent(float p_Percent);
     } // namespace Util
   }   // namespace Math
 } // namespace Low

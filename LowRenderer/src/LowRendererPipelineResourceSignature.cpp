@@ -145,6 +145,7 @@ namespace Low {
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: signature
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(signature);
           l_PropertyInfo.editorProperty = false;
@@ -153,7 +154,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
             l_Handle.get_signature();
@@ -163,9 +164,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PipelineResourceSignature l_Handle = p_Handle.get_id();
+            *((Backend::PipelineResourceSignature *)p_Data) =
+                l_Handle.get_signature();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: signature
         }
         {
+          // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
@@ -173,7 +182,7 @@ namespace Low {
               offsetof(PipelineResourceSignatureData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
             l_Handle.get_name();
@@ -186,9 +195,16 @@ namespace Low {
             PipelineResourceSignature l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PipelineResourceSignature l_Handle = p_Handle.get_id();
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
         }
         {
+          // Function: make
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -227,15 +243,19 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: make
         }
         {
+          // Function: commit
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(commit);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: commit
         }
         {
+          // Function: set_image_resource
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_image_resource);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -265,8 +285,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_image_resource
         }
         {
+          // Function: set_sampler_resource
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_sampler_resource);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -296,8 +318,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_sampler_resource
         }
         {
+          // Function: set_unbound_sampler_resource
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_unbound_sampler_resource);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -327,8 +351,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_unbound_sampler_resource
         }
         {
+          // Function: set_texture2d_resource
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_texture2d_resource);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -358,8 +384,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_texture2d_resource
         }
         {
+          // Function: set_constant_buffer_resource
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_constant_buffer_resource);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -389,8 +417,10 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_constant_buffer_resource
         }
         {
+          // Function: set_buffer_resource
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(set_buffer_resource);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
@@ -420,14 +450,17 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: set_buffer_resource
         }
         {
+          // Function: get_binding
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_binding);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_binding
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }

@@ -144,6 +144,7 @@ namespace Low {
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
+          // Property: context
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(context);
           l_PropertyInfo.editorProperty = false;
@@ -151,7 +152,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_context();
@@ -160,9 +161,16 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Context l_Handle = p_Handle.get_id();
+            *((Backend::Context *)p_Data) = l_Handle.get_context();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: context
         }
         {
+          // Property: renderpasses
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(renderpasses);
           l_PropertyInfo.editorProperty = false;
@@ -171,7 +179,7 @@ namespace Low {
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_renderpasses();
@@ -181,9 +189,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Context l_Handle = p_Handle.get_id();
+            *((Util::List<Renderpass> *)p_Data) =
+                l_Handle.get_renderpasses();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: renderpasses
         }
         {
+          // Property: global_signature
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(global_signature);
           l_PropertyInfo.editorProperty = false;
@@ -192,7 +208,7 @@ namespace Low {
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
               PipelineResourceSignature::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_global_signature();
@@ -202,9 +218,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Context l_Handle = p_Handle.get_id();
+            *((PipelineResourceSignature *)p_Data) =
+                l_Handle.get_global_signature();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: global_signature
         }
         {
+          // Property: frame_info_buffer
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(frame_info_buffer);
           l_PropertyInfo.editorProperty = false;
@@ -212,7 +236,7 @@ namespace Low {
               offsetof(ContextData, frame_info_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_frame_info_buffer();
@@ -222,9 +246,17 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Context l_Handle = p_Handle.get_id();
+            *((Resource::Buffer *)p_Data) =
+                l_Handle.get_frame_info_buffer();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: frame_info_buffer
         }
         {
+          // Property: material_data_buffer
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(material_data_buffer);
           l_PropertyInfo.editorProperty = false;
@@ -232,7 +264,7 @@ namespace Low {
               offsetof(ContextData, material_data_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_material_data_buffer();
@@ -242,16 +274,24 @@ namespace Low {
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Context l_Handle = p_Handle.get_id();
+            *((Resource::Buffer *)p_Data) =
+                l_Handle.get_material_data_buffer();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: material_data_buffer
         }
         {
+          // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(ContextData, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get =
+          l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
             l_Handle.get_name();
@@ -263,9 +303,16 @@ namespace Low {
             Context l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Context l_Handle = p_Handle.get_id();
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
         }
         {
+          // Function: make
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
@@ -303,135 +350,170 @@ namespace Low {
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: make
         }
         {
+          // Function: get_frames_in_flight
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_frames_in_flight);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_frames_in_flight
         }
         {
+          // Function: get_image_count
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_image_count);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_image_count
         }
         {
+          // Function: get_current_frame_index
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_current_frame_index);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_current_frame_index
         }
         {
+          // Function: get_current_image_index
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_current_image_index);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_current_image_index
         }
         {
+          // Function: get_current_renderpass
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_current_renderpass);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_FunctionInfo.handleType = Renderpass::TYPE_ID;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_current_renderpass
         }
         {
+          // Function: get_dimensions
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_dimensions);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_dimensions
         }
         {
+          // Function: get_image_format
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_image_format);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_image_format
         }
         {
+          // Function: get_window
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_window);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_window
         }
         {
+          // Function: get_state
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(get_state);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_state
         }
         {
+          // Function: is_debug_enabled
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(is_debug_enabled);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: is_debug_enabled
         }
         {
+          // Function: wait_idle
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(wait_idle);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: wait_idle
         }
         {
+          // Function: prepare_frame
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(prepare_frame);
           l_FunctionInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: prepare_frame
         }
         {
+          // Function: render_frame
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(render_frame);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: render_frame
         }
         {
+          // Function: begin_imgui_frame
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(begin_imgui_frame);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: begin_imgui_frame
         }
         {
+          // Function: render_imgui
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(render_imgui);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: render_imgui
         }
         {
+          // Function: update_dimensions
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(update_dimensions);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: update_dimensions
         }
         {
+          // Function: clear_committed_resource_signatures
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name =
               N(clear_committed_resource_signatures);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
           l_FunctionInfo.handleType = 0;
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: clear_committed_resource_signatures
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
