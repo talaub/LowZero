@@ -47,6 +47,8 @@ namespace Low {
         Math::Quaternion m_Quaternion;
       };
 
+      List<u8> m_DynamicData;
+
       Variant();
       Variant(bool p_Value);
       Variant(float p_Value);
@@ -60,6 +62,9 @@ namespace Low {
       Variant(Math::Quaternion p_Value);
       Variant(Handle p_Value);
       Variant(Name p_Value);
+      Variant(String p_Value);
+
+      ~Variant();
 
       Variant &operator=(const bool p_Value);
       Variant &operator=(const float p_Value);
@@ -73,6 +78,7 @@ namespace Low {
       Variant &operator=(const Math::Quaternion p_Value);
       Variant &operator=(const Name p_Value);
       Variant &operator=(const Handle p_Value);
+      Variant &operator=(const String p_Value);
       Variant &operator=(const Variant &p_Value);
 
       bool operator==(const Variant &p_Other) const;
@@ -101,6 +107,10 @@ namespace Low {
       u64 as_u64() const;
       Math::Vector3 as_vector3() const;
       Name as_name() const;
+      String as_string() const;
+
+    protected:
+      void wipe_data();
     };
   } // namespace Util
 } // namespace Low

@@ -451,31 +451,35 @@ function process_file(p_Path, p_FileName, p_Project = false) {
           i_Type.functions = {};
         }
 
-        i_Type.functions[i_VProp.getter_name] = {
-          name: i_VProp.getter_name,
-          return_type: i_VProp.plain_type,
-          return_handle: i_VProp.handle,
-          accessor_type: i_VProp.accessor_type,
-          expose_scripting: i_VProp.expose_scripting,
-          hide_flode: i_VProp.hide_flode,
-        };
+        if (!i_VProp.no_getter) {
+          i_Type.functions[i_VProp.getter_name] = {
+            name: i_VProp.getter_name,
+            return_type: i_VProp.plain_type,
+            return_handle: i_VProp.handle,
+            accessor_type: i_VProp.accessor_type,
+            expose_scripting: i_VProp.expose_scripting,
+            hide_flode: i_VProp.hide_flode,
+          };
+        }
 
-        i_Type.functions[i_VProp.setter_name] = {
-          name: i_VProp.setter_name,
-          return_type: "void",
-          return_handle: false,
-          accessor_type: "void",
-          expose_scripting: i_VProp.expose_scripting,
-          hide_flode: i_VProp.hide_flode,
-          parameters: [
-            {
-              name: "p_Value",
-              type: i_VProp.plain_type,
-              handle: i_VProp.handle,
-              accessor_type: i_VProp.accessor_type,
-            },
-          ],
-        };
+        if (!i_VProp.no_setter) {
+          i_Type.functions[i_VProp.setter_name] = {
+            name: i_VProp.setter_name,
+            return_type: "void",
+            return_handle: false,
+            accessor_type: "void",
+            expose_scripting: i_VProp.expose_scripting,
+            hide_flode: i_VProp.hide_flode,
+            parameters: [
+              {
+                name: "p_Value",
+                type: i_VProp.plain_type,
+                handle: i_VProp.handle,
+                accessor_type: i_VProp.accessor_type,
+              },
+            ],
+          };
+        }
       }
     }
 

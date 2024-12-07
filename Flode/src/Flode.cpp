@@ -982,6 +982,10 @@ namespace Flode {
       return;
     }
 
+    if (pin->containerType == PinContainerType::List) {
+      iconType = IconType::Grid;
+    }
+
     draw_icon(ImVec2(static_cast<float>(m_PinIconSize),
                      static_cast<float>(m_PinIconSize)),
               iconType, connected, color, ImColor(32, 32, 32, alpha));
@@ -1103,7 +1107,8 @@ namespace Flode {
 
   Pin *Node::create_pin(PinDirection p_Direction,
                         Low::Util::String p_Title, PinType p_Type,
-                        u16 p_TypeId, u64 p_PinId)
+                        u16 p_TypeId,
+                        PinContainerType p_ContainerType, u64 p_PinId)
   {
     Pin *l_Pin = new Pin;
 
@@ -1119,11 +1124,20 @@ namespace Flode {
     l_Pin->typeId = p_TypeId;
     l_Pin->direction = p_Direction;
     l_Pin->nodeId = id;
+    l_Pin->containerType = p_ContainerType;
     setup_default_value_for_pin(l_Pin);
 
     pins.push_back(l_Pin);
 
     return l_Pin;
+  }
+
+  Pin *Node::create_pin(PinDirection p_Direction,
+                        Low::Util::String p_Title, PinType p_Type,
+                        u16 p_TypeId, u64 p_PinId)
+  {
+    return create_pin(p_Direction, p_Title, p_Type, p_TypeId,
+                      PinContainerType::None, p_PinId);
   }
 
   Pin *Node::create_pin(PinDirection p_Direction,

@@ -25,7 +25,8 @@ namespace Low {
     void Transaction::cleanup()
     {
       // Deletes all of the operations in this transaction
-      for (auto it = m_Operations.begin(); it != m_Operations.end();) {
+      for (auto it = m_Operations.begin();
+           it != m_Operations.end();) {
         Operation *op = *it;
         it = m_Operations.erase(it);
         delete op;
@@ -35,7 +36,8 @@ namespace Low {
     void Transaction::execute(ChangeList &p_ChangeTracker)
     {
       // Executes all of the operations in this transaction one by one
-      for (auto it = m_Operations.begin(); it != m_Operations.end(); ++it) {
+      for (auto it = m_Operations.begin(); it != m_Operations.end();
+           ++it) {
         (*it)->execute(p_ChangeTracker, *this);
       }
     }
@@ -44,8 +46,8 @@ namespace Low {
     {
       Transaction invertedTransaction("TempInverted");
       for (int i = m_Operations.size() - 1; i >= 0; --i) {
-        invertedTransaction.add_operation(
-            m_Operations[i]->invert(p_ChangeTracker, invertedTransaction));
+        invertedTransaction.add_operation(m_Operations[i]->invert(
+            p_ChangeTracker, invertedTransaction));
       }
 
       return invertedTransaction;
@@ -54,7 +56,8 @@ namespace Low {
     Transaction &Transaction::add_operation(Operation *p_Operation)
     {
       // Adds an operation to the current transaction
-      // Works corresponding to the builder pattern to it returns itself
+      // Works corresponding to the builder pattern to it returns
+      // itself
       m_Operations.push_back(p_Operation);
       return *this;
     }
@@ -98,8 +101,10 @@ namespace Low {
       for (auto it = l_ChangedEditorProperties.begin();
            it != l_ChangedEditorProperties.end(); ++it) {
 
-        l_Transaction.add_operation(new CommonOperations::PropertyEditOperation(
-            p_Handle, *it, p_H1.properties[*it], p_H2.properties[*it]));
+        l_Transaction.add_operation(
+            new CommonOperations::PropertyEditOperation(
+                p_Handle, *it, p_H1.properties[*it],
+                p_H2.properties[*it]));
       }
 
       return l_Transaction;
@@ -116,9 +121,9 @@ namespace Low {
       }
 
       if (m_ChangePointer != m_Changelist.size() - 1) {
-        // If the current pointer is not at the end of the changelist, that
-        // means that we have to delete all the changes that happened since then
-        // before pushing the new change
+        // If the current pointer is not at the end of the changelist,
+        // that means that we have to delete all the changes that
+        // happened since then before pushing the new change
         uint32_t l_DeletePointer = m_Changelist.size() - 1;
         while (l_DeletePointer > m_ChangePointer) {
           m_Changelist.back().cleanup();
@@ -133,8 +138,8 @@ namespace Low {
         m_Changelist = l_NewChangelist;
       }
 
-      // Push the new entry to the changelist and adjust the changepointer to
-      // now point to the index of the newest entry
+      // Push the new entry to the changelist and adjust the
+      // changepointer to now point to the index of the newest entry
       m_Changelist.push_back(p_Transaction);
       m_ChangePointer = m_Changelist.size() - 1;
     }
@@ -153,7 +158,8 @@ namespace Low {
       }
     }
 
-    void ChangeList::set_mapping(Util::Handle p_From, Util::Handle p_To)
+    void ChangeList::set_mapping(Util::Handle p_From,
+                                 Util::Handle p_To)
     {
       if (p_From != p_To) {
         m_Mappings[p_From] = p_To;
@@ -192,12 +198,13 @@ namespace Low {
         // So if this happens there are no actions left to undo
         return;
       }
-      // Inverts the entry the changepointer currently points to and executes it
+      // Inverts the entry the changepointer currently points to and
+      // executes it
       Transaction l_InvertedTransaction =
           m_Changelist[m_ChangePointer].invert(*this);
       l_InvertedTransaction.execute(*this);
-      // The inverted transaction is only temporary so it needs  to be cleaned
-      // up
+      // The inverted transaction is only temporary so it needs  to be
+      // cleaned up
       l_InvertedTransaction.cleanup();
       // Decrease the changepointer to it points to the previous entry
       m_ChangePointer--;
@@ -206,8 +213,8 @@ namespace Low {
     void ChangeList::redo()
     {
       if (m_ChangePointer == m_Changelist.size() - 1) {
-        // We are already pointing to the newest entry in the changelist, so
-        // there is nothing left to redo
+        // We are already pointing to the newest entry in the
+        // changelist, so there is nothing left to redo
         return;
       }
 

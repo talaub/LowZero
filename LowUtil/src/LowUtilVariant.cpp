@@ -2,10 +2,17 @@
 #include "LowUtilVariant.h"
 #include <vcruntime_string.h>
 
+#include "LowUtilAssert.h"
+
 #define VARIANT_DATA_SIZE sizeof(Math::Vector4)
 
 namespace Low {
   namespace Util {
+    Variant::~Variant()
+    {
+      wipe_data();
+    }
+
     Variant::Variant() : m_Type(VariantType::Int32)
     {
       m_Int32 = 0;
@@ -63,9 +70,15 @@ namespace Low {
     {
       m_Uint32 = p_Value.m_Index;
     }
+    Variant::Variant(String p_Value) : m_Type(VariantType::String)
+    {
+      m_DynamicData.resize(sizeof(String));
+      *((String *)m_DynamicData.data()) = p_Value;
+    }
 
     Variant &Variant::operator=(const bool p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Bool;
       m_Bool = p_Value;
 
@@ -73,6 +86,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const float p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Float;
       m_Float = p_Value;
 
@@ -80,6 +94,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const int32_t p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Int32;
       m_Int32 = p_Value;
 
@@ -87,6 +102,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const uint32_t p_Value)
     {
+      wipe_data();
       m_Type = VariantType::UInt32;
       m_Uint32 = p_Value;
 
@@ -94,6 +110,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const uint64_t p_Value)
     {
+      wipe_data();
       m_Type = VariantType::UInt64;
       m_Uint64 = p_Value;
 
@@ -101,6 +118,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const Math::UVector2 p_Value)
     {
+      wipe_data();
       m_Type = VariantType::UVector2;
       m_UVector2 = p_Value;
 
@@ -108,6 +126,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const Math::Vector2 p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Vector2;
       m_Vector2 = p_Value;
 
@@ -115,6 +134,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const Math::Vector3 p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Vector3;
       m_Vector3 = p_Value;
 
@@ -122,6 +142,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const Math::Vector4 p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Vector4;
       m_Vector4 = p_Value;
 
@@ -129,6 +150,7 @@ namespace Low {
     }
     Variant &Variant::operator=(const Math::Quaternion p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Quaternion;
       m_Quaternion = p_Value;
 
@@ -136,21 +158,37 @@ namespace Low {
     }
     Variant &Variant::operator=(const Name p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Name;
       m_Uint32 = p_Value.m_Index;
 
       return *this;
     }
+    Variant &Variant::operator=(const String p_Value)
+    {
+      wipe_data();
+      m_Type = VariantType::String;
+      m_DynamicData.resize(sizeof(String));
+      *((String *)m_DynamicData.data()) = p_Value;
+
+      return *this;
+    }
     Variant &Variant::operator=(const Variant &p_Value)
     {
-      m_Type = p_Value.m_Type;
-      memcpy(&m_Bool, &p_Value.m_Bool, VARIANT_DATA_SIZE);
+      wipe_data();
+      if (p_Value.m_Type == VariantType::String) {
+        *this = p_Value.as_string();
+      } else {
+        m_Type = p_Value.m_Type;
+        memcpy(&m_Bool, &p_Value.m_Bool, VARIANT_DATA_SIZE);
+      }
 
       return *this;
     }
 
     void Variant::set_handle(Handle p_Value)
     {
+      wipe_data();
       m_Type = VariantType::Handle;
       m_Uint64 = p_Value.get_id();
     }
@@ -259,6 +297,9 @@ namespace Low {
       if (m_Type == VariantType::Handle) {
         return m_Uint64 == p_Other.m_Uint64;
       }
+      if (m_Type == VariantType::String) {
+        return as_string() == p_Other.as_string();
+      }
 
       LOW_ASSERT(false, "Unknown variant type on == comparison");
       return false;
@@ -287,6 +328,23 @@ namespace Low {
     Name Variant::as_name() const
     {
       return (Name)m_Uint32;
+    }
+    String Variant::as_string() const
+    {
+      _LOW_ASSERT(m_Type == VariantType::String);
+
+      return *(String *)m_DynamicData.data();
+    }
+
+    void Variant::wipe_data()
+    {
+      if (!m_DynamicData.empty()) {
+        if (m_Type == VariantType::String) {
+          ((String *)m_DynamicData.data())->clear();
+        }
+
+        m_DynamicData.clear();
+      }
     }
   } // namespace Util
 } // namespace Low

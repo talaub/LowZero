@@ -103,8 +103,8 @@ namespace Low {
           "Could not find name property for unique id generation");
 
       l_Combinator.data.nameHash =
-          ((Name *)l_TypeInfoForName.properties[l_NameName].get_return(
-               l_HandleForName))
+          ((Name *)l_TypeInfoForName.properties[l_NameName]
+               .get_return(l_HandleForName))
               ->m_Index;
       l_Combinator.data.type = p_Handle.get_type();
       do {
@@ -273,12 +273,6 @@ namespace Low {
         return;
       }
 
-      if (p_PropertyInfo.type == Util::RTTI::PropertyType::STRING) {
-        // TODO: Integrate String type into variant
-        // Currently strings are not managed in variants
-        return;
-      }
-
       p_Variants[p_PropertyInfo.name] =
           p_PropertyInfo.get_variant(p_Handle);
     }
@@ -326,6 +320,9 @@ namespace Low {
       }
       if (type == Util::RTTI::PropertyType::ENUM) {
         return Variant(*(u8 *)l_Ptr);
+      }
+      if (type == Util::RTTI::PropertyType::STRING) {
+        return Variant(*(String *)l_Ptr);
       }
 
       LOW_ASSERT(

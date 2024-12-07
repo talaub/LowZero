@@ -46,6 +46,12 @@ namespace Flode {
     Output
   };
 
+  enum class PinContainerType
+  {
+    None,
+    List
+  };
+
   struct Pin;
 
   void ShowToolTip(const char *p_Label, ImColor p_Color);
@@ -73,6 +79,7 @@ namespace Flode {
     Low::Util::String title;
     PinType type;
     PinDirection direction;
+    PinContainerType containerType;
     NodeEd::NodeId nodeId;
 
     u16 typeId;
@@ -101,6 +108,10 @@ namespace Flode {
 
     Graph *graph;
 
+    Pin *create_pin(PinDirection p_Direction,
+                    Low::Util::String p_Title, PinType p_Type,
+                    u16 p_TypeId, PinContainerType p_ContainerType,
+                    u64 p_PinId = 0);
     Pin *create_pin(PinDirection p_Direction,
                     Low::Util::String p_Title, PinType p_Type,
                     u16 p_TypeId, u64 p_PinId = 0);

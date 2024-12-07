@@ -9,10 +9,13 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
 #include "LowEditorCommonOperations.h"
+#include "LowEditorIcons.h"
 
 #include "LowCoreEntity.h"
 #include "LowCorePrefab.h"
 #include "LowCoreTransform.h"
+#include "LowCoreMeshRenderer.h"
+#include "LowCorePointLight.h"
 
 #include "LowUtilString.h"
 
@@ -210,9 +213,43 @@ namespace Low {
         set_focused_widget(this);
       }
 
+      if (ImGui::BeginPopup("create_entity_selection_popup")) {
+        if (ImGui::Selectable(LOW_EDITOR_ICON_CYLINDER " Empty")) {
+          Core::Entity l_Entity = Core::Entity::make("Empty");
+          Core::Component::Transform::make(l_Entity);
+          set_selected_entity(l_Entity);
+        }
+        ImGui::Separator();
+        if (ImGui::Selectable(LOW_EDITOR_ICON_CUBE
+                              " Mesh renderer")) {
+          Core::Entity l_Entity = Core::Entity::make("Mesh");
+          Core::Component::Transform::make(l_Entity);
+          Core::Component::MeshRenderer::make(l_Entity);
+          set_selected_entity(l_Entity);
+        }
+        if (ImGui::Selectable(LOW_EDITOR_ICON_POINT_LIGHT
+                              " Point light")) {
+          Core::Entity l_Entity = Core::Entity::make("PointLight");
+          Core::Component::Transform::make(l_Entity);
+          Core::Component::PointLight l_PointLight =
+              Core::Component::PointLight::make(l_Entity);
+          l_PointLight.set_color(
+              Low::Math::ColorRGB(1.0f, 1.0f, 1.0f));
+          l_PointLight.set_intensity(1.0f);
+          set_selected_entity(l_Entity);
+        }
+        ImGui::EndPopup();
+      }
+
+      if (ImGui::Button(LOW_EDITOR_ICON_ADD " Create")) {
+        ImGui::OpenPopup("create_entity_selection_popup");
+      }
+
+      ImGui::SameLine();
+
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
-                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+                       IM_ARRAYSIZE(l_Search), {0.0f, 0.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();
