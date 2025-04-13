@@ -29,6 +29,24 @@
                     type::get_capacity() +                           \
                 (accessor.m_Data.m_Index * sizeof(membertype))]))
 
+#if 1
+
+#define WRITE_LOCK(lockname)                                         \
+  std::unique_lock<std::shared_mutex> lockname(ms_BufferMutex)
+
+#define READ_LOCK(lockname)                                          \
+  std::shared_lock<std::shared_mutex> lockname(ms_BufferMutex)
+
+#define LOCK_UNLOCK(lockname) lockname.unlock()
+
+#else
+#define WRITE_LOCK(lockname)
+
+#define READ_LOCK(lockname)
+
+#define LOCK_UNLOCK(lockname)
+#endif
+
 namespace Low {
   namespace Util {
     struct Variant;

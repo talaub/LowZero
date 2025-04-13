@@ -4,6 +4,9 @@
 
 #include "vulkan/vulkan.h"
 
+#include "LowRendererRenderObject.h"
+#include "LowRendererMeshInfo.h"
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -12,6 +15,8 @@ namespace Low {
       bool cleanup();
       bool prepare_tick(float p_Delta);
       bool tick(float p_Delta);
+
+      bool wait_idle();
 
       size_t request_resource_staging_buffer_space(
           const size_t p_RequestedSize, size_t *p_OutOffset);

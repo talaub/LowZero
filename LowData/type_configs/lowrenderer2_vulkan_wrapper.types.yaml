@@ -18,3 +18,29 @@ types:
     properties:
       allocated_image:
         type: AllocatedImage
+    functions:
+      unload:
+        return_type: bool
+  ViewInfo:
+    properties:
+      view_data_buffer:
+        type: AllocatedBuffer
+      view_data_descriptor_set:
+        type: VkDescriptorSet
+        no_ref: true
+      lighting_descriptor_set:
+        type: VkDescriptorSet
+      staging_buffers:
+        type: Low::Util::List<StagingBuffer>
+      initialized:
+        type: bool
+      gbuffer_descriptor_set:
+        type: VkDescriptorSet
+      gbuffer_depth:
+        type: AllocatedImage
+      gbuffer_albedo:
+        type: AllocatedImage
+      gbuffer_normals:
+        type: AllocatedImage
+      img_lit:
+        type: AllocatedImage

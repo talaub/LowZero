@@ -435,6 +435,9 @@ function process_file(p_Path, p_FileName, p_Project = false) {
         i_VProp.accessor_type = get_accessor_type(i_VProp.type, i_VProp.handle);
         i_VProp.name = i_VPropName;
 
+        i_VProp.hide_setter_flode =
+          i_VProp.hide_flode || i_VProp.hide_setter_flode;
+
         i_VProp.plain_type = get_plain_type(i_VProp.type);
         i_VProp.soa_type = i_VProp.plain_type;
         i_VProp.cs_type = get_cs_type(i_VProp);
@@ -458,7 +461,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
             return_handle: i_VProp.handle,
             accessor_type: i_VProp.accessor_type,
             expose_scripting: i_VProp.expose_scripting,
-            hide_flode: i_VProp.hide_flode,
+            hide_flode: i_VProp.hide_flode || i_VProp.hide_getter_flode,
           };
         }
 
@@ -469,7 +472,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
             return_handle: false,
             accessor_type: "void",
             expose_scripting: i_VProp.expose_scripting,
-            hide_flode: i_VProp.hide_flode,
+            hide_flode: i_VProp.hide_flode || i_VProp.hide_setter_flode,
             parameters: [
               {
                 name: "p_Value",

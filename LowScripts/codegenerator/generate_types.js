@@ -391,6 +391,7 @@ function generate_header(p_Type) {
     }
     t += empty();
   }
+  t += include(`shared_mutex`);
 
   if (true) {
     const l_MarkerName = `CUSTOM:HEADER_CODE`;
@@ -464,6 +465,7 @@ function generate_header(p_Type) {
   t += line("{", n++);
   t += line("public:", --n);
   n++;
+  t += line("static std::shared_mutex ms_BufferMutex;", n);
   t += line("static uint8_t *ms_Buffer;", n);
   t += line("static Low::Util::Instances::Slot *ms_Slots;", n);
   t += empty();
@@ -483,12 +485,27 @@ function generate_header(p_Type) {
   if (p_Type.component) {
     t += line(`static ${p_Type.name} make(Low::Core::Entity p_Entity);`);
     t += line(`static Low::Util::Handle _make(Low::Util::Handle p_Entity);`);
+    if (p_Type.unique_id) {
+      t += line(
+        `static ${p_Type.name} make(Low::Core::Entity p_Entity, Low::Util::UniqueId p_UniqueId);`,
+      );
+    }
   } else if (p_Type.ui_component) {
     t += line(`static ${p_Type.name} make(Low::Core::UI::Element p_Element);`);
     t += line(`static Low::Util::Handle _make(Low::Util::Handle p_Element);`);
+    if (p_Type.unique_id) {
+      t += line(
+        `static ${p_Type.name} make(Low::Core::UI::Element p_Element, Low::Util::UniqueId p_UniqueId);`,
+      );
+    }
   } else {
     t += line(`static ${p_Type.name} make(Low::Util::Name p_Name);`);
     t += line(`static Low::Util::Handle _make(Low::Util::Name p_Name);`);
+    if (p_Type.unique_id) {
+      t += line(
+        `static ${p_Type.name} make(Low::Util::Name p_Name, Low::Util::UniqueId p_UniqueId);`,
+      );
+    }
   }
   if (p_Type.private_make) {
     t += line("public:");
@@ -570,6 +587,7 @@ function generate_header(p_Type) {
     n,
   );
   t += line("static bool is_alive(Low::Util::Handle p_Handle) {");
+  t += line(`READ_LOCK(l_Lock);`);
   t += line(
     `return p_Handle.get_type() == ${p_Type.name}::TYPE_ID && p_Handle.check_alive(ms_Slots, get_capacity());`,
   );
@@ -595,12 +613,32 @@ function generate_header(p_Type) {
       }
     }
     if (!i_Prop.no_setter) {
-      const l = `void ${i_Prop.setter_name}(${i_Prop.accessor_type} p_Value);`;
+      const l_SetterLines = [
+        `void ${i_Prop.setter_name}(${i_Prop.accessor_type} p_Value);`,
+      ];
+
+      // Type specific special setters
+      if (is_string_type(i_Prop.plain_type)) {
+        l_SetterLines.push(`void ${i_Prop.setter_name}(const char* p_Value);`);
+      }
+      if (i_Prop.plain_type.endsWith("Vector2")) {
+        l_SetterLines.push(`void ${i_Prop.setter_name}(float p_X, float p_Y);`);
+        l_SetterLines.push(`void ${i_Prop.setter_name}_x(float p_Value);`);
+        l_SetterLines.push(`void ${i_Prop.setter_name}_y(float p_Value);`);
+      }
+      if (i_Prop.plain_type.endsWith("Vector3")) {
+        l_SetterLines.push(
+          `void ${i_Prop.setter_name}(float p_X, float p_Y, float p_Z);`,
+        );
+        l_SetterLines.push(`void ${i_Prop.setter_name}_x(float p_Value);`);
+        l_SetterLines.push(`void ${i_Prop.setter_name}_y(float p_Value);`);
+        l_SetterLines.push(`void ${i_Prop.setter_name}_z(float p_Value);`);
+      }
 
       if (i_Prop.private_setter) {
-        privatelines.push(l);
+        l_SetterLines.forEach((l) => privatelines.push(l));
       } else {
-        t += line(l, n);
+        l_SetterLines.forEach((l) => (t += line(l, n)));
       }
     }
     t += empty();
@@ -786,6 +824,7 @@ function generate_source(p_Type) {
   t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${p_Type.typeId};`, n);
   t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
   t += line(`uint8_t *${p_Type.name}::ms_Buffer = 0;`, n);
+  t += line(`std::shared_mutex ${p_Type.name}::ms_BufferMutex;`, n);
   t += line(`Low::Util::Instances::Slot *${p_Type.name}::ms_Slots = 0;`, n);
   t += line(
     `Low::Util::List<${p_Type.name}> ${p_Type.name}::ms_LivingInstances = Low::Util::List<${p_Type.name}>();`,
@@ -837,13 +876,38 @@ function generate_source(p_Type) {
     t += line(
       `${p_Type.name} ${p_Type.name}::make(Low::Core::Entity p_Entity){`,
     );
+    if (p_Type.unique_id) {
+      t += line(`return make(p_Entity, 0ull);`);
+      t += line("}");
+      t += empty();
+      t += line(
+        `${p_Type.name} ${p_Type.name}::make(Low::Core::Entity p_Entity, Low::Util::UniqueId p_UniqueId){`,
+      );
+    }
   } else if (p_Type.ui_component) {
     t += line(
       `${p_Type.name} ${p_Type.name}::make(Low::Core::UI::Element p_Element){`,
     );
+    if (p_Type.unique_id) {
+      t += line(`return make(p_Element, 0ull);`);
+      t += line("}");
+      t += empty();
+      t += line(
+        `${p_Type.name} ${p_Type.name}::make(Low::Core::UI::Element p_Element, Low::Util::UniqueId p_UniqueId){`,
+      );
+    }
   } else {
     t += line(`${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name){`);
+    if (p_Type.unique_id) {
+      t += line(`return make(p_Name, 0ull);`);
+      t += line("}");
+      t += empty();
+      t += line(
+        `${p_Type.name} ${p_Type.name}::make(Low::Util::Name p_Name, Low::Util::UniqueId p_UniqueId){`,
+      );
+    }
   }
+  t += line(`WRITE_LOCK(l_Lock);`);
   t += line(`uint32_t l_Index = create_instance();`);
   t += empty();
   t += line(`${p_Type.name} l_Handle;`);
@@ -870,6 +934,7 @@ function generate_source(p_Type) {
       );
     }
   }
+  t += line(`LOCK_UNLOCK(l_Lock);`);
   t += empty();
   if (p_Type.component) {
     t += line("l_Handle.set_entity(p_Entity);");
@@ -886,9 +951,13 @@ function generate_source(p_Type) {
   t += line(`ms_LivingInstances.push_back(l_Handle);`);
   if (p_Type.unique_id) {
     t += empty();
+    t += line(`if (p_UniqueId > 0ull) {`);
+    t += line(`l_Handle.set_unique_id(p_UniqueId);`);
+    t += line(`} else {`);
     t += line(
       `l_Handle.set_unique_id(Low::Util::generate_unique_id(l_Handle.get_id()));`,
     );
+    t += line(`}`);
     t += line(
       `Low::Util::register_unique_id(l_Handle.get_unique_id(),l_Handle.get_id());`,
     );
@@ -940,6 +1009,7 @@ function generate_source(p_Type) {
 
     l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
   }
+
   t += line(l_DestroyBeginMarker);
   t += l_CustomCode;
   t += line(l_DestroyEndMarker);
@@ -948,6 +1018,7 @@ function generate_source(p_Type) {
     t += line(`Low::Util::remove_unique_id(get_unique_id());`);
     t += empty();
   }
+  t += line(`WRITE_LOCK(l_Lock);`);
   t += line("ms_Slots[this->m_Data.m_Index].m_Occupied = false;");
   t += line("ms_Slots[this->m_Data.m_Index].m_Generation++;");
   t += empty();
@@ -964,6 +1035,7 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::initialize() {`);
+  t += line(`WRITE_LOCK(l_Lock);`);
   if (true) {
     const l_MarkerName = `CUSTOM:PREINITIALIZE`;
 
@@ -993,6 +1065,7 @@ function generate_source(p_Type) {
     `&ms_Buffer, ${p_Type.name}Data::get_size(), get_capacity(), &ms_Slots`,
   );
   t += line(`);`);
+  t += line(`LOCK_UNLOCK(l_Lock);`);
   t += empty();
   t += line(`LOW_PROFILE_ALLOC(type_buffer_${p_Type.name});`);
   t += line(`LOW_PROFILE_ALLOC(type_slots_${p_Type.name});`);
@@ -1239,11 +1312,13 @@ function generate_source(p_Type) {
   t += line(`for (uint32_t i = 0u; i < l_Instances.size(); ++i) {`);
   t += line(`l_Instances[i].destroy();`);
   t += line("}");
+  t += line(`WRITE_LOCK(l_Lock);`);
   t += line("free(ms_Buffer);");
   t += line("free(ms_Slots);");
   t += empty();
   t += line(`LOW_PROFILE_FREE(type_buffer_${p_Type.name});`);
   t += line(`LOW_PROFILE_FREE(type_slots_${p_Type.name});`);
+  t += line(`LOCK_UNLOCK(l_Lock);`);
   t += line("}");
   t += empty();
 
@@ -1267,6 +1342,7 @@ function generate_source(p_Type) {
   t += empty();
 
   t += line(`bool ${p_Type.name}::is_alive() const {`);
+  t += line(`READ_LOCK(l_Lock);`);
   t += line(
     `return m_Data.m_Type == ${p_Type.name}::TYPE_ID && check_alive(ms_Slots, ${p_Type.name}::get_capacity());`,
   );
@@ -1666,6 +1742,7 @@ function generate_source(p_Type) {
       t += i_CustomCode;
       t += line(i_GetterEndMarker);
       t += empty();
+      t += line(`READ_LOCK(l_ReadLock);`);
       t += line(
         `return TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type});`,
         n,
@@ -1689,6 +1766,63 @@ function generate_source(p_Type) {
           i_BeginMarkerIndex,
           i_EndMarkerIndex,
         );
+      }
+
+      // Type specific special setters
+      if (is_string_type(i_Prop.plain_type)) {
+        t += line(
+          `void ${p_Type.name}::${i_Prop.setter_name}(const char* p_Value){`,
+          n,
+        );
+        t += line(`${i_Prop.setter_name}(Low::Util::String(p_Value));`);
+        t += line("}");
+        t += empty();
+      }
+      if (i_Prop.plain_type.endsWith("Vector2")) {
+        t += line(
+          `void ${p_Type.name}::${i_Prop.setter_name}(float p_X, float p_Y){`,
+          n,
+        );
+        t += line(`${i_Prop.setter_name}(Low::Math::Vector2(p_X, p_Y));`);
+        t += line("}");
+        t += empty();
+
+        const l_Coefficients = ["x", "y"];
+
+        for (const it of l_Coefficients) {
+          t += line(
+            `void ${p_Type.name}::${i_Prop.setter_name}_${it}(float p_Value){`,
+            n,
+          );
+          t += line(`Low::Math::Vector2 l_Value = ${i_Prop.getter_name}();`);
+          t += line(`l_Value.${it} = p_Value;`);
+          t += line(`${i_Prop.setter_name}(l_Value);`);
+          t += line("}");
+          t += empty();
+        }
+      }
+      if (i_Prop.plain_type.endsWith("Vector3")) {
+        t += line(
+          `void ${p_Type.name}::${i_Prop.setter_name}(float p_X, float p_Y, float p_Z){`,
+          n,
+        );
+        t += line(`${i_Prop.setter_name}(Low::Math::Vector3(p_X, p_Y, p_Z));`);
+        t += line("}");
+        t += empty();
+
+        const l_Coefficients = ["x", "y", "z"];
+
+        for (const it of l_Coefficients) {
+          t += line(
+            `void ${p_Type.name}::${i_Prop.setter_name}_${it}(float p_Value){`,
+            n,
+          );
+          t += line(`Low::Math::Vector3 l_Value = ${i_Prop.getter_name}();`);
+          t += line(`l_Value.${it} = p_Value;`);
+          t += line(`${i_Prop.setter_name}(l_Value);`);
+          t += line("}");
+          t += empty();
+        }
       }
 
       t += line(
@@ -1727,11 +1861,20 @@ function generate_source(p_Type) {
         t += line(i_SetterEndMarker);
         t += empty();
       }
+
+      let i_GeneratedWriteLock = false;
+
       if (i_Prop.dirty_flag) {
         if (!i_Prop.dirty_flag_no_check) {
           t += line(`if (${i_Prop.getter_name}() != p_Value) {`);
         }
         t += line("// Set dirty flags");
+
+        if (!i_GeneratedWriteLock) {
+          t += line(`WRITE_LOCK(l_WriteLock);`);
+          i_GeneratedWriteLock = true;
+        }
+
         for (var i_Flag of i_Prop.dirty_flag) {
           t += line(`TYPE_SOA(${p_Type.name}, ${i_Flag}, bool) = true;`, n);
         }
@@ -1739,10 +1882,15 @@ function generate_source(p_Type) {
       }
 
       t += line("// Set new value");
+      if (!i_GeneratedWriteLock) {
+        t += line(`WRITE_LOCK(l_WriteLock);`);
+        i_GeneratedWriteLock = true;
+      }
       t += line(
         `TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = p_Value;`,
         n,
       );
+      t += line(`LOCK_UNLOCK(l_WriteLock);`);
       if (i_Prop.editor_editable) {
         if (p_Type.component && p_Type.name !== "PrefabInstance") {
           t += line("{");
@@ -1870,10 +2018,14 @@ function generate_source(p_Type) {
         t += line(
           `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`,
         );
+        t += line(`${p_Type.name} i_${p_Type.name} = *it;`);
+        t += empty();
         t += line(
           `auto* i_ValPtr = new (&l_NewBuffer[offsetof(${p_Type.name}Data, ${i_PropName})*(l_Capacity + l_CapacityIncrease) + (it->get_index() * sizeof(${i_Prop.plain_type}))]) ${i_Prop.plain_type}();`,
         );
-        t += line(`*i_ValPtr = it->${i_Prop.getter_name}();`);
+        t += line(
+          `*i_ValPtr = ACCESSOR_TYPE_SOA(i_${p_Type.name}, ${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type});`,
+        );
         t += line("}");
       } else {
         t += line(

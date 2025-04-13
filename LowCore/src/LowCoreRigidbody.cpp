@@ -27,6 +27,7 @@ namespace Low {
       const uint16_t Rigidbody::TYPE_ID = 31;
       uint32_t Rigidbody::ms_Capacity = 0u;
       uint8_t *Rigidbody::ms_Buffer = 0;
+      std::shared_mutex Rigidbody::ms_BufferMutex;
       Low::Util::Instances::Slot *Rigidbody::ms_Slots = 0;
       Low::Util::List<Rigidbody> Rigidbody::ms_LivingInstances =
           Low::Util::List<Rigidbody>();
@@ -52,6 +53,13 @@ namespace Low {
 
       Rigidbody Rigidbody::make(Low::Core::Entity p_Entity)
       {
+        return make(p_Entity, 0ull);
+      }
+
+      Rigidbody Rigidbody::make(Low::Core::Entity p_Entity,
+                                Low::Util::UniqueId p_UniqueId)
+      {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Rigidbody l_Handle;
@@ -74,14 +82,19 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, entity,
                                 Low::Core::Entity))
             Low::Core::Entity();
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
         ms_LivingInstances.push_back(l_Handle);
 
-        l_Handle.set_unique_id(
-            Low::Util::generate_unique_id(l_Handle.get_id()));
+        if (p_UniqueId > 0ull) {
+          l_Handle.set_unique_id(p_UniqueId);
+        } else {
+          l_Handle.set_unique_id(
+              Low::Util::generate_unique_id(l_Handle.get_id()));
+        }
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
@@ -119,6 +132,7 @@ namespace Low {
 
         Low::Util::remove_unique_id(get_unique_id());
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -135,6 +149,7 @@ namespace Low {
 
       void Rigidbody::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -144,6 +159,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, RigidbodyData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Rigidbody);
         LOW_PROFILE_ALLOC(type_slots_Rigidbody);
@@ -420,11 +436,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Rigidbody);
         LOW_PROFILE_FREE(type_slots_Rigidbody);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Rigidbody::_find_by_index(uint32_t p_Index)
@@ -446,6 +464,7 @@ namespace Low {
 
       bool Rigidbody::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Rigidbody::TYPE_ID &&
                check_alive(ms_Slots, Rigidbody::get_capacity());
       }
@@ -558,6 +577,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_fixed
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, fixed, bool);
       }
       void Rigidbody::set_fixed(bool p_Value)
@@ -569,7 +589,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_fixed
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, fixed, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -600,6 +622,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_gravity
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, gravity, bool);
       }
       void Rigidbody::set_gravity(bool p_Value)
@@ -611,7 +634,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_gravity
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, gravity, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -642,6 +667,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_mass
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, mass, float);
       }
       void Rigidbody::set_mass(float p_Value)
@@ -653,7 +679,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mass
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, mass, float) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -684,6 +712,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, initialized, bool);
       }
       void Rigidbody::set_initialized(bool p_Value)
@@ -695,7 +724,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, initialized, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
 
@@ -710,6 +741,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_rigid_dynamic
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, rigid_dynamic,
                         PhysicsRigidDynamic);
       }
@@ -722,6 +754,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_physics_shape
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, physics_shape, PhysicsShape);
       }
 
@@ -733,6 +766,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_shape
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, shape, Math::Shape);
       }
       void Rigidbody::set_shape(Math::Shape &p_Value)
@@ -744,7 +778,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_shape
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, shape, Math::Shape) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -798,6 +834,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, entity, Low::Core::Entity);
       }
       void Rigidbody::set_entity(Low::Core::Entity p_Value)
@@ -809,7 +846,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, entity, Low::Core::Entity) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -824,6 +863,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId);
       }
       void Rigidbody::set_unique_id(Low::Util::UniqueId p_Value)
@@ -835,7 +875,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 

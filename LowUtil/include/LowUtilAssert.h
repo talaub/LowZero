@@ -36,6 +36,16 @@ namespace Low {
     }                                                                \
   }
 
+#define LOW_ASSERT_ERROR_RETURN_FALSE(cond, msg)                     \
+  {                                                                  \
+    if (!(cond)) {                                                   \
+      Low::Util::Assertion::print_assert(                            \
+          Low::Util::Log::LogLevel::ERROR, LOW_MODULE_NAME, msg,     \
+          __FILE__, __LINE__, __FUNCTION__, false);                  \
+      return false;                                                  \
+    }                                                                \
+  }
+
 #define LOW_ASSERT_WARN(cond, msg)                                   \
   {                                                                  \
     if (!(cond)) {                                                   \

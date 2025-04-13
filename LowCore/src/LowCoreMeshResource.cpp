@@ -43,6 +43,7 @@ namespace Low {
     const uint16_t MeshResource::TYPE_ID = 21;
     uint32_t MeshResource::ms_Capacity = 0u;
     uint8_t *MeshResource::ms_Buffer = 0;
+    std::shared_mutex MeshResource::ms_BufferMutex;
     Low::Util::Instances::Slot *MeshResource::ms_Slots = 0;
     Low::Util::List<MeshResource> MeshResource::ms_LivingInstances =
         Low::Util::List<MeshResource>();
@@ -66,6 +67,7 @@ namespace Low {
 
     MeshResource MeshResource::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       MeshResource l_Handle;
@@ -85,6 +87,7 @@ namespace Low {
                               ResourceState)) ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -106,6 +109,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -122,6 +126,7 @@ namespace Low {
 
     void MeshResource::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       g_Meshes.resize(MESH_COUNT);
@@ -136,6 +141,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, MeshResourceData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_MeshResource);
       LOW_PROFILE_ALLOC(type_slots_MeshResource);
@@ -366,6 +372,23 @@ namespace Low {
         // End function: _load
       }
       {
+        // Function: _internal_load
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(_internal_load);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Mesh);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: _internal_load
+      }
+      {
         // Function: unload
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(unload);
@@ -401,11 +424,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_MeshResource);
       LOW_PROFILE_FREE(type_slots_MeshResource);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle MeshResource::_find_by_index(uint32_t p_Index)
@@ -427,6 +452,7 @@ namespace Low {
 
     bool MeshResource::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == MeshResource::TYPE_ID &&
              check_alive(ms_Slots, MeshResource::get_capacity());
     }
@@ -525,8 +551,14 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, path, Util::String);
     }
+    void MeshResource::set_path(const char *p_Value)
+    {
+      set_path(Low::Util::String(p_Value));
+    }
+
     void MeshResource::set_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -536,7 +568,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, path, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
 
@@ -551,6 +585,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_submeshes
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, submeshes, Util::List<Submesh>);
     }
 
@@ -562,6 +597,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, reference_count, uint32_t);
     }
     void MeshResource::set_reference_count(uint32_t p_Value)
@@ -573,7 +609,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, reference_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
@@ -588,6 +626,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_skeleton
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton);
     }
     void MeshResource::set_skeleton(Renderer::Skeleton p_Value)
@@ -599,7 +638,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_skeleton
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, skeleton, Renderer::Skeleton) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skeleton
 
@@ -614,6 +655,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, state, ResourceState);
     }
     void MeshResource::set_state(ResourceState p_Value)
@@ -625,7 +667,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, state, ResourceState) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
 
@@ -640,6 +684,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
     }
     void MeshResource::set_name(Low::Util::Name p_Value)
@@ -651,7 +696,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -709,6 +756,11 @@ namespace Low {
       uint32_t l_MeshIndex = 0;
       bool l_FoundIndex = false;
 
+      Util::String l_FullPath =
+          Util::get_project().dataPath + "\\resources\\meshes\\";
+      l_FullPath += get_path().c_str();
+
+#if 1
       do {
         for (uint32_t i = 0u; i < MESH_COUNT; ++i) {
           if (!g_MeshSlots[i]) {
@@ -719,10 +771,6 @@ namespace Low {
           }
         }
       } while (!l_FoundIndex);
-
-      Util::String l_FullPath =
-          Util::get_project().dataPath + "\\resources\\meshes\\";
-      l_FullPath += get_path().c_str();
 
       MeshLoadSchedule &l_LoadSchedule =
           g_MeshLoadSchedules.emplace_back(
@@ -738,7 +786,14 @@ namespace Low {
                       }
                     }
                   }));
+
       l_LoadSchedule.meshResource = *this;
+#else
+      Util::Resource::Mesh l_Mesh;
+      Util::Resource::load_mesh(l_FullPath, l_Mesh);
+
+      _internal_load(l_Mesh);
+#endif
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_load
     }
@@ -746,28 +801,37 @@ namespace Low {
     void MeshResource::_load(uint32_t p_MeshIndex)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__load
-
       Util::Resource::Mesh &l_Mesh = g_Meshes[p_MeshIndex];
 
-      for (uint32_t i = 0u; i < l_Mesh.submeshes.size(); ++i) {
-        for (uint32_t j = 0u;
-             j < l_Mesh.submeshes[i].meshInfos.size(); ++j) {
-          Submesh i_Submesh;
-          i_Submesh.name = l_Mesh.submeshes[i].name;
-          i_Submesh.transformation = l_Mesh.submeshes[i].transform;
-          i_Submesh.mesh = Renderer::upload_mesh(
-              N(Submesh), l_Mesh.submeshes[i].meshInfos[j]);
+      _internal_load(l_Mesh);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
+    }
 
-          get_submeshes().push_back(i_Submesh);
+    void
+    MeshResource::_internal_load(Low::Util::Resource::Mesh &p_Mesh)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__internal_load
+      Util::List<Submesh> &l_Submeshes = get_submeshes();
+
+      for (uint32_t i = 0u; i < p_Mesh.submeshes.size(); ++i) {
+        for (uint32_t j = 0u;
+             j < p_Mesh.submeshes[i].meshInfos.size(); ++j) {
+          Submesh i_Submesh;
+          i_Submesh.name = p_Mesh.submeshes[i].name;
+          i_Submesh.transformation = p_Mesh.submeshes[i].transform;
+          i_Submesh.mesh = Renderer::upload_mesh(
+              N(Submesh), p_Mesh.submeshes[i].meshInfos[j]);
+
+          l_Submeshes.push_back(i_Submesh);
         }
       }
 
-      if (!l_Mesh.animations.empty()) {
-        set_skeleton(Renderer::upload_skeleton(N(Skeleton), l_Mesh));
+      if (!p_Mesh.animations.empty()) {
+        set_skeleton(Renderer::upload_skeleton(N(Skeleton), p_Mesh));
       }
 
       set_state(ResourceState::LOADED);
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION__load
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION__internal_load
     }
 
     void MeshResource::unload()
@@ -874,13 +938,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          MeshResource i_MeshResource = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(MeshResourceData, submeshes) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::List<Submesh>))])
               Util::List<Submesh>();
-          *i_ValPtr = it->get_submeshes();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_MeshResource, MeshResource,
+                                submeshes, Util::List<Submesh>);
         }
       }
       {

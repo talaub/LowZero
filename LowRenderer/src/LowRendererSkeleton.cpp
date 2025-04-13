@@ -22,6 +22,7 @@ namespace Low {
     const uint16_t Skeleton::TYPE_ID = 30;
     uint32_t Skeleton::ms_Capacity = 0u;
     uint8_t *Skeleton::ms_Buffer = 0;
+    std::shared_mutex Skeleton::ms_BufferMutex;
     Low::Util::Instances::Slot *Skeleton::ms_Slots = 0;
     Low::Util::List<Skeleton> Skeleton::ms_LivingInstances =
         Low::Util::List<Skeleton>();
@@ -44,6 +45,7 @@ namespace Low {
 
     Skeleton Skeleton::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Skeleton l_Handle;
@@ -58,6 +60,7 @@ namespace Low {
           Util::List<SkeletalAnimation>();
       ACCESSOR_TYPE_SOA(l_Handle, Skeleton, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -78,6 +81,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -94,6 +98,7 @@ namespace Low {
 
     void Skeleton::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -103,6 +108,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, SkeletonData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Skeleton);
       LOW_PROFILE_ALLOC(type_slots_Skeleton);
@@ -249,11 +255,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Skeleton);
       LOW_PROFILE_FREE(type_slots_Skeleton);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Skeleton::_find_by_index(uint32_t p_Index)
@@ -275,6 +283,7 @@ namespace Low {
 
     bool Skeleton::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Skeleton::TYPE_ID &&
              check_alive(ms_Slots, Skeleton::get_capacity());
     }
@@ -379,6 +388,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_root_bone
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Skeleton, root_bone, Bone);
     }
     void Skeleton::set_root_bone(Bone &p_Value)
@@ -390,7 +400,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_root_bone
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Skeleton, root_bone, Bone) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_root_bone
 
@@ -405,6 +417,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_bone_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Skeleton, bone_count, uint32_t);
     }
     void Skeleton::set_bone_count(uint32_t p_Value)
@@ -416,7 +429,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_bone_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Skeleton, bone_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bone_count
 
@@ -431,6 +446,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_animations
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Skeleton, animations,
                       Util::List<SkeletalAnimation>);
     }
@@ -443,6 +459,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Skeleton, name, Low::Util::Name);
     }
     void Skeleton::set_name(Low::Util::Name p_Value)
@@ -454,7 +471,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Skeleton, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -514,13 +533,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          Skeleton i_Skeleton = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(SkeletonData, animations) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::List<SkeletalAnimation>))])
               Util::List<SkeletalAnimation>();
-          *i_ValPtr = it->get_animations();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_Skeleton, Skeleton, animations,
+                                Util::List<SkeletalAnimation>);
         }
       }
       {

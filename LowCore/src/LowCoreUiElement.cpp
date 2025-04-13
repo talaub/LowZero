@@ -25,6 +25,7 @@ namespace Low {
       const uint16_t Element::TYPE_ID = 37;
       uint32_t Element::ms_Capacity = 0u;
       uint8_t *Element::ms_Buffer = 0;
+      std::shared_mutex Element::ms_BufferMutex;
       Low::Util::Instances::Slot *Element::ms_Slots = 0;
       Low::Util::List<Element> Element::ms_LivingInstances =
           Low::Util::List<Element>();
@@ -47,6 +48,13 @@ namespace Low {
 
       Element Element::make(Low::Util::Name p_Name)
       {
+        return make(p_Name, 0ull);
+      }
+
+      Element Element::make(Low::Util::Name p_Name,
+                            Low::Util::UniqueId p_UniqueId)
+      {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Element l_Handle;
@@ -65,13 +73,18 @@ namespace Low {
                           bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Element, name, Low::Util::Name) =
             Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
         ms_LivingInstances.push_back(l_Handle);
 
-        l_Handle.set_unique_id(
-            Low::Util::generate_unique_id(l_Handle.get_id()));
+        if (p_UniqueId > 0ull) {
+          l_Handle.set_unique_id(p_UniqueId);
+        } else {
+          l_Handle.set_unique_id(
+              Low::Util::generate_unique_id(l_Handle.get_id()));
+        }
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
@@ -125,6 +138,7 @@ namespace Low {
 
         Low::Util::remove_unique_id(get_unique_id());
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -141,6 +155,7 @@ namespace Low {
 
       void Element::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -150,6 +165,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, ElementData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Element);
         LOW_PROFILE_ALLOC(type_slots_Element);
@@ -502,11 +518,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Element);
         LOW_PROFILE_FREE(type_slots_Element);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Element::_find_by_index(uint32_t p_Index)
@@ -528,6 +546,7 @@ namespace Low {
 
       bool Element::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Element::TYPE_ID &&
                check_alive(ms_Slots, Element::get_capacity());
       }
@@ -685,6 +704,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_components
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(
             Element, components,
             SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
@@ -698,6 +718,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_view
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Element, view, Low::Core::UI::View);
       }
       void Element::set_view(Low::Core::UI::View p_Value)
@@ -709,7 +730,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Element, view, Low::Core::UI::View) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view
 
@@ -734,6 +757,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_click_passthrough
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Element, click_passthrough, bool);
       }
       void Element::set_click_passthrough(bool p_Value)
@@ -745,7 +769,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_click_passthrough
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Element, click_passthrough, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_click_passthrough
 
@@ -760,6 +786,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Element, unique_id, Low::Util::UniqueId);
       }
       void Element::set_unique_id(Low::Util::UniqueId p_Value)
@@ -771,7 +798,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Element, unique_id, Low::Util::UniqueId) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -786,6 +815,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Element, name, Low::Util::Name);
       }
       void Element::set_name(Low::Util::Name p_Value)
@@ -797,7 +827,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Element, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1009,6 +1041,8 @@ namespace Low {
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
+            Element i_Element = *it;
+
             auto *i_ValPtr = new (
                 &l_NewBuffer[offsetof(ElementData, components) *
                                  (l_Capacity + l_CapacityIncrease) +
@@ -1016,7 +1050,9 @@ namespace Low {
                               sizeof(Util::Map<uint16_t,
                                                Util::Handle>))])
                 Util::Map<uint16_t, Util::Handle>();
-            *i_ValPtr = it->get_components();
+            *i_ValPtr = ACCESSOR_TYPE_SOA(
+                i_Element, Element, components,
+                SINGLE_ARG(Util::Map<uint16_t, Util::Handle>));
           }
         }
         {

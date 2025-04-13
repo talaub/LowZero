@@ -73,16 +73,6 @@ namespace Low {
 
           p_Swapchain.context = &p_Context;
 
-          return true;
-        }
-
-        bool swapchain_init(Context &p_Context,
-                            Swapchain &p_Swapchain,
-                            Math::UVector2 p_Dimensions)
-        {
-          bool l_Result = swapchain_create(
-              p_Context, p_Context.swapchain, p_Dimensions);
-
           {
             VkExtent3D l_DrawImageExtent = {p_Dimensions.x,
                                             p_Dimensions.y, 1};
@@ -122,6 +112,16 @@ namespace Low {
                 Global::get_device(), &l_ImgViewInfo, nullptr,
                 &p_Swapchain.drawImage.imageView));
           }
+
+          return true;
+        }
+
+        bool swapchain_init(Context &p_Context,
+                            Swapchain &p_Swapchain,
+                            Math::UVector2 p_Dimensions)
+        {
+          bool l_Result = swapchain_create(
+              p_Context, p_Context.swapchain, p_Dimensions);
 
           return l_Result;
         }
@@ -217,16 +217,6 @@ namespace Low {
               sizeof(FrameData) * Global::get_frame_overlap());
 
           for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
-            {
-              p_Context.frames[i].frameStagingBuffer.buffer =
-                  BufferUtil::create_buffer(
-                      FRAME_STAGING_BUFFER_SIZE,
-                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                      VMA_MEMORY_USAGE_CPU_TO_GPU);
-              p_Context.frames[i].frameStagingBuffer.size =
-                  FRAME_STAGING_BUFFER_SIZE;
-              p_Context.frames[i].frameStagingBuffer.occupied = 0u;
-            }
           }
 
           return true;
@@ -271,6 +261,9 @@ namespace Low {
         bool swapchain_cleanup(Swapchain &p_Swapchain)
         {
 
+          // Destroy drawimage
+          ImageUtil::destroy(p_Swapchain.drawImage);
+
           vkDestroySwapchainKHR(Global::get_device(),
                                 p_Swapchain.vkhandle, nullptr);
 
@@ -287,9 +280,6 @@ namespace Low {
         bool framedata_cleanup(Context &p_Context)
         {
           for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
-            BufferUtil::destroy_buffer(
-                p_Context.frames[i].frameStagingBuffer.buffer);
-            p_Context.frames[i].frameStagingBuffer.size = 0;
           }
 
           return true;
@@ -332,9 +322,6 @@ namespace Low {
         {
           vkDeviceWaitIdle(Global::get_device());
 
-          // Destroy drawimage
-          ImageUtil::destroy(p_Context.swapchain.drawImage);
-
           LOWR_VK_ASSERT(swapchain_cleanup(p_Context.swapchain),
                          "Failed to cleanup swapchain");
 
@@ -366,9 +353,9 @@ namespace Low {
               InitUtil::attachment_info(
                   p_TargetImageView, nullptr,
                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-          VkRenderingInfo l_RenderInfo =
-              InitUtil::rendering_info(p_Context.swapchain.extent,
-                                       &l_ColorAttachment, nullptr);
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              p_Context.swapchain.extent, &l_ColorAttachment, 1,
+              nullptr);
 
           vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 

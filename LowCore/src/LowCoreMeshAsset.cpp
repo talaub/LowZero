@@ -24,6 +24,7 @@ namespace Low {
     const uint16_t MeshAsset::TYPE_ID = 23;
     uint32_t MeshAsset::ms_Capacity = 0u;
     uint8_t *MeshAsset::ms_Buffer = 0;
+    std::shared_mutex MeshAsset::ms_BufferMutex;
     Low::Util::Instances::Slot *MeshAsset::ms_Slots = 0;
     Low::Util::List<MeshAsset> MeshAsset::ms_LivingInstances =
         Low::Util::List<MeshAsset>();
@@ -46,6 +47,13 @@ namespace Low {
 
     MeshAsset MeshAsset::make(Low::Util::Name p_Name)
     {
+      return make(p_Name, 0ull);
+    }
+
+    MeshAsset MeshAsset::make(Low::Util::Name p_Name,
+                              Low::Util::UniqueId p_UniqueId)
+    {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       MeshAsset l_Handle;
@@ -57,13 +65,18 @@ namespace Low {
                               MeshResource)) MeshResource();
       ACCESSOR_TYPE_SOA(l_Handle, MeshAsset, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(
-          Low::Util::generate_unique_id(l_Handle.get_id()));
+      if (p_UniqueId > 0ull) {
+        l_Handle.set_unique_id(p_UniqueId);
+      } else {
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+      }
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -86,6 +99,7 @@ namespace Low {
 
       Low::Util::remove_unique_id(get_unique_id());
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -102,6 +116,7 @@ namespace Low {
 
     void MeshAsset::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -111,6 +126,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, MeshAssetData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_MeshAsset);
       LOW_PROFILE_ALLOC(type_slots_MeshAsset);
@@ -282,11 +298,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_MeshAsset);
       LOW_PROFILE_FREE(type_slots_MeshAsset);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle MeshAsset::_find_by_index(uint32_t p_Index)
@@ -308,6 +326,7 @@ namespace Low {
 
     bool MeshAsset::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == MeshAsset::TYPE_ID &&
              check_alive(ms_Slots, MeshAsset::get_capacity());
     }
@@ -427,6 +446,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_lod0
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshAsset, lod0, MeshResource);
     }
     void MeshAsset::set_lod0(MeshResource p_Value)
@@ -441,7 +461,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_lod0
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshAsset, lod0, MeshResource) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod0
 
@@ -461,6 +483,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshAsset, reference_count, uint32_t);
     }
     void MeshAsset::set_reference_count(uint32_t p_Value)
@@ -472,7 +495,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshAsset, reference_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
@@ -487,6 +512,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshAsset, unique_id, Low::Util::UniqueId);
     }
     void MeshAsset::set_unique_id(Low::Util::UniqueId p_Value)
@@ -498,7 +524,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshAsset, unique_id, Low::Util::UniqueId) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -513,6 +541,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshAsset, name, Low::Util::Name);
     }
     void MeshAsset::set_name(Low::Util::Name p_Value)
@@ -524,7 +553,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshAsset, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

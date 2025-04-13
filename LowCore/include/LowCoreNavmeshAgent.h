@@ -11,6 +11,7 @@
 
 #include "LowMath.h"
 
+#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -41,6 +42,7 @@ namespace Low {
       struct LOW_CORE_API NavmeshAgent : public Low::Util::Handle
       {
       public:
+        static std::shared_mutex ms_BufferMutex;
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
@@ -54,6 +56,8 @@ namespace Low {
 
         static NavmeshAgent make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
+        static NavmeshAgent make(Low::Core::Entity p_Entity,
+                                 Low::Util::UniqueId p_UniqueId);
         explicit NavmeshAgent(const NavmeshAgent &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
@@ -96,6 +100,7 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
+          READ_LOCK(l_Lock);
           return p_Handle.get_type() == NavmeshAgent::TYPE_ID &&
                  p_Handle.check_alive(ms_Slots, get_capacity());
         }
@@ -118,6 +123,10 @@ namespace Low {
 
         Low::Math::Vector3 &get_offset() const;
         void set_offset(Low::Math::Vector3 &p_Value);
+        void set_offset(float p_X, float p_Y, float p_Z);
+        void set_offset_x(float p_Value);
+        void set_offset_y(float p_Value);
+        void set_offset_z(float p_Value);
 
         int get_agent_index() const;
         void set_agent_index(int p_Value);

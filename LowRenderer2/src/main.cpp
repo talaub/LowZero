@@ -10,6 +10,8 @@
 #include "LowRendererCompatibility.h"
 
 #include "LowRenderer.h"
+#include "LowRendererRenderObject.h"
+#include "LowRendererRenderView.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -28,6 +30,8 @@ void *operator new[](size_t size, size_t alignment,
 }
 
 Low::Util::Window g_MainWindow;
+
+Low::Renderer::RenderView g_RenderView;
 
 namespace Low {
   namespace Util {
@@ -92,7 +96,32 @@ void init()
     Low::Util::String l_BasePath = Low::Util::get_project().dataPath;
     l_BasePath += "/_internal/assets/meshes/cube.glb";
 
-    Low::Renderer::load_mesh(l_BasePath);
+    Low::Renderer::MeshResource l_MeshResource =
+        Low::Renderer::load_mesh(l_BasePath);
+
+    Low::Math::Vector3 l_Position(0.0f);
+    Low::Math::Quaternion l_Rotation(1.0f, 0.0f, 0.0f, 0.0f);
+    Low::Math::Vector3 l_Scale(1.0f);
+
+    Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+    l_LocalMatrix = glm::translate(l_LocalMatrix, l_Position);
+    l_LocalMatrix *= glm::toMat4(l_Rotation);
+    l_LocalMatrix = glm::scale(l_LocalMatrix, l_Scale);
+
+    g_RenderView = Low::Renderer::RenderView::make("Default");
+    g_RenderView.set_dimensions(g_Dimensions);
+
+    Low::Math::Vector3 p(0.0f, 0.0f, -14.0f);
+    Low::Math::Vector3 d(0.0f, 0.0f, 1.0f);
+
+    g_RenderView.set_camera_position(p);
+    g_RenderView.set_camera_direction(d);
+
+    Low::Renderer::RenderObject l_RenderObject =
+        Low::Renderer::RenderObject::make(g_RenderView);
+    l_RenderObject.set_mesh_resource(l_MeshResource);
+    l_RenderObject.set_world_transform(l_LocalMatrix);
   }
 }
 

@@ -25,6 +25,7 @@ namespace Low {
     const uint16_t Region::TYPE_ID = 19;
     uint32_t Region::ms_Capacity = 0u;
     uint8_t *Region::ms_Buffer = 0;
+    std::shared_mutex Region::ms_BufferMutex;
     Low::Util::Instances::Slot *Region::ms_Slots = 0;
     Low::Util::List<Region> Region::ms_LivingInstances =
         Low::Util::List<Region>();
@@ -46,6 +47,13 @@ namespace Low {
 
     Region Region::make(Low::Util::Name p_Name)
     {
+      return make(p_Name, 0ull);
+    }
+
+    Region Region::make(Low::Util::Name p_Name,
+                        Low::Util::UniqueId p_UniqueId)
+    {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Region l_Handle;
@@ -67,13 +75,18 @@ namespace Low {
           Scene();
       ACCESSOR_TYPE_SOA(l_Handle, Region, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(
-          Low::Util::generate_unique_id(l_Handle.get_id()));
+      if (p_UniqueId > 0ull) {
+        l_Handle.set_unique_id(p_UniqueId);
+      } else {
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+      }
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -94,6 +107,7 @@ namespace Low {
 
       Low::Util::remove_unique_id(get_unique_id());
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -110,6 +124,7 @@ namespace Low {
 
     void Region::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -119,6 +134,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, RegionData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Region);
       LOW_PROFILE_ALLOC(type_slots_Region);
@@ -437,11 +453,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Region);
       LOW_PROFILE_FREE(type_slots_Region);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Region::_find_by_index(uint32_t p_Index)
@@ -463,6 +481,7 @@ namespace Low {
 
     bool Region::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Region::TYPE_ID &&
              check_alive(ms_Slots, Region::get_capacity());
     }
@@ -592,6 +611,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, loaded, bool);
     }
     void Region::set_loaded(bool p_Value)
@@ -603,7 +623,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, loaded, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
 
@@ -618,6 +640,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_enabled
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, streaming_enabled, bool);
     }
     void Region::set_streaming_enabled(bool p_Value)
@@ -629,7 +652,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_enabled
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, streaming_enabled, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_enabled
 
@@ -644,8 +669,36 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_position
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, streaming_position, Math::Vector3);
     }
+    void Region::set_streaming_position(float p_X, float p_Y,
+                                        float p_Z)
+    {
+      set_streaming_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+    }
+
+    void Region::set_streaming_position_x(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_streaming_position();
+      l_Value.x = p_Value;
+      set_streaming_position(l_Value);
+    }
+
+    void Region::set_streaming_position_y(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_streaming_position();
+      l_Value.y = p_Value;
+      set_streaming_position(l_Value);
+    }
+
+    void Region::set_streaming_position_z(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_streaming_position();
+      l_Value.z = p_Value;
+      set_streaming_position(l_Value);
+    }
+
     void Region::set_streaming_position(Math::Vector3 &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -655,7 +708,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_position
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, streaming_position, Math::Vector3) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_position
 
@@ -670,6 +725,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_streaming_radius
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, streaming_radius, float);
     }
     void Region::set_streaming_radius(float p_Value)
@@ -681,7 +737,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_streaming_radius
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, streaming_radius, float) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_radius
 
@@ -696,6 +754,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_entities
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, entities, Util::Set<Util::UniqueId>);
     }
 
@@ -707,6 +766,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_scene
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, scene, Scene);
     }
     void Region::set_scene(Scene p_Value)
@@ -718,7 +778,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_scene
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, scene, Scene) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scene
 
@@ -734,6 +796,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, unique_id, Low::Util::UniqueId);
     }
     void Region::set_unique_id(Low::Util::UniqueId p_Value)
@@ -745,7 +808,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, unique_id, Low::Util::UniqueId) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -760,6 +825,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, name, Low::Util::Name);
     }
     void Region::set_name(Low::Util::Name p_Value)
@@ -771,7 +837,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Region, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -934,13 +1002,16 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          Region i_Region = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(RegionData, entities) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::Set<Util::UniqueId>))])
               Util::Set<Util::UniqueId>();
-          *i_ValPtr = it->get_entities();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_Region, Region, entities,
+                                        Util::Set<Util::UniqueId>);
         }
       }
       {

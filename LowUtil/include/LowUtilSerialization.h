@@ -7,6 +7,10 @@
 
 #include "LowMath.h"
 
+#define LOW_SERIALIZATION_HANDLE_FROM_UNIQUE_ID(x)                   \
+  Low::Util::find_handle_by_unique_id(x.as<Low::Util::UniqueId>())   \
+      .get_id()
+
 namespace Low {
   namespace Util {
     namespace Serialization {

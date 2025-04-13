@@ -24,6 +24,7 @@ namespace Low {
     const uint16_t Scene::TYPE_ID = 20;
     uint32_t Scene::ms_Capacity = 0u;
     uint8_t *Scene::ms_Buffer = 0;
+    std::shared_mutex Scene::ms_BufferMutex;
     Low::Util::Instances::Slot *Scene::ms_Slots = 0;
     Low::Util::List<Scene> Scene::ms_LivingInstances =
         Low::Util::List<Scene>();
@@ -45,6 +46,13 @@ namespace Low {
 
     Scene Scene::make(Low::Util::Name p_Name)
     {
+      return make(p_Name, 0ull);
+    }
+
+    Scene Scene::make(Low::Util::Name p_Name,
+                      Low::Util::UniqueId p_UniqueId)
+    {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Scene l_Handle;
@@ -58,13 +66,18 @@ namespace Low {
       ACCESSOR_TYPE_SOA(l_Handle, Scene, loaded, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, Scene, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(
-          Low::Util::generate_unique_id(l_Handle.get_id()));
+      if (p_UniqueId > 0ull) {
+        l_Handle.set_unique_id(p_UniqueId);
+      } else {
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+      }
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -85,6 +98,7 @@ namespace Low {
 
       Low::Util::remove_unique_id(get_unique_id());
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -101,6 +115,7 @@ namespace Low {
 
     void Scene::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -110,6 +125,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, SceneData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Scene);
       LOW_PROFILE_ALLOC(type_slots_Scene);
@@ -284,11 +300,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Scene);
       LOW_PROFILE_FREE(type_slots_Scene);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Scene::_find_by_index(uint32_t p_Index)
@@ -310,6 +328,7 @@ namespace Low {
 
     bool Scene::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Scene::TYPE_ID &&
              check_alive(ms_Slots, Scene::get_capacity());
     }
@@ -415,6 +434,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_regions
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Scene, regions, Low::Util::Set<Util::UniqueId>);
     }
 
@@ -426,6 +446,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Scene, loaded, bool);
     }
     void Scene::set_loaded(bool p_Value)
@@ -437,7 +458,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Scene, loaded, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
 
@@ -452,6 +475,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Scene, unique_id, Low::Util::UniqueId);
     }
     void Scene::set_unique_id(Low::Util::UniqueId p_Value)
@@ -463,7 +487,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Scene, unique_id, Low::Util::UniqueId) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -478,6 +504,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Scene, name, Low::Util::Name);
     }
     void Scene::set_name(Low::Util::Name p_Value)
@@ -489,7 +516,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Scene, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -598,13 +627,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          Scene i_Scene = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(SceneData, regions) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Low::Util::Set<Util::UniqueId>))])
               Low::Util::Set<Util::UniqueId>();
-          *i_ValPtr = it->get_regions();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_Scene, Scene, regions,
+                                Low::Util::Set<Util::UniqueId>);
         }
       }
       {

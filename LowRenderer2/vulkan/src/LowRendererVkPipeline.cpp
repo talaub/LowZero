@@ -23,6 +23,7 @@ namespace Low {
       const uint16_t Pipeline::TYPE_ID = 45;
       uint32_t Pipeline::ms_Capacity = 0u;
       uint8_t *Pipeline::ms_Buffer = 0;
+      std::shared_mutex Pipeline::ms_BufferMutex;
       Low::Util::Instances::Slot *Pipeline::ms_Slots = 0;
       Low::Util::List<Pipeline> Pipeline::ms_LivingInstances =
           Low::Util::List<Pipeline>();
@@ -45,6 +46,7 @@ namespace Low {
 
       Pipeline Pipeline::make(Low::Util::Name p_Name)
       {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Pipeline l_Handle;
@@ -58,6 +60,7 @@ namespace Low {
                                 VkPipelineLayout)) VkPipelineLayout();
         ACCESSOR_TYPE_SOA(l_Handle, Pipeline, name, Low::Util::Name) =
             Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -82,6 +85,7 @@ namespace Low {
                           nullptr);
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -98,6 +102,7 @@ namespace Low {
 
       void Pipeline::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -107,6 +112,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, PipelineData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Pipeline);
         LOW_PROFILE_ALLOC(type_slots_Pipeline);
@@ -227,11 +233,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Pipeline);
         LOW_PROFILE_FREE(type_slots_Pipeline);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Pipeline::_find_by_index(uint32_t p_Index)
@@ -253,6 +261,7 @@ namespace Low {
 
       bool Pipeline::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Pipeline::TYPE_ID &&
                check_alive(ms_Slots, Pipeline::get_capacity());
       }
@@ -355,6 +364,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Pipeline, pipeline, VkPipeline);
       }
       void Pipeline::set_pipeline(VkPipeline &p_Value)
@@ -366,7 +376,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_pipeline
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Pipeline, pipeline, VkPipeline) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pipeline
 
@@ -381,6 +393,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_layout
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Pipeline, layout, VkPipelineLayout);
       }
       void Pipeline::set_layout(VkPipelineLayout &p_Value)
@@ -392,7 +405,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_layout
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Pipeline, layout, VkPipelineLayout) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layout
 
@@ -407,6 +422,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Pipeline, name, Low::Util::Name);
       }
       void Pipeline::set_name(Low::Util::Name p_Value)
@@ -418,7 +434,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Pipeline, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

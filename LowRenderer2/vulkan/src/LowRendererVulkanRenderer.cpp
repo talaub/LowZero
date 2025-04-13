@@ -8,9 +8,15 @@
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanPipelineManager.h"
 #include "LowRendererVulkanBuffer.h"
+#include "LowRendererRenderView.h"
+#include "LowRendererVkViewInfo.h"
 
 #include "LowUtil.h"
 #include "LowUtilResource.h"
+
+#include <glm/gtc/matrix_access.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include "LowMathVectorUtil.h"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -20,14 +26,12 @@
 #include "imgui_impl_vulkan.h"
 
 #include "LowRendererVkPipeline.h"
+#include "LowRendererVkImage.h"
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       Context g_Context;
-
-      AllocatedBuffer g_VertexBuffer;
-      AllocatedBuffer g_IndexBuffer;
 
       struct ComputePushConstants
       {
@@ -37,6 +41,11 @@ namespace Low {
         Math::Vector4 data4;
       };
 
+      struct RenderEntryPushConstant
+      {
+        u32 renderObjectSlot;
+      };
+
       struct
       {
         VkPipeline gradientPipeline;
@@ -44,7 +53,52 @@ namespace Low {
 
         VkPipelineLayout trianglePipelineLayout;
         Pipeline trianglePipeline;
+
+        VkPipelineLayout solidBasePipelineLayout;
+        Pipeline solidBasePipeline;
+
+        Pipeline lightingPipeline;
       } g_Pipelines;
+
+      struct
+      {
+        VkDescriptorSet set;
+        VkDescriptorSetLayout layout;
+      } g_GlobalDescriptors;
+
+      bool lighting_pipeline_init(Context &p_Context)
+      {
+        Util::String l_VertexShaderPath = "fullscreen_triangle.vert";
+        Util::String l_FragmentShaderPath = "lighting.frag";
+
+        VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
+            PipelineUtil::layout_create_info();
+
+        // Create pipeline
+        PipelineUtil::GraphicsPipelineBuilder l_Builder;
+        l_Builder.pipelineLayout =
+            Global::get_lighting_pipeline_layout();
+        l_Builder.set_shaders(l_VertexShaderPath,
+                              l_FragmentShaderPath);
+        l_Builder.set_input_topology(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                VK_FRONT_FACE_CLOCKWISE);
+        l_Builder.set_multismapling_none();
+        l_Builder.disable_blending();
+        l_Builder.disable_depth_test();
+
+        l_Builder.colorAttachmentFormats.clear();
+        l_Builder.colorAttachmentFormats.push_back(
+            VK_FORMAT_R16G16B16A16_SFLOAT);
+
+        l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+        g_Pipelines.lightingPipeline = l_Builder.register_pipeline();
+
+        return true;
+      }
 
       bool bg_pipelines_init(Context &p_Context)
       {
@@ -109,6 +163,65 @@ namespace Low {
         return true;
       }
 
+      bool solid_base_pipeline_init(Context &p_Context)
+      {
+        Util::String l_VertexShaderPath = "solid_base.vert";
+        Util::String l_FragmentShaderPath = "solid_base.frag";
+
+        VkPipelineLayoutCreateInfo l_PipelineLayoutInfo =
+            PipelineUtil::layout_create_info();
+
+        Util::List<VkDescriptorSetLayout> l_Layouts;
+        l_Layouts.resize(2);
+        l_Layouts[0] = g_GlobalDescriptors.layout;
+        l_Layouts[1] = Global::get_view_info_descriptor_set_layout();
+
+        l_PipelineLayoutInfo.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        l_PipelineLayoutInfo.pNext = nullptr;
+        l_PipelineLayoutInfo.pSetLayouts = l_Layouts.data();
+        l_PipelineLayoutInfo.setLayoutCount = l_Layouts.size();
+
+        VkPushConstantRange l_PushConstant{};
+        l_PushConstant.offset = 0;
+        l_PushConstant.size = sizeof(RenderEntryPushConstant);
+        l_PushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS;
+
+        l_PipelineLayoutInfo.pPushConstantRanges = &l_PushConstant;
+        l_PipelineLayoutInfo.pushConstantRangeCount = 1;
+
+        LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
+            Global::get_device(), &l_PipelineLayoutInfo, nullptr,
+            &g_Pipelines.solidBasePipelineLayout));
+
+        // Create pipeline
+        PipelineUtil::GraphicsPipelineBuilder l_Builder;
+        l_Builder.pipelineLayout =
+            g_Pipelines.solidBasePipelineLayout;
+        l_Builder.set_shaders(l_VertexShaderPath,
+                              l_FragmentShaderPath);
+        l_Builder.set_input_topology(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                VK_FRONT_FACE_COUNTER_CLOCKWISE);
+        l_Builder.set_multismapling_none();
+        l_Builder.disable_blending();
+        l_Builder.disable_depth_test();
+
+        l_Builder.colorAttachmentFormats.clear();
+        l_Builder.colorAttachmentFormats.push_back(
+            VK_FORMAT_R16G16B16A16_SFLOAT);
+        l_Builder.colorAttachmentFormats.push_back(
+            VK_FORMAT_R16G16B16A16_SFLOAT);
+
+        l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+        g_Pipelines.solidBasePipeline = l_Builder.register_pipeline();
+
+        return true;
+      }
+
       bool triangle_pipeline_init(Context &p_Context)
       {
         Util::String l_VertexShaderPath = "colored_triangle.vert";
@@ -134,7 +247,7 @@ namespace Low {
         l_Builder.disable_blending();
         l_Builder.disable_depth_test();
 
-        l_Builder.set_color_attachment_format(
+        l_Builder.colorAttachmentFormats.push_back(
             p_Context.swapchain.drawImage.format);
         l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
 
@@ -146,18 +259,22 @@ namespace Low {
       bool setup_renderflow(Context &p_Context)
       {
         bg_pipelines_init(p_Context);
+        lighting_pipeline_init(p_Context);
         triangle_pipeline_init(p_Context);
+        solid_base_pipeline_init(p_Context);
         return true;
       }
 
       static void initialize_types()
       {
         Pipeline::initialize();
+        Image::initialize();
       }
 
       static void cleanup_types()
       {
         Pipeline::cleanup();
+        Image::cleanup();
       }
 
       size_t request_resource_staging_buffer_space(
@@ -198,21 +315,39 @@ namespace Low {
         return true;
       }
 
-      static bool initialize_global_buffers()
+      static bool initialize_global_descriptors()
       {
-        g_VertexBuffer = BufferUtil::create_buffer(
-            sizeof(Util::Resource::Vertex) * 256000u,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VMA_MEMORY_USAGE_GPU_ONLY);
+        {
+          DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+          l_Builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+          l_Builder.add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+          g_GlobalDescriptors.layout = l_Builder.build(
+              Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+        }
 
-        g_IndexBuffer = BufferUtil::create_buffer(
-            sizeof(u32) * 512000u,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VMA_MEMORY_USAGE_GPU_ONLY);
+        // Allocate new descriptor for the drawimage
+        g_GlobalDescriptors.set =
+            Global::get_global_descriptor_allocator().allocate(
+                Global::get_device(), g_GlobalDescriptors.layout);
 
+        // This part assignes the drawImage to the descriptor set
+        {
+          DescriptorUtil::DescriptorWriter l_Writer;
+          l_Writer.write_buffer(
+              0, Global::get_mesh_vertex_buffer().m_Buffer.buffer,
+              Global::get_mesh_vertex_buffer().m_ElementSize *
+                  Global::get_mesh_vertex_buffer().m_ElementCount,
+              0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+          l_Writer.write_buffer(
+              1, Global::get_renderobject_buffer().m_Buffer.buffer,
+              Global::get_renderobject_buffer().m_ElementSize *
+                  Global::get_renderobject_buffer().m_ElementCount,
+              0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+          l_Writer.update_set(Global::get_device(),
+                              g_GlobalDescriptors.set);
+        }
         return true;
       }
 
@@ -233,8 +368,8 @@ namespace Low {
             "Failed to initialize global vulkan context");
 
         LOWR_VK_ASSERT_RETURN(
-            initialize_global_buffers(),
-            "Failed to initialize vulkan global buffers");
+            initialize_global_descriptors(),
+            "Failed to initialize vulkan global descriptors");
 
         {
           Util::Resource::Mesh l_Mesh;
@@ -283,11 +418,17 @@ namespace Low {
         return true;
       }
 
-      static bool cleanup_global_buffers()
+      static bool cleanup_global_descriptors()
       {
-        BufferUtil::destroy_buffer(g_IndexBuffer);
-        BufferUtil::destroy_buffer(g_VertexBuffer);
+        vkDestroyDescriptorSetLayout(Global::get_device(),
+                                     g_GlobalDescriptors.layout,
+                                     nullptr);
+        return true;
+      }
 
+      bool wait_idle()
+      {
+        vkDeviceWaitIdle(Global::get_device());
         return true;
       }
 
@@ -298,8 +439,8 @@ namespace Low {
         cleanup_renderflow(g_Context);
 
         LOWR_VK_ASSERT_RETURN(
-            cleanup_global_buffers(),
-            "Failed to cleanup vulkan global buffers");
+            cleanup_global_descriptors(),
+            "Failed to cleanup vulkan global descriptors");
 
         cleanup_types();
 
@@ -325,7 +466,7 @@ namespace Low {
 
         VkRenderingInfo l_RenderInfo =
             InitUtil::rendering_info(p_Context.swapchain.drawExtent,
-                                     &l_ColorAttachment, nullptr);
+                                     &l_ColorAttachment, 1, nullptr);
         vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
 
         vkCmdBindPipeline(
@@ -362,6 +503,131 @@ namespace Low {
         return true;
       }
 
+      static bool draw_render_entries(Context &p_Context,
+                                      float p_Delta,
+                                      RenderView p_RenderView)
+      {
+        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
+
+        ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+        VkClearValue l_ClearColorValue = {};
+        l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+        Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+        l_ColorAttachments.resize(2);
+        l_ColorAttachments[0] = InitUtil::attachment_info(
+            l_ViewInfo.get_gbuffer_albedo().imageView,
+            &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+        l_ColorAttachments[1] = InitUtil::attachment_info(
+            l_ViewInfo.get_gbuffer_normals().imageView,
+            &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+
+        VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+            {p_RenderView.get_dimensions().x,
+             p_RenderView.get_dimensions().y},
+            l_ColorAttachments.data(), l_ColorAttachments.size(),
+            nullptr);
+        vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+        vkCmdBindIndexBuffer(
+            l_Cmd, Global::get_mesh_index_buffer().m_Buffer.buffer, 0,
+            VK_INDEX_TYPE_UINT32);
+
+        vkCmdBindPipeline(
+            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            g_Pipelines.solidBasePipeline.get_pipeline());
+
+        vkCmdBindDescriptorSets(
+            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            g_Pipelines.solidBasePipelineLayout, 0, 1,
+            &g_GlobalDescriptors.set, 0, nullptr);
+
+        VkDescriptorSet l_DescriptorSet =
+            l_ViewInfo.get_view_data_descriptor_set();
+
+        vkCmdBindDescriptorSets(l_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                g_Pipelines.solidBasePipelineLayout,
+                                1, 1, &l_DescriptorSet, 0, nullptr);
+
+        // set dynamic viewport and scissor
+        VkViewport l_Viewport = {};
+        l_Viewport.x = 0;
+        l_Viewport.y = 0;
+        l_Viewport.width =
+            static_cast<float>(p_Context.swapchain.drawExtent.width);
+        l_Viewport.height =
+            static_cast<float>(p_Context.swapchain.drawExtent.height);
+        l_Viewport.minDepth = 0.f;
+        l_Viewport.maxDepth = 1.f;
+
+        vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+        VkRect2D l_Scissor = {};
+        l_Scissor.offset.x = 0;
+        l_Scissor.offset.y = 0;
+        l_Scissor.extent.width = p_Context.swapchain.drawExtent.width;
+        l_Scissor.extent.height =
+            p_Context.swapchain.drawExtent.height;
+
+        vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+        for (auto it = p_RenderView.get_render_entries().begin();
+             it != p_RenderView.get_render_entries().end();) {
+          if (!it->renderObject.is_alive()) {
+            it = p_RenderView.get_render_entries().erase(it);
+            continue;
+          }
+
+          if (it->renderObject.get_mesh_resource().get_state() !=
+              MeshResourceState::LOADED) {
+            it++;
+            continue;
+          }
+
+          MeshInfo i_MeshInfo =
+              MeshInfo::find_by_index(it->meshInfoIndex);
+
+          LOW_ASSERT(i_MeshInfo.is_alive(),
+                     "Mesh info of mesh entry not alive anymore. "
+                     "This should not happen if the corresponding "
+                     "RenderObject is still alive.");
+
+          RenderEntryPushConstant i_PushConstants;
+          i_PushConstants.renderObjectSlot = it->slot;
+
+          vkCmdPushConstants(
+              l_Cmd, g_Pipelines.solidBasePipelineLayout,
+              VK_SHADER_STAGE_ALL_GRAPHICS, 0,
+              sizeof(RenderEntryPushConstant), &i_PushConstants);
+
+          vkCmdDrawIndexed(l_Cmd, i_MeshInfo.get_index_count(), 1,
+                           i_MeshInfo.get_index_start(), 0, 0);
+
+          it++;
+        }
+
+        vkCmdEndRendering(l_Cmd);
+
+        return true;
+      }
+
+      static bool draw_render_entries(Context &p_Context,
+                                      float p_Delta)
+      {
+        for (u32 i = 0u; i < RenderView::living_count(); ++i) {
+          RenderView i_RenderView = RenderView::living_instances()[i];
+
+          if (!draw_render_entries(p_Context, p_Delta,
+                                   i_RenderView)) {
+            return false;
+          }
+        }
+
+        return true;
+      }
+
       static bool draw(Context &p_Context, float p_Delta)
       {
         VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
@@ -371,13 +637,6 @@ namespace Low {
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
 #if 0
-        float l_Flash = abs(sin(p_Context.frameNumber / 120.f));
-        Math::Color l_ClearColor = {0.0f, 0.0f, l_Flash, 1.0f};
-
-        ImageUtil::cmd_clear_color(
-            l_Cmd, p_Context.swapchain.drawImage.image,
-            VK_IMAGE_LAYOUT_GENERAL, l_ClearColor);
-#else
         vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
                           g_Pipelines.gradientPipeline);
 
@@ -402,18 +661,126 @@ namespace Low {
             static_cast<u32>(std::ceil(
                 p_Context.swapchain.drawExtent.height / 16.0f)),
             1);
+
 #endif
 
         ImageUtil::cmd_transition(
             l_Cmd, p_Context.swapchain.drawImage.image,
             VK_IMAGE_LAYOUT_GENERAL,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        geometry_draw(p_Context);
+        // geometry_draw(p_Context);
+
+        draw_render_entries(p_Context, p_Delta);
+
+        // TODO: Change this - this is just for testing
+        {
+          RenderView l_RenderView = RenderView::living_instances()[0];
+          ViewInfo l_ViewInfo = l_RenderView.get_view_info_handle();
+
+          {
+            ImageUtil::cmd_transition(
+                l_Cmd, l_ViewInfo.get_img_lit().image,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkClearValue l_ClearColorValue = {};
+            l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_ViewInfo.get_img_lit().imageView,
+                &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {RenderView::living_instances()[0].get_dimensions().x,
+                 RenderView::living_instances()[0]
+                     .get_dimensions()
+                     .y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_Pipelines.lightingPipeline.get_pipeline());
+
+            {
+              VkDescriptorSet l_DescriptorSet =
+                  l_ViewInfo.get_view_data_descriptor_set();
+
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  Global::get_lighting_pipeline_layout(), 0, 1,
+                  &l_DescriptorSet, 0, nullptr);
+            }
+
+            {
+              VkDescriptorSet l_DescriptorSet =
+                  l_ViewInfo.get_gbuffer_descriptor_set();
+
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  Global::get_lighting_pipeline_layout(), 1, 1,
+                  &l_DescriptorSet, 0, nullptr);
+            }
+
+            VkViewport l_Viewport = {};
+            l_Viewport.x = 0;
+            l_Viewport.y = 0;
+            l_Viewport.width = static_cast<float>(
+                p_Context.swapchain.drawExtent.width);
+            l_Viewport.height = static_cast<float>(
+                p_Context.swapchain.drawExtent.height);
+            l_Viewport.minDepth = 0.f;
+            l_Viewport.maxDepth = 1.f;
+
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            VkRect2D l_Scissor = {};
+            l_Scissor.offset.x = 0;
+            l_Scissor.offset.y = 0;
+            l_Scissor.extent.width =
+                p_Context.swapchain.drawExtent.width;
+            l_Scissor.extent.height =
+                p_Context.swapchain.drawExtent.height;
+
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_ViewInfo.get_img_lit().image,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+          }
+
+          /*
+          ImageUtil::cmd_transition(
+              l_Cmd, l_ViewInfo.get_gbuffer_albedo().image,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+              */
+
+          ImageUtil::cmd_copy2D(l_Cmd, l_ViewInfo.get_img_lit().image,
+                                g_Context.swapchain.drawImage.image,
+                                p_Context.swapchain.drawExtent,
+                                p_Context.swapchain.drawExtent);
+
+          /*
+          ImageUtil::cmd_transition(
+              l_Cmd, l_ViewInfo.get_gbuffer_albedo().image,
+              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+              */
+        }
 
         ImageUtil::cmd_transition(
             l_Cmd, p_Context.swapchain.drawImage.image,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         ImageUtil::cmd_transition(
             l_Cmd,
@@ -425,6 +792,196 @@ namespace Low {
         return true;
       }
 
+      static bool prepare_render_view_dimensions(
+          float p_Delta, RenderView p_RenderView, ViewInfo p_ViewInfo)
+      {
+        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
+
+        if (p_ViewInfo.is_initialized()) {
+          wait_idle();
+          ImageUtil::destroy(p_ViewInfo.get_gbuffer_albedo());
+          ImageUtil::destroy(p_ViewInfo.get_gbuffer_normals());
+        }
+
+        VkExtent3D l_Extent{p_RenderView.get_dimensions().x,
+                            p_RenderView.get_dimensions().y, 1.0f};
+
+        {
+          AllocatedImage l_Image = ImageUtil::create(
+              l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                  VK_IMAGE_USAGE_STORAGE_BIT |
+                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                  VK_IMAGE_USAGE_SAMPLED_BIT,
+              false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          p_ViewInfo.set_gbuffer_albedo(l_Image);
+        }
+        {
+          AllocatedImage l_Image = ImageUtil::create(
+              l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                  VK_IMAGE_USAGE_STORAGE_BIT |
+                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                  VK_IMAGE_USAGE_SAMPLED_BIT,
+              false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          p_ViewInfo.set_gbuffer_normals(l_Image);
+        }
+
+        {
+          AllocatedImage l_Image = ImageUtil::create(
+              l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                  VK_IMAGE_USAGE_STORAGE_BIT |
+                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                  VK_IMAGE_USAGE_SAMPLED_BIT,
+              false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          p_ViewInfo.set_img_lit(l_Image);
+        }
+
+        {
+          VkDescriptorSet l_Set =
+              Global::get_global_descriptor_allocator().allocate(
+                  Global::get_device(),
+                  Global::get_gbuffer_descriptor_set_layout());
+          p_ViewInfo.set_gbuffer_descriptor_set(l_Set);
+
+          Samplers &l_Samplers = Global::get_samplers();
+
+          DescriptorUtil::DescriptorWriter l_Writer;
+          l_Writer.write_image(
+              0, p_ViewInfo.get_gbuffer_albedo().imageView,
+              l_Samplers.no_lod_nearest_repeat_black,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+          l_Writer.write_image(
+              1, p_ViewInfo.get_gbuffer_normals().imageView,
+              l_Samplers.no_lod_nearest_repeat_black,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+          l_Writer.update_set(Global::get_device(), l_Set);
+        }
+
+        p_ViewInfo.set_initialized(true);
+
+        return true;
+      }
+
+      static bool prepare_render_view_camera(float p_Delta,
+                                             RenderView p_RenderView,
+                                             ViewInfo p_ViewInfo)
+      {
+        const int CURRENT_FRAME_INDEX =
+            Global::get_current_frame_index();
+
+        StagingBuffer &l_StagingBuffer =
+            p_ViewInfo.get_staging_buffers()[CURRENT_FRAME_INDEX];
+
+        l_StagingBuffer.occupied = 0u;
+
+        u8 *l_Buffer = (u8 *)p_ViewInfo
+                           .get_staging_buffers()[CURRENT_FRAME_INDEX]
+                           .buffer.info.pMappedData;
+
+        {
+          ViewInfoFrameData l_FrameData;
+
+          l_FrameData.dimensions = p_RenderView.get_dimensions();
+          l_FrameData.inverseDimensions.x =
+              1.0f / l_FrameData.dimensions.x;
+          l_FrameData.inverseDimensions.y =
+              1.0f / l_FrameData.dimensions.y;
+
+          l_FrameData.projectionMatrix = glm::perspective(
+              glm::radians(45.0f),
+              ((float)p_RenderView.get_dimensions().x) /
+                  ((float)p_RenderView.get_dimensions().y),
+              1.0f, 100.0f);
+
+          l_FrameData.projectionMatrix[1][1] *= -1.0f;
+
+          l_FrameData.viewMatrix =
+              glm::lookAt(p_RenderView.get_camera_position(),
+                          p_RenderView.get_camera_position() +
+                              p_RenderView.get_camera_direction(),
+                          LOW_VECTOR3_UP);
+
+          l_FrameData.viewProjectionMatrix =
+              l_FrameData.projectionMatrix * l_FrameData.viewMatrix;
+
+          memcpy((void *)&(l_Buffer[l_StagingBuffer.occupied]),
+                 &l_FrameData, sizeof(ViewInfoFrameData));
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = l_StagingBuffer.occupied;
+          l_CopyRegion.dstOffset = l_StagingBuffer.occupied;
+          l_CopyRegion.size = sizeof(ViewInfoFrameData);
+
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              l_StagingBuffer.buffer.buffer,
+              p_ViewInfo.get_view_data_buffer().buffer, 1,
+              &l_CopyRegion);
+
+          l_StagingBuffer.occupied += sizeof(ViewInfoFrameData);
+        }
+
+        return true;
+      }
+
+      static bool prepare_render_views(float p_Delta)
+      {
+        for (u32 i = 0u; i < RenderView::living_count(); ++i) {
+          RenderView i_RenderView = RenderView::living_instances()[i];
+
+          ViewInfo i_ViewInfo = i_RenderView.get_view_info_handle();
+
+          if (!i_ViewInfo.is_alive()) {
+            i_ViewInfo = ViewInfo::make(i_RenderView.get_name());
+            i_RenderView.set_view_info_handle(i_ViewInfo);
+          }
+
+          if (i_RenderView.is_dimensions_dirty()) {
+            i_RenderView.set_camera_dirty(true);
+
+            if (!prepare_render_view_dimensions(p_Delta, i_RenderView,
+                                                i_ViewInfo)) {
+              return false;
+            }
+
+            i_RenderView.set_dimensions_dirty(false);
+          }
+
+          if (i_RenderView.is_camera_dirty()) {
+            if (!prepare_render_view_camera(p_Delta, i_RenderView,
+                                            i_ViewInfo)) {
+              return false;
+            }
+            i_RenderView.set_camera_dirty(false);
+          }
+        }
+        return true;
+      }
+
       bool prepare_tick(float p_Delta)
       {
         ImGui_ImplVulkan_NewFrame();
@@ -433,10 +990,11 @@ namespace Low {
 
         ImGui::ShowDemoWindow();
 
-
         PipelineManager::tick(p_Delta);
 
         bool l_Result = Base::context_prepare_draw(g_Context);
+
+        prepare_render_views(p_Delta);
         return true;
       }
 
@@ -450,8 +1008,6 @@ namespace Low {
 
           Base::context_present(g_Context);
         }
-
-
         Global::advance_frame_count();
 
         return true;
@@ -462,6 +1018,22 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             Base::swapchain_resize(g_Context),
             "Failed to swapchain_resize vulkan renderer");
+
+        // TODO: CHANGE THIS IS JUST FOR TESTING
+        // RenderViews should not automatically scale with the
+        // Swapchain
+        Math::UVector2 l_Dimensions{
+            g_Context.swapchain.drawExtent.width,
+            g_Context.swapchain.drawExtent.height};
+
+        if (l_Dimensions.x > 0 && l_Dimensions.y > 0) {
+          for (u32 i = 0u; i < RenderView::living_count(); ++i) {
+            RenderView i_RenderView =
+                RenderView::living_instances()[i];
+            i_RenderView.set_dimensions(l_Dimensions);
+          }
+        }
+
         return true;
       }
     } // namespace Vulkan

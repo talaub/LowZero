@@ -24,6 +24,7 @@ namespace Low {
     const uint16_t ComputeStepConfig::TYPE_ID = 11;
     uint32_t ComputeStepConfig::ms_Capacity = 0u;
     uint8_t *ComputeStepConfig::ms_Buffer = 0;
+    std::shared_mutex ComputeStepConfig::ms_BufferMutex;
     Low::Util::Instances::Slot *ComputeStepConfig::ms_Slots = 0;
     Low::Util::List<ComputeStepConfig>
         ComputeStepConfig::ms_LivingInstances =
@@ -48,6 +49,7 @@ namespace Low {
 
     ComputeStepConfig ComputeStepConfig::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       ComputeStepConfig l_Handle;
@@ -70,6 +72,7 @@ namespace Low {
           PipelineResourceBindingConfig();
       ACCESSOR_TYPE_SOA(l_Handle, ComputeStepConfig, name,
                         Low::Util::Name) = Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -90,6 +93,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -106,6 +110,7 @@ namespace Low {
 
     void ComputeStepConfig::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -115,6 +120,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, ComputeStepConfigData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_ComputeStepConfig);
       LOW_PROFILE_ALLOC(type_slots_ComputeStepConfig);
@@ -321,11 +327,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_ComputeStepConfig);
       LOW_PROFILE_FREE(type_slots_ComputeStepConfig);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle
@@ -349,6 +357,7 @@ namespace Low {
 
     bool ComputeStepConfig::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == ComputeStepConfig::TYPE_ID &&
              check_alive(ms_Slots, ComputeStepConfig::get_capacity());
     }
@@ -460,6 +469,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_callbacks
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStepConfig, callbacks,
                       ComputeStepCallbacks);
     }
@@ -473,8 +483,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_callbacks
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStepConfig, callbacks, ComputeStepCallbacks) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_callbacks
 
@@ -490,6 +502,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStepConfig, resources,
                       Util::List<ResourceConfig>);
     }
@@ -503,6 +516,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStepConfig, pipelines,
                       Util::List<ComputePipelineConfig>);
     }
@@ -516,6 +530,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStepConfig, output_image,
                       PipelineResourceBindingConfig);
     }
@@ -529,8 +544,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStepConfig, output_image,
                PipelineResourceBindingConfig) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
@@ -545,6 +562,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStepConfig, name, Low::Util::Name);
     }
     void ComputeStepConfig::set_name(Low::Util::Name p_Value)
@@ -556,7 +574,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStepConfig, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -647,6 +667,8 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          ComputeStepConfig i_ComputeStepConfig = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(ComputeStepConfigData,
                                     resources) *
@@ -654,12 +676,16 @@ namespace Low {
                            (it->get_index() *
                             sizeof(Util::List<ResourceConfig>))])
               Util::List<ResourceConfig>();
-          *i_ValPtr = it->get_resources();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_ComputeStepConfig,
+                                        ComputeStepConfig, resources,
+                                        Util::List<ResourceConfig>);
         }
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          ComputeStepConfig i_ComputeStepConfig = *it;
+
           auto *i_ValPtr =
               new (&l_NewBuffer
                        [offsetof(ComputeStepConfigData, pipelines) *
@@ -667,7 +693,9 @@ namespace Low {
                         (it->get_index() *
                          sizeof(Util::List<ComputePipelineConfig>))])
                   Util::List<ComputePipelineConfig>();
-          *i_ValPtr = it->get_pipelines();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_ComputeStepConfig, ComputeStepConfig, pipelines,
+              Util::List<ComputePipelineConfig>);
         }
       }
       {

@@ -12,6 +12,7 @@
 #include "LowCoreTexture2D.h"
 #include "LowRenderer.h"
 
+#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -40,6 +41,7 @@ namespace Low {
         struct LOW_CORE_API Image : public Low::Util::Handle
         {
         public:
+          static std::shared_mutex ms_BufferMutex;
           static uint8_t *ms_Buffer;
           static Low::Util::Instances::Slot *ms_Slots;
 
@@ -53,6 +55,8 @@ namespace Low {
 
           static Image make(Low::Core::UI::Element p_Element);
           static Low::Util::Handle _make(Low::Util::Handle p_Element);
+          static Image make(Low::Core::UI::Element p_Element,
+                            Low::Util::UniqueId p_UniqueId);
           explicit Image(const Image &p_Copy)
               : Low::Util::Handle(p_Copy.m_Id)
           {
@@ -95,6 +99,7 @@ namespace Low {
                       Low::Util::Handle p_Creator);
           static bool is_alive(Low::Util::Handle p_Handle)
           {
+            READ_LOCK(l_Lock);
             return p_Handle.get_type() == Image::TYPE_ID &&
                    p_Handle.check_alive(ms_Slots, get_capacity());
           }

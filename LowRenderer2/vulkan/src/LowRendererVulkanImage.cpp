@@ -160,6 +160,8 @@ namespace Low {
               p_Size);
           if (p_Mipmapped) {
             l_ImgInfo.mipLevels = 4;
+          } else {
+            l_ImgInfo.mipLevels = 1;
           }
 
           VmaAllocationCreateInfo l_AllocInfo = {};

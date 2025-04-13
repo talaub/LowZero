@@ -451,13 +451,13 @@ namespace Flode {
     {
       for (auto it = l_TypeMetadata.properties.begin();
            it != l_TypeMetadata.properties.end(); ++it) {
-        if (!it->scriptingExpose) {
+        if (!it->scriptingExpose || !it->hideFlode) {
           continue;
         }
 
         Low::Util::Name i_PropertyName = it->name;
 
-        {
+        if (!it->hideGetterFlode) {
           Low::Util::Name i_NodeTypeName =
               LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Get" +
                                          i_PropertyName.c_str())
@@ -474,7 +474,8 @@ namespace Flode {
                                          i_PropertyName.c_str(),
                                      i_NodeTypeName);
         }
-        {
+
+        if (!it->hideSetterFlode) {
           Low::Util::Name i_NodeTypeName =
               LOW_NAME(Low::Util::String(l_NodeNamePrefix + "Set" +
                                          i_PropertyName.c_str())

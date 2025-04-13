@@ -26,6 +26,7 @@ namespace Low {
         const uint16_t Display::TYPE_ID = 39;
         uint32_t Display::ms_Capacity = 0u;
         uint8_t *Display::ms_Buffer = 0;
+        std::shared_mutex Display::ms_BufferMutex;
         Low::Util::Instances::Slot *Display::ms_Slots = 0;
         Low::Util::List<Display> Display::ms_LivingInstances =
             Low::Util::List<Display>();
@@ -51,6 +52,13 @@ namespace Low {
 
         Display Display::make(Low::Core::UI::Element p_Element)
         {
+          return make(p_Element, 0ull);
+        }
+
+        Display Display::make(Low::Core::UI::Element p_Element,
+                              Low::Util::UniqueId p_UniqueId)
+        {
+          WRITE_LOCK(l_Lock);
           uint32_t l_Index = create_instance();
 
           Display l_Handle;
@@ -89,14 +97,19 @@ namespace Low {
           ACCESSOR_TYPE_SOA(l_Handle, Display, dirty, bool) = false;
           ACCESSOR_TYPE_SOA(l_Handle, Display, world_dirty, bool) =
               false;
+          LOCK_UNLOCK(l_Lock);
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
 
           ms_LivingInstances.push_back(l_Handle);
 
-          l_Handle.set_unique_id(
-              Low::Util::generate_unique_id(l_Handle.get_id()));
+          if (p_UniqueId > 0ull) {
+            l_Handle.set_unique_id(p_UniqueId);
+          } else {
+            l_Handle.set_unique_id(
+                Low::Util::generate_unique_id(l_Handle.get_id()));
+          }
           Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                         l_Handle.get_id());
 
@@ -120,6 +133,7 @@ namespace Low {
 
           Low::Util::remove_unique_id(get_unique_id());
 
+          WRITE_LOCK(l_Lock);
           ms_Slots[this->m_Data.m_Index].m_Occupied = false;
           ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -137,6 +151,7 @@ namespace Low {
 
         void Display::initialize()
         {
+          WRITE_LOCK(l_Lock);
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
           // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -146,6 +161,7 @@ namespace Low {
 
           initialize_buffer(&ms_Buffer, DisplayData::get_size(),
                             get_capacity(), &ms_Slots);
+          LOCK_UNLOCK(l_Lock);
 
           LOW_PROFILE_ALLOC(type_buffer_Display);
           LOW_PROFILE_ALLOC(type_slots_Display);
@@ -728,11 +744,13 @@ namespace Low {
           for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
             l_Instances[i].destroy();
           }
+          WRITE_LOCK(l_Lock);
           free(ms_Buffer);
           free(ms_Slots);
 
           LOW_PROFILE_FREE(type_buffer_Display);
           LOW_PROFILE_FREE(type_slots_Display);
+          LOCK_UNLOCK(l_Lock);
         }
 
         Low::Util::Handle Display::_find_by_index(uint32_t p_Index)
@@ -755,6 +773,7 @@ namespace Low {
 
         bool Display::is_alive() const
         {
+          READ_LOCK(l_Lock);
           return m_Data.m_Type == Display::TYPE_ID &&
                  check_alive(ms_Slots, Display::get_capacity());
         }
@@ -879,9 +898,29 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, pixel_position,
                           Low::Math::Vector2);
         }
+        void Display::pixel_position(float p_X, float p_Y)
+        {
+          pixel_position(Low::Math::Vector2(p_X, p_Y));
+        }
+
+        void Display::pixel_position_x(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = pixel_position();
+          l_Value.x = p_Value;
+          pixel_position(l_Value);
+        }
+
+        void Display::pixel_position_y(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = pixel_position();
+          l_Value.y = p_Value;
+          pixel_position(l_Value);
+        }
+
         void Display::pixel_position(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
@@ -892,12 +931,14 @@ namespace Low {
 
           if (pixel_position() != p_Value) {
             // Set dirty flags
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
             TYPE_SOA(Display, pixel_position, Low::Math::Vector2) =
                 p_Value;
+            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
 
@@ -913,6 +954,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, rotation, float);
         }
         void Display::rotation(float p_Value)
@@ -925,11 +967,13 @@ namespace Low {
 
           if (rotation() != p_Value) {
             // Set dirty flags
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
             TYPE_SOA(Display, rotation, float) = p_Value;
+            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
 
@@ -945,8 +989,28 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_scale
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, pixel_scale, Low::Math::Vector2);
         }
+        void Display::pixel_scale(float p_X, float p_Y)
+        {
+          pixel_scale(Low::Math::Vector2(p_X, p_Y));
+        }
+
+        void Display::pixel_scale_x(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = pixel_scale();
+          l_Value.x = p_Value;
+          pixel_scale(l_Value);
+        }
+
+        void Display::pixel_scale_y(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = pixel_scale();
+          l_Value.y = p_Value;
+          pixel_scale(l_Value);
+        }
+
         void Display::pixel_scale(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
@@ -957,12 +1021,14 @@ namespace Low {
 
           if (pixel_scale() != p_Value) {
             // Set dirty flags
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
             TYPE_SOA(Display, pixel_scale, Low::Math::Vector2) =
                 p_Value;
+            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
 
@@ -978,6 +1044,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_layer
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, layer, uint32_t);
         }
         void Display::layer(uint32_t p_Value)
@@ -990,11 +1057,13 @@ namespace Low {
 
           if (layer() != p_Value) {
             // Set dirty flags
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
             TYPE_SOA(Display, layer, uint32_t) = p_Value;
+            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer
 
@@ -1010,6 +1079,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, parent, uint64_t);
         }
         void Display::set_parent(uint64_t p_Value)
@@ -1033,11 +1103,13 @@ namespace Low {
 
           if (get_parent() != p_Value) {
             // Set dirty flags
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
             TYPE_SOA(Display, parent, uint64_t) = p_Value;
+            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
@@ -1060,6 +1132,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, parent_uid, uint64_t);
         }
         void Display::set_parent_uid(uint64_t p_Value)
@@ -1072,11 +1145,13 @@ namespace Low {
 
           if (get_parent_uid() != p_Value) {
             // Set dirty flags
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
             TYPE_SOA(Display, world_dirty, bool) = true;
 
             // Set new value
             TYPE_SOA(Display, parent_uid, uint64_t) = p_Value;
+            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
 
@@ -1092,6 +1167,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, children,
                           Low::Util::List<uint64_t>);
         }
@@ -1105,9 +1181,30 @@ namespace Low {
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_position
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_pixel_position,
                           Low::Math::Vector2);
         }
+        void Display::set_absolute_pixel_position(float p_X,
+                                                  float p_Y)
+        {
+          set_absolute_pixel_position(Low::Math::Vector2(p_X, p_Y));
+        }
+
+        void Display::set_absolute_pixel_position_x(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = get_absolute_pixel_position();
+          l_Value.x = p_Value;
+          set_absolute_pixel_position(l_Value);
+        }
+
+        void Display::set_absolute_pixel_position_y(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = get_absolute_pixel_position();
+          l_Value.y = p_Value;
+          set_absolute_pixel_position(l_Value);
+        }
+
         void Display::set_absolute_pixel_position(
             Low::Math::Vector2 &p_Value)
         {
@@ -1118,8 +1215,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_position
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_pixel_position,
                    Low::Math::Vector2) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_position
 
@@ -1135,6 +1234,7 @@ namespace Low {
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_rotation
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_rotation, float);
         }
         void Display::set_absolute_rotation(float p_Value)
@@ -1146,7 +1246,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_rotation
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_rotation, float) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_rotation
 
@@ -1162,9 +1264,29 @@ namespace Low {
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_scale
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_pixel_scale,
                           Low::Math::Vector2);
         }
+        void Display::set_absolute_pixel_scale(float p_X, float p_Y)
+        {
+          set_absolute_pixel_scale(Low::Math::Vector2(p_X, p_Y));
+        }
+
+        void Display::set_absolute_pixel_scale_x(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = get_absolute_pixel_scale();
+          l_Value.x = p_Value;
+          set_absolute_pixel_scale(l_Value);
+        }
+
+        void Display::set_absolute_pixel_scale_y(float p_Value)
+        {
+          Low::Math::Vector2 l_Value = get_absolute_pixel_scale();
+          l_Value.y = p_Value;
+          set_absolute_pixel_scale(l_Value);
+        }
+
         void
         Display::set_absolute_pixel_scale(Low::Math::Vector2 &p_Value)
         {
@@ -1175,8 +1297,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_scale
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_pixel_scale,
                    Low::Math::Vector2) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
 
@@ -1192,6 +1316,7 @@ namespace Low {
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_layer
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_layer, uint32_t);
         }
         void Display::set_absolute_layer(uint32_t p_Value)
@@ -1203,7 +1328,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_layer
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_layer, uint32_t) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_layer
 
@@ -1219,6 +1346,7 @@ namespace Low {
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_matrix,
                           Low::Math::Matrix4x4);
         }
@@ -1231,8 +1359,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, world_matrix, Low::Math::Matrix4x4) =
               p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
 
@@ -1247,6 +1377,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_updated, bool);
         }
         void Display::set_world_updated(bool p_Value)
@@ -1258,7 +1389,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, world_updated, bool) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
 
@@ -1273,6 +1406,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_element
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, element, Low::Core::UI::Element);
         }
         void Display::set_element(Low::Core::UI::Element p_Value)
@@ -1284,8 +1418,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_element
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, element, Low::Core::UI::Element) =
               p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
 
@@ -1300,6 +1436,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, unique_id, Low::Util::UniqueId);
         }
         void Display::set_unique_id(Low::Util::UniqueId p_Value)
@@ -1311,7 +1448,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, unique_id, Low::Util::UniqueId) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -1326,6 +1465,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, dirty, bool);
         }
         void Display::set_dirty(bool p_Value)
@@ -1337,7 +1477,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, dirty, bool) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
@@ -1367,6 +1509,7 @@ namespace Low {
           }
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_dirty, bool);
         }
         void Display::set_world_dirty(bool p_Value)
@@ -1378,7 +1521,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, world_dirty, bool) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
@@ -1580,13 +1725,17 @@ namespace Low {
           {
             for (auto it = ms_LivingInstances.begin();
                  it != ms_LivingInstances.end(); ++it) {
+              Display i_Display = *it;
+
               auto *i_ValPtr = new (
                   &l_NewBuffer[offsetof(DisplayData, children) *
                                    (l_Capacity + l_CapacityIncrease) +
                                (it->get_index() *
                                 sizeof(Low::Util::List<uint64_t>))])
                   Low::Util::List<uint64_t>();
-              *i_ValPtr = it->get_children();
+              *i_ValPtr =
+                  ACCESSOR_TYPE_SOA(i_Display, Display, children,
+                                    Low::Util::List<uint64_t>);
             }
           }
           {

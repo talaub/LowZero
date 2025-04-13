@@ -300,6 +300,7 @@ namespace Low {
         VkRenderingInfo
         rendering_info(VkExtent2D p_RenderExtent,
                        VkRenderingAttachmentInfo *p_ColorAttachment,
+                       u32 p_ColorAttachmentCount,
                        VkRenderingAttachmentInfo *p_DepthAttachment)
         {
           VkRenderingInfo l_RenderInfo{};
@@ -309,7 +310,7 @@ namespace Low {
           l_RenderInfo.renderArea =
               VkRect2D{VkOffset2D{0, 0}, p_RenderExtent};
           l_RenderInfo.layerCount = 1;
-          l_RenderInfo.colorAttachmentCount = 1;
+          l_RenderInfo.colorAttachmentCount = p_ColorAttachmentCount;
           l_RenderInfo.pColorAttachments = p_ColorAttachment;
           l_RenderInfo.pDepthAttachment = p_DepthAttachment;
           l_RenderInfo.pStencilAttachment = nullptr;

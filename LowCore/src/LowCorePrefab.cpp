@@ -61,6 +61,7 @@ namespace Low {
     const uint16_t Prefab::TYPE_ID = 33;
     uint32_t Prefab::ms_Capacity = 0u;
     uint8_t *Prefab::ms_Buffer = 0;
+    std::shared_mutex Prefab::ms_BufferMutex;
     Low::Util::Instances::Slot *Prefab::ms_Slots = 0;
     Low::Util::List<Prefab> Prefab::ms_LivingInstances =
         Low::Util::List<Prefab>();
@@ -82,6 +83,13 @@ namespace Low {
 
     Prefab Prefab::make(Low::Util::Name p_Name)
     {
+      return make(p_Name, 0ull);
+    }
+
+    Prefab Prefab::make(Low::Util::Name p_Name,
+                        Low::Util::UniqueId p_UniqueId)
+    {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Prefab l_Handle;
@@ -102,13 +110,18 @@ namespace Low {
           Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>>();
       ACCESSOR_TYPE_SOA(l_Handle, Prefab, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
       ms_LivingInstances.push_back(l_Handle);
 
-      l_Handle.set_unique_id(
-          Low::Util::generate_unique_id(l_Handle.get_id()));
+      if (p_UniqueId > 0ull) {
+        l_Handle.set_unique_id(p_UniqueId);
+      } else {
+        l_Handle.set_unique_id(
+            Low::Util::generate_unique_id(l_Handle.get_id()));
+      }
       Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                     l_Handle.get_id());
 
@@ -129,6 +142,7 @@ namespace Low {
 
       Low::Util::remove_unique_id(get_unique_id());
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -145,6 +159,7 @@ namespace Low {
 
     void Prefab::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -154,6 +169,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, PrefabData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Prefab);
       LOW_PROFILE_ALLOC(type_slots_Prefab);
@@ -414,11 +430,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Prefab);
       LOW_PROFILE_FREE(type_slots_Prefab);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Prefab::_find_by_index(uint32_t p_Index)
@@ -440,6 +458,7 @@ namespace Low {
 
     bool Prefab::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Prefab::TYPE_ID &&
              check_alive(ms_Slots, Prefab::get_capacity());
     }
@@ -605,6 +624,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Prefab, parent, Util::Handle);
     }
     void Prefab::set_parent(Util::Handle p_Value)
@@ -616,7 +636,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Prefab, parent, Util::Handle) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
@@ -631,6 +653,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Prefab, children, Util::List<Util::Handle>);
     }
     void Prefab::set_children(Util::List<Util::Handle> &p_Value)
@@ -642,7 +665,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_children
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Prefab, children, Util::List<Util::Handle>) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_children
 
@@ -658,6 +683,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_components
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           Prefab, components,
           SINGLE_ARG(
@@ -675,11 +701,13 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_components
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Prefab, components,
                SINGLE_ARG(
                    Util::Map<uint16_t,
                              Util::Map<Util::Name, Util::Variant>>)) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_components
 
@@ -694,6 +722,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Prefab, unique_id, Low::Util::UniqueId);
     }
     void Prefab::set_unique_id(Low::Util::UniqueId p_Value)
@@ -705,7 +734,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Prefab, unique_id, Low::Util::UniqueId) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -720,6 +751,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Prefab, name, Low::Util::Name);
     }
     void Prefab::set_name(Low::Util::Name p_Value)
@@ -731,7 +763,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Prefab, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -952,18 +986,23 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          Prefab i_Prefab = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(PrefabData, children) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::List<Util::Handle>))])
               Util::List<Util::Handle>();
-          *i_ValPtr = it->get_children();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_Prefab, Prefab, children,
+                                        Util::List<Util::Handle>);
         }
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          Prefab i_Prefab = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer
                   [offsetof(PrefabData, components) *
@@ -974,7 +1013,11 @@ namespace Low {
                            Util::Map<Util::Name, Util::Variant>>))])
               Util::Map<uint16_t,
                         Util::Map<Util::Name, Util::Variant>>();
-          *i_ValPtr = it->get_components();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_Prefab, Prefab, components,
+              SINGLE_ARG(
+                  Util::Map<uint16_t,
+                            Util::Map<Util::Name, Util::Variant>>));
         }
       }
       {

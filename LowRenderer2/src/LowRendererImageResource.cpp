@@ -10,6 +10,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererVkImage.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -20,6 +21,7 @@ namespace Low {
     const uint16_t ImageResource::TYPE_ID = 48;
     uint32_t ImageResource::ms_Capacity = 0u;
     uint8_t *ImageResource::ms_Buffer = 0;
+    std::shared_mutex ImageResource::ms_BufferMutex;
     Low::Util::Instances::Slot *ImageResource::ms_Slots = 0;
     Low::Util::List<ImageResource> ImageResource::ms_LivingInstances =
         Low::Util::List<ImageResource>();
@@ -43,6 +45,7 @@ namespace Low {
 
     ImageResource ImageResource::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       ImageResource l_Handle;
@@ -63,6 +66,7 @@ namespace Low {
           Low::Util::List<uint8_t>();
       ACCESSOR_TYPE_SOA(l_Handle, ImageResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -80,8 +84,14 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      Vulkan::Image l_VkImage = get_data_handle();
+      if (get_state() == ImageResourceState::LOADED) {
+        l_VkImage.unload();
+      }
+      l_VkImage.destroy();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -98,6 +108,7 @@ namespace Low {
 
     void ImageResource::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
@@ -106,6 +117,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, ImageResourceData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_ImageResource);
       LOW_PROFILE_ALLOC(type_slots_ImageResource);
@@ -324,11 +336,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_ImageResource);
       LOW_PROFILE_FREE(type_slots_ImageResource);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle ImageResource::_find_by_index(uint32_t p_Index)
@@ -350,6 +364,7 @@ namespace Low {
 
     bool ImageResource::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == ImageResource::TYPE_ID &&
              check_alive(ms_Slots, ImageResource::get_capacity());
     }
@@ -439,8 +454,14 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ImageResource, path, Util::String);
     }
+    void ImageResource::set_path(const char *p_Value)
+    {
+      set_path(Low::Util::String(p_Value));
+    }
+
     void ImageResource::set_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -449,7 +470,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ImageResource, path, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
@@ -463,6 +486,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource_image
       // LOW_CODEGEN::END::CUSTOM:GETTER_resource_image
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ImageResource, resource_image,
                       Util::Resource::ImageMipMaps);
     }
@@ -474,6 +498,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ImageResource, state, ImageResourceState);
     }
     void ImageResource::set_state(ImageResourceState p_Value)
@@ -484,7 +509,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ImageResource, state, ImageResourceState) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
@@ -497,6 +524,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ImageResource, data_handle, uint64_t);
     }
     void ImageResource::set_data_handle(uint64_t p_Value)
@@ -507,7 +535,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ImageResource, data_handle, uint64_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
@@ -520,6 +550,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded_mips
       // LOW_CODEGEN::END::CUSTOM:GETTER_loaded_mips
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ImageResource, loaded_mips,
                       Low::Util::List<uint8_t>);
     }
@@ -532,8 +563,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded_mips
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ImageResource, loaded_mips, Low::Util::List<uint8_t>) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded_mips
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded_mips
@@ -546,6 +579,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ImageResource, name, Low::Util::Name);
     }
     void ImageResource::set_name(Low::Util::Name p_Value)
@@ -556,7 +590,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ImageResource, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -651,13 +687,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          ImageResource i_ImageResource = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(ImageResourceData, loaded_mips) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Low::Util::List<uint8_t>))])
               Low::Util::List<uint8_t>();
-          *i_ValPtr = it->loaded_mips();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_ImageResource,
+                                        ImageResource, loaded_mips,
+                                        Low::Util::List<uint8_t>);
         }
       }
       {

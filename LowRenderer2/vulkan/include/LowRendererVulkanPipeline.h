@@ -32,7 +32,7 @@ namespace Low {
           VkPipelineLayout pipelineLayout;
           VkPipelineDepthStencilStateCreateInfo depthStencil;
           VkPipelineRenderingCreateInfo renderInfo;
-          VkFormat colorAttachmentFormat;
+          Util::List<VkFormat> colorAttachmentFormats;
 
           Util::String vertexShaderPath;
           Util::String fragmentShaderPath;
@@ -58,12 +58,10 @@ namespace Low {
                              VkFrontFace p_FrontFace);
           void set_multismapling_none();
           void disable_blending();
-          void set_color_attachment_format(VkFormat p_Format);
           void set_depth_format(VkFormat p_Format);
           void disable_depth_test();
 
-          void set_shaders(
-                           Util::String p_VertexShader,
+          void set_shaders(Util::String p_VertexShader,
                            Util::String p_FragmentShader,
                            bool p_Project = false);
 

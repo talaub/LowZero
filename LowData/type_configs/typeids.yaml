@@ -50,3 +50,12 @@ LowRenderer2:
   MeshResource: 47
   ImageResource: 48
   Image: 49
+  Submesh: 50
+  MeshInfo: 51
+  RenderObject: 52
+  RenderView: 53
+  RenderTarget: 54
+  ViewInfo: 55
+LowRendjrer2:
+  RenderObject: 56
+  RenderView: 57

@@ -10,6 +10,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererVulkanImage.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -21,6 +22,7 @@ namespace Low {
       const uint16_t Image::TYPE_ID = 49;
       uint32_t Image::ms_Capacity = 0u;
       uint8_t *Image::ms_Buffer = 0;
+      std::shared_mutex Image::ms_BufferMutex;
       Low::Util::Instances::Slot *Image::ms_Slots = 0;
       Low::Util::List<Image> Image::ms_LivingInstances =
           Low::Util::List<Image>();
@@ -42,6 +44,7 @@ namespace Low {
 
       Image Image::make(Low::Util::Name p_Name)
       {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Image l_Handle;
@@ -53,6 +56,7 @@ namespace Low {
                                 AllocatedImage)) AllocatedImage();
         ACCESSOR_TYPE_SOA(l_Handle, Image, name, Low::Util::Name) =
             Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -71,6 +75,7 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -87,6 +92,7 @@ namespace Low {
 
       void Image::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
@@ -95,6 +101,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, ImageData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Image);
         LOW_PROFILE_ALLOC(type_slots_Image);
@@ -178,6 +185,15 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
         }
+        {
+          // Function: unload
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(unload);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: unload
+        }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
@@ -187,11 +203,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Image);
         LOW_PROFILE_FREE(type_slots_Image);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Image::_find_by_index(uint32_t p_Index)
@@ -213,6 +231,7 @@ namespace Low {
 
       bool Image::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Image::TYPE_ID &&
                check_alive(ms_Slots, Image::get_capacity());
       }
@@ -305,6 +324,7 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_allocated_image
         // LOW_CODEGEN::END::CUSTOM:GETTER_allocated_image
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Image, allocated_image, AllocatedImage);
       }
       void Image::set_allocated_image(AllocatedImage &p_Value)
@@ -315,7 +335,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_allocated_image
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Image, allocated_image, AllocatedImage) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_allocated_image
         // LOW_CODEGEN::END::CUSTOM:SETTER_allocated_image
@@ -328,6 +350,7 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Image, name, Low::Util::Name);
       }
       void Image::set_name(Low::Util::Name p_Value)
@@ -338,10 +361,19 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Image, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+      }
+
+      bool Image::unload()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+        return ImageUtil::destroy(get_allocated_image());
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload
       }
 
       uint32_t Image::create_instance()

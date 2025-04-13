@@ -69,6 +69,7 @@ namespace Low {
         VkRenderingInfo
         rendering_info(VkExtent2D p_RenderExtent,
                        VkRenderingAttachmentInfo *p_ColorAttachment,
+                       u32 p_ColorAttachmentCount,
                        VkRenderingAttachmentInfo *p_DepthAttachment);
       } // namespace InitUtil
     }   // namespace Vulkan

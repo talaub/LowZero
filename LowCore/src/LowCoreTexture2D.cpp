@@ -45,6 +45,7 @@ namespace Low {
     const uint16_t Texture2D::TYPE_ID = 22;
     uint32_t Texture2D::ms_Capacity = 0u;
     uint8_t *Texture2D::ms_Buffer = 0;
+    std::shared_mutex Texture2D::ms_BufferMutex;
     Low::Util::Instances::Slot *Texture2D::ms_Slots = 0;
     Low::Util::List<Texture2D> Texture2D::ms_LivingInstances =
         Low::Util::List<Texture2D>();
@@ -67,6 +68,7 @@ namespace Low {
 
     Texture2D Texture2D::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Texture2D l_Handle;
@@ -83,6 +85,7 @@ namespace Low {
                               ResourceState)) ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -103,6 +106,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -119,6 +123,7 @@ namespace Low {
 
     void Texture2D::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       g_Image2Ds.resize(TEXTURE_COUNT);
@@ -133,6 +138,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, Texture2DData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Texture2D);
       LOW_PROFILE_ALLOC(type_slots_Texture2D);
@@ -357,11 +363,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Texture2D);
       LOW_PROFILE_FREE(type_slots_Texture2D);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Texture2D::_find_by_index(uint32_t p_Index)
@@ -383,6 +391,7 @@ namespace Low {
 
     bool Texture2D::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Texture2D::TYPE_ID &&
              check_alive(ms_Slots, Texture2D::get_capacity());
     }
@@ -479,8 +488,14 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, path, Util::String);
     }
+    void Texture2D::set_path(const char *p_Value)
+    {
+      set_path(Low::Util::String(p_Value));
+    }
+
     void Texture2D::set_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -490,7 +505,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, path, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
 
@@ -505,6 +522,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_texture
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, renderer_texture,
                       Renderer::Texture2D);
     }
@@ -517,8 +535,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_texture
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_texture
 
@@ -533,6 +553,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, reference_count, uint32_t);
     }
     void Texture2D::set_reference_count(uint32_t p_Value)
@@ -544,7 +565,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, reference_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
@@ -559,6 +582,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, state, ResourceState);
     }
     void Texture2D::set_state(ResourceState p_Value)
@@ -570,7 +594,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, state, ResourceState) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
 
@@ -585,6 +611,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
     }
     void Texture2D::set_name(Low::Util::Name p_Value)
@@ -596,7 +623,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

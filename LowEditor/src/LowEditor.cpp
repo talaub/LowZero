@@ -375,6 +375,28 @@ namespace Low {
                                     it->second["metadata"]);
           }
 
+          {
+            i_Metadata.hideFlode = false;
+
+            if (it->second["flode_hide"]) {
+              i_Metadata.hideFlode =
+                  it->second["flode_hide"].as<bool>();
+            }
+            i_Metadata.hideGetterFlode = i_Metadata.hideFlode;
+            i_Metadata.hideSetterFlode = i_Metadata.hideFlode;
+
+            if (!i_Metadata.hideFlode) {
+              if (it->second["flode_hide_setter"]) {
+                i_Metadata.hideSetterFlode =
+                    it->second["flode_hide_setter"].as<bool>();
+              }
+              if (it->second["flode_hide_getter"]) {
+                i_Metadata.hideGetterFlode =
+                    it->second["flode_hide_getter"].as<bool>();
+              }
+            }
+          }
+
           i_Metadata.getterName = "get_";
           i_Metadata.getterName += i_Metadata.name.c_str();
           if (it->second["getter_name"]) {
@@ -530,6 +552,7 @@ namespace Low {
            it != p_Node["types"].end(); ++it) {
         Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
         TypeMetadata i_Metadata;
+
         i_Metadata.name = LOW_YAML_AS_NAME(it->first);
         i_Metadata.friendlyName = prettify_name(i_Metadata.name);
         i_Metadata.module = l_ModuleString;

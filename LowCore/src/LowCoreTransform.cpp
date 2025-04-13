@@ -24,6 +24,7 @@ namespace Low {
       const uint16_t Transform::TYPE_ID = 25;
       uint32_t Transform::ms_Capacity = 0u;
       uint8_t *Transform::ms_Buffer = 0;
+      std::shared_mutex Transform::ms_BufferMutex;
       Low::Util::Instances::Slot *Transform::ms_Slots = 0;
       Low::Util::List<Transform> Transform::ms_LivingInstances =
           Low::Util::List<Transform>();
@@ -49,6 +50,13 @@ namespace Low {
 
       Transform Transform::make(Low::Core::Entity p_Entity)
       {
+        return make(p_Entity, 0ull);
+      }
+
+      Transform Transform::make(Low::Core::Entity p_Entity,
+                                Low::Util::UniqueId p_UniqueId)
+      {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Transform l_Handle;
@@ -88,14 +96,19 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, Transform, dirty, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Transform, world_dirty, bool) =
             false;
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
         ms_LivingInstances.push_back(l_Handle);
 
-        l_Handle.set_unique_id(
-            Low::Util::generate_unique_id(l_Handle.get_id()));
+        if (p_UniqueId > 0ull) {
+          l_Handle.set_unique_id(p_UniqueId);
+        } else {
+          l_Handle.set_unique_id(
+              Low::Util::generate_unique_id(l_Handle.get_id()));
+        }
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
@@ -120,6 +133,7 @@ namespace Low {
 
         Low::Util::remove_unique_id(get_unique_id());
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -136,6 +150,7 @@ namespace Low {
 
       void Transform::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -145,6 +160,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, TransformData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Transform);
         LOW_PROFILE_ALLOC(type_slots_Transform);
@@ -614,11 +630,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Transform);
         LOW_PROFILE_FREE(type_slots_Transform);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Transform::_find_by_index(uint32_t p_Index)
@@ -640,6 +658,7 @@ namespace Low {
 
       bool Transform::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Transform::TYPE_ID &&
                check_alive(ms_Slots, Transform::get_capacity());
       }
@@ -759,8 +778,35 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_position
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, position, Low::Math::Vector3);
       }
+      void Transform::position(float p_X, float p_Y, float p_Z)
+      {
+        position(Low::Math::Vector3(p_X, p_Y, p_Z));
+      }
+
+      void Transform::position_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = position();
+        l_Value.x = p_Value;
+        position(l_Value);
+      }
+
+      void Transform::position_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = position();
+        l_Value.y = p_Value;
+        position(l_Value);
+      }
+
+      void Transform::position_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = position();
+        l_Value.z = p_Value;
+        position(l_Value);
+      }
+
       void Transform::position(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -771,11 +817,13 @@ namespace Low {
 
         if (position() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, dirty, bool) = true;
           TYPE_SOA(Transform, world_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(Transform, position, Low::Math::Vector3) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -807,6 +855,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, rotation, Low::Math::Quaternion);
       }
       void Transform::rotation(Low::Math::Quaternion &p_Value)
@@ -819,12 +868,14 @@ namespace Low {
 
         if (rotation() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, dirty, bool) = true;
           TYPE_SOA(Transform, world_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(Transform, rotation, Low::Math::Quaternion) =
               p_Value;
+          LOCK_UNLOCK(l_WriteLock);
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -856,8 +907,35 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_scale
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, scale, Low::Math::Vector3);
       }
+      void Transform::scale(float p_X, float p_Y, float p_Z)
+      {
+        scale(Low::Math::Vector3(p_X, p_Y, p_Z));
+      }
+
+      void Transform::scale_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = scale();
+        l_Value.x = p_Value;
+        scale(l_Value);
+      }
+
+      void Transform::scale_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = scale();
+        l_Value.y = p_Value;
+        scale(l_Value);
+      }
+
+      void Transform::scale_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = scale();
+        l_Value.z = p_Value;
+        scale(l_Value);
+      }
+
       void Transform::scale(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -868,11 +946,13 @@ namespace Low {
 
         if (scale() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, dirty, bool) = true;
           TYPE_SOA(Transform, world_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(Transform, scale, Low::Math::Vector3) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -904,6 +984,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, parent, uint64_t);
       }
       void Transform::set_parent(uint64_t p_Value)
@@ -927,11 +1008,13 @@ namespace Low {
 
         if (get_parent() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, dirty, bool) = true;
           TYPE_SOA(Transform, world_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(Transform, parent, uint64_t) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
@@ -954,6 +1037,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, parent_uid, uint64_t);
       }
       void Transform::set_parent_uid(uint64_t p_Value)
@@ -966,11 +1050,13 @@ namespace Low {
 
         if (get_parent_uid() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, dirty, bool) = true;
           TYPE_SOA(Transform, world_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(Transform, parent_uid, uint64_t) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
 
@@ -986,6 +1072,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, children,
                         Low::Util::List<uint64_t>);
       }
@@ -999,9 +1086,37 @@ namespace Low {
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_position
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_position,
                         Low::Math::Vector3);
       }
+      void Transform::set_world_position(float p_X, float p_Y,
+                                         float p_Z)
+      {
+        set_world_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+      }
+
+      void Transform::set_world_position_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_world_position();
+        l_Value.x = p_Value;
+        set_world_position(l_Value);
+      }
+
+      void Transform::set_world_position_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_world_position();
+        l_Value.y = p_Value;
+        set_world_position(l_Value);
+      }
+
+      void Transform::set_world_position_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_world_position();
+        l_Value.z = p_Value;
+        set_world_position(l_Value);
+      }
+
       void Transform::set_world_position(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -1011,8 +1126,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_position, Low::Math::Vector3) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_position
 
@@ -1028,6 +1145,7 @@ namespace Low {
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_rotation
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_rotation,
                         Low::Math::Quaternion);
       }
@@ -1041,8 +1159,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_rotation
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_rotation, Low::Math::Quaternion) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_rotation
 
@@ -1058,8 +1178,35 @@ namespace Low {
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_scale
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_scale, Low::Math::Vector3);
       }
+      void Transform::set_world_scale(float p_X, float p_Y, float p_Z)
+      {
+        set_world_scale(Low::Math::Vector3(p_X, p_Y, p_Z));
+      }
+
+      void Transform::set_world_scale_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_world_scale();
+        l_Value.x = p_Value;
+        set_world_scale(l_Value);
+      }
+
+      void Transform::set_world_scale_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_world_scale();
+        l_Value.y = p_Value;
+        set_world_scale(l_Value);
+      }
+
+      void Transform::set_world_scale_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_world_scale();
+        l_Value.z = p_Value;
+        set_world_scale(l_Value);
+      }
+
       void Transform::set_world_scale(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -1069,8 +1216,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_scale
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_scale, Low::Math::Vector3) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_scale
 
@@ -1086,6 +1235,7 @@ namespace Low {
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_matrix,
                         Low::Math::Matrix4x4);
       }
@@ -1098,8 +1248,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_matrix, Low::Math::Matrix4x4) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
 
@@ -1114,6 +1266,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_updated, bool);
       }
       void Transform::set_world_updated(bool p_Value)
@@ -1125,7 +1278,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_updated, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
 
@@ -1140,6 +1295,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, entity, Low::Core::Entity);
       }
       void Transform::set_entity(Low::Core::Entity p_Value)
@@ -1151,7 +1307,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, entity, Low::Core::Entity) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -1166,6 +1324,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, unique_id, Low::Util::UniqueId);
       }
       void Transform::set_unique_id(Low::Util::UniqueId p_Value)
@@ -1177,7 +1336,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, unique_id, Low::Util::UniqueId) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -1192,6 +1353,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, dirty, bool);
       }
       void Transform::set_dirty(bool p_Value)
@@ -1203,7 +1365,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, dirty, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
@@ -1228,6 +1392,7 @@ namespace Low {
         }
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_dirty, bool);
       }
       void Transform::set_world_dirty(bool p_Value)
@@ -1239,7 +1404,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_dirty, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
@@ -1389,13 +1556,17 @@ namespace Low {
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
+            Transform i_Transform = *it;
+
             auto *i_ValPtr = new (
                 &l_NewBuffer[offsetof(TransformData, children) *
                                  (l_Capacity + l_CapacityIncrease) +
                              (it->get_index() *
                               sizeof(Low::Util::List<uint64_t>))])
                 Low::Util::List<uint64_t>();
-            *i_ValPtr = it->get_children();
+            *i_ValPtr =
+                ACCESSOR_TYPE_SOA(i_Transform, Transform, children,
+                                  Low::Util::List<uint64_t>);
           }
         }
         {

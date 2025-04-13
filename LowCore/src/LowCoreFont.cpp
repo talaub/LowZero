@@ -29,6 +29,7 @@ namespace Low {
     const uint16_t Font::TYPE_ID = 36;
     uint32_t Font::ms_Capacity = 0u;
     uint8_t *Font::ms_Buffer = 0;
+    std::shared_mutex Font::ms_BufferMutex;
     Low::Util::Instances::Slot *Font::ms_Slots = 0;
     Low::Util::List<Font> Font::ms_LivingInstances =
         Low::Util::List<Font>();
@@ -50,6 +51,7 @@ namespace Low {
 
     Font Font::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Font l_Handle;
@@ -67,6 +69,7 @@ namespace Low {
           ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, Font, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -87,6 +90,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -103,6 +107,7 @@ namespace Low {
 
     void Font::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       LOW_ASSERT(!FT_Init_FreeType(&g_FreeType),
@@ -114,6 +119,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, FontData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Font);
       LOW_PROFILE_ALLOC(type_slots_Font);
@@ -371,11 +377,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Font);
       LOW_PROFILE_FREE(type_slots_Font);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Font::_find_by_index(uint32_t p_Index)
@@ -397,6 +405,7 @@ namespace Low {
 
     bool Font::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Font::TYPE_ID &&
              check_alive(ms_Slots, Font::get_capacity());
     }
@@ -488,8 +497,14 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Font, path, Util::String);
     }
+    void Font::set_path(const char *p_Value)
+    {
+      set_path(Low::Util::String(p_Value));
+    }
+
     void Font::set_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -499,7 +514,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Font, path, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
 
@@ -514,6 +531,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_glyphs
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Font, glyphs,
                       SINGLE_ARG(Util::Map<char, FontGlyph>));
     }
@@ -526,8 +544,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_glyphs
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Font, glyphs, SINGLE_ARG(Util::Map<char, FontGlyph>)) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_glyphs
 
@@ -542,6 +562,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Font, reference_count, uint32_t);
     }
     void Font::set_reference_count(uint32_t p_Value)
@@ -553,7 +574,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Font, reference_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
@@ -568,6 +591,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_font_size
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Font, font_size, float);
     }
     void Font::set_font_size(float p_Value)
@@ -579,7 +603,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_font_size
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Font, font_size, float) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font_size
 
@@ -594,6 +620,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Font, state, ResourceState);
     }
     void Font::set_state(ResourceState p_Value)
@@ -605,7 +632,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Font, state, ResourceState) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
 
@@ -620,6 +649,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Font, name, Low::Util::Name);
     }
     void Font::set_name(Low::Util::Name p_Value)
@@ -631,7 +661,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Font, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -837,13 +869,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          Font i_Font = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(FontData, glyphs) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::Map<char, FontGlyph>))])
               Util::Map<char, FontGlyph>();
-          *i_ValPtr = it->get_glyphs();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_Font, Font, glyphs,
+              SINGLE_ARG(Util::Map<char, FontGlyph>));
         }
       }
       {

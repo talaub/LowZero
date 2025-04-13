@@ -27,6 +27,7 @@ namespace Low {
       const uint16_t NavmeshAgent::TYPE_ID = 35;
       uint32_t NavmeshAgent::ms_Capacity = 0u;
       uint8_t *NavmeshAgent::ms_Buffer = 0;
+      std::shared_mutex NavmeshAgent::ms_BufferMutex;
       Low::Util::Instances::Slot *NavmeshAgent::ms_Slots = 0;
       Low::Util::List<NavmeshAgent> NavmeshAgent::ms_LivingInstances =
           Low::Util::List<NavmeshAgent>();
@@ -54,6 +55,13 @@ namespace Low {
 
       NavmeshAgent NavmeshAgent::make(Low::Core::Entity p_Entity)
       {
+        return make(p_Entity, 0ull);
+      }
+
+      NavmeshAgent NavmeshAgent::make(Low::Core::Entity p_Entity,
+                                      Low::Util::UniqueId p_UniqueId)
+      {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         NavmeshAgent l_Handle;
@@ -73,14 +81,19 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, entity,
                                 Low::Core::Entity))
             Low::Core::Entity();
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
         ms_LivingInstances.push_back(l_Handle);
 
-        l_Handle.set_unique_id(
-            Low::Util::generate_unique_id(l_Handle.get_id()));
+        if (p_UniqueId > 0ull) {
+          l_Handle.set_unique_id(p_UniqueId);
+        } else {
+          l_Handle.set_unique_id(
+              Low::Util::generate_unique_id(l_Handle.get_id()));
+        }
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
@@ -102,6 +115,7 @@ namespace Low {
 
         Low::Util::remove_unique_id(get_unique_id());
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -118,6 +132,7 @@ namespace Low {
 
       void NavmeshAgent::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -127,6 +142,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, NavmeshAgentData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_NavmeshAgent);
         LOW_PROFILE_ALLOC(type_slots_NavmeshAgent);
@@ -380,11 +396,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_NavmeshAgent);
         LOW_PROFILE_FREE(type_slots_NavmeshAgent);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle NavmeshAgent::_find_by_index(uint32_t p_Index)
@@ -406,6 +424,7 @@ namespace Low {
 
       bool NavmeshAgent::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == NavmeshAgent::TYPE_ID &&
                check_alive(ms_Slots, NavmeshAgent::get_capacity());
       }
@@ -525,6 +544,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_speed
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, speed, float);
       }
       void NavmeshAgent::set_speed(float p_Value)
@@ -536,7 +556,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_speed
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, speed, float) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -566,6 +588,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_height
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, height, float);
       }
       void NavmeshAgent::set_height(float p_Value)
@@ -577,7 +600,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_height
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, height, float) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -607,6 +632,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_radius
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, radius, float);
       }
       void NavmeshAgent::set_radius(float p_Value)
@@ -618,7 +644,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_radius
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, radius, float) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -648,8 +676,35 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_offset
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, offset, Low::Math::Vector3);
       }
+      void NavmeshAgent::set_offset(float p_X, float p_Y, float p_Z)
+      {
+        set_offset(Low::Math::Vector3(p_X, p_Y, p_Z));
+      }
+
+      void NavmeshAgent::set_offset_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_offset();
+        l_Value.x = p_Value;
+        set_offset(l_Value);
+      }
+
+      void NavmeshAgent::set_offset_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_offset();
+        l_Value.y = p_Value;
+        set_offset(l_Value);
+      }
+
+      void NavmeshAgent::set_offset_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_offset();
+        l_Value.z = p_Value;
+        set_offset(l_Value);
+      }
+
       void NavmeshAgent::set_offset(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -659,7 +714,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_offset
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, offset, Low::Math::Vector3) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -689,6 +746,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_agent_index
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, agent_index, int);
       }
       void NavmeshAgent::set_agent_index(int p_Value)
@@ -700,7 +758,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_agent_index
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, agent_index, int) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_agent_index
 
@@ -715,6 +775,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, entity, Low::Core::Entity);
       }
       void NavmeshAgent::set_entity(Low::Core::Entity p_Value)
@@ -726,7 +787,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, entity, Low::Core::Entity) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -741,6 +804,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(NavmeshAgent, unique_id, Low::Util::UniqueId);
       }
       void NavmeshAgent::set_unique_id(Low::Util::UniqueId p_Value)
@@ -752,8 +816,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(NavmeshAgent, unique_id, Low::Util::UniqueId) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 

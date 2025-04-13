@@ -23,6 +23,7 @@ namespace Low {
       const uint16_t Image::TYPE_ID = 7;
       uint32_t Image::ms_Capacity = 0u;
       uint8_t *Image::ms_Buffer = 0;
+      std::shared_mutex Image::ms_BufferMutex;
       Low::Util::Instances::Slot *Image::ms_Slots = 0;
       Low::Util::List<Image> Image::ms_LivingInstances =
           Low::Util::List<Image>();
@@ -44,6 +45,7 @@ namespace Low {
 
       Image Image::make(Low::Util::Name p_Name)
       {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Image l_Handle;
@@ -56,6 +58,7 @@ namespace Low {
             Backend::ImageResource();
         ACCESSOR_TYPE_SOA(l_Handle, Image, name, Low::Util::Name) =
             Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -77,6 +80,7 @@ namespace Low {
         Backend::callbacks().imageresource_cleanup(get_image());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -93,6 +97,7 @@ namespace Low {
 
       void Image::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -102,6 +107,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, ImageData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Image);
         LOW_PROFILE_ALLOC(type_slots_Image);
@@ -235,11 +241,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Image);
         LOW_PROFILE_FREE(type_slots_Image);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Image::_find_by_index(uint32_t p_Index)
@@ -261,6 +269,7 @@ namespace Low {
 
       bool Image::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Image::TYPE_ID &&
                check_alive(ms_Slots, Image::get_capacity());
       }
@@ -357,6 +366,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_image
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Image, image, Backend::ImageResource);
       }
       void Image::set_image(Backend::ImageResource &p_Value)
@@ -368,7 +378,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_image
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Image, image, Backend::ImageResource) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_image
 
@@ -383,6 +395,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Image, name, Low::Util::Name);
       }
       void Image::set_name(Low::Util::Name p_Value)
@@ -394,7 +407,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Image, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

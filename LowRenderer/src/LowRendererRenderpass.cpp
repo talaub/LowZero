@@ -26,6 +26,7 @@ namespace Low {
       const uint16_t Renderpass::TYPE_ID = 2;
       uint32_t Renderpass::ms_Capacity = 0u;
       uint8_t *Renderpass::ms_Buffer = 0;
+      std::shared_mutex Renderpass::ms_BufferMutex;
       Low::Util::Instances::Slot *Renderpass::ms_Slots = 0;
       Low::Util::List<Renderpass> Renderpass::ms_LivingInstances =
           Low::Util::List<Renderpass>();
@@ -48,6 +49,7 @@ namespace Low {
 
       Renderpass Renderpass::make(Low::Util::Name p_Name)
       {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Renderpass l_Handle;
@@ -60,6 +62,7 @@ namespace Low {
             Backend::Renderpass();
         ACCESSOR_TYPE_SOA(l_Handle, Renderpass, name,
                           Low::Util::Name) = Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -83,6 +86,7 @@ namespace Low {
         }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -99,6 +103,7 @@ namespace Low {
 
       void Renderpass::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -108,6 +113,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, RenderpassData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Renderpass);
         LOW_PROFILE_ALLOC(type_slots_Renderpass);
@@ -254,11 +260,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Renderpass);
         LOW_PROFILE_FREE(type_slots_Renderpass);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Renderpass::_find_by_index(uint32_t p_Index)
@@ -280,6 +288,7 @@ namespace Low {
 
       bool Renderpass::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Renderpass::TYPE_ID &&
                check_alive(ms_Slots, Renderpass::get_capacity());
       }
@@ -379,6 +388,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_renderpass
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Renderpass, renderpass, Backend::Renderpass);
       }
       void Renderpass::set_renderpass(Backend::Renderpass &p_Value)
@@ -390,8 +400,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderpass
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Renderpass, renderpass, Backend::Renderpass) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderpass
 
@@ -406,6 +418,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Renderpass, name, Low::Util::Name);
       }
       void Renderpass::set_name(Low::Util::Name p_Value)
@@ -417,7 +430,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Renderpass, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

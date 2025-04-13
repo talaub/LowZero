@@ -10,6 +10,7 @@
 #include "LowRendererVulkanDescriptor.h"
 
 #include "LowUtilContainers.h"
+#include <vulkan/vulkan_core.h>
 
 #define VK_FRAME_OVERLAP 2
 
@@ -30,6 +31,51 @@ namespace Low {
         size_t occupied;
       };
 
+      struct DynamicBufferFreeSlot
+      {
+        uint32_t start;
+        uint32_t length;
+      };
+
+      struct DescriptorData
+      {
+        VkDescriptorSet set;
+        VkDescriptorSetLayout layout;
+      };
+
+      struct ViewInfoFrameData
+      {
+        alignas(16) Math::Matrix4x4 viewMatrix;
+        alignas(16) Math::Matrix4x4 projectionMatrix;
+        alignas(16) Math::Matrix4x4 viewProjectionMatrix;
+        alignas(16) Math::Vector2 dimensions;
+        alignas(16) Math::Vector2 inverseDimensions;
+      };
+
+      struct DynamicBuffer
+      {
+        bool reserve(u32 p_ElementCount, u32 *p_StartOut);
+
+        void free(u32 p_Position, u32 p_ElementCount);
+
+        void clear();
+
+        void destroy();
+
+        u32 get_used_elements() const;
+
+        AllocatedBuffer m_Buffer;
+
+        u32 m_ElementSize;
+        u32 m_ElementCount;
+        Util::List<DynamicBufferFreeSlot> m_FreeSlots;
+      };
+
+      struct Samplers
+      {
+        VkSampler no_lod_nearest_repeat_black;
+      };
+
       namespace Global {
         bool initialize();
         bool cleanup();
@@ -42,6 +88,11 @@ namespace Low {
         VmaAllocator get_allocator();
         DescriptorUtil::DescriptorAllocator &
         get_global_descriptor_allocator();
+
+        DynamicBuffer &get_mesh_vertex_buffer();
+        DynamicBuffer &get_mesh_index_buffer();
+
+        DynamicBuffer &get_renderobject_buffer();
 
         VkFormat get_swapchain_format();
 
@@ -57,6 +108,13 @@ namespace Low {
         VkCommandBuffer get_current_command_buffer();
         VkCommandPool get_current_command_pool();
         StagingBuffer &get_current_resource_staging_buffer();
+
+        VkDescriptorSetLayout get_view_info_descriptor_set_layout();
+        VkDescriptorSetLayout get_gbuffer_descriptor_set_layout();
+
+        VkPipelineLayout get_lighting_pipeline_layout();
+
+        Samplers &get_samplers();
 
         bool advance_frame_count();
       } // namespace Global
@@ -80,7 +138,7 @@ namespace Low {
 
         VkFence renderFence;
 
-        StagingBuffer frameStagingBuffer;
+        // StagingBuffer frameStagingBuffer;
       };
 
       struct Swapchain

@@ -8,8 +8,11 @@
 #include "LowRendererVulkanPipeline.h"
 #include "LowRendererVulkanDescriptor.h"
 #include "LowRendererVulkanBuffer.h"
+#include "LowRendererGlobals.h"
 
 #include "VkBootstrap.h"
+
+#include "LowUtilResource.h"
 
 #include "vk_mem_alloc.h"
 
@@ -19,6 +22,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
+#include <vulkan/vulkan_core.h>
 
 namespace Low {
   namespace Renderer {
@@ -52,6 +56,11 @@ namespace Low {
         vkb::Device g_VkbDevice;
         VkSurfaceKHR g_Surface;
 
+        DynamicBuffer g_MeshVertexBuffer;
+        DynamicBuffer g_MeshIndexBuffer;
+
+        DynamicBuffer g_RenderObjectBuffer;
+
         VmaAllocator g_Allocator;
 
         VkQueue g_GraphicsQueue;
@@ -60,10 +69,36 @@ namespace Low {
         VkQueue g_TransferQueue;
         u32 g_TransferQueueFamily;
 
+        Samplers g_Samplers;
+
         DescriptorUtil::DescriptorAllocator
             g_GlobalDescriptorAllocator;
         VkDescriptorPool g_ImguiPool;
 
+        VkDescriptorSetLayout g_ViewInfoDescriptorSetLayout;
+        VkDescriptorSetLayout g_GBufferDescriptorSetLayout;
+        VkDescriptorSetLayout g_LightingDescriptorSetLayout;
+
+        VkPipelineLayout g_LightingPipelineLayout;
+
+        Samplers &get_samplers()
+        {
+          return g_Samplers;
+        }
+
+        VkPipelineLayout get_lighting_pipeline_layout()
+        {
+          return g_LightingPipelineLayout;
+        }
+
+        VkDescriptorSetLayout get_gbuffer_descriptor_set_layout()
+        {
+          return g_GBufferDescriptorSetLayout;
+        }
+        VkDescriptorSetLayout get_view_info_descriptor_set_layout()
+        {
+          return g_ViewInfoDescriptorSetLayout;
+        }
         u32 get_frame_overlap()
         {
           return g_FrameOverlap;
@@ -88,9 +123,21 @@ namespace Low {
         {
           return g_Frames[g_CurrentFrameIndex].resourceStagingBuffer;
         }
+        DynamicBuffer &get_mesh_vertex_buffer()
+        {
+          return g_MeshVertexBuffer;
+        }
+        DynamicBuffer &get_mesh_index_buffer()
+        {
+          return g_MeshIndexBuffer;
+        }
         VkFormat get_swapchain_format()
         {
           return VK_FORMAT_B8G8R8A8_UNORM;
+        }
+        DynamicBuffer &get_renderobject_buffer()
+        {
+          return g_RenderObjectBuffer;
         }
 
         VkInstance get_instance()
@@ -209,6 +256,66 @@ namespace Low {
           return true;
         }
 
+        static bool
+        dynamic_buffer_init(DynamicBuffer &p_DynamicBuffer,
+                            u32 p_ElementSize, u32 p_ElementCount,
+                            VkBufferUsageFlags p_Usage,
+                            VmaMemoryUsage p_MemoryUsage)
+        {
+          p_DynamicBuffer.m_ElementSize = p_ElementSize;
+          p_DynamicBuffer.m_ElementCount = p_ElementCount;
+
+          DynamicBufferFreeSlot l_Slot;
+          l_Slot.start = 0;
+          l_Slot.length = p_ElementCount;
+          p_DynamicBuffer.m_FreeSlots.push_back(l_Slot);
+
+          p_DynamicBuffer.m_Buffer = BufferUtil::create_buffer(
+              p_ElementSize * p_ElementCount, p_Usage, p_MemoryUsage);
+
+          return true;
+        }
+
+        static bool resource_buffers_init()
+        {
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              dynamic_buffer_init(
+                  g_MeshVertexBuffer, sizeof(Util::Resource::Vertex),
+                  125000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize mesh vertex resource buffer");
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              dynamic_buffer_init(
+                  g_MeshIndexBuffer, sizeof(u32), 500000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize mesh index resource buffer");
+
+          return true;
+        }
+
+        static bool buffers_init()
+        {
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              dynamic_buffer_init(
+                  g_RenderObjectBuffer, sizeof(RenderObjectUpload),
+                  10000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize render object buffer");
+
+          return true;
+        }
+
         static bool allocator_init()
         {
           VmaAllocatorCreateInfo l_AllocatorInfo = {};
@@ -241,6 +348,34 @@ namespace Low {
               g_VkbDevice.get_queue_index(vkb::QueueType::transfer)
                   .value();
 
+          return true;
+        }
+
+        static bool samplers_init()
+        {
+          {
+            VkSamplerCreateInfo sampl = {
+                .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+
+            sampl.magFilter = VK_FILTER_NEAREST;
+            sampl.minFilter = VK_FILTER_NEAREST;
+            sampl.mipmapMode =
+                VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+
+            sampl.addressModeU =
+                VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
+            sampl.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            sampl.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+            sampl.mipLodBias = 0.0f; // LOD bias for mip selection
+            sampl.minLod = 0.0f;     // Minimum LOD level
+            sampl.maxLod = 0.0f;     // Max LOD level
+            sampl.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+            vkCreateSampler(
+                Low::Renderer::Vulkan::Global::get_device(), &sampl,
+                nullptr, &g_Samplers.no_lod_nearest_repeat_black);
+          }
           return true;
         }
 
@@ -360,7 +495,16 @@ namespace Low {
           LOWR_VK_ASSERT(transfer_queue_init(),
                          "Could not initialize transfer queue");
 
+          LOWR_VK_ASSERT(buffers_init(),
+                         "Could not initialize buffers");
+
+          LOWR_VK_ASSERT(resource_buffers_init(),
+                         "Could not initialize resource buffers");
+
           LOWR_VK_ASSERT(imgui_init(), "Could not initialize imgui");
+
+          LOWR_VK_ASSERT(samplers_init(),
+                         "Could not initialize global samplers");
 
           LOWR_VK_ASSERT(frames_init(),
                          "Could not initialize frames");
@@ -371,6 +515,43 @@ namespace Low {
 
           g_GlobalDescriptorAllocator.init_pool(g_Device, 10,
                                                 l_Sizes);
+
+          {
+            DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+            l_Builder.add_binding(0,
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            g_ViewInfoDescriptorSetLayout = l_Builder.build(
+                Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+          }
+
+          {
+            DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+            l_Builder.add_binding(
+                0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            l_Builder.add_binding(
+                1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+            g_GBufferDescriptorSetLayout = l_Builder.build(
+                Global::get_device(), VK_SHADER_STAGE_ALL);
+          }
+
+          {
+            Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+            l_DescriptorSetLayouts.push_back(
+                g_ViewInfoDescriptorSetLayout);
+            l_DescriptorSetLayouts.push_back(
+                g_GBufferDescriptorSetLayout);
+
+            VkPipelineLayoutCreateInfo l_Layout{};
+            l_Layout.sType =
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            l_Layout.pNext = nullptr;
+            l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+            l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+
+            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
+                Global::get_device(), &l_Layout, nullptr,
+                &g_LightingPipelineLayout));
+          }
 
           return true;
         }
@@ -393,13 +574,37 @@ namespace Low {
           return true;
         }
 
+        static bool buffer_cleanup()
+        {
+          get_renderobject_buffer().destroy();
+
+          return true;
+        }
+
+        static bool mesh_buffer_cleanup()
+        {
+          get_mesh_vertex_buffer().destroy();
+          get_mesh_index_buffer().destroy();
+
+          return true;
+        }
+
         bool cleanup()
         {
           ImGui_ImplVulkan_Shutdown();
           vkDestroyDescriptorPool(g_Device, g_ImguiPool, nullptr);
 
+          vkDestroyDescriptorSetLayout(
+              g_Device, g_GBufferDescriptorSetLayout, nullptr);
+          vkDestroyDescriptorSetLayout(
+              g_Device, g_ViewInfoDescriptorSetLayout, nullptr);
+
           LOWR_VK_ASSERT(frames_cleanup(),
                          "Could not cleanup frames");
+          LOWR_VK_ASSERT(buffer_cleanup(),
+                         "Could not cleanup buffers");
+          LOWR_VK_ASSERT(mesh_buffer_cleanup(),
+                         "Could not cleanup mesh buffers");
 
           vkDestroySurfaceKHR(g_Instance, g_Surface, nullptr);
 

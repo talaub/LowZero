@@ -1,9 +1,10 @@
 #include "LowRendererDynamicBuffer.h"
-
 namespace Low {
   namespace Renderer {
+
     void DynamicBuffer::initialize(Util::Name p_Name,
-                                   Interface::Context p_Context, uint8_t p_Type,
+                                   Interface::Context p_Context,
+                                   uint8_t p_Type,
                                    uint32_t p_ElementSize,
                                    uint32_t p_ElementCount)
     {
@@ -17,12 +18,14 @@ namespace Low {
       l_Params.bufferSize = p_ElementSize * p_ElementCount;
       l_Params.data = nullptr;
       if (p_Type == DynamicBufferType::VERTEX) {
-        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_VERTEX |
-                              LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+        l_Params.usageFlags =
+            LOW_RENDERER_BUFFER_USAGE_VERTEX |
+            LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
       } else if (p_Type == DynamicBufferType::INDEX) {
         l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_INDEX;
       } else if (p_Type == DynamicBufferType::MISC) {
-        l_Params.usageFlags = LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
+        l_Params.usageFlags =
+            LOW_RENDERER_BUFFER_USAGE_RESOURCE_BUFFER;
       } else {
         LOW_ASSERT(false, "Unknown mesh buffer type");
       }
@@ -36,8 +39,10 @@ namespace Low {
 
     uint32_t DynamicBuffer::reserve(uint32_t p_ElementCount)
     {
-      LOW_ASSERT(m_Initialized, "Cannot write to uninitialized Dynamic Buffer");
-      LOW_ASSERT(!m_FreeSlots.empty(), "No free space left in Dynamic Buffer");
+      LOW_ASSERT(m_Initialized,
+                 "Cannot write to uninitialized Dynamic Buffer");
+      LOW_ASSERT(!m_FreeSlots.empty(),
+                 "No free space left in Dynamic Buffer");
 
       DynamicBufferFreeSlot l_FreeSlot{0, 0};
       uint32_t i_SlotIndex = 0;
@@ -49,21 +54,24 @@ namespace Low {
         }
       }
 
-      LOW_ASSERT(l_FreeSlot.length >= p_ElementCount,
-                 "Could not find free space in DynamicBuffer to fit data");
+      LOW_ASSERT(
+          l_FreeSlot.length >= p_ElementCount,
+          "Could not find free space in DynamicBuffer to fit data");
 
       uint32_t l_SavePoint = l_FreeSlot.start;
       if (l_FreeSlot.length == p_ElementCount) {
         m_FreeSlots.erase(m_FreeSlots.begin() + i_SlotIndex);
       } else {
-        m_FreeSlots[i_SlotIndex].length = l_FreeSlot.length - p_ElementCount;
+        m_FreeSlots[i_SlotIndex].length =
+            l_FreeSlot.length - p_ElementCount;
         m_FreeSlots[i_SlotIndex].start = l_SavePoint + p_ElementCount;
       }
 
       return l_SavePoint;
     }
 
-    uint32_t DynamicBuffer::write(void *p_DataPtr, uint32_t p_ElementCount)
+    uint32_t DynamicBuffer::write(void *p_DataPtr,
+                                  uint32_t p_ElementCount)
     {
       uint32_t l_Offset = reserve(p_ElementCount);
 
@@ -73,9 +81,11 @@ namespace Low {
       return l_Offset;
     }
 
-    void DynamicBuffer::free(uint32_t p_Position, uint32_t p_ElementCount)
+    void DynamicBuffer::free(uint32_t p_Position,
+                             uint32_t p_ElementCount)
     {
-      LOW_ASSERT(m_Initialized, "Cannot free from uninitialized DynamicBuffer");
+      LOW_ASSERT(m_Initialized,
+                 "Cannot free from uninitialized DynamicBuffer");
 
       uint32_t l_ClosestUnder = ~0u;
       uint32_t l_ClosestOver = ~0u;
@@ -89,7 +99,8 @@ namespace Low {
           LOW_ASSERT((i_Slot.start + i_Slot.length) <= p_Position,
                      "Tried to double free from mesh buffer");
 
-          uint32_t i_Diff = p_Position - (i_Slot.start + i_Slot.length);
+          uint32_t i_Diff =
+              p_Position - (i_Slot.start + i_Slot.length);
           if (i_Diff < l_UnderDiff) {
             l_UnderDiff = i_Diff;
             l_ClosestUnder = i;
@@ -98,7 +109,8 @@ namespace Low {
           LOW_ASSERT((p_Position + p_ElementCount) <= i_Slot.start,
                      "Tried to double free from mesh buffer");
 
-          uint32_t i_Diff = i_Slot.start - (p_Position + p_ElementCount);
+          uint32_t i_Diff =
+              i_Slot.start - (p_Position + p_ElementCount);
           if (i_Diff < l_OverDiff) {
             l_OverDiff = i_Diff;
             l_ClosestOver = i;
@@ -137,7 +149,8 @@ namespace Low {
       } else if (m_Type == DynamicBufferType::INDEX) {
         m_Buffer.bind_index(Backend::IndexBufferType::UINT32);
       } else if (m_Type == DynamicBufferType::MISC) {
-        LOW_ASSERT(false, "Cannot implicitly bind misc dynamic buffer");
+        LOW_ASSERT(false,
+                   "Cannot implicitly bind misc dynamic buffer");
       } else {
         LOW_ASSERT(false, "Unknown dynamic buffer type");
       }
@@ -148,7 +161,8 @@ namespace Low {
       const uint32_t l_MaxElements = m_ElementCount;
       uint32_t l_FreeElements = 0;
 
-      for (auto it = m_FreeSlots.begin(); it != m_FreeSlots.end(); ++it) {
+      for (auto it = m_FreeSlots.begin(); it != m_FreeSlots.end();
+           ++it) {
         l_FreeElements += it->length;
       }
 

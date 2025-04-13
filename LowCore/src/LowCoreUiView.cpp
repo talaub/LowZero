@@ -27,6 +27,7 @@ namespace Low {
       const uint16_t View::TYPE_ID = 38;
       uint32_t View::ms_Capacity = 0u;
       uint8_t *View::ms_Buffer = 0;
+      std::shared_mutex View::ms_BufferMutex;
       Low::Util::Instances::Slot *View::ms_Slots = 0;
       Low::Util::List<View> View::ms_LivingInstances =
           Low::Util::List<View>();
@@ -48,6 +49,13 @@ namespace Low {
 
       View View::make(Low::Util::Name p_Name)
       {
+        return make(p_Name, 0ull);
+      }
+
+      View View::make(Low::Util::Name p_Name,
+                      Low::Util::UniqueId p_UniqueId)
+      {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         View l_Handle;
@@ -72,13 +80,18 @@ namespace Low {
             false;
         ACCESSOR_TYPE_SOA(l_Handle, View, name, Low::Util::Name) =
             Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
         ms_LivingInstances.push_back(l_Handle);
 
-        l_Handle.set_unique_id(
-            Low::Util::generate_unique_id(l_Handle.get_id()));
+        if (p_UniqueId > 0ull) {
+          l_Handle.set_unique_id(p_UniqueId);
+        } else {
+          l_Handle.set_unique_id(
+              Low::Util::generate_unique_id(l_Handle.get_id()));
+        }
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
@@ -123,6 +136,7 @@ namespace Low {
 
         Low::Util::remove_unique_id(get_unique_id());
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -139,6 +153,7 @@ namespace Low {
 
       void View::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -148,6 +163,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, ViewData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_View);
         LOW_PROFILE_ALLOC(type_slots_View);
@@ -593,11 +609,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_View);
         LOW_PROFILE_FREE(type_slots_View);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle View::_find_by_index(uint32_t p_Index)
@@ -619,6 +637,7 @@ namespace Low {
 
       bool View::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == View::TYPE_ID &&
                check_alive(ms_Slots, View::get_capacity());
       }
@@ -776,6 +795,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, loaded, bool);
       }
       void View::set_loaded(bool p_Value)
@@ -787,7 +807,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, loaded, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
 
@@ -802,6 +824,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_elements
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, elements, Util::Set<Util::UniqueId>);
       }
 
@@ -813,6 +836,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_internal
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, internal, bool);
       }
       void View::set_internal(bool p_Value)
@@ -824,7 +848,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, internal, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
 
@@ -839,6 +865,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_template
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, view_template, bool);
       }
       void View::set_view_template(bool p_Value)
@@ -850,7 +877,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_template
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, view_template, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_template
 
@@ -865,8 +894,28 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, pixel_position, Low::Math::Vector2);
       }
+      void View::pixel_position(float p_X, float p_Y)
+      {
+        pixel_position(Low::Math::Vector2(p_X, p_Y));
+      }
+
+      void View::pixel_position_x(float p_Value)
+      {
+        Low::Math::Vector2 l_Value = pixel_position();
+        l_Value.x = p_Value;
+        pixel_position(l_Value);
+      }
+
+      void View::pixel_position_y(float p_Value)
+      {
+        Low::Math::Vector2 l_Value = pixel_position();
+        l_Value.y = p_Value;
+        pixel_position(l_Value);
+      }
+
       void View::pixel_position(Low::Math::Vector2 &p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -877,11 +926,13 @@ namespace Low {
 
         if (pixel_position() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, transform_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(View, pixel_position, Low::Math::Vector2) =
               p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
 
@@ -897,6 +948,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, rotation, float);
       }
       void View::rotation(float p_Value)
@@ -909,10 +961,12 @@ namespace Low {
 
         if (rotation() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, transform_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(View, rotation, float) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
 
@@ -928,6 +982,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_scale_multiplier
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, scale_multiplier, float);
       }
       void View::scale_multiplier(float p_Value)
@@ -940,10 +995,12 @@ namespace Low {
 
         if (scale_multiplier() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, transform_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(View, scale_multiplier, float) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_multiplier
 
@@ -959,6 +1016,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_layer_offset
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, layer_offset, uint32_t);
       }
       void View::layer_offset(uint32_t p_Value)
@@ -971,10 +1029,12 @@ namespace Low {
 
         if (layer_offset() != p_Value) {
           // Set dirty flags
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, transform_dirty, bool) = true;
 
           // Set new value
           TYPE_SOA(View, layer_offset, uint32_t) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer_offset
 
@@ -990,6 +1050,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, unique_id, Low::Util::UniqueId);
       }
       void View::set_unique_id(Low::Util::UniqueId p_Value)
@@ -1001,7 +1062,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, unique_id, Low::Util::UniqueId) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -1016,6 +1079,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_transform_dirty
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, transform_dirty, bool);
       }
       void View::set_transform_dirty(bool p_Value)
@@ -1027,7 +1091,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_transform_dirty
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, transform_dirty, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform_dirty
 
@@ -1042,6 +1108,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, name, Low::Util::Name);
       }
       void View::set_name(Low::Util::Name p_Value)
@@ -1053,7 +1120,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1233,13 +1302,16 @@ namespace Low {
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
+            View i_View = *it;
+
             auto *i_ValPtr = new (
                 &l_NewBuffer[offsetof(ViewData, elements) *
                                  (l_Capacity + l_CapacityIncrease) +
                              (it->get_index() *
                               sizeof(Util::Set<Util::UniqueId>))])
                 Util::Set<Util::UniqueId>();
-            *i_ValPtr = it->get_elements();
+            *i_ValPtr = ACCESSOR_TYPE_SOA(i_View, View, elements,
+                                          Util::Set<Util::UniqueId>);
           }
         }
         {

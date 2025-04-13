@@ -22,6 +22,7 @@ namespace Low {
     const uint16_t ComputeStep::TYPE_ID = 10;
     uint32_t ComputeStep::ms_Capacity = 0u;
     uint8_t *ComputeStep::ms_Buffer = 0;
+    std::shared_mutex ComputeStep::ms_BufferMutex;
     Low::Util::Instances::Slot *ComputeStep::ms_Slots = 0;
     Low::Util::List<ComputeStep> ComputeStep::ms_LivingInstances =
         Low::Util::List<ComputeStep>();
@@ -44,6 +45,7 @@ namespace Low {
 
     ComputeStep ComputeStep::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       ComputeStep l_Handle;
@@ -80,6 +82,7 @@ namespace Low {
                               Resource::Image)) Resource::Image();
       ACCESSOR_TYPE_SOA(l_Handle, ComputeStep, name,
                         Low::Util::Name) = Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -100,6 +103,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -116,6 +120,7 @@ namespace Low {
 
     void ComputeStep::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -125,6 +130,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, ComputeStepData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_ComputeStep);
       LOW_PROFILE_ALLOC(type_slots_ComputeStep);
@@ -541,11 +547,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_ComputeStep);
       LOW_PROFILE_FREE(type_slots_ComputeStep);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle ComputeStep::_find_by_index(uint32_t p_Index)
@@ -567,6 +575,7 @@ namespace Low {
 
     bool ComputeStep::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == ComputeStep::TYPE_ID &&
              check_alive(ms_Slots, ComputeStep::get_capacity());
     }
@@ -704,6 +713,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           ComputeStep, resources,
           SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
@@ -717,6 +727,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_config
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, config, ComputeStepConfig);
     }
     void ComputeStep::set_config(ComputeStepConfig p_Value)
@@ -728,7 +739,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, config, ComputeStepConfig) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_config
 
@@ -744,6 +757,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           ComputeStep, pipelines,
           SINGLE_ARG(
@@ -761,6 +775,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_signatures
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           ComputeStep, signatures,
           SINGLE_ARG(
@@ -777,6 +792,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, context, Interface::Context);
     }
     void ComputeStep::set_context(Interface::Context p_Value)
@@ -788,7 +804,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, context, Interface::Context) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
 
@@ -803,6 +821,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, output_image, Resource::Image);
     }
     void ComputeStep::set_output_image(Resource::Image p_Value)
@@ -814,7 +833,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, output_image, Resource::Image) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
@@ -829,6 +850,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, name, Low::Util::Name);
     }
     void ComputeStep::set_name(Low::Util::Name p_Value)
@@ -840,7 +862,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1231,6 +1255,8 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          ComputeStep i_ComputeStep = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(ComputeStepData, resources) *
                                (l_Capacity + l_CapacityIncrease) +
@@ -1238,7 +1264,9 @@ namespace Low {
                             sizeof(Util::Map<RenderFlow,
                                              ResourceRegistry>))])
               Util::Map<RenderFlow, ResourceRegistry>();
-          *i_ValPtr = it->get_resources();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_ComputeStep, ComputeStep, resources,
+              SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
         }
       }
       {
@@ -1251,6 +1279,8 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          ComputeStep i_ComputeStep = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer
                   [offsetof(ComputeStepData, pipelines) *
@@ -1261,12 +1291,18 @@ namespace Low {
                            Util::List<Interface::ComputePipeline>>))])
               Util::Map<RenderFlow,
                         Util::List<Interface::ComputePipeline>>();
-          *i_ValPtr = it->get_pipelines();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_ComputeStep, ComputeStep, pipelines,
+              SINGLE_ARG(
+                  Util::Map<RenderFlow,
+                            Util::List<Interface::ComputePipeline>>));
         }
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          ComputeStep i_ComputeStep = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer
                   [offsetof(ComputeStepData, signatures) *
@@ -1280,7 +1316,12 @@ namespace Low {
               Util::Map<
                   RenderFlow,
                   Util::List<Interface::PipelineResourceSignature>>();
-          *i_ValPtr = it->get_signatures();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_ComputeStep, ComputeStep, signatures,
+              SINGLE_ARG(Util::Map<
+                         RenderFlow,
+                         Util::List<
+                             Interface::PipelineResourceSignature>>));
         }
       }
       {

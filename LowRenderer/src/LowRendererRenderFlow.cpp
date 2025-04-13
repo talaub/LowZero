@@ -25,6 +25,7 @@ namespace Low {
     const uint16_t RenderFlow::TYPE_ID = 9;
     uint32_t RenderFlow::ms_Capacity = 0u;
     uint8_t *RenderFlow::ms_Buffer = 0;
+    std::shared_mutex RenderFlow::ms_BufferMutex;
     Low::Util::Instances::Slot *RenderFlow::ms_Slots = 0;
     Low::Util::List<RenderFlow> RenderFlow::ms_LivingInstances =
         Low::Util::List<RenderFlow>();
@@ -47,6 +48,7 @@ namespace Low {
 
     RenderFlow RenderFlow::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       RenderFlow l_Handle;
@@ -93,6 +95,7 @@ namespace Low {
           Util::List<PointLight>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -113,6 +116,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -129,6 +133,7 @@ namespace Low {
 
     void RenderFlow::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -138,6 +143,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, RenderFlowData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_RenderFlow);
       LOW_PROFILE_ALLOC(type_slots_RenderFlow);
@@ -745,11 +751,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_RenderFlow);
       LOW_PROFILE_FREE(type_slots_RenderFlow);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle RenderFlow::_find_by_index(uint32_t p_Index)
@@ -771,6 +779,7 @@ namespace Low {
 
     bool RenderFlow::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == RenderFlow::TYPE_ID &&
              check_alive(ms_Slots, RenderFlow::get_capacity());
     }
@@ -967,6 +976,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, context, Interface::Context);
     }
     void RenderFlow::set_context(Interface::Context p_Value)
@@ -978,7 +988,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, context, Interface::Context) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
 
@@ -993,6 +1005,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, dimensions, Math::UVector2);
     }
 
@@ -1004,6 +1017,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, output_image, Resource::Image);
     }
     void RenderFlow::set_output_image(Resource::Image p_Value)
@@ -1015,7 +1029,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, output_image, Resource::Image) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
@@ -1030,6 +1046,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_steps
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>);
     }
     void RenderFlow::set_steps(Util::List<Util::Handle> &p_Value)
@@ -1041,7 +1058,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_steps
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, steps, Util::List<Util::Handle>) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_steps
 
@@ -1056,6 +1075,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, resources, ResourceRegistry);
     }
 
@@ -1067,6 +1087,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_frame_info_buffer
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, frame_info_buffer,
                       Resource::Buffer);
     }
@@ -1079,8 +1100,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, frame_info_buffer, Resource::Buffer) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
 
@@ -1096,6 +1119,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_resource_signature
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, resource_signature,
                       Interface::PipelineResourceSignature);
     }
@@ -1109,8 +1133,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource_signature
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, resource_signature,
                Interface::PipelineResourceSignature) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource_signature
 
@@ -1125,8 +1151,36 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_position
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, camera_position, Math::Vector3);
     }
+    void RenderFlow::set_camera_position(float p_X, float p_Y,
+                                         float p_Z)
+    {
+      set_camera_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+    }
+
+    void RenderFlow::set_camera_position_x(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_camera_position();
+      l_Value.x = p_Value;
+      set_camera_position(l_Value);
+    }
+
+    void RenderFlow::set_camera_position_y(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_camera_position();
+      l_Value.y = p_Value;
+      set_camera_position(l_Value);
+    }
+
+    void RenderFlow::set_camera_position_z(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_camera_position();
+      l_Value.z = p_Value;
+      set_camera_position(l_Value);
+    }
+
     void RenderFlow::set_camera_position(Math::Vector3 &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1136,7 +1190,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_position
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, camera_position, Math::Vector3) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_position
 
@@ -1151,8 +1207,36 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_direction
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, camera_direction, Math::Vector3);
     }
+    void RenderFlow::set_camera_direction(float p_X, float p_Y,
+                                          float p_Z)
+    {
+      set_camera_direction(Low::Math::Vector3(p_X, p_Y, p_Z));
+    }
+
+    void RenderFlow::set_camera_direction_x(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_camera_direction();
+      l_Value.x = p_Value;
+      set_camera_direction(l_Value);
+    }
+
+    void RenderFlow::set_camera_direction_y(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_camera_direction();
+      l_Value.y = p_Value;
+      set_camera_direction(l_Value);
+    }
+
+    void RenderFlow::set_camera_direction_z(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_camera_direction();
+      l_Value.z = p_Value;
+      set_camera_direction(l_Value);
+    }
+
     void RenderFlow::set_camera_direction(Math::Vector3 &p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1162,7 +1246,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_direction
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, camera_direction, Math::Vector3) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_direction
 
@@ -1177,6 +1263,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_fov
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, camera_fov, float);
     }
     void RenderFlow::set_camera_fov(float p_Value)
@@ -1188,7 +1275,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_fov
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, camera_fov, float) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_fov
 
@@ -1203,6 +1292,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_near_plane
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, camera_near_plane, float);
     }
     void RenderFlow::set_camera_near_plane(float p_Value)
@@ -1214,7 +1304,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_near_plane
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, camera_near_plane, float) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_near_plane
 
@@ -1229,6 +1321,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_far_plane
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, camera_far_plane, float);
     }
     void RenderFlow::set_camera_far_plane(float p_Value)
@@ -1240,7 +1333,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_far_plane
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, camera_far_plane, float) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_far_plane
 
@@ -1255,6 +1350,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_projection_matrix
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, projection_matrix, Math::Matrix4x4);
     }
     void RenderFlow::set_projection_matrix(Math::Matrix4x4 &p_Value)
@@ -1266,8 +1362,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_projection_matrix
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, projection_matrix, Math::Matrix4x4) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_projection_matrix
 
@@ -1282,6 +1380,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_view_matrix
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, view_matrix, Math::Matrix4x4);
     }
     void RenderFlow::set_view_matrix(Math::Matrix4x4 &p_Value)
@@ -1293,7 +1392,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_matrix
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, view_matrix, Math::Matrix4x4) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_matrix
 
@@ -1308,6 +1409,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, directional_light,
                       DirectionalLight);
     }
@@ -1320,8 +1422,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, directional_light, DirectionalLight) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light
 
@@ -1336,6 +1440,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_point_lights
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, point_lights,
                       Util::List<PointLight>);
     }
@@ -1348,6 +1453,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderFlow, name, Low::Util::Name);
     }
     void RenderFlow::set_name(Low::Util::Name p_Value)
@@ -1359,7 +1465,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderFlow, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1804,13 +1912,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          RenderFlow i_RenderFlow = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(RenderFlowData, steps) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::List<Util::Handle>))])
               Util::List<Util::Handle>();
-          *i_ValPtr = it->get_steps();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_RenderFlow, RenderFlow, steps,
+                                Util::List<Util::Handle>);
         }
       }
       {
@@ -1903,13 +2015,17 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          RenderFlow i_RenderFlow = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(RenderFlowData, point_lights) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
                             sizeof(Util::List<PointLight>))])
               Util::List<PointLight>();
-          *i_ValPtr = it->get_point_lights();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_RenderFlow, RenderFlow,
+                                point_lights, Util::List<PointLight>);
         }
       }
       {

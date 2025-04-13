@@ -24,6 +24,7 @@ namespace Low {
     const uint16_t Material::TYPE_ID = 17;
     uint32_t Material::ms_Capacity = 0u;
     uint8_t *Material::ms_Buffer = 0;
+    std::shared_mutex Material::ms_BufferMutex;
     Low::Util::Instances::Slot *Material::ms_Slots = 0;
     Low::Util::List<Material> Material::ms_LivingInstances =
         Low::Util::List<Material>();
@@ -46,6 +47,7 @@ namespace Low {
 
     Material Material::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Material l_Handle;
@@ -60,6 +62,7 @@ namespace Low {
           Interface::Context();
       ACCESSOR_TYPE_SOA(l_Handle, Material, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -80,6 +83,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -96,6 +100,7 @@ namespace Low {
 
     void Material::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -105,6 +110,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, MaterialData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Material);
       LOW_PROFILE_ALLOC(type_slots_Material);
@@ -262,11 +268,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Material);
       LOW_PROFILE_FREE(type_slots_Material);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Material::_find_by_index(uint32_t p_Index)
@@ -288,6 +296,7 @@ namespace Low {
 
     bool Material::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Material::TYPE_ID &&
              check_alive(ms_Slots, Material::get_capacity());
     }
@@ -405,6 +414,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_material_type
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Material, material_type, MaterialType);
     }
     void Material::set_material_type(MaterialType p_Value)
@@ -416,7 +426,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_type
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Material, material_type, MaterialType) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_type
 
@@ -431,6 +443,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Material, context, Interface::Context);
     }
     void Material::set_context(Interface::Context p_Value)
@@ -442,7 +455,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Material, context, Interface::Context) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
 
@@ -457,6 +472,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Material, name, Low::Util::Name);
     }
     void Material::set_name(Low::Util::Name p_Value)
@@ -468,7 +484,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Material, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

@@ -24,6 +24,7 @@ namespace Low {
         const uint16_t Text::TYPE_ID = 42;
         uint32_t Text::ms_Capacity = 0u;
         uint8_t *Text::ms_Buffer = 0;
+        std::shared_mutex Text::ms_BufferMutex;
         Low::Util::Instances::Slot *Text::ms_Slots = 0;
         Low::Util::List<Text> Text::ms_LivingInstances =
             Low::Util::List<Text>();
@@ -48,6 +49,13 @@ namespace Low {
 
         Text Text::make(Low::Core::UI::Element p_Element)
         {
+          return make(p_Element, 0ull);
+        }
+
+        Text Text::make(Low::Core::UI::Element p_Element,
+                        Low::Util::UniqueId p_UniqueId)
+        {
+          WRITE_LOCK(l_Lock);
           uint32_t l_Index = create_instance();
 
           Text l_Handle;
@@ -71,14 +79,19 @@ namespace Low {
           new (&ACCESSOR_TYPE_SOA(l_Handle, Text, element,
                                   Low::Core::UI::Element))
               Low::Core::UI::Element();
+          LOCK_UNLOCK(l_Lock);
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
 
           ms_LivingInstances.push_back(l_Handle);
 
-          l_Handle.set_unique_id(
-              Low::Util::generate_unique_id(l_Handle.get_id()));
+          if (p_UniqueId > 0ull) {
+            l_Handle.set_unique_id(p_UniqueId);
+          } else {
+            l_Handle.set_unique_id(
+                Low::Util::generate_unique_id(l_Handle.get_id()));
+          }
           Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                         l_Handle.get_id());
 
@@ -102,6 +115,7 @@ namespace Low {
 
           Low::Util::remove_unique_id(get_unique_id());
 
+          WRITE_LOCK(l_Lock);
           ms_Slots[this->m_Data.m_Index].m_Occupied = false;
           ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -119,6 +133,7 @@ namespace Low {
 
         void Text::initialize()
         {
+          WRITE_LOCK(l_Lock);
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
           // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -128,6 +143,7 @@ namespace Low {
 
           initialize_buffer(&ms_Buffer, TextData::get_size(),
                             get_capacity(), &ms_Slots);
+          LOCK_UNLOCK(l_Lock);
 
           LOW_PROFILE_ALLOC(type_buffer_Text);
           LOW_PROFILE_ALLOC(type_slots_Text);
@@ -374,11 +390,13 @@ namespace Low {
           for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
             l_Instances[i].destroy();
           }
+          WRITE_LOCK(l_Lock);
           free(ms_Buffer);
           free(ms_Slots);
 
           LOW_PROFILE_FREE(type_buffer_Text);
           LOW_PROFILE_FREE(type_slots_Text);
+          LOCK_UNLOCK(l_Lock);
         }
 
         Low::Util::Handle Text::_find_by_index(uint32_t p_Index)
@@ -401,6 +419,7 @@ namespace Low {
 
         bool Text::is_alive() const
         {
+          READ_LOCK(l_Lock);
           return m_Data.m_Type == Text::TYPE_ID &&
                  check_alive(ms_Slots, Text::get_capacity());
         }
@@ -523,8 +542,14 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_text
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, text, Low::Util::String);
         }
+        void Text::set_text(const char *p_Value)
+        {
+          set_text(Low::Util::String(p_Value));
+        }
+
         void Text::set_text(Low::Util::String &p_Value)
         {
           _LOW_ASSERT(is_alive());
@@ -534,7 +559,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_text
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, text, Low::Util::String) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_text
 
@@ -549,6 +576,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_font
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, font, Low::Core::Font);
         }
         void Text::set_font(Low::Core::Font p_Value)
@@ -566,7 +594,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_font
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, font, Low::Core::Font) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
 
@@ -581,6 +611,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, color, Low::Math::Color);
         }
         void Text::set_color(Low::Math::Color &p_Value)
@@ -592,7 +623,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
 
@@ -614,6 +647,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_size
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, size, float);
         }
         void Text::set_size(float p_Value)
@@ -625,7 +659,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_size
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, size, float) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
 
@@ -640,6 +676,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_content_fit_approach
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, content_fit_approach,
                           TextContentFitOptions);
         }
@@ -653,8 +690,10 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_content_fit_approach
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, content_fit_approach,
                    TextContentFitOptions) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content_fit_approach
 
@@ -669,6 +708,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_element
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, element, Low::Core::UI::Element);
         }
         void Text::set_element(Low::Core::UI::Element p_Value)
@@ -680,7 +720,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_element
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, element, Low::Core::UI::Element) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
 
@@ -695,6 +737,7 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Text, unique_id, Low::Util::UniqueId);
         }
         void Text::set_unique_id(Low::Util::UniqueId p_Value)
@@ -706,7 +749,9 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Text, unique_id, Low::Util::UniqueId) = p_Value;
+          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 

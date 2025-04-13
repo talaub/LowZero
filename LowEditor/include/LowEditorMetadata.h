@@ -14,6 +14,9 @@ namespace Low {
       bool multiline;
       bool enumType;
       bool scriptingExpose;
+      bool hideFlode;
+      bool hideSetterFlode;
+      bool hideGetterFlode;
 
       Util::String friendlyName;
 

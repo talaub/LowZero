@@ -56,6 +56,11 @@ types:
         parameters:
           - name: meshIndex
             type: uint32_t
+      _internal_load:
+        return_type: void
+        parameters:
+          - name: mesh
+            type: Low::Util::Resource::Mesh
       unload:
         return_type: void
       _unload:

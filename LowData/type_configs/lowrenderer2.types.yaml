@@ -1,0 +1,79 @@
+module: LowRenderer2
+source_path: src
+header_path: include
+prefix: LowRenderer
+namespace:
+  - Low
+  - Renderer
+dll_macro: LOW_RENDERER2_API
+types:
+  RenderObject:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    private_make: true
+    properties:
+      world_transform:
+        type: Low::Math::Matrix4x4
+        dirty_flag: dirty
+      mesh_resource:
+        type: Low::Renderer::MeshResource
+        handle: true
+        dirty_flag: dirty
+      uploaded:
+        type: bool
+      slot:
+        type: uint32_t
+      render_view_handle:
+        type: uint64_t
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: RenderObject
+        return_handle: true
+        parameters:
+          - name: renderView
+            type: RenderView
+            handle: true
+  RenderView:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      camera_position:
+        type: Low::Math::Vector3
+        dirty_flag: camera_dirty
+      camera_direction:
+        type: Low::Math::Vector3
+        dirty_flag: camera_dirty
+      render_target_handle:
+        type: uint64_t
+      render_entries:
+        type: Low::Util::List<RenderEntry>
+        no_setter: true
+      view_info_handle:
+        type: uint64_t
+      dimensions:
+        type: Low::Math::UVector2
+        dirty_flag: dimensions_dirty
+    functions:
+      insert_render_entry:
+        private: true
+        return_type: bool
+        parameters:
+          - name: renderEntry
+            type: RenderEntry
+      add_render_entry:
+        return_type: bool
+        parameters:
+          - name: renderObject
+            type: RenderObject
+            handle: true
+          - name: slot
+            type: uint32_t
+          - name: meshInfo
+            type: MeshInfo
+            handle: true

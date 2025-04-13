@@ -5,6 +5,9 @@
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVkImage.h"
 #include "LowRendererGlobals.h"
+#include "LowRendererSubmesh.h"
+#include "LowRendererMeshInfo.h"
+#include "LowRendererVulkan.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
@@ -13,9 +16,36 @@
 #include <iostream>
 #include <vulkan/vulkan_core.h>
 
+#define MESH_INDEX_SIZE sizeof(u32)
+
 namespace Low {
   namespace Renderer {
     namespace ResourceManager {
+
+      struct MeshEntry
+      {
+        union
+        {
+          u32 lodPriority;
+          u32 resourcePriority;
+        };
+        u64 priority;
+
+        MeshResource meshResource;
+
+        u32 submeshCount;
+      };
+
+      auto g_MeshEntryComparator = [](const MeshEntry &p_A,
+                                      const MeshEntry &p_B) {
+        return p_A.priority > p_B.priority;
+      };
+
+      Util::List<MeshEntry> g_MeshEntriesContainer;
+
+      Util::PriorityQueue<MeshEntry, decltype(g_MeshEntryComparator)>
+          g_MeshEntries(g_MeshEntryComparator,
+                        g_MeshEntriesContainer);
 
       struct
       {
@@ -36,19 +66,21 @@ namespace Low {
           };
           u64 priority;
         };
-
+        u64 uploadedSize;
         struct
         {
           struct
           {
             ImageResource imageResource;
-            u64 uploadedSize;
           } image;
           struct
           {
             MeshResource meshResource;
+            Submesh submesh;
+            MeshInfo meshInfo;
             u32 submeshIndex;
-          } submesh;
+            u32 meshInfoIndex;
+          } mesh;
         } data;
 
         bool is_image_upload()
@@ -56,9 +88,9 @@ namespace Low {
           return ImageResource::is_alive(data.image.imageResource);
         }
 
-        bool is_submesh_upload()
+        bool is_mesh_upload()
         {
-          return MeshResource::is_alive(data.submesh.meshResource);
+          return MeshResource::is_alive(data.mesh.meshResource);
         }
       };
 
@@ -121,6 +153,9 @@ namespace Low {
 
       bool unload_mesh_resource(MeshResource p_MeshResource)
       {
+        // TODO: Implement
+        LOW_ASSERT(false, "Tried to unload mesh resource but the "
+                          "method is not yet implemented");
         return true;
       }
 
@@ -135,7 +170,7 @@ namespace Low {
 
         for (int i = IMAGE_MIPMAP_COUNT - 1; i >= 0; --i) {
           UploadEntry i_Entry;
-          i_Entry.data.image.uploadedSize = 0;
+          i_Entry.uploadedSize = 0;
           i_Entry.data.image.imageResource = p_ImageResource;
           i_Entry.progressPriority = 0;
           i_Entry.lodPriority = i;
@@ -214,6 +249,31 @@ namespace Low {
               Util::Resource::load_mesh(
                   l_MeshResource.get_path(),
                   l_MeshResource.get_resource_mesh());
+
+              for (auto it = l_MeshResource.get_resource_mesh()
+                                 .submeshes.begin();
+                   it !=
+                   l_MeshResource.get_resource_mesh().submeshes.end();
+                   ++it) {
+                Submesh i_Submesh = Submesh::make(it->name);
+                i_Submesh.set_meshinfo_count(it->meshInfos.size());
+                i_Submesh.set_state(MeshResourceState::MEMORYLOADED);
+                i_Submesh.set_uploaded_meshinfo_count(0);
+
+                for (auto mit = it->meshInfos.begin();
+                     mit != it->meshInfos.end(); ++mit) {
+                  MeshInfo i_MeshInfo = MeshInfo::make(it->name);
+                  i_MeshInfo.set_vertex_count(mit->vertices.size());
+                  i_MeshInfo.set_index_count(mit->indices.size());
+                  i_MeshInfo.set_uploaded_vertex_count(0);
+                  i_MeshInfo.set_uploaded_index_count(0);
+                  i_MeshInfo.set_state(
+                      MeshResourceState::MEMORYLOADED);
+                  i_Submesh.get_meshinfos().push_back(i_MeshInfo);
+                }
+                l_MeshResource.get_submeshes().push_back(i_Submesh);
+              }
+
               l_MeshResource.set_state(
                   MeshResourceState::MEMORYLOADED);
             });
@@ -225,24 +285,47 @@ namespace Low {
       static bool
       mesh_schedule_gpu_upload(MeshResource p_MeshResource)
       {
+        p_MeshResource.set_submesh_count(
+            p_MeshResource.get_resource_mesh().submeshes.size());
+        p_MeshResource.set_uploaded_submesh_count(0);
+
+        u32 l_FullMeshInfoCount = 0;
+
         int l_Index = 0;
         for (auto it =
                  p_MeshResource.get_resource_mesh().submeshes.begin();
              it != p_MeshResource.get_resource_mesh().submeshes.end();
              ++it) {
 
-          UploadEntry i_Entry;
-          i_Entry.data.submesh.meshResource = p_MeshResource;
-          i_Entry.data.submesh.submeshIndex = l_Index;
-          i_Entry.progressPriority = 0;
-          i_Entry.lodPriority = 0;
-          i_Entry.waitPriority = 0;
-          i_Entry.resourcePriority = 0;
-          g_UploadSchedules.emplace(i_Entry);
+          int i_MeshIndex = 0;
+
+          for (auto mit = it->meshInfos.begin();
+               mit != it->meshInfos.end(); ++mit) {
+
+            UploadEntry i_Entry;
+            i_Entry.data.mesh.meshResource = p_MeshResource;
+            i_Entry.data.mesh.submeshIndex = l_Index;
+            i_Entry.data.mesh.meshInfoIndex = i_MeshIndex;
+            i_Entry.data.mesh.submesh =
+                p_MeshResource.get_submeshes()[l_Index];
+            i_Entry.data.mesh.meshInfo =
+                i_Entry.data.mesh.submesh
+                    .get_meshinfos()[i_MeshIndex];
+            i_Entry.progressPriority = 0;
+            i_Entry.lodPriority = 0;
+            i_Entry.waitPriority = 0;
+            i_Entry.resourcePriority = 0;
+            i_Entry.uploadedSize = 0;
+            g_UploadSchedules.emplace(i_Entry);
+
+            i_MeshIndex++;
+            l_FullMeshInfoCount++;
+          }
 
           l_Index++;
         }
 
+        p_MeshResource.set_full_meshinfo_count(l_FullMeshInfoCount);
         p_MeshResource.set_state(MeshResourceState::UPLOADINGTOGPU);
         return true;
       }
@@ -313,9 +396,219 @@ namespace Low {
         return true;
       }
 
+      static bool request_mesh_buffer_space(
+          Vulkan::DynamicBuffer &p_DynamicBuffer, u64 p_Priority,
+          u32 p_EntryCount, u32 *p_OutStart)
+      {
+        if (!p_DynamicBuffer.reserve(p_EntryCount, p_OutStart)) {
+          if (g_MeshEntries.empty()) {
+            return false;
+          }
+
+          if (g_MeshEntries.top().priority >= p_Priority) {
+            return false;
+          }
+
+          unload_mesh_resource(g_MeshEntries.top().meshResource);
+        }
+
+        return true;
+      }
+
+      static bool
+      request_mesh_buffer_space(UploadEntry &p_UploadEntry,
+                                u32 p_VertexCount, u32 p_IndexCount,
+                                u32 *p_OutVertexStart,
+                                u32 *p_OutIndexStart)
+      {
+        MeshEntry l_MeshEntry;
+        l_MeshEntry.lodPriority = p_UploadEntry.lodPriority;
+        l_MeshEntry.resourcePriority = p_UploadEntry.resourcePriority;
+
+        if (!request_mesh_buffer_space(
+                Vulkan::Global::get_mesh_vertex_buffer(),
+                l_MeshEntry.priority, p_VertexCount,
+                p_OutVertexStart)) {
+          return false;
+        }
+        if (!request_mesh_buffer_space(
+                Vulkan::Global::get_mesh_index_buffer(),
+                l_MeshEntry.priority, p_IndexCount,
+                p_OutIndexStart)) {
+          return false;
+        }
+
+        return true;
+      }
+
       static bool mesh_upload(UploadEntry &p_UploadEntry)
       {
-        return true;
+        MeshInfo l_RendererMeshInfo =
+            p_UploadEntry.data.mesh.meshInfo;
+        Submesh l_RendererSubmesh = p_UploadEntry.data.mesh.submesh;
+        {
+
+          if (l_RendererMeshInfo.get_state() ==
+              MeshResourceState::MEMORYLOADED) {
+            l_RendererMeshInfo.set_state(
+                MeshResourceState::UPLOADINGTOGPU);
+
+            u32 l_VertexStart;
+            u32 l_IndexStart;
+            if (!request_mesh_buffer_space(
+                    p_UploadEntry,
+                    l_RendererMeshInfo.get_vertex_count(),
+                    l_RendererMeshInfo.get_index_count(),
+                    &l_VertexStart, &l_IndexStart)) {
+              LOW_LOG_WARN << "Could not load mesh since mesh buffer "
+                              "space could not be reserved"
+                           << LOW_LOG_END;
+              return true;
+            }
+
+            l_RendererMeshInfo.set_vertex_start(l_VertexStart);
+            l_RendererMeshInfo.set_index_start(l_IndexStart);
+          }
+
+          if (l_RendererSubmesh.get_state() ==
+              MeshResourceState::MEMORYLOADED) {
+            l_RendererSubmesh.set_state(
+                MeshResourceState::UPLOADINGTOGPU);
+          }
+        }
+
+        MeshResource l_MeshResource =
+            p_UploadEntry.data.mesh.meshResource;
+        Util::Resource::Submesh &l_Submesh =
+            l_MeshResource.get_resource_mesh()
+                .submeshes[p_UploadEntry.data.mesh.submeshIndex];
+        Util::Resource::MeshInfo &l_MeshInfo =
+            l_Submesh
+                .meshInfos[p_UploadEntry.data.mesh.meshInfoIndex];
+
+        u64 l_VertexDataSize = l_MeshInfo.vertices.size() *
+                               sizeof(Low::Util::Resource::Vertex);
+        u64 l_IndexDataSize =
+            l_MeshInfo.indices.size() * MESH_INDEX_SIZE;
+
+        if (p_UploadEntry.data.mesh.meshInfo
+                .get_uploaded_vertex_count() <
+            l_MeshInfo.vertices.size()) {
+          const u64 l_FullSize = l_VertexDataSize;
+          const u64 l_UploadedSize = p_UploadEntry.uploadedSize;
+
+          u8 *l_Data = (u8 *)l_MeshInfo.vertices.data();
+
+          const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
+
+          size_t l_StagingOffset = 0;
+
+          // Request staging buffer space
+          const u64 l_FrameUploadSpace =
+              Vulkan::request_resource_staging_buffer_space(
+                  l_SpaceRequired, &l_StagingOffset);
+
+          const float l_UploadProgress =
+              (((float)l_UploadedSize) +
+               ((float)l_FrameUploadSpace)) /
+              ((float)l_FullSize);
+          // Calculate the progress as percent. We divide it by 2
+          // because we upload the vertices first and we still need to
+          // upload the indices after that.
+          const u8 l_UploadProgressPercent =
+              Math::Util::floor(l_UploadProgress * 100.0f) / 2.0f;
+
+          // Upload data to staging buffer
+          LOW_ASSERT(
+              Vulkan::resource_staging_buffer_write(
+                  &l_Data[l_UploadedSize], l_FrameUploadSpace,
+                  l_StagingOffset),
+              "Failed to write mesh vertex data to staging buffer");
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = l_StagingOffset;
+          l_CopyRegion.dstOffset =
+              l_RendererMeshInfo.get_vertex_start();
+          l_CopyRegion.size = l_FrameUploadSpace;
+          // TODO: Change to transfer queue command buffer
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_resource_staging_buffer()
+                  .buffer.buffer,
+              Vulkan::Global::get_mesh_vertex_buffer()
+                  .m_Buffer.buffer,
+              1, &l_CopyRegion);
+
+          p_UploadEntry.uploadedSize += l_FrameUploadSpace;
+          p_UploadEntry.data.mesh.meshInfo.set_uploaded_vertex_count(
+              p_UploadEntry.uploadedSize /
+              sizeof(Util::Resource::Vertex));
+          p_UploadEntry.progressPriority = l_UploadProgressPercent;
+
+          return l_FrameUploadSpace > 0.0f;
+        } else if (p_UploadEntry.data.mesh.meshInfo
+                       .get_uploaded_index_count() <
+                   l_MeshInfo.indices.size()) {
+          const u64 l_FullSize = l_IndexDataSize;
+          const u64 l_UploadedSize =
+              l_RendererMeshInfo.get_uploaded_index_count() *
+              MESH_INDEX_SIZE;
+
+          u8 *l_Data = (u8 *)l_MeshInfo.indices.data();
+
+          const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
+
+          size_t l_StagingOffset = 0;
+
+          // Request staging buffer space
+          const u64 l_FrameUploadSpace =
+              Vulkan::request_resource_staging_buffer_space(
+                  l_SpaceRequired, &l_StagingOffset);
+
+          const float l_UploadProgress =
+              (((float)l_UploadedSize) +
+               ((float)l_FrameUploadSpace)) /
+              ((float)l_FullSize);
+          // Calculate the progress as percent.
+          // This calculation takes into account that the vertices
+          // have already been uploaded at this point which is why we
+          // divide it by 2 and add 50% to it to account for the
+          // vertices.
+          const u8 l_UploadProgressPercent =
+              (Math::Util::floor(l_UploadProgress * 100.0f) / 2.0f) +
+              50;
+
+          // Upload data to staging buffer
+          LOW_ASSERT(
+              Vulkan::resource_staging_buffer_write(
+                  &l_Data[l_UploadedSize], l_FrameUploadSpace,
+                  l_StagingOffset),
+              "Failed to write mesh index data to staging buffer");
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = l_StagingOffset;
+          l_CopyRegion.dstOffset =
+              l_RendererMeshInfo.get_index_start();
+          l_CopyRegion.size = l_FrameUploadSpace;
+          // TODO: Change to transfer queue command buffer
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_resource_staging_buffer()
+                  .buffer.buffer,
+              Vulkan::Global::get_mesh_index_buffer().m_Buffer.buffer,
+              1, &l_CopyRegion);
+
+          p_UploadEntry.uploadedSize += l_FrameUploadSpace;
+          p_UploadEntry.data.mesh.meshInfo.set_uploaded_index_count(
+              p_UploadEntry.uploadedSize / MESH_INDEX_SIZE);
+          p_UploadEntry.progressPriority = l_UploadProgressPercent;
+
+          return l_FrameUploadSpace > 0.0f;
+        }
+
+        LOW_ASSERT(false, "Unknown situation, mesh is most likely "
+                          "already fully uploaded");
+        return false;
       }
 
       static bool image_upload(UploadEntry &p_UploadEntry)
@@ -341,8 +634,7 @@ namespace Low {
         }
 
         const u64 l_FullSize = l_Mip.size;
-        const u64 l_UploadedSize =
-            p_UploadEntry.data.image.uploadedSize;
+        const u64 l_UploadedSize = p_UploadEntry.uploadedSize;
 
         u8 *l_ImageData = (u8 *)l_Mip.data.data();
 
@@ -441,7 +733,7 @@ namespace Low {
           }
         }
 
-        p_UploadEntry.data.image.uploadedSize += l_FrameUploadSpace;
+        p_UploadEntry.uploadedSize += l_FrameUploadSpace;
 
         p_UploadEntry.progressPriority = l_UploadProgressPercent;
 
@@ -480,12 +772,33 @@ namespace Low {
                   .end());
 
           LOW_LOG_DEBUG << "Image fully loaded" << LOW_LOG_END;
+        } else if (p_UploadEntry.is_mesh_upload()) {
+          MeshInfo l_MeshInfo = p_UploadEntry.data.mesh.meshInfo;
+          Submesh l_Submesh = p_UploadEntry.data.mesh.submesh;
+          MeshResource l_MeshResource =
+              p_UploadEntry.data.mesh.meshResource;
+          // At this point one mesh info has been fully
+          // uploaded to we set it to LOADED before
+          // checking if the assigned submesh and
+          // meshresource have now been completely
+          // uploaded.
+          l_MeshInfo.set_state(MeshResourceState::LOADED);
+          l_Submesh.set_uploaded_meshinfo_count(
+              l_Submesh.get_uploaded_meshinfo_count() + 1);
+
+          if (l_Submesh.get_uploaded_meshinfo_count() >=
+              l_Submesh.get_meshinfo_count()) {
+            l_Submesh.set_state(MeshResourceState::LOADED);
+
+            l_MeshResource.set_uploaded_submesh_count(
+                l_MeshResource.get_uploaded_submesh_count() + 1);
+
+            if (l_MeshResource.get_uploaded_submesh_count() ==
+                l_MeshResource.get_submesh_count()) {
+              l_MeshResource.set_state(MeshResourceState::LOADED);
+            }
+          }
         }
-        /*
-        else if (p_UploadEntry.mesh.is_alive()){
-          p_UploadEntry.mesh.set_state(MeshResourceState::LOADED);
-        }
-        */
 
         return true;
       }
@@ -496,7 +809,8 @@ namespace Low {
         if (p_UploadEntry.is_image_upload() &&
             p_UploadEntry.progressPriority < 100) {
           return image_upload(p_UploadEntry);
-        } else if (p_UploadEntry.is_submesh_upload()) {
+        } else if (p_UploadEntry.is_mesh_upload() &&
+                   p_UploadEntry.progressPriority < 100) {
           return mesh_upload(p_UploadEntry);
         }
 

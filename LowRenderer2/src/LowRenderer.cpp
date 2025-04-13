@@ -7,10 +7,14 @@
 #include "LowRendererImageResource.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererVkImage.h"
+#include "LowRendererRenderObject.h"
+#include "LowRendererGlobals.h"
+#include "LowRendererRenderView.h"
 
 #include "LowUtilAssert.h"
 
 #include "imgui_impl_vulkan.h"
+#include <vulkan/vulkan_core.h>
 
 namespace Low {
   namespace Renderer {
@@ -21,12 +25,16 @@ namespace Low {
 
     static void initialize_types()
     {
+      RenderView::initialize();
+      RenderObject::initialize();
       MeshResource::initialize();
       ImageResource::initialize();
     }
 
     static void cleanup_types()
     {
+      RenderView::cleanup();
+      RenderObject::cleanup();
       ImageResource::cleanup();
       MeshResource::cleanup();
     }
@@ -34,7 +42,6 @@ namespace Low {
     void initialize()
     {
       initialize_types();
-
       LOW_ASSERT(Vulkan::initialize(),
                  "Failed to initialize Vulkan renderer");
 
@@ -72,10 +79,115 @@ namespace Low {
 
     void cleanup()
     {
-      LOW_ASSERT(Vulkan::cleanup(),
-                 "Failed to cleanup Vulkan renderer");
+      Vulkan::wait_idle();
+
+      vkDestroySampler(Vulkan::Global::get_device(), g_TestSampler,
+                       nullptr);
 
       cleanup_types();
+
+      LOW_ASSERT(Vulkan::cleanup(),
+                 "Failed to cleanup Vulkan renderer");
+    }
+
+    static bool upload_render_object(RenderObject p_RenderObject)
+    {
+      MeshResource l_MeshResource =
+          p_RenderObject.get_mesh_resource();
+      const u32 l_FullMeshInfoCount =
+          l_MeshResource.get_full_meshinfo_count();
+
+      size_t l_StagingOffset = 0;
+      const u64 l_FrameUploadSpace =
+          Vulkan::request_resource_staging_buffer_space(
+              sizeof(RenderObjectUpload) * l_FullMeshInfoCount,
+              &l_StagingOffset);
+
+      if (l_FrameUploadSpace <
+          (sizeof(RenderObjectUpload) * l_FullMeshInfoCount)) {
+        return false;
+      }
+
+      bool l_IsFirstTimeUpload = false;
+
+      if (!p_RenderObject.is_uploaded()) {
+        u32 l_Slot = 0;
+        if (!Vulkan::Global::get_renderobject_buffer().reserve(
+                l_FullMeshInfoCount, &l_Slot)) {
+          return false;
+        }
+
+        LOW_LOG_INFO << "Renderobject upload" << LOW_LOG_END;
+        p_RenderObject.set_slot(l_Slot);
+        p_RenderObject.set_uploaded(true);
+        l_IsFirstTimeUpload = true;
+      }
+
+      _LOW_ASSERT(p_RenderObject.is_uploaded());
+
+      Util::List<RenderObjectUpload> l_Uploads;
+      l_Uploads.resize(l_FullMeshInfoCount);
+
+      RenderView l_RenderView =
+          p_RenderObject.get_render_view_handle();
+
+      u32 l_Index = 0;
+
+      for (auto sit = l_MeshResource.get_submeshes().begin();
+           sit != l_MeshResource.get_submeshes().end(); ++sit) {
+        for (auto mit = sit->get_meshinfos().begin();
+             mit != sit->get_meshinfos().end(); ++mit) {
+          // TODO: Take submesh transform into account
+          l_Uploads[l_Index].world_transform =
+              p_RenderObject.get_world_transform();
+
+          if (l_IsFirstTimeUpload) {
+
+            LOW_ASSERT(l_RenderView.add_render_entry(p_RenderObject,
+                                                     l_Index, *mit),
+                       "Failed to add render entry to renderview");
+          }
+
+          l_Index++;
+        }
+      }
+
+      LOW_ASSERT(
+          Vulkan::resource_staging_buffer_write(
+              l_Uploads.data(),
+              sizeof(RenderObjectUpload) * l_Uploads.size(),
+              l_StagingOffset),
+          "Failed to write render object data to staging buffer");
+
+      VkBufferCopy l_CopyRegion{};
+      l_CopyRegion.srcOffset = l_StagingOffset;
+      l_CopyRegion.dstOffset =
+          p_RenderObject.get_slot() * sizeof(RenderObjectUpload);
+      l_CopyRegion.size = l_FrameUploadSpace;
+      // TODO: Change to transfer queue command buffer - or leave
+      // this specifically on the graphics queue not sure tbh
+      vkCmdCopyBuffer(
+          Vulkan::Global::get_current_command_buffer(),
+          Vulkan::Global::get_current_resource_staging_buffer()
+              .buffer.buffer,
+          Vulkan::Global::get_renderobject_buffer().m_Buffer.buffer,
+          1, &l_CopyRegion);
+
+      LOW_LOG_INFO << "updated renderobject" << LOW_LOG_END;
+
+      p_RenderObject.set_dirty(false);
+    }
+
+    static void tick_render_objects(float p_Delta)
+    {
+      for (u32 i = 0; i < RenderObject::living_count(); ++i) {
+        RenderObject i_RenderObject =
+            RenderObject::living_instances()[i];
+
+        if (i_RenderObject.is_dirty()) {
+          upload_render_object(i_RenderObject);
+        }
+      }
     }
 
     void tick(float p_Delta)
@@ -89,6 +201,7 @@ namespace Low {
       LOW_ASSERT(Vulkan::prepare_tick(p_Delta),
                  "Failed to prepare tick Vulkan renderer");
       ResourceManager::tick(p_Delta);
+      tick_render_objects(p_Delta);
       if (!l_ImageInit) {
         if (g_Img.get_state() == ImageResourceState::LOADED) {
           l_ImageInit = true;
@@ -98,6 +211,14 @@ namespace Low {
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
       }
+
+      ImGui::Begin("Camera");
+      RenderView l_RenderView = RenderView::living_instances()[0];
+      Math::Vector3 l_CameraPosition =
+          l_RenderView.get_camera_position();
+      ImGui::DragFloat3("Position", (float *)&l_CameraPosition);
+      l_RenderView.set_camera_position(l_CameraPosition);
+      ImGui::End();
 
       if (l_ImageInit) {
         ImGui::Begin("Viewport");

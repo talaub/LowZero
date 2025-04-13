@@ -26,6 +26,7 @@ namespace Low {
     const uint16_t GraphicsStepConfig::TYPE_ID = 12;
     uint32_t GraphicsStepConfig::ms_Capacity = 0u;
     uint8_t *GraphicsStepConfig::ms_Buffer = 0;
+    std::shared_mutex GraphicsStepConfig::ms_BufferMutex;
     Low::Util::Instances::Slot *GraphicsStepConfig::ms_Slots = 0;
     Low::Util::List<GraphicsStepConfig>
         GraphicsStepConfig::ms_LivingInstances =
@@ -52,6 +53,7 @@ namespace Low {
     GraphicsStepConfig
     GraphicsStepConfig::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       GraphicsStepConfig l_Handle;
@@ -96,6 +98,7 @@ namespace Low {
           PipelineResourceBindingConfig();
       ACCESSOR_TYPE_SOA(l_Handle, GraphicsStepConfig, name,
                         Low::Util::Name) = Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -116,6 +119,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -132,6 +136,7 @@ namespace Low {
 
     void GraphicsStepConfig::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -142,6 +147,7 @@ namespace Low {
       initialize_buffer(&ms_Buffer,
                         GraphicsStepConfigData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_GraphicsStepConfig);
       LOW_PROFILE_ALLOC(type_slots_GraphicsStepConfig);
@@ -615,11 +621,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_GraphicsStepConfig);
       LOW_PROFILE_FREE(type_slots_GraphicsStepConfig);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle
@@ -643,6 +651,7 @@ namespace Low {
 
     bool GraphicsStepConfig::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == GraphicsStepConfig::TYPE_ID &&
              check_alive(ms_Slots,
                          GraphicsStepConfig::get_capacity());
@@ -801,6 +810,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_callbacks
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, callbacks,
                       GraphicsStepCallbacks);
     }
@@ -814,8 +824,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_callbacks
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, callbacks, GraphicsStepCallbacks) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_callbacks
 
@@ -831,6 +843,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, resources,
                       Util::List<ResourceConfig>);
     }
@@ -844,6 +857,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions_config
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, dimensions_config,
                       DimensionsConfig);
     }
@@ -857,8 +871,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions_config
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, dimensions_config,
                DimensionsConfig) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_config
 
@@ -874,6 +890,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, pipelines,
                       Util::List<GraphicsPipelineConfig>);
     }
@@ -887,6 +904,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_rendertargets
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, rendertargets,
                       Util::List<PipelineResourceBindingConfig>);
     }
@@ -900,6 +918,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_rendertargets_clearcolor
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor,
                       Math::Color);
     }
@@ -913,8 +932,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_rendertargets_clearcolor
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, rendertargets_clearcolor,
                Math::Color) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rendertargets_clearcolor
 
@@ -930,6 +951,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_rendertarget
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
                       PipelineResourceBindingConfig);
     }
@@ -943,8 +965,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_rendertarget
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, depth_rendertarget,
                PipelineResourceBindingConfig) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_rendertarget
 
@@ -959,6 +983,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_use_depth
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, use_depth, bool);
     }
     void GraphicsStepConfig::set_use_depth(bool p_Value)
@@ -970,7 +995,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_use_depth
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, use_depth, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_use_depth
 
@@ -985,6 +1012,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_clear
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_clear, bool);
     }
     void GraphicsStepConfig::set_depth_clear(bool p_Value)
@@ -996,7 +1024,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_clear
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, depth_clear, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_clear
 
@@ -1011,6 +1041,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_test
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_test, bool);
     }
     void GraphicsStepConfig::set_depth_test(bool p_Value)
@@ -1022,7 +1053,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_test
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, depth_test, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_test
 
@@ -1037,6 +1070,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_write
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_write, bool);
     }
     void GraphicsStepConfig::set_depth_write(bool p_Value)
@@ -1048,7 +1082,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_write
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, depth_write, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_write
 
@@ -1063,6 +1099,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_compare_operation
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_compare_operation,
                       uint8_t);
     }
@@ -1076,8 +1113,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_compare_operation
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, depth_compare_operation, uint8_t) =
           p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_compare_operation
 
@@ -1093,6 +1132,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, output_image,
                       PipelineResourceBindingConfig);
     }
@@ -1106,8 +1146,10 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, output_image,
                PipelineResourceBindingConfig) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
@@ -1122,6 +1164,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, name, Low::Util::Name);
     }
     void GraphicsStepConfig::set_name(Low::Util::Name p_Value)
@@ -1133,7 +1176,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GraphicsStepConfig, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1352,6 +1397,8 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          GraphicsStepConfig i_GraphicsStepConfig = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer[offsetof(GraphicsStepConfigData,
                                     resources) *
@@ -1359,7 +1406,9 @@ namespace Low {
                            (it->get_index() *
                             sizeof(Util::List<ResourceConfig>))])
               Util::List<ResourceConfig>();
-          *i_ValPtr = it->get_resources();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_GraphicsStepConfig,
+                                        GraphicsStepConfig, resources,
+                                        Util::List<ResourceConfig>);
         }
       }
       {
@@ -1374,6 +1423,8 @@ namespace Low {
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          GraphicsStepConfig i_GraphicsStepConfig = *it;
+
           auto *i_ValPtr =
               new (&l_NewBuffer
                        [offsetof(GraphicsStepConfigData, pipelines) *
@@ -1381,12 +1432,16 @@ namespace Low {
                         (it->get_index() *
                          sizeof(Util::List<GraphicsPipelineConfig>))])
                   Util::List<GraphicsPipelineConfig>();
-          *i_ValPtr = it->get_pipelines();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_GraphicsStepConfig, GraphicsStepConfig, pipelines,
+              Util::List<GraphicsPipelineConfig>);
         }
       }
       {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
+          GraphicsStepConfig i_GraphicsStepConfig = *it;
+
           auto *i_ValPtr = new (
               &l_NewBuffer
                   [offsetof(GraphicsStepConfigData, rendertargets) *
@@ -1395,7 +1450,9 @@ namespace Low {
                     sizeof(
                         Util::List<PipelineResourceBindingConfig>))])
               Util::List<PipelineResourceBindingConfig>();
-          *i_ValPtr = it->get_rendertargets();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_GraphicsStepConfig, GraphicsStepConfig, rendertargets,
+              Util::List<PipelineResourceBindingConfig>);
         }
       }
       {

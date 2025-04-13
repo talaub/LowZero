@@ -8,6 +8,7 @@
 #include "LowUtil.h"
 
 #include <fstream>
+#include <vulkan/vulkan_core.h>
 
 namespace Low {
   namespace Renderer {
@@ -123,15 +124,14 @@ namespace Low {
           shaderStages.clear();
         }
 
-        Pipeline
-        GraphicsPipelineBuilder::register_pipeline()
+        Pipeline GraphicsPipelineBuilder::register_pipeline()
         {
           Pipeline l_Pipeline = Pipeline::make(N(Pipeline));
 
           l_Pipeline.set_layout(pipelineLayout);
 
-          PipelineManager::register_graphics_pipeline(
-               l_Pipeline, *this);
+          PipelineManager::register_graphics_pipeline(l_Pipeline,
+                                                      *this);
 
           return l_Pipeline;
         }
@@ -139,8 +139,10 @@ namespace Low {
         VkPipeline
         GraphicsPipelineBuilder::build_pipeline(VkDevice p_Device)
         {
-          renderInfo.colorAttachmentCount = 1;
-          renderInfo.pColorAttachmentFormats = &colorAttachmentFormat;
+          renderInfo.colorAttachmentCount =
+              colorAttachmentFormats.size();
+          renderInfo.pColorAttachmentFormats =
+              colorAttachmentFormats.data();
 
           VkPipelineViewportStateCreateInfo l_ViewportState = {};
           l_ViewportState.sType =
@@ -151,15 +153,25 @@ namespace Low {
           l_ViewportState.scissorCount = 1;
 
           // TODO: Right now this is just a dummy
-          VkPipelineColorBlendStateCreateInfo l_ColorBlending = {};
-          l_ColorBlending.sType =
-              VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-          l_ColorBlending.pNext = nullptr;
+          VkPipelineColorBlendStateCreateInfo l_BlendStateCreateInfo;
 
-          l_ColorBlending.logicOpEnable = VK_FALSE;
-          l_ColorBlending.logicOp = VK_LOGIC_OP_COPY;
-          l_ColorBlending.attachmentCount = 1;
-          l_ColorBlending.pAttachments = &colorBlendAttachment;
+          Util::List<VkPipelineColorBlendAttachmentState>
+              l_BlendAttachments;
+
+          for (u32 i = 0u; i < colorAttachmentFormats.size(); ++i) {
+            l_BlendAttachments.push_back(colorBlendAttachment);
+          }
+
+          l_BlendStateCreateInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+          l_BlendStateCreateInfo.pNext = nullptr;
+
+          l_BlendStateCreateInfo.logicOpEnable = VK_FALSE;
+          l_BlendStateCreateInfo.logicOp = VK_LOGIC_OP_COPY;
+          l_BlendStateCreateInfo.attachmentCount =
+              l_BlendAttachments.size();
+          l_BlendStateCreateInfo.pAttachments =
+              l_BlendAttachments.data();
 
           // Clear for now
           VkPipelineVertexInputStateCreateInfo l_VertexInputInfo = {
@@ -180,7 +192,7 @@ namespace Low {
           l_PipelineInfo.pViewportState = &l_ViewportState;
           l_PipelineInfo.pRasterizationState = &rasterizer;
           l_PipelineInfo.pMultisampleState = &multisampling;
-          l_PipelineInfo.pColorBlendState = &l_ColorBlending;
+          l_PipelineInfo.pColorBlendState = &l_BlendStateCreateInfo;
           l_PipelineInfo.pDepthStencilState = &depthStencil;
           l_PipelineInfo.layout = pipelineLayout;
 
@@ -224,7 +236,7 @@ namespace Low {
         }
 
         void GraphicsPipelineBuilder::set_shaders(
-             Util::String p_VertexShader,
+            Util::String p_VertexShader,
             Util::String p_FragmentShader, bool p_Project)
         {
           vertexShaderPath = Util::get_project().engineDataPath +
@@ -239,21 +251,18 @@ namespace Low {
                               ".spv";
         }
 
-        void
-        GraphicsPipelineBuilder::update_shaders()
+        void GraphicsPipelineBuilder::update_shaders()
         {
           VkShaderModule l_FragShader;
           LOW_ASSERT(PipelineUtil::load_shader_module(
                          fragmentSpirvPath.c_str(),
-                         Global::get_device(),
-                         &l_FragShader),
+                         Global::get_device(), &l_FragShader),
                      "Failed to load fragment shader");
 
           VkShaderModule l_VertShader;
           LOW_ASSERT(PipelineUtil::load_shader_module(
                          vertexSpirvPath.c_str(),
-                         Global::get_device(),
-                         &l_VertShader),
+                         Global::get_device(), &l_VertShader),
                      "Failed to load vertex shader");
 
           set_shaders(l_VertShader, l_FragShader);
@@ -312,16 +321,6 @@ namespace Low {
               VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
               VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
           colorBlendAttachment.blendEnable = VK_FALSE;
-        }
-
-        void GraphicsPipelineBuilder::set_color_attachment_format(
-            VkFormat p_Format)
-        {
-          // TODO: Most likely revisit to allow drawing to multiple
-          // attachments for GBuffer for instance
-          colorAttachmentFormat = p_Format;
-          renderInfo.colorAttachmentCount = 1;
-          renderInfo.pColorAttachmentFormats = &colorAttachmentFormat;
         }
 
         void

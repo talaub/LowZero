@@ -10,6 +10,7 @@
 #include "LowMath.h"
 #include "LowCoreScene.h"
 
+#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -41,6 +42,7 @@ namespace Low {
     struct LOW_CORE_API Region : public Low::Util::Handle
     {
     public:
+      static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
@@ -54,6 +56,8 @@ namespace Low {
 
       static Region make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+      static Region make(Low::Util::Name p_Name,
+                         Low::Util::UniqueId p_UniqueId);
       explicit Region(const Region &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -98,6 +102,7 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
+        READ_LOCK(l_Lock);
         return p_Handle.get_type() == Region::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
@@ -117,6 +122,10 @@ namespace Low {
 
       Math::Vector3 &get_streaming_position() const;
       void set_streaming_position(Math::Vector3 &p_Value);
+      void set_streaming_position(float p_X, float p_Y, float p_Z);
+      void set_streaming_position_x(float p_Value);
+      void set_streaming_position_y(float p_Value);
+      void set_streaming_position_z(float p_Value);
 
       float get_streaming_radius() const;
       void set_streaming_radius(float p_Value);

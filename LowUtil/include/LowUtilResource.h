@@ -33,6 +33,16 @@ namespace Low {
         Image2D mip3;
       };
 
+#if 0
+      struct Vertex
+      {
+        alignas(16) Math::Vector3 position;
+        alignas(16) Math::Vector2 texture_coordinates;
+        alignas(16) Math::Vector3 normal;
+        alignas(16) Math::Vector3 tangent;
+        alignas(16) Math::Vector3 bitangent;
+      };
+#else
       struct Vertex
       {
         Math::Vector3 position;
@@ -41,6 +51,7 @@ namespace Low {
         Math::Vector3 tangent;
         Math::Vector3 bitangent;
       };
+#endif
 
       struct AnimationVector3Key
       {

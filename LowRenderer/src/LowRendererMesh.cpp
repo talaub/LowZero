@@ -22,6 +22,7 @@ namespace Low {
     const uint16_t Mesh::TYPE_ID = 15;
     uint32_t Mesh::ms_Capacity = 0u;
     uint8_t *Mesh::ms_Buffer = 0;
+    std::shared_mutex Mesh::ms_BufferMutex;
     Low::Util::Instances::Slot *Mesh::ms_Slots = 0;
     Low::Util::List<Mesh> Mesh::ms_LivingInstances =
         Low::Util::List<Mesh>();
@@ -43,6 +44,7 @@ namespace Low {
 
     Mesh Mesh::make(Low::Util::Name p_Name)
     {
+      WRITE_LOCK(l_Lock);
       uint32_t l_Index = create_instance();
 
       Mesh l_Handle;
@@ -52,6 +54,7 @@ namespace Low {
 
       ACCESSOR_TYPE_SOA(l_Handle, Mesh, name, Low::Util::Name) =
           Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -72,6 +75,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -88,6 +92,7 @@ namespace Low {
 
     void Mesh::initialize()
     {
+      WRITE_LOCK(l_Lock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -97,6 +102,7 @@ namespace Low {
 
       initialize_buffer(&ms_Buffer, MeshData::get_size(),
                         get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
 
       LOW_PROFILE_ALLOC(type_buffer_Mesh);
       LOW_PROFILE_ALLOC(type_slots_Mesh);
@@ -331,11 +337,13 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
+      WRITE_LOCK(l_Lock);
       free(ms_Buffer);
       free(ms_Slots);
 
       LOW_PROFILE_FREE(type_buffer_Mesh);
       LOW_PROFILE_FREE(type_slots_Mesh);
+      LOCK_UNLOCK(l_Lock);
     }
 
     Low::Util::Handle Mesh::_find_by_index(uint32_t p_Index)
@@ -357,6 +365,7 @@ namespace Low {
 
     bool Mesh::is_alive() const
     {
+      READ_LOCK(l_Lock);
       return m_Data.m_Type == Mesh::TYPE_ID &&
              check_alive(ms_Slots, Mesh::get_capacity());
     }
@@ -487,6 +496,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_buffer_start
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, vertex_buffer_start, uint32_t);
     }
     void Mesh::set_vertex_buffer_start(uint32_t p_Value)
@@ -498,7 +508,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_buffer_start
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, vertex_buffer_start, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_buffer_start
 
@@ -513,6 +525,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, vertex_count, uint32_t);
     }
     void Mesh::set_vertex_count(uint32_t p_Value)
@@ -524,7 +537,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, vertex_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_count
 
@@ -539,6 +554,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_index_buffer_start
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, index_buffer_start, uint32_t);
     }
     void Mesh::set_index_buffer_start(uint32_t p_Value)
@@ -550,7 +566,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_buffer_start
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, index_buffer_start, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_buffer_start
 
@@ -565,6 +583,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_index_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, index_count, uint32_t);
     }
     void Mesh::set_index_count(uint32_t p_Value)
@@ -576,7 +595,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, index_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_count
 
@@ -591,6 +612,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertexweight_buffer_start
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t);
     }
     void Mesh::set_vertexweight_buffer_start(uint32_t p_Value)
@@ -602,7 +624,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertexweight_buffer_start
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, vertexweight_buffer_start, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_buffer_start
 
@@ -617,6 +641,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertexweight_count
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, vertexweight_count, uint32_t);
     }
     void Mesh::set_vertexweight_count(uint32_t p_Value)
@@ -628,7 +653,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertexweight_count
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, vertexweight_count, uint32_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_count
 
@@ -643,6 +670,7 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Mesh, name, Low::Util::Name);
     }
     void Mesh::set_name(Low::Util::Name p_Value)
@@ -654,7 +682,9 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
+      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Mesh, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

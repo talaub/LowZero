@@ -27,6 +27,7 @@ namespace Low {
       const uint16_t PrefabInstance::TYPE_ID = 34;
       uint32_t PrefabInstance::ms_Capacity = 0u;
       uint8_t *PrefabInstance::ms_Buffer = 0;
+      std::shared_mutex PrefabInstance::ms_BufferMutex;
       Low::Util::Instances::Slot *PrefabInstance::ms_Slots = 0;
       Low::Util::List<PrefabInstance>
           PrefabInstance::ms_LivingInstances =
@@ -55,6 +56,14 @@ namespace Low {
 
       PrefabInstance PrefabInstance::make(Low::Core::Entity p_Entity)
       {
+        return make(p_Entity, 0ull);
+      }
+
+      PrefabInstance
+      PrefabInstance::make(Low::Core::Entity p_Entity,
+                           Low::Util::UniqueId p_UniqueId)
+      {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         PrefabInstance l_Handle;
@@ -71,14 +80,19 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, PrefabInstance, entity,
                                 Low::Core::Entity))
             Low::Core::Entity();
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
         ms_LivingInstances.push_back(l_Handle);
 
-        l_Handle.set_unique_id(
-            Low::Util::generate_unique_id(l_Handle.get_id()));
+        if (p_UniqueId > 0ull) {
+          l_Handle.set_unique_id(p_UniqueId);
+        } else {
+          l_Handle.set_unique_id(
+              Low::Util::generate_unique_id(l_Handle.get_id()));
+        }
         Low::Util::register_unique_id(l_Handle.get_unique_id(),
                                       l_Handle.get_id());
 
@@ -99,6 +113,7 @@ namespace Low {
 
         Low::Util::remove_unique_id(get_unique_id());
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -115,6 +130,7 @@ namespace Low {
 
       void PrefabInstance::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -124,6 +140,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, PrefabInstanceData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_PrefabInstance);
         LOW_PROFILE_ALLOC(type_slots_PrefabInstance);
@@ -336,11 +353,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_PrefabInstance);
         LOW_PROFILE_FREE(type_slots_PrefabInstance);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle
@@ -363,6 +382,7 @@ namespace Low {
 
       bool PrefabInstance::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == PrefabInstance::TYPE_ID &&
                check_alive(ms_Slots, PrefabInstance::get_capacity());
       }
@@ -489,6 +509,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_prefab
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PrefabInstance, prefab, Prefab);
       }
       void PrefabInstance::set_prefab(Prefab p_Value)
@@ -500,7 +521,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_prefab
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PrefabInstance, prefab, Prefab) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_prefab
 
@@ -516,6 +539,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_overrides
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(
             PrefabInstance, overrides,
             SINGLE_ARG(Util::Map<uint16_t, Util::List<Util::Name>>));
@@ -530,10 +554,12 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_overrides
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(
             PrefabInstance, overrides,
             SINGLE_ARG(Util::Map<uint16_t, Util::List<Util::Name>>)) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_overrides
 
@@ -548,6 +574,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PrefabInstance, entity, Low::Core::Entity);
       }
       void PrefabInstance::set_entity(Low::Core::Entity p_Value)
@@ -559,7 +586,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PrefabInstance, entity, Low::Core::Entity) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -574,6 +603,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PrefabInstance, unique_id,
                         Low::Util::UniqueId);
       }
@@ -586,8 +616,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PrefabInstance, unique_id, Low::Util::UniqueId) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -738,6 +770,8 @@ namespace Low {
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
+            PrefabInstance i_PrefabInstance = *it;
+
             auto *i_ValPtr = new (
                 &l_NewBuffer
                     [offsetof(PrefabInstanceData, overrides) *
@@ -746,7 +780,10 @@ namespace Low {
                       sizeof(Util::Map<uint16_t,
                                        Util::List<Util::Name>>))])
                 Util::Map<uint16_t, Util::List<Util::Name>>();
-            *i_ValPtr = it->get_overrides();
+            *i_ValPtr = ACCESSOR_TYPE_SOA(
+                i_PrefabInstance, PrefabInstance, overrides,
+                SINGLE_ARG(
+                    Util::Map<uint16_t, Util::List<Util::Name>>));
           }
         }
         {

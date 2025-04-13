@@ -217,6 +217,11 @@ namespace Low {
         if (ImGui::Selectable(LOW_EDITOR_ICON_CYLINDER " Empty")) {
           Core::Entity l_Entity = Core::Entity::make("Empty");
           Core::Component::Transform::make(l_Entity);
+          l_Entity.set_region(Util::find_handle_by_unique_id(
+                                  *Core::Scene::get_loaded_scene()
+                                       .get_regions()
+                                       .begin())
+                                  .get_id());
           set_selected_entity(l_Entity);
         }
         ImGui::Separator();
@@ -225,6 +230,11 @@ namespace Low {
           Core::Entity l_Entity = Core::Entity::make("Mesh");
           Core::Component::Transform::make(l_Entity);
           Core::Component::MeshRenderer::make(l_Entity);
+          l_Entity.set_region(Util::find_handle_by_unique_id(
+                                  *Core::Scene::get_loaded_scene()
+                                       .get_regions()
+                                       .begin())
+                                  .get_id());
           set_selected_entity(l_Entity);
         }
         if (ImGui::Selectable(LOW_EDITOR_ICON_POINT_LIGHT
@@ -236,6 +246,11 @@ namespace Low {
           l_PointLight.set_color(
               Low::Math::ColorRGB(1.0f, 1.0f, 1.0f));
           l_PointLight.set_intensity(1.0f);
+          l_Entity.set_region(Util::find_handle_by_unique_id(
+                                  *Core::Scene::get_loaded_scene()
+                                       .get_regions()
+                                       .begin())
+                                  .get_id());
           set_selected_entity(l_Entity);
         }
         ImGui::EndPopup();

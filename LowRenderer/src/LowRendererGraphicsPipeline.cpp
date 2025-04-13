@@ -25,6 +25,7 @@ namespace Low {
       const uint16_t GraphicsPipeline::TYPE_ID = 5;
       uint32_t GraphicsPipeline::ms_Capacity = 0u;
       uint8_t *GraphicsPipeline::ms_Buffer = 0;
+      std::shared_mutex GraphicsPipeline::ms_BufferMutex;
       Low::Util::Instances::Slot *GraphicsPipeline::ms_Slots = 0;
       Low::Util::List<GraphicsPipeline>
           GraphicsPipeline::ms_LivingInstances =
@@ -50,6 +51,7 @@ namespace Low {
 
       GraphicsPipeline GraphicsPipeline::make(Low::Util::Name p_Name)
       {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         GraphicsPipeline l_Handle;
@@ -62,6 +64,7 @@ namespace Low {
             Backend::Pipeline();
         ACCESSOR_TYPE_SOA(l_Handle, GraphicsPipeline, name,
                           Low::Util::Name) = Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -84,6 +87,7 @@ namespace Low {
         Backend::callbacks().pipeline_cleanup(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -100,6 +104,7 @@ namespace Low {
 
       void GraphicsPipeline::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -110,6 +115,7 @@ namespace Low {
         initialize_buffer(&ms_Buffer,
                           GraphicsPipelineData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_GraphicsPipeline);
         LOW_PROFILE_ALLOC(type_slots_GraphicsPipeline);
@@ -235,11 +241,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_GraphicsPipeline);
         LOW_PROFILE_FREE(type_slots_GraphicsPipeline);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle
@@ -263,6 +271,7 @@ namespace Low {
 
       bool GraphicsPipeline::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == GraphicsPipeline::TYPE_ID &&
                check_alive(ms_Slots,
                            GraphicsPipeline::get_capacity());
@@ -367,6 +376,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_pipeline
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(GraphicsPipeline, pipeline,
                         Backend::Pipeline);
       }
@@ -379,6 +389,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(GraphicsPipeline, name, Low::Util::Name);
       }
       void GraphicsPipeline::set_name(Low::Util::Name p_Value)
@@ -390,7 +401,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(GraphicsPipeline, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 

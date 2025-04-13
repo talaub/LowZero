@@ -29,6 +29,7 @@ namespace Low {
       const uint16_t Context::TYPE_ID = 1;
       uint32_t Context::ms_Capacity = 0u;
       uint8_t *Context::ms_Buffer = 0;
+      std::shared_mutex Context::ms_BufferMutex;
       Low::Util::Instances::Slot *Context::ms_Slots = 0;
       Low::Util::List<Context> Context::ms_LivingInstances =
           Low::Util::List<Context>();
@@ -51,6 +52,7 @@ namespace Low {
 
       Context Context::make(Low::Util::Name p_Name)
       {
+        WRITE_LOCK(l_Lock);
         uint32_t l_Index = create_instance();
 
         Context l_Handle;
@@ -73,6 +75,7 @@ namespace Low {
                                 Resource::Buffer)) Resource::Buffer();
         ACCESSOR_TYPE_SOA(l_Handle, Context, name, Low::Util::Name) =
             Low::Util::Name(0u);
+        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -94,6 +97,7 @@ namespace Low {
         Backend::callbacks().context_cleanup(get_context());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
 
@@ -110,6 +114,7 @@ namespace Low {
 
       void Context::initialize()
       {
+        WRITE_LOCK(l_Lock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -119,6 +124,7 @@ namespace Low {
 
         initialize_buffer(&ms_Buffer, ContextData::get_size(),
                           get_capacity(), &ms_Slots);
+        LOCK_UNLOCK(l_Lock);
 
         LOW_PROFILE_ALLOC(type_buffer_Context);
         LOW_PROFILE_ALLOC(type_slots_Context);
@@ -524,11 +530,13 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
+        WRITE_LOCK(l_Lock);
         free(ms_Buffer);
         free(ms_Slots);
 
         LOW_PROFILE_FREE(type_buffer_Context);
         LOW_PROFILE_FREE(type_slots_Context);
+        LOCK_UNLOCK(l_Lock);
       }
 
       Low::Util::Handle Context::_find_by_index(uint32_t p_Index)
@@ -550,6 +558,7 @@ namespace Low {
 
       bool Context::is_alive() const
       {
+        READ_LOCK(l_Lock);
         return m_Data.m_Type == Context::TYPE_ID &&
                check_alive(ms_Slots, Context::get_capacity());
       }
@@ -689,6 +698,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Context, context, Backend::Context);
       }
 
@@ -700,6 +710,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_renderpasses
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Context, renderpasses,
                         Util::List<Renderpass>);
       }
@@ -712,6 +723,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_global_signature
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Context, global_signature,
                         PipelineResourceSignature);
       }
@@ -725,8 +737,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_global_signature
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Context, global_signature,
                  PipelineResourceSignature) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_global_signature
 
@@ -741,6 +755,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_frame_info_buffer
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Context, frame_info_buffer, Resource::Buffer);
       }
       void Context::set_frame_info_buffer(Resource::Buffer p_Value)
@@ -752,8 +767,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_info_buffer
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Context, frame_info_buffer, Resource::Buffer) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
 
@@ -768,6 +785,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_material_data_buffer
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Context, material_data_buffer,
                         Resource::Buffer);
       }
@@ -780,8 +798,10 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_data_buffer
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Context, material_data_buffer, Resource::Buffer) =
             p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_data_buffer
 
@@ -796,6 +816,7 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
+        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Context, name, Low::Util::Name);
       }
       void Context::set_name(Low::Util::Name p_Value)
@@ -807,7 +828,9 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Context, name, Low::Util::Name) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1142,13 +1165,17 @@ namespace Low {
         {
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end(); ++it) {
+            Context i_Context = *it;
+
             auto *i_ValPtr = new (
                 &l_NewBuffer[offsetof(ContextData, renderpasses) *
                                  (l_Capacity + l_CapacityIncrease) +
                              (it->get_index() *
                               sizeof(Util::List<Renderpass>))])
                 Util::List<Renderpass>();
-            *i_ValPtr = it->get_renderpasses();
+            *i_ValPtr =
+                ACCESSOR_TYPE_SOA(i_Context, Context, renderpasses,
+                                  Util::List<Renderpass>);
           }
         }
         {
