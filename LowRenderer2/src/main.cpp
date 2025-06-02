@@ -12,6 +12,9 @@
 #include "LowRenderer.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderView.h"
+#include "LowRendererRenderScene.h"
+#include "LowRendererMaterial.h"
+#include "LowRendererMaterialType.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -32,6 +35,10 @@ void *operator new[](size_t size, size_t alignment,
 Low::Util::Window g_MainWindow;
 
 Low::Renderer::RenderView g_RenderView;
+Low::Renderer::RenderScene g_RenderScene;
+
+Low::Renderer::MaterialType g_SolidBaseMaterialType;
+Low::Renderer::Material g_TestMaterial;
 
 namespace Low {
   namespace Util {
@@ -109,8 +116,22 @@ void init()
     l_LocalMatrix *= glm::toMat4(l_Rotation);
     l_LocalMatrix = glm::scale(l_LocalMatrix, l_Scale);
 
+    g_RenderScene = Low::Renderer::RenderScene::make("Default");
+
     g_RenderView = Low::Renderer::RenderView::make("Default");
     g_RenderView.set_dimensions(g_Dimensions);
+    g_RenderView.set_render_scene(g_RenderScene);
+
+    g_SolidBaseMaterialType =
+        Low::Renderer::MaterialType::make(N(solid_base));
+    g_SolidBaseMaterialType.add_input(
+        N(base_color), Low::Renderer::MaterialTypeInputType::VECTOR3);
+    g_SolidBaseMaterialType.finalize();
+
+    g_TestMaterial = Low::Renderer::Material::make(
+        N(TestMaterial), g_SolidBaseMaterialType);
+    g_TestMaterial.set_property_vector3(
+        N(base_color), Low::Math::Vector3(1.0f, 0.0f, 0.0f));
 
     Low::Math::Vector3 p(0.0f, 0.0f, -14.0f);
     Low::Math::Vector3 d(0.0f, 0.0f, 1.0f);
@@ -119,8 +140,8 @@ void init()
     g_RenderView.set_camera_direction(d);
 
     Low::Renderer::RenderObject l_RenderObject =
-        Low::Renderer::RenderObject::make(g_RenderView);
-    l_RenderObject.set_mesh_resource(l_MeshResource);
+        Low::Renderer::RenderObject::make(g_RenderScene, l_MeshResource);
+    l_RenderObject.set_material(g_TestMaterial);
     l_RenderObject.set_world_transform(l_LocalMatrix);
   }
 }

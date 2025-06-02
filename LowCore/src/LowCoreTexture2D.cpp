@@ -493,7 +493,8 @@ namespace Low {
     }
     void Texture2D::set_path(const char *p_Value)
     {
-      set_path(Low::Util::String(p_Value));
+      Low::Util::String l_Val(p_Value);
+      set_path(l_Val);
     }
 
     void Texture2D::set_path(Util::String &p_Value)

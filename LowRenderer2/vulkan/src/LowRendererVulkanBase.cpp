@@ -41,14 +41,16 @@ namespace Low {
               Global::get_surface()};
 
           p_Swapchain.imageFormat = Global::get_swapchain_format();
+          
+            VkSurfaceFormatKHR l_SurfaceFormat;
+				  l_SurfaceFormat.format = p_Swapchain.imageFormat;
+				  l_SurfaceFormat.colorSpace =
+					  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
           vkb::Swapchain l_VkbSwapchain =
               l_SwapchainBuilder
                   //.use_default_format_selection()
-                  .set_desired_format(VkSurfaceFormatKHR{
-                      .format = p_Swapchain.imageFormat,
-                      .colorSpace =
-                          VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
+                  .set_desired_format(l_SurfaceFormat)
                   // use vsync present mode
                   .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
                   .set_desired_extent(p_Dimensions.x, p_Dimensions.y)

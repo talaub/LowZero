@@ -10,6 +10,7 @@
 #include "LowRendererVulkanBuffer.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererVkViewInfo.h"
+#include "LowRendererDrawCommand.h"
 
 #include "LowUtil.h"
 #include "LowUtilResource.h"
@@ -27,6 +28,8 @@
 
 #include "LowRendererVkPipeline.h"
 #include "LowRendererVkImage.h"
+
+#include "LowRendererHelper.h"
 
 namespace Low {
   namespace Renderer {
@@ -65,6 +68,89 @@ namespace Low {
         VkDescriptorSet set;
         VkDescriptorSetLayout layout;
       } g_GlobalDescriptors;
+
+      namespace Convert {
+        static VkFormat image_format(ImageFormat p_Format)
+        {
+          switch (p_Format) {
+          case ImageFormat::UNDEFINED:
+            return VK_FORMAT_UNDEFINED;
+          case ImageFormat::RGBA16_SFLOAT:
+            return VK_FORMAT_R16G16B16A16_SFLOAT;
+          }
+
+          LOW_ASSERT(false, "Unsupported format");
+          return VK_FORMAT_MAX_ENUM;
+        }
+
+        static VkCullModeFlags
+        cull_mode(GraphicsPipelineCullMode p_CullMode)
+        {
+          switch (p_CullMode) {
+          case GraphicsPipelineCullMode::NONE:
+            return VK_CULL_MODE_NONE;
+          case GraphicsPipelineCullMode::BACK:
+            return VK_CULL_MODE_BACK_BIT;
+          case GraphicsPipelineCullMode::FRONT:
+            return VK_CULL_MODE_FRONT_BIT;
+          }
+
+          LOW_ASSERT(false, "Unsupported cull mode");
+          return VK_CULL_MODE_FLAG_BITS_MAX_ENUM;
+        }
+
+        static VkFrontFace
+        front_face(GraphicsPipelineFrontFace p_FrontFace)
+        {
+          switch (p_FrontFace) {
+          case GraphicsPipelineFrontFace::CLOCKWISE:
+            return VK_FRONT_FACE_CLOCKWISE;
+          case GraphicsPipelineFrontFace::COUNTER_CLOCKWISE:
+            return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+          }
+
+          LOW_ASSERT(false, "Unsupported front face");
+          return VK_FRONT_FACE_MAX_ENUM;
+        }
+      } // namespace Convert
+
+      Vulkan::Pipeline create_pipeline_from_config(
+          const GraphicsPipelineConfig &p_Config,
+          VkPipelineLayout p_PipelineLayout)
+      {
+        Vulkan::PipelineUtil::GraphicsPipelineBuilder l_Builder;
+
+        l_Builder.pipelineLayout = p_PipelineLayout;
+        l_Builder.set_shaders(p_Config.vertexShaderPath,
+                              p_Config.fragmentShaderPath);
+        l_Builder.set_input_topology(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        l_Builder.set_cull_mode(
+            Convert::cull_mode(p_Config.cullMode),
+            Convert::front_face(p_Config.frontFace));
+        l_Builder.set_multismapling_none();
+
+        l_Builder.disable_blending();
+
+        if (!p_Config.depthTest) {
+          l_Builder.disable_depth_test();
+        }
+
+        l_Builder.colorAttachmentFormats.clear();
+
+        for (u32 i = 0; i < p_Config.colorAttachmentFormats.size();
+             ++i) {
+          l_Builder.colorAttachmentFormats.push_back(
+              Convert::image_format(
+                  p_Config.colorAttachmentFormats[i]));
+        }
+
+        l_Builder.set_depth_format(
+            Convert::image_format(p_Config.depthFormat));
+
+        return l_Builder.register_pipeline();
+      }
 
       bool lighting_pipeline_init(Context &p_Context)
       {
@@ -340,9 +426,9 @@ namespace Low {
               0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
           l_Writer.write_buffer(
-              1, Global::get_renderobject_buffer().m_Buffer.buffer,
-              Global::get_renderobject_buffer().m_ElementSize *
-                  Global::get_renderobject_buffer().m_ElementCount,
+              1, Global::get_drawcommand_buffer().m_Buffer.buffer,
+              Global::get_drawcommand_buffer().m_ElementSize *
+                  Global::get_drawcommand_buffer().m_ElementCount,
               0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
           l_Writer.update_set(Global::get_device(),
@@ -573,21 +659,22 @@ namespace Low {
 
         vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
 
-        for (auto it = p_RenderView.get_render_entries().begin();
-             it != p_RenderView.get_render_entries().end();) {
-          if (!it->renderObject.is_alive()) {
-            it = p_RenderView.get_render_entries().erase(it);
+        for (auto it = p_RenderView.get_render_scene().get_draw_commands().begin();
+             it != p_RenderView.get_render_scene().get_draw_commands().end();) {
+          if (!it->get_render_object().is_alive()) {
+            it = p_RenderView.get_render_scene().get_draw_commands().erase(it);
             continue;
           }
 
-          if (it->renderObject.get_mesh_resource().get_state() !=
+          if (it->get_render_object()
+                  .get_mesh_resource()
+                  .get_state() !=
               MeshResourceState::LOADED) {
             it++;
             continue;
           }
 
-          MeshInfo i_MeshInfo =
-              MeshInfo::find_by_index(it->meshInfoIndex);
+          MeshInfo i_MeshInfo = it->get_mesh_info();
 
           LOW_ASSERT(i_MeshInfo.is_alive(),
                      "Mesh info of mesh entry not alive anymore. "
@@ -595,7 +682,7 @@ namespace Low {
                      "RenderObject is still alive.");
 
           RenderEntryPushConstant i_PushConstants;
-          i_PushConstants.renderObjectSlot = it->slot;
+          i_PushConstants.renderObjectSlot = it->get_slot();
 
           vkCmdPushConstants(
               l_Cmd, g_Pipelines.solidBasePipelineLayout,
@@ -677,6 +764,18 @@ namespace Low {
         {
           RenderView l_RenderView = RenderView::living_instances()[0];
           ViewInfo l_ViewInfo = l_RenderView.get_view_info_handle();
+
+          {
+            // Transfer the gbuffer images
+            ImageUtil::cmd_transition(
+                l_Cmd, l_ViewInfo.get_gbuffer_albedo().image,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition(
+                l_Cmd, l_ViewInfo.get_gbuffer_normals().image,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
 
           {
             ImageUtil::cmd_transition(

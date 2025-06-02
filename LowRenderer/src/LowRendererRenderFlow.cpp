@@ -1157,7 +1157,8 @@ namespace Low {
     void RenderFlow::set_camera_position(float p_X, float p_Y,
                                          float p_Z)
     {
-      set_camera_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_camera_position(p_Val);
     }
 
     void RenderFlow::set_camera_position_x(float p_Value)
@@ -1213,7 +1214,8 @@ namespace Low {
     void RenderFlow::set_camera_direction(float p_X, float p_Y,
                                           float p_Z)
     {
-      set_camera_direction(Low::Math::Vector3(p_X, p_Y, p_Z));
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_camera_direction(p_Val);
     }
 
     void RenderFlow::set_camera_direction_x(float p_Value)

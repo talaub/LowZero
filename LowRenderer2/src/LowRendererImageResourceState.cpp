@@ -150,6 +150,11 @@ namespace Low {
       {
         return 2;
       }
+
+      u8 get_entry_count()
+      {
+        return 7;
+      }
     } // namespace ImageResourceStateEnumHelper
   }   // namespace Renderer
 } // namespace Low

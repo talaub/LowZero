@@ -56,6 +56,11 @@ LowRenderer2:
   RenderView: 53
   RenderTarget: 54
   ViewInfo: 55
+  MaterialType: 58
+  Material: 59
+  Texture: 60
+  RenderScene: 61
+  DrawCommand: 62
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

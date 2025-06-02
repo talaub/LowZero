@@ -10,12 +10,14 @@
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererMeshResource.h"
+#include "LowRendererMaterial.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    struct RenderView;
+    struct RenderScene;
+    struct DrawCommand;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API RenderObjectData
@@ -24,7 +26,9 @@ namespace Low {
       Low::Renderer::MeshResource mesh_resource;
       bool uploaded;
       uint32_t slot;
-      uint64_t render_view_handle;
+      uint64_t render_scene_handle;
+      Low::Renderer::Material material;
+      Low::Util::List<DrawCommand> draw_commands;
       bool dirty;
       Low::Util::Name name;
 
@@ -114,7 +118,6 @@ namespace Low {
       void set_world_transform(Low::Math::Matrix4x4 &p_Value);
 
       Low::Renderer::MeshResource get_mesh_resource() const;
-      void set_mesh_resource(Low::Renderer::MeshResource p_Value);
 
       bool is_uploaded() const;
       void set_uploaded(bool p_Value);
@@ -122,7 +125,12 @@ namespace Low {
       uint32_t get_slot() const;
       void set_slot(uint32_t p_Value);
 
-      uint64_t get_render_view_handle() const;
+      uint64_t get_render_scene_handle() const;
+
+      Low::Renderer::Material get_material() const;
+      void set_material(Low::Renderer::Material p_Value);
+
+      Low::Util::List<DrawCommand> &get_draw_commands() const;
 
       bool is_dirty() const;
       void set_dirty(bool p_Value);
@@ -130,15 +138,20 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static RenderObject make(RenderView p_RenderView);
+      static RenderObject
+      make(RenderScene p_RenderScene,
+           Low::Renderer::MeshResource p_MeshResource);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_render_view_handle(uint64_t p_Value);
+      void set_mesh_resource(Low::Renderer::MeshResource p_Value);
+      void set_render_scene_handle(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::RenderObject> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

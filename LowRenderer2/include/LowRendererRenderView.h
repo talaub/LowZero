@@ -9,7 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererGlobals.h"
+#include "LowRendererRenderScene.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -22,9 +22,9 @@ namespace Low {
       Low::Math::Vector3 camera_position;
       Low::Math::Vector3 camera_direction;
       uint64_t render_target_handle;
-      Low::Util::List<RenderEntry> render_entries;
       uint64_t view_info_handle;
       Low::Math::UVector2 dimensions;
+      Low::Renderer::RenderScene render_scene;
       bool camera_dirty;
       bool dimensions_dirty;
       Low::Util::Name name;
@@ -125,16 +125,17 @@ namespace Low {
       uint64_t get_render_target_handle() const;
       void set_render_target_handle(uint64_t p_Value);
 
-      Low::Util::List<RenderEntry> &get_render_entries() const;
-
       uint64_t get_view_info_handle() const;
       void set_view_info_handle(uint64_t p_Value);
 
       Low::Math::UVector2 &get_dimensions() const;
       void set_dimensions(Low::Math::UVector2 &p_Value);
-      void set_dimensions(float p_X, float p_Y);
-      void set_dimensions_x(float p_Value);
-      void set_dimensions_y(float p_Value);
+      void set_dimensions(u32 p_X, u32 p_Y);
+      void set_dimensions_x(u32 p_Value);
+      void set_dimensions_y(u32 p_Value);
+
+      Low::Renderer::RenderScene get_render_scene() const;
+      void set_render_scene(Low::Renderer::RenderScene p_Value);
 
       bool is_camera_dirty() const;
       void set_camera_dirty(bool p_Value);
@@ -145,14 +146,10 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      bool add_render_entry(RenderObject p_RenderObject,
-                            uint32_t p_Slot, MeshInfo p_MeshInfo);
-
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      bool insert_render_entry(RenderEntry &p_RenderEntry);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

@@ -675,7 +675,8 @@ namespace Low {
     void Region::set_streaming_position(float p_X, float p_Y,
                                         float p_Z)
     {
-      set_streaming_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_streaming_position(p_Val);
     }
 
     void Region::set_streaming_position_x(float p_Value)

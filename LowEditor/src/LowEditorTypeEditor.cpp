@@ -114,7 +114,15 @@ namespace Low {
         PropertyMetadata l_PropMetadata = *it;
 
         l_Id++;
+
         Util::RTTI::PropertyInfo &i_PropInfo = it->propInfo;
+#if 1
+        if (i_PropInfo.editorProperty) {
+          show_editor(p_Handle, p_Metadata, l_PropMetadata.name);
+        }
+        ImGui::PopID();
+        continue;
+#endif
 
         if (i_PropInfo.editorProperty) {
           ImVec2 l_Pos = ImGui::GetCursorScreenPos();
@@ -132,8 +140,9 @@ namespace Low {
             PropertyEditors::render_handle_selector(l_PropMetadata,
                                                     p_Handle);
           } else {
-            PropertyEditors::render_editor(l_PropMetadata, p_Handle,
-                                           i_PropInfo.get_return(p_Handle));
+            PropertyEditors::render_editor(
+                l_PropMetadata, p_Handle,
+                i_PropInfo.get_return(p_Handle));
           }
           ImVec2 l_PosNew = ImGui::GetCursorScreenPos();
 
@@ -147,9 +156,8 @@ namespace Low {
           if (ImGui::BeginPopupContextItem(i_InvisButtonId.c_str())) {
             if (p_Metadata.typeInfo.component) {
               Core::Entity i_Entity;
-			  p_Metadata.typeInfo
-				   .properties[l_EntityName]
-				   .get(p_Handle, &i_Entity);
+              p_Metadata.typeInfo.properties[l_EntityName].get(
+                  p_Handle, &i_Entity);
               if (i_Entity.has_component(
                       Core::Component::PrefabInstance::TYPE_ID)) {
                 Core::Component::PrefabInstance i_Instance =
@@ -189,6 +197,21 @@ namespace Low {
             ImGui::EndPopup();
           }
           ImGui::SetCursorScreenPos(l_PosNew);
+        }
+        ImGui::PopID();
+      }
+      for (auto it = p_Metadata.virtualProperties.begin();
+           it != p_Metadata.virtualProperties.end(); ++it) {
+        Util::String i_Id =
+            LOW_TO_STRING(l_Id) + LOW_TO_STRING(p_Metadata.typeId);
+        ImGui::PushID(std::stoul(i_Id.c_str()));
+
+        VirtualPropertyMetadata l_PropMetadata = *it;
+
+        l_Id++;
+
+        if (l_PropMetadata.editor) {
+          show_editor(p_Handle, p_Metadata, l_PropMetadata.name);
         }
         ImGui::PopID();
       }

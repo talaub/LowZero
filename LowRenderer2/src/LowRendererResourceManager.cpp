@@ -195,7 +195,10 @@ namespace Low {
 
         l_Image.set_allocated_image(l_AllocatedImage);
 
-        p_ImageResource.set_data_handle(l_Image.get_id());
+        Texture l_Texture = Texture::make(p_ImageResource.get_name());
+        l_Texture.set_data_handle(l_Image.get_id());
+
+        p_ImageResource.set_texture(l_Texture);
 
         // TODO: Should be changed to transfer command buffer
         Vulkan::ImageUtil::cmd_transition(
@@ -262,7 +265,7 @@ namespace Low {
 
                 for (auto mit = it->meshInfos.begin();
                      mit != it->meshInfos.end(); ++mit) {
-                  MeshInfo i_MeshInfo = MeshInfo::make(it->name);
+                  MeshInfo i_MeshInfo = MeshInfo::make(i_Submesh);
                   i_MeshInfo.set_vertex_count(mit->vertices.size());
                   i_MeshInfo.set_index_count(mit->indices.size());
                   i_MeshInfo.set_uploaded_vertex_count(0);
@@ -663,7 +666,8 @@ namespace Low {
                    "Failed to write image data to staging buffer");
 
         {
-          Vulkan::Image l_Image = l_ImageResource.get_data_handle();
+          Vulkan::Image l_Image =
+              l_ImageResource.get_texture().get_data_handle();
 
           VkImage l_VkImage = l_Image.get_allocated_image().image;
 
@@ -747,7 +751,7 @@ namespace Low {
               ImageResourceState::LOADED);
 
           Vulkan::Image l_Image =
-              p_UploadEntry.data.image.imageResource
+              p_UploadEntry.data.image.imageResource.get_texture()
                   .get_data_handle();
 
           VkImage l_VkImage = l_Image.get_allocated_image().image;

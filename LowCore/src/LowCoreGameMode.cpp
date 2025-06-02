@@ -385,7 +385,8 @@ namespace Low {
     }
     void GameMode::set_tick_function_name(const char *p_Value)
     {
-      set_tick_function_name(Low::Util::String(p_Value));
+      Low::Util::String l_Val(p_Value);
+      set_tick_function_name(l_Val);
     }
 
     void GameMode::set_tick_function_name(Util::String &p_Value)

@@ -234,6 +234,8 @@ function generate_enum_header(p_Enum) {
 
   t += empty();
   t += line(`u16 ${p_Enum.dll_macro} get_enum_id();`);
+  t += empty();
+  t += line(`u8 ${p_Enum.dll_macro} get_entry_count();`);
 
   t += line("}");
 
@@ -340,6 +342,11 @@ function generate_enum_source(p_Enum) {
 
   t += line(`u16 get_enum_id() {`);
   t += line(`return ${p_Enum.enumId};`);
+  t += line("}");
+  t += empty();
+
+  t += line(`u8 get_entry_count() {`);
+  t += line(`return ${p_Enum.options.length};`);
   t += line("}");
 
   t += line("}");
@@ -620,13 +627,15 @@ function generate_header(p_Type) {
       // Type specific special setters
       if (is_string_type(i_Prop.plain_type)) {
         l_SetterLines.push(`void ${i_Prop.setter_name}(const char* p_Value);`);
-      }
-      if (i_Prop.plain_type.endsWith("Vector2")) {
+      } else if (i_Prop.plain_type.endsWith("UVector2")) {
+        l_SetterLines.push(`void ${i_Prop.setter_name}(u32 p_X, u32 p_Y);`);
+        l_SetterLines.push(`void ${i_Prop.setter_name}_x(u32 p_Value);`);
+        l_SetterLines.push(`void ${i_Prop.setter_name}_y(u32 p_Value);`);
+      } else if (i_Prop.plain_type.endsWith("Vector2")) {
         l_SetterLines.push(`void ${i_Prop.setter_name}(float p_X, float p_Y);`);
         l_SetterLines.push(`void ${i_Prop.setter_name}_x(float p_Value);`);
         l_SetterLines.push(`void ${i_Prop.setter_name}_y(float p_Value);`);
-      }
-      if (i_Prop.plain_type.endsWith("Vector3")) {
+      } else if (i_Prop.plain_type.endsWith("Vector3")) {
         l_SetterLines.push(
           `void ${i_Prop.setter_name}(float p_X, float p_Y, float p_Z);`,
         );
@@ -1774,16 +1783,40 @@ function generate_source(p_Type) {
           `void ${p_Type.name}::${i_Prop.setter_name}(const char* p_Value){`,
           n,
         );
-        t += line(`${i_Prop.setter_name}(Low::Util::String(p_Value));`);
+        t += line(`Low::Util::String l_Val(p_Value);`);
+        t += line(`${i_Prop.setter_name}(l_Val);`);
         t += line("}");
         t += empty();
-      }
-      if (i_Prop.plain_type.endsWith("Vector2")) {
+      } else if (i_Prop.plain_type.endsWith("UVector2")) {
+        t += line(
+          `void ${p_Type.name}::${i_Prop.setter_name}(u32 p_X, u32 p_Y){`,
+          n,
+        );
+        t += line(`Low::Math::UVector2 l_Val(p_X, p_Y);`);
+        t += line(`${i_Prop.setter_name}(l_Val);`);
+        t += line("}");
+        t += empty();
+
+        const l_Coefficients = ["x", "y"];
+
+        for (const it of l_Coefficients) {
+          t += line(
+            `void ${p_Type.name}::${i_Prop.setter_name}_${it}(u32 p_Value){`,
+            n,
+          );
+          t += line(`Low::Math::UVector2 l_Value = ${i_Prop.getter_name}();`);
+          t += line(`l_Value.${it} = p_Value;`);
+          t += line(`${i_Prop.setter_name}(l_Value);`);
+          t += line("}");
+          t += empty();
+        }
+      } else if (i_Prop.plain_type.endsWith("Vector2")) {
         t += line(
           `void ${p_Type.name}::${i_Prop.setter_name}(float p_X, float p_Y){`,
           n,
         );
-        t += line(`${i_Prop.setter_name}(Low::Math::Vector2(p_X, p_Y));`);
+        t += line(`Low::Math::Vector2 l_Val(p_X, p_Y);`);
+        t += line(`${i_Prop.setter_name}(l_Val);`);
         t += line("}");
         t += empty();
 
@@ -1800,13 +1833,13 @@ function generate_source(p_Type) {
           t += line("}");
           t += empty();
         }
-      }
-      if (i_Prop.plain_type.endsWith("Vector3")) {
+      } else if (i_Prop.plain_type.endsWith("Vector3")) {
         t += line(
           `void ${p_Type.name}::${i_Prop.setter_name}(float p_X, float p_Y, float p_Z){`,
           n,
         );
-        t += line(`${i_Prop.setter_name}(Low::Math::Vector3(p_X, p_Y, p_Z));`);
+        t += line(`Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);`);
+        t += line(`${i_Prop.setter_name}(p_Val);`);
         t += line("}");
         t += empty();
 

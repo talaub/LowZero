@@ -451,7 +451,7 @@ namespace Flode {
     {
       for (auto it = l_TypeMetadata.properties.begin();
            it != l_TypeMetadata.properties.end(); ++it) {
-        if (!it->scriptingExpose || !it->hideFlode) {
+        if (!it->scriptingExpose || it->hideFlode) {
           continue;
         }
 
@@ -1355,10 +1355,10 @@ namespace Flode {
 
     if (p_Pin->direction == Flode::PinDirection::Input) {
       draw_pin_icon(p_Pin, l_Connected, (int)(alpha * 255));
-      ImGui::Spring(0);
+      // ImGui::Spring(0);
       if (!p_Pin->title.empty()) {
         ImGui::TextUnformatted(p_Pin->title.c_str());
-        ImGui::Spring(0);
+        // ImGui::Spring(0);
       }
       if (!l_Connected) {
         if (p_Pin->type == PinType::Number) {

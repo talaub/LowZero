@@ -57,12 +57,12 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_direction,
                               Low::Math::Vector3))
           Low::Math::Vector3();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, render_entries,
-                              Low::Util::List<RenderEntry>))
-          Low::Util::List<RenderEntry>();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, dimensions,
                               Low::Math::UVector2))
           Low::Math::UVector2();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, render_scene,
+                              Low::Renderer::RenderScene))
+          Low::Renderer::RenderScene();
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_dirty, bool) =
           false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, dimensions_dirty,
@@ -234,34 +234,6 @@ namespace Low {
         // End property: render_target_handle
       }
       {
-        // Property: render_entries
-        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(render_entries);
-        l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(RenderViewData, render_entries);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.handleType = 0;
-        l_PropertyInfo.get_return =
-            [](Low::Util::Handle p_Handle) -> void const * {
-          RenderView l_Handle = p_Handle.get_id();
-          l_Handle.get_render_entries();
-          return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, RenderView, render_entries,
-              Low::Util::List<RenderEntry>);
-        };
-        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {};
-        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                void *p_Data) {
-          RenderView l_Handle = p_Handle.get_id();
-          *((Low::Util::List<RenderEntry> *)p_Data) =
-              l_Handle.get_render_entries();
-        };
-        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: render_entries
-      }
-      {
         // Property: view_info_handle
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(view_info_handle);
@@ -319,6 +291,39 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: dimensions
+      }
+      {
+        // Property: render_scene
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(render_scene);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, render_scene);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType =
+            Low::Renderer::RenderScene::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_render_scene();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, render_scene,
+              Low::Renderer::RenderScene);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_render_scene(
+              *(Low::Renderer::RenderScene *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::RenderScene *)p_Data) =
+              l_Handle.get_render_scene();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: render_scene
       }
       {
         // Property: camera_dirty
@@ -406,56 +411,6 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      {
-        // Function: insert_render_entry
-        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-        l_FunctionInfo.name = N(insert_render_entry);
-        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_FunctionInfo.handleType = 0;
-        {
-          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_RenderEntry);
-          l_ParameterInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_ParameterInfo.handleType = 0;
-          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-        }
-        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-        // End function: insert_render_entry
-      }
-      {
-        // Function: add_render_entry
-        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
-        l_FunctionInfo.name = N(add_render_entry);
-        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
-        l_FunctionInfo.handleType = 0;
-        {
-          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_RenderObject);
-          l_ParameterInfo.type =
-              Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = RenderObject::TYPE_ID;
-          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-        }
-        {
-          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_Slot);
-          l_ParameterInfo.type =
-              Low::Util::RTTI::PropertyType::UINT32;
-          l_ParameterInfo.handleType = 0;
-          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-        }
-        {
-          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_MeshInfo);
-          l_ParameterInfo.type =
-              Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = MeshInfo::TYPE_ID;
-          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
-        }
-        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
-        // End function: add_render_entry
-      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -530,6 +485,9 @@ namespace Low {
       l_Handle.set_render_target_handle(get_render_target_handle());
       l_Handle.set_view_info_handle(get_view_info_handle());
       l_Handle.set_dimensions(get_dimensions());
+      if (get_render_scene().is_alive()) {
+        l_Handle.set_render_scene(get_render_scene());
+      }
       l_Handle.set_camera_dirty(is_camera_dirty());
       l_Handle.set_dimensions_dirty(is_dimensions_dirty());
 
@@ -592,7 +550,8 @@ namespace Low {
     void RenderView::set_camera_position(float p_X, float p_Y,
                                          float p_Z)
     {
-      set_camera_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_camera_position(p_Val);
     }
 
     void RenderView::set_camera_position_x(float p_Value)
@@ -652,7 +611,8 @@ namespace Low {
     void RenderView::set_camera_direction(float p_X, float p_Y,
                                           float p_Z)
     {
-      set_camera_direction(Low::Math::Vector3(p_X, p_Y, p_Z));
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_camera_direction(p_Val);
     }
 
     void RenderView::set_camera_direction_x(float p_Value)
@@ -724,19 +684,6 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_target_handle
     }
 
-    Low::Util::List<RenderEntry> &
-    RenderView::get_render_entries() const
-    {
-      _LOW_ASSERT(is_alive());
-
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_entries
-      // LOW_CODEGEN::END::CUSTOM:GETTER_render_entries
-
-      READ_LOCK(l_ReadLock);
-      return TYPE_SOA(RenderView, render_entries,
-                      Low::Util::List<RenderEntry>);
-    }
-
     uint64_t RenderView::get_view_info_handle() const
     {
       _LOW_ASSERT(is_alive());
@@ -773,21 +720,22 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderView, dimensions, Low::Math::UVector2);
     }
-    void RenderView::set_dimensions(float p_X, float p_Y)
+    void RenderView::set_dimensions(u32 p_X, u32 p_Y)
     {
-      set_dimensions(Low::Math::Vector2(p_X, p_Y));
+      Low::Math::UVector2 l_Val(p_X, p_Y);
+      set_dimensions(l_Val);
     }
 
-    void RenderView::set_dimensions_x(float p_Value)
+    void RenderView::set_dimensions_x(u32 p_Value)
     {
-      Low::Math::Vector2 l_Value = get_dimensions();
+      Low::Math::UVector2 l_Value = get_dimensions();
       l_Value.x = p_Value;
       set_dimensions(l_Value);
     }
 
-    void RenderView::set_dimensions_y(float p_Value)
+    void RenderView::set_dimensions_y(u32 p_Value)
     {
-      Low::Math::Vector2 l_Value = get_dimensions();
+      Low::Math::UVector2 l_Value = get_dimensions();
       l_Value.y = p_Value;
       set_dimensions(l_Value);
     }
@@ -812,6 +760,35 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
         // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
       }
+    }
+
+    Low::Renderer::RenderScene RenderView::get_render_scene() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene
+      // LOW_CODEGEN::END::CUSTOM:GETTER_render_scene
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, render_scene,
+                      Low::Renderer::RenderScene);
+    }
+    void
+    RenderView::set_render_scene(Low::Renderer::RenderScene p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_scene
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, render_scene, Low::Renderer::RenderScene) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene
+      // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene
     }
 
     bool RenderView::is_camera_dirty() const
@@ -892,67 +869,6 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
     }
 
-    bool RenderView::insert_render_entry(RenderEntry &p_RenderEntry)
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_insert_render_entry
-      _LOW_ASSERT(is_alive());
-
-      if (get_render_entries().empty()) {
-        get_render_entries().push_back(p_RenderEntry);
-        return true;
-      }
-
-      u32 l_SavedIndex = 0;
-      bool l_IndexFound = false;
-
-      for (u32 i = 0; i < get_render_entries().size(); ++i) {
-        if (get_render_entries()[i].sortIndex <
-            p_RenderEntry.sortIndex) {
-          l_SavedIndex = i;
-          continue;
-        } else if (get_render_entries()[i].sortIndex >
-                   p_RenderEntry.sortIndex) {
-          l_IndexFound = true;
-          break;
-        }
-      }
-
-      if (l_IndexFound) {
-        get_render_entries().insert(get_render_entries().begin() +
-                                        l_SavedIndex,
-                                    p_RenderEntry);
-      } else {
-        get_render_entries().push_back(p_RenderEntry);
-      }
-
-      return true;
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_insert_render_entry
-    }
-
-    bool RenderView::add_render_entry(RenderObject p_RenderObject,
-                                      uint32_t p_Slot,
-                                      MeshInfo p_MeshInfo)
-    {
-      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_render_entry
-      _LOW_ASSERT(is_alive());
-
-      if (!p_RenderObject.is_alive() || !p_MeshInfo.is_alive() ||
-          !p_RenderObject.get_mesh_resource().is_alive() ||
-          p_Slot > p_RenderObject.get_mesh_resource()
-                       .get_full_meshinfo_count()) {
-        return false;
-      }
-      RenderEntry l_RenderEntry;
-      l_RenderEntry.slot = p_Slot + p_RenderObject.get_slot();
-      l_RenderEntry.renderObject = p_RenderObject;
-
-      l_RenderEntry.empty = 0;
-      l_RenderEntry.meshInfoIndex = p_MeshInfo.get_index();
-
-      return insert_render_entry(l_RenderEntry);
-      // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_render_entry
-    }
-
     uint32_t RenderView::create_instance()
     {
       uint32_t l_Index = 0u;
@@ -1015,22 +931,6 @@ namespace Low {
                l_Capacity * sizeof(uint64_t));
       }
       {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          RenderView i_RenderView = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(RenderViewData, render_entries) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Low::Util::List<RenderEntry>))])
-              Low::Util::List<RenderEntry>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(i_RenderView, RenderView,
-                                        render_entries,
-                                        Low::Util::List<RenderEntry>);
-        }
-      }
-      {
         memcpy(
             &l_NewBuffer[offsetof(RenderViewData, view_info_handle) *
                          (l_Capacity + l_CapacityIncrease)],
@@ -1044,6 +944,13 @@ namespace Low {
                &ms_Buffer[offsetof(RenderViewData, dimensions) *
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Math::UVector2));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderViewData, render_scene) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderViewData, render_scene) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Renderer::RenderScene));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderViewData, camera_dirty) *

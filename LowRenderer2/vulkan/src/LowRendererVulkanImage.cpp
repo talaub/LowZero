@@ -32,8 +32,8 @@ namespace Low {
                             VkImageLayout p_CurrentLayout,
                             VkImageLayout p_NewLayout)
         {
-          VkImageMemoryBarrier2 l_ImageBarrier{
-              .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2};
+          VkImageMemoryBarrier2 l_ImageBarrier{};
+          l_ImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
           l_ImageBarrier.pNext = nullptr;
 
           l_ImageBarrier.srcStageMask =
@@ -77,9 +77,9 @@ namespace Low {
           // TODO: Please check entire function for MIP stuff and
           // other things that may need to be dynamic
 
-          VkImageBlit2 l_BlitRegion{
-              .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
-              .pNext = nullptr};
+          VkImageBlit2 l_BlitRegion{};
+		  l_BlitRegion.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+		  l_BlitRegion.pNext = nullptr;
 
           l_BlitRegion.srcOffsets[1].x = p_SourceExtent.width;
           l_BlitRegion.srcOffsets[1].y = p_SourceExtent.height;
@@ -109,9 +109,9 @@ namespace Low {
           // them obviously don't have mips.
           l_BlitRegion.dstSubresource.mipLevel = 0;
 
-          VkBlitImageInfo2 l_BlitInfo{
-              .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-              .pNext = nullptr};
+          VkBlitImageInfo2 l_BlitInfo{};
+		  l_BlitInfo.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+		  l_BlitInfo.pNext = nullptr;
           l_BlitInfo.dstImage = p_Destination;
           l_BlitInfo.dstImageLayout =
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;

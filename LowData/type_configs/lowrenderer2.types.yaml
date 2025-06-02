@@ -7,6 +7,51 @@ namespace:
   - Renderer
 dll_macro: LOW_RENDERER2_API
 types:
+  DrawCommand:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    private_make: true
+    properties:
+      world_transform:
+        type: Low::Math::Matrix4x4
+      mesh_info:
+        type: Low::Renderer::MeshInfo
+        handle: true
+        private_setter: true
+      slot:
+        type: uint32_t
+      render_object:
+        type: Low::Renderer::RenderObject
+        handle: true
+        private_setter: true
+      material:
+        type: Low::Renderer::Material
+        handle: true
+      uploaded:
+        type: bool
+      render_scene_handle:
+        type: uint64_t
+    functions:
+      make:
+        static: true
+        return_type: DrawCommand
+        return_handle: true
+        parameters:
+          - name: renderObject
+            type: Low::Renderer::RenderObject
+            handle: true
+          - name: renderScene
+            type: Low::Renderer::RenderScene
+            handle: true
+          - name: meshInfo
+            type: Low::Renderer::MeshInfo
+            handle: true
+      get_sort_index:
+        constant: true
+        return_type: uint64_t
+
   RenderObject:
     skip_name_serialization: true
     skip_name_deserialization: true
@@ -20,22 +65,48 @@ types:
       mesh_resource:
         type: Low::Renderer::MeshResource
         handle: true
-        dirty_flag: dirty
+        private_setter: true
       uploaded:
         type: bool
       slot:
         type: uint32_t
-      render_view_handle:
+      render_scene_handle:
         type: uint64_t
         private_setter: true
+      material:
+        type: Low::Renderer::Material
+        handle: true
+        dirty_flag: dirty
+      draw_commands:
+        type: Low::Util::List<DrawCommand>
+        no_setter: true
     functions:
       make:
         static: true
         return_type: RenderObject
         return_handle: true
         parameters:
-          - name: renderView
-            type: RenderView
+          - name: renderScene
+            type: RenderScene
+            handle: true
+          - name: meshResource
+            type: Low::Renderer::MeshResource
+            handle: true
+  RenderScene:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      draw_commands:
+        type: Low::Util::List<DrawCommand>
+        no_setter: true
+    functions:
+      insert_draw_command:
+        return_type: bool
+        parameters:
+          - name: drawCommand
+            type: Low::Renderer::DrawCommand
             handle: true
   RenderView:
     skip_name_serialization: true
@@ -51,29 +122,172 @@ types:
         dirty_flag: camera_dirty
       render_target_handle:
         type: uint64_t
-      render_entries:
-        type: Low::Util::List<RenderEntry>
-        no_setter: true
       view_info_handle:
         type: uint64_t
       dimensions:
         type: Low::Math::UVector2
         dirty_flag: dimensions_dirty
+      render_scene:
+        type: Low::Renderer::RenderScene
+        handle: true
+  MaterialType:
+    properties:
+      transparent:
+        type: bool
+      draw_pipeline_handle:
+        type: uint64_t
+      depth_pipeline_handle:
+        type: uint64_t
+      inputs:
+        type: Util::List<MaterialTypeInput>
+        private_getter: true
+        no_setter: true
+      initialized:
+        type: bool
     functions:
-      insert_render_entry:
+      calculate_offsets:
+        return_type: void
         private: true
+      get_input:
         return_type: bool
         parameters:
-          - name: renderEntry
-            type: RenderEntry
-      add_render_entry:
+          - name: name
+            type: Low::Util::Name
+          - name: input
+            type: MaterialTypeInput*
+      finalize:
+        return_type: void
+      add_input:
+        return_type: void
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: type
+            type: MaterialTypeInputType
+            no_ref: true
+      has_input:
         return_type: bool
         parameters:
-          - name: renderObject
-            type: RenderObject
+          - name: name
+            type: Low::Util::Name
+      get_input_offset:
+        return_type: uint32_t
+        parameters:
+          - name: name
+            type: Low::Util::Name
+      get_input_type:
+        return_type: MaterialTypeInputType
+        no_ref: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+      fill_input_names:
+        return_type: uint32_t
+        parameters:
+          - name: inputNames
+            type: Low::Util::List<Low::Util::Name>
+
+  Material:
+    dynamic_increase: false
+    private_make: true
+    header_imports:
+      - LowRendererMaterialType.h
+    properties:
+      material_type:
+        type: MaterialType
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      data:
+        type: Util::List<uint8_t>
+        private_getter: true
+        no_setter: true
+        getter_name: data
+        skip_serialization: true
+      dirty:
+        type: bool
+    functions:
+      make:
+        return_type: Material
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: materialType
+            type: Low::Renderer::MaterialType
             handle: true
-          - name: slot
+      get_data:
+        return_type: void*
+        constant: true
+      set_property_vector4:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Math::Vector4
+      set_property_vector3:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Math::Vector3
+      set_property_vector2:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Math::Vector2
+      set_property_float:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: float
+      set_property_u32:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
             type: uint32_t
-          - name: meshInfo
-            type: MeshInfo
-            handle: true
+      get_property_vector4:
+        return_type: Low::Math::Vector4
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_vector3:
+        return_type: Low::Math::Vector3
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_vector2:
+        return_type: Low::Math::Vector2
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_float:
+        return_type: float
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_u32:
+        return_type: uint32_t
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+  Texture:
+    dynamic_increase: false
+    properties:
+      data_handle:
+        type: uint64_t

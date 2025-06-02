@@ -7,10 +7,10 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
+#include "LowRendererMaterialType.h"
+
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererMeshResourceState.h"
-#include "LowRendererSubmesh.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -18,45 +18,40 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MeshInfoData
+    struct LOW_RENDERER2_API MaterialData
     {
-      MeshResourceState state;
-      uint32_t vertex_count;
-      uint32_t index_count;
-      uint32_t uploaded_vertex_count;
-      uint32_t uploaded_index_count;
-      uint32_t vertex_start;
-      uint32_t index_start;
-      Submesh submesh;
+      MaterialType material_type;
+      Util::List<uint8_t> data;
+      bool dirty;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(MeshInfoData);
+        return sizeof(MaterialData);
       }
     };
 
-    struct LOW_RENDERER2_API MeshInfo : public Low::Util::Handle
+    struct LOW_RENDERER2_API Material : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<MeshInfo> ms_LivingInstances;
+      static Low::Util::List<Material> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      MeshInfo();
-      MeshInfo(uint64_t p_Id);
-      MeshInfo(MeshInfo &p_Copy);
+      Material();
+      Material(uint64_t p_Id);
+      Material(Material &p_Copy);
 
     private:
-      static MeshInfo make(Low::Util::Name p_Name);
+      static Material make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
 
     public:
-      explicit MeshInfo(const MeshInfo &p_Copy)
+      explicit Material(const Material &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -70,12 +65,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static MeshInfo *living_instances()
+      static Material *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static MeshInfo find_by_index(uint32_t p_Index);
+      static Material find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -84,13 +79,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      MeshInfo duplicate(Low::Util::Name p_Name) const;
-      static MeshInfo duplicate(MeshInfo p_Handle,
+      Material duplicate(Low::Util::Name p_Name) const;
+      static Material duplicate(Material p_Handle,
                                 Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static MeshInfo find_by_name(Low::Util::Name p_Name);
+      static Material find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -101,50 +96,51 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == MeshInfo::TYPE_ID &&
+        return p_Handle.get_type() == Material::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        MeshInfo l_MeshInfo = p_Handle.get_id();
-        l_MeshInfo.destroy();
+        Material l_Material = p_Handle.get_id();
+        l_Material.destroy();
       }
 
-      MeshResourceState get_state() const;
-      void set_state(MeshResourceState p_Value);
+      MaterialType get_material_type() const;
 
-      uint32_t get_vertex_count() const;
-      void set_vertex_count(uint32_t p_Value);
-
-      uint32_t get_index_count() const;
-      void set_index_count(uint32_t p_Value);
-
-      uint32_t get_uploaded_vertex_count() const;
-      void set_uploaded_vertex_count(uint32_t p_Value);
-
-      uint32_t get_uploaded_index_count() const;
-      void set_uploaded_index_count(uint32_t p_Value);
-
-      uint32_t get_vertex_start() const;
-      void set_vertex_start(uint32_t p_Value);
-
-      uint32_t get_index_start() const;
-      void set_index_start(uint32_t p_Value);
-
-      Submesh get_submesh() const;
+      bool is_dirty() const;
+      void set_dirty(bool p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static MeshInfo make(Submesh p_Submesh);
+      static Material
+      make(Low::Util::Name p_Name,
+           Low::Renderer::MaterialType p_MaterialType);
+      void *get_data() const;
+      void set_property_vector4(Util::Name p_Name,
+                                Math::Vector4 &p_Value);
+      void set_property_vector3(Util::Name p_Name,
+                                Math::Vector3 &p_Value);
+      void set_property_vector2(Util::Name p_Name,
+                                Math::Vector2 &p_Value);
+      void set_property_float(Util::Name p_Name, float p_Value);
+      void set_property_u32(Util::Name p_Name, uint32_t p_Value);
+      Low::Math::Vector4 &
+      get_property_vector4(Util::Name p_Name) const;
+      Low::Math::Vector3 &
+      get_property_vector3(Util::Name p_Name) const;
+      Low::Math::Vector2 &
+      get_property_vector2(Util::Name p_Name) const;
+      float get_property_float(Util::Name p_Name) const;
+      uint32_t get_property_u32(Util::Name p_Name) const;
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
-      static void increase_budget();
-      void set_submesh(Submesh p_Value);
+      void set_material_type(MaterialType p_Value);
+      Util::List<uint8_t> &data() const;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

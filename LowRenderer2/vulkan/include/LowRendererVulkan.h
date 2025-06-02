@@ -92,7 +92,9 @@ namespace Low {
         DynamicBuffer &get_mesh_vertex_buffer();
         DynamicBuffer &get_mesh_index_buffer();
 
-        DynamicBuffer &get_renderobject_buffer();
+        DynamicBuffer &get_drawcommand_buffer();
+
+        AllocatedBuffer get_material_data_buffer();
 
         VkFormat get_swapchain_format();
 

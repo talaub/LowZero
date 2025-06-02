@@ -556,7 +556,8 @@ namespace Low {
     }
     void MeshResource::set_path(const char *p_Value)
     {
-      set_path(Low::Util::String(p_Value));
+      Low::Util::String l_Val(p_Value);
+      set_path(l_Val);
     }
 
     void MeshResource::set_path(Util::String &p_Value)

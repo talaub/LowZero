@@ -3,6 +3,8 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilProfiler.h"
 
+#include "LowUtil.h"
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -19,8 +21,13 @@ namespace Low {
         static bool compile_shader(Util::String p_SourcePath,
                                    Util::String p_OutPath)
         {
-          Util::String l_Command =
-              "glslc " + p_SourcePath + " -o " + p_OutPath;
+          Util::String l_IncludeCommand =
+              "-I " + Util::get_project().engineDataPath +
+              "\\lowr_shaders\\lib";
+          Util::String l_Command = "glslc " + l_IncludeCommand + " " +
+                                   p_SourcePath + " -o " + p_OutPath;
+
+          // LOW_LOG_DEBUG << l_Command << LOW_LOG_END;
 
           Util::String l_Notice = "Compiling shader " + p_SourcePath;
 

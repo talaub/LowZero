@@ -702,30 +702,32 @@ namespace Low {
             p_HandleId);
       }
 
-      void
-      render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
-                             Util::Handle p_Handle)
+      void render_handle_selector(
+          Util::RTTI::PropertyInfoBase &p_PropertyInfoBase,
+          Util::Handle p_Handle)
       {
-        Util::String l_Label = p_PropertyInfo.name.c_str();
+        Util::String l_Label = p_PropertyInfoBase.name.c_str();
 
         Util::RTTI::TypeInfo &l_PropTypeInfo =
-            Util::Handle::get_type_info(p_PropertyInfo.handleType);
+            Util::Handle::get_type_info(
+                p_PropertyInfoBase.handleType);
 
         uint64_t l_CurrentValue;
-        p_PropertyInfo.get(p_Handle, &l_CurrentValue);
+        p_PropertyInfoBase.get(p_Handle, &l_CurrentValue);
 
         Util::FileSystem::WatchHandle l_WatchHandle =
-            Core::get_filesystem_watcher(p_PropertyInfo.handleType);
+            Core::get_filesystem_watcher(
+                p_PropertyInfoBase.handleType);
 
         if (l_WatchHandle) {
           if (render_fs_handle_selector(l_Label, l_PropTypeInfo,
                                         &l_CurrentValue)) {
-            p_PropertyInfo.set(p_Handle, &l_CurrentValue);
+            p_PropertyInfoBase.set(p_Handle, &l_CurrentValue);
           }
         } else {
           if (render_handle_selector(l_Label, l_PropTypeInfo,
                                      &l_CurrentValue)) {
-            p_PropertyInfo.set(p_Handle, &l_CurrentValue);
+            p_PropertyInfoBase.set(p_Handle, &l_CurrentValue);
           }
         }
       }
@@ -899,8 +901,8 @@ namespace Low {
               p_PropertyName) {
             render_editor(
                 p_Metadata.virtualProperties[i].friendlyName,
-                p_Handle, p_Metadata.virtualProperties[i].virtPropInfo,
-                true);
+                p_Handle,
+                p_Metadata.virtualProperties[i].virtPropInfo, true);
             return;
           }
         }
@@ -1036,6 +1038,15 @@ namespace Low {
             p_PropertyInfoBase.set(p_Handle, &l_IntValue);
           }
         } else if (p_PropertyInfoBase.type ==
+                   Util::RTTI::PropertyType::INT) {
+          u32 l_IntValue;
+          p_PropertyInfoBase.get(p_Handle, &l_IntValue);
+
+          if (render_uint32_editor(p_Label, l_IntValue,
+                                   p_RenderLabel)) {
+            p_PropertyInfoBase.set(p_Handle, &l_IntValue);
+          }
+        } else if (p_PropertyInfoBase.type ==
                    Util::RTTI::PropertyType::SHAPE) {
           Math::Shape l_ShapeValue;
           p_PropertyInfoBase.get(p_Handle, &l_ShapeValue);
@@ -1043,6 +1054,10 @@ namespace Low {
                                   p_RenderLabel)) {
             p_PropertyInfoBase.set(p_Handle, &l_ShapeValue);
           }
+        } else if (p_PropertyInfoBase.type ==
+                   Util::RTTI::PropertyType::HANDLE) {
+          PropertyEditors::render_handle_selector(p_PropertyInfoBase,
+                                                  p_Handle);
         }
 
         ImGui::SetCursorScreenPos(

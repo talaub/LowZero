@@ -899,7 +899,8 @@ namespace Low {
       }
       void View::pixel_position(float p_X, float p_Y)
       {
-        pixel_position(Low::Math::Vector2(p_X, p_Y));
+        Low::Math::Vector2 l_Val(p_X, p_Y);
+        pixel_position(l_Val);
       }
 
       void View::pixel_position_x(float p_Value)

@@ -681,7 +681,8 @@ namespace Low {
       }
       void NavmeshAgent::set_offset(float p_X, float p_Y, float p_Z)
       {
-        set_offset(Low::Math::Vector3(p_X, p_Y, p_Z));
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        set_offset(p_Val);
       }
 
       void NavmeshAgent::set_offset_x(float p_Value)

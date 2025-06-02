@@ -9,54 +9,55 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererMeshResourceState.h"
-#include "LowRendererSubmesh.h"
+#include "LowRendererMeshInfo.h"
+#include "LowRendererMaterial.h"
+#include "LowRendererRenderObject.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct RenderScene;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MeshInfoData
+    struct LOW_RENDERER2_API DrawCommandData
     {
-      MeshResourceState state;
-      uint32_t vertex_count;
-      uint32_t index_count;
-      uint32_t uploaded_vertex_count;
-      uint32_t uploaded_index_count;
-      uint32_t vertex_start;
-      uint32_t index_start;
-      Submesh submesh;
+      Low::Math::Matrix4x4 world_transform;
+      Low::Renderer::MeshInfo mesh_info;
+      uint32_t slot;
+      Low::Renderer::RenderObject render_object;
+      Low::Renderer::Material material;
+      bool uploaded;
+      uint64_t render_scene_handle;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(MeshInfoData);
+        return sizeof(DrawCommandData);
       }
     };
 
-    struct LOW_RENDERER2_API MeshInfo : public Low::Util::Handle
+    struct LOW_RENDERER2_API DrawCommand : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<MeshInfo> ms_LivingInstances;
+      static Low::Util::List<DrawCommand> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      MeshInfo();
-      MeshInfo(uint64_t p_Id);
-      MeshInfo(MeshInfo &p_Copy);
+      DrawCommand();
+      DrawCommand(uint64_t p_Id);
+      DrawCommand(DrawCommand &p_Copy);
 
     private:
-      static MeshInfo make(Low::Util::Name p_Name);
+      static DrawCommand make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
 
     public:
-      explicit MeshInfo(const MeshInfo &p_Copy)
+      explicit DrawCommand(const DrawCommand &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -70,12 +71,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static MeshInfo *living_instances()
+      static DrawCommand *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static MeshInfo find_by_index(uint32_t p_Index);
+      static DrawCommand find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -84,13 +85,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      MeshInfo duplicate(Low::Util::Name p_Name) const;
-      static MeshInfo duplicate(MeshInfo p_Handle,
-                                Low::Util::Name p_Name);
+      DrawCommand duplicate(Low::Util::Name p_Name) const;
+      static DrawCommand duplicate(DrawCommand p_Handle,
+                                   Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static MeshInfo find_by_name(Low::Util::Name p_Name);
+      static DrawCommand find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -101,52 +102,55 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == MeshInfo::TYPE_ID &&
+        return p_Handle.get_type() == DrawCommand::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        MeshInfo l_MeshInfo = p_Handle.get_id();
-        l_MeshInfo.destroy();
+        DrawCommand l_DrawCommand = p_Handle.get_id();
+        l_DrawCommand.destroy();
       }
 
-      MeshResourceState get_state() const;
-      void set_state(MeshResourceState p_Value);
+      Low::Math::Matrix4x4 &get_world_transform() const;
+      void set_world_transform(Low::Math::Matrix4x4 &p_Value);
 
-      uint32_t get_vertex_count() const;
-      void set_vertex_count(uint32_t p_Value);
+      Low::Renderer::MeshInfo get_mesh_info() const;
 
-      uint32_t get_index_count() const;
-      void set_index_count(uint32_t p_Value);
+      uint32_t get_slot() const;
+      void set_slot(uint32_t p_Value);
 
-      uint32_t get_uploaded_vertex_count() const;
-      void set_uploaded_vertex_count(uint32_t p_Value);
+      Low::Renderer::RenderObject get_render_object() const;
 
-      uint32_t get_uploaded_index_count() const;
-      void set_uploaded_index_count(uint32_t p_Value);
+      Low::Renderer::Material get_material() const;
+      void set_material(Low::Renderer::Material p_Value);
 
-      uint32_t get_vertex_start() const;
-      void set_vertex_start(uint32_t p_Value);
+      bool is_uploaded() const;
+      void set_uploaded(bool p_Value);
 
-      uint32_t get_index_start() const;
-      void set_index_start(uint32_t p_Value);
-
-      Submesh get_submesh() const;
+      uint64_t get_render_scene_handle() const;
+      void set_render_scene_handle(uint64_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static MeshInfo make(Submesh p_Submesh);
+      static DrawCommand
+      make(Low::Renderer::RenderObject p_RenderObject,
+           Low::Renderer::RenderScene p_RenderScene,
+           Low::Renderer::MeshInfo p_MeshInfo);
+      uint64_t get_sort_index() const;
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_submesh(Submesh p_Value);
+      void set_mesh_info(Low::Renderer::MeshInfo p_Value);
+      void set_render_object(Low::Renderer::RenderObject p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::DrawCommand> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

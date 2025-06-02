@@ -53,6 +53,8 @@ namespace Low {
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshInfo, state,
                               MeshResourceState)) MeshResourceState();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshInfo, submesh, Submesh))
+          Submesh();
       ACCESSOR_TYPE_SOA(l_Handle, MeshInfo, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -330,6 +332,31 @@ namespace Low {
         // End property: index_start
       }
       {
+        // Property: submesh
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(submesh);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshInfoData, submesh);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Submesh::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshInfo l_Handle = p_Handle.get_id();
+          l_Handle.get_submesh();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshInfo,
+                                            submesh, Submesh);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshInfo l_Handle = p_Handle.get_id();
+          *((Submesh *)p_Data) = l_Handle.get_submesh();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: submesh
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -356,6 +383,23 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: make
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = MeshInfo::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Submesh);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType = Submesh::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -432,6 +476,9 @@ namespace Low {
       l_Handle.set_uploaded_index_count(get_uploaded_index_count());
       l_Handle.set_vertex_start(get_vertex_start());
       l_Handle.set_index_start(get_index_start());
+      if (get_submesh().is_alive()) {
+        l_Handle.set_submesh(get_submesh());
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -659,6 +706,32 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_start
     }
 
+    Submesh MeshInfo::get_submesh() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh
+      // LOW_CODEGEN::END::CUSTOM:GETTER_submesh
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MeshInfo, submesh, Submesh);
+    }
+    void MeshInfo::set_submesh(Submesh p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_submesh
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MeshInfo, submesh, Submesh) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh
+      // LOW_CODEGEN::END::CUSTOM:SETTER_submesh
+    }
+
     Low::Util::Name MeshInfo::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -683,6 +756,16 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+    }
+
+    MeshInfo MeshInfo::make(Submesh p_Submesh)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      MeshInfo l_MeshInfo = MeshInfo::make(p_Submesh.get_name());
+      l_MeshInfo.set_submesh(p_Submesh);
+
+      return l_MeshInfo;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
     uint32_t MeshInfo::create_instance()
@@ -773,6 +856,13 @@ namespace Low {
                &ms_Buffer[offsetof(MeshInfoData, index_start) *
                           (l_Capacity)],
                l_Capacity * sizeof(uint32_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshInfoData, submesh) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshInfoData, submesh) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Submesh));
       }
       {
         memcpy(

@@ -148,6 +148,11 @@ namespace Low {
       {
         return 1;
       }
+
+      u8 get_entry_count()
+      {
+        return 7;
+      }
     } // namespace MeshResourceStateEnumHelper
   }   // namespace Renderer
 } // namespace Low

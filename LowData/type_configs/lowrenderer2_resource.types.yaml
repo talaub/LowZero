@@ -59,6 +59,7 @@ types:
     skip_name_deserialization: true
     no_auto_serialize: true
     no_auto_deserialize: true
+    private_make: true
     properties:
       state:
         type: MeshResourceState
@@ -75,6 +76,20 @@ types:
         type: uint32_t
       index_start:
         type: uint32_t
+      submesh:
+        type: Submesh
+        handle: true
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: MeshInfo
+        return_handle: true
+        parameters:
+          - name: submesh
+            type: Submesh
+            handle: true
+
 
   ImageResource:
     private_make: true
@@ -90,10 +105,10 @@ types:
         type: Util::Resource::ImageMipMaps
         no_setter: true
       state:
-        type: ImageResourceState
+        type: Low::Renderer::ImageResourceState
         enum: true
-      data_handle:
-        type: uint64_t
+      texture:
+        type: Low::Renderer::Texture
       loaded_mips:
         type: Low::Util::List<uint8_t>
         getter_name: loaded_mips

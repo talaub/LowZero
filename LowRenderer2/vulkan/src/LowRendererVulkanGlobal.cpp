@@ -59,7 +59,9 @@ namespace Low {
         DynamicBuffer g_MeshVertexBuffer;
         DynamicBuffer g_MeshIndexBuffer;
 
-        DynamicBuffer g_RenderObjectBuffer;
+        DynamicBuffer g_DrawCommandBuffer;
+
+        AllocatedBuffer g_MaterialDataBuffer;
 
         VmaAllocator g_Allocator;
 
@@ -135,9 +137,13 @@ namespace Low {
         {
           return VK_FORMAT_B8G8R8A8_UNORM;
         }
-        DynamicBuffer &get_renderobject_buffer()
+        DynamicBuffer &get_drawcommand_buffer()
         {
-          return g_RenderObjectBuffer;
+          return g_DrawCommandBuffer;
+        }
+        AllocatedBuffer get_material_data_buffer()
+        {
+          return g_MaterialDataBuffer;
         }
 
         VkInstance get_instance()
@@ -239,9 +245,8 @@ namespace Low {
           VkFormat l_Formats[] = {get_swapchain_format()};
 
           // dynamic rendering parameters for imgui to use
-          l_InitInfo.PipelineRenderingCreateInfo = {
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+          l_InitInfo.PipelineRenderingCreateInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
           l_InitInfo.PipelineRenderingCreateInfo
               .colorAttachmentCount = 1;
           l_InitInfo.PipelineRenderingCreateInfo
@@ -305,13 +310,20 @@ namespace Low {
         {
           LOW_ASSERT_ERROR_RETURN_FALSE(
               dynamic_buffer_init(
-                  g_RenderObjectBuffer, sizeof(RenderObjectUpload),
+                  g_DrawCommandBuffer, sizeof(DrawCommandUpload),
                   10000,
                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                       VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VMA_MEMORY_USAGE_GPU_ONLY),
-              "Could not initialize render object buffer");
+              "Could not initialize draw command buffer");
+
+          g_MaterialDataBuffer = BufferUtil::create_buffer(
+              MATERIAL_DATA_SIZE * 1000,
+              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+              VMA_MEMORY_USAGE_GPU_ONLY);
 
           return true;
         }
@@ -354,8 +366,8 @@ namespace Low {
         static bool samplers_init()
         {
           {
-            VkSamplerCreateInfo sampl = {
-                .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+            VkSamplerCreateInfo sampl{};
+            sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 
             sampl.magFilter = VK_FILTER_NEAREST;
             sampl.minFilter = VK_FILTER_NEAREST;
@@ -576,7 +588,8 @@ namespace Low {
 
         static bool buffer_cleanup()
         {
-          get_renderobject_buffer().destroy();
+          get_drawcommand_buffer().destroy();
+          BufferUtil::destroy_buffer(get_material_data_buffer());
 
           return true;
         }

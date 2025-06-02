@@ -10,6 +10,10 @@
 #include "LowRendererRenderObject.h"
 #include "LowRendererGlobals.h"
 #include "LowRendererRenderView.h"
+#include "LowRendererMaterial.h"
+#include "LowRendererTexture.h"
+#include "LowRendererRenderScene.h"
+#include "LowRendererDrawCommand.h"
 
 #include "LowUtilAssert.h"
 
@@ -25,10 +29,14 @@ namespace Low {
 
     static void initialize_types()
     {
+      RenderScene::initialize();
       RenderView::initialize();
       RenderObject::initialize();
       MeshResource::initialize();
       ImageResource::initialize();
+      Material::initialize();
+      Texture::initialize();
+      DrawCommand::initialize();
     }
 
     static void cleanup_types()
@@ -37,6 +45,10 @@ namespace Low {
       RenderObject::cleanup();
       ImageResource::cleanup();
       MeshResource::cleanup();
+      Material::cleanup();
+      Texture::cleanup();
+      RenderScene::cleanup();
+      DrawCommand::cleanup();
     }
 
     void initialize()
@@ -53,8 +65,8 @@ namespace Low {
         g_Img = Low::Renderer::load_image(l_BasePath);
       }
 
-      VkSamplerCreateInfo sampl = {
-          .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+      VkSamplerCreateInfo sampl{};
+      sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 
       sampl.magFilter = VK_FILTER_NEAREST;
       sampl.minFilter = VK_FILTER_NEAREST;
@@ -90,102 +102,295 @@ namespace Low {
                  "Failed to cleanup Vulkan renderer");
     }
 
-    static bool upload_render_object(RenderObject p_RenderObject)
+    static bool update_dirty_drawcommands(float p_Delta)
     {
-      MeshResource l_MeshResource =
-          p_RenderObject.get_mesh_resource();
-      const u32 l_FullMeshInfoCount =
-          l_MeshResource.get_full_meshinfo_count();
+      bool l_Result = true;
 
+      for (auto it = DrawCommand::ms_Dirty.begin();
+           it != DrawCommand::ms_Dirty.end(); ++it) {
+        DrawCommand i_DrawCommand = *it;
+
+        if (!i_DrawCommand.is_alive() ||
+            i_DrawCommand.get_render_object().is_dirty()) {
+          // We will skip dead draw commands as well as ones that have
+          // a dirty renderobject because then they will be updated
+          // later together with their render object
+          continue;
+        }
+
+        size_t l_StagingOffset = 0;
+        // TODO: Reconsider if that needs to be on the resource
+        // staging buffer
+        const u64 l_FrameUploadSpace =
+            Vulkan::request_resource_staging_buffer_space(
+                sizeof(DrawCommandUpload), &l_StagingOffset);
+
+        if (l_FrameUploadSpace < sizeof(DrawCommandUpload)) {
+          // We don't have enough space on the staging buffer to
+          // upload this drawcommand
+          l_Result = false;
+          break;
+        }
+
+        bool i_IsFirstTimeUpload = false;
+        if (!i_DrawCommand.is_uploaded()) {
+          LOW_ASSERT(
+              !i_DrawCommand.get_render_object().is_alive(),
+              "Drawcommands that are not yet uploaded should exist "
+              "on their own and not as part of a renderobject");
+
+          u32 i_Slot = 0;
+          if (!Vulkan::Global::get_drawcommand_buffer().reserve(
+                  1, &i_Slot)) {
+            // Could not reserve space in the draw command buffer for
+            // another entry
+            l_Result = false;
+            break;
+          }
+
+          i_DrawCommand.set_slot(i_Slot);
+          i_DrawCommand.set_uploaded(true);
+          i_IsFirstTimeUpload = true;
+        }
+
+        _LOW_ASSERT(i_DrawCommand.is_uploaded());
+
+        DrawCommandUpload i_Upload;
+        i_Upload.world_transform =
+            i_DrawCommand.get_world_transform();
+
+        RenderScene i_RenderScene =
+            i_DrawCommand.get_render_scene_handle();
+
+        if (i_IsFirstTimeUpload) {
+          LOW_ASSERT(i_RenderScene.insert_draw_command(i_DrawCommand),
+                     "Failed so add draw command to render scene");
+        }
+
+        // TODO: Check if this has to be the resource staging buffer
+        LOW_ASSERT(
+            Vulkan::resource_staging_buffer_write(
+                &i_Upload, sizeof(DrawCommandUpload),
+                l_StagingOffset),
+            "Failed to write draw command data to staging buffer");
+
+        VkBufferCopy i_CopyRegion;
+        i_CopyRegion.srcOffset = l_StagingOffset;
+        i_CopyRegion.dstOffset =
+            i_DrawCommand.get_slot() * sizeof(DrawCommandUpload);
+        i_CopyRegion.size = l_FrameUploadSpace;
+
+        // TODO: Change to transfer queue command buffer - or leave
+        // this specifically on the graphics queue not sure tbh
+        // TODO: Also adjust the staging buffer if necessary
+        vkCmdCopyBuffer(
+            Vulkan::Global::get_current_command_buffer(),
+            Vulkan::Global::get_current_resource_staging_buffer()
+                .buffer.buffer,
+            Vulkan::Global::get_drawcommand_buffer().m_Buffer.buffer,
+            1, &i_CopyRegion);
+      }
+
+      DrawCommand::ms_Dirty.clear();
+      return l_Result;
+    }
+
+    static bool update_dirty_renderobjects(float p_Delta)
+    {
+      bool l_Result = true;
+
+      Util::List<RenderObject> l_RescheduleRenderObjects;
+
+      for (auto it = RenderObject::ms_Dirty.begin();
+           it != RenderObject::ms_Dirty.end(); ++it) {
+        RenderObject i_RenderObject = *it;
+        if (!i_RenderObject.is_alive()) {
+          continue;
+        }
+
+        if (i_RenderObject.get_mesh_resource().get_state() !=
+            MeshResourceState::LOADED) {
+          // If the renderobject's meshresource has not been loaded
+          // yet we reschedule its update so that we can initialize
+          // everything properly
+          l_RescheduleRenderObjects.push_back(i_RenderObject);
+          continue;
+        }
+
+        if (i_RenderObject.get_draw_commands().empty()) {
+          MeshResource i_MeshResource =
+              i_RenderObject.get_mesh_resource();
+
+          for (auto sit = i_MeshResource.get_submeshes().begin();
+               sit != i_MeshResource.get_submeshes().end(); ++sit) {
+            Submesh i_Submesh = *sit;
+            for (auto mit = sit->get_meshinfos().begin();
+                 mit != sit->get_meshinfos().end(); ++mit) {
+              MeshInfo i_MeshInfo = *mit;
+
+              DrawCommand i_DrawCommand = DrawCommand::make(
+                  i_RenderObject,
+                  i_RenderObject.get_render_scene_handle(),
+                  i_MeshInfo);
+
+              i_RenderObject.get_draw_commands().push_back(
+                  i_DrawCommand);
+            }
+          }
+        }
+
+        const Util::List<DrawCommand> &i_DrawCommands =
+            i_RenderObject.get_draw_commands();
+
+        size_t l_StagingOffset = 0;
+        // TODO: Reconsider if that needs to be on the resource
+        // staging buffer
+        const u64 l_FrameUploadSpace =
+            Vulkan::request_resource_staging_buffer_space(
+                sizeof(DrawCommandUpload) * i_DrawCommands.size(),
+                &l_StagingOffset);
+
+        if (l_FrameUploadSpace <
+            (sizeof(DrawCommandUpload) * i_DrawCommands.size())) {
+          // We don't have enough space on the staging buffer to
+          // upload this drawcommand
+          l_Result = false;
+          break;
+        }
+
+        bool i_IsFirstTimeUpload = false;
+        if (!i_RenderObject.is_uploaded()) {
+          u32 i_Slot = 0;
+          if (!Vulkan::Global::get_drawcommand_buffer().reserve(
+                  i_DrawCommands.size(), &i_Slot)) {
+            // Could not reserve space in the draw command buffer
+            // for another entry
+            l_Result = false;
+            break;
+          }
+
+          i_RenderObject.set_slot(i_Slot);
+          i_RenderObject.set_uploaded(true);
+          i_IsFirstTimeUpload = true;
+        }
+
+        Util::List<DrawCommandUpload> i_Uploads;
+
+        for (u32 i = 0; i < i_DrawCommands.size(); ++i) {
+          DrawCommand i_DrawCommand = i_DrawCommands[i];
+
+          if (i_IsFirstTimeUpload) {
+            i_DrawCommand.set_slot(i_RenderObject.get_slot() + i);
+            i_DrawCommand.set_uploaded(true);
+
+            RenderScene i_RenderScene =
+                i_DrawCommand.get_render_scene_handle();
+            i_RenderScene.insert_draw_command(i_DrawCommand);
+          }
+
+          // TODO: Take submesh transform into account
+          // Submesh can be fetched from the meshinfo of the draw
+          // command
+          i_DrawCommand.set_world_transform(
+              i_RenderObject.get_world_transform());
+
+          DrawCommandUpload i_Upload;
+          i_Upload.world_transform =
+              i_DrawCommand.get_world_transform();
+
+          i_Uploads.push_back(i_Upload);
+        }
+
+        LOW_ASSERT(
+            Vulkan::resource_staging_buffer_write(
+                i_Uploads.data(),
+                sizeof(DrawCommandUpload) * i_Uploads.size(),
+                l_StagingOffset),
+            "Failed to write draw command data to staging buffer");
+
+        VkBufferCopy i_CopyRegion;
+        i_CopyRegion.srcOffset = l_StagingOffset;
+        i_CopyRegion.dstOffset =
+            i_RenderObject.get_slot() * sizeof(DrawCommandUpload);
+        i_CopyRegion.size = l_FrameUploadSpace;
+
+        // TODO: Change to transfer queue command buffer - or leave
+        // this specifically on the graphics queue not sure tbh
+        // TODO: Also adjust the staging buffer if necessary
+        vkCmdCopyBuffer(
+            Vulkan::Global::get_current_command_buffer(),
+            Vulkan::Global::get_current_resource_staging_buffer()
+                .buffer.buffer,
+            Vulkan::Global::get_drawcommand_buffer().m_Buffer.buffer,
+            1, &i_CopyRegion);
+
+        i_RenderObject.set_dirty(false);
+      }
+
+      RenderObject::ms_Dirty.clear();
+
+      for (auto it = l_RescheduleRenderObjects.begin();
+           it != l_RescheduleRenderObjects.end(); ++it) {
+        it->set_dirty(true);
+      }
+
+      return l_Result;
+    }
+
+    static bool update_drawcommand_buffer(float p_Delta)
+    {
+      update_dirty_drawcommands(p_Delta);
+      update_dirty_renderobjects(p_Delta);
+      return true;
+    }
+
+    static bool upload_material(float p_Delta, Material p_Material)
+    {
       size_t l_StagingOffset = 0;
+
       const u64 l_FrameUploadSpace =
           Vulkan::request_resource_staging_buffer_space(
-              sizeof(RenderObjectUpload) * l_FullMeshInfoCount,
-              &l_StagingOffset);
+              MATERIAL_DATA_SIZE, &l_StagingOffset);
 
-      if (l_FrameUploadSpace <
-          (sizeof(RenderObjectUpload) * l_FullMeshInfoCount)) {
+      if (l_FrameUploadSpace < MATERIAL_DATA_SIZE) {
         return false;
       }
 
-      bool l_IsFirstTimeUpload = false;
-
-      if (!p_RenderObject.is_uploaded()) {
-        u32 l_Slot = 0;
-        if (!Vulkan::Global::get_renderobject_buffer().reserve(
-                l_FullMeshInfoCount, &l_Slot)) {
-          return false;
-        }
-
-        LOW_LOG_INFO << "Renderobject upload" << LOW_LOG_END;
-        p_RenderObject.set_slot(l_Slot);
-        p_RenderObject.set_uploaded(true);
-        l_IsFirstTimeUpload = true;
-      }
-
-      _LOW_ASSERT(p_RenderObject.is_uploaded());
-
-      Util::List<RenderObjectUpload> l_Uploads;
-      l_Uploads.resize(l_FullMeshInfoCount);
-
-      RenderView l_RenderView =
-          p_RenderObject.get_render_view_handle();
-
-      u32 l_Index = 0;
-
-      for (auto sit = l_MeshResource.get_submeshes().begin();
-           sit != l_MeshResource.get_submeshes().end(); ++sit) {
-        for (auto mit = sit->get_meshinfos().begin();
-             mit != sit->get_meshinfos().end(); ++mit) {
-          // TODO: Take submesh transform into account
-          l_Uploads[l_Index].world_transform =
-              p_RenderObject.get_world_transform();
-
-          if (l_IsFirstTimeUpload) {
-
-            LOW_ASSERT(l_RenderView.add_render_entry(p_RenderObject,
-                                                     l_Index, *mit),
-                       "Failed to add render entry to renderview");
-          }
-
-          l_Index++;
-        }
-      }
-
-      LOW_ASSERT(
-          Vulkan::resource_staging_buffer_write(
-              l_Uploads.data(),
-              sizeof(RenderObjectUpload) * l_Uploads.size(),
-              l_StagingOffset),
-          "Failed to write render object data to staging buffer");
+      LOW_ASSERT(Vulkan::resource_staging_buffer_write(
+                     p_Material.get_data(), MATERIAL_DATA_SIZE,
+                     l_StagingOffset),
+                 "Failed to write material data to staging buffer");
 
       VkBufferCopy l_CopyRegion{};
       l_CopyRegion.srcOffset = l_StagingOffset;
       l_CopyRegion.dstOffset =
-          p_RenderObject.get_slot() * sizeof(RenderObjectUpload);
-      l_CopyRegion.size = l_FrameUploadSpace;
-      // TODO: Change to transfer queue command buffer - or leave
-      // this specifically on the graphics queue not sure tbh
+          p_Material.get_index() * MATERIAL_DATA_SIZE;
+      l_CopyRegion.size = MATERIAL_DATA_SIZE;
+      // TODO: Change to transfer queue command buffer
       vkCmdCopyBuffer(
           Vulkan::Global::get_current_command_buffer(),
           Vulkan::Global::get_current_resource_staging_buffer()
               .buffer.buffer,
-          Vulkan::Global::get_renderobject_buffer().m_Buffer.buffer,
-          1, &l_CopyRegion);
+          Vulkan::Global::get_material_data_buffer().buffer, 1,
+          &l_CopyRegion);
 
-      LOW_LOG_INFO << "updated renderobject" << LOW_LOG_END;
-
-      p_RenderObject.set_dirty(false);
+      p_Material.set_dirty(false);
     }
 
-    static void tick_render_objects(float p_Delta)
+    static void tick_materials(float p_Delta)
     {
-      for (u32 i = 0; i < RenderObject::living_count(); ++i) {
-        RenderObject i_RenderObject =
-            RenderObject::living_instances()[i];
+      for (u32 i = 0; i < Material::living_count(); ++i) {
+        Material i_Material = Material::living_instances()[i];
 
-        if (i_RenderObject.is_dirty()) {
-          upload_render_object(i_RenderObject);
+        if (!i_Material.is_dirty()) {
+          continue;
+        }
+
+        if (!upload_material(p_Delta, i_Material)) {
+          // If we ever fail to upload a material (most likely
+          // because there is not enough space left on the staging
+          // buffer), we just stop trying for this frame
+          break;
         }
       }
     }
@@ -201,11 +406,12 @@ namespace Low {
       LOW_ASSERT(Vulkan::prepare_tick(p_Delta),
                  "Failed to prepare tick Vulkan renderer");
       ResourceManager::tick(p_Delta);
-      tick_render_objects(p_Delta);
+      update_drawcommand_buffer(p_Delta);
+      tick_materials(p_Delta);
       if (!l_ImageInit) {
         if (g_Img.get_state() == ImageResourceState::LOADED) {
           l_ImageInit = true;
-          Vulkan::Image l_Img = g_Img.get_data_handle();
+          Vulkan::Image l_Img = g_Img.get_texture().get_data_handle();
           g_ImgDS = ImGui_ImplVulkan_AddTexture(
               g_TestSampler, l_Img.get_allocated_image().imageView,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

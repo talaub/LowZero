@@ -9,8 +9,8 @@ namespace Low {
                                       VkBufferUsageFlags p_Usage,
                                       VmaMemoryUsage p_MemoryUsage)
         {
-          VkBufferCreateInfo l_BufferInfo = {
-              .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+          VkBufferCreateInfo l_BufferInfo{};
+          l_BufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
           l_BufferInfo.pNext = nullptr;
           l_BufferInfo.size = p_AllocSize;
 

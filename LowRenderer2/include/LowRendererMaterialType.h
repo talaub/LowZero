@@ -9,54 +9,61 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererMeshResourceState.h"
-#include "LowRendererSubmesh.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
+    enum class MaterialTypeInputType
+    {
+      VECTOR4,
+      VECTOR3,
+      VECTOR2,
+      FLOAT
+    };
+
+    struct MaterialTypeInput
+    {
+      Util::Name name;
+      MaterialTypeInputType type;
+      u32 offset;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MeshInfoData
+    struct LOW_RENDERER2_API MaterialTypeData
     {
-      MeshResourceState state;
-      uint32_t vertex_count;
-      uint32_t index_count;
-      uint32_t uploaded_vertex_count;
-      uint32_t uploaded_index_count;
-      uint32_t vertex_start;
-      uint32_t index_start;
-      Submesh submesh;
+      bool transparent;
+      uint64_t draw_pipeline_handle;
+      uint64_t depth_pipeline_handle;
+      Util::List<MaterialTypeInput> inputs;
+      bool initialized;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(MeshInfoData);
+        return sizeof(MaterialTypeData);
       }
     };
 
-    struct LOW_RENDERER2_API MeshInfo : public Low::Util::Handle
+    struct LOW_RENDERER2_API MaterialType : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<MeshInfo> ms_LivingInstances;
+      static Low::Util::List<MaterialType> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      MeshInfo();
-      MeshInfo(uint64_t p_Id);
-      MeshInfo(MeshInfo &p_Copy);
+      MaterialType();
+      MaterialType(uint64_t p_Id);
+      MaterialType(MaterialType &p_Copy);
 
-    private:
-      static MeshInfo make(Low::Util::Name p_Name);
+      static MaterialType make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-    public:
-      explicit MeshInfo(const MeshInfo &p_Copy)
+      explicit MaterialType(const MaterialType &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -70,12 +77,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static MeshInfo *living_instances()
+      static MaterialType *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static MeshInfo find_by_index(uint32_t p_Index);
+      static MaterialType find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -84,13 +91,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      MeshInfo duplicate(Low::Util::Name p_Name) const;
-      static MeshInfo duplicate(MeshInfo p_Handle,
-                                Low::Util::Name p_Name);
+      MaterialType duplicate(Low::Util::Name p_Name) const;
+      static MaterialType duplicate(MaterialType p_Handle,
+                                    Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static MeshInfo find_by_name(Low::Util::Name p_Name);
+      static MaterialType find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -101,50 +108,49 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == MeshInfo::TYPE_ID &&
+        return p_Handle.get_type() == MaterialType::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        MeshInfo l_MeshInfo = p_Handle.get_id();
-        l_MeshInfo.destroy();
+        MaterialType l_MaterialType = p_Handle.get_id();
+        l_MaterialType.destroy();
       }
 
-      MeshResourceState get_state() const;
-      void set_state(MeshResourceState p_Value);
+      bool is_transparent() const;
+      void set_transparent(bool p_Value);
 
-      uint32_t get_vertex_count() const;
-      void set_vertex_count(uint32_t p_Value);
+      uint64_t get_draw_pipeline_handle() const;
+      void set_draw_pipeline_handle(uint64_t p_Value);
 
-      uint32_t get_index_count() const;
-      void set_index_count(uint32_t p_Value);
+      uint64_t get_depth_pipeline_handle() const;
+      void set_depth_pipeline_handle(uint64_t p_Value);
 
-      uint32_t get_uploaded_vertex_count() const;
-      void set_uploaded_vertex_count(uint32_t p_Value);
-
-      uint32_t get_uploaded_index_count() const;
-      void set_uploaded_index_count(uint32_t p_Value);
-
-      uint32_t get_vertex_start() const;
-      void set_vertex_start(uint32_t p_Value);
-
-      uint32_t get_index_start() const;
-      void set_index_start(uint32_t p_Value);
-
-      Submesh get_submesh() const;
+      bool is_initialized() const;
+      void set_initialized(bool p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static MeshInfo make(Submesh p_Submesh);
+      bool get_input(Low::Util::Name p_Name,
+                     MaterialTypeInput *p_Input);
+      void finalize();
+      void add_input(Low::Util::Name p_Name,
+                     MaterialTypeInputType p_Type);
+      bool has_input(Low::Util::Name p_Name);
+      uint32_t get_input_offset(Low::Util::Name p_Name);
+      MaterialTypeInputType &get_input_type(Low::Util::Name p_Name);
+      uint32_t fill_input_names(
+          Low::Util::List<Low::Util::Name> &p_InputNames);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_submesh(Submesh p_Value);
+      Util::List<MaterialTypeInput> &get_inputs() const;
+      void calculate_offsets();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

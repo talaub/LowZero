@@ -11,6 +11,7 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowUtilResource.h"
 #include "LowRendererImageResourceState.h"
+#include "LowRendererTexture.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -22,8 +23,8 @@ namespace Low {
     {
       Util::String path;
       Util::Resource::ImageMipMaps resource_image;
-      ImageResourceState state;
-      uint64_t data_handle;
+      Low::Renderer::ImageResourceState state;
+      Low::Renderer::Texture texture;
       Low::Util::List<uint8_t> loaded_mips;
       Low::Util::Name name;
 
@@ -113,11 +114,11 @@ namespace Low {
 
       Util::Resource::ImageMipMaps &get_resource_image() const;
 
-      ImageResourceState get_state() const;
-      void set_state(ImageResourceState p_Value);
+      Low::Renderer::ImageResourceState get_state() const;
+      void set_state(Low::Renderer::ImageResourceState p_Value);
 
-      uint64_t get_data_handle() const;
-      void set_data_handle(uint64_t p_Value);
+      Low::Renderer::Texture &get_texture() const;
+      void set_texture(Low::Renderer::Texture &p_Value);
 
       Low::Util::List<uint8_t> &loaded_mips() const;
 

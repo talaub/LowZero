@@ -36,9 +36,9 @@ namespace Low {
       bool LOW_EDITOR_API render_enum_selector(
           PropertyMetadata &p_Metadata, Util::Handle p_Handle);
 
-      void LOW_EDITOR_API
-      render_handle_selector(Util::RTTI::PropertyInfo &p_PropertyInfo,
-                             Util::Handle p_Handle);
+      void LOW_EDITOR_API render_handle_selector(
+          Util::RTTI::PropertyInfoBase &p_PropertyInfoBase,
+          Util::Handle p_Handle);
 
       void LOW_EDITOR_API render_editor(Util::Handle p_Handle,
                                         TypeMetadata &p_Metadata,

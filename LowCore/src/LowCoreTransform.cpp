@@ -783,7 +783,8 @@ namespace Low {
       }
       void Transform::position(float p_X, float p_Y, float p_Z)
       {
-        position(Low::Math::Vector3(p_X, p_Y, p_Z));
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        position(p_Val);
       }
 
       void Transform::position_x(float p_Value)
@@ -912,7 +913,8 @@ namespace Low {
       }
       void Transform::scale(float p_X, float p_Y, float p_Z)
       {
-        scale(Low::Math::Vector3(p_X, p_Y, p_Z));
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        scale(p_Val);
       }
 
       void Transform::scale_x(float p_Value)
@@ -1093,7 +1095,8 @@ namespace Low {
       void Transform::set_world_position(float p_X, float p_Y,
                                          float p_Z)
       {
-        set_world_position(Low::Math::Vector3(p_X, p_Y, p_Z));
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        set_world_position(p_Val);
       }
 
       void Transform::set_world_position_x(float p_Value)
@@ -1183,7 +1186,8 @@ namespace Low {
       }
       void Transform::set_world_scale(float p_X, float p_Y, float p_Z)
       {
-        set_world_scale(Low::Math::Vector3(p_X, p_Y, p_Z));
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        set_world_scale(p_Val);
       }
 
       void Transform::set_world_scale_x(float p_Value)

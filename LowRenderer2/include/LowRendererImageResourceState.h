@@ -31,6 +31,8 @@ namespace Low {
       uint8_t LOW_RENDERER2_API _entry_value(Low::Util::Name p_Name);
 
       u16 LOW_RENDERER2_API get_enum_id();
+
+      u8 LOW_RENDERER2_API get_entry_count();
     } // namespace ImageResourceStateEnumHelper
   }   // namespace Renderer
 } // namespace Low

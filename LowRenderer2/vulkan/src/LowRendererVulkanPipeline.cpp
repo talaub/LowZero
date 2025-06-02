@@ -62,7 +62,7 @@ namespace Low {
 
         VkPipelineLayoutCreateInfo layout_create_info()
         {
-          VkPipelineLayoutCreateInfo l_Info{};
+          VkPipelineLayoutCreateInfo l_Info={};
           l_Info.sType =
               VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
           l_Info.pNext = nullptr;
@@ -81,7 +81,7 @@ namespace Low {
                                  VkShaderModule p_ShaderModule,
                                  const char *p_Entry)
         {
-          VkPipelineShaderStageCreateInfo l_Info{};
+          VkPipelineShaderStageCreateInfo l_Info={};
           l_Info.sType =
               VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
           l_Info.pNext = nullptr;
@@ -97,29 +97,34 @@ namespace Low {
 
         void GraphicsPipelineBuilder::clear()
         {
-          inputAssembly = {
+          inputAssembly = {};
+          inputAssembly 
               .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+                  VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 
-          rasterizer = {
+          rasterizer = {};
+          rasterizer 
               .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+                  VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 
           colorBlendAttachment = {};
 
-          multisampling = {
+          multisampling = {};
+          multisampling 
               .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+                  VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
           pipelineLayout = {};
 
-          depthStencil = {
+          depthStencil = {};
+          depthStencil
               .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+                  VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
-          renderInfo = {
+          renderInfo = {};
+          renderInfo 
               .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+                  VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 
           shaderStages.clear();
         }
@@ -153,7 +158,8 @@ namespace Low {
           l_ViewportState.scissorCount = 1;
 
           // TODO: Right now this is just a dummy
-          VkPipelineColorBlendStateCreateInfo l_BlendStateCreateInfo;
+          VkPipelineColorBlendStateCreateInfo
+              l_BlendStateCreateInfo;
 
           Util::List<VkPipelineColorBlendAttachmentState>
               l_BlendAttachments;
@@ -175,15 +181,18 @@ namespace Low {
 
           // Clear for now
           VkPipelineVertexInputStateCreateInfo l_VertexInputInfo = {
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+        };
+          l_VertexInputInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
           // Create the pipeline
-          VkGraphicsPipelineCreateInfo l_PipelineInfo = {
-              .sType =
-                  VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+              VkGraphicsPipelineCreateInfo l_PipelineInfo={}; 
+              l_PipelineInfo.sType =
+                  VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
           // Connect the renderinfo
           l_PipelineInfo.pNext = &renderInfo;
+
+          inputAssembly.pNext = nullptr;
 
           l_PipelineInfo.stageCount = (u32)shaderStages.size();
           l_PipelineInfo.pStages = shaderStages.data();
@@ -199,9 +208,9 @@ namespace Low {
           VkDynamicState l_State[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                       VK_DYNAMIC_STATE_SCISSOR};
 
-          VkPipelineDynamicStateCreateInfo l_DynamicInfo = {
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+          VkPipelineDynamicStateCreateInfo l_DynamicInfo={};
+              l_DynamicInfo.sType =
+                  VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
           l_DynamicInfo.pDynamicStates = &l_State[0];
           l_DynamicInfo.dynamicStateCount = 2;
 

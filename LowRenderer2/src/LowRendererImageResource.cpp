@@ -10,7 +10,6 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-#include "LowRendererVkImage.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -59,8 +58,11 @@ namespace Low {
                               Util::Resource::ImageMipMaps))
           Util::Resource::ImageMipMaps();
       new (&ACCESSOR_TYPE_SOA(l_Handle, ImageResource, state,
-                              ImageResourceState))
-          ImageResourceState();
+                              Low::Renderer::ImageResourceState))
+          Low::Renderer::ImageResourceState();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, ImageResource, texture,
+                              Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (&ACCESSOR_TYPE_SOA(l_Handle, ImageResource, loaded_mips,
                               Low::Util::List<uint8_t>))
           Low::Util::List<uint8_t>();
@@ -84,11 +86,10 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      Vulkan::Image l_VkImage = get_data_handle();
-      if (get_state() == ImageResourceState::LOADED) {
-        l_VkImage.unload();
+      Texture l_Texture = get_texture();
+      if (l_Texture.is_alive()) {
+        l_Texture.destroy();
       }
-      l_VkImage.destroy();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       WRITE_LOCK(l_Lock);
@@ -203,56 +204,61 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(ImageResourceData, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
-        l_PropertyInfo.handleType =
+        l_PropertyInfo.handleType = Low::Renderer::
             ImageResourceStateEnumHelper::get_enum_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, ImageResource, state, ImageResourceState);
+              p_Handle, ImageResource, state,
+              Low::Renderer::ImageResourceState);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           ImageResource l_Handle = p_Handle.get_id();
-          l_Handle.set_state(*(ImageResourceState *)p_Data);
+          l_Handle.set_state(
+              *(Low::Renderer::ImageResourceState *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ImageResource l_Handle = p_Handle.get_id();
-          *((ImageResourceState *)p_Data) = l_Handle.get_state();
+          *((Low::Renderer::ImageResourceState *)p_Data) =
+              l_Handle.get_state();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: state
       }
       {
-        // Property: data_handle
+        // Property: texture
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(data_handle);
+        l_PropertyInfo.name = N(texture);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ImageResourceData, data_handle);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+            offsetof(ImageResourceData, texture);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ImageResource l_Handle = p_Handle.get_id();
-          l_Handle.get_data_handle();
+          l_Handle.get_texture();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ImageResource,
-                                            data_handle, uint64_t);
+                                            texture,
+                                            Low::Renderer::Texture);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           ImageResource l_Handle = p_Handle.get_id();
-          l_Handle.set_data_handle(*(uint64_t *)p_Data);
+          l_Handle.set_texture(*(Low::Renderer::Texture *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ImageResource l_Handle = p_Handle.get_id();
-          *((uint64_t *)p_Data) = l_Handle.get_data_handle();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_texture();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: data_handle
+        // End property: texture
       }
       {
         // Property: loaded_mips
@@ -399,7 +405,7 @@ namespace Low {
       ImageResource l_Handle = make(p_Name);
       l_Handle.set_path(get_path());
       l_Handle.set_state(get_state());
-      l_Handle.set_data_handle(get_data_handle());
+      l_Handle.set_texture(get_texture());
       l_Handle.set_loaded_mips(loaded_mips());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
@@ -459,7 +465,8 @@ namespace Low {
     }
     void ImageResource::set_path(const char *p_Value)
     {
-      set_path(Low::Util::String(p_Value));
+      Low::Util::String l_Val(p_Value);
+      set_path(l_Val);
     }
 
     void ImageResource::set_path(Util::String &p_Value)
@@ -491,7 +498,7 @@ namespace Low {
                       Util::Resource::ImageMipMaps);
     }
 
-    ImageResourceState ImageResource::get_state() const
+    Low::Renderer::ImageResourceState ImageResource::get_state() const
     {
       _LOW_ASSERT(is_alive());
 
@@ -499,9 +506,11 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       READ_LOCK(l_ReadLock);
-      return TYPE_SOA(ImageResource, state, ImageResourceState);
+      return TYPE_SOA(ImageResource, state,
+                      Low::Renderer::ImageResourceState);
     }
-    void ImageResource::set_state(ImageResourceState p_Value)
+    void ImageResource::set_state(
+        Low::Renderer::ImageResourceState p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -510,37 +519,39 @@ namespace Low {
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(ImageResource, state, ImageResourceState) = p_Value;
+      TYPE_SOA(ImageResource, state,
+               Low::Renderer::ImageResourceState) = p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
     }
 
-    uint64_t ImageResource::get_data_handle() const
+    Low::Renderer::Texture &ImageResource::get_texture() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
-      // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
+      // LOW_CODEGEN::END::CUSTOM:GETTER_texture
 
       READ_LOCK(l_ReadLock);
-      return TYPE_SOA(ImageResource, data_handle, uint64_t);
+      return TYPE_SOA(ImageResource, texture, Low::Renderer::Texture);
     }
-    void ImageResource::set_data_handle(uint64_t p_Value)
+    void ImageResource::set_texture(Low::Renderer::Texture &p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(ImageResource, data_handle, uint64_t) = p_Value;
+      TYPE_SOA(ImageResource, texture, Low::Renderer::Texture) =
+          p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
-      // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+      // LOW_CODEGEN::END::CUSTOM:SETTER_texture
     }
 
     Low::Util::List<uint8_t> &ImageResource::loaded_mips() const
@@ -675,14 +686,15 @@ namespace Low {
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(ImageResourceData, state) *
                           (l_Capacity)],
-               l_Capacity * sizeof(ImageResourceState));
+               l_Capacity *
+                   sizeof(Low::Renderer::ImageResourceState));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(ImageResourceData, data_handle) *
+        memcpy(&l_NewBuffer[offsetof(ImageResourceData, texture) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ImageResourceData, data_handle) *
+               &ms_Buffer[offsetof(ImageResourceData, texture) *
                           (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
+               l_Capacity * sizeof(Low::Renderer::Texture));
       }
       {
         for (auto it = ms_LivingInstances.begin();

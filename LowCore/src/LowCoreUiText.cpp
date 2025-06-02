@@ -547,7 +547,8 @@ namespace Low {
         }
         void Text::set_text(const char *p_Value)
         {
-          set_text(Low::Util::String(p_Value));
+          Low::Util::String l_Val(p_Value);
+          set_text(l_Val);
         }
 
         void Text::set_text(Low::Util::String &p_Value)

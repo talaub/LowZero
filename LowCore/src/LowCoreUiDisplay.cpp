@@ -904,7 +904,8 @@ namespace Low {
         }
         void Display::pixel_position(float p_X, float p_Y)
         {
-          pixel_position(Low::Math::Vector2(p_X, p_Y));
+          Low::Math::Vector2 l_Val(p_X, p_Y);
+          pixel_position(l_Val);
         }
 
         void Display::pixel_position_x(float p_Value)
@@ -994,7 +995,8 @@ namespace Low {
         }
         void Display::pixel_scale(float p_X, float p_Y)
         {
-          pixel_scale(Low::Math::Vector2(p_X, p_Y));
+          Low::Math::Vector2 l_Val(p_X, p_Y);
+          pixel_scale(l_Val);
         }
 
         void Display::pixel_scale_x(float p_Value)
@@ -1188,7 +1190,8 @@ namespace Low {
         void Display::set_absolute_pixel_position(float p_X,
                                                   float p_Y)
         {
-          set_absolute_pixel_position(Low::Math::Vector2(p_X, p_Y));
+          Low::Math::Vector2 l_Val(p_X, p_Y);
+          set_absolute_pixel_position(l_Val);
         }
 
         void Display::set_absolute_pixel_position_x(float p_Value)
@@ -1270,7 +1273,8 @@ namespace Low {
         }
         void Display::set_absolute_pixel_scale(float p_X, float p_Y)
         {
-          set_absolute_pixel_scale(Low::Math::Vector2(p_X, p_Y));
+          Low::Math::Vector2 l_Val(p_X, p_Y);
+          set_absolute_pixel_scale(l_Val);
         }
 
         void Display::set_absolute_pixel_scale_x(float p_Value)
