@@ -11,6 +11,7 @@
 #include "LowRendererRenderView.h"
 #include "LowRendererVkViewInfo.h"
 #include "LowRendererDrawCommand.h"
+#include "LowRendererTexture.h"
 
 #include "LowUtil.h"
 #include "LowUtilResource.h"
@@ -35,6 +36,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       Context g_Context;
+      Texture g_DefaultTexture;
 
       struct ComputePushConstants
       {
@@ -62,12 +64,6 @@ namespace Low {
 
         Pipeline lightingPipeline;
       } g_Pipelines;
-
-      struct
-      {
-        VkDescriptorSet set;
-        VkDescriptorSetLayout layout;
-      } g_GlobalDescriptors;
 
       namespace Convert {
         static VkFormat image_format(ImageFormat p_Format)
@@ -259,7 +255,7 @@ namespace Low {
 
         Util::List<VkDescriptorSetLayout> l_Layouts;
         l_Layouts.resize(2);
-        l_Layouts[0] = g_GlobalDescriptors.layout;
+        l_Layouts[0] = Global::get_global_descriptor_set_layout();
         l_Layouts[1] = Global::get_view_info_descriptor_set_layout();
 
         l_PipelineLayoutInfo.sType =
@@ -401,39 +397,117 @@ namespace Low {
         return true;
       }
 
-      static bool initialize_global_descriptors()
+      static bool initialize_default_texture()
       {
-        {
-          DescriptorUtil::DescriptorLayoutBuilder l_Builder;
-          l_Builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-          l_Builder.add_binding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-          g_GlobalDescriptors.layout = l_Builder.build(
-              Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+        g_DefaultTexture = Texture::make(N(Default));
+        Vulkan::Image l_Image = Vulkan::Image::make(N(Default));
+        g_DefaultTexture.set_data_handle(l_Image.get_id());
+
+        Math::UVector2 l_Dimensions(128.0f);
+
+        size_t l_StagingOffset = 0;
+        const u64 l_UploadSpace =
+            Vulkan::request_resource_staging_buffer_space(
+                l_Dimensions.x * l_Dimensions.y * IMAGE_CHANNEL_COUNT,
+                &l_StagingOffset);
+
+        LOW_ASSERT(l_UploadSpace == (l_Dimensions.x * l_Dimensions.y *
+                                     IMAGE_CHANNEL_COUNT),
+                   "Failed to request resource "
+                   "staging buffer space for "
+                   "default texture");
+
+        VkExtent3D l_Extent;
+        l_Extent.width = l_Dimensions.x;
+        l_Extent.height = l_Dimensions.y;
+        l_Extent.depth = 1;
+
+        Vulkan::ImageUtil::create(l_Image, l_Extent,
+                                  VK_FORMAT_R8G8B8A8_UNORM,
+                                  VK_IMAGE_USAGE_SAMPLED_BIT, false);
+
+        Util::List<uint8_t> l_Pixels(l_Dimensions.x * l_Dimensions.y *
+                                     IMAGE_CHANNEL_COUNT); // RGBA8
+
+        for (uint32_t y = 0; y < l_Dimensions.y; ++y) {
+          for (uint32_t x = 0; x < l_Dimensions.x; ++x) {
+            // Determine if this tile is white or black
+            // Tile size is 64x64 (128 / 2)
+            bool i_WhiteTile =
+                (x < 64 && y < 64) ||
+                (x >= 64 &&
+                 y >= 64); // Top-left and bottom-right white
+
+            size_t i_Index = (y * l_Dimensions.x + x) * 4;
+            if (i_WhiteTile) {
+              l_Pixels[i_Index + 0] = 228; // R
+              l_Pixels[i_Index + 1] = 114; // G
+              l_Pixels[i_Index + 2] = 184; // B
+              l_Pixels[i_Index + 3] = 255; // A
+            } else {
+              l_Pixels[i_Index + 0] = 114; // R
+              l_Pixels[i_Index + 1] = 184; // G
+              l_Pixels[i_Index + 2] = 228; // B
+              l_Pixels[i_Index + 3] = 255; // A
+            }
+          }
         }
 
-        // Allocate new descriptor for the drawimage
-        g_GlobalDescriptors.set =
-            Global::get_global_descriptor_allocator().allocate(
-                Global::get_device(), g_GlobalDescriptors.layout);
+        LOW_ASSERT(
+            Vulkan::resource_staging_buffer_write(
+                l_Pixels.data(), l_UploadSpace, l_StagingOffset),
+            "Failed to upload default image to resource staging "
+            "buffer");
 
-        // This part assignes the drawImage to the descriptor set
-        {
-          DescriptorUtil::DescriptorWriter l_Writer;
-          l_Writer.write_buffer(
-              0, Global::get_mesh_vertex_buffer().m_Buffer.buffer,
-              Global::get_mesh_vertex_buffer().m_ElementSize *
-                  Global::get_mesh_vertex_buffer().m_ElementCount,
-              0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        ImageUtil::cmd_transition(
+            Global::get_current_command_buffer(), l_Image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-          l_Writer.write_buffer(
-              1, Global::get_drawcommand_buffer().m_Buffer.buffer,
-              Global::get_drawcommand_buffer().m_ElementSize *
-                  Global::get_drawcommand_buffer().m_ElementCount,
-              0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        VkBufferImageCopy l_Region = {};
+        l_Region.bufferOffset = l_StagingOffset;
+        l_Region.bufferRowLength =
+            0; // Tightly packed (matches image width)
+        l_Region.bufferImageHeight =
+            0; // Tightly packed (matches image height)
 
-          l_Writer.update_set(Global::get_device(),
-                              g_GlobalDescriptors.set);
-        }
+        l_Region.imageSubresource.aspectMask =
+            VK_IMAGE_ASPECT_COLOR_BIT;
+        l_Region.imageSubresource.mipLevel = 0;
+        l_Region.imageSubresource.baseArrayLayer = 0;
+        l_Region.imageSubresource.layerCount = 1;
+
+        l_Region.imageOffset = {0, 0, 0};
+        l_Region.imageExtent = {
+            l_Dimensions.x, // width
+            l_Dimensions.y, // height
+            1               // depth
+        };
+
+        vkCmdCopyBufferToImage(
+            Vulkan::Global::get_current_command_buffer(),
+            Vulkan::Global::get_current_resource_staging_buffer()
+                .buffer.buffer,
+            l_Image.get_allocated_image().image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &l_Region);
+
+        ImageUtil::cmd_transition(
+            Global::get_current_command_buffer(), l_Image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        Samplers &l_Samplers = Global::get_samplers();
+
+        DescriptorUtil::DescriptorWriter l_Writer;
+        l_Writer.write_image(
+            2, l_Image.get_allocated_image().imageView,
+            l_Samplers.no_lod_nearest_repeat_black,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+        l_Writer.update_set(Global::get_device(),
+                            Global::get_global_descriptor_set());
+
         return true;
       }
 
@@ -452,10 +526,6 @@ namespace Low {
             Base::context_initialize(
                 g_Context, Math::UVector2(l_Width, l_Height)),
             "Failed to initialize global vulkan context");
-
-        LOWR_VK_ASSERT_RETURN(
-            initialize_global_descriptors(),
-            "Failed to initialize vulkan global descriptors");
 
         {
           Util::Resource::Mesh l_Mesh;
@@ -504,14 +574,6 @@ namespace Low {
         return true;
       }
 
-      static bool cleanup_global_descriptors()
-      {
-        vkDestroyDescriptorSetLayout(Global::get_device(),
-                                     g_GlobalDescriptors.layout,
-                                     nullptr);
-        return true;
-      }
-
       bool wait_idle()
       {
         vkDeviceWaitIdle(Global::get_device());
@@ -523,10 +585,6 @@ namespace Low {
         vkDeviceWaitIdle(Global::get_device());
 
         cleanup_renderflow(g_Context);
-
-        LOWR_VK_ASSERT_RETURN(
-            cleanup_global_descriptors(),
-            "Failed to cleanup vulkan global descriptors");
 
         cleanup_types();
 
@@ -600,13 +658,18 @@ namespace Low {
         VkClearValue l_ClearColorValue = {};
         l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
+        Image l_AlbedoImage =
+            p_RenderView.get_gbuffer_albedo().get_data_handle();
+        Image l_NormalsImage =
+            p_RenderView.get_gbuffer_normals().get_data_handle();
+
         Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
         l_ColorAttachments.resize(2);
         l_ColorAttachments[0] = InitUtil::attachment_info(
-            l_ViewInfo.get_gbuffer_albedo().imageView,
+            l_AlbedoImage.get_allocated_image().imageView,
             &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
         l_ColorAttachments[1] = InitUtil::attachment_info(
-            l_ViewInfo.get_gbuffer_normals().imageView,
+            l_NormalsImage.get_allocated_image().imageView,
             &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
 
         VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
@@ -624,10 +687,12 @@ namespace Low {
             l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
             g_Pipelines.solidBasePipeline.get_pipeline());
 
-        vkCmdBindDescriptorSets(
-            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            g_Pipelines.solidBasePipelineLayout, 0, 1,
-            &g_GlobalDescriptors.set, 0, nullptr);
+        VkDescriptorSet l_Set = Global::get_global_descriptor_set();
+
+        vkCmdBindDescriptorSets(l_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                g_Pipelines.solidBasePipelineLayout,
+                                0, 1, &l_Set, 0, nullptr);
 
         VkDescriptorSet l_DescriptorSet =
             l_ViewInfo.get_view_data_descriptor_set();
@@ -659,17 +724,22 @@ namespace Low {
 
         vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
 
-        for (auto it = p_RenderView.get_render_scene().get_draw_commands().begin();
-             it != p_RenderView.get_render_scene().get_draw_commands().end();) {
+        for (auto it = p_RenderView.get_render_scene()
+                           .get_draw_commands()
+                           .begin();
+             it != p_RenderView.get_render_scene()
+                       .get_draw_commands()
+                       .end();) {
           if (!it->get_render_object().is_alive()) {
-            it = p_RenderView.get_render_scene().get_draw_commands().erase(it);
+            it = p_RenderView.get_render_scene()
+                     .get_draw_commands()
+                     .erase(it);
             continue;
           }
 
           if (it->get_render_object()
                   .get_mesh_resource()
-                  .get_state() !=
-              MeshResourceState::LOADED) {
+                  .get_state() != MeshResourceState::LOADED) {
             it++;
             continue;
           }
@@ -719,7 +789,7 @@ namespace Low {
       {
         VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
 
-        ImageUtil::cmd_transition(
+        ImageUtil::Internal::cmd_transition(
             l_Cmd, p_Context.swapchain.drawImage.image,
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -751,7 +821,7 @@ namespace Low {
 
 #endif
 
-        ImageUtil::cmd_transition(
+        ImageUtil::Internal::cmd_transition(
             l_Cmd, p_Context.swapchain.drawImage.image,
             VK_IMAGE_LAYOUT_GENERAL,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -768,28 +838,33 @@ namespace Low {
           {
             // Transfer the gbuffer images
             ImageUtil::cmd_transition(
-                l_Cmd, l_ViewInfo.get_gbuffer_albedo().image,
+                l_Cmd,
+                l_RenderView.get_gbuffer_albedo().get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             ImageUtil::cmd_transition(
-                l_Cmd, l_ViewInfo.get_gbuffer_normals().image,
+                l_Cmd,
+                l_RenderView.get_gbuffer_normals().get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
 
           {
             ImageUtil::cmd_transition(
-                l_Cmd, l_ViewInfo.get_img_lit().image,
+                l_Cmd, l_RenderView.get_lit_image().get_data_handle(),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             VkClearValue l_ClearColorValue = {};
             l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
+            Image l_LitImage =
+                l_RenderView.get_lit_image().get_data_handle();
+
             Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
             l_ColorAttachments.resize(1);
             l_ColorAttachments[0] = InitUtil::attachment_info(
-                l_ViewInfo.get_img_lit().imageView,
+                l_LitImage.get_allocated_image().imageView,
                 &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
 
             VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
@@ -806,18 +881,16 @@ namespace Low {
                 g_Pipelines.lightingPipeline.get_pipeline());
 
             {
-              VkDescriptorSet l_DescriptorSet =
-                  l_ViewInfo.get_view_data_descriptor_set();
+              VkDescriptorSet l_Set =
+                  Global::get_global_descriptor_set();
 
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
                   Global::get_lighting_pipeline_layout(), 0, 1,
-                  &l_DescriptorSet, 0, nullptr);
-            }
+                  &l_Set, 0, nullptr);
 
-            {
               VkDescriptorSet l_DescriptorSet =
-                  l_ViewInfo.get_gbuffer_descriptor_set();
+                  l_ViewInfo.get_view_data_descriptor_set();
 
               vkCmdBindDescriptorSets(
                   l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -852,7 +925,7 @@ namespace Low {
             vkCmdEndRendering(l_Cmd);
 
             ImageUtil::cmd_transition(
-                l_Cmd, l_ViewInfo.get_img_lit().image,
+                l_Cmd, l_RenderView.get_lit_image().get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
           }
@@ -864,10 +937,14 @@ namespace Low {
               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
               */
 
-          ImageUtil::cmd_copy2D(l_Cmd, l_ViewInfo.get_img_lit().image,
-                                g_Context.swapchain.drawImage.image,
-                                p_Context.swapchain.drawExtent,
-                                p_Context.swapchain.drawExtent);
+          Image l_LitImage =
+              l_RenderView.get_lit_image().get_data_handle();
+
+          ImageUtil::Internal::cmd_copy2D(
+              l_Cmd, l_LitImage.get_allocated_image().image,
+              g_Context.swapchain.drawImage.image,
+              p_Context.swapchain.drawExtent,
+              p_Context.swapchain.drawExtent);
 
           /*
           ImageUtil::cmd_transition(
@@ -877,11 +954,11 @@ namespace Low {
               */
         }
 
-        ImageUtil::cmd_transition(
+        ImageUtil::Internal::cmd_transition(
             l_Cmd, p_Context.swapchain.drawImage.image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        ImageUtil::cmd_transition(
+        ImageUtil::Internal::cmd_transition(
             l_Cmd,
             p_Context.swapchain
                 .images[p_Context.swapchain.imageIndex],
@@ -898,61 +975,117 @@ namespace Low {
 
         if (p_ViewInfo.is_initialized()) {
           wait_idle();
-          ImageUtil::destroy(p_ViewInfo.get_gbuffer_albedo());
-          ImageUtil::destroy(p_ViewInfo.get_gbuffer_normals());
+          {
+            Image l_Image =
+                p_RenderView.get_gbuffer_albedo().get_data_handle();
+            ImageUtil::destroy(
+                l_Image);
+            l_Image.destroy();
+          }
+          {
+            Image l_Image =
+                p_RenderView.get_gbuffer_normals().get_data_handle();
+            ImageUtil::destroy(
+                l_Image);
+            l_Image.destroy();
+          }
         }
 
         VkExtent3D l_Extent{p_RenderView.get_dimensions().x,
                             p_RenderView.get_dimensions().y, 1.0f};
 
         {
-          AllocatedImage l_Image = ImageUtil::create(
-              l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
-              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                  VK_IMAGE_USAGE_STORAGE_BIT |
-                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                  VK_IMAGE_USAGE_SAMPLED_BIT,
-              false);
+          if (!p_RenderView.get_gbuffer_albedo().is_alive()) {
+            p_RenderView.set_gbuffer_albedo(Texture::make(N(Albedo)));
+
+            LOW_LOG_DEBUG
+                << "Albedo:"
+                << p_RenderView.get_gbuffer_albedo().get_index()
+                << LOW_LOG_END;
+          }
+
+          Image l_Image =
+              p_RenderView.get_gbuffer_albedo().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(Albedo));
+            p_RenderView.get_gbuffer_albedo().set_data_handle(
+                l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent,
+                            VK_FORMAT_R16G16B16A16_SFLOAT,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
 
           ImageUtil::cmd_transition(
-              l_Cmd, l_Image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-          p_ViewInfo.set_gbuffer_albedo(l_Image);
         }
         {
-          AllocatedImage l_Image = ImageUtil::create(
-              l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
-              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                  VK_IMAGE_USAGE_STORAGE_BIT |
-                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                  VK_IMAGE_USAGE_SAMPLED_BIT,
-              false);
+          if (!p_RenderView.get_gbuffer_normals().is_alive()) {
+            p_RenderView.set_gbuffer_normals(
+                Texture::make(N(Normals)));
+
+            LOW_LOG_DEBUG
+                << "Normals:"
+                << p_RenderView.get_gbuffer_normals().get_index()
+                << LOW_LOG_END;
+          }
+
+          Image l_Image =
+              p_RenderView.get_gbuffer_normals().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(Normals));
+            p_RenderView.get_gbuffer_normals().set_data_handle(
+                l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent,
+                            VK_FORMAT_R16G16B16A16_SFLOAT,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
 
           ImageUtil::cmd_transition(
-              l_Cmd, l_Image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-          p_ViewInfo.set_gbuffer_normals(l_Image);
         }
 
         {
-          AllocatedImage l_Image = ImageUtil::create(
-              l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
-              VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                  VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                  VK_IMAGE_USAGE_STORAGE_BIT |
-                  VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                  VK_IMAGE_USAGE_SAMPLED_BIT,
-              false);
+          if (!p_RenderView.get_lit_image().is_alive()) {
+            p_RenderView.set_lit_image(Texture::make(N(Lit)));
+          }
+
+          Image l_Image =
+              p_RenderView.get_lit_image().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(Lit));
+            p_RenderView.get_lit_image().set_data_handle(
+                l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent,
+                            VK_FORMAT_R16G16B16A16_SFLOAT,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
 
           ImageUtil::cmd_transition(
-              l_Cmd, l_Image.image, VK_IMAGE_LAYOUT_UNDEFINED,
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-          p_ViewInfo.set_img_lit(l_Image);
         }
 
         {
@@ -966,13 +1099,13 @@ namespace Low {
 
           DescriptorUtil::DescriptorWriter l_Writer;
           l_Writer.write_image(
-              0, p_ViewInfo.get_gbuffer_albedo().imageView,
+              0, p_RenderView.get_gbuffer_albedo().get_data_handle(),
               l_Samplers.no_lod_nearest_repeat_black,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
           l_Writer.write_image(
-              1, p_ViewInfo.get_gbuffer_normals().imageView,
+              1, p_RenderView.get_gbuffer_normals().get_data_handle(),
               l_Samplers.no_lod_nearest_repeat_black,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -1081,8 +1214,54 @@ namespace Low {
         return true;
       }
 
+      bool update_dirty_textures(float p_Delta)
+      {
+        Samplers &l_Samplers = Global::get_samplers();
+
+        DescriptorUtil::DescriptorWriter l_Writer;
+
+        u32 l_Count = 0;
+
+        for (auto it = Texture::ms_Dirty.begin();
+             it != Texture::ms_Dirty.end(); ++it) {
+
+          Texture i_Texture = *it;
+          if (!i_Texture.is_alive()) {
+            continue;
+          }
+
+          Image i_Image = i_Texture.get_data_handle();
+
+          if (!i_Image.is_alive()) {
+            continue;
+          }
+
+          l_Writer.write_image(
+              2, i_Image.get_allocated_image().imageView,
+              l_Samplers.no_lod_nearest_repeat_black,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+              i_Texture.get_index());
+
+          u32 ind = i_Texture.get_index();
+
+          l_Count++;
+        }
+
+        if (l_Count) {
+          l_Writer.update_set(Global::get_device(),
+                              Global::get_global_descriptor_set());
+        }
+
+        Texture::ms_Dirty.clear();
+
+        return true;
+      }
+
       bool prepare_tick(float p_Delta)
       {
+        static bool l_Initialized = false;
+
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -1092,6 +1271,13 @@ namespace Low {
         PipelineManager::tick(p_Delta);
 
         bool l_Result = Base::context_prepare_draw(g_Context);
+
+        update_dirty_textures(p_Delta);
+
+        if (!l_Initialized) {
+          initialize_default_texture();
+          l_Initialized = true;
+        }
 
         prepare_render_views(p_Delta);
         return true;

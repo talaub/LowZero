@@ -36,11 +36,7 @@ types:
         type: bool
       gbuffer_descriptor_set:
         type: VkDescriptorSet
-      gbuffer_depth:
-        type: AllocatedImage
-      gbuffer_albedo:
-        type: AllocatedImage
-      gbuffer_normals:
-        type: AllocatedImage
-      img_lit:
-        type: AllocatedImage
+  Scene:
+    properties:
+      point_light_buffer:
+        type: AllocatedBuffer

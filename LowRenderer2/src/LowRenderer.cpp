@@ -395,16 +395,20 @@ namespace Low {
       }
     }
 
-    void tick(float p_Delta)
+    void prepare_tick(float p_Delta)
     {
-      static bool l_ImageInit = false;
-
       // Resetting the resource staging buffer for this frame
       Vulkan::Global::get_current_resource_staging_buffer().occupied =
           0;
 
       LOW_ASSERT(Vulkan::prepare_tick(p_Delta),
                  "Failed to prepare tick Vulkan renderer");
+    }
+
+    void tick(float p_Delta)
+    {
+
+      static bool l_ImageInit = false;
       ResourceManager::tick(p_Delta);
       update_drawcommand_buffer(p_Delta);
       tick_materials(p_Delta);

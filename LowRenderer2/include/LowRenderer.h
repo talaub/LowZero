@@ -9,6 +9,7 @@ namespace Low {
   namespace Renderer {
     void initialize();
     void cleanup();
+    void prepare_tick(float p_Delta);
     void tick(float p_Delta);
 
     void check_window_resize(float p_Delta);

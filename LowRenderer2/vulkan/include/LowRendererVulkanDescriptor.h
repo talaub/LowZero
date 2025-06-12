@@ -9,12 +9,14 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
+      struct Image;
       namespace DescriptorUtil {
         struct DescriptorLayoutBuilder
         {
           Util::List<VkDescriptorSetLayoutBinding> m_Bindings;
 
-          void add_binding(u32 p_Binding, VkDescriptorType p_Type);
+          void add_binding(u32 p_Binding, VkDescriptorType p_Type,
+                           u32 p_DescriptorCount = 1);
           void clear();
           VkDescriptorSetLayout
           build(VkDevice p_Device, VkShaderStageFlags p_SHaderStaged,
@@ -76,10 +78,18 @@ namespace Low {
           Util::Deque<VkDescriptorBufferInfo> m_BufferInfos;
           Util::List<VkWriteDescriptorSet> m_Writes;
 
+
+        bool write_image(int p_Binding,
+                                             Low::Renderer::Vulkan::Image p_Image,
+                                             VkSampler p_Sampler,
+                                             VkImageLayout p_Layout,
+                                             VkDescriptorType p_Type,
+                                             int p_ArrayElement=0);
           bool write_image(int p_Binding, VkImageView p_ImageView,
                            VkSampler p_Sampler,
                            VkImageLayout p_Layout,
-                           VkDescriptorType p_Type);
+                           VkDescriptorType p_Type,
+                           int p_ArrayElement = 0);
           bool write_buffer(int p_Binding, VkBuffer p_Buffer,
                             size_t p_Size, size_t p_Offset,
                             VkDescriptorType p_Type);

@@ -22,6 +22,8 @@ namespace Low {
 
       void drag_handle(Util::Handle p_Handle);
 
+      void LOW_EDITOR_API Heading2(const char *p_Text);
+
       bool LOW_EDITOR_API SearchField(
           Util::String p_Label, char *p_SearchString, int p_Length,
           ImVec2 p_IconOffset = ImVec2(0.0f, 0.0f));

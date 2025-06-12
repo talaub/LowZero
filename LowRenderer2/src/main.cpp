@@ -37,8 +37,14 @@ Low::Util::Window g_MainWindow;
 Low::Renderer::RenderView g_RenderView;
 Low::Renderer::RenderScene g_RenderScene;
 
+Low::Renderer::RenderObject g_RenderObject;
+
 Low::Renderer::MaterialType g_SolidBaseMaterialType;
 Low::Renderer::Material g_TestMaterial;
+
+Low::Math::Vector3 g_Position(0.0f);
+Low::Math::Quaternion g_Rotation(1.0f, 0.0f, 0.0f, 0.0f);
+Low::Math::Vector3 g_Scale(1.0f);
 
 namespace Low {
   namespace Util {
@@ -53,6 +59,19 @@ Low::Math::UVector2 g_Dimensions{1700, 900};
 
 void draw()
 {
+  Low::Renderer::prepare_tick(0.1f);
+
+  ImGui::Begin("Cube");
+  if (ImGui::DragFloat3("Position", (float *)&g_Position)) {
+    Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+    l_LocalMatrix = glm::translate(l_LocalMatrix, g_Position);
+    l_LocalMatrix *= glm::toMat4(g_Rotation);
+    l_LocalMatrix = glm::scale(l_LocalMatrix, g_Scale);
+
+    g_RenderObject.set_world_transform(l_LocalMatrix);
+  }
+  ImGui::End();
   Low::Renderer::tick(0.1f);
 }
 
@@ -106,15 +125,11 @@ void init()
     Low::Renderer::MeshResource l_MeshResource =
         Low::Renderer::load_mesh(l_BasePath);
 
-    Low::Math::Vector3 l_Position(0.0f);
-    Low::Math::Quaternion l_Rotation(1.0f, 0.0f, 0.0f, 0.0f);
-    Low::Math::Vector3 l_Scale(1.0f);
-
     Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
-    l_LocalMatrix = glm::translate(l_LocalMatrix, l_Position);
-    l_LocalMatrix *= glm::toMat4(l_Rotation);
-    l_LocalMatrix = glm::scale(l_LocalMatrix, l_Scale);
+    l_LocalMatrix = glm::translate(l_LocalMatrix, g_Position);
+    l_LocalMatrix *= glm::toMat4(g_Rotation);
+    l_LocalMatrix = glm::scale(l_LocalMatrix, g_Scale);
 
     g_RenderScene = Low::Renderer::RenderScene::make("Default");
 
@@ -139,10 +154,10 @@ void init()
     g_RenderView.set_camera_position(p);
     g_RenderView.set_camera_direction(d);
 
-    Low::Renderer::RenderObject l_RenderObject =
-        Low::Renderer::RenderObject::make(g_RenderScene, l_MeshResource);
-    l_RenderObject.set_material(g_TestMaterial);
-    l_RenderObject.set_world_transform(l_LocalMatrix);
+    g_RenderObject = Low::Renderer::RenderObject::make(
+        g_RenderScene, l_MeshResource);
+    g_RenderObject.set_material(g_TestMaterial);
+    g_RenderObject.set_world_transform(l_LocalMatrix);
   }
 }
 

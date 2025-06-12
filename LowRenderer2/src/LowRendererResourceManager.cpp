@@ -188,12 +188,9 @@ namespace Low {
         l_Extent.height = l_ImageMipmaps.mip0.dimensions.y;
         l_Extent.depth = 1;
 
-        Vulkan::AllocatedImage l_AllocatedImage =
-            Vulkan::ImageUtil::create(
+            Vulkan::ImageUtil::create(l_Image,
                 l_Extent, VK_FORMAT_R8G8B8A8_UNORM,
                 VK_IMAGE_USAGE_SAMPLED_BIT, true);
-
-        l_Image.set_allocated_image(l_AllocatedImage);
 
         Texture l_Texture = Texture::make(p_ImageResource.get_name());
         l_Texture.set_data_handle(l_Image.get_id());
@@ -203,7 +200,7 @@ namespace Low {
         // TODO: Should be changed to transfer command buffer
         Vulkan::ImageUtil::cmd_transition(
             Vulkan::Global::get_current_command_buffer(),
-            l_AllocatedImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            l_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         p_ImageResource.set_state(ImageResourceState::UPLOADINGTOGPU);
         return true;
@@ -720,7 +717,7 @@ namespace Low {
 
             Vulkan::ImageUtil::cmd_transition(
                 Vulkan::Global::get_current_command_buffer(),
-                l_Image.get_allocated_image(),
+                l_Image,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             vkCmdCopyBufferToImage(
@@ -732,7 +729,7 @@ namespace Low {
 
             Vulkan::ImageUtil::cmd_transition(
                 Vulkan::Global::get_current_command_buffer(),
-                l_Image.get_allocated_image(),
+                l_Image,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
         }
@@ -761,7 +758,7 @@ namespace Low {
           // synchronization
           Vulkan::ImageUtil::cmd_transition(
               Vulkan::Global::get_current_command_buffer(),
-              l_Image.get_allocated_image(),
+              l_Image,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
           // Add the loaded mip to the list of mips loaded and sort

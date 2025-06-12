@@ -4,18 +4,20 @@
 
 #include "LowUtilLogger.h"
 
+#include "LowRendererVkImage.h"
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace DescriptorUtil {
         void
         DescriptorLayoutBuilder::add_binding(u32 p_Binding,
-                                             VkDescriptorType p_Type)
+                                             VkDescriptorType p_Type,
+                                             u32 p_DescriptorCount)
         {
           VkDescriptorSetLayoutBinding l_Binding = {};
           l_Binding.binding = p_Binding;
-          // TODO: Check again maybe expose that as a parameter
-          l_Binding.descriptorCount = 1;
+          l_Binding.descriptorCount = p_DescriptorCount;
           l_Binding.descriptorType = p_Type;
 
           m_Bindings.push_back(l_Binding);
@@ -35,8 +37,8 @@ namespace Low {
           }
 
           VkDescriptorSetLayoutCreateInfo l_Info;
-              l_Info.sType =
-                  VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+          l_Info.sType =
+              VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
           l_Info.pNext = p_Next;
 
           l_Info.pBindings = m_Bindings.data();
@@ -58,8 +60,8 @@ namespace Low {
           for (PoolSizeRatio i_Ratio : p_PoolRatios) {
             VkDescriptorPoolSize i_Size{};
             i_Size.type = i_Ratio.type;
-                i_Size.descriptorCount = u32(i_Ratio.ratio * p_MaxSets);
-          l_PoolSizes.push_back(i_Size);
+            i_Size.descriptorCount = u32(i_Ratio.ratio * p_MaxSets);
+            l_PoolSizes.push_back(i_Size);
           }
 
           VkDescriptorPoolCreateInfo l_PoolInfo{};
@@ -89,8 +91,8 @@ namespace Low {
                                       VkDescriptorSetLayout p_Layout)
         {
           VkDescriptorSetAllocateInfo l_Info{};
-              l_Info.sType =
-                  VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+          l_Info.sType =
+              VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
           l_Info.pNext = nullptr;
           l_Info.descriptorPool = m_Pool;
           l_Info.descriptorSetCount = 1;
@@ -132,8 +134,8 @@ namespace Low {
           for (PoolSizeRatio i_Ratio : p_PoolRatios) {
             VkDescriptorPoolSize i_Size{};
             i_Size.type = i_Ratio.type;
-                i_Size.descriptorCount = u32(i_Ratio.ratio * p_SetCount);
-                
+            i_Size.descriptorCount = u32(i_Ratio.ratio * p_SetCount);
+
             l_PoolSizes.push_back(i_Size);
           }
 
@@ -241,16 +243,16 @@ namespace Low {
         {
           {
             VkDescriptorBufferInfo l_LocalInfo{};
-              l_LocalInfo.buffer = p_Buffer;
-			 l_LocalInfo.offset = p_Offset;
-			 l_LocalInfo.range = p_Size;
+            l_LocalInfo.buffer = p_Buffer;
+            l_LocalInfo.offset = p_Offset;
+            l_LocalInfo.range = p_Size;
 
-          m_BufferInfos.push_back(l_LocalInfo);
+            m_BufferInfos.push_back(l_LocalInfo);
           }
           VkDescriptorBufferInfo &l_Info = m_BufferInfos.back();
 
           VkWriteDescriptorSet l_Write{};
-              l_Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          l_Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 
           l_Write.dstBinding = p_Binding;
           l_Write.dstSet = VK_NULL_HANDLE;
@@ -264,30 +266,44 @@ namespace Low {
         }
 
         bool DescriptorWriter::write_image(int p_Binding,
+                                           Image p_Image,
+                                           VkSampler p_Sampler,
+                                           VkImageLayout p_Layout,
+                                           VkDescriptorType p_Type,
+                                           int p_ArrayElement)
+        {
+          return write_image(
+              p_Binding, p_Image.get_allocated_image().imageView,
+              p_Sampler, p_Layout, p_Type, p_ArrayElement);
+        }
+
+        bool DescriptorWriter::write_image(int p_Binding,
                                            VkImageView p_ImageView,
                                            VkSampler p_Sampler,
                                            VkImageLayout p_Layout,
-                                           VkDescriptorType p_Type)
+                                           VkDescriptorType p_Type,
+                                           int p_ArrayElement)
         {
           {
             VkDescriptorImageInfo l_LocalInfo{};
 
-                l_LocalInfo.sampler = p_Sampler;
+            l_LocalInfo.sampler = p_Sampler;
             l_LocalInfo.imageView = p_ImageView;
-                                      l_LocalInfo.imageLayout = p_Layout;
+            l_LocalInfo.imageLayout = p_Layout;
 
             m_ImageInfos.push_back(l_LocalInfo);
           }
           VkDescriptorImageInfo &l_Info = m_ImageInfos.back();
 
           VkWriteDescriptorSet l_Write{};
-              l_Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+          l_Write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 
           l_Write.dstBinding = p_Binding;
           l_Write.dstSet = VK_NULL_HANDLE;
           l_Write.descriptorCount = 1;
           l_Write.descriptorType = p_Type;
           l_Write.pImageInfo = &l_Info;
+          l_Write.dstArrayElement = p_ArrayElement;
 
           m_Writes.push_back(l_Write);
 

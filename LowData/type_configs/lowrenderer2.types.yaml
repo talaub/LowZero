@@ -130,6 +130,20 @@ types:
       render_scene:
         type: Low::Renderer::RenderScene
         handle: true
+      gbuffer_albedo:
+        type: Low::Renderer::Texture
+        handle: true
+      gbuffer_normals:
+        type: Low::Renderer::Texture
+        handle: true
+      gbuffer_depth:
+        type: Low::Renderer::Texture
+        handle: true
+      lit_image:
+        type: Low::Renderer::Texture
+        handle: true
+
+
   MaterialType:
     properties:
       transparent:

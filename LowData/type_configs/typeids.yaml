@@ -61,6 +61,7 @@ LowRenderer2:
   Texture: 60
   RenderScene: 61
   DrawCommand: 62
+  Scene: 63
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

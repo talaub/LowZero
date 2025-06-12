@@ -9,7 +9,6 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -18,40 +17,35 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_RENDERER2_API ViewInfoData
+      struct LOW_RENDERER2_API SceneData
       {
-        AllocatedBuffer view_data_buffer;
-        VkDescriptorSet view_data_descriptor_set;
-        VkDescriptorSet lighting_descriptor_set;
-        Low::Util::List<StagingBuffer> staging_buffers;
-        bool initialized;
-        VkDescriptorSet gbuffer_descriptor_set;
+        AllocatedBuffer point_light_buffer;
         Low::Util::Name name;
 
         static size_t get_size()
         {
-          return sizeof(ViewInfoData);
+          return sizeof(SceneData);
         }
       };
 
-      struct LOW_RENDERER2_API ViewInfo : public Low::Util::Handle
+      struct LOW_RENDERER2_API Scene : public Low::Util::Handle
       {
       public:
         static std::shared_mutex ms_BufferMutex;
         static uint8_t *ms_Buffer;
         static Low::Util::Instances::Slot *ms_Slots;
 
-        static Low::Util::List<ViewInfo> ms_LivingInstances;
+        static Low::Util::List<Scene> ms_LivingInstances;
 
         const static uint16_t TYPE_ID;
 
-        ViewInfo();
-        ViewInfo(uint64_t p_Id);
-        ViewInfo(ViewInfo &p_Copy);
+        Scene();
+        Scene(uint64_t p_Id);
+        Scene(Scene &p_Copy);
 
-        static ViewInfo make(Low::Util::Name p_Name);
+        static Scene make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
-        explicit ViewInfo(const ViewInfo &p_Copy)
+        explicit Scene(const Scene &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -65,12 +59,12 @@ namespace Low {
         {
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static ViewInfo *living_instances()
+        static Scene *living_instances()
         {
           return ms_LivingInstances.data();
         }
 
-        static ViewInfo find_by_index(uint32_t p_Index);
+        static Scene find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -79,14 +73,14 @@ namespace Low {
 
         void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-        ViewInfo duplicate(Low::Util::Name p_Name) const;
-        static ViewInfo duplicate(ViewInfo p_Handle,
-                                  Low::Util::Name p_Name);
+        Scene duplicate(Low::Util::Name p_Name) const;
+        static Scene duplicate(Scene p_Handle,
+                               Low::Util::Name p_Name);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
                    Low::Util::Name p_Name);
 
-        static ViewInfo find_by_name(Low::Util::Name p_Name);
+        static Scene find_by_name(Low::Util::Name p_Name);
         static Low::Util::Handle
         _find_by_name(Low::Util::Name p_Name);
 
@@ -98,35 +92,19 @@ namespace Low {
         static bool is_alive(Low::Util::Handle p_Handle)
         {
           READ_LOCK(l_Lock);
-          return p_Handle.get_type() == ViewInfo::TYPE_ID &&
+          return p_Handle.get_type() == Scene::TYPE_ID &&
                  p_Handle.check_alive(ms_Slots, get_capacity());
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          ViewInfo l_ViewInfo = p_Handle.get_id();
-          l_ViewInfo.destroy();
+          Scene l_Scene = p_Handle.get_id();
+          l_Scene.destroy();
         }
 
-        AllocatedBuffer &get_view_data_buffer() const;
-        void set_view_data_buffer(AllocatedBuffer &p_Value);
-
-        VkDescriptorSet get_view_data_descriptor_set() const;
-        void set_view_data_descriptor_set(VkDescriptorSet p_Value);
-
-        VkDescriptorSet &get_lighting_descriptor_set() const;
-        void set_lighting_descriptor_set(VkDescriptorSet &p_Value);
-
-        Low::Util::List<StagingBuffer> &get_staging_buffers() const;
-        void
-        set_staging_buffers(Low::Util::List<StagingBuffer> &p_Value);
-
-        bool is_initialized() const;
-        void set_initialized(bool p_Value);
-
-        VkDescriptorSet &get_gbuffer_descriptor_set() const;
-        void set_gbuffer_descriptor_set(VkDescriptorSet &p_Value);
+        AllocatedBuffer &get_point_light_buffer() const;
+        void set_point_light_buffer(AllocatedBuffer &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

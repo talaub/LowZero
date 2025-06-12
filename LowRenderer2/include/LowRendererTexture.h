@@ -111,6 +111,8 @@ namespace Low {
       static uint32_t create_instance();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::Texture> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

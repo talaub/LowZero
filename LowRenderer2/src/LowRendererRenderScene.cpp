@@ -373,7 +373,8 @@ namespace Low {
       Util::List<DrawCommand> &l_DrawCommands = get_draw_commands();
 
       for (u32 i = 0; i < l_DrawCommands.size(); ++i) {
-        if (l_DrawCommands[i].get_sort_index() < p_DrawCommand.get_sort_index()) {
+        if (l_DrawCommands[i].get_sort_index() <
+            p_DrawCommand.get_sort_index()) {
           l_SavedIndex = i;
           continue;
         } else if (l_DrawCommands[i].get_sort_index() >

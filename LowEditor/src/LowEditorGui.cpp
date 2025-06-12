@@ -23,6 +23,13 @@ namespace Low {
   namespace Editor {
     namespace Gui {
 
+      void Heading2(const char *p_Text)
+      {
+        ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
+        ImGui::TextWrapped(p_Text);
+        ImGui::PopFont();
+      }
+
       static bool drag_float(const char *label, float *value,
                              float width, float v_speed = 1.0f,
                              float v_min = 0.0f, float v_max = 0.0f)
@@ -335,12 +342,10 @@ namespace Low {
 
           if (l_TypeInfo.component) {
             Core::Entity l_Entity;
-			l_TypeInfo.properties[N(entity)].get(
-				p_Handle, &l_Entity);
+            l_TypeInfo.properties[N(entity)].get(p_Handle, &l_Entity);
             l_Name = l_Entity.get_name();
           } else {
-			l_TypeInfo.properties[N(name)].get(
-				p_Handle, &l_Name);
+            l_TypeInfo.properties[N(name)].get(p_Handle, &l_Name);
           }
 
           ImGui::Text(l_Name.c_str());

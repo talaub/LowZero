@@ -10,6 +10,7 @@
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererRenderScene.h"
+#include "LowRendererTexture.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -25,6 +26,10 @@ namespace Low {
       uint64_t view_info_handle;
       Low::Math::UVector2 dimensions;
       Low::Renderer::RenderScene render_scene;
+      Low::Renderer::Texture gbuffer_albedo;
+      Low::Renderer::Texture gbuffer_normals;
+      Low::Renderer::Texture gbuffer_depth;
+      Low::Renderer::Texture lit_image;
       bool camera_dirty;
       bool dimensions_dirty;
       Low::Util::Name name;
@@ -136,6 +141,18 @@ namespace Low {
 
       Low::Renderer::RenderScene get_render_scene() const;
       void set_render_scene(Low::Renderer::RenderScene p_Value);
+
+      Low::Renderer::Texture get_gbuffer_albedo() const;
+      void set_gbuffer_albedo(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_gbuffer_normals() const;
+      void set_gbuffer_normals(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_gbuffer_depth() const;
+      void set_gbuffer_depth(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_lit_image() const;
+      void set_lit_image(Low::Renderer::Texture p_Value);
 
       bool is_camera_dirty() const;
       void set_camera_dirty(bool p_Value);

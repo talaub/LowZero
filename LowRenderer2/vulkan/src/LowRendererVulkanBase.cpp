@@ -264,7 +264,7 @@ namespace Low {
         {
 
           // Destroy drawimage
-          ImageUtil::destroy(p_Swapchain.drawImage);
+          ImageUtil::Internal::destroy(p_Swapchain.drawImage);
 
           vkDestroySwapchainKHR(Global::get_device(),
                                 p_Swapchain.vkhandle, nullptr);
@@ -426,14 +426,14 @@ namespace Low {
           VkCommandBuffer l_Cmd =
               Global::get_current_command_buffer();
 
-          ImageUtil::cmd_copy2D(
+          ImageUtil::Internal::cmd_copy2D(
               l_Cmd, p_Context.swapchain.drawImage.image,
               p_Context.swapchain
                   .images[p_Context.swapchain.imageIndex],
               p_Context.swapchain.drawExtent,
               p_Context.swapchain.extent);
 
-          ImageUtil::cmd_transition(
+          ImageUtil::Internal::cmd_transition(
               l_Cmd,
               p_Context.swapchain
                   .images[p_Context.swapchain.imageIndex],
@@ -444,7 +444,7 @@ namespace Low {
                      p_Context.swapchain
                          .imageViews[p_Context.swapchain.imageIndex]);
 
-          ImageUtil::cmd_transition(
+          ImageUtil::Internal::cmd_transition(
               l_Cmd,
               p_Context.swapchain
                   .images[p_Context.swapchain.imageIndex],

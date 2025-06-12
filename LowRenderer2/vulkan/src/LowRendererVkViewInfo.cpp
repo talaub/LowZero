@@ -73,14 +73,6 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
                                 gbuffer_descriptor_set,
                                 VkDescriptorSet)) VkDescriptorSet();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, gbuffer_depth,
-                                AllocatedImage)) AllocatedImage();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, gbuffer_albedo,
-                                AllocatedImage)) AllocatedImage();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, gbuffer_normals,
-                                AllocatedImage)) AllocatedImage();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, img_lit,
-                                AllocatedImage)) AllocatedImage();
         ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, name, Low::Util::Name) =
             Low::Util::Name(0u);
         LOCK_UNLOCK(l_Lock);
@@ -390,128 +382,6 @@ namespace Low {
           // End property: gbuffer_descriptor_set
         }
         {
-          // Property: gbuffer_depth
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(gbuffer_depth);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, gbuffer_depth);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.get_gbuffer_depth();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, ViewInfo, gbuffer_depth, AllocatedImage);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.set_gbuffer_depth(*(AllocatedImage *)p_Data);
-          };
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            ViewInfo l_Handle = p_Handle.get_id();
-            *((AllocatedImage *)p_Data) =
-                l_Handle.get_gbuffer_depth();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: gbuffer_depth
-        }
-        {
-          // Property: gbuffer_albedo
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(gbuffer_albedo);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, gbuffer_albedo);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.get_gbuffer_albedo();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, ViewInfo, gbuffer_albedo, AllocatedImage);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.set_gbuffer_albedo(*(AllocatedImage *)p_Data);
-          };
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            ViewInfo l_Handle = p_Handle.get_id();
-            *((AllocatedImage *)p_Data) =
-                l_Handle.get_gbuffer_albedo();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: gbuffer_albedo
-        }
-        {
-          // Property: gbuffer_normals
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(gbuffer_normals);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, gbuffer_normals);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.get_gbuffer_normals();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, ViewInfo, gbuffer_normals, AllocatedImage);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.set_gbuffer_normals(*(AllocatedImage *)p_Data);
-          };
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            ViewInfo l_Handle = p_Handle.get_id();
-            *((AllocatedImage *)p_Data) =
-                l_Handle.get_gbuffer_normals();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: gbuffer_normals
-        }
-        {
-          // Property: img_lit
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(img_lit);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewInfoData, img_lit);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.handleType = 0;
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.get_img_lit();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, ViewInfo, img_lit, AllocatedImage);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            ViewInfo l_Handle = p_Handle.get_id();
-            l_Handle.set_img_lit(*(AllocatedImage *)p_Data);
-          };
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            ViewInfo l_Handle = p_Handle.get_id();
-            *((AllocatedImage *)p_Data) = l_Handle.get_img_lit();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: img_lit
-        }
-        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -617,10 +487,6 @@ namespace Low {
         l_Handle.set_initialized(is_initialized());
         l_Handle.set_gbuffer_descriptor_set(
             get_gbuffer_descriptor_set());
-        l_Handle.set_gbuffer_depth(get_gbuffer_depth());
-        l_Handle.set_gbuffer_albedo(get_gbuffer_albedo());
-        l_Handle.set_gbuffer_normals(get_gbuffer_normals());
-        l_Handle.set_img_lit(get_img_lit());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -678,14 +544,6 @@ namespace Low {
           l_Handle.set_initialized(p_Node["initialized"].as<bool>());
         }
         if (p_Node["gbuffer_descriptor_set"]) {
-        }
-        if (p_Node["gbuffer_depth"]) {
-        }
-        if (p_Node["gbuffer_albedo"]) {
-        }
-        if (p_Node["gbuffer_normals"]) {
-        }
-        if (p_Node["img_lit"]) {
         }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -867,110 +725,6 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_descriptor_set
       }
 
-      AllocatedImage &ViewInfo::get_gbuffer_depth() const
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_depth
-        // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_depth
-
-        READ_LOCK(l_ReadLock);
-        return TYPE_SOA(ViewInfo, gbuffer_depth, AllocatedImage);
-      }
-      void ViewInfo::set_gbuffer_depth(AllocatedImage &p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_depth
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_depth
-
-        // Set new value
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(ViewInfo, gbuffer_depth, AllocatedImage) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_depth
-        // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_depth
-      }
-
-      AllocatedImage &ViewInfo::get_gbuffer_albedo() const
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_albedo
-        // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_albedo
-
-        READ_LOCK(l_ReadLock);
-        return TYPE_SOA(ViewInfo, gbuffer_albedo, AllocatedImage);
-      }
-      void ViewInfo::set_gbuffer_albedo(AllocatedImage &p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_albedo
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_albedo
-
-        // Set new value
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(ViewInfo, gbuffer_albedo, AllocatedImage) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_albedo
-        // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_albedo
-      }
-
-      AllocatedImage &ViewInfo::get_gbuffer_normals() const
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_normals
-        // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_normals
-
-        READ_LOCK(l_ReadLock);
-        return TYPE_SOA(ViewInfo, gbuffer_normals, AllocatedImage);
-      }
-      void ViewInfo::set_gbuffer_normals(AllocatedImage &p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_normals
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_normals
-
-        // Set new value
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(ViewInfo, gbuffer_normals, AllocatedImage) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_normals
-        // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_normals
-      }
-
-      AllocatedImage &ViewInfo::get_img_lit() const
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_img_lit
-        // LOW_CODEGEN::END::CUSTOM:GETTER_img_lit
-
-        READ_LOCK(l_ReadLock);
-        return TYPE_SOA(ViewInfo, img_lit, AllocatedImage);
-      }
-      void ViewInfo::set_img_lit(AllocatedImage &p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_img_lit
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_img_lit
-
-        // Set new value
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(ViewInfo, img_lit, AllocatedImage) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_img_lit
-        // LOW_CODEGEN::END::CUSTOM:SETTER_img_lit
-      }
-
       Low::Util::Name ViewInfo::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -1091,35 +845,6 @@ namespace Low {
                                      gbuffer_descriptor_set) *
                             (l_Capacity)],
                  l_Capacity * sizeof(VkDescriptorSet));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData, gbuffer_depth) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData, gbuffer_depth) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(AllocatedImage));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData, gbuffer_albedo) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData, gbuffer_albedo) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(AllocatedImage));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewInfoData, gbuffer_normals) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewInfoData, gbuffer_normals) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(AllocatedImage));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData, img_lit) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData, img_lit) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(AllocatedImage));
         }
         {
           memcpy(

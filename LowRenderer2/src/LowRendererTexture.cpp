@@ -10,11 +10,14 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererVkImage.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    Low::Util::Set<Low::Renderer::Texture>
+        Low::Renderer::Texture::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Texture::TYPE_ID = 60;
@@ -69,6 +72,8 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      Vulkan::Image l_Image = get_data_handle();
+      l_Image.destroy();
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       WRITE_LOCK(l_Lock);
@@ -329,6 +334,7 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
+      ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
     }
 

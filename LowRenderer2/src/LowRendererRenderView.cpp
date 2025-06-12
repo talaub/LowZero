@@ -63,6 +63,18 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, render_scene,
                               Low::Renderer::RenderScene))
           Low::Renderer::RenderScene();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, gbuffer_albedo,
+                              Low::Renderer::Texture))
+          Low::Renderer::Texture();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, gbuffer_normals,
+                              Low::Renderer::Texture))
+          Low::Renderer::Texture();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, gbuffer_depth,
+                              Low::Renderer::Texture))
+          Low::Renderer::Texture();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, lit_image,
+                              Low::Renderer::Texture))
+          Low::Renderer::Texture();
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_dirty, bool) =
           false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, dimensions_dirty,
@@ -326,6 +338,133 @@ namespace Low {
         // End property: render_scene
       }
       {
+        // Property: gbuffer_albedo
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(gbuffer_albedo);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, gbuffer_albedo);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_gbuffer_albedo();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            gbuffer_albedo,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_gbuffer_albedo(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_gbuffer_albedo();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: gbuffer_albedo
+      }
+      {
+        // Property: gbuffer_normals
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(gbuffer_normals);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, gbuffer_normals);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_gbuffer_normals();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            gbuffer_normals,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_gbuffer_normals(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_gbuffer_normals();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: gbuffer_normals
+      }
+      {
+        // Property: gbuffer_depth
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(gbuffer_depth);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, gbuffer_depth);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_gbuffer_depth();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            gbuffer_depth,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_gbuffer_depth(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_gbuffer_depth();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: gbuffer_depth
+      }
+      {
+        // Property: lit_image
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(lit_image);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, lit_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_lit_image();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            lit_image,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_lit_image(*(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_lit_image();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: lit_image
+      }
+      {
         // Property: camera_dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_dirty);
@@ -487,6 +626,18 @@ namespace Low {
       l_Handle.set_dimensions(get_dimensions());
       if (get_render_scene().is_alive()) {
         l_Handle.set_render_scene(get_render_scene());
+      }
+      if (get_gbuffer_albedo().is_alive()) {
+        l_Handle.set_gbuffer_albedo(get_gbuffer_albedo());
+      }
+      if (get_gbuffer_normals().is_alive()) {
+        l_Handle.set_gbuffer_normals(get_gbuffer_normals());
+      }
+      if (get_gbuffer_depth().is_alive()) {
+        l_Handle.set_gbuffer_depth(get_gbuffer_depth());
+      }
+      if (get_lit_image().is_alive()) {
+        l_Handle.set_lit_image(get_lit_image());
       }
       l_Handle.set_camera_dirty(is_camera_dirty());
       l_Handle.set_dimensions_dirty(is_dimensions_dirty());
@@ -791,6 +942,119 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene
     }
 
+    Low::Renderer::Texture RenderView::get_gbuffer_albedo() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_albedo
+      // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_albedo
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, gbuffer_albedo,
+                      Low::Renderer::Texture);
+    }
+    void
+    RenderView::set_gbuffer_albedo(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_albedo
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_albedo
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, gbuffer_albedo, Low::Renderer::Texture) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_albedo
+      // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_albedo
+    }
+
+    Low::Renderer::Texture RenderView::get_gbuffer_normals() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_normals
+      // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_normals
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, gbuffer_normals,
+                      Low::Renderer::Texture);
+    }
+    void
+    RenderView::set_gbuffer_normals(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_normals
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_normals
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, gbuffer_normals, Low::Renderer::Texture) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_normals
+      // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_normals
+    }
+
+    Low::Renderer::Texture RenderView::get_gbuffer_depth() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_depth
+      // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_depth
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, gbuffer_depth,
+                      Low::Renderer::Texture);
+    }
+    void RenderView::set_gbuffer_depth(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_depth
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_depth
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, gbuffer_depth, Low::Renderer::Texture) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_depth
+      // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_depth
+    }
+
+    Low::Renderer::Texture RenderView::get_lit_image() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lit_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_lit_image
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, lit_image, Low::Renderer::Texture);
+    }
+    void RenderView::set_lit_image(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lit_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_lit_image
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, lit_image, Low::Renderer::Texture) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lit_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_lit_image
+    }
+
     bool RenderView::is_camera_dirty() const
     {
       _LOW_ASSERT(is_alive());
@@ -951,6 +1215,35 @@ namespace Low {
                &ms_Buffer[offsetof(RenderViewData, render_scene) *
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Renderer::RenderScene));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderViewData, gbuffer_albedo) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderViewData, gbuffer_albedo) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Renderer::Texture));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(RenderViewData, gbuffer_normals) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(RenderViewData, gbuffer_normals) *
+                       (l_Capacity)],
+            l_Capacity * sizeof(Low::Renderer::Texture));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderViewData, gbuffer_depth) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderViewData, gbuffer_depth) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Renderer::Texture));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderViewData, lit_image) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderViewData, lit_image) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Renderer::Texture));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderViewData, camera_dirty) *

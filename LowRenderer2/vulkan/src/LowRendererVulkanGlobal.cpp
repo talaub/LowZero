@@ -9,6 +9,8 @@
 #include "LowRendererVulkanDescriptor.h"
 #include "LowRendererVulkanBuffer.h"
 #include "LowRendererGlobals.h"
+#include "LowRendererVulkan.h"
+#include "LowRendererTexture.h"
 
 #include "VkBootstrap.h"
 
@@ -81,7 +83,20 @@ namespace Low {
         VkDescriptorSetLayout g_GBufferDescriptorSetLayout;
         VkDescriptorSetLayout g_LightingDescriptorSetLayout;
 
+        VkDescriptorSetLayout g_GlobalDescriptorSetLayout;
+        VkDescriptorSet g_GlobalDescriptorSet;
+
         VkPipelineLayout g_LightingPipelineLayout;
+
+        VkDescriptorSetLayout get_global_descriptor_set_layout()
+        {
+          return g_GlobalDescriptorSetLayout;
+        }
+
+        VkDescriptorSet get_global_descriptor_set()
+        {
+          return g_GlobalDescriptorSet;
+        }
 
         Samplers &get_samplers()
         {
@@ -196,6 +211,47 @@ namespace Low {
         {
           g_FrameNumber++;
           g_CurrentFrameIndex = g_FrameNumber % g_FrameOverlap;
+          return true;
+        }
+
+        static bool initialize_global_descriptors()
+        {
+          {
+            DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+            l_Builder.add_binding(0,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(1,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(
+                2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                Texture::get_capacity());
+            g_GlobalDescriptorSetLayout = l_Builder.build(
+                Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+          }
+
+          g_GlobalDescriptorSet =
+              Global::get_global_descriptor_allocator().allocate(
+                  Global::get_device(),
+                  get_global_descriptor_set_layout());
+
+          {
+            DescriptorUtil::DescriptorWriter l_Writer;
+            l_Writer.write_buffer(
+                0, Global::get_mesh_vertex_buffer().m_Buffer.buffer,
+                Global::get_mesh_vertex_buffer().m_ElementSize *
+                    Global::get_mesh_vertex_buffer().m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.write_buffer(
+                1, Global::get_drawcommand_buffer().m_Buffer.buffer,
+                Global::get_drawcommand_buffer().m_ElementSize *
+                    Global::get_drawcommand_buffer().m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.update_set(Global::get_device(),
+                                get_global_descriptor_set());
+          }
+
           return true;
         }
 
@@ -388,6 +444,89 @@ namespace Low {
                 Low::Renderer::Vulkan::Global::get_device(), &sampl,
                 nullptr, &g_Samplers.no_lod_nearest_repeat_black);
           }
+          {
+            VkSamplerCreateInfo sampl{};
+            sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+            sampl.magFilter = VK_FILTER_NEAREST;
+            sampl.minFilter = VK_FILTER_NEAREST;
+            sampl.mipmapMode =
+                VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+
+            sampl.addressModeU =
+                VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
+            sampl.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            sampl.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+            sampl.mipLodBias = 0.0f; // LOD bias for mip selection
+            sampl.minLod = 0.0f;     // Minimum LOD level
+            sampl.maxLod = 0.0f;     // Max LOD level
+            sampl.borderColor = VK_BORDER_COLOR_INT_OPAQUE_WHITE;
+
+            vkCreateSampler(
+                Low::Renderer::Vulkan::Global::get_device(), &sampl,
+                nullptr, &g_Samplers.no_lod_nearest_repeat_white);
+          }
+
+          {
+            g_Samplers.lod_nearest_repeat_black.resize(
+                IMAGE_MIPMAP_COUNT);
+            for (int i = 0; i < IMAGE_MIPMAP_COUNT; ++i) {
+              VkSamplerCreateInfo sampl{};
+              sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+              sampl.magFilter = VK_FILTER_NEAREST;
+              sampl.minFilter = VK_FILTER_NEAREST;
+              sampl.mipmapMode =
+                  VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+
+              sampl.addressModeU =
+                  VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
+              sampl.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+              sampl.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+              sampl.mipLodBias = 0.0f; // LOD bias for mip selection
+              sampl.minLod =
+                  static_cast<float>(i); // Minimum LOD level
+              sampl.maxLod = static_cast<float>(IMAGE_MIPMAP_COUNT -
+                                                1); // Max LOD level
+              sampl.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+              vkCreateSampler(
+                  Low::Renderer::Vulkan::Global::get_device(), &sampl,
+                  nullptr, &g_Samplers.lod_nearest_repeat_black[i]);
+            }
+          }
+          {
+            g_Samplers.lod_linear_repeat_black.resize(
+                IMAGE_MIPMAP_COUNT);
+            for (int i = 0; i < IMAGE_MIPMAP_COUNT; ++i) {
+              VkSamplerCreateInfo sampl{};
+              sampl.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+              sampl.magFilter = VK_FILTER_LINEAR;
+              sampl.minFilter = VK_FILTER_LINEAR;
+              sampl.mipmapMode =
+                  VK_SAMPLER_MIPMAP_MODE_LINEAR; // Enable mipmaps
+
+              sampl.addressModeU =
+                  VK_SAMPLER_ADDRESS_MODE_REPEAT; // Addressing mode
+              sampl.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+              sampl.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+              sampl.mipLodBias = 0.0f; // LOD bias for mip selection
+              sampl.minLod =
+                  static_cast<float>(i); // Minimum LOD level
+              sampl.maxLod = static_cast<float>(IMAGE_MIPMAP_COUNT -
+                                                1); // Max LOD level
+              sampl.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+              vkCreateSampler(
+                  Low::Renderer::Vulkan::Global::get_device(), &sampl,
+                  nullptr, &g_Samplers.lod_linear_repeat_black[i]);
+            }
+          }
+
           return true;
         }
 
@@ -528,6 +667,9 @@ namespace Low {
           g_GlobalDescriptorAllocator.init_pool(g_Device, 10,
                                                 l_Sizes);
 
+          LOWR_VK_ASSERT(initialize_global_descriptors(),
+                         "Could not initialize global descriptors");
+
           {
             DescriptorUtil::DescriptorLayoutBuilder l_Builder;
             l_Builder.add_binding(0,
@@ -549,9 +691,9 @@ namespace Low {
           {
             Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
             l_DescriptorSetLayouts.push_back(
-                g_ViewInfoDescriptorSetLayout);
+                get_global_descriptor_set_layout());
             l_DescriptorSetLayouts.push_back(
-                g_GBufferDescriptorSetLayout);
+                get_view_info_descriptor_set_layout());
 
             VkPipelineLayoutCreateInfo l_Layout{};
             l_Layout.sType =
@@ -594,6 +736,15 @@ namespace Low {
           return true;
         }
 
+        static bool global_descriptors_cleanup()
+        {
+          vkDestroyDescriptorSetLayout(
+              Global::get_device(),
+              Global::get_global_descriptor_set_layout(), nullptr);
+
+          return true;
+        }
+
         static bool mesh_buffer_cleanup()
         {
           get_mesh_vertex_buffer().destroy();
@@ -612,6 +763,8 @@ namespace Low {
           vkDestroyDescriptorSetLayout(
               g_Device, g_ViewInfoDescriptorSetLayout, nullptr);
 
+          LOWR_VK_ASSERT(global_descriptors_cleanup(),
+                         "Could not cleanup global descriptors");
           LOWR_VK_ASSERT(frames_cleanup(),
                          "Could not cleanup frames");
           LOWR_VK_ASSERT(buffer_cleanup(),

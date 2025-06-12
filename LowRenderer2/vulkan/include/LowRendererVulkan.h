@@ -74,6 +74,10 @@ namespace Low {
       struct Samplers
       {
         VkSampler no_lod_nearest_repeat_black;
+        VkSampler no_lod_nearest_repeat_white;
+
+        Util::List<VkSampler> lod_nearest_repeat_black;
+        Util::List<VkSampler> lod_linear_repeat_black;
       };
 
       namespace Global {
@@ -117,6 +121,9 @@ namespace Low {
         VkPipelineLayout get_lighting_pipeline_layout();
 
         Samplers &get_samplers();
+
+        VkDescriptorSetLayout get_global_descriptor_set_layout();
+        VkDescriptorSet get_global_descriptor_set();
 
         bool advance_frame_count();
       } // namespace Global

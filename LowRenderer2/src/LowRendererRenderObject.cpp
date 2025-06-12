@@ -586,6 +586,7 @@ namespace Low {
         LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
+        ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_transform
       }
     }
@@ -727,6 +728,7 @@ namespace Low {
         LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+        ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:SETTER_material
       }
     }
@@ -767,7 +769,9 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
-      ms_Dirty.insert(get_id());
+      if (p_Value) {
+        ms_Dirty.insert(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
     }
 
