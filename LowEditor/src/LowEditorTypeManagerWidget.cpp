@@ -4,6 +4,9 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorTypeEditor.h"
 #include "LowEditorGui.h"
+#include "LowEditorIcons.h"
+#include "LowEditorNotifications.h"
+#include "LowEditorThemes.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -55,6 +58,27 @@ namespace Low {
 
       LOW_LOG_INFO << "Saved " << p_TypeInfo.name << LOW_LOG_END;
 
+      {
+        Util::String l_NotificationMessage = "Saved ";
+        l_NotificationMessage += p_TypeInfo.name.c_str();
+
+        Util::RTTI::PropertyInfo l_NamePropertyInfo =
+            p_TypeInfo.properties[N(name)];
+
+        // Read name from handle and convert to string
+        Util::Name l_Name;
+        l_NamePropertyInfo.get(p_Handle, &l_Name);
+        Util::String l_NameString = l_Name.c_str();
+
+        l_NotificationMessage += " '";
+        l_NotificationMessage += l_NameString;
+        l_NotificationMessage += "'";
+
+        push_notification(LOW_EDITOR_ICON_SAVE, "Saved",
+                          l_NotificationMessage, 5.0f,
+                          theme_get_current().save);
+      }
+
       TypeEditor::handle_after_save(p_Handle);
     }
 
@@ -74,7 +98,7 @@ namespace Low {
           get_type_metadata(p_TypeInfo.typeId);
 
       if (l_TypeMetadata.editor.saveable) {
-        if (ImGui::Button(ICON_LC_SAVE " Save")) {
+        if (Gui::SaveButton()) {
           save(p_Handle, p_TypeInfo);
         }
       }
@@ -116,6 +140,8 @@ namespace Low {
 
       Gui::SearchField("##searchinput", m_Search,
                        IM_ARRAYSIZE(m_Search), {0.0f, 3.0f});
+
+      ImGui::Dummy({0.0f, 4.0f});
 
       Low::Util::String l_SearchString = m_Search;
       l_SearchString.make_lower();
@@ -190,7 +216,7 @@ namespace Low {
       Util::String l_CreateString = "Create ";
       l_CreateString += l_TypeName.c_str();
 
-      if (ImGui::Button(ICON_LC_PLUS " Add")) {
+      if (Gui::AddButton()) {
         ImGui::OpenPopup(l_CreateString.c_str());
       }
 
@@ -199,17 +225,20 @@ namespace Low {
             "You are about to create a new asset. Please select "
             "a name.");
         static char l_NameBuffer[255];
-        ImGui::InputText("##name", l_NameBuffer, 255);
+        Gui::InputText("##name", l_NameBuffer, 255);
+        ImGui::Dummy({0.0f, 3.0f});
 
         ImGui::Separator();
-        if (ImGui::Button("Cancel")) {
+        if (Gui::Button("Cancel")) {
           ImGui::CloseCurrentPopup();
         }
 
         bool l_IsEnter =
             ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
 
-        if (ImGui::Button("Create") || l_IsEnter) {
+        ImGui::SameLine();
+
+        if (Gui::AddButton("Create") || l_IsEnter) {
           Util::Name l_Name = LOW_NAME(l_NameBuffer);
 
           bool l_Ok = true;

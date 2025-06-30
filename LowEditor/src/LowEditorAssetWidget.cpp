@@ -106,7 +106,7 @@ namespace Low {
     {
       Core::Material l_Asset = p_Handle.get_id();
 
-      if (ImGui::Button("Save")) {
+      if (Gui::SaveButton()) {
         AssetWidget::save_material_asset(p_Handle);
       }
     }
@@ -117,7 +117,7 @@ namespace Low {
     {
       Core::MeshAsset l_Asset = p_Handle.get_id();
 
-      if (ImGui::Button("Save")) {
+      if (Gui::SaveButton()) {
         save_mesh_asset(p_Handle);
       }
     }
@@ -128,7 +128,7 @@ namespace Low {
     {
       Core::Prefab l_Asset = p_Handle.get_id();
 
-      if (ImGui::Button("Save")) {
+      if (Gui::SaveButton()) {
         AssetWidget::save_prefab_asset(p_Handle);
       }
     }
@@ -318,9 +318,16 @@ namespace Low {
           Util::FileSystem::get_directory_watcher(
               p_Config.currentDirectoryWatchHandle);
 
+      if (Gui::AddButton()) {
+        ImGui::OpenPopup("Create mesh asset");
+      }
+      ImGui::SameLine();
+
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
                        IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      ImGui::Dummy({0.0f, 4.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();
@@ -329,10 +336,12 @@ namespace Low {
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
+      /*
       if (render_element(l_Id++, ICON_LC_PLUS, "Create mesh asset",
                          false, 0, 0)) {
         ImGui::OpenPopup("Create mesh asset");
       }
+      */
 
       if (ImGui::BeginPopupModal("Create mesh asset")) {
         ImGui::Text(
@@ -342,7 +351,7 @@ namespace Low {
         ImGui::InputText("##name", l_NameBuffer, 255);
 
         ImGui::Separator();
-        if (ImGui::Button("Cancel")) {
+        if (Low::Editor::Gui::Button("Cancel")) {
           ImGui::CloseCurrentPopup();
         }
 
@@ -351,7 +360,7 @@ namespace Low {
         bool l_IsEnter =
             ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
 
-        if (ImGui::Button("Create") || l_IsEnter) {
+        if (Gui::AddButton("Create") || l_IsEnter) {
           Util::Name l_Name = LOW_NAME(l_NameBuffer);
 
           bool l_Ok = true;
@@ -380,8 +389,6 @@ namespace Low {
 
         ImGui::EndPopup();
       }
-
-      ImGui::NextColumn();
 
       if (p_Config.currentDirectoryWatchHandle !=
           p_Config.rootDirectoryWatchHandle) {
@@ -455,9 +462,17 @@ namespace Low {
 
       float l_ContentWidth = ImGui::GetContentRegionAvail().x;
 
+      if (Gui::AddButton()) {
+        ImGui::OpenPopup("Create material");
+      }
+
+      ImGui::SameLine();
+
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
                        IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      ImGui::Dummy({0.0f, 4.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();
@@ -466,11 +481,6 @@ namespace Low {
           LOW_MATH_MAX(1, (int)(l_ContentWidth / (g_ElementSize)));
       ImGui::Columns(l_Columns, NULL, false);
 
-      if (render_element(l_Id++, ICON_LC_PLUS, "Create material",
-                         false, 0, 0)) {
-        ImGui::OpenPopup("Create material");
-      }
-
       if (ImGui::BeginPopupModal("Create material")) {
         ImGui::Text("You are about to create a new material. Please "
                     "select a name.");
@@ -478,14 +488,14 @@ namespace Low {
         ImGui::InputText("##name", l_NameBuffer, 255);
 
         ImGui::Separator();
-        if (ImGui::Button("Cancel")) {
+        if (Gui::Button("Cancel")) {
           ImGui::CloseCurrentPopup();
         }
 
         bool l_IsEnter =
             ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
         ImGui::SameLine();
-        if (ImGui::Button("Create") || l_IsEnter) {
+        if (Gui::AddButton("Create") || l_IsEnter) {
           Util::Name l_Name = LOW_NAME(l_NameBuffer);
 
           bool l_Ok = true;
@@ -513,8 +523,6 @@ namespace Low {
 
         ImGui::EndPopup();
       }
-
-      ImGui::NextColumn();
 
       if (p_Config.rootDirectoryWatchHandle !=
           p_Config.currentDirectoryWatchHandle) {
@@ -595,6 +603,12 @@ namespace Low {
 
       static bool l_Hidden = false;
 
+      if (Gui::AddButton()) {
+        ImGui::OpenPopup("Create flode");
+      }
+
+      ImGui::SameLine();
+
       Base::BoolEdit("Hidden", &l_Hidden);
 
       ImGui::SameLine();
@@ -602,6 +616,8 @@ namespace Low {
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
                        IM_ARRAYSIZE(l_Search));
+
+      ImGui::Dummy({0.0f, 4.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();
@@ -619,10 +635,6 @@ namespace Low {
               l_DirectoryWatcher.parentWatchHandle;
         }
       } else {
-        if (render_element(l_Id++, ICON_LC_PLUS, "Create flode graph",
-                           false, 0, 0)) {
-          ImGui::OpenPopup("Create flode");
-        }
 
         if (ImGui::BeginPopupModal("Create flode")) {
           ImGui::Text(
@@ -632,14 +644,14 @@ namespace Low {
           ImGui::InputText("##name", l_NameBuffer, 255);
 
           ImGui::Separator();
-          if (ImGui::Button("Cancel")) {
+          if (Gui::Button("Cancel")) {
             ImGui::CloseCurrentPopup();
           }
 
           bool l_IsEnter =
               ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
           ImGui::SameLine();
-          if (ImGui::Button("Create") || l_IsEnter) {
+          if (Gui::AddButton("Create") || l_IsEnter) {
             Util::Name l_Name = LOW_NAME(l_NameBuffer);
 
             bool l_Ok = true;
@@ -659,8 +671,6 @@ namespace Low {
           ImGui::EndPopup();
         }
       }
-
-      ImGui::NextColumn();
 
       for (auto it = l_DirectoryWatcher.subdirectories.begin();
            it != l_DirectoryWatcher.subdirectories.end(); ++it) {
@@ -738,6 +748,8 @@ namespace Low {
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
                        IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      ImGui::Dummy({0.0f, 4.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();

@@ -33,7 +33,7 @@ namespace Low {
         Image2D mip3;
       };
 
-#if 1
+#if 0
       struct Vertex
       {
         alignas(16) Math::Vector3 position;

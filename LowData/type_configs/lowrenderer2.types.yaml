@@ -305,3 +305,15 @@ types:
     properties:
       data_handle:
         type: uint64_t
+      imgui_texture_id:
+        type: ImTextureID
+        no_ref: true
+  RenderStep:
+    dynamic_increase: false
+    properties:
+      prepare_callback:
+        type: Low::Util::Function<bool(Low::Renderer::RenderView)>
+      cleanup_callback:
+        type: Low::Util::Function<bool(Low::Renderer::RenderView)>
+      tick_callback:
+        type: Low::Util::Function<bool(float, Low::Renderer::RenderView)>

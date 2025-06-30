@@ -11,6 +11,7 @@
 #include "LowUtilJobManager.h"
 
 #include "imgui.h"
+#include "imgui_impl_vulkan.h"
 
 #include "LowRendererBackend.h"
 #include "LowRendererImage.h"
@@ -38,12 +39,15 @@
 #include <stdint.h>
 
 #include "microprofile.h"
+#include "vulkan/vulkan_core.h"
 
 #define LOW_RENDERER_MAX_POSE_BONES 512
 #define RECORD_IN_DIFFERENT_THREAD 0
 
 namespace Low {
   namespace Renderer {
+    ImTextureID g_DefaultTextureId;
+
     struct PoseBone
     {
       uint32_t name;
@@ -973,6 +977,12 @@ namespace Low {
         g_FullScreenPipelineSignature.set_sampler_resource(
             N(u_FinalImage), 0,
             Texture2D::ms_LivingInstances[0].get_image());
+
+        Texture2D l_DefaultTexture = Texture2D::ms_LivingInstances[0];
+        g_DefaultTextureId = ImGui_ImplVulkan_AddTexture(
+            l_DefaultTexture.get_image().get_image().vk.m_Sampler,
+            l_DefaultTexture.get_image().get_image().vk.m_ImageView,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
       }
 
       g_MainRenderFlow.set_camera_position(
@@ -1522,6 +1532,11 @@ namespace Low {
       l_Vertices[2].position = p_Vertex2;
 
       g_DebugGeometryTriangleVertexBuffer.write(l_Vertices.data(), 3);
+    }
+
+    ImTextureID get_default_texture_id()
+    {
+      return g_DefaultTextureId;
     }
   } // namespace Renderer
 } // namespace Low

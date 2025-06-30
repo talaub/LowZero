@@ -16,6 +16,7 @@ namespace Low {
       Math::Color button;
       Math::Color buttonHover;
       Math::Color buttonActive;
+      Math::Color buttonBorder;
       Math::Color header;
       Math::Color headerHover;
       Math::Color headerActive;
@@ -48,6 +49,12 @@ namespace Low {
       Math::Color inputActive;
       Math::Color popupBackground;
       Math::Color border;
+      Math::Color success;
+      Math::Color save;
+      Math::Color add;
+      Math::Color remove;
+      Math::Color clear;
+      Math::Color edit;
     };
 
     void themes_load();

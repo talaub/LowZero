@@ -86,14 +86,16 @@ namespace Low {
 
     void ScriptingErrorList::render(float p_Delta)
     {
-      if (ImGui::Button(ICON_LC_ERASER " Clear")) {
+      if (Gui::ClearButton()) {
         m_Errors.clear();
       }
       ImGui::SameLine();
 
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
-                       IM_ARRAYSIZE(l_Search));
+                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      ImGui::Dummy({0.0f, 3.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();

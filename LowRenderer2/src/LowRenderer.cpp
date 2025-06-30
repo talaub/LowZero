@@ -428,6 +428,86 @@ namespace Low {
           l_RenderView.get_camera_position();
       ImGui::DragFloat3("Position", (float *)&l_CameraPosition);
       l_RenderView.set_camera_position(l_CameraPosition);
+
+      {
+        static float value = 0;
+        static float value2 = 0;
+
+        static float split = 150.0f;
+        float splitter_thickness = 4.0f;
+        ImVec2 region = ImGui::GetContentRegionAvail();
+
+        // Left panel: label column
+        ImGui::BeginChild("LeftColumn", ImVec2(split, 0), false);
+        ImGui::Text("Property Name");
+        ImGui::EndChild();
+
+        // Splitter: draw and interact
+        ImGui::SameLine();
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Normal
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(0.7f, 0.7f, 0.7f, 1.0f)); // Hover
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(0.9f, 0.9f, 0.9f, 1.0f)); // Dragging
+        ImGui::Button("##Splitter",
+                      ImVec2(splitter_thickness, region.y));
+        ImGui::PopStyleColor(3);
+
+        if (ImGui::IsItemActive())
+          split += ImGui::GetIO().MouseDelta.x;
+
+        ImGui::SetCursorPosX(
+            split + splitter_thickness); // Position right of splitter
+
+        // Right panel: value column
+        ImGui::SameLine();
+        ImGui::BeginChild("RightColumn", ImVec2(0, 0), false);
+        ImGui::InputFloat("##Value2", &value2);
+        ImGui::EndChild();
+
+        ImGui::BeginChild("LeftColumn", ImVec2(split, 0), false);
+        ImGui::Text("Property2");
+        ImGui::EndChild();
+
+        // Splitter: draw and interact
+        /*
+        ImGui::SameLine();
+        ImGui::PushStyleColor(
+            ImGuiCol_Button,
+            ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Normal
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonHovered,
+            ImVec4(0.7f, 0.7f, 0.7f, 1.0f)); // Hover
+        ImGui::PushStyleColor(
+            ImGuiCol_ButtonActive,
+            ImVec4(0.9f, 0.9f, 0.9f, 1.0f)); // Dragging
+        ImGui::Button("##Splitter",
+                      ImVec2(splitter_thickness, region.y));
+        ImGui::PopStyleColor(3);
+
+        if (ImGui::IsItemActive())
+          split += ImGui::GetIO().MouseDelta.x;
+
+        ImGui::SetCursorPosX(
+            split + splitter_thickness); // Position right of splitter
+            */
+
+        // Right panel: value column
+        ImGui::SameLine();
+        ImGui::BeginChild("RightColumn", ImVec2(0, 0), false);
+        ImGui::InputFloat("##Value", &value);
+        ImGui::EndChild();
+      }
+      ImGui::End();
+
+      ImGui::Begin("Texture");
+      ImGui::Image(
+          Texture::living_instances()[2].get_imgui_texture_id(),
+          ImVec2(256, 256));
       ImGui::End();
 
       if (l_ImageInit) {

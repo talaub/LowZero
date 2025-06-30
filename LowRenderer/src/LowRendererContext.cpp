@@ -948,7 +948,7 @@ namespace Low {
             Util::Resource::Image2D l_Image;
             Util::Resource::load_image2d(
                 Util::get_project().dataPath +
-                    "/resources/img2d/default_texture.ktx",
+                    "/resources/img2d/logo.ktx",
                 l_Image);
 
             Texture2D l_Texture2D = Texture2D::make(

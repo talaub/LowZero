@@ -14,6 +14,7 @@
 #include "LowEditorSaveHelper.h"
 #include "LowEditorHandlePropertiesSection.h"
 #include "LowEditorDetailsWidget.h"
+#include "LowEditorGui.h"
 
 namespace Low {
   namespace Editor {
@@ -23,7 +24,7 @@ namespace Low {
       Core::UI::View l_Asset = p_Handle.get_id();
 
       if (l_Asset.is_loaded()) {
-        if (ImGui::Button("Save")) {
+        if (Gui::SaveButton()) {
           Util::String l_JobTitle = "Saving view ";
           l_JobTitle += l_Asset.get_name().c_str();
           register_editor_job(l_JobTitle, [l_Asset] {

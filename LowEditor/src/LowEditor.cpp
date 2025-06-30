@@ -18,6 +18,7 @@
 #include "LowEditorTypeEditor.h"
 #include "LowEditorFlodeWidget.h"
 #include "LowEditorIcons.h"
+#include "LowEditorNotifications.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -248,6 +249,14 @@ namespace Low {
 
       g_UserSettings[N(theme)] = theme_get_current_name();
       g_UserSettings[N(loaded_scene)] = l_Scene.get_name();
+
+      /*
+      LOW_LOG_DEBUG << "Debug" << LOW_LOG_END;
+      LOW_LOG_INFO << "Info" << LOW_LOG_END;
+      LOW_LOG_WARN << "Warning" << LOW_LOG_END;
+      LOW_LOG_ERROR << "Error" << LOW_LOG_END;
+      LOW_LOG_PROFILE << "Profile" << LOW_LOG_END;
+      */
     }
 
     static void register_type_nodes()
@@ -742,6 +751,8 @@ namespace Low {
       render_main_window(p_Delta, p_State);
 
       tick_editor_jobs(p_Delta);
+
+      render_notifications(p_Delta);
     }
 
     Util::String prettify_name(Util::String p_String)
@@ -771,6 +782,26 @@ namespace Low {
     Util::String prettify_name(Util::Name p_Name)
     {
       return prettify_name(Util::String(p_Name.c_str()));
+    }
+
+    Util::String technify_string(Util::String p_String)
+    {
+      Util::String output;
+      for (char c : p_String) {
+        if (std::isalnum(c)) {
+          output += c; // keep letters and digits
+        } else if (c == ' ' || c == '-' || c == '_') {
+          output += '_'; // normalize common safe separators
+        } else if (c == '.' || c == '/' || c == '\\' || c == ':' ||
+                   c == '*' || c == '?' || c == '"' || c == '<' ||
+                   c == '>' || c == '|') {
+          // skip forbidden or unsafe characters
+          continue;
+        } else {
+          output += '_'; // fallback: replace unknowns with underscore
+        }
+      }
+      return output;
     }
 
     DirectoryWatchers &get_directory_watchers()

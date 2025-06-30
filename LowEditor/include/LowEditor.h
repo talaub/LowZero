@@ -44,6 +44,8 @@ namespace Low {
 
     Util::String LOW_EDITOR_API prettify_name(Util::Name p_Name);
     Util::String LOW_EDITOR_API prettify_name(Util::String p_String);
+    Util::String LOW_EDITOR_API
+    technify_string(Util::String p_String);
 
     LOW_EDITOR_API ChangeList &get_global_changelist();
 

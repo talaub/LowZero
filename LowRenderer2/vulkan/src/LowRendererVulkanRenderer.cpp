@@ -978,15 +978,23 @@ namespace Low {
           {
             Image l_Image =
                 p_RenderView.get_gbuffer_albedo().get_data_handle();
-            ImageUtil::destroy(
-                l_Image);
+
+            ImGui_ImplVulkan_RemoveTexture(
+                (VkDescriptorSet)p_RenderView.get_gbuffer_albedo()
+                    .get_imgui_texture_id());
+
+            ImageUtil::destroy(l_Image);
             l_Image.destroy();
           }
           {
             Image l_Image =
                 p_RenderView.get_gbuffer_normals().get_data_handle();
-            ImageUtil::destroy(
-                l_Image);
+
+            ImGui_ImplVulkan_RemoveTexture(
+                (VkDescriptorSet)p_RenderView.get_gbuffer_normals()
+                    .get_imgui_texture_id());
+
+            ImageUtil::destroy(l_Image);
             l_Image.destroy();
           }
         }
@@ -1243,7 +1251,11 @@ namespace Low {
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
               i_Texture.get_index());
 
-          u32 ind = i_Texture.get_index();
+          i_Texture.set_imgui_texture_id(
+              (ImTextureID)ImGui_ImplVulkan_AddTexture(
+                  l_Samplers.no_lod_nearest_repeat_black,
+                  i_Image.get_allocated_image().imageView,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
           l_Count++;
         }

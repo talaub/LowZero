@@ -12,6 +12,9 @@
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
+#include "LowEditorThemes.h"
+#include "LowEditorNotifications.h"
+#include "LowEditorIcons.h"
 
 #include "LowRendererImGuiHelper.h"
 
@@ -493,12 +496,26 @@ namespace Flode {
     auto &io = ImGui::GetIO();
 
     if (m_Graph) {
-      if (ImGui::Button(ICON_LC_SAVE " Save")) {
+      if (Low::Editor::Gui::SaveButton()) {
         l_Save = true;
       }
       ImGui::SameLine();
-      if (ImGui::Button(ICON_LC_SETTINGS " Compile")) {
+      if (Low::Editor::Gui::Button(
+              "Compile", false, ICON_LC_SETTINGS,
+              Low::Editor::theme_get_current().profile)) {
         m_Graph->compile();
+
+        {
+          Low::Util::String l_NotificationMessage = "Flode graph ";
+
+          l_NotificationMessage += " '";
+          l_NotificationMessage += m_Graph->m_Name.c_str();
+          l_NotificationMessage += "' compiled.";
+
+          Low::Editor::push_notification(
+              ICON_LC_COG, "Compiled", l_NotificationMessage, 5.0f,
+              Low::Editor::theme_get_current().profile);
+        }
       }
     }
 
@@ -775,6 +792,18 @@ namespace Flode {
 
       LOW_LOG_INFO << "Saved flode graph '" << m_Graph->m_Name
                    << "' to file." << LOW_LOG_END;
+
+      {
+        Low::Util::String l_NotificationMessage = "Flode graph ";
+
+        l_NotificationMessage += " '";
+        l_NotificationMessage += m_Graph->m_Name.c_str();
+        l_NotificationMessage += "' saved";
+
+        Low::Editor::push_notification(
+            LOW_EDITOR_ICON_SAVE, "Saved", l_NotificationMessage,
+            5.0f, Low::Editor::theme_get_current().save);
+      }
     }
 
     // Handle creation action, returns true if editor want to create

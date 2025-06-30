@@ -9,6 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "imgui.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -19,6 +20,7 @@ namespace Low {
     struct LOW_RENDERER2_API TextureData
     {
       uint64_t data_handle;
+      ImTextureID imgui_texture_id;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -102,6 +104,9 @@ namespace Low {
 
       uint64_t get_data_handle() const;
       void set_data_handle(uint64_t p_Value);
+
+      ImTextureID get_imgui_texture_id() const;
+      void set_imgui_texture_id(ImTextureID p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

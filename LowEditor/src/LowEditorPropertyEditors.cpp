@@ -177,8 +177,8 @@ namespace Low {
         Util::String l_Label = "##";
         l_Label += p_Label.c_str();
 
-        if (ImGui::InputText(l_Label.c_str(), l_Buffer, 255,
-                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (Gui::InputText(l_Label.c_str(), l_Buffer, 255,
+                           ImGuiInputTextFlags_EnterReturnsTrue)) {
           p_Name.m_Index = LOW_NAME(l_Buffer).m_Index;
           return true;
         }
@@ -211,9 +211,8 @@ namespace Low {
             return true;
           }
         } else {
-          if (ImGui::InputText(
-                  l_Label.c_str(), l_Buffer, 1024,
-                  ImGuiInputTextFlags_EnterReturnsTrue)) {
+          if (Gui::InputText(l_Label.c_str(), l_Buffer, 1024,
+                             ImGuiInputTextFlags_EnterReturnsTrue)) {
             p_String = l_Buffer;
             return true;
           }

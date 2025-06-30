@@ -256,7 +256,7 @@ namespace Low {
         ImGui::EndPopup();
       }
 
-      if (ImGui::Button(LOW_EDITOR_ICON_ADD " Create")) {
+      if (Gui::AddButton("Create")) {
         ImGui::OpenPopup("create_entity_selection_popup");
       }
 
@@ -264,7 +264,9 @@ namespace Low {
 
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
-                       IM_ARRAYSIZE(l_Search), {0.0f, 0.0f});
+                       IM_ARRAYSIZE(l_Search), {0.0f, 2.0f});
+
+      ImGui::Dummy({0.0f, 4.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();

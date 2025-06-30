@@ -8,6 +8,7 @@
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorHandlePropertiesSection.h"
 #include "LowEditorSaveHelper.h"
+#include "LowEditorGui.h"
 
 #include "LowCoreRegion.h"
 
@@ -20,7 +21,7 @@ namespace Low {
       Core::Region l_Asset = p_Handle.get_id();
 
       if (l_Asset.is_loaded()) {
-        if (ImGui::Button("Save")) {
+        if (Gui::SaveButton()) {
           Util::String l_JobTitle = "Saving region ";
           l_JobTitle += l_Asset.get_name().c_str();
           register_editor_job(l_JobTitle, [l_Asset] {

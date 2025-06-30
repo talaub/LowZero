@@ -180,6 +180,41 @@ namespace Low {
       if (p_Node["border"]) {
         l_Theme.border = parse_color(p_Node["border"]);
       }
+      if (p_Node["button_border"]) {
+        l_Theme.buttonBorder = parse_color(p_Node["button_border"]);
+      } else {
+        l_Theme.buttonBorder = l_Theme.border;
+      }
+      if (p_Node["success"]) {
+        l_Theme.success = parse_color(p_Node["success"]);
+      } else {
+        l_Theme.success = l_Theme.coords1;
+      }
+      if (p_Node["save"]) {
+        l_Theme.save = parse_color(p_Node["save"]);
+      } else {
+        l_Theme.save = l_Theme.coords2;
+      }
+      if (p_Node["clear"]) {
+        l_Theme.clear = parse_color(p_Node["clear"]);
+      } else {
+        l_Theme.clear = l_Theme.profile;
+      }
+      if (p_Node["remove"]) {
+        l_Theme.remove = parse_color(p_Node["remove"]);
+      } else {
+        l_Theme.remove = l_Theme.error;
+      }
+      if (p_Node["add"]) {
+        l_Theme.add = parse_color(p_Node["add"]);
+      } else {
+        l_Theme.add = l_Theme.success;
+      }
+      if (p_Node["edit"]) {
+        l_Theme.edit = parse_color(p_Node["edit"]);
+      } else {
+        l_Theme.edit = l_Theme.warning;
+      }
 
       g_Themes[l_Name] = l_Theme;
     }
@@ -242,6 +277,10 @@ namespace Low {
       colors[ImGuiCol_ButtonActive] =
           color_to_imvec4(l_Theme.buttonActive);
       colors[ImGuiCol_Header] = color_to_imvec4(l_Theme.header);
+      /*
+      colors[ImGuiCol_Header] =
+          color_to_imvec4(Math::Color{0.0f, 1.0f, 0.0f, 1.0f});
+          */
       colors[ImGuiCol_HeaderHovered] =
           color_to_imvec4(l_Theme.headerHover);
       colors[ImGuiCol_HeaderActive] =

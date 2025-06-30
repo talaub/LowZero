@@ -160,14 +160,16 @@ namespace Low {
     {
       ImGui::Begin(ICON_LC_MESSAGE_SQUARE_WARNING " Log", &m_Open);
 
-      if (ImGui::Button(ICON_LC_ERASER " Clear")) {
+      if (Gui::ClearButton()) {
         g_Entries.clear();
       }
       ImGui::SameLine();
 
       static char l_Search[128] = "";
       Gui::SearchField("##searchinput", l_Search,
-                       IM_ARRAYSIZE(l_Search));
+                       IM_ARRAYSIZE(l_Search), {0.0f, 3.0f});
+
+      ImGui::Dummy({0.0f, 3.0f});
 
       Low::Util::String l_SearchString = l_Search;
       l_SearchString.make_lower();

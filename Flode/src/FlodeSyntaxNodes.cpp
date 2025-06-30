@@ -686,6 +686,41 @@ namespace Flode {
       return new ReturnNumberNode;
     }
 
+    ReturnBoolNode::ReturnBoolNode()
+    {
+    }
+
+    Low::Util::String
+    ReturnBoolNode::get_name(NodeNameType p_Type) const
+    {
+      return "Return";
+    }
+
+    ImU32 ReturnBoolNode::get_color() const
+    {
+      return g_SyntaxColor;
+    }
+
+    void ReturnBoolNode::setup_default_pins()
+    {
+      create_pin(PinDirection::Input, "", PinType::Flow);
+      create_pin(PinDirection::Input, "", PinType::Bool);
+    }
+
+    void
+    ReturnBoolNode::compile(Low::Util::StringBuilder &p_Builder) const
+    {
+      p_Builder.append("return ");
+      compile_input_pin(p_Builder,
+                        pins[1]->id); // Compile the value input pin
+      p_Builder.append(";").endl();
+    }
+
+    Node *returnbool_create_instance()
+    {
+      return new ReturnBoolNode;
+    }
+
     Low::Util::String IfNode::get_name(NodeNameType p_Type) const
     {
       return "if";
@@ -808,6 +843,12 @@ namespace Flode {
         register_node(l_TypeName, &returnnumber_create_instance);
 
         register_spawn_node("Syntax", "Return number", l_TypeName);
+      }
+      {
+        Low::Util::Name l_TypeName = N(FlodeSyntaxReturnBool);
+        register_node(l_TypeName, &returnbool_create_instance);
+
+        register_spawn_node("Syntax", "Return bool", l_TypeName);
       }
       {
         Low::Util::Name l_TypeName = N(FlodeSyntaxIf);

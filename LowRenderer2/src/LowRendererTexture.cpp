@@ -53,6 +53,8 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Texture::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, imgui_texture_id,
+                              ImTextureID)) ImTextureID();
       ACCESSOR_TYPE_SOA(l_Handle, Texture, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -157,6 +159,35 @@ namespace Low {
         // End property: data_handle
       }
       {
+        // Property: imgui_texture_id
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(imgui_texture_id);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(TextureData, imgui_texture_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Texture l_Handle = p_Handle.get_id();
+          l_Handle.get_imgui_texture_id();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Texture, imgui_texture_id, ImTextureID);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Texture l_Handle = p_Handle.get_id();
+          l_Handle.set_imgui_texture_id(*(ImTextureID *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Texture l_Handle = p_Handle.get_id();
+          *((ImTextureID *)p_Data) = l_Handle.get_imgui_texture_id();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: imgui_texture_id
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -253,6 +284,7 @@ namespace Low {
 
       Texture l_Handle = make(p_Name);
       l_Handle.set_data_handle(get_data_handle());
+      l_Handle.set_imgui_texture_id(get_imgui_texture_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -301,6 +333,8 @@ namespace Low {
         l_Handle.set_data_handle(
             p_Node["data_handle"].as<uint64_t>());
       }
+      if (p_Node["imgui_texture_id"]) {
+      }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
       }
@@ -336,6 +370,32 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
       ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
+    }
+
+    ImTextureID Texture::get_imgui_texture_id() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_imgui_texture_id
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Texture, imgui_texture_id, ImTextureID);
+    }
+    void Texture::set_imgui_texture_id(ImTextureID p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_imgui_texture_id
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(Texture, imgui_texture_id, ImTextureID) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_imgui_texture_id
+      // LOW_CODEGEN::END::CUSTOM:SETTER_imgui_texture_id
     }
 
     Low::Util::Name Texture::get_name() const

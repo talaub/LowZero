@@ -66,10 +66,11 @@ namespace Low {
         l_LastEntity = l_Entity;
       }
 
-      if (ImGui::InputText("##name", l_NameBuffer, 255,
-                           ImGuiInputTextFlags_EnterReturnsTrue)) {
+      if (Gui::InputText("##name", l_NameBuffer, 255,
+                         ImGuiInputTextFlags_EnterReturnsTrue)) {
         l_Entity.set_name(LOW_NAME(l_NameBuffer));
       }
+      ImGui::Dummy({0.0f, 4.0f});
 
       if (!l_IsChildEntity) {
         ImGui::BeginGroup();
@@ -116,7 +117,9 @@ namespace Low {
         ImGui::PopStyleColor();
       }
 
-      if (ImGui::Button(ICON_LC_PLUS " Add component")) {
+      ImGui::Dummy({0.0f, 4.0f});
+
+      if (Gui::AddButton("Add component")) {
         ImGui::OpenPopup("add_component_popup");
       }
 
@@ -137,6 +140,8 @@ namespace Low {
         }
         ImGui::EndPopup();
       }
+
+      ImGui::Dummy({0.0f, 7.0f});
 
       return l_Added;
     }
@@ -300,7 +305,7 @@ namespace Low {
       }
       l_HeaderTitle += m_Metadata.name.c_str();
 
-      if (ImGui::CollapsingHeader(
+      if (Gui::CollapsingHeader(
               l_HeaderTitle.c_str(),
               m_DefaultOpen ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {
 
@@ -341,6 +346,7 @@ namespace Low {
         : m_Handle(p_Handle), m_DefaultOpen(p_DefaultOpen)
     {
       m_Metadata = get_type_metadata(p_Handle.get_type());
+      m_Open = p_DefaultOpen;
     }
   } // namespace Editor
 } // namespace Low

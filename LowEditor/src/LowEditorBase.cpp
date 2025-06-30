@@ -56,8 +56,8 @@ namespace Low {
         memcpy(l_Buffer, l_String.c_str(), l_StringLength);
         l_Buffer[l_StringLength] = '\0';
 
-        if (ImGui::InputText(p_Label, l_Buffer, 255,
-                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (Gui::InputText(p_Label, l_Buffer, 255,
+                           ImGuiInputTextFlags_EnterReturnsTrue)) {
           *p_String = l_Buffer;
 
           return true;
@@ -82,8 +82,8 @@ namespace Low {
           l_Buffer[l_NameLength] = '\0';
         }
 
-        if (ImGui::InputText(p_Label, l_Buffer, 255,
-                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+        if (Gui::InputText(p_Label, l_Buffer, 255,
+                           ImGuiInputTextFlags_EnterReturnsTrue)) {
           p_Name->m_Index = LOW_NAME(l_Buffer).m_Index;
 
           return true;

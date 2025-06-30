@@ -47,6 +47,34 @@ namespace Low {
 
       bool LOW_EDITOR_API CollapsingHeaderButton(
           const char *label, u32 p_Flags, const char *button_label);
+
+      bool LOW_EDITOR_API ToggleButtonSimple(const char *p_Label,
+                                             bool *p_Value);
+
+      bool LOW_EDITOR_API Button(const char *p_Label,
+                                 bool p_Disabled = false,
+                                 const char *p_Icon = nullptr,
+                                 Low::Math::Color p_IconColor =
+                                     Low::Math::Color(1.0f, 1.0f,
+                                                      1.0f, 1.0f));
+      bool LOW_EDITOR_API AddButton(bool p_Disabled = false);
+      bool LOW_EDITOR_API AddButton(const char *p_Label,
+                                    bool p_Disabled = false);
+      bool LOW_EDITOR_API SaveButton(bool p_Disabled = false);
+      bool LOW_EDITOR_API ClearButton(bool p_Disabled = false);
+      bool LOW_EDITOR_API DeleteButton(bool p_Disabled = false);
+      bool LOW_EDITOR_API EditButton(bool p_Disabled = false);
+
+      bool LOW_EDITOR_API TreeNodeBehavior(
+          ImGuiID id, ImGuiTreeNodeFlags flags, const char *label,
+          const char *label_end = NULL);
+      bool LOW_EDITOR_API CollapsingHeader(
+          const char *label, ImGuiTreeNodeFlags flags = 0);
+
+      bool LOW_EDITOR_API InputText(Util::String p_Label,
+                                    char *p_Text, int p_Length,
+                                    ImGuiInputTextFlags p_Flags = 0);
+
     } // namespace Gui
   }   // namespace Editor
 } // namespace Low

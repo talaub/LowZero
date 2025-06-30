@@ -39,6 +39,7 @@
 
 #include "LowRendererTexture2D.h"
 #include "LowRendererImGuiHelper.h"
+#include "LowRenderer.h"
 
 #include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
@@ -285,9 +286,64 @@ namespace Low {
       }
     }
 
+    static void render_title_bar(float p_Delta)
+    {
+      const float topBarHeight = 40.0f; // Taller than default
+      /*
+      ImGui::SetNextWindowPos(ImVec2(0, 0));
+      ImGui::SetNextWindowSize(
+          ImVec2(ImGui::GetIO().DisplaySize.x, topBarHeight));
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+      */
+
+      ImGui::PushStyleColor(
+          ImGuiCol_ChildBg,
+          color_to_imvec4(theme_get_current().menubar));
+      ImGui::BeginChild(
+          "TopBar", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f),
+          true, 0);
+
+      ImGui::PopStyleColor();
+
+      // ImGui::PopStyleVar(2);
+
+      ImGui::BeginGroup();
+      ImGui::SetCursorPosY((topBarHeight - 24.0f) *
+                           0.5f); // Center icon vertically
+
+      // Example: ImGui::Image for your logo
+      ImGui::Image(Low::Renderer::get_default_texture_id(),
+                   ImVec2(24, 24)); // Replace with your ID
+      ImGui::SameLine();
+      // ImGui::Text("LowEngine"); // Optional name
+
+      ImGui::EndGroup();
+
+      ImGui::SameLine(); // Adjust spacing based on logo size
+
+      // ImGui::SetCursorScreenPos(ImVec2(50, 24.0f));
+
+      if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Test")) {
+        }
+        ImGui::EndMenu();
+      }
+      ImGui::SameLine();
+      if (ImGui::BeginMenu("Edit")) {
+        if (ImGui::MenuItem("TestEdit")) {
+        }
+        ImGui::EndMenu();
+      }
+
+      ImGui::EndChild();
+    }
+
     static void render_menu_bar(float p_Delta)
     {
       bool l_CreateScene = false;
+
+      // ImGui::Dummy({0.0f, 20.0f});
 
       // Menu
       if (ImGui::BeginMainMenuBar()) {
@@ -481,6 +537,7 @@ namespace Low {
                           ImVec2(0.0f, 0.0f));
       ImGui::Begin("DockSpace", &g_CentralDockOpen, window_flags);
       ImGui::PopStyleVar(3);
+      // render_title_bar(p_Delta);
 
       ImGuiIO &io = ImGui::GetIO();
       ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
@@ -578,6 +635,24 @@ namespace Low {
 
       render_menu_bar(p_Delta);
 
+      /*
+      ImGui::Begin("TestWindow", nullptr, ImGuiWindowFlags_MenuBar);
+      if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+          ImGui::MenuItem("New");
+          ImGui::MenuItem("Open");
+          ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Edit")) {
+          ImGui::MenuItem("Undo");
+          ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+      }
+      ImGui::Text("Content");
+      ImGui::End();
+      */
+
       render_status_bar(p_Delta);
 
       render_central_docking_space(p_Delta);
@@ -595,6 +670,7 @@ namespace Low {
         handle_shortcuts(p_Delta);
       }
       // ImGui::ShowDemoWindow();
+      // ImGui::ShowMetricsWindow();
     }
 
     DetailsWidget *get_details_widget()
