@@ -508,7 +508,7 @@ namespace Flode {
         {
           Low::Util::String l_NotificationMessage = "Flode graph ";
 
-          l_NotificationMessage += " '";
+          l_NotificationMessage += "'";
           l_NotificationMessage += m_Graph->m_Name.c_str();
           l_NotificationMessage += "' compiled.";
 
@@ -796,7 +796,7 @@ namespace Flode {
       {
         Low::Util::String l_NotificationMessage = "Flode graph ";
 
-        l_NotificationMessage += " '";
+        l_NotificationMessage += "'";
         l_NotificationMessage += m_Graph->m_Name.c_str();
         l_NotificationMessage += "' saved";
 

@@ -50,10 +50,6 @@
 [submodule "LowDependencies/freetype"]
 	path = LowDependencies/freetype
 	url = https://github.com/freetype/freetype.git
-[submodule "LowDependencies/imgui"]
-	path = LowDependencies/imgui
-	url = https://github.com/thedmd/imgui.git
-	branch = feature/docking-layout-external
 [submodule "LowDependencies/SDL"]
 	path = LowDependencies/SDL
 	url = https://github.com/libsdl-org/SDL.git
