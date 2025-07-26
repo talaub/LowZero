@@ -54,6 +54,7 @@ namespace Low {
 
         new (&ACCESSOR_TYPE_SOA(l_Handle, Image, allocated_image,
                                 AllocatedImage)) AllocatedImage();
+        ACCESSOR_TYPE_SOA(l_Handle, Image, depth, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Image, name, Low::Util::Name) =
             Low::Util::Name(0u);
         LOCK_UNLOCK(l_Lock);
@@ -63,6 +64,7 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        l_Handle.set_depth(false);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -157,6 +159,34 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: allocated_image
+        }
+        {
+          // Property: depth
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(depth);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(ImageData, depth);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Image l_Handle = p_Handle.get_id();
+            l_Handle.is_depth();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image, depth,
+                                              bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Image l_Handle = p_Handle.get_id();
+            l_Handle.set_depth(*(bool *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Image l_Handle = p_Handle.get_id();
+            *((bool *)p_Data) = l_Handle.is_depth();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: depth
         }
         {
           // Property: name
@@ -264,6 +294,7 @@ namespace Low {
 
         Image l_Handle = make(p_Name);
         l_Handle.set_allocated_image(get_allocated_image());
+        l_Handle.set_depth(is_depth());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -287,6 +318,7 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
+        p_Node["depth"] = is_depth();
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -307,6 +339,9 @@ namespace Low {
         Image l_Handle = Image::make(N(Image));
 
         if (p_Node["allocated_image"]) {
+        }
+        if (p_Node["depth"]) {
+          l_Handle.set_depth(p_Node["depth"].as<bool>());
         }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -342,6 +377,37 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_allocated_image
         // LOW_CODEGEN::END::CUSTOM:SETTER_allocated_image
+      }
+
+      bool Image::is_depth() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth
+        // LOW_CODEGEN::END::CUSTOM:GETTER_depth
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(Image, depth, bool);
+      }
+      void Image::toggle_depth()
+      {
+        set_depth(!is_depth());
+      }
+
+      void Image::set_depth(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(Image, depth, bool) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth
+        // LOW_CODEGEN::END::CUSTOM:SETTER_depth
       }
 
       Low::Util::Name Image::get_name() const
@@ -419,6 +485,13 @@ namespace Low {
                  &ms_Buffer[offsetof(ImageData, allocated_image) *
                             (l_Capacity)],
                  l_Capacity * sizeof(AllocatedImage));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(ImageData, depth) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ImageData, depth) * (l_Capacity)],
+              l_Capacity * sizeof(bool));
         }
         {
           memcpy(&l_NewBuffer[offsetof(ImageData, name) *

@@ -120,6 +120,7 @@ namespace Low {
 
         bool is_loaded() const;
         void set_loaded(bool p_Value);
+        void toggle_loaded();
 
         Util::Set<Util::UniqueId> &get_elements() const;
 
@@ -127,6 +128,7 @@ namespace Low {
 
         bool is_view_template() const;
         void set_view_template(bool p_Value);
+        void toggle_view_template();
 
         Low::Math::Vector2 &pixel_position() const;
         void pixel_position(Low::Math::Vector2 &p_Value);
@@ -147,6 +149,8 @@ namespace Low {
 
         bool is_transform_dirty() const;
         void set_transform_dirty(bool p_Value);
+        void toggle_transform_dirty();
+        void mark_transform_dirty();
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
@@ -165,6 +169,7 @@ namespace Low {
         static uint32_t create_instance();
         static void increase_budget();
         void set_internal(bool p_Value);
+        void toggle_internal();
         void set_unique_id(Low::Util::UniqueId p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

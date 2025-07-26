@@ -12,11 +12,20 @@
 #include "LowUtilContainers.h"
 #include <vulkan/vulkan_core.h>
 
+#include "LowRendererTexture.h"
+
 #define VK_FRAME_OVERLAP 2
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
+      struct PointLightInfo
+      {
+        Math::Vector4 transform;
+        Math::Vector4 color;
+        bool active;
+      };
+
       struct AllocatedBuffer
       {
         VkBuffer buffer;
@@ -43,13 +52,17 @@ namespace Low {
         VkDescriptorSetLayout layout;
       };
 
-      struct ViewInfoFrameData
+      struct alignas(16) ViewInfoFrameData
       {
         alignas(16) Math::Matrix4x4 viewMatrix;
+        alignas(16) Math::Matrix4x4 inverseViewMatrix;
+        alignas(16) Math::Matrix4x4 inverseProjectionMatrix;
         alignas(16) Math::Matrix4x4 projectionMatrix;
         alignas(16) Math::Matrix4x4 viewProjectionMatrix;
-        alignas(16) Math::Vector2 dimensions;
-        alignas(16) Math::Vector2 inverseDimensions;
+        alignas(16) Math::UVector4 gbufferIndices;
+        alignas(16) Math::UVector4 lightClusters;
+        alignas(16) Math::Vector4 dimensions;
+        alignas(16) Math::Vector2 nearFarPlane;
       };
 
       struct DynamicBuffer
@@ -78,6 +91,12 @@ namespace Low {
 
         Util::List<VkSampler> lod_nearest_repeat_black;
         Util::List<VkSampler> lod_linear_repeat_black;
+      };
+
+      struct TextureUpdate
+      {
+        Texture texture;
+        u32 textureIndex;
       };
 
       namespace Global {
@@ -124,6 +143,15 @@ namespace Low {
 
         VkDescriptorSetLayout get_global_descriptor_set_layout();
         VkDescriptorSet get_global_descriptor_set();
+
+        VkDescriptorSetLayout get_texture_descriptor_set_layout();
+        VkDescriptorSet get_texture_descriptor_set(u32 p_FrameIndex);
+        VkDescriptorSet get_current_texture_descriptor_set();
+
+        Low::Util::Queue<TextureUpdate> &
+        get_texture_update_queue(u32 p_FrameIndex);
+        Low::Util::Queue<TextureUpdate> &
+        get_current_texture_update_queue();
 
         bool advance_frame_count();
       } // namespace Global

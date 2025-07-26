@@ -306,6 +306,8 @@ function process_file(p_Path, p_FileName, p_Project = false) {
         type: "Low::Util::UniqueId",
         private_setter: true,
         skip_duplication: true,
+        description:
+          "A persistent unique id that defines this exact instance of the type.",
       };
     }
 
@@ -325,14 +327,31 @@ function process_file(p_Path, p_FileName, p_Project = false) {
       }
     }
 
-    i_Type.dirty_flags = l_DirtyFlags;
+    let l_TempDirtyFlags = [];
+
+    for (let i_Flag of l_DirtyFlags) {
+      let i_F = { name: i_Flag };
+      if (i_Type.dirty_flags) {
+        if (i_Type.dirty_flags[i_Flag]) {
+          i_F = { name: i_Flag, ...i_Type.dirty_flags[i_Flag] };
+        }
+      }
+      l_TempDirtyFlags.push(i_F);
+    }
+
+    i_Type.dirty_flags = l_TempDirtyFlags;
 
     for (let i_Flag of i_Type.dirty_flags) {
-      i_Type.properties[i_Flag] = {
+      i_Type.properties[i_Flag.name] = {
         type: "bool",
+        is_dirty_flag: true,
         skip_serialization: true,
         skip_deserialization: true,
+        dirty_flag_info: i_Flag,
       };
+      if (i_Flag.no_data) {
+        i_Type.properties[i_Flag.name].no_data = true;
+      }
     }
 
     if (!i_Type.component && !i_Type.ui_component) {
@@ -340,6 +359,8 @@ function process_file(p_Path, p_FileName, p_Project = false) {
         type: "Low::Util::Name",
         expose_scripting: true,
         skip_duplication: true,
+        description:
+          "Name of the instance. Should in most cases be unique but not always necessary.",
       };
       if (i_Type.name_editable) {
         i_Type.properties.name.editor_editable = true;
@@ -407,6 +428,8 @@ function process_file(p_Path, p_FileName, p_Project = false) {
               i_Param.type,
               i_Param.handle || i_Param.enum || i_Param.no_ref,
             );
+            i_Param.base_name = i_Param.name;
+            i_Param.local_name = `l_${capitalize_first_letter(i_Param.name)}`;
             i_Param.name = `p_${capitalize_first_letter(i_Param.name)}`;
           }
         }
@@ -462,6 +485,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
             accessor_type: i_VProp.accessor_type,
             expose_scripting: i_VProp.expose_scripting,
             hide_flode: i_VProp.hide_flode || i_VProp.hide_getter_flode,
+            virtual_property: true,
           };
         }
 
@@ -473,6 +497,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
             accessor_type: "void",
             expose_scripting: i_VProp.expose_scripting,
             hide_flode: i_VProp.hide_flode || i_VProp.hide_setter_flode,
+            virtual_property: true,
             parameters: [
               {
                 name: "p_Value",
@@ -497,6 +522,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     if (p_Project) {
       i_Type.module_path = `${p_Path}modules\\${i_Type.module}`;
     }
+    i_Type.docs_path = `${p_Path}docs\\docs\\types\\${i_Type.name.toLowerCase()}.mdx`;
     i_Type.header_file_name = `${i_Type.prefix}${i_Type.name}.h`;
     i_Type.header_file_path = `${i_Type.module_path}\\include\\${i_Type.prefix}${i_Type.name}.h`;
     if (i_Type.header_path) {
@@ -869,6 +895,82 @@ function find_end_marker_end(p_Text, p_Name) {
   return l_Index + l_Marker.length;
 }
 
+function is_math_type(p_Type) {
+  const l_Name = [
+    "Vector2",
+    "Vector3",
+    "Vector4",
+    "Color",
+    "ColorRGB",
+    "Quaternion",
+    "Shape",
+    "Box",
+    "Sphere",
+    "Cylinder",
+    "Cone",
+  ];
+
+  const l_Prefixes = ["Low::Math::", "Math::", ""];
+
+  for (const i_Name of l_Name) {
+    for (const i_Prefix of l_Prefixes) {
+      if (p_Type === `${i_Prefix}${i_Name}`) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function is_name_type(p_Type) {
+  const l_Name = ["Name"];
+
+  const l_Prefixes = ["Low::Util::", "Util::", ""];
+
+  for (const i_Name of l_Name) {
+    for (const i_Prefix of l_Prefixes) {
+      if (p_Type === `${i_Prefix}${i_Name}`) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function is_string_type(p_Type) {
+  const l_Name = ["String"];
+
+  const l_Prefixes = ["Low::Util::", "Util::", ""];
+
+  for (const i_Name of l_Name) {
+    for (const i_Prefix of l_Prefixes) {
+      if (p_Type === `${i_Prefix}${i_Name}`) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function is_container_type(p_Type) {
+  const l_Containers = ["List", "Array", "Map", "Set", "Queue"];
+
+  const l_Prefixes = ["Low::Util::", "Util::", ""];
+
+  for (const i_Container of l_Containers) {
+    for (const i_Prefix of l_Prefixes) {
+      if (p_Type.startsWith(`${i_Prefix}${i_Container}<`)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 module.exports = {
   read_file,
   collect_types_for_project,
@@ -894,4 +996,8 @@ module.exports = {
   find_end_marker_end,
   load_project_info,
   g_Directory,
+  is_math_type,
+  is_name_type,
+  is_container_type,
+  is_string_type,
 };

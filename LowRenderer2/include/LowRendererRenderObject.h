@@ -121,6 +121,7 @@ namespace Low {
 
       bool is_uploaded() const;
       void set_uploaded(bool p_Value);
+      void toggle_uploaded();
 
       uint32_t get_slot() const;
       void set_slot(uint32_t p_Value);
@@ -134,6 +135,8 @@ namespace Low {
 
       bool is_dirty() const;
       void set_dirty(bool p_Value);
+      void toggle_dirty();
+      void mark_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

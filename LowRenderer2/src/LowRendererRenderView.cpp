@@ -75,6 +75,13 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, lit_image,
                               Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderView, steps,
+          Low::Util::List<Low::Renderer::RenderStep>))
+          Low::Util::List<Low::Renderer::RenderStep>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, step_data,
+                              Low::Util::List<RenderStepDataPtr>))
+          Low::Util::List<RenderStepDataPtr>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_dirty, bool) =
           false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, dimensions_dirty,
@@ -90,6 +97,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       l_Handle.set_camera_dirty(true);
       l_Handle.set_dimensions_dirty(true);
+      l_Handle.get_step_data().resize(RenderStep::get_capacity());
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -100,6 +108,11 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      for (auto it = get_steps().begin(); it != get_steps().end();
+           ++it) {
+        it->teardown(get_id());
+        free(get_step_data()[it->get_index()]);
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       WRITE_LOCK(l_Lock);
@@ -465,6 +478,65 @@ namespace Low {
         // End property: lit_image
       }
       {
+        // Property: steps
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(steps);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(RenderViewData, steps);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_steps();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, steps,
+              Low::Util::List<Low::Renderer::RenderStep>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<Low::Renderer::RenderStep> *)p_Data) =
+              l_Handle.get_steps();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: steps
+      }
+      {
+        // Property: step_data
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(step_data);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, step_data);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_step_data();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, step_data,
+              Low::Util::List<RenderStepDataPtr>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_step_data(
+              *(Low::Util::List<RenderStepDataPtr> *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<RenderStepDataPtr> *)p_Data) =
+              l_Handle.get_step_data();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: step_data
+      }
+      {
         // Property: camera_dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_dirty);
@@ -549,6 +621,40 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: add_step
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(add_step);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Step);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::RenderStep::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: add_step
+      }
+      {
+        // Function: add_step_by_name
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(add_step_by_name);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_StepName);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: add_step_by_name
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -639,6 +745,7 @@ namespace Low {
       if (get_lit_image().is_alive()) {
         l_Handle.set_lit_image(get_lit_image());
       }
+      l_Handle.set_step_data(get_step_data());
       l_Handle.set_camera_dirty(is_camera_dirty());
       l_Handle.set_dimensions_dirty(is_dimensions_dirty());
 
@@ -735,10 +842,10 @@ namespace Low {
 
       if (get_camera_position() != p_Value) {
         // Set dirty flags
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(RenderView, camera_dirty, bool) = true;
+        mark_camera_dirty();
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderView, camera_position, Low::Math::Vector3) =
             p_Value;
         LOCK_UNLOCK(l_WriteLock);
@@ -796,10 +903,10 @@ namespace Low {
 
       if (get_camera_direction() != p_Value) {
         // Set dirty flags
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(RenderView, camera_dirty, bool) = true;
+        mark_camera_dirty();
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderView, camera_direction, Low::Math::Vector3) =
             p_Value;
         LOCK_UNLOCK(l_WriteLock);
@@ -900,10 +1007,10 @@ namespace Low {
 
       if (get_dimensions() != p_Value) {
         // Set dirty flags
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(RenderView, dimensions_dirty, bool) = true;
+        mark_dimensions_dirty();
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderView, dimensions, Low::Math::UVector2) =
             p_Value;
         LOCK_UNLOCK(l_WriteLock);
@@ -1055,6 +1162,49 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_lit_image
     }
 
+    Low::Util::List<Low::Renderer::RenderStep> &
+    RenderView::get_steps() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_steps
+      // LOW_CODEGEN::END::CUSTOM:GETTER_steps
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, steps,
+                      Low::Util::List<Low::Renderer::RenderStep>);
+    }
+
+    Low::Util::List<RenderStepDataPtr> &
+    RenderView::get_step_data() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_step_data
+      // LOW_CODEGEN::END::CUSTOM:GETTER_step_data
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, step_data,
+                      Low::Util::List<RenderStepDataPtr>);
+    }
+    void RenderView::set_step_data(
+        Low::Util::List<RenderStepDataPtr> &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_step_data
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_step_data
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, step_data,
+               Low::Util::List<RenderStepDataPtr>) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_step_data
+      // LOW_CODEGEN::END::CUSTOM:SETTER_step_data
+    }
+
     bool RenderView::is_camera_dirty() const
     {
       _LOW_ASSERT(is_alive());
@@ -1065,6 +1215,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderView, camera_dirty, bool);
     }
+    void RenderView::toggle_camera_dirty()
+    {
+      set_camera_dirty(!is_camera_dirty());
+    }
+
     void RenderView::set_camera_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1081,6 +1236,17 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_dirty
     }
 
+    void RenderView::mark_camera_dirty()
+    {
+      if (!is_camera_dirty()) {
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(RenderView, camera_dirty, bool) = true;
+        LOCK_UNLOCK(l_WriteLock);
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_camera_dirty
+        // LOW_CODEGEN::END::CUSTOM:MARK_camera_dirty
+      }
+    }
+
     bool RenderView::is_dimensions_dirty() const
     {
       _LOW_ASSERT(is_alive());
@@ -1091,6 +1257,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderView, dimensions_dirty, bool);
     }
+    void RenderView::toggle_dimensions_dirty()
+    {
+      set_dimensions_dirty(!is_dimensions_dirty());
+    }
+
     void RenderView::set_dimensions_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1105,6 +1276,17 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_dirty
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions_dirty
+    }
+
+    void RenderView::mark_dimensions_dirty()
+    {
+      if (!is_dimensions_dirty()) {
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(RenderView, dimensions_dirty, bool) = true;
+        LOCK_UNLOCK(l_WriteLock);
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dimensions_dirty
+        // LOW_CODEGEN::END::CUSTOM:MARK_dimensions_dirty
+      }
     }
 
     Low::Util::Name RenderView::get_name() const
@@ -1131,6 +1313,22 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+    }
+
+    void RenderView::add_step(Low::Renderer::RenderStep p_Step)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step
+      get_steps().push_back(p_Step);
+      LOW_ASSERT(p_Step.prepare(get_id()),
+                 "Failed to add renderstep to renderview");
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_step
+    }
+
+    void RenderView::add_step_by_name(Low::Util::Name p_StepName)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step_by_name
+      add_step(RenderStep::find_by_name(p_StepName));
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_step_by_name
     }
 
     uint32_t RenderView::create_instance()
@@ -1244,6 +1442,40 @@ namespace Low {
                &ms_Buffer[offsetof(RenderViewData, lit_image) *
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Renderer::Texture));
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          RenderView i_RenderView = *it;
+
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(RenderViewData, steps) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Low::Util::List<
+                                   Low::Renderer::RenderStep>))])
+              Low::Util::List<Low::Renderer::RenderStep>();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_RenderView, RenderView, steps,
+              Low::Util::List<Low::Renderer::RenderStep>);
+        }
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          RenderView i_RenderView = *it;
+
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(RenderViewData, step_data) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(
+                                Low::Util::List<RenderStepDataPtr>))])
+              Low::Util::List<RenderStepDataPtr>();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_RenderView, RenderView, step_data,
+                                Low::Util::List<RenderStepDataPtr>);
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderViewData, camera_dirty) *

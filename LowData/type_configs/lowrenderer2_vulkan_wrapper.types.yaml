@@ -18,6 +18,8 @@ types:
     properties:
       allocated_image:
         type: AllocatedImage
+      depth:
+        type: bool
     functions:
       unload:
         return_type: bool
@@ -36,7 +38,18 @@ types:
         type: bool
       gbuffer_descriptor_set:
         type: VkDescriptorSet
+      point_light_cluster_buffer:
+        type: AllocatedBuffer
+      point_light_buffer:
+        type: AllocatedBuffer
+      light_clusters:
+        type: Low::Math::UVector3
+      light_cluster_count:
+        type: uint32_t
   Scene:
     properties:
+      point_light_slots:
+        type: bool*
+        private_setter: true
       point_light_buffer:
         type: AllocatedBuffer

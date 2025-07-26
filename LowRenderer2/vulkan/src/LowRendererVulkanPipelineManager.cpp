@@ -11,8 +11,10 @@ namespace Low {
       namespace PipelineManager {
         Util::Map<Pipeline, PipelineUtil::GraphicsPipelineBuilder>
             g_GraphicsPipelines;
+        Util::Map<Pipeline, PipelineUtil::ComputePipelineBuilder>
+            g_ComputePipelines;
 
-        Util::Map<Util::String, Pipeline> g_GraphicsSources;
+        Util::Map<Util::String, Pipeline> g_Sources;
 
         Util::Map<Util::String, u64> g_SourceTimes;
 
@@ -72,15 +74,42 @@ namespace Low {
           return true;
         }
 
+        bool compile_compute_pipeline(Pipeline p_Pipeline,
+                                      bool p_CompileShaders)
+        {
+          PipelineUtil::ComputePipelineBuilder &l_Builder =
+              g_ComputePipelines[p_Pipeline];
+
+          // Destroy old pipeline
+          vkDestroyPipeline(Global::get_device(),
+                            p_Pipeline.get_pipeline(), nullptr);
+
+          // #if LOW_RENDERER_COMPILE_SHADERS
+          if (p_CompileShaders) {
+            compile_shader(l_Builder.computeShaderPath);
+          }
+          // #endif
+
+          // Update shaders in builder
+          l_Builder.update_shader();
+
+          VkPipeline l_VkPipeline =
+              l_Builder.build_pipeline(Global::get_device());
+
+          // Create new pipeline and assign
+          p_Pipeline.set_pipeline(l_VkPipeline);
+
+          return true;
+        }
+
         bool register_graphics_pipeline(
             Pipeline p_Pipeline,
             PipelineUtil::GraphicsPipelineBuilder p_Builder)
         {
           g_GraphicsPipelines[p_Pipeline] = p_Builder;
 
-          g_GraphicsSources[p_Builder.vertexShaderPath] = p_Pipeline;
-          g_GraphicsSources[p_Builder.fragmentShaderPath] =
-              p_Pipeline;
+          g_Sources[p_Builder.vertexShaderPath] = p_Pipeline;
+          g_Sources[p_Builder.fragmentShaderPath] = p_Pipeline;
 
           g_SourceTimes[p_Builder.vertexShaderPath] =
               Util::FileIO::modified_sync(
@@ -96,6 +125,25 @@ namespace Low {
 
           compile_graphics_pipeline(p_Pipeline);
 
+          return true;
+        }
+
+        bool register_compute_pipeline(
+            Pipeline p_Pipeline,
+            PipelineUtil::ComputePipelineBuilder p_Builder)
+        {
+          g_ComputePipelines[p_Pipeline] = p_Builder;
+
+          g_Sources[p_Builder.computeShaderPath] = p_Pipeline;
+
+          g_SourceTimes[p_Builder.computeShaderPath] =
+              Util::FileIO::modified_sync(
+                  p_Builder.computeShaderPath.c_str());
+
+          g_SourceOutMapping[p_Builder.computeShaderPath] =
+              p_Builder.computeSpirvPath;
+
+          compile_compute_pipeline(p_Pipeline);
           return true;
         }
 
@@ -116,14 +164,21 @@ namespace Low {
 
             g_SourceTimes[i_SourcePath] = i_Modified;
 
-            auto i_GraphicsSourcesEntry =
-                g_GraphicsSources.find(i_SourcePath);
-            if (i_GraphicsSourcesEntry != g_GraphicsSources.end()) {
-              Pipeline i_Pipeline = i_GraphicsSourcesEntry->second;
+            auto i_SourcesEntry = g_Sources.find(i_SourcePath);
+            if (i_SourcesEntry != g_Sources.end()) {
+              Pipeline i_Pipeline = i_SourcesEntry->second;
 
               compile_shader(i_SourcePath);
 
-              compile_graphics_pipeline(i_Pipeline, false);
+              auto i_GraphicsEntry =
+                  g_GraphicsPipelines.find(i_Pipeline);
+              auto i_ComputeEntry =
+                  g_ComputePipelines.find(i_Pipeline);
+              if (i_GraphicsEntry != g_GraphicsPipelines.end()) {
+                compile_graphics_pipeline(i_Pipeline, false);
+              } else if (i_ComputeEntry != g_ComputePipelines.end()) {
+                compile_compute_pipeline(i_Pipeline, false);
+              }
             }
           }
 

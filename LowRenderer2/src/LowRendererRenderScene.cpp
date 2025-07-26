@@ -11,6 +11,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererDrawCommand.h"
+#include "LowRendererVkScene.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -55,6 +56,9 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderScene, draw_commands,
                               Low::Util::List<DrawCommand>))
           Low::Util::List<DrawCommand>();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderScene, pointlight_deleted_slots,
+          Low::Util::Set<u32>)) Low::Util::Set<u32>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderScene, name,
                         Low::Util::Name) = Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -64,6 +68,8 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      // TODO: Should be moved somewhere else
+      l_Handle.set_data_handle(Vulkan::Scene::make(p_Name));
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -154,6 +160,63 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: draw_commands
+      }
+      {
+        // Property: pointlight_deleted_slots
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(pointlight_deleted_slots);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderSceneData, pointlight_deleted_slots);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.get_pointlight_deleted_slots();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
+                                            pointlight_deleted_slots,
+                                            Low::Util::Set<u32>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderScene l_Handle = p_Handle.get_id();
+          *((Low::Util::Set<u32> *)p_Data) =
+              l_Handle.get_pointlight_deleted_slots();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: pointlight_deleted_slots
+      }
+      {
+        // Property: data_handle
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(data_handle);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderSceneData, data_handle);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.get_data_handle();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
+                                            data_handle, uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.set_data_handle(*(uint64_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderScene l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_data_handle();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: data_handle
       }
       {
         // Property: name
@@ -270,6 +333,9 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       RenderScene l_Handle = make(p_Name);
+      l_Handle.set_pointlight_deleted_slots(
+          get_pointlight_deleted_slots());
+      l_Handle.set_data_handle(get_data_handle());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -327,6 +393,62 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderScene, draw_commands,
                       Low::Util::List<DrawCommand>);
+    }
+
+    Low::Util::Set<u32> &
+    RenderScene::get_pointlight_deleted_slots() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pointlight_deleted_slots
+      // LOW_CODEGEN::END::CUSTOM:GETTER_pointlight_deleted_slots
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderScene, pointlight_deleted_slots,
+                      Low::Util::Set<u32>);
+    }
+    void RenderScene::set_pointlight_deleted_slots(
+        Low::Util::Set<u32> &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pointlight_deleted_slots
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_pointlight_deleted_slots
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderScene, pointlight_deleted_slots,
+               Low::Util::Set<u32>) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pointlight_deleted_slots
+      // LOW_CODEGEN::END::CUSTOM:SETTER_pointlight_deleted_slots
+    }
+
+    uint64_t RenderScene::get_data_handle() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
+      // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderScene, data_handle, uint64_t);
+    }
+    void RenderScene::set_data_handle(uint64_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderScene, data_handle, uint64_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
+      // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
     }
 
     Low::Util::Name RenderScene::get_name() const
@@ -448,6 +570,30 @@ namespace Low {
                                         draw_commands,
                                         Low::Util::List<DrawCommand>);
         }
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          RenderScene i_RenderScene = *it;
+
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(RenderSceneData,
+                                    pointlight_deleted_slots) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Low::Util::Set<u32>))])
+              Low::Util::Set<u32>();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_RenderScene, RenderScene,
+                                        pointlight_deleted_slots,
+                                        Low::Util::Set<u32>);
+        }
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderSceneData, data_handle) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderSceneData, data_handle) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint64_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderSceneData, name) *

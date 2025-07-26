@@ -703,6 +703,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(DrawCommand, uploaded, bool);
     }
+    void DrawCommand::toggle_uploaded()
+    {
+      set_uploaded(!is_uploaded());
+    }
+
     void DrawCommand::set_uploaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());

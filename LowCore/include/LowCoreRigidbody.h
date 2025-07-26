@@ -117,9 +117,11 @@ namespace Low {
 
         bool is_fixed() const;
         void set_fixed(bool p_Value);
+        void toggle_fixed();
 
         bool is_gravity() const;
         void set_gravity(bool p_Value);
+        void toggle_gravity();
 
         float get_mass() const;
         void set_mass(float p_Value);
@@ -141,6 +143,7 @@ namespace Low {
         static uint32_t create_instance();
         static void increase_budget();
         void set_initialized(bool p_Value);
+        void toggle_initialized();
         PhysicsShape &get_physics_shape() const;
         void set_unique_id(Low::Util::UniqueId p_Value);
 

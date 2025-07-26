@@ -111,6 +111,7 @@ namespace Low {
 
       bool is_dirty() const;
       void set_dirty(bool p_Value);
+      void toggle_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

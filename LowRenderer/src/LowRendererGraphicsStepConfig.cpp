@@ -986,6 +986,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, use_depth, bool);
     }
+    void GraphicsStepConfig::toggle_use_depth()
+    {
+      set_use_depth(!is_use_depth());
+    }
+
     void GraphicsStepConfig::set_use_depth(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1015,6 +1020,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_clear, bool);
     }
+    void GraphicsStepConfig::toggle_depth_clear()
+    {
+      set_depth_clear(!is_depth_clear());
+    }
+
     void GraphicsStepConfig::set_depth_clear(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1044,6 +1054,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_test, bool);
     }
+    void GraphicsStepConfig::toggle_depth_test()
+    {
+      set_depth_test(!is_depth_test());
+    }
+
     void GraphicsStepConfig::set_depth_test(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -1073,6 +1088,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(GraphicsStepConfig, depth_write, bool);
     }
+    void GraphicsStepConfig::toggle_depth_write()
+    {
+      set_depth_write(!is_depth_write());
+    }
+
     void GraphicsStepConfig::set_depth_write(bool p_Value)
     {
       _LOW_ASSERT(is_alive());

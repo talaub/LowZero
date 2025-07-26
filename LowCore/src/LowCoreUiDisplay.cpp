@@ -932,11 +932,11 @@ namespace Low {
 
           if (pixel_position() != p_Value) {
             // Set dirty flags
-            WRITE_LOCK(l_WriteLock);
-            TYPE_SOA(Display, dirty, bool) = true;
-            TYPE_SOA(Display, world_dirty, bool) = true;
+            mark_dirty();
+            mark_world_dirty();
 
             // Set new value
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, pixel_position, Low::Math::Vector2) =
                 p_Value;
             LOCK_UNLOCK(l_WriteLock);
@@ -968,11 +968,11 @@ namespace Low {
 
           if (rotation() != p_Value) {
             // Set dirty flags
-            WRITE_LOCK(l_WriteLock);
-            TYPE_SOA(Display, dirty, bool) = true;
-            TYPE_SOA(Display, world_dirty, bool) = true;
+            mark_dirty();
+            mark_world_dirty();
 
             // Set new value
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, rotation, float) = p_Value;
             LOCK_UNLOCK(l_WriteLock);
 
@@ -1023,11 +1023,11 @@ namespace Low {
 
           if (pixel_scale() != p_Value) {
             // Set dirty flags
-            WRITE_LOCK(l_WriteLock);
-            TYPE_SOA(Display, dirty, bool) = true;
-            TYPE_SOA(Display, world_dirty, bool) = true;
+            mark_dirty();
+            mark_world_dirty();
 
             // Set new value
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, pixel_scale, Low::Math::Vector2) =
                 p_Value;
             LOCK_UNLOCK(l_WriteLock);
@@ -1059,11 +1059,11 @@ namespace Low {
 
           if (layer() != p_Value) {
             // Set dirty flags
-            WRITE_LOCK(l_WriteLock);
-            TYPE_SOA(Display, dirty, bool) = true;
-            TYPE_SOA(Display, world_dirty, bool) = true;
+            mark_dirty();
+            mark_world_dirty();
 
             // Set new value
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, layer, uint32_t) = p_Value;
             LOCK_UNLOCK(l_WriteLock);
 
@@ -1105,11 +1105,11 @@ namespace Low {
 
           if (get_parent() != p_Value) {
             // Set dirty flags
-            WRITE_LOCK(l_WriteLock);
-            TYPE_SOA(Display, dirty, bool) = true;
-            TYPE_SOA(Display, world_dirty, bool) = true;
+            mark_dirty();
+            mark_world_dirty();
 
             // Set new value
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, parent, uint64_t) = p_Value;
             LOCK_UNLOCK(l_WriteLock);
 
@@ -1147,11 +1147,11 @@ namespace Low {
 
           if (get_parent_uid() != p_Value) {
             // Set dirty flags
-            WRITE_LOCK(l_WriteLock);
-            TYPE_SOA(Display, dirty, bool) = true;
-            TYPE_SOA(Display, world_dirty, bool) = true;
+            mark_dirty();
+            mark_world_dirty();
 
             // Set new value
+            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, parent_uid, uint64_t) = p_Value;
             LOCK_UNLOCK(l_WriteLock);
 
@@ -1384,6 +1384,11 @@ namespace Low {
           READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_updated, bool);
         }
+        void Display::toggle_world_updated()
+        {
+          set_world_updated(!is_world_updated());
+        }
+
         void Display::set_world_updated(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
@@ -1472,6 +1477,11 @@ namespace Low {
           READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, dirty, bool);
         }
+        void Display::toggle_dirty()
+        {
+          set_dirty(!is_dirty());
+        }
+
         void Display::set_dirty(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
@@ -1488,6 +1498,17 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+        }
+
+        void Display::mark_dirty()
+        {
+          if (!is_dirty()) {
+            WRITE_LOCK(l_WriteLock);
+            TYPE_SOA(Display, dirty, bool) = true;
+            LOCK_UNLOCK(l_WriteLock);
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+            // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+          }
         }
 
         bool Display::is_world_dirty() const
@@ -1516,6 +1537,11 @@ namespace Low {
           READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_dirty, bool);
         }
+        void Display::toggle_world_dirty()
+        {
+          set_world_dirty(!is_world_dirty());
+        }
+
         void Display::set_world_dirty(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
@@ -1532,6 +1558,17 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
+        }
+
+        void Display::mark_world_dirty()
+        {
+          if (!is_world_dirty()) {
+            WRITE_LOCK(l_WriteLock);
+            TYPE_SOA(Display, world_dirty, bool) = true;
+            LOCK_UNLOCK(l_WriteLock);
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
+            // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
+          }
         }
 
         void Display::recalculate_world_transform()

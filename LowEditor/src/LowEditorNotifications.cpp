@@ -69,12 +69,47 @@ namespace Low {
 
         float spacing = 10.0f;
 
+#if 0
+        {
+          ImVec2 window_pos = ImGui::GetWindowPos();
+          ImVec2 window_size = ImGui::GetWindowSize();
+
+          ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+          // Calculate center-left position inside window for giant
+          // icon
+          float giant_icon_size = 80.0f; // Big size
+          ImVec2 icon_pos = ImVec2(
+              window_pos.x - 5, window_pos.y + window_size.y * 0.5f -
+                                    giant_icon_size * 0.5f);
+
+          // Prepare color with reduced opacity
+          ImU32 icon_color = ImGui::GetColorU32(ImVec4(
+              n.color.x, n.color.y, n.color.z, 0.3f)); // 10% opacity
+
+          // If icon is text (icon font), draw using AddText:
+
+          // Make sure iconFont is pushed before drawing normal icon,
+          // but here draw giant icon separately:
+          draw_list->AddText(Renderer::ImGuiHelper::fonts().icon_800,
+                             giant_icon_size, icon_pos, icon_color,
+                             n.icon.c_str());
+        }
+
+
+        ImGui::BeginGroup(); // Entire notification block
+
+        ImGui::BeginGroup();
+        ImGui::Dummy({32.0f, 32.0f});
+
+        ImGui::EndGroup();
+#else
         ImGui::BeginGroup(); // Entire notification block
 
         // Icon block
         ImGui::BeginGroup();
         ImGui::PushFont(Renderer::ImGuiHelper::fonts()
-                            .icon_800); // Use your icon font
+                            .lucide_800); // Use your icon font
         ImGui::PushStyleColor(ImGuiCol_Text,
                               color_to_imvec4(n.color));
         ImGui::TextUnformatted(
@@ -82,6 +117,7 @@ namespace Low {
         ImGui::PopStyleColor();
         ImGui::PopFont();
         ImGui::EndGroup();
+#endif
 
         ImGui::SameLine(0.0f, spacing);
 

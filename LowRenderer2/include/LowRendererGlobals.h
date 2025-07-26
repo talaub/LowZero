@@ -5,6 +5,8 @@
 
 #define MATERIAL_DATA_SIZE (sizeof(Low::Math::Vector4) * 4)
 
+#define POINTLIGHT_COUNT 128
+
 #include "LowMath.h"
 #include "LowRendererRenderObject.h"
 

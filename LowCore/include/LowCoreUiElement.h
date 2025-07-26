@@ -122,6 +122,7 @@ namespace Low {
 
         bool is_click_passthrough() const;
         void set_click_passthrough(bool p_Value);
+        void toggle_click_passthrough();
 
         Low::Util::UniqueId get_unique_id() const;
 

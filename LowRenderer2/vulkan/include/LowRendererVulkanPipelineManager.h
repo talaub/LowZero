@@ -10,9 +10,14 @@ namespace Low {
         bool register_graphics_pipeline(
             Pipeline p_Pipeline,
             PipelineUtil::GraphicsPipelineBuilder p_Builder);
+        bool register_compute_pipeline(
+            Pipeline p_Pipeline,
+            PipelineUtil::ComputePipelineBuilder p_Builder);
 
         bool compile_graphics_pipeline(Pipeline p_Pipeline,
                                        bool p_CompileShaders = true);
+        bool compile_compute_pipeline(Pipeline p_Pipeline,
+                                      bool p_CompileShaders = true);
 
         bool tick(float p_Delta);
       } // namespace PipelineManager

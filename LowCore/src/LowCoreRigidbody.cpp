@@ -580,6 +580,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, fixed, bool);
       }
+      void Rigidbody::toggle_fixed()
+      {
+        set_fixed(!is_fixed());
+      }
+
       void Rigidbody::set_fixed(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -625,6 +630,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, gravity, bool);
       }
+      void Rigidbody::toggle_gravity()
+      {
+        set_gravity(!is_gravity());
+      }
+
       void Rigidbody::set_gravity(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -715,6 +725,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, initialized, bool);
       }
+      void Rigidbody::toggle_initialized()
+      {
+        set_initialized(!is_initialized());
+      }
+
       void Rigidbody::set_initialized(bool p_Value)
       {
         _LOW_ASSERT(is_alive());

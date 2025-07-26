@@ -67,6 +67,7 @@ namespace Low {
 
     typedef glm::uvec2 UVector2;
     typedef glm::uvec3 UVector3;
+    typedef glm::uvec4 UVector4;
 
     typedef glm::ivec2 IVector2;
 

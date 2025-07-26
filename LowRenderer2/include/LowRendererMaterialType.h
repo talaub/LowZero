@@ -9,6 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "LowRendererHelper.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -38,6 +39,8 @@ namespace Low {
       uint64_t depth_pipeline_handle;
       Util::List<MaterialTypeInput> inputs;
       bool initialized;
+      Low::Renderer::GraphicsPipelineConfig draw_pipeline_config;
+      Low::Renderer::GraphicsPipelineConfig depth_pipeline_config;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -121,6 +124,7 @@ namespace Low {
 
       bool is_transparent() const;
       void set_transparent(bool p_Value);
+      void toggle_transparent();
 
       uint64_t get_draw_pipeline_handle() const;
       void set_draw_pipeline_handle(uint64_t p_Value);
@@ -130,6 +134,13 @@ namespace Low {
 
       bool is_initialized() const;
       void set_initialized(bool p_Value);
+      void toggle_initialized();
+
+      Low::Renderer::GraphicsPipelineConfig &
+      get_draw_pipeline_config() const;
+
+      Low::Renderer::GraphicsPipelineConfig &
+      get_depth_pipeline_config() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -144,6 +155,10 @@ namespace Low {
       MaterialTypeInputType &get_input_type(Low::Util::Name p_Name);
       uint32_t fill_input_names(
           Low::Util::List<Low::Util::Name> &p_InputNames);
+      void set_draw_vertex_shader_path(Low::Util::String p_Path);
+      void set_draw_fragment_shader_path(Low::Util::String p_Path);
+      void set_depth_vertex_shader_path(Low::Util::String p_Path);
+      void set_depth_fragment_shader_path(Low::Util::String p_Path);
 
     private:
       static uint32_t ms_Capacity;

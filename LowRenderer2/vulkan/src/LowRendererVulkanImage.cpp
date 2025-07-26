@@ -29,6 +29,67 @@ namespace Low {
             return l_Result;
           }
 
+          bool cmd_transition_depth(VkCommandBuffer p_Cmd,
+                                    AllocatedImage &p_AllocatedImage,
+                                    VkImageLayout p_NewLayout)
+          {
+            // Early out if the layouts already match
+            if (p_AllocatedImage.layout == p_NewLayout) {
+              return true;
+            }
+
+            bool l_Result = cmd_transition_depth(
+                p_Cmd, p_AllocatedImage.image,
+                p_AllocatedImage.layout, p_NewLayout);
+
+            if (l_Result) {
+              p_AllocatedImage.layout = p_NewLayout;
+            }
+            return l_Result;
+          }
+
+          bool cmd_transition_depth(VkCommandBuffer p_Cmd,
+                                    VkImage p_Image,
+                                    VkImageLayout p_CurrentLayout,
+                                    VkImageLayout p_NewLayout)
+          {
+            VkImageMemoryBarrier2 l_ImageBarrier{};
+            l_ImageBarrier.sType =
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+            l_ImageBarrier.pNext = nullptr;
+
+            l_ImageBarrier.srcStageMask =
+                VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            l_ImageBarrier.srcAccessMask =
+                VK_ACCESS_2_MEMORY_WRITE_BIT;
+            l_ImageBarrier.dstStageMask =
+                VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            l_ImageBarrier.dstAccessMask =
+                VK_ACCESS_2_MEMORY_WRITE_BIT |
+                VK_ACCESS_2_MEMORY_READ_BIT;
+
+            l_ImageBarrier.oldLayout = p_CurrentLayout;
+            l_ImageBarrier.newLayout = p_NewLayout;
+
+            VkImageAspectFlags l_AspectMask =
+                VK_IMAGE_ASPECT_DEPTH_BIT;
+            l_ImageBarrier.subresourceRange =
+                InitUtil::image_subresource_range(l_AspectMask);
+            l_ImageBarrier.image = p_Image;
+
+            VkDependencyInfo l_DependencyInfo{};
+            l_DependencyInfo.sType =
+                VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+            l_DependencyInfo.pNext = nullptr;
+
+            l_DependencyInfo.imageMemoryBarrierCount = 1;
+            l_DependencyInfo.pImageMemoryBarriers = &l_ImageBarrier;
+
+            vkCmdPipelineBarrier2(p_Cmd, &l_DependencyInfo);
+
+            return true;
+          }
+
           bool cmd_transition(VkCommandBuffer p_Cmd, VkImage p_Image,
                               VkImageLayout p_CurrentLayout,
                               VkImageLayout p_NewLayout)
@@ -181,8 +242,11 @@ namespace Low {
 
             VkImageAspectFlags l_AspectFlag =
                 VK_IMAGE_ASPECT_COLOR_BIT;
-            if (p_Format == VK_FORMAT_D32_SFLOAT) {
+            if (p_Format == VK_FORMAT_D32_SFLOAT ||
+                p_Format == VK_FORMAT_D32_SFLOAT_S8_UINT) {
               l_AspectFlag = VK_IMAGE_ASPECT_DEPTH_BIT;
+              // VK_IMAGE_ASPECT_COLOR_BIT;
+              // VK_IMAGE_ASPECT_STENCIL_BIT;
             }
 
             VkImageViewCreateInfo l_ViewInfo =
@@ -212,6 +276,10 @@ namespace Low {
         bool cmd_transition(VkCommandBuffer p_Cmd, Image p_Image,
                             VkImageLayout p_NewLayout)
         {
+          if (p_Image.is_depth()) {
+            return Internal::cmd_transition_depth(
+                p_Cmd, p_Image.get_allocated_image(), p_NewLayout);
+          }
           return Internal::cmd_transition(
               p_Cmd, p_Image.get_allocated_image(), p_NewLayout);
         }
@@ -220,6 +288,11 @@ namespace Low {
                             VkImageLayout p_CurrentLayout,
                             VkImageLayout p_NewLayout)
         {
+          if (p_Image.is_depth()) {
+            return Internal::cmd_transition_depth(
+                p_Cmd, p_Image.get_allocated_image().image,
+                p_CurrentLayout, p_NewLayout);
+          }
           return Internal::cmd_transition(
               p_Cmd, p_Image.get_allocated_image().image,
               p_CurrentLayout, p_NewLayout);
@@ -230,10 +303,10 @@ namespace Low {
                         VkExtent2D p_SourceExtent,
                         VkExtent2D p_DestinationExtent)
         {
-          return Internal::cmd_copy2D(p_Cmd,
-                               p_Source.get_allocated_image().image,
-                               p_Source.get_allocated_image().image,
-                               p_SourceExtent, p_DestinationExtent);
+          return Internal::cmd_copy2D(
+              p_Cmd, p_Source.get_allocated_image().image,
+              p_Source.get_allocated_image().image, p_SourceExtent,
+              p_DestinationExtent);
         }
 
         bool cmd_clear_color(VkCommandBuffer p_Cmd, Image p_Image,

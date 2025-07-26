@@ -128,6 +128,7 @@ namespace Low {
 
       bool is_uploaded() const;
       void set_uploaded(bool p_Value);
+      void toggle_uploaded();
 
       uint64_t get_render_scene_handle() const;
       void set_render_scene_handle(uint64_t p_Value);

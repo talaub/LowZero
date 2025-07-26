@@ -577,10 +577,10 @@ namespace Low {
 
       if (get_world_transform() != p_Value) {
         // Set dirty flags
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(RenderObject, dirty, bool) = true;
+        mark_dirty();
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderObject, world_transform,
                  Low::Math::Matrix4x4) = p_Value;
         LOCK_UNLOCK(l_WriteLock);
@@ -631,6 +631,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, uploaded, bool);
     }
+    void RenderObject::toggle_uploaded()
+    {
+      set_uploaded(!is_uploaded());
+    }
+
     void RenderObject::set_uploaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -719,10 +724,10 @@ namespace Low {
 
       if (get_material() != p_Value) {
         // Set dirty flags
-        WRITE_LOCK(l_WriteLock);
-        TYPE_SOA(RenderObject, dirty, bool) = true;
+        mark_dirty();
 
         // Set new value
+        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderObject, material, Low::Renderer::Material) =
             p_Value;
         LOCK_UNLOCK(l_WriteLock);
@@ -756,6 +761,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, dirty, bool);
     }
+    void RenderObject::toggle_dirty()
+    {
+      set_dirty(!is_dirty());
+    }
+
     void RenderObject::set_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -773,6 +783,17 @@ namespace Low {
         ms_Dirty.insert(get_id());
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+    }
+
+    void RenderObject::mark_dirty()
+    {
+      if (!is_dirty()) {
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(RenderObject, dirty, bool) = true;
+        LOCK_UNLOCK(l_WriteLock);
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+        // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+      }
     }
 
     Low::Util::Name RenderObject::get_name() const

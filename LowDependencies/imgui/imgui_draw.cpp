@@ -39,6 +39,8 @@ Index of this file:
 
 #include <stdio.h>      // vsnprintf, sscanf, printf
 
+#include "IconsLucide.h"
+
 // Visual Studio warnings
 #ifdef _MSC_VER
 #pragma warning (disable: 4127)     // condition expression is constant
@@ -3899,6 +3901,8 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, const ImVec2& pos, Im
 // Render an arrow aimed to be aligned with text (p_min is a position in the same space text would be positioned). To e.g. denote expanded/collapsed state
 void ImGui::RenderArrow(ImDrawList* draw_list, ImVec2 pos, ImU32 col, ImGuiDir dir, float scale)
 {
+
+    #if 0
     const float h = draw_list->_Data->FontSize * 1.00f;
     float r = h * 0.40f * scale;
     ImVec2 center = pos + ImVec2(h * 0.50f, h * 0.50f * scale);
@@ -3926,6 +3930,33 @@ void ImGui::RenderArrow(ImDrawList* draw_list, ImVec2 pos, ImU32 col, ImGuiDir d
         break;
     }
     draw_list->AddTriangleFilled(center + a, center + b, center + c, col);
+
+    #else
+
+    const float h = draw_list->_Data->FontSize * 1.00f;
+    float r = h * 0.40f * scale;
+    ImVec2 center = pos + ImVec2(h * 0.50f, h * 0.50f * scale);
+
+    ImVec2 a, b, c;
+    switch (dir) {
+    case ImGuiDir_Up:
+      draw_list->AddText(pos, col, ICON_LC_CHEVRON_UP);
+      break;
+    case ImGuiDir_Down:
+      draw_list->AddText(pos, col, ICON_LC_CHEVRON_DOWN);
+      break;
+    case ImGuiDir_Left:
+      draw_list->AddText(pos, col, ICON_LC_CHEVRON_LEFT);
+      break;
+    case ImGuiDir_Right:
+      draw_list->AddText(pos, col, ICON_LC_CHEVRON_RIGHT);
+      break;
+    case ImGuiDir_None:
+    case ImGuiDir_COUNT:
+      IM_ASSERT(0);
+      break;
+    }
+    #endif
 }
 
 void ImGui::RenderBullet(ImDrawList* draw_list, ImVec2 pos, ImU32 col)

@@ -739,6 +739,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(Material, dirty, bool);
     }
+    void Material::toggle_dirty()
+    {
+      set_dirty(!is_dirty());
+    }
+
     void Material::set_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());

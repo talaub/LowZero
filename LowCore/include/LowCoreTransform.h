@@ -154,6 +154,7 @@ namespace Low {
 
         bool is_world_updated() const;
         void set_world_updated(bool p_Value);
+        void toggle_world_updated();
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);
@@ -162,9 +163,13 @@ namespace Low {
 
         bool is_dirty() const;
         void set_dirty(bool p_Value);
+        void toggle_dirty();
+        void mark_dirty();
 
         bool is_world_dirty() const;
         void set_world_dirty(bool p_Value);
+        void toggle_world_dirty();
+        void mark_world_dirty();
 
         void recalculate_world_transform();
 

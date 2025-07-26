@@ -78,13 +78,12 @@ namespace Low {
           Util::Deque<VkDescriptorBufferInfo> m_BufferInfos;
           Util::List<VkWriteDescriptorSet> m_Writes;
 
-
-        bool write_image(int p_Binding,
-                                             Low::Renderer::Vulkan::Image p_Image,
-                                             VkSampler p_Sampler,
-                                             VkImageLayout p_Layout,
-                                             VkDescriptorType p_Type,
-                                             int p_ArrayElement=0);
+          bool write_image(int p_Binding,
+                           Low::Renderer::Vulkan::Image p_Image,
+                           VkSampler p_Sampler,
+                           VkImageLayout p_Layout,
+                           VkDescriptorType p_Type,
+                           int p_ArrayElement = 0);
           bool write_image(int p_Binding, VkImageView p_ImageView,
                            VkSampler p_Sampler,
                            VkImageLayout p_Layout,

@@ -26,6 +26,10 @@ namespace Low {
         Low::Util::List<StagingBuffer> staging_buffers;
         bool initialized;
         VkDescriptorSet gbuffer_descriptor_set;
+        AllocatedBuffer point_light_cluster_buffer;
+        AllocatedBuffer point_light_buffer;
+        Low::Math::UVector3 light_clusters;
+        uint32_t light_cluster_count;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -124,9 +128,22 @@ namespace Low {
 
         bool is_initialized() const;
         void set_initialized(bool p_Value);
+        void toggle_initialized();
 
         VkDescriptorSet &get_gbuffer_descriptor_set() const;
         void set_gbuffer_descriptor_set(VkDescriptorSet &p_Value);
+
+        AllocatedBuffer &get_point_light_cluster_buffer() const;
+        void set_point_light_cluster_buffer(AllocatedBuffer &p_Value);
+
+        AllocatedBuffer &get_point_light_buffer() const;
+        void set_point_light_buffer(AllocatedBuffer &p_Value);
+
+        Low::Math::UVector3 &get_light_clusters() const;
+        void set_light_clusters(Low::Math::UVector3 &p_Value);
+
+        uint32_t get_light_cluster_count() const;
+        void set_light_cluster_count(uint32_t p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

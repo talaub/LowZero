@@ -12,7 +12,6 @@
 #include "LowCoreRegion.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -93,7 +92,6 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       Low::Util::remove_unique_id(get_unique_id());
@@ -449,6 +447,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(Scene, loaded, bool);
     }
+    void Scene::toggle_loaded()
+    {
+      set_loaded(!is_loaded());
+    }
+
     void Scene::set_loaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());

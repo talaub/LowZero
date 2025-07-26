@@ -1,0 +1,812 @@
+#include "LowRendererRenderStep.h"
+
+#include <algorithm>
+
+#include "LowUtil.h"
+#include "LowUtilAssert.h"
+#include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
+#include "LowUtilConfig.h"
+#include "LowUtilSerialization.h"
+
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererRenderView.h"
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
+
+namespace Low {
+  namespace Renderer {
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
+    const uint16_t RenderStep::TYPE_ID = 64;
+    uint32_t RenderStep::ms_Capacity = 0u;
+    uint8_t *RenderStep::ms_Buffer = 0;
+    std::shared_mutex RenderStep::ms_BufferMutex;
+    Low::Util::Instances::Slot *RenderStep::ms_Slots = 0;
+    Low::Util::List<RenderStep> RenderStep::ms_LivingInstances =
+        Low::Util::List<RenderStep>();
+
+    RenderStep::RenderStep() : Low::Util::Handle(0ull)
+    {
+    }
+    RenderStep::RenderStep(uint64_t p_Id) : Low::Util::Handle(p_Id)
+    {
+    }
+    RenderStep::RenderStep(RenderStep &p_Copy)
+        : Low::Util::Handle(p_Copy.m_Id)
+    {
+    }
+
+    Low::Util::Handle RenderStep::_make(Low::Util::Name p_Name)
+    {
+      return make(p_Name).get_id();
+    }
+
+    RenderStep RenderStep::make(Low::Util::Name p_Name)
+    {
+      WRITE_LOCK(l_Lock);
+      uint32_t l_Index = create_instance();
+
+      RenderStep l_Handle;
+      l_Handle.m_Data.m_Index = l_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Type = RenderStep::TYPE_ID;
+
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderStep, prepare_callback,
+          SINGLE_ARG(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)>)))
+          Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                   Low::Renderer::RenderView)>();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderStep, teardown_callback,
+          SINGLE_ARG(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)>)))
+          Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                   Low::Renderer::RenderView)>();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderStep, execute_callback,
+          SINGLE_ARG(Low::Util::Function<bool(
+                         Low::Renderer::RenderStep, float,
+                         Low::Renderer::RenderView)>)))
+          Low::Util::Function<bool(Low::Renderer::RenderStep, float,
+                                   Low::Renderer::RenderView)>();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderStep, resolution_update_callback,
+          SINGLE_ARG(Low::Util::Function<bool(
+                         Low::Renderer::RenderStep,
+                         Low::Math::UVector2 p_NewDimensions,
+                         Low::Renderer::RenderView)>)))
+          Low::Util::Function<bool(
+              Low::Renderer::RenderStep,
+              Low::Math::UVector2 p_NewDimensions,
+              Low::Renderer::RenderView)>();
+      ACCESSOR_TYPE_SOA(l_Handle, RenderStep, name, Low::Util::Name) =
+          Low::Util::Name(0u);
+      LOCK_UNLOCK(l_Lock);
+
+      l_Handle.set_name(p_Name);
+
+      ms_LivingInstances.push_back(l_Handle);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_prepare_callback(
+          [&](RenderStep p_RenderStep,
+              RenderView p_RenderView) -> bool { return true; });
+      l_Handle.set_teardown_callback(
+          [&](RenderStep p_RenderStep,
+              RenderView p_RenderView) -> bool { return true; });
+      l_Handle.set_resolution_update_callback(
+          [&](RenderStep p_RenderStep,
+              Low::Math::UVector2 p_NewDimensions,
+              RenderView p_RenderView) -> bool { return true; });
+      l_Handle.set_execute_callback(
+          [&](RenderStep p_RenderStep, float p_Delta,
+              RenderView p_RenderView) -> bool { return true; });
+      // LOW_CODEGEN::END::CUSTOM:MAKE
+
+      return l_Handle;
+    }
+
+    void RenderStep::destroy()
+    {
+      LOW_ASSERT(is_alive(), "Cannot destroy dead object");
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+      WRITE_LOCK(l_Lock);
+      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
+      ms_Slots[this->m_Data.m_Index].m_Generation++;
+
+      const RenderStep *l_Instances = living_instances();
+      bool l_LivingInstanceFound = false;
+      for (uint32_t i = 0u; i < living_count(); ++i) {
+        if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
+          ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
+          l_LivingInstanceFound = true;
+          break;
+        }
+      }
+    }
+
+    void RenderStep::initialize()
+    {
+      WRITE_LOCK(l_Lock);
+      // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
+      ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
+                                                    N(RenderStep));
+
+      initialize_buffer(&ms_Buffer, RenderStepData::get_size(),
+                        get_capacity(), &ms_Slots);
+      LOCK_UNLOCK(l_Lock);
+
+      LOW_PROFILE_ALLOC(type_buffer_RenderStep);
+      LOW_PROFILE_ALLOC(type_slots_RenderStep);
+
+      Low::Util::RTTI::TypeInfo l_TypeInfo;
+      l_TypeInfo.name = N(RenderStep);
+      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.get_capacity = &get_capacity;
+      l_TypeInfo.is_alive = &RenderStep::is_alive;
+      l_TypeInfo.destroy = &RenderStep::destroy;
+      l_TypeInfo.serialize = &RenderStep::serialize;
+      l_TypeInfo.deserialize = &RenderStep::deserialize;
+      l_TypeInfo.find_by_index = &RenderStep::_find_by_index;
+      l_TypeInfo.find_by_name = &RenderStep::_find_by_name;
+      l_TypeInfo.make_component = nullptr;
+      l_TypeInfo.make_default = &RenderStep::_make;
+      l_TypeInfo.duplicate_default = &RenderStep::_duplicate;
+      l_TypeInfo.duplicate_component = nullptr;
+      l_TypeInfo.get_living_instances =
+          reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+              &RenderStep::living_instances);
+      l_TypeInfo.get_living_count = &RenderStep::living_count;
+      l_TypeInfo.component = false;
+      l_TypeInfo.uiComponent = false;
+      {
+        // Property: prepare_callback
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(prepare_callback);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderStepData, prepare_callback);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.get_prepare_callback();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderStep, prepare_callback,
+              SINGLE_ARG(Low::Util::Function<bool(
+                             Low::Renderer::RenderStep,
+                             Low::Renderer::RenderView)>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.set_prepare_callback(*(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)> *)
+                                            p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                      Low::Renderer::RenderView)> *)
+                p_Data) = l_Handle.get_prepare_callback();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: prepare_callback
+      }
+      {
+        // Property: teardown_callback
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(teardown_callback);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderStepData, teardown_callback);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.get_teardown_callback();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderStep, teardown_callback,
+              SINGLE_ARG(Low::Util::Function<bool(
+                             Low::Renderer::RenderStep,
+                             Low::Renderer::RenderView)>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.set_teardown_callback(*(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)> *)
+                                             p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                      Low::Renderer::RenderView)> *)
+                p_Data) = l_Handle.get_teardown_callback();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: teardown_callback
+      }
+      {
+        // Property: execute_callback
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(execute_callback);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderStepData, execute_callback);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.get_execute_callback();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderStep, execute_callback,
+              SINGLE_ARG(Low::Util::Function<bool(
+                             Low::Renderer::RenderStep, float,
+                             Low::Renderer::RenderView)>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.set_execute_callback(
+              *(Low::Util::Function<bool(
+                    Low::Renderer::RenderStep, float,
+                    Low::Renderer::RenderView)> *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Function<bool(
+                 Low::Renderer::RenderStep, float,
+                 Low::Renderer::RenderView)> *)p_Data) =
+              l_Handle.get_execute_callback();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: execute_callback
+      }
+      {
+        // Property: resolution_update_callback
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(resolution_update_callback);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderStepData, resolution_update_callback);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.get_resolution_update_callback();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderStep, resolution_update_callback,
+              SINGLE_ARG(Low::Util::Function<bool(
+                             Low::Renderer::RenderStep,
+                             Low::Math::UVector2 p_NewDimensions,
+                             Low::Renderer::RenderView)>));
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.set_resolution_update_callback(
+              *(Low::Util::Function<bool(
+                    Low::Renderer::RenderStep,
+                    Low::Math::UVector2 p_NewDimensions,
+                    Low::Renderer::RenderView)> *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Function<bool(
+                 Low::Renderer::RenderStep,
+                 Low::Math::UVector2 p_NewDimensions,
+                 Low::Renderer::RenderView)> *)p_Data) =
+              l_Handle.get_resolution_update_callback();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: resolution_update_callback
+      }
+      {
+        // Property: name
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(name);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(RenderStepData, name);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.get_name();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderStep,
+                                            name, Low::Util::Name);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.set_name(*(Low::Util::Name *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: name
+      }
+      {
+        // Function: prepare
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(prepare);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_RenderView);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::RenderView::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: prepare
+      }
+      {
+        // Function: teardown
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(teardown);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_RenderView);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::RenderView::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: teardown
+      }
+      {
+        // Function: update_resolution
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(update_resolution);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_NewDimensions);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_RenderView);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::RenderView::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: update_resolution
+      }
+      {
+        // Function: execute
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(execute);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_DeltaTime);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_RenderView);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::RenderView::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: execute
+      }
+      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+    }
+
+    void RenderStep::cleanup()
+    {
+      Low::Util::List<RenderStep> l_Instances = ms_LivingInstances;
+      for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
+        l_Instances[i].destroy();
+      }
+      WRITE_LOCK(l_Lock);
+      free(ms_Buffer);
+      free(ms_Slots);
+
+      LOW_PROFILE_FREE(type_buffer_RenderStep);
+      LOW_PROFILE_FREE(type_slots_RenderStep);
+      LOCK_UNLOCK(l_Lock);
+    }
+
+    Low::Util::Handle RenderStep::_find_by_index(uint32_t p_Index)
+    {
+      return find_by_index(p_Index).get_id();
+    }
+
+    RenderStep RenderStep::find_by_index(uint32_t p_Index)
+    {
+      LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+      RenderStep l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
+      l_Handle.m_Data.m_Type = RenderStep::TYPE_ID;
+
+      return l_Handle;
+    }
+
+    bool RenderStep::is_alive() const
+    {
+      READ_LOCK(l_Lock);
+      return m_Data.m_Type == RenderStep::TYPE_ID &&
+             check_alive(ms_Slots, RenderStep::get_capacity());
+    }
+
+    uint32_t RenderStep::get_capacity()
+    {
+      return ms_Capacity;
+    }
+
+    Low::Util::Handle
+    RenderStep::_find_by_name(Low::Util::Name p_Name)
+    {
+      return find_by_name(p_Name).get_id();
+    }
+
+    RenderStep RenderStep::find_by_name(Low::Util::Name p_Name)
+    {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
+        if (it->get_name() == p_Name) {
+          return *it;
+        }
+      }
+      return 0ull;
+    }
+
+    RenderStep RenderStep::duplicate(Low::Util::Name p_Name) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      RenderStep l_Handle = make(p_Name);
+      l_Handle.set_prepare_callback(get_prepare_callback());
+      l_Handle.set_teardown_callback(get_teardown_callback());
+      l_Handle.set_execute_callback(get_execute_callback());
+      l_Handle.set_resolution_update_callback(
+          get_resolution_update_callback());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+      // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+
+      return l_Handle;
+    }
+
+    RenderStep RenderStep::duplicate(RenderStep p_Handle,
+                                     Low::Util::Name p_Name)
+    {
+      return p_Handle.duplicate(p_Name);
+    }
+
+    Low::Util::Handle
+    RenderStep::_duplicate(Low::Util::Handle p_Handle,
+                           Low::Util::Name p_Name)
+    {
+      RenderStep l_RenderStep = p_Handle.get_id();
+      return l_RenderStep.duplicate(p_Name);
+    }
+
+    void RenderStep::serialize(Low::Util::Yaml::Node &p_Node) const
+    {
+      _LOW_ASSERT(is_alive());
+
+      p_Node["name"] = get_name().c_str();
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+    }
+
+    void RenderStep::serialize(Low::Util::Handle p_Handle,
+                               Low::Util::Yaml::Node &p_Node)
+    {
+      RenderStep l_RenderStep = p_Handle.get_id();
+      l_RenderStep.serialize(p_Node);
+    }
+
+    Low::Util::Handle
+    RenderStep::deserialize(Low::Util::Yaml::Node &p_Node,
+                            Low::Util::Handle p_Creator)
+    {
+      RenderStep l_Handle = RenderStep::make(N(RenderStep));
+
+      if (p_Node["prepare_callback"]) {
+      }
+      if (p_Node["teardown_callback"]) {
+      }
+      if (p_Node["execute_callback"]) {
+      }
+      if (p_Node["resolution_update_callback"]) {
+      }
+      if (p_Node["name"]) {
+        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+      }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+      // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+
+      return l_Handle;
+    }
+
+    Low::Util::Function<bool(Low::Renderer::RenderStep,
+                             Low::Renderer::RenderView)>
+    RenderStep::get_prepare_callback() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_prepare_callback
+      // LOW_CODEGEN::END::CUSTOM:GETTER_prepare_callback
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(
+          RenderStep, prepare_callback,
+          SINGLE_ARG(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)>));
+    }
+    void RenderStep::set_prepare_callback(
+        Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                 Low::Renderer::RenderView)>
+            p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_prepare_callback
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_prepare_callback
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(
+          RenderStep, prepare_callback,
+          SINGLE_ARG(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)>)) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_prepare_callback
+      // LOW_CODEGEN::END::CUSTOM:SETTER_prepare_callback
+    }
+
+    Low::Util::Function<bool(Low::Renderer::RenderStep,
+                             Low::Renderer::RenderView)>
+    RenderStep::get_teardown_callback() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_teardown_callback
+      // LOW_CODEGEN::END::CUSTOM:GETTER_teardown_callback
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(
+          RenderStep, teardown_callback,
+          SINGLE_ARG(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)>));
+    }
+    void RenderStep::set_teardown_callback(
+        Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                 Low::Renderer::RenderView)>
+            p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_teardown_callback
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_teardown_callback
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(
+          RenderStep, teardown_callback,
+          SINGLE_ARG(
+              Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                       Low::Renderer::RenderView)>)) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_teardown_callback
+      // LOW_CODEGEN::END::CUSTOM:SETTER_teardown_callback
+    }
+
+    Low::Util::Function<bool(Low::Renderer::RenderStep, float,
+                             Low::Renderer::RenderView)>
+    RenderStep::get_execute_callback() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_execute_callback
+      // LOW_CODEGEN::END::CUSTOM:GETTER_execute_callback
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderStep, execute_callback,
+                      SINGLE_ARG(Low::Util::Function<bool(
+                                     Low::Renderer::RenderStep, float,
+                                     Low::Renderer::RenderView)>));
+    }
+    void RenderStep::set_execute_callback(
+        Low::Util::Function<bool(Low::Renderer::RenderStep, float,
+                                 Low::Renderer::RenderView)>
+            p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_execute_callback
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_execute_callback
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderStep, execute_callback,
+               SINGLE_ARG(Low::Util::Function<bool(
+                              Low::Renderer::RenderStep, float,
+                              Low::Renderer::RenderView)>)) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_execute_callback
+      // LOW_CODEGEN::END::CUSTOM:SETTER_execute_callback
+    }
+
+    Low::Util::Function<bool(Low::Renderer::RenderStep,
+                             Low::Math::UVector2 p_NewDimensions,
+                             Low::Renderer::RenderView)>
+    RenderStep::get_resolution_update_callback() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resolution_update_callback
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resolution_update_callback
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(
+          RenderStep, resolution_update_callback,
+          SINGLE_ARG(Low::Util::Function<bool(
+                         Low::Renderer::RenderStep,
+                         Low::Math::UVector2 p_NewDimensions,
+                         Low::Renderer::RenderView)>));
+    }
+    void RenderStep::set_resolution_update_callback(
+        Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                 Low::Math::UVector2 p_NewDimensions,
+                                 Low::Renderer::RenderView)>
+            p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resolution_update_callback
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_resolution_update_callback
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderStep, resolution_update_callback,
+               SINGLE_ARG(Low::Util::Function<bool(
+                              Low::Renderer::RenderStep,
+                              Low::Math::UVector2 p_NewDimensions,
+                              Low::Renderer::RenderView)>)) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resolution_update_callback
+      // LOW_CODEGEN::END::CUSTOM:SETTER_resolution_update_callback
+    }
+
+    Low::Util::Name RenderStep::get_name() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+      // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderStep, name, Low::Util::Name);
+    }
+    void RenderStep::set_name(Low::Util::Name p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderStep, name, Low::Util::Name) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+      // LOW_CODEGEN::END::CUSTOM:SETTER_name
+    }
+
+    bool RenderStep::prepare(Low::Renderer::RenderView p_RenderView)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
+      return get_prepare_callback()(get_id(), p_RenderView);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
+    }
+
+    bool RenderStep::teardown(Low::Renderer::RenderView p_RenderView)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_teardown
+      return get_teardown_callback()(get_id(), p_RenderView);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_teardown
+    }
+
+    bool RenderStep::update_resolution(
+        Low::Math::UVector2 &p_NewDimensions,
+        Low::Renderer::RenderView p_RenderView)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_resolution
+      return get_resolution_update_callback()(
+          get_id(), p_NewDimensions, p_RenderView);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_resolution
+    }
+
+    bool RenderStep::execute(float p_DeltaTime,
+                             Low::Renderer::RenderView p_RenderView)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+      return get_execute_callback()(get_id(), p_DeltaTime,
+                                    p_RenderView);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
+    }
+
+    uint32_t RenderStep::create_instance()
+    {
+      uint32_t l_Index = 0u;
+
+      for (; l_Index < get_capacity(); ++l_Index) {
+        if (!ms_Slots[l_Index].m_Occupied) {
+          break;
+        }
+      }
+      LOW_ASSERT(l_Index < get_capacity(),
+                 "Budget blown for type RenderStep");
+      ms_Slots[l_Index].m_Occupied = true;
+      return l_Index;
+    }
+
+    // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
+  } // namespace Renderer
+} // namespace Low

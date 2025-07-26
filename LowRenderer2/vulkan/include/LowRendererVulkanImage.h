@@ -19,6 +19,14 @@ namespace Low {
                               VkImageLayout p_CurrentLayout,
                               VkImageLayout p_NewLayout);
 
+          bool cmd_transition_depth(VkCommandBuffer p_Cmd,
+                                    VkImage p_Image,
+                                    VkImageLayout p_CurrentLayout,
+                                    VkImageLayout p_NewLayout);
+          bool cmd_transition_depth(VkCommandBuffer p_Cmd,
+                                    AllocatedImage &p_AllocatedImage,
+                                    VkImageLayout p_NewLayout);
+
           bool cmd_copy2D(VkCommandBuffer p_Cmd, VkImage p_Source,
                           VkImage p_Destination,
                           VkExtent2D p_SourceExtent,

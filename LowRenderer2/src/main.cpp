@@ -15,6 +15,8 @@
 #include "LowRendererRenderScene.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererMaterialType.h"
+#include "LowRendererRenderStep.h"
+#include "LowRendererPointLight.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -46,6 +48,8 @@ Low::Math::Vector3 g_Position(0.0f);
 Low::Math::Quaternion g_Rotation(1.0f, 0.0f, 0.0f, 0.0f);
 Low::Math::Vector3 g_Scale(1.0f);
 
+Low::Renderer::PointLight g_PointLight;
+
 namespace Low {
   namespace Util {
     Window &Window::get_main_window()
@@ -72,6 +76,26 @@ void draw()
     g_RenderObject.set_world_transform(l_LocalMatrix);
   }
   ImGui::End();
+
+  {
+    ImGui::Begin("Light");
+    Low::Math::Vector3 pos = g_PointLight.get_world_position();
+    if (ImGui::DragFloat3("Position", (float *)&pos)) {
+      g_PointLight.set_world_position(pos);
+    }
+
+    float intensity = g_PointLight.get_intensity();
+    if (ImGui::DragFloat("Intensity", &intensity)) {
+      g_PointLight.set_intensity(intensity);
+    }
+
+    float range = g_PointLight.get_range();
+    if (ImGui::DragFloat("Range", &range)) {
+      g_PointLight.set_range(range);
+    }
+
+    ImGui::End();
+  }
   Low::Renderer::tick(0.1f);
 }
 
@@ -133,15 +157,36 @@ void init()
 
     g_RenderScene = Low::Renderer::RenderScene::make("Default");
 
+    {
+      g_PointLight = Low::Renderer::PointLight::make(g_RenderScene);
+      g_PointLight.set_world_position(0.0f, 5.0f, 0.0f);
+      g_PointLight.set_range(5.0f);
+      g_PointLight.set_intensity(1.0f);
+      Low::Math::ColorRGB l_Color(1.0f, 1.0f, 1.0f);
+      g_PointLight.set_color(l_Color);
+    }
+
     g_RenderView = Low::Renderer::RenderView::make("Default");
     g_RenderView.set_dimensions(g_Dimensions);
     g_RenderView.set_render_scene(g_RenderScene);
+
+    g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
+        RENDERSTEP_SOLID_MATERIAL_NAME));
+    g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
+        RENDERSTEP_LIGHTCULLING_NAME));
+    g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
+        RENDERSTEP_LIGHTING_NAME));
 
     g_SolidBaseMaterialType =
         Low::Renderer::MaterialType::make(N(solid_base));
     g_SolidBaseMaterialType.add_input(
         N(base_color), Low::Renderer::MaterialTypeInputType::VECTOR3);
     g_SolidBaseMaterialType.finalize();
+
+    g_SolidBaseMaterialType.set_draw_vertex_shader_path(
+        "solid_base.vert");
+    g_SolidBaseMaterialType.set_draw_fragment_shader_path(
+        "solid_base.frag");
 
     g_TestMaterial = Low::Renderer::Material::make(
         N(TestMaterial), g_SolidBaseMaterialType);

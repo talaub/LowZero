@@ -11,11 +11,13 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererRenderScene.h"
 #include "LowRendererTexture.h"
+#include "LowRendererRenderStep.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    typedef void *RenderStepDataPtr;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API RenderViewData
@@ -30,6 +32,8 @@ namespace Low {
       Low::Renderer::Texture gbuffer_normals;
       Low::Renderer::Texture gbuffer_depth;
       Low::Renderer::Texture lit_image;
+      Low::Util::List<Low::Renderer::RenderStep> steps;
+      Low::Util::List<RenderStepDataPtr> step_data;
       bool camera_dirty;
       bool dimensions_dirty;
       Low::Util::Name name;
@@ -154,14 +158,26 @@ namespace Low {
       Low::Renderer::Texture get_lit_image() const;
       void set_lit_image(Low::Renderer::Texture p_Value);
 
+      Low::Util::List<Low::Renderer::RenderStep> &get_steps() const;
+
+      Low::Util::List<RenderStepDataPtr> &get_step_data() const;
+      void set_step_data(Low::Util::List<RenderStepDataPtr> &p_Value);
+
       bool is_camera_dirty() const;
       void set_camera_dirty(bool p_Value);
+      void toggle_camera_dirty();
+      void mark_camera_dirty();
 
       bool is_dimensions_dirty() const;
       void set_dimensions_dirty(bool p_Value);
+      void toggle_dimensions_dirty();
+      void mark_dimensions_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
+
+      void add_step(Low::Renderer::RenderStep p_Step);
+      void add_step_by_name(Low::Util::Name p_StepName);
 
     private:
       static uint32_t ms_Capacity;

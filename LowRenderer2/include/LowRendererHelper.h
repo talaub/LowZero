@@ -19,7 +19,9 @@ namespace Low {
     enum class ImageFormat
     {
       UNDEFINED,
-      RGBA16_SFLOAT
+      RGBA16_SFLOAT,
+      R16_SFLOAT,
+      DEPTH
     };
 
     struct GraphicsPipelineConfig

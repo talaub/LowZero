@@ -406,6 +406,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Camera, active, bool);
       }
+      void Camera::toggle_active()
+      {
+        set_active(!is_active());
+      }
+
       void Camera::set_active(bool p_Value)
       {
         _LOW_ASSERT(is_alive());

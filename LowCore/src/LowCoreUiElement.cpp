@@ -760,6 +760,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Element, click_passthrough, bool);
       }
+      void Element::toggle_click_passthrough()
+      {
+        set_click_passthrough(!is_click_passthrough());
+      }
+
       void Element::set_click_passthrough(bool p_Value)
       {
         _LOW_ASSERT(is_alive());

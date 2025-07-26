@@ -24,6 +24,10 @@ const {
   collect_enums_for_project,
   collect_types_for_project,
   collect_types_for_low,
+  is_string_type,
+  is_math_type,
+  is_name_type,
+  is_container_type,
 } = require("./lib.js");
 
 function get_deserializer_method_for_math_type(p_Type) {
@@ -42,82 +46,6 @@ function get_deserializer_method_for_math_type(p_Type) {
   }
 
   return `Low::Util::Serialization::deserialize_${l_Type.toLowerCase()}`;
-}
-
-function is_math_type(p_Type) {
-  const l_Name = [
-    "Vector2",
-    "Vector3",
-    "Vector4",
-    "Color",
-    "ColorRGB",
-    "Quaternion",
-    "Shape",
-    "Box",
-    "Sphere",
-    "Cylinder",
-    "Cone",
-  ];
-
-  const l_Prefixes = ["Low::Math::", "Math::", ""];
-
-  for (const i_Name of l_Name) {
-    for (const i_Prefix of l_Prefixes) {
-      if (p_Type === `${i_Prefix}${i_Name}`) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function is_name_type(p_Type) {
-  const l_Name = ["Name"];
-
-  const l_Prefixes = ["Low::Util::", "Util::", ""];
-
-  for (const i_Name of l_Name) {
-    for (const i_Prefix of l_Prefixes) {
-      if (p_Type === `${i_Prefix}${i_Name}`) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function is_string_type(p_Type) {
-  const l_Name = ["String"];
-
-  const l_Prefixes = ["Low::Util::", "Util::", ""];
-
-  for (const i_Name of l_Name) {
-    for (const i_Prefix of l_Prefixes) {
-      if (p_Type === `${i_Prefix}${i_Name}`) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function is_container_type(p_Type) {
-  const l_Containers = ["List", "Array", "Map", "Set", "Queue"];
-
-  const l_Prefixes = ["Low::Util::", "Util::", ""];
-
-  for (const i_Container of l_Containers) {
-    for (const i_Prefix of l_Prefixes) {
-      if (p_Type.startsWith(`${i_Prefix}${i_Container}<`)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
 }
 
 function get_property_type(p_Type) {
@@ -450,7 +378,7 @@ function generate_header(p_Type) {
   t += line("{", n++);
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-    if (!i_Prop.static) {
+    if (!i_Prop.static && !i_Prop.no_data) {
       t += line(`${i_Prop.plain_type} ${i_PropName};`, n);
     }
   }
@@ -611,7 +539,7 @@ function generate_header(p_Type) {
     if (i_Prop.static) {
       continue;
     }
-    if (!i_Prop.no_getter) {
+    if (!i_Prop.no_getter && !i_Prop.no_data) {
       const l = `${i_Prop.accessor_type} ${i_Prop.getter_name}() ${i_Prop.getter_no_const ? "" : "const"};`;
       if (i_Prop.private_getter) {
         privatelines.push(l);
@@ -619,7 +547,7 @@ function generate_header(p_Type) {
         t += line(l, n);
       }
     }
-    if (!i_Prop.no_setter) {
+    if (!i_Prop.no_setter && !i_Prop.no_data) {
       const l_SetterLines = [
         `void ${i_Prop.setter_name}(${i_Prop.accessor_type} p_Value);`,
       ];
@@ -635,7 +563,7 @@ function generate_header(p_Type) {
         l_SetterLines.push(`void ${i_Prop.setter_name}(float p_X, float p_Y);`);
         l_SetterLines.push(`void ${i_Prop.setter_name}_x(float p_Value);`);
         l_SetterLines.push(`void ${i_Prop.setter_name}_y(float p_Value);`);
-      } else if (i_Prop.plain_type.endsWith("Vector3")) {
+      } else if (i_Prop.plain_type.endsWith("Math::Vector3")) {
         l_SetterLines.push(
           `void ${i_Prop.setter_name}(float p_X, float p_Y, float p_Z);`,
         );
@@ -644,11 +572,19 @@ function generate_header(p_Type) {
         l_SetterLines.push(`void ${i_Prop.setter_name}_z(float p_Value);`);
       }
 
+      if (i_Prop.plain_type == "bool") {
+        l_SetterLines.push(`void toggle_${i_PropName}();`);
+      }
+
       if (i_Prop.private_setter) {
         l_SetterLines.forEach((l) => privatelines.push(l));
       } else {
         l_SetterLines.forEach((l) => (t += line(l, n)));
       }
+    }
+
+    if (i_Prop.is_dirty_flag) {
+      t += line(`void mark_${i_PropName}();`);
     }
     t += empty();
   }
@@ -925,6 +861,9 @@ function generate_source(p_Type) {
   t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::TYPE_ID;`);
   t += empty();
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+    if (i_Prop.no_data) {
+      continue;
+    }
     if (["bool", "boolean"].includes(i_Prop.type)) {
       t += line(
         `ACCESSOR_TYPE_SOA(l_Handle, ${p_Type.name}, ${i_PropName}, ${i_Prop.soa_type}) = false;`,
@@ -1120,6 +1059,9 @@ function generate_source(p_Type) {
     t += line(`l_TypeInfo.uiComponent = false;`);
   }
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+    if (i_Prop.no_data) {
+      continue;
+    }
     t += line(`{`);
     t += line(`// Property: ${i_PropName}`);
     t += line(`Low::Util::RTTI::PropertyInfo l_PropertyInfo;`);
@@ -1433,7 +1375,7 @@ function generate_source(p_Type) {
       t += line(`${p_Type.name} l_Handle = make(p_Name);`);
     }
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-      if (i_Prop.skip_duplication) {
+      if (i_Prop.skip_duplication || i_Prop.no_data) {
         continue;
       }
       if (i_Prop.no_setter || i_Prop.no_getter) {
@@ -1722,7 +1664,7 @@ function generate_source(p_Type) {
   t += empty();
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
-    if (!i_Prop.no_getter) {
+    if (!i_Prop.no_getter && !i_Prop.no_data) {
       t += line(
         `${i_Prop.accessor_type} ${p_Type.name}::${i_Prop.getter_name}() ${i_Prop.getter_no_const ? "" : "const"}`,
         n,
@@ -1758,7 +1700,7 @@ function generate_source(p_Type) {
       );
       t += line("}", --n);
     }
-    if (!i_Prop.no_setter) {
+    if (!i_Prop.no_setter && !i_Prop.no_data) {
       const l_MarkerName = `CUSTOM:SETTER_${i_PropName}`;
 
       const i_SetterBeginMarker = get_marker_begin(l_MarkerName);
@@ -1833,7 +1775,7 @@ function generate_source(p_Type) {
           t += line("}");
           t += empty();
         }
-      } else if (i_Prop.plain_type.endsWith("Vector3")) {
+      } else if (i_Prop.plain_type.endsWith("Math::Vector3")) {
         t += line(
           `void ${p_Type.name}::${i_Prop.setter_name}(float p_X, float p_Y, float p_Z){`,
           n,
@@ -1856,6 +1798,11 @@ function generate_source(p_Type) {
           t += line("}");
           t += empty();
         }
+      } else if (i_Prop.plain_type == "bool") {
+        t += line(`void ${p_Type.name}::toggle_${i_PropName}(){`, n);
+        t += line(`${i_Prop.setter_name}(!${i_Prop.getter_name}());`);
+        t += line("}");
+        t += empty();
       }
 
       t += line(
@@ -1903,13 +1850,9 @@ function generate_source(p_Type) {
         }
         t += line("// Set dirty flags");
 
-        if (!i_GeneratedWriteLock) {
-          t += line(`WRITE_LOCK(l_WriteLock);`);
-          i_GeneratedWriteLock = true;
-        }
-
         for (var i_Flag of i_Prop.dirty_flag) {
-          t += line(`TYPE_SOA(${p_Type.name}, ${i_Flag}, bool) = true;`, n);
+          //t += line(`TYPE_SOA(${p_Type.name}, ${i_Flag}, bool) = true;`, n);
+          t += line(`mark_${i_Flag}();`, n);
         }
         t += empty();
       }
@@ -1955,6 +1898,54 @@ function generate_source(p_Type) {
       t += line("}", --n);
     }
     t += empty();
+
+    if (i_Prop.is_dirty_flag) {
+      t += line(`void ${p_Type.name}::mark_${i_PropName}(){`, n);
+      if (!i_Prop.no_data) {
+        t += line(`if (!${i_Prop.getter_name}()){`);
+        t += line(`WRITE_LOCK(l_WriteLock);`);
+        t += line(
+          `TYPE_SOA(${p_Type.name}, ${i_Prop.name}, ${i_Prop.soa_type}) = true;`,
+          n,
+        );
+        t += line(`LOCK_UNLOCK(l_WriteLock);`);
+      }
+
+      if (true) {
+        const l_MarkerName = `CUSTOM:MARK_${i_PropName}`;
+
+        const i_SetterBeginMarker = get_marker_begin(l_MarkerName);
+        const i_SetterEndMarker = get_marker_end(l_MarkerName);
+
+        const i_BeginMarkerIndex = find_begin_marker_end(
+          l_OldCode,
+          l_MarkerName,
+        );
+
+        let i_CustomCode = "";
+
+        if (i_BeginMarkerIndex >= 0) {
+          const i_EndMarkerIndex = find_end_marker_start(
+            l_OldCode,
+            l_MarkerName,
+          );
+
+          i_CustomCode = l_OldCode.substring(
+            i_BeginMarkerIndex,
+            i_EndMarkerIndex,
+          );
+        }
+        t += line(i_SetterBeginMarker);
+        t += i_CustomCode;
+        t += line(i_SetterEndMarker);
+        t += empty();
+      }
+      if (!i_Prop.no_data) {
+        t += line("}");
+      }
+      t += line("}");
+      t += empty();
+    }
   }
 
   if (p_Type.functions) {
@@ -2046,6 +2037,9 @@ function generate_source(p_Type) {
       `memcpy(l_NewSlots, ms_Slots, l_Capacity * sizeof(Low::Util::Instances::Slot));`,
     );
     for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
+      if (i_Prop.no_data) {
+        continue;
+      }
       t += line("{");
       if (is_container_type(i_Prop.plain_type)) {
         t += line(

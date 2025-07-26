@@ -21,6 +21,7 @@ namespace Low {
       struct LOW_RENDERER2_API ImageData
       {
         AllocatedImage allocated_image;
+        bool depth;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -106,6 +107,10 @@ namespace Low {
 
         AllocatedImage &get_allocated_image() const;
         void set_allocated_image(AllocatedImage &p_Value);
+
+        bool is_depth() const;
+        void set_depth(bool p_Value);
+        void toggle_depth();
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

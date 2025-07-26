@@ -1718,7 +1718,7 @@ bool ImGui::BeginCombo(const char* label, const char* preview_value, ImGuiComboF
         ImU32 text_col = GetColorU32(ImGuiCol_Text);
         window->DrawList->AddRectFilled(ImVec2(value_x2, bb.Min.y), bb.Max, bg_col, style.FrameRounding, (w <= arrow_size) ? ImDrawFlags_RoundCornersAll : ImDrawFlags_RoundCornersRight);
         if (value_x2 + arrow_size - style.FramePadding.x <= bb.Max.x)
-            RenderArrow(window->DrawList, ImVec2(value_x2 + style.FramePadding.y, bb.Min.y + style.FramePadding.y), text_col, ImGuiDir_Down, 1.0f);
+            RenderArrow(window->DrawList, ImVec2(value_x2 + style.FramePadding.y, bb.Min.y + style.FramePadding.y), text_col, popup_open? ImGuiDir_Up : ImGuiDir_Down, 1.0f);
     }
     RenderFrameBorder(bb.Min, bb.Max, style.FrameRounding);
 
@@ -4426,32 +4426,83 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
 
     // Process other shortcuts/key-presses
     bool revert_edit = false;
-    if (g.ActiveId == id && !g.ActiveIdIsJustActivated && !clear_active_id)
-    {
-        IM_ASSERT(state != NULL);
+    if (g.ActiveId == id && !g.ActiveIdIsJustActivated &&
+        !clear_active_id) {
+      IM_ASSERT(state != NULL);
 
-        const int row_count_per_page = ImMax((int)((inner_size.y - style.FramePadding.y) / g.FontSize), 1);
-        state->Stb.row_count_per_page = row_count_per_page;
+      const int row_count_per_page = ImMax(
+          (int)((inner_size.y - style.FramePadding.y) / g.FontSize),
+          1);
+      state->Stb.row_count_per_page = row_count_per_page;
 
-        const int k_mask = (io.KeyShift ? STB_TEXTEDIT_K_SHIFT : 0);
-        const bool is_wordmove_key_down = is_osx ? io.KeyAlt : io.KeyCtrl;                     // OS X style: Text editing cursor movement using Alt instead of Ctrl
-        const bool is_startend_key_down = is_osx && io.KeySuper && !io.KeyCtrl && !io.KeyAlt;  // OS X style: Line/Text Start and End using Cmd+Arrows instead of Home/End
+      const int k_mask = (io.KeyShift ? STB_TEXTEDIT_K_SHIFT : 0);
+      const bool is_wordmove_key_down =
+          is_osx ? io.KeyAlt
+                 : io.KeyCtrl; // OS X style: Text editing cursor
+                               // movement using Alt instead of Ctrl
+      const bool is_startend_key_down =
+          is_osx && io.KeySuper && !io.KeyCtrl &&
+          !io.KeyAlt; // OS X style: Line/Text Start and End using
+                      // Cmd+Arrows instead of Home/End
 
-        // Using Shortcut() with ImGuiInputFlags_RouteFocused (default policy) to allow routing operations for other code (e.g. calling window trying to use CTRL+A and CTRL+B: formet would be handled by InputText)
-        // Otherwise we could simply assume that we own the keys as we are active.
-        const ImGuiInputFlags f_repeat = ImGuiInputFlags_Repeat;
-        const bool is_cut   = (Shortcut(ImGuiMod_Shortcut | ImGuiKey_X, id, f_repeat) || Shortcut(ImGuiMod_Shift | ImGuiKey_Delete, id, f_repeat)) && !is_readonly && !is_password && (!is_multiline || state->HasSelection());
-        const bool is_copy  = (Shortcut(ImGuiMod_Shortcut | ImGuiKey_C, id) || Shortcut(ImGuiMod_Ctrl | ImGuiKey_Insert, id))  && !is_password && (!is_multiline || state->HasSelection());
-        const bool is_paste = (Shortcut(ImGuiMod_Shortcut | ImGuiKey_V, id, f_repeat) || Shortcut(ImGuiMod_Shift | ImGuiKey_Insert, id, f_repeat)) && !is_readonly;
-        const bool is_undo  = (Shortcut(ImGuiMod_Shortcut | ImGuiKey_Z, id, f_repeat)) && !is_readonly && is_undoable;
-        const bool is_redo =  (Shortcut(ImGuiMod_Shortcut | ImGuiKey_Y, id, f_repeat) || (is_osx && Shortcut(ImGuiMod_Shortcut | ImGuiMod_Shift | ImGuiKey_Z, id, f_repeat))) && !is_readonly && is_undoable;
-        const bool is_select_all = Shortcut(ImGuiMod_Shortcut | ImGuiKey_A, id);
+      // Using Shortcut() with ImGuiInputFlags_RouteFocused (default
+      // policy) to allow routing operations for other code (e.g.
+      // calling window trying to use CTRL+A and CTRL+B: formet would
+      // be handled by InputText) Otherwise we could simply assume
+      // that we own the keys as we are active.
+      const ImGuiInputFlags f_repeat = ImGuiInputFlags_Repeat;
+      const bool is_cut =
+          (Shortcut(ImGuiMod_Shortcut | ImGuiKey_X, id, f_repeat) ||
+           Shortcut(ImGuiMod_Shift | ImGuiKey_Delete, id,
+                    f_repeat)) &&
+          !is_readonly && !is_password &&
+          (!is_multiline || state->HasSelection());
+      const bool is_copy =
+          (Shortcut(ImGuiMod_Shortcut | ImGuiKey_C, id) ||
+           Shortcut(ImGuiMod_Ctrl | ImGuiKey_Insert, id)) &&
+          !is_password && (!is_multiline || state->HasSelection());
+      const bool is_paste =
+          (Shortcut(ImGuiMod_Shortcut | ImGuiKey_V, id, f_repeat) ||
+           Shortcut(ImGuiMod_Shift | ImGuiKey_Insert, id,
+                    f_repeat)) &&
+          !is_readonly;
+      const bool is_undo =
+          (Shortcut(ImGuiMod_Shortcut | ImGuiKey_Z, id, f_repeat)) &&
+          !is_readonly && is_undoable;
+      const bool is_redo =
+          (Shortcut(ImGuiMod_Shortcut | ImGuiKey_Y, id, f_repeat) ||
+           (is_osx &&
+            Shortcut(ImGuiMod_Shortcut | ImGuiMod_Shift | ImGuiKey_Z,
+                     id, f_repeat))) &&
+          !is_readonly && is_undoable;
+      const bool is_select_all =
+          Shortcut(ImGuiMod_Shortcut | ImGuiKey_A, id);
 
-        // We allow validate/cancel with Nav source (gamepad) to makes it easier to undo an accidental NavInput press with no keyboard wired, but otherwise it isn't very useful.
-        const bool nav_gamepad_active = (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0 && (io.BackendFlags & ImGuiBackendFlags_HasGamepad) != 0;
-        const bool is_enter_pressed = IsKeyPressed(ImGuiKey_Enter, true) || IsKeyPressed(ImGuiKey_KeypadEnter, true);
-        const bool is_gamepad_validate = nav_gamepad_active && (IsKeyPressed(ImGuiKey_NavGamepadActivate, false) || IsKeyPressed(ImGuiKey_NavGamepadInput, false));
-        const bool is_cancel = Shortcut(ImGuiKey_Escape, id, f_repeat) || (nav_gamepad_active && Shortcut(ImGuiKey_NavGamepadCancel, id, f_repeat));
+      // We allow validate/cancel with Nav source (gamepad) to makes
+      // it easier to undo an accidental NavInput press with no
+      // keyboard wired, but otherwise it isn't very useful.
+      const bool nav_gamepad_active =
+          (io.ConfigFlags & ImGuiConfigFlags_NavEnableGamepad) != 0 &&
+          (io.BackendFlags & ImGuiBackendFlags_HasGamepad) != 0;
+      const bool is_enter_pressed =
+          IsKeyPressed(ImGuiKey_Enter, true) ||
+          IsKeyPressed(ImGuiKey_KeypadEnter, true);
+      const bool is_gamepad_validate =
+          nav_gamepad_active &&
+          (IsKeyPressed(ImGuiKey_NavGamepadActivate, false) ||
+           IsKeyPressed(ImGuiKey_NavGamepadInput, false));
+      const bool is_cancel =
+          Shortcut(ImGuiKey_Escape, id, f_repeat) ||
+          (nav_gamepad_active &&
+           Shortcut(ImGuiKey_NavGamepadCancel, id, f_repeat));
+
+      const bool is_losing_focus = g.ActiveId == id &&
+                                   g.ActiveId != g.NavId &&
+                                   !IsItemActive();
+
+      if (is_losing_focus){
+        validated = true;
+    }
 
         // FIXME: Should use more Shortcut() and reduce IsKeyPressed()+SetKeyOwner(), but requires modifiers combination to be taken account of.
         if (IsKeyPressed(ImGuiKey_LeftArrow))                        { state->OnKeyPressed((is_startend_key_down ? STB_TEXTEDIT_K_LINESTART : is_wordmove_key_down ? STB_TEXTEDIT_K_WORDLEFT : STB_TEXTEDIT_K_LEFT) | k_mask); }
@@ -4625,6 +4676,10 @@ bool ImGui::InputTextEx(const char* label, const char* hint, char* buf, int buf_
             state->TextA.resize(state->TextW.Size * 4 + 1);
             ImTextStrToUtf8(state->TextA.Data, state->TextA.Size, state->TextW.Data, NULL);
         }
+
+        const bool is_losing_focus = (g.ActiveId == id) &&
+                                     (g.ActiveId != g.NavId) &&
+                                     !IsItemActive();
 
         // When using 'ImGuiInputTextFlags_EnterReturnsTrue' as a special case we reapply the live buffer back to the input buffer
         // before clearing ActiveId, even though strictly speaking it wasn't modified on this frame.

@@ -614,6 +614,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, loaded, bool);
     }
+    void Region::toggle_loaded()
+    {
+      set_loaded(!is_loaded());
+    }
+
     void Region::set_loaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -643,6 +648,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(Region, streaming_enabled, bool);
     }
+    void Region::toggle_streaming_enabled()
+    {
+      set_streaming_enabled(!is_streaming_enabled());
+    }
+
     void Region::set_streaming_enabled(bool p_Value)
     {
       _LOW_ASSERT(is_alive());

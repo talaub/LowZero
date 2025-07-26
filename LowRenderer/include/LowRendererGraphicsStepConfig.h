@@ -148,15 +148,19 @@ namespace Low {
 
       bool is_use_depth() const;
       void set_use_depth(bool p_Value);
+      void toggle_use_depth();
 
       bool is_depth_clear() const;
       void set_depth_clear(bool p_Value);
+      void toggle_depth_clear();
 
       bool is_depth_test() const;
       void set_depth_test(bool p_Value);
+      void toggle_depth_test();
 
       bool is_depth_write() const;
       void set_depth_write(bool p_Value);
+      void toggle_depth_write();
 
       uint8_t get_depth_compare_operation() const;
       void set_depth_compare_operation(uint8_t p_Value);

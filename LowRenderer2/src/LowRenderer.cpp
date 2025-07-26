@@ -14,6 +14,8 @@
 #include "LowRendererTexture.h"
 #include "LowRendererRenderScene.h"
 #include "LowRendererDrawCommand.h"
+#include "LowRendererRenderStep.h"
+#include "LowRendererPointLight.h"
 
 #include "LowUtilAssert.h"
 
@@ -29,6 +31,7 @@ namespace Low {
 
     static void initialize_types()
     {
+      RenderStep::initialize();
       RenderScene::initialize();
       RenderView::initialize();
       RenderObject::initialize();
@@ -37,10 +40,12 @@ namespace Low {
       Material::initialize();
       Texture::initialize();
       DrawCommand::initialize();
+      PointLight::initialize();
     }
 
     static void cleanup_types()
     {
+      PointLight::cleanup();
       RenderView::cleanup();
       RenderObject::cleanup();
       ImageResource::cleanup();
@@ -49,6 +54,7 @@ namespace Low {
       Texture::cleanup();
       RenderScene::cleanup();
       DrawCommand::cleanup();
+      RenderStep::cleanup();
     }
 
     void initialize()
@@ -507,6 +513,11 @@ namespace Low {
       ImGui::Begin("Texture");
       ImGui::Image(
           Texture::living_instances()[2].get_imgui_texture_id(),
+          ImVec2(256, 256));
+      ImGui::End();
+      ImGui::Begin("Depth");
+      ImGui::Image(
+          Texture::living_instances()[3].get_imgui_texture_id(),
           ImVec2(256, 256));
       ImGui::End();
 

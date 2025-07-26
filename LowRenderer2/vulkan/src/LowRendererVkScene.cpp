@@ -10,6 +10,8 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererGlobals.h"
+#include "LowRendererVulkanBuffer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -62,6 +64,18 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        l_Handle.set_point_light_slots(
+            (bool *)calloc(POINTLIGHT_COUNT, sizeof(bool)));
+
+        {
+          AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
+              sizeof(PointLightInfo) * POINTLIGHT_COUNT,
+              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+              VMA_MEMORY_USAGE_GPU_ONLY);
+          l_Handle.set_point_light_buffer(l_Buffer);
+        }
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -72,6 +86,8 @@ namespace Low {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        free(get_point_light_slots());
+        BufferUtil::destroy_buffer(get_point_light_buffer());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         WRITE_LOCK(l_Lock);
@@ -125,6 +141,33 @@ namespace Low {
         l_TypeInfo.get_living_count = &Scene::living_count;
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
+        {
+          // Property: point_light_slots
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(point_light_slots);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(SceneData, point_light_slots);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Scene l_Handle = p_Handle.get_id();
+            l_Handle.get_point_light_slots();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Scene, point_light_slots, bool *);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Scene l_Handle = p_Handle.get_id();
+            *((bool **)p_Data) = l_Handle.get_point_light_slots();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: point_light_slots
+        }
         {
           // Property: point_light_buffer
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -253,6 +296,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         Scene l_Handle = make(p_Name);
+        l_Handle.set_point_light_slots(get_point_light_slots());
         l_Handle.set_point_light_buffer(get_point_light_buffer());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
@@ -296,6 +340,8 @@ namespace Low {
       {
         Scene l_Handle = Scene::make(N(Scene));
 
+        if (p_Node["point_light_slots"]) {
+        }
         if (p_Node["point_light_buffer"]) {
         }
         if (p_Node["name"]) {
@@ -306,6 +352,32 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
+      }
+
+      bool *Scene::get_point_light_slots() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_slots
+        // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_slots
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(Scene, point_light_slots, bool *);
+      }
+      void Scene::set_point_light_slots(bool *p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_slots
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_slots
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(Scene, point_light_slots, bool *) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_slots
+        // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_slots
       }
 
       AllocatedBuffer &Scene::get_point_light_buffer() const
@@ -397,6 +469,13 @@ namespace Low {
 
         memcpy(l_NewSlots, ms_Slots,
                l_Capacity * sizeof(Low::Util::Instances::Slot));
+        {
+          memcpy(&l_NewBuffer[offsetof(SceneData, point_light_slots) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(SceneData, point_light_slots) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(bool *));
+        }
         {
           memcpy(
               &l_NewBuffer[offsetof(SceneData, point_light_buffer) *

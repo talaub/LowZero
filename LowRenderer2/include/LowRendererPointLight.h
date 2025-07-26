@@ -1,6 +1,6 @@
 #pragma once
 
-#include "LowCoreApi.h"
+#include "LowRenderer2Api.h"
 
 #include "LowUtilHandle.h"
 #include "LowUtilName.h"
@@ -9,48 +9,51 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
-  namespace Core {
+  namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
+    struct RenderScene;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_CORE_API SceneData
+    struct LOW_RENDERER2_API PointLightData
     {
-      Low::Util::Set<Util::UniqueId> regions;
-      bool loaded;
-      Low::Util::UniqueId unique_id;
+      Low::Math::Vector3 world_position;
+      Low::Math::ColorRGB color;
+      float intensity;
+      float range;
+      uint64_t render_scene_handle;
+      uint32_t slot;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(SceneData);
+        return sizeof(PointLightData);
       }
     };
 
-    struct LOW_CORE_API Scene : public Low::Util::Handle
+    struct LOW_RENDERER2_API PointLight : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Scene> ms_LivingInstances;
+      static Low::Util::List<PointLight> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Scene();
-      Scene(uint64_t p_Id);
-      Scene(Scene &p_Copy);
+      PointLight();
+      PointLight(uint64_t p_Id);
+      PointLight(PointLight &p_Copy);
 
-      static Scene make(Low::Util::Name p_Name);
+    private:
+      static PointLight make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      static Scene make(Low::Util::Name p_Name,
-                        Low::Util::UniqueId p_UniqueId);
-      explicit Scene(const Scene &p_Copy)
+
+    public:
+      explicit PointLight(const PointLight &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -64,12 +67,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Scene *living_instances()
+      static PointLight *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static Scene find_by_index(uint32_t p_Index);
+      static PointLight find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -78,12 +81,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      Scene duplicate(Low::Util::Name p_Name) const;
-      static Scene duplicate(Scene p_Handle, Low::Util::Name p_Name);
+      PointLight duplicate(Low::Util::Name p_Name) const;
+      static PointLight duplicate(PointLight p_Handle,
+                                  Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static Scene find_by_name(Low::Util::Name p_Name);
+      static PointLight find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -94,46 +98,60 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Scene::TYPE_ID &&
+        return p_Handle.get_type() == PointLight::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Scene l_Scene = p_Handle.get_id();
-        l_Scene.destroy();
+        PointLight l_PointLight = p_Handle.get_id();
+        l_PointLight.destroy();
       }
 
-      Low::Util::Set<Util::UniqueId> &get_regions() const;
+      Low::Math::Vector3 &get_world_position() const;
+      void set_world_position(Low::Math::Vector3 &p_Value);
+      void set_world_position(float p_X, float p_Y, float p_Z);
+      void set_world_position_x(float p_Value);
+      void set_world_position_y(float p_Value);
+      void set_world_position_z(float p_Value);
 
-      bool is_loaded() const;
+      Low::Math::ColorRGB &get_color() const;
+      void set_color(Low::Math::ColorRGB &p_Value);
 
-      Low::Util::UniqueId get_unique_id() const;
+      float get_intensity() const;
+      void set_intensity(float p_Value);
+
+      float get_range() const;
+      void set_range(float p_Value);
+
+      uint64_t get_render_scene_handle() const;
+
+      uint32_t get_slot() const;
+      void set_slot(uint32_t p_Value);
+
+      void mark_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      void load();
-      void unload();
-      static Scene get_loaded_scene();
+      static PointLight
+      make(Low::Renderer::RenderScene p_RenderScene);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_loaded(bool p_Value);
-      void toggle_loaded();
-      void set_unique_id(Low::Util::UniqueId p_Value);
-      void _load();
+      void set_render_scene_handle(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::PointLight> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
-  } // namespace Core
+  } // namespace Renderer
 } // namespace Low

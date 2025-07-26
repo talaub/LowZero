@@ -160,6 +160,7 @@ namespace Low {
 
           bool is_world_updated() const;
           void set_world_updated(bool p_Value);
+          void toggle_world_updated();
 
           Low::Core::UI::Element get_element() const;
           void set_element(Low::Core::UI::Element p_Value);
@@ -168,9 +169,13 @@ namespace Low {
 
           bool is_dirty() const;
           void set_dirty(bool p_Value);
+          void toggle_dirty();
+          void mark_dirty();
 
           bool is_world_dirty() const;
           void set_world_dirty(bool p_Value);
+          void toggle_world_dirty();
+          void mark_world_dirty();
 
           void recalculate_world_transform();
           float get_absolute_layer_float();

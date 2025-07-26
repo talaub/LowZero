@@ -1,6 +1,7 @@
 #include "LowRendererVkViewInfo.h"
 
 #include <algorithm>
+#include <vulkan/vulkan_core.h>
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -15,6 +16,8 @@
 #include "LowMath.h"
 
 #define STAGING_BUFFER_SIZE (8 * LOW_KILOBYTE_I)
+
+#include "LowRendererGlobals.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -73,6 +76,15 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
                                 gbuffer_descriptor_set,
                                 VkDescriptorSet)) VkDescriptorSet();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
+                                point_light_cluster_buffer,
+                                AllocatedBuffer)) AllocatedBuffer();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
+                                point_light_buffer, AllocatedBuffer))
+            AllocatedBuffer();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, light_clusters,
+                                Low::Math::UVector3))
+            Low::Math::UVector3();
         ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, name, Low::Util::Name) =
             Low::Util::Name(0u);
         LOCK_UNLOCK(l_Lock);
@@ -82,27 +94,30 @@ namespace Low {
         ms_LivingInstances.push_back(l_Handle);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-        AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
-            sizeof(ViewInfoFrameData),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-            VMA_MEMORY_USAGE_GPU_ONLY);
-        l_Handle.set_view_data_buffer(l_Buffer);
+        {
+          AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
+              sizeof(ViewInfoFrameData),
+              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+              VMA_MEMORY_USAGE_GPU_ONLY);
+          l_Handle.set_view_data_buffer(l_Buffer);
+        }
+
+        {
+          AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
+              sizeof(PointLightInfo) * POINTLIGHT_COUNT,
+              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+              VMA_MEMORY_USAGE_GPU_ONLY);
+          l_Handle.set_point_light_buffer(l_Buffer);
+        }
 
         l_Handle.set_view_data_descriptor_set(
             Global::get_global_descriptor_allocator().allocate(
                 Global::get_device(),
                 Global::get_view_info_descriptor_set_layout()));
-
-        DescriptorUtil::DescriptorWriter l_Writer;
-        l_Writer.write_buffer(0,
-                              l_Handle.get_view_data_buffer().buffer,
-                              sizeof(ViewInfoFrameData), 0,
-                              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-
-        l_Writer.update_set(Global::get_device(),
-                            l_Handle.get_view_data_descriptor_set());
 
         {
           l_Handle.get_staging_buffers().resize(
@@ -131,6 +146,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
         BufferUtil::destroy_buffer(get_view_data_buffer());
+        BufferUtil::destroy_buffer(get_point_light_cluster_buffer());
+        BufferUtil::destroy_buffer(get_point_light_buffer());
 
         for (u32 i = 0u; i < Global::get_frame_overlap(); ++i) {
           BufferUtil::destroy_buffer(get_staging_buffers()[i].buffer);
@@ -382,6 +399,135 @@ namespace Low {
           // End property: gbuffer_descriptor_set
         }
         {
+          // Property: point_light_cluster_buffer
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(point_light_cluster_buffer);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfoData, point_light_cluster_buffer);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_point_light_cluster_buffer();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ViewInfo, point_light_cluster_buffer,
+                AllocatedBuffer);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_point_light_cluster_buffer(
+                *(AllocatedBuffer *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((AllocatedBuffer *)p_Data) =
+                l_Handle.get_point_light_cluster_buffer();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: point_light_cluster_buffer
+        }
+        {
+          // Property: point_light_buffer
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(point_light_buffer);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfoData, point_light_buffer);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_point_light_buffer();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              point_light_buffer,
+                                              AllocatedBuffer);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_point_light_buffer(
+                *(AllocatedBuffer *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((AllocatedBuffer *)p_Data) =
+                l_Handle.get_point_light_buffer();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: point_light_buffer
+        }
+        {
+          // Property: light_clusters
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(light_clusters);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfoData, light_clusters);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_light_clusters();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              light_clusters,
+                                              Low::Math::UVector3);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_light_clusters(
+                *(Low::Math::UVector3 *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((Low::Math::UVector3 *)p_Data) =
+                l_Handle.get_light_clusters();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: light_clusters
+        }
+        {
+          // Property: light_cluster_count
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(light_cluster_count);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfoData, light_cluster_count);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_light_cluster_count();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ViewInfo, light_cluster_count, uint32_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_light_cluster_count(*(uint32_t *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((uint32_t *)p_Data) =
+                l_Handle.get_light_cluster_count();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: light_cluster_count
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -487,6 +633,11 @@ namespace Low {
         l_Handle.set_initialized(is_initialized());
         l_Handle.set_gbuffer_descriptor_set(
             get_gbuffer_descriptor_set());
+        l_Handle.set_point_light_cluster_buffer(
+            get_point_light_cluster_buffer());
+        l_Handle.set_point_light_buffer(get_point_light_buffer());
+        l_Handle.set_light_clusters(get_light_clusters());
+        l_Handle.set_light_cluster_count(get_light_cluster_count());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -513,6 +664,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         p_Node["initialized"] = is_initialized();
+        p_Node["light_cluster_count"] = get_light_cluster_count();
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -544,6 +696,16 @@ namespace Low {
           l_Handle.set_initialized(p_Node["initialized"].as<bool>());
         }
         if (p_Node["gbuffer_descriptor_set"]) {
+        }
+        if (p_Node["point_light_cluster_buffer"]) {
+        }
+        if (p_Node["point_light_buffer"]) {
+        }
+        if (p_Node["light_clusters"]) {
+        }
+        if (p_Node["light_cluster_count"]) {
+          l_Handle.set_light_cluster_count(
+              p_Node["light_cluster_count"].as<uint32_t>());
         }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -680,6 +842,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, initialized, bool);
       }
+      void ViewInfo::toggle_initialized()
+      {
+        set_initialized(!is_initialized());
+      }
+
       void ViewInfo::set_initialized(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -723,6 +890,118 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_descriptor_set
+      }
+
+      AllocatedBuffer &
+      ViewInfo::get_point_light_cluster_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_cluster_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_cluster_buffer
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(ViewInfo, point_light_cluster_buffer,
+                        AllocatedBuffer);
+      }
+      void ViewInfo::set_point_light_cluster_buffer(
+          AllocatedBuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_cluster_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_cluster_buffer
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(ViewInfo, point_light_cluster_buffer,
+                 AllocatedBuffer) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_cluster_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_cluster_buffer
+      }
+
+      AllocatedBuffer &ViewInfo::get_point_light_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_buffer
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(ViewInfo, point_light_buffer,
+                        AllocatedBuffer);
+      }
+      void ViewInfo::set_point_light_buffer(AllocatedBuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_buffer
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(ViewInfo, point_light_buffer, AllocatedBuffer) =
+            p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
+      }
+
+      Low::Math::UVector3 &ViewInfo::get_light_clusters() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_light_clusters
+        // LOW_CODEGEN::END::CUSTOM:GETTER_light_clusters
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(ViewInfo, light_clusters,
+                        Low::Math::UVector3);
+      }
+      void ViewInfo::set_light_clusters(Low::Math::UVector3 &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_light_clusters
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_light_clusters
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(ViewInfo, light_clusters, Low::Math::UVector3) =
+            p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_clusters
+        // LOW_CODEGEN::END::CUSTOM:SETTER_light_clusters
+      }
+
+      uint32_t ViewInfo::get_light_cluster_count() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_light_cluster_count
+        // LOW_CODEGEN::END::CUSTOM:GETTER_light_cluster_count
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(ViewInfo, light_cluster_count, uint32_t);
+      }
+      void ViewInfo::set_light_cluster_count(uint32_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_light_cluster_count
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_light_cluster_count
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(ViewInfo, light_cluster_count, uint32_t) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_cluster_count
+        // LOW_CODEGEN::END::CUSTOM:SETTER_light_cluster_count
       }
 
       Low::Util::Name ViewInfo::get_name() const
@@ -845,6 +1124,40 @@ namespace Low {
                                      gbuffer_descriptor_set) *
                             (l_Capacity)],
                  l_Capacity * sizeof(VkDescriptorSet));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
+                                       point_light_cluster_buffer) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewInfoData,
+                                     point_light_cluster_buffer) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(AllocatedBuffer));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(ViewInfoData,
+                                    point_light_buffer) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ViewInfoData, point_light_buffer) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(AllocatedBuffer));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewInfoData, light_clusters) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewInfoData, light_clusters) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(Low::Math::UVector3));
+        }
+        {
+          memcpy(
+              &l_NewBuffer[offsetof(ViewInfoData,
+                                    light_cluster_count) *
+                           (l_Capacity + l_CapacityIncrease)],
+              &ms_Buffer[offsetof(ViewInfoData, light_cluster_count) *
+                         (l_Capacity)],
+              l_Capacity * sizeof(uint32_t));
         }
         {
           memcpy(

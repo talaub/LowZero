@@ -818,11 +818,11 @@ namespace Low {
 
         if (position() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(Transform, dirty, bool) = true;
-          TYPE_SOA(Transform, world_dirty, bool) = true;
+          mark_dirty();
+          mark_world_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, position, Low::Math::Vector3) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
           {
@@ -869,11 +869,11 @@ namespace Low {
 
         if (rotation() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(Transform, dirty, bool) = true;
-          TYPE_SOA(Transform, world_dirty, bool) = true;
+          mark_dirty();
+          mark_world_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, rotation, Low::Math::Quaternion) =
               p_Value;
           LOCK_UNLOCK(l_WriteLock);
@@ -948,11 +948,11 @@ namespace Low {
 
         if (scale() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(Transform, dirty, bool) = true;
-          TYPE_SOA(Transform, world_dirty, bool) = true;
+          mark_dirty();
+          mark_world_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, scale, Low::Math::Vector3) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
           {
@@ -1010,11 +1010,11 @@ namespace Low {
 
         if (get_parent() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(Transform, dirty, bool) = true;
-          TYPE_SOA(Transform, world_dirty, bool) = true;
+          mark_dirty();
+          mark_world_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, parent, uint64_t) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
 
@@ -1052,11 +1052,11 @@ namespace Low {
 
         if (get_parent_uid() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(Transform, dirty, bool) = true;
-          TYPE_SOA(Transform, world_dirty, bool) = true;
+          mark_dirty();
+          mark_world_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, parent_uid, uint64_t) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
 
@@ -1273,6 +1273,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_updated, bool);
       }
+      void Transform::toggle_world_updated()
+      {
+        set_world_updated(!is_world_updated());
+      }
+
       void Transform::set_world_updated(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -1360,6 +1365,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, dirty, bool);
       }
+      void Transform::toggle_dirty()
+      {
+        set_dirty(!is_dirty());
+      }
+
       void Transform::set_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -1376,6 +1386,17 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+      }
+
+      void Transform::mark_dirty()
+      {
+        if (!is_dirty()) {
+          WRITE_LOCK(l_WriteLock);
+          TYPE_SOA(Transform, dirty, bool) = true;
+          LOCK_UNLOCK(l_WriteLock);
+          // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+          // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+        }
       }
 
       bool Transform::is_world_dirty() const
@@ -1399,6 +1420,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_dirty, bool);
       }
+      void Transform::toggle_world_dirty()
+      {
+        set_world_dirty(!is_world_dirty());
+      }
+
       void Transform::set_world_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -1415,6 +1441,17 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
+      }
+
+      void Transform::mark_world_dirty()
+      {
+        if (!is_world_dirty()) {
+          WRITE_LOCK(l_WriteLock);
+          TYPE_SOA(Transform, world_dirty, bool) = true;
+          LOCK_UNLOCK(l_WriteLock);
+          // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
+          // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
+        }
       }
 
       void Transform::recalculate_world_transform()

@@ -131,6 +131,7 @@ namespace Low {
 
       bool is_internal() const;
       void set_internal(bool p_Value);
+      void toggle_internal();
 
       Util::List<MaterialTypeProperty> &get_properties() const;
       void set_properties(Util::List<MaterialTypeProperty> &p_Value);

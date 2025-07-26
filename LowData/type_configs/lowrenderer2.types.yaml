@@ -101,6 +101,11 @@ types:
       draw_commands:
         type: Low::Util::List<DrawCommand>
         no_setter: true
+      pointlight_deleted_slots:
+        type: Low::Util::Set<u32>
+        private_setter: true
+      data_handle:
+        type: uint64_t
     functions:
       insert_draw_command:
         return_type: bool
@@ -142,6 +147,24 @@ types:
       lit_image:
         type: Low::Renderer::Texture
         handle: true
+      steps:
+        type: Low::Util::List<Low::Renderer::RenderStep>
+        no_setter: true
+      step_data:
+        type: Low::Util::List<RenderStepDataPtr>
+        private_set: true
+    functions:
+      add_step:
+        return_type: void
+        parameters:
+          - name: step
+            type: Low::Renderer::RenderStep
+            handle: true
+      add_step_by_name:
+        return_type: void
+        parameters:
+          - name: stepName
+            type: Low::Util::Name
 
 
   MaterialType:
@@ -158,6 +181,12 @@ types:
         no_setter: true
       initialized:
         type: bool
+      draw_pipeline_config:
+        type: Low::Renderer::GraphicsPipelineConfig
+        no_setter: true
+      depth_pipeline_config:
+        type: Low::Renderer::GraphicsPipelineConfig
+        no_setter: true
     functions:
       calculate_offsets:
         return_type: void
@@ -200,6 +229,31 @@ types:
         parameters:
           - name: inputNames
             type: Low::Util::List<Low::Util::Name>
+      set_draw_vertex_shader_path:
+        return_type: void
+        parameters:
+          - name: path
+            type: Low::Util::String
+            no_ref: true
+      set_draw_fragment_shader_path:
+        return_type: void
+        parameters:
+          - name: path
+            type: Low::Util::String
+            no_ref: true
+      set_depth_vertex_shader_path:
+        return_type: void
+        parameters:
+          - name: path
+            type: Low::Util::String
+            no_ref: true
+      set_depth_fragment_shader_path:
+        return_type: void
+        parameters:
+          - name: path
+            type: Low::Util::String
+            no_ref: true
+
 
   Material:
     dynamic_increase: false
@@ -312,8 +366,75 @@ types:
     dynamic_increase: false
     properties:
       prepare_callback:
-        type: Low::Util::Function<bool(Low::Renderer::RenderView)>
-      cleanup_callback:
-        type: Low::Util::Function<bool(Low::Renderer::RenderView)>
-      tick_callback:
-        type: Low::Util::Function<bool(float, Low::Renderer::RenderView)>
+        type: Low::Util::Function<bool(Low::Renderer::RenderStep, Low::Renderer::RenderView)>
+        no_ref: true
+      teardown_callback:
+        type: Low::Util::Function<bool(Low::Renderer::RenderStep, Low::Renderer::RenderView)>
+        no_ref: true
+      execute_callback:
+        type: Low::Util::Function<bool(Low::Renderer::RenderStep, float, Low::Renderer::RenderView)>
+        no_ref: true
+      resolution_update_callback:
+        type: Low::Util::Function<bool(Low::Renderer::RenderStep, Low::Math::UVector2 p_NewDimensions, Low::Renderer::RenderView)>
+        no_ref: true
+    functions:
+      prepare:
+        return_type: bool
+        parameters:
+          - name: renderView
+            type: Low::Renderer::RenderView
+            handle: true
+      teardown:
+        return_type: bool
+        parameters:
+          - name: renderView
+            type: Low::Renderer::RenderView
+            handle: true
+      update_resolution:
+        return_type: bool
+        parameters:
+          - name: newDimensions
+            type: Low::Math::UVector2
+          - name: renderView
+            type: Low::Renderer::RenderView
+            handle: true
+      execute:
+        return_type: bool
+        parameters:
+          - name: deltaTime
+            type: float
+          - name: renderView
+            type: Low::Renderer::RenderView
+            handle: true
+  PointLight:
+    private_make: true
+    dirty_flags:
+      dirty:
+        no_data: true
+    properties:
+      world_position:
+        type: Low::Math::Vector3
+        dirty_flag: dirty
+      color:
+        type: Low::Math::ColorRGB
+        dirty_flag: dirty
+      intensity:
+        type: float
+        dirty_flag: dirty
+      range:
+        type: float
+        dirty_flag: dirty
+      render_scene_handle:
+        type: uint64_t
+        private_setter: true
+      slot:
+        type: uint32_t
+    functions:
+      make:
+        static: true
+        return_type: PointLight
+        return_handle: true
+        parameters:
+          - name: renderScene
+            type: Low::Renderer::RenderScene
+            handle: true

@@ -9,6 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "LowRendererVulkanBuffer.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -19,6 +20,7 @@ namespace Low {
 
       struct LOW_RENDERER2_API SceneData
       {
+        bool *point_light_slots;
         AllocatedBuffer point_light_buffer;
         Low::Util::Name name;
 
@@ -103,6 +105,8 @@ namespace Low {
           l_Scene.destroy();
         }
 
+        bool *get_point_light_slots() const;
+
         AllocatedBuffer &get_point_light_buffer() const;
         void set_point_light_buffer(AllocatedBuffer &p_Value);
 
@@ -113,6 +117,7 @@ namespace Low {
         static uint32_t ms_Capacity;
         static uint32_t create_instance();
         static void increase_budget();
+        void set_point_light_slots(bool *p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

@@ -798,6 +798,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, loaded, bool);
       }
+      void View::toggle_loaded()
+      {
+        set_loaded(!is_loaded());
+      }
+
       void View::set_loaded(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -839,6 +844,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, internal, bool);
       }
+      void View::toggle_internal()
+      {
+        set_internal(!is_internal());
+      }
+
       void View::set_internal(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -868,6 +878,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, view_template, bool);
       }
+      void View::toggle_view_template()
+      {
+        set_view_template(!is_view_template());
+      }
+
       void View::set_view_template(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -927,10 +942,10 @@ namespace Low {
 
         if (pixel_position() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(View, transform_dirty, bool) = true;
+          mark_transform_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, pixel_position, Low::Math::Vector2) =
               p_Value;
           LOCK_UNLOCK(l_WriteLock);
@@ -962,10 +977,10 @@ namespace Low {
 
         if (rotation() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(View, transform_dirty, bool) = true;
+          mark_transform_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, rotation, float) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
 
@@ -996,10 +1011,10 @@ namespace Low {
 
         if (scale_multiplier() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(View, transform_dirty, bool) = true;
+          mark_transform_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, scale_multiplier, float) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
 
@@ -1030,10 +1045,10 @@ namespace Low {
 
         if (layer_offset() != p_Value) {
           // Set dirty flags
-          WRITE_LOCK(l_WriteLock);
-          TYPE_SOA(View, transform_dirty, bool) = true;
+          mark_transform_dirty();
 
           // Set new value
+          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, layer_offset, uint32_t) = p_Value;
           LOCK_UNLOCK(l_WriteLock);
 
@@ -1083,6 +1098,11 @@ namespace Low {
         READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, transform_dirty, bool);
       }
+      void View::toggle_transform_dirty()
+      {
+        set_transform_dirty(!is_transform_dirty());
+      }
+
       void View::set_transform_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
@@ -1099,6 +1119,17 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform_dirty
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_transform_dirty
+      }
+
+      void View::mark_transform_dirty()
+      {
+        if (!is_transform_dirty()) {
+          WRITE_LOCK(l_WriteLock);
+          TYPE_SOA(View, transform_dirty, bool) = true;
+          LOCK_UNLOCK(l_WriteLock);
+          // LOW_CODEGEN:BEGIN:CUSTOM:MARK_transform_dirty
+          // LOW_CODEGEN::END::CUSTOM:MARK_transform_dirty
+        }
       }
 
       Low::Util::Name View::get_name() const

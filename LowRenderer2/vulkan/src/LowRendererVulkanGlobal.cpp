@@ -38,18 +38,45 @@ namespace Low {
 
 #define RESOURCE_STAGING_BUFFER_SIZE (LOW_MEGABYTE_I * 16)
 
+        VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+            VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+            const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+            void *pUserData)
+        {
+          // Print the validation message
+          LOW_LOG_ERROR << "Validation Layer: "
+                        << pCallbackData->pMessage << LOW_LOG_END;
+
+          // Break on error or warning
+          if (messageSeverity >=
+              VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+#ifdef _WIN32
+            //__debugbreak(); // Windows
+            // LOW_LOG_DEBUG << "Test" << LOW_LOG_END;
+#else
+            raise(SIGTRAP); // Unix-like
+#endif
+          }
+
+          return VK_FALSE;
+        }
+
         struct Frame
         {
           VkCommandPool commandPool;
           VkCommandBuffer mainCommandBuffer;
 
           StagingBuffer resourceStagingBuffer;
+          VkDescriptorSet textureDescriptorSet;
+
+          Low::Util::Queue<TextureUpdate> textureUpdateQueue;
         };
 
         u32 g_FrameOverlap;
         u64 g_FrameNumber;
         u32 g_CurrentFrameIndex;
-        Frame *g_Frames;
+        Low::Util::List<Frame> g_Frames;
 
         VkInstance g_Instance;
         VkDebugUtilsMessengerEXT g_DebugMessenger;
@@ -86,7 +113,33 @@ namespace Low {
         VkDescriptorSetLayout g_GlobalDescriptorSetLayout;
         VkDescriptorSet g_GlobalDescriptorSet;
 
+        VkDescriptorSetLayout g_TextureDescriptorSetLayout;
+        VkDescriptorSet *g_TextureDescriptorSets;
+
         VkPipelineLayout g_LightingPipelineLayout;
+
+        Low::Util::Queue<TextureUpdate> &
+        get_texture_update_queue(u32 p_FrameIndex)
+        {
+          return g_Frames[p_FrameIndex].textureUpdateQueue;
+        }
+
+        Low::Util::Queue<TextureUpdate> &
+        get_current_texture_update_queue()
+        {
+          return get_texture_update_queue(get_current_frame_index());
+        }
+
+        VkDescriptorSet get_texture_descriptor_set(u32 p_FrameIndex)
+        {
+          return g_Frames[p_FrameIndex].textureDescriptorSet;
+        }
+
+        VkDescriptorSet get_current_texture_descriptor_set()
+        {
+          return get_texture_descriptor_set(
+              get_current_frame_index());
+        }
 
         VkDescriptorSetLayout get_global_descriptor_set_layout()
         {
@@ -96,6 +149,11 @@ namespace Low {
         VkDescriptorSet get_global_descriptor_set()
         {
           return g_GlobalDescriptorSet;
+        }
+
+        VkDescriptorSetLayout get_texture_descriptor_set_layout()
+        {
+          return g_TextureDescriptorSetLayout;
         }
 
         Samplers &get_samplers()
@@ -222,9 +280,7 @@ namespace Low {
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(1,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-            l_Builder.add_binding(
-                2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                Texture::get_capacity());
+
             g_GlobalDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
           }
@@ -250,6 +306,15 @@ namespace Low {
 
             l_Writer.update_set(Global::get_device(),
                                 get_global_descriptor_set());
+          }
+
+          {
+            DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+            l_Builder.add_binding(
+                0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                Texture::get_capacity());
+            g_TextureDescriptorSetLayout = l_Builder.build(
+                Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
           }
 
           return true;
@@ -545,7 +610,7 @@ namespace Low {
                   Global::get_graphics_queue_family(),
                   VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-          g_Frames = (Frame *)malloc(sizeof(Frame) * g_FrameOverlap);
+          g_Frames.resize(g_FrameOverlap);
 
           for (u32 i = 0; i < g_FrameOverlap; ++i) {
             LOWR_VK_CHECK_RETURN(vkCreateCommandPool(
@@ -570,6 +635,13 @@ namespace Low {
                   RESOURCE_STAGING_BUFFER_SIZE;
               g_Frames[i].resourceStagingBuffer.occupied = 0u;
             }
+
+            {
+              g_Frames[i].textureDescriptorSet =
+                  Global::get_global_descriptor_allocator().allocate(
+                      Global::get_device(),
+                      g_TextureDescriptorSetLayout);
+            }
           }
         }
 
@@ -580,7 +652,8 @@ namespace Low {
           vkb::Result<vkb::Instance> l_InstanceReturn =
               l_InstanceBuilder.set_app_name("LowEngine")
                   .request_validation_layers(g_ValidationEnabled)
-                  .use_default_debug_messenger()
+                  //.use_default_debug_messenger()
+                  .set_debug_callback(&DebugCallback)
                   .require_api_version(1, 3, 0)
                   .build();
 
@@ -657,9 +730,6 @@ namespace Low {
           LOWR_VK_ASSERT(samplers_init(),
                          "Could not initialize global samplers");
 
-          LOWR_VK_ASSERT(frames_init(),
-                         "Could not initialize frames");
-
           Util::List<
               DescriptorUtil::DescriptorAllocator::PoolSizeRatio>
               l_Sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
@@ -670,12 +740,23 @@ namespace Low {
           LOWR_VK_ASSERT(initialize_global_descriptors(),
                          "Could not initialize global descriptors");
 
+          LOWR_VK_ASSERT(frames_init(),
+                         "Could not initialize frames");
+
           {
             DescriptorUtil::DescriptorLayoutBuilder l_Builder;
             l_Builder.add_binding(0,
                                   VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-            g_ViewInfoDescriptorSetLayout = l_Builder.build(
-                Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+            l_Builder.add_binding(1,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(2,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(3,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            g_ViewInfoDescriptorSetLayout =
+                l_Builder.build(Global::get_device(),
+                                VK_SHADER_STAGE_ALL_GRAPHICS |
+                                    VK_SHADER_STAGE_COMPUTE_BIT);
           }
 
           {
@@ -692,6 +773,8 @@ namespace Low {
             Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
             l_DescriptorSetLayouts.push_back(
                 get_global_descriptor_set_layout());
+            l_DescriptorSetLayouts.push_back(
+                get_texture_descriptor_set_layout());
             l_DescriptorSetLayouts.push_back(
                 get_view_info_descriptor_set_layout());
 
@@ -724,6 +807,8 @@ namespace Low {
                 g_Frames[i].resourceStagingBuffer.buffer);
             g_Frames[i].resourceStagingBuffer.size = 0;
           }
+
+          g_Frames.clear();
 
           return true;
         }

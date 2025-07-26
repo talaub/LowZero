@@ -62,6 +62,8 @@ LowRenderer2:
   RenderScene: 61
   DrawCommand: 62
   Scene: 63
+  RenderStep: 64
+  PointLight: 65
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

@@ -73,6 +73,34 @@ namespace Low {
 
           void clear_shader_modules(VkDevice p_Device);
         };
+
+        struct ComputePipelineBuilder
+        {
+          VkPipelineShaderStageCreateInfo shaderStage;
+          VkPipelineLayout pipelineLayout;
+          Util::String computeShaderPath;
+          Util::String computeSpirvPath;
+
+          ComputePipelineBuilder()
+          {
+            clear();
+          }
+
+          void clear();
+
+          VkPipeline build_pipeline(VkDevice p_Device);
+
+          Pipeline register_pipeline();
+
+          void set_shader(Util::String p_ComputeShader);
+
+          void set_pipeline_layout(VkPipelineLayout p_PipelineLayout);
+
+          void update_shader();
+
+        private:
+          void set_shader(VkShaderModule p_ComputeShader);
+        };
       } // namespace PipelineUtil
     }   // namespace Vulkan
   }     // namespace Renderer

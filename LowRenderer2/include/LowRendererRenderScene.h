@@ -21,6 +21,8 @@ namespace Low {
     struct LOW_RENDERER2_API RenderSceneData
     {
       Low::Util::List<DrawCommand> draw_commands;
+      Low::Util::Set<u32> pointlight_deleted_slots;
+      uint64_t data_handle;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -104,6 +106,11 @@ namespace Low {
 
       Low::Util::List<DrawCommand> &get_draw_commands() const;
 
+      Low::Util::Set<u32> &get_pointlight_deleted_slots() const;
+
+      uint64_t get_data_handle() const;
+      void set_data_handle(uint64_t p_Value);
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
@@ -114,6 +121,7 @@ namespace Low {
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
+      void set_pointlight_deleted_slots(Low::Util::Set<u32> &p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

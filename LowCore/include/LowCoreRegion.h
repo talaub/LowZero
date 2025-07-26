@@ -116,9 +116,11 @@ namespace Low {
 
       bool is_loaded() const;
       void set_loaded(bool p_Value);
+      void toggle_loaded();
 
       bool is_streaming_enabled() const;
       void set_streaming_enabled(bool p_Value);
+      void toggle_streaming_enabled();
 
       Math::Vector3 &get_streaming_position() const;
       void set_streaming_position(Math::Vector3 &p_Value);

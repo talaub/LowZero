@@ -59,6 +59,14 @@ namespace Low {
           Util::List<MaterialTypeInput>();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, initialized, bool) =
           false;
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType,
+                              draw_pipeline_config,
+                              Low::Renderer::GraphicsPipelineConfig))
+          Low::Renderer::GraphicsPipelineConfig();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType,
+                              depth_pipeline_config,
+                              Low::Renderer::GraphicsPipelineConfig))
+          Low::Renderer::GraphicsPipelineConfig();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, name,
                         Low::Util::Name) = Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -68,6 +76,24 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      {
+        l_Handle.get_draw_pipeline_config().vertexShaderPath = "";
+        l_Handle.get_draw_pipeline_config().fragmentShaderPath = "";
+        l_Handle.get_draw_pipeline_config().depthTest = true;
+        l_Handle.get_draw_pipeline_config().cullMode =
+            GraphicsPipelineCullMode::BACK;
+        l_Handle.get_draw_pipeline_config().frontFace =
+            GraphicsPipelineFrontFace::COUNTER_CLOCKWISE;
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+        l_Handle.get_draw_pipeline_config().depthFormat =
+            ImageFormat::DEPTH;
+        // l_Handle.get_draw_pipeline_config().depthFormat
+      }
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -270,6 +296,62 @@ namespace Low {
         // End property: initialized
       }
       {
+        // Property: draw_pipeline_config
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(draw_pipeline_config);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialTypeData, draw_pipeline_config);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_draw_pipeline_config();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, draw_pipeline_config,
+              Low::Renderer::GraphicsPipelineConfig);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Low::Renderer::GraphicsPipelineConfig *)p_Data) =
+              l_Handle.get_draw_pipeline_config();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: draw_pipeline_config
+      }
+      {
+        // Property: depth_pipeline_config
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(depth_pipeline_config);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialTypeData, depth_pipeline_config);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_depth_pipeline_config();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, depth_pipeline_config,
+              Low::Renderer::GraphicsPipelineConfig);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Low::Renderer::GraphicsPipelineConfig *)p_Data) =
+              l_Handle.get_depth_pipeline_config();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: depth_pipeline_config
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -428,6 +510,74 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: fill_input_names
       }
+      {
+        // Function: set_draw_vertex_shader_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(set_draw_vertex_shader_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: set_draw_vertex_shader_path
+      }
+      {
+        // Function: set_draw_fragment_shader_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(set_draw_fragment_shader_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: set_draw_fragment_shader_path
+      }
+      {
+        // Function: set_depth_vertex_shader_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(set_depth_vertex_shader_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: set_depth_vertex_shader_path
+      }
+      {
+        // Function: set_depth_fragment_shader_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(set_depth_fragment_shader_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: set_depth_fragment_shader_path
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -565,6 +715,10 @@ namespace Low {
       if (p_Node["initialized"]) {
         l_Handle.set_initialized(p_Node["initialized"].as<bool>());
       }
+      if (p_Node["draw_pipeline_config"]) {
+      }
+      if (p_Node["depth_pipeline_config"]) {
+      }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
       }
@@ -585,6 +739,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, transparent, bool);
     }
+    void MaterialType::toggle_transparent()
+    {
+      set_transparent(!is_transparent());
+    }
+
     void MaterialType::set_transparent(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -677,6 +836,11 @@ namespace Low {
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, initialized, bool);
     }
+    void MaterialType::toggle_initialized()
+    {
+      set_initialized(!is_initialized());
+    }
+
     void MaterialType::set_initialized(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
@@ -691,6 +855,32 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
       // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
+    }
+
+    Low::Renderer::GraphicsPipelineConfig &
+    MaterialType::get_draw_pipeline_config() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_pipeline_config
+      // LOW_CODEGEN::END::CUSTOM:GETTER_draw_pipeline_config
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MaterialType, draw_pipeline_config,
+                      Low::Renderer::GraphicsPipelineConfig);
+    }
+
+    Low::Renderer::GraphicsPipelineConfig &
+    MaterialType::get_depth_pipeline_config() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline_config
+      // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline_config
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MaterialType, depth_pipeline_config,
+                      Low::Renderer::GraphicsPipelineConfig);
     }
 
     Low::Util::Name MaterialType::get_name() const
@@ -883,6 +1073,38 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_fill_input_names
     }
 
+    void MaterialType::set_draw_vertex_shader_path(
+        Low::Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_vertex_shader_path
+      get_draw_pipeline_config().vertexShaderPath = p_Path;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
+    }
+
+    void MaterialType::set_draw_fragment_shader_path(
+        Low::Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_fragment_shader_path
+      get_draw_pipeline_config().fragmentShaderPath = p_Path;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_fragment_shader_path
+    }
+
+    void MaterialType::set_depth_vertex_shader_path(
+        Low::Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_vertex_shader_path
+      get_depth_pipeline_config().vertexShaderPath = p_Path;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_vertex_shader_path
+    }
+
+    void MaterialType::set_depth_fragment_shader_path(
+        Low::Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_fragment_shader_path
+      get_depth_pipeline_config().fragmentShaderPath = p_Path;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_fragment_shader_path
+    }
+
     uint32_t MaterialType::create_instance()
     {
       uint32_t l_Index = 0u;
@@ -967,6 +1189,26 @@ namespace Low {
                &ms_Buffer[offsetof(MaterialTypeData, initialized) *
                           (l_Capacity)],
                l_Capacity * sizeof(bool));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MaterialTypeData,
+                                     draw_pipeline_config) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MaterialTypeData,
+                                   draw_pipeline_config) *
+                          (l_Capacity)],
+               l_Capacity *
+                   sizeof(Low::Renderer::GraphicsPipelineConfig));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MaterialTypeData,
+                                     depth_pipeline_config) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MaterialTypeData,
+                                   depth_pipeline_config) *
+                          (l_Capacity)],
+               l_Capacity *
+                   sizeof(Low::Renderer::GraphicsPipelineConfig));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MaterialTypeData, name) *

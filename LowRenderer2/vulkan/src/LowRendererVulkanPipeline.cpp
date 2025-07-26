@@ -62,7 +62,7 @@ namespace Low {
 
         VkPipelineLayoutCreateInfo layout_create_info()
         {
-          VkPipelineLayoutCreateInfo l_Info={};
+          VkPipelineLayoutCreateInfo l_Info = {};
           l_Info.sType =
               VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
           l_Info.pNext = nullptr;
@@ -81,7 +81,7 @@ namespace Low {
                                  VkShaderModule p_ShaderModule,
                                  const char *p_Entry)
         {
-          VkPipelineShaderStageCreateInfo l_Info={};
+          VkPipelineShaderStageCreateInfo l_Info = {};
           l_Info.sType =
               VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
           l_Info.pNext = nullptr;
@@ -98,33 +98,28 @@ namespace Low {
         void GraphicsPipelineBuilder::clear()
         {
           inputAssembly = {};
-          inputAssembly 
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+          inputAssembly.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 
           rasterizer = {};
-          rasterizer 
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+          rasterizer.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 
           colorBlendAttachment = {};
 
           multisampling = {};
-          multisampling 
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+          multisampling.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 
           pipelineLayout = {};
 
           depthStencil = {};
-          depthStencil
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+          depthStencil.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 
           renderInfo = {};
-          renderInfo 
-              .sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+          renderInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 
           shaderStages.clear();
         }
@@ -158,8 +153,7 @@ namespace Low {
           l_ViewportState.scissorCount = 1;
 
           // TODO: Right now this is just a dummy
-          VkPipelineColorBlendStateCreateInfo
-              l_BlendStateCreateInfo;
+          VkPipelineColorBlendStateCreateInfo l_BlendStateCreateInfo;
 
           Util::List<VkPipelineColorBlendAttachmentState>
               l_BlendAttachments;
@@ -180,15 +174,14 @@ namespace Low {
               l_BlendAttachments.data();
 
           // Clear for now
-          VkPipelineVertexInputStateCreateInfo l_VertexInputInfo = {
-        };
+          VkPipelineVertexInputStateCreateInfo l_VertexInputInfo = {};
           l_VertexInputInfo.sType =
               VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
           // Create the pipeline
-              VkGraphicsPipelineCreateInfo l_PipelineInfo={}; 
-              l_PipelineInfo.sType =
-                  VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+          VkGraphicsPipelineCreateInfo l_PipelineInfo = {};
+          l_PipelineInfo.sType =
+              VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
           // Connect the renderinfo
           l_PipelineInfo.pNext = &renderInfo;
 
@@ -208,9 +201,9 @@ namespace Low {
           VkDynamicState l_State[] = {VK_DYNAMIC_STATE_VIEWPORT,
                                       VK_DYNAMIC_STATE_SCISSOR};
 
-          VkPipelineDynamicStateCreateInfo l_DynamicInfo={};
-              l_DynamicInfo.sType =
-                  VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+          VkPipelineDynamicStateCreateInfo l_DynamicInfo = {};
+          l_DynamicInfo.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
           l_DynamicInfo.pDynamicStates = &l_State[0];
           l_DynamicInfo.dynamicStateCount = 2;
 
@@ -336,6 +329,18 @@ namespace Low {
         GraphicsPipelineBuilder::set_depth_format(VkFormat p_Format)
         {
           renderInfo.depthAttachmentFormat = p_Format;
+
+          if (p_Format != VK_FORMAT_UNDEFINED) {
+            depthStencil.depthTestEnable = VK_TRUE;
+            depthStencil.depthWriteEnable = VK_TRUE;
+            depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+            depthStencil.depthBoundsTestEnable = VK_TRUE;
+            depthStencil.stencilTestEnable = VK_FALSE;
+            depthStencil.front = {};
+            depthStencil.back = {};
+            depthStencil.minDepthBounds = 0.0f;
+            depthStencil.maxDepthBounds = 1.0f;
+          }
         }
 
         void GraphicsPipelineBuilder::disable_depth_test()
@@ -349,6 +354,94 @@ namespace Low {
           depthStencil.back = {};
           depthStencil.minDepthBounds = 0.0f;
           depthStencil.maxDepthBounds = 1.0f;
+        }
+
+        void ComputePipelineBuilder::clear()
+        {
+          shaderStage = {};
+          shaderStage.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+          shaderStage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+          shaderStage.pName =
+              "main"; // Default entry point for compute shaders
+
+          pipelineLayout = VK_NULL_HANDLE;
+          computeShaderPath.clear();
+          computeSpirvPath.clear();
+        }
+
+        VkPipeline
+        ComputePipelineBuilder::build_pipeline(VkDevice p_Device)
+        {
+          VkComputePipelineCreateInfo pipelineCreateInfo = {};
+          pipelineCreateInfo.sType =
+              VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+          pipelineCreateInfo.stage = shaderStage;
+          pipelineCreateInfo.layout = pipelineLayout;
+
+          VkPipeline pipeline;
+          if (vkCreateComputePipelines(p_Device, VK_NULL_HANDLE, 1,
+                                       &pipelineCreateInfo, nullptr,
+                                       &pipeline) != VK_SUCCESS) {
+
+            LOW_LOG_ERROR << "Failed to create compute pipeline"
+                          << LOW_LOG_END;
+            vkDestroyShaderModule(p_Device, shaderStage.module,
+                                  nullptr);
+            return VK_NULL_HANDLE;
+          }
+          vkDestroyShaderModule(p_Device, shaderStage.module,
+                                nullptr);
+          return pipeline;
+        }
+
+        void ComputePipelineBuilder::set_pipeline_layout(
+            VkPipelineLayout p_PipelineLayout)
+        {
+          pipelineLayout = p_PipelineLayout;
+        }
+
+        void ComputePipelineBuilder::set_shader(
+            Util::String p_ComputeShader)
+        {
+          computeShaderPath = Util::get_project().engineDataPath +
+                              "/lowr_shaders/" + p_ComputeShader;
+
+          computeSpirvPath = Util::get_project().engineDataPath +
+                             "/lowr_spirv/" + p_ComputeShader +
+                             ".spv";
+        }
+
+        void ComputePipelineBuilder::set_shader(
+            VkShaderModule p_ComputeShader)
+        {
+          shaderStage = PipelineUtil::shader_stage_create_info(
+              VK_SHADER_STAGE_COMPUTE_BIT, p_ComputeShader);
+        }
+
+        void ComputePipelineBuilder::update_shader()
+        {
+          if (!computeSpirvPath.empty()) {
+            VkShaderModule l_ComputeShader;
+            LOW_ASSERT(PipelineUtil::load_shader_module(
+                           computeSpirvPath.c_str(),
+                           Global::get_device(), &l_ComputeShader),
+                       "Failed to load compute shader");
+
+            set_shader(l_ComputeShader);
+          }
+        }
+
+        Pipeline ComputePipelineBuilder::register_pipeline()
+        {
+          Pipeline l_Pipeline = Pipeline::make(N(Pipeline));
+
+          l_Pipeline.set_layout(pipelineLayout);
+
+          PipelineManager::register_compute_pipeline(l_Pipeline,
+                                                     *this);
+
+          return l_Pipeline;
         }
       } // namespace PipelineUtil
     }   // namespace Vulkan
