@@ -3,7 +3,7 @@
 #include "LowUtil.h"
 
 #include "LowRendererMesh.h"
-#include "LowRendererImageResource.h"
+#include "LowRendererTexture.h"
 
 namespace Low {
   namespace Renderer {
@@ -15,6 +15,6 @@ namespace Low {
     void check_window_resize(float p_Delta);
 
     Mesh load_mesh(Util::String p_MeshPath);
-    ImageResource load_image(Util::String p_ImagePath);
+    Texture load_texture(Util::String p_ImagePath);
   } // namespace Renderer
 } // namespace Low

@@ -416,9 +416,9 @@ namespace Low {
 
       static bool initialize_default_texture()
       {
-        g_DefaultTexture = Texture::make(N(Default));
+        g_DefaultTexture = Texture::make_gpu_ready(N(Default));
         Vulkan::Image l_Image = Vulkan::Image::make(N(Default));
-        g_DefaultTexture.set_data_handle(l_Image.get_id());
+        g_DefaultTexture.get_gpu().set_data_handle(l_Image.get_id());
 
         Math::UVector2 l_Dimensions(128.0f);
 
@@ -514,9 +514,11 @@ namespace Low {
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
-          for (u32 j = 0; j < Texture::get_capacity(); ++j) {
-            Global::get_texture_update_queue(i).push(
-                {g_DefaultTexture, j});
+          for (u32 j = 0; j < GpuTexture::get_capacity(); ++j) {
+            if (!GpuTexture::find_by_index(j).is_alive()) {
+              Global::get_texture_update_queue(i).push(
+                  {g_DefaultTexture.get_gpu(), j});
+            }
           }
         }
 
@@ -704,12 +706,16 @@ namespace Low {
           ViewInfo l_ViewInfo = l_RenderView.get_view_info_handle();
 
           ImageUtil::cmd_transition(
-              l_Cmd, l_RenderView.get_lit_image().get_data_handle(),
+              l_Cmd,
+              l_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-          Image l_LitImage =
-              l_RenderView.get_lit_image().get_data_handle();
+          Image l_LitImage = l_RenderView.get_lit_image()
+                                 .get_gpu()
+                                 .get_data_handle();
 
           ImageUtil::Internal::cmd_copy2D(
               l_Cmd, l_LitImage.get_allocated_image().image,
@@ -718,7 +724,10 @@ namespace Low {
               p_Context.swapchain.drawExtent);
 
           ImageUtil::cmd_transition(
-              l_Cmd, l_RenderView.get_lit_image().get_data_handle(),
+              l_Cmd,
+              l_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
@@ -747,22 +756,26 @@ namespace Low {
         if (p_ViewInfo.is_initialized()) {
           wait_idle();
           {
-            Image l_Image =
-                p_RenderView.get_gbuffer_albedo().get_data_handle();
+            Image l_Image = p_RenderView.get_gbuffer_albedo()
+                                .get_gpu()
+                                .get_data_handle();
 
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView.get_gbuffer_albedo()
+                    .get_gpu()
                     .get_imgui_texture_id());
 
             ImageUtil::destroy(l_Image);
             l_Image.destroy();
           }
           {
-            Image l_Image =
-                p_RenderView.get_gbuffer_normals().get_data_handle();
+            Image l_Image = p_RenderView.get_gbuffer_normals()
+                                .get_gpu()
+                                .get_data_handle();
 
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView.get_gbuffer_normals()
+                    .get_gpu()
                     .get_imgui_texture_id());
 
             ImageUtil::destroy(l_Image);
@@ -770,33 +783,39 @@ namespace Low {
           }
           {
             Image l_Image = p_RenderView.get_gbuffer_viewposition()
+                                .get_gpu()
                                 .get_data_handle();
 
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView
                     .get_gbuffer_viewposition()
+                    .get_gpu()
                     .get_imgui_texture_id());
 
             ImageUtil::destroy(l_Image);
             l_Image.destroy();
           }
           {
-            Image l_Image =
-                p_RenderView.get_gbuffer_depth().get_data_handle();
+            Image l_Image = p_RenderView.get_gbuffer_depth()
+                                .get_gpu()
+                                .get_data_handle();
 
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView.get_gbuffer_depth()
+                    .get_gpu()
                     .get_imgui_texture_id());
 
             ImageUtil::destroy(l_Image);
             l_Image.destroy();
           }
           {
-            Image l_Image =
-                p_RenderView.get_lit_image().get_data_handle();
+            Image l_Image = p_RenderView.get_lit_image()
+                                .get_gpu()
+                                .get_data_handle();
 
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView.get_lit_image()
+                    .get_gpu()
                     .get_imgui_texture_id());
 
             ImageUtil::destroy(l_Image);
@@ -865,16 +884,19 @@ namespace Low {
 
         {
           if (!p_RenderView.get_gbuffer_albedo().is_alive()) {
-            p_RenderView.set_gbuffer_albedo(Texture::make(N(Albedo)));
+            p_RenderView.set_gbuffer_albedo(
+                Texture::make_gpu_ready(N(Albedo)));
           }
 
-          Image l_Image =
-              p_RenderView.get_gbuffer_albedo().get_data_handle();
+          Image l_Image = p_RenderView.get_gbuffer_albedo()
+                              .get_gpu()
+                              .get_data_handle();
 
           if (!l_Image.is_alive()) {
             l_Image = Image::make(N(Albedo));
-            p_RenderView.get_gbuffer_albedo().set_data_handle(
-                l_Image.get_id());
+            p_RenderView.get_gbuffer_albedo()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
           }
 
           ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
@@ -892,16 +914,18 @@ namespace Low {
         {
           if (!p_RenderView.get_gbuffer_normals().is_alive()) {
             p_RenderView.set_gbuffer_normals(
-                Texture::make(N(Normals)));
+                Texture::make_gpu_ready(N(Normals)));
           }
 
-          Image l_Image =
-              p_RenderView.get_gbuffer_normals().get_data_handle();
+          Image l_Image = p_RenderView.get_gbuffer_normals()
+                              .get_gpu()
+                              .get_data_handle();
 
           if (!l_Image.is_alive()) {
             l_Image = Image::make(N(Normals));
-            p_RenderView.get_gbuffer_normals().set_data_handle(
-                l_Image.get_id());
+            p_RenderView.get_gbuffer_normals()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
           }
 
           ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
@@ -920,16 +944,18 @@ namespace Low {
         {
           if (!p_RenderView.get_gbuffer_viewposition().is_alive()) {
             p_RenderView.set_gbuffer_viewposition(
-                Texture::make(N(ViewPosition)));
+                Texture::make_gpu_ready(N(ViewPosition)));
           }
 
           Image l_Image = p_RenderView.get_gbuffer_viewposition()
+                              .get_gpu()
                               .get_data_handle();
 
           if (!l_Image.is_alive()) {
             l_Image = Image::make(N(ViewPosition));
-            p_RenderView.get_gbuffer_viewposition().set_data_handle(
-                l_Image.get_id());
+            p_RenderView.get_gbuffer_viewposition()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
           }
 
           ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
@@ -947,17 +973,20 @@ namespace Low {
 
         {
           if (!p_RenderView.get_gbuffer_depth().is_alive()) {
-            p_RenderView.set_gbuffer_depth(Texture::make(N(Depth)));
+            p_RenderView.set_gbuffer_depth(
+                Texture::make_gpu_ready(N(Depth)));
           }
 
-          Image l_Image =
-              p_RenderView.get_gbuffer_depth().get_data_handle();
+          Image l_Image = p_RenderView.get_gbuffer_depth()
+                              .get_gpu()
+                              .get_data_handle();
 
           if (!l_Image.is_alive()) {
             l_Image = Image::make(N(Depth));
             l_Image.set_depth(true);
-            p_RenderView.get_gbuffer_depth().set_data_handle(
-                l_Image.get_id());
+            p_RenderView.get_gbuffer_depth()
+                .get_gpu()
+                .set_data_handle(l_Image.get_id());
           }
 
           // TODO: Change type over to be extracted from the texture
@@ -978,15 +1007,17 @@ namespace Low {
 
         {
           if (!p_RenderView.get_lit_image().is_alive()) {
-            p_RenderView.set_lit_image(Texture::make(N(Lit)));
+            p_RenderView.set_lit_image(
+                Texture::make_gpu_ready(N(Lit)));
           }
 
-          Image l_Image =
-              p_RenderView.get_lit_image().get_data_handle();
+          Image l_Image = p_RenderView.get_lit_image()
+                              .get_gpu()
+                              .get_data_handle();
 
           if (!l_Image.is_alive()) {
             l_Image = Image::make(N(Lit));
-            p_RenderView.get_lit_image().set_data_handle(
+            p_RenderView.get_lit_image().get_gpu().set_data_handle(
                 l_Image.get_id());
           }
 
@@ -1015,13 +1046,19 @@ namespace Low {
 
           DescriptorUtil::DescriptorWriter l_Writer;
           l_Writer.write_image(
-              0, p_RenderView.get_gbuffer_albedo().get_data_handle(),
+              0,
+              p_RenderView.get_gbuffer_albedo()
+                  .get_gpu()
+                  .get_data_handle(),
               l_Samplers.no_lod_nearest_repeat_black,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
           l_Writer.write_image(
-              1, p_RenderView.get_gbuffer_normals().get_data_handle(),
+              1,
+              p_RenderView.get_gbuffer_normals()
+                  .get_gpu()
+                  .get_data_handle(),
               l_Samplers.no_lod_nearest_repeat_black,
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
@@ -1084,13 +1121,17 @@ namespace Low {
               l_FrameData.projectionMatrix * l_FrameData.viewMatrix;
 
           l_FrameData.gbufferIndices.w =
-              p_RenderView.get_gbuffer_viewposition().get_index();
+              p_RenderView.get_gbuffer_viewposition()
+                  .get_gpu()
+                  .get_index();
           l_FrameData.gbufferIndices.z =
-              p_RenderView.get_gbuffer_depth().get_index();
+              p_RenderView.get_gbuffer_depth().get_gpu().get_index();
           l_FrameData.gbufferIndices.x =
-              p_RenderView.get_gbuffer_albedo().get_index();
+              p_RenderView.get_gbuffer_albedo().get_gpu().get_index();
           l_FrameData.gbufferIndices.y =
-              p_RenderView.get_gbuffer_normals().get_index();
+              p_RenderView.get_gbuffer_normals()
+                  .get_gpu()
+                  .get_index();
 
           l_FrameData.lightClusters.x =
               p_ViewInfo.get_light_clusters().x;
@@ -1175,21 +1216,21 @@ namespace Low {
       {
         Samplers &l_Samplers = Global::get_samplers();
 
-        for (auto it = Texture::ms_Dirty.begin();
-             it != Texture::ms_Dirty.end(); ++it) {
+        for (auto it = GpuTexture::ms_Dirty.begin();
+             it != GpuTexture::ms_Dirty.end(); ++it) {
 
-          Texture i_Texture = *it;
-          if (!i_Texture.is_alive()) {
+          GpuTexture i_GpuTexture = *it;
+          if (!i_GpuTexture.is_alive()) {
             continue;
           }
 
-          Image i_Image = i_Texture.get_data_handle();
+          Image i_Image = i_GpuTexture.get_data_handle();
 
           if (!i_Image.is_alive()) {
             continue;
           }
 
-          i_Texture.set_imgui_texture_id(
+          i_GpuTexture.set_imgui_texture_id(
               (ImTextureID)ImGui_ImplVulkan_AddTexture(
                   l_Samplers.no_lod_nearest_repeat_black,
                   i_Image.get_allocated_image().imageView,
@@ -1197,13 +1238,13 @@ namespace Low {
 
           for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
             TextureUpdate i_Update;
-            i_Update.texture = i_Texture;
-            i_Update.textureIndex = i_Texture.get_index();
+            i_Update.gpuTexture = i_GpuTexture;
+            i_Update.textureIndex = i_GpuTexture.get_index();
             Global::get_texture_update_queue(i).push(i_Update);
           }
         }
 
-        Texture::ms_Dirty.clear();
+        GpuTexture::ms_Dirty.clear();
 
         return true;
       }
@@ -1446,11 +1487,11 @@ namespace Low {
                 Global::get_current_texture_update_queue().front();
             Global::get_current_texture_update_queue().pop();
 
-            if (!i_Update.texture.is_alive()) {
+            if (!i_Update.gpuTexture.is_alive()) {
               continue;
             }
 
-            Image i_Image = i_Update.texture.get_data_handle();
+            Image i_Image = i_Update.gpuTexture.get_data_handle();
 
             if (!i_Image.is_alive()) {
               continue;

@@ -70,6 +70,10 @@ LowRenderer2:
   GpuSubmesh: 69
   UiDrawCommand: 70
   UiCanvas: 71
+  TextureResource: 72
+  TexturePixels: 73
+  GpuTexture: 74
+  TextureStaging: 75
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

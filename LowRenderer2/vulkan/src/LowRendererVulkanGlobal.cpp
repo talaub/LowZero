@@ -326,7 +326,7 @@ namespace Low {
             DescriptorUtil::DescriptorLayoutBuilder l_Builder;
             l_Builder.add_binding(
                 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                Texture::get_capacity());
+                GpuTexture::get_capacity());
             g_TextureDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
           }
@@ -965,9 +965,10 @@ namespace Low {
 
           Samplers &l_Samplers = get_samplers();
 
-          Image l_TempImage = p_TempImage.get_data_handle();
-          Image l_ImageToBlur = p_ImageToBlur.get_data_handle();
-          Image l_OutImage = p_OutImage.get_data_handle();
+          Image l_TempImage = p_TempImage.get_gpu().get_data_handle();
+          Image l_ImageToBlur =
+              p_ImageToBlur.get_gpu().get_data_handle();
+          Image l_OutImage = p_OutImage.get_gpu().get_data_handle();
 
           {
             ImageUtil::cmd_transition(
@@ -999,7 +1000,7 @@ namespace Low {
             BlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
-                p_ImageToBlur.get_index();
+                p_ImageToBlur.get_gpu().get_index();
 
             vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
@@ -1050,7 +1051,7 @@ namespace Low {
             BlurPushConstants l_PushConstants;
             l_PushConstants.texelSize = l_InverseDimensions;
             l_PushConstants.inputTextureIndex =
-                p_TempImage.get_index();
+                p_TempImage.get_gpu().get_index();
 
             vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,

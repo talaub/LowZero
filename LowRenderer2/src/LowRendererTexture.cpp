@@ -17,8 +17,6 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    Low::Util::Set<Low::Renderer::Texture>
-        Low::Renderer::Texture::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Texture::TYPE_ID = 60;
@@ -54,8 +52,15 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = Texture::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, imgui_texture_id,
-                              ImTextureID)) ImTextureID();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, gpu, GpuTexture))
+          GpuTexture();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, resource,
+                              TextureResource)) TextureResource();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, staging,
+                              TextureStaging)) TextureStaging();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, state,
+                              Low::Renderer::TextureState))
+          Low::Renderer::TextureState();
       ACCESSOR_TYPE_SOA(l_Handle, Texture, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -65,6 +70,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_state(TextureState::UNLOADED);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -75,8 +81,16 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      Vulkan::Image l_Image = get_data_handle();
-      l_Image.destroy();
+      // TODO: unload of loaded
+      if (get_gpu().is_alive()) {
+        get_gpu().destroy();
+      }
+      if (get_resource().is_alive()) {
+        get_resource().destroy();
+      }
+      if (get_staging().is_alive()) {
+        get_staging().destroy();
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       broadcast_observable(OBSERVABLE_DESTROY);
@@ -134,62 +148,118 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
-        // Property: data_handle
+        // Property: gpu
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(data_handle);
+        l_PropertyInfo.name = N(gpu);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(TextureData, data_handle);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
-        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.dataOffset = offsetof(TextureData, gpu);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = GpuTexture::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          l_Handle.get_data_handle();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture,
-                                            data_handle, uint64_t);
+          l_Handle.get_gpu();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture, gpu,
+                                            GpuTexture);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           Texture l_Handle = p_Handle.get_id();
-          l_Handle.set_data_handle(*(uint64_t *)p_Data);
+          l_Handle.set_gpu(*(GpuTexture *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          *((uint64_t *)p_Data) = l_Handle.get_data_handle();
+          *((GpuTexture *)p_Data) = l_Handle.get_gpu();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: data_handle
+        // End property: gpu
       }
       {
-        // Property: imgui_texture_id
+        // Property: resource
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(imgui_texture_id);
+        l_PropertyInfo.name = N(resource);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(TextureData, imgui_texture_id);
-        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.dataOffset = offsetof(TextureData, resource);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = TextureResource::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture l_Handle = p_Handle.get_id();
-          l_Handle.get_imgui_texture_id();
+          l_Handle.get_resource();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, Texture, imgui_texture_id, ImTextureID);
+              p_Handle, Texture, resource, TextureResource);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           Texture l_Handle = p_Handle.get_id();
-          l_Handle.set_imgui_texture_id(*(ImTextureID *)p_Data);
+          l_Handle.set_resource(*(TextureResource *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture l_Handle = p_Handle.get_id();
-          *((ImTextureID *)p_Data) = l_Handle.get_imgui_texture_id();
+          *((TextureResource *)p_Data) = l_Handle.get_resource();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: imgui_texture_id
+        // End property: resource
+      }
+      {
+        // Property: staging
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(staging);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(TextureData, staging);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = TextureStaging::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Texture l_Handle = p_Handle.get_id();
+          l_Handle.get_staging();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture,
+                                            staging, TextureStaging);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Texture l_Handle = p_Handle.get_id();
+          l_Handle.set_staging(*(TextureStaging *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Texture l_Handle = p_Handle.get_id();
+          *((TextureStaging *)p_Data) = l_Handle.get_staging();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: staging
+      }
+      {
+        // Property: state
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(state);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(TextureData, state);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+        l_PropertyInfo.handleType =
+            Low::Renderer::TextureStateEnumHelper::get_enum_id();
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Texture l_Handle = p_Handle.get_id();
+          l_Handle.get_state();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, Texture, state, Low::Renderer::TextureState);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Texture l_Handle = p_Handle.get_id();
+          l_Handle.set_state(*(Low::Renderer::TextureState *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Texture l_Handle = p_Handle.get_id();
+          *((Low::Renderer::TextureState *)p_Data) =
+              l_Handle.get_state();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: state
       }
       {
         // Property: name
@@ -218,6 +288,22 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: make_gpu_ready
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_gpu_ready);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_gpu_ready
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -287,8 +373,16 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       Texture l_Handle = make(p_Name);
-      l_Handle.set_data_handle(get_data_handle());
-      l_Handle.set_imgui_texture_id(get_imgui_texture_id());
+      if (get_gpu().is_alive()) {
+        l_Handle.set_gpu(get_gpu());
+      }
+      if (get_resource().is_alive()) {
+        l_Handle.set_resource(get_resource());
+      }
+      if (get_staging().is_alive()) {
+        l_Handle.set_staging(get_staging());
+      }
+      l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -313,7 +407,19 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["data_handle"] = get_data_handle();
+      if (get_gpu().is_alive()) {
+        get_gpu().serialize(p_Node["gpu"]);
+      }
+      if (get_resource().is_alive()) {
+        get_resource().serialize(p_Node["resource"]);
+      }
+      if (get_staging().is_alive()) {
+        get_staging().serialize(p_Node["staging"]);
+      }
+      Low::Util::Serialization::serialize_enum(
+          p_Node["state"],
+          Low::Renderer::TextureStateEnumHelper::get_enum_id(),
+          static_cast<uint8_t>(get_state()));
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -333,11 +439,26 @@ namespace Low {
     {
       Texture l_Handle = Texture::make(N(Texture));
 
-      if (p_Node["data_handle"]) {
-        l_Handle.set_data_handle(
-            p_Node["data_handle"].as<uint64_t>());
+      if (p_Node["gpu"]) {
+        l_Handle.set_gpu(
+            GpuTexture::deserialize(p_Node["gpu"], l_Handle.get_id())
+                .get_id());
       }
-      if (p_Node["imgui_texture_id"]) {
+      if (p_Node["resource"]) {
+        l_Handle.set_resource(
+            TextureResource::deserialize(p_Node["resource"],
+                                         l_Handle.get_id())
+                .get_id());
+      }
+      if (p_Node["staging"]) {
+        l_Handle.set_staging(TextureStaging::deserialize(
+                                 p_Node["staging"], l_Handle.get_id())
+                                 .get_id());
+      }
+      if (p_Node["state"]) {
+        l_Handle.set_state(static_cast<Low::Renderer::TextureState>(
+            Low::Util::Serialization::deserialize_enum(
+                p_Node["state"])));
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -384,61 +505,116 @@ namespace Low {
       l_Texture.notify(p_Observed, p_Observable);
     }
 
-    uint64_t Texture::get_data_handle() const
+    GpuTexture Texture::get_gpu() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
-      // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gpu
+      // LOW_CODEGEN::END::CUSTOM:GETTER_gpu
 
       READ_LOCK(l_ReadLock);
-      return TYPE_SOA(Texture, data_handle, uint64_t);
+      return TYPE_SOA(Texture, gpu, GpuTexture);
     }
-    void Texture::set_data_handle(uint64_t p_Value)
+    void Texture::set_gpu(GpuTexture p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gpu
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_gpu
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(Texture, data_handle, uint64_t) = p_Value;
+      TYPE_SOA(Texture, gpu, GpuTexture) = p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
-      ms_Dirty.insert(get_id());
-      // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gpu
+      // LOW_CODEGEN::END::CUSTOM:SETTER_gpu
 
-      broadcast_observable(N(data_handle));
+      broadcast_observable(N(gpu));
     }
 
-    ImTextureID Texture::get_imgui_texture_id() const
+    TextureResource Texture::get_resource() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_id
-      // LOW_CODEGEN::END::CUSTOM:GETTER_imgui_texture_id
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
+      // LOW_CODEGEN::END::CUSTOM:GETTER_resource
 
       READ_LOCK(l_ReadLock);
-      return TYPE_SOA(Texture, imgui_texture_id, ImTextureID);
+      return TYPE_SOA(Texture, resource, TextureResource);
     }
-    void Texture::set_imgui_texture_id(ImTextureID p_Value)
+    void Texture::set_resource(TextureResource p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_id
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_imgui_texture_id
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(Texture, imgui_texture_id, ImTextureID) = p_Value;
+      TYPE_SOA(Texture, resource, TextureResource) = p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_imgui_texture_id
-      // LOW_CODEGEN::END::CUSTOM:SETTER_imgui_texture_id
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource
+      // LOW_CODEGEN::END::CUSTOM:SETTER_resource
 
-      broadcast_observable(N(imgui_texture_id));
+      broadcast_observable(N(resource));
+    }
+
+    TextureStaging Texture::get_staging() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging
+      // LOW_CODEGEN::END::CUSTOM:GETTER_staging
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Texture, staging, TextureStaging);
+    }
+    void Texture::set_staging(TextureStaging p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(Texture, staging, TextureStaging) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging
+      // LOW_CODEGEN::END::CUSTOM:SETTER_staging
+
+      broadcast_observable(N(staging));
+    }
+
+    Low::Renderer::TextureState Texture::get_state() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+      // LOW_CODEGEN::END::CUSTOM:GETTER_state
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Texture, state, Low::Renderer::TextureState);
+    }
+    void Texture::set_state(Low::Renderer::TextureState p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(Texture, state, Low::Renderer::TextureState) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+      // LOW_CODEGEN::END::CUSTOM:SETTER_state
+
+      broadcast_observable(N(state));
     }
 
     Low::Util::Name Texture::get_name() const
@@ -469,6 +645,25 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
+    Low::Renderer::Texture
+    Texture::make_gpu_ready(Low::Util::Name p_Name)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_gpu_ready
+      Texture l_Texture = make(p_Name);
+
+      LOW_ASSERT(GpuTexture::living_count() <
+                     GpuTexture::get_capacity(),
+                 "GpuTexture capacity blown, we cannot set up a new "
+                 "gpu ready texture.");
+
+      l_Texture.set_gpu(GpuTexture::make(p_Name));
+
+      l_Texture.set_state(TextureState::LOADED);
+
+      return l_Texture;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_gpu_ready
+    }
+
     uint32_t Texture::create_instance()
     {
       uint32_t l_Index = 0u;
@@ -478,10 +673,81 @@ namespace Low {
           break;
         }
       }
-      LOW_ASSERT(l_Index < get_capacity(),
-                 "Budget blown for type Texture");
+      if (l_Index >= get_capacity()) {
+        increase_budget();
+      }
       ms_Slots[l_Index].m_Occupied = true;
       return l_Index;
+    }
+
+    void Texture::increase_budget()
+    {
+      uint32_t l_Capacity = get_capacity();
+      uint32_t l_CapacityIncrease =
+          std::max(std::min(l_Capacity, 64u), 1u);
+      l_CapacityIncrease =
+          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+
+      LOW_ASSERT(l_CapacityIncrease > 0,
+                 "Could not increase capacity");
+
+      uint8_t *l_NewBuffer = (uint8_t *)malloc(
+          (l_Capacity + l_CapacityIncrease) * sizeof(TextureData));
+      Low::Util::Instances::Slot *l_NewSlots =
+          (Low::Util::Instances::Slot *)malloc(
+              (l_Capacity + l_CapacityIncrease) *
+              sizeof(Low::Util::Instances::Slot));
+
+      memcpy(l_NewSlots, ms_Slots,
+             l_Capacity * sizeof(Low::Util::Instances::Slot));
+      {
+        memcpy(&l_NewBuffer[offsetof(TextureData, gpu) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(TextureData, gpu) * (l_Capacity)],
+               l_Capacity * sizeof(GpuTexture));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(TextureData, resource) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(TextureData, resource) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(TextureResource));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(TextureData, staging) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(TextureData, staging) * (l_Capacity)],
+            l_Capacity * sizeof(TextureStaging));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(TextureData, state) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(TextureData, state) * (l_Capacity)],
+            l_Capacity * sizeof(Low::Renderer::TextureState));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(TextureData, name) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(TextureData, name) * (l_Capacity)],
+               l_Capacity * sizeof(Low::Util::Name));
+      }
+      for (uint32_t i = l_Capacity;
+           i < l_Capacity + l_CapacityIncrease; ++i) {
+        l_NewSlots[i].m_Occupied = false;
+        l_NewSlots[i].m_Generation = 0;
+      }
+      free(ms_Buffer);
+      free(ms_Slots);
+      ms_Buffer = l_NewBuffer;
+      ms_Slots = l_NewSlots;
+      ms_Capacity = l_Capacity + l_CapacityIncrease;
+
+      LOW_LOG_DEBUG << "Auto-increased budget for Texture from "
+                    << l_Capacity << " to "
+                    << (l_Capacity + l_CapacityIncrease)
+                    << LOW_LOG_END;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

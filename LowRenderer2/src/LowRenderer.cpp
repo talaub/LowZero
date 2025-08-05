@@ -4,14 +4,12 @@
 #include "LowRendererBase.h"
 #include "LowRendererResourceManager.h"
 #include "LowRendererMeshResource.h"
-#include "LowRendererImageResource.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererVkImage.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererGlobals.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererMaterial.h"
-#include "LowRendererTexture.h"
 #include "LowRendererRenderScene.h"
 #include "LowRendererDrawCommand.h"
 #include "LowRendererRenderStep.h"
@@ -23,6 +21,11 @@
 #include "LowRendererGpuMesh.h"
 #include "LowRendererUiDrawCommand.h"
 #include "LowRendererUiCanvas.h"
+#include "LowRendererTexture.h"
+#include "LowRendererTextureResource.h"
+#include "LowRendererGpuTexture.h"
+#include "LowRendererTexturePixels.h"
+#include "LowRendererTextureStaging.h"
 
 #include "LowUtilAssert.h"
 
@@ -33,12 +36,10 @@ namespace Low {
   namespace Renderer {
 
     VkSampler g_TestSampler;
-    Low::Renderer::ImageResource g_Img;
-    VkDescriptorSet g_ImgDS;
+    Low::Renderer::Texture g_Texture;
 
     static void initialize_types()
     {
-      RenderStep::initialize();
       RenderScene::initialize();
       RenderView::initialize();
       RenderObject::initialize();
@@ -48,13 +49,17 @@ namespace Low {
       GpuMesh::initialize();
       GpuSubmesh::initialize();
       MeshResource::initialize();
-      ImageResource::initialize();
       Material::initialize();
-      Texture::initialize();
       DrawCommand::initialize();
       PointLight::initialize();
       UiCanvas::initialize();
       UiDrawCommand::initialize();
+      Texture::initialize();
+      TextureResource::initialize();
+      TextureStaging::initialize();
+      TexturePixels::initialize();
+      GpuTexture::initialize();
+      RenderStep::initialize();
     }
 
     static void cleanup_types()
@@ -64,7 +69,6 @@ namespace Low {
       PointLight::cleanup();
       RenderView::cleanup();
       RenderObject::cleanup();
-      ImageResource::cleanup();
       MeshResource::cleanup();
       GpuSubmesh::cleanup();
       GpuMesh::cleanup();
@@ -72,10 +76,14 @@ namespace Low {
       MeshGeometry::cleanup();
       Mesh::cleanup();
       Material::cleanup();
-      Texture::cleanup();
       RenderScene::cleanup();
       DrawCommand::cleanup();
       RenderStep::cleanup();
+      TextureResource::cleanup();
+      TexturePixels::cleanup();
+      TextureStaging::cleanup();
+      GpuTexture::cleanup();
+      Texture::cleanup();
     }
 
     void initialize()
@@ -89,7 +97,7 @@ namespace Low {
             Low::Util::get_project().dataPath;
         l_BasePath += "/resources/img2d/test.ktx";
 
-        g_Img = Low::Renderer::load_image(l_BasePath);
+        g_Texture = Low::Renderer::load_texture(l_BasePath);
       }
 
       VkSamplerCreateInfo sampl{};
@@ -427,16 +435,14 @@ namespace Low {
       LOW_ASSERT(Vulkan::prepare_tick(p_Delta),
                  "Failed to prepare tick Vulkan renderer");
 
-      {
-        // Setup rendersteps
-        static bool l_IsInitialized = false;
-        if (!l_IsInitialized) {
-          l_IsInitialized = true;
-          for (u32 i = 0; i < RenderStep::living_count(); ++i) {
-            LOW_ASSERT(RenderStep::living_instances()[i].setup(),
-                       "Failed to setup renderstep.");
-          }
+      static bool l_Initialized = false;
+      if (!l_Initialized) {
+
+        for (u32 i = 0; i < RenderStep::living_count(); ++i) {
+          LOW_ASSERT(RenderStep::living_instances()[i].setup(),
+                     "Failed to setup renderstep.");
         }
+        l_Initialized = true;
       }
     }
 
@@ -448,12 +454,8 @@ namespace Low {
       update_drawcommand_buffer(p_Delta);
       tick_materials(p_Delta);
       if (!l_ImageInit) {
-        if (g_Img.get_state() == ImageResourceState::LOADED) {
+        if (g_Texture.get_state() == TextureState::LOADED) {
           l_ImageInit = true;
-          Vulkan::Image l_Img = g_Img.get_texture().get_data_handle();
-          g_ImgDS = ImGui_ImplVulkan_AddTexture(
-              g_TestSampler, l_Img.get_allocated_image().imageView,
-              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
       }
 
@@ -542,34 +544,38 @@ namespace Low {
       ImGui::Begin("Normals");
       ImGui::Image(RenderView::living_instances()[0]
                        .get_gbuffer_normals()
+                       .get_gpu()
                        .get_imgui_texture_id(),
                    ImVec2(256, 256));
       ImGui::End();
       ImGui::Begin("Depth");
       ImGui::Image(RenderView::living_instances()[0]
                        .get_gbuffer_depth()
+                       .get_gpu()
                        .get_imgui_texture_id(),
                    ImVec2(256, 256));
       ImGui::End();
       ImGui::Begin("View Position");
       ImGui::Image(RenderView::living_instances()[0]
                        .get_gbuffer_viewposition()
+                       .get_gpu()
                        .get_imgui_texture_id(),
                    ImVec2(256, 256));
       ImGui::End();
       ImGui::Begin("Albedo");
       ImGui::Image(RenderView::living_instances()[0]
                        .get_gbuffer_albedo()
+                       .get_gpu()
                        .get_imgui_texture_id(),
                    ImVec2(256, 256));
       ImGui::End();
 
       if (l_ImageInit) {
-        ImGui::Begin("Viewport");
+        ImGui::Begin("Mipmapped");
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         ImGui::Image(
-            (ImTextureID)g_ImgDS,
+            (ImTextureID)g_Texture.get_gpu().get_imgui_texture_id(),
             ImVec2{viewportPanelSize.x, viewportPanelSize.y});
 
         ImGui::End();
@@ -597,15 +603,15 @@ namespace Low {
       return l_Mesh;
     }
 
-    ImageResource load_image(Util::String p_ImagePath)
+    Texture load_texture(Util::String p_ImagePath)
     {
-      ImageResource l_ImageResource =
-          ImageResource::make(p_ImagePath);
+      TextureResource l_Resource = TextureResource::make(p_ImagePath);
+      Texture l_Texture = Texture::make(l_Resource.get_name());
+      l_Texture.set_resource(l_Resource);
 
-      _LOW_ASSERT(
-          ResourceManager::load_image_resource(l_ImageResource));
+      _LOW_ASSERT(ResourceManager::load_texture(l_Texture));
 
-      return l_ImageResource;
+      return l_Texture;
     }
   } // namespace Renderer
 } // namespace Low

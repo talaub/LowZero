@@ -14,7 +14,7 @@ enums:
       - name: MemoryLoaded
       - name: UploadingToGpu
       - name: Loaded
-  ImageResourceState:
+  TextureState:
     options:
       - name: Unknown
       - name: Unloaded

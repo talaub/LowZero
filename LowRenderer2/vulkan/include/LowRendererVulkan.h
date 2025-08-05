@@ -99,7 +99,7 @@ namespace Low {
 
       struct TextureUpdate
       {
-        Texture texture;
+        GpuTexture gpuTexture;
         u32 textureIndex;
       };
 

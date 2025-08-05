@@ -115,7 +115,7 @@ types:
       local_transform:
         type: Low::Math::Matrix4x4
 
-  ImageResource:
+  TextureResource:
     private_make: true
     skip_name_serialization: true
     skip_name_deserialization: true
@@ -125,23 +125,88 @@ types:
       path:
         type: Util::String
         private_setter: true
-      resource_image:
-        type: Util::Resource::ImageMipMaps
-        no_setter: true
-      state:
-        type: Low::Renderer::ImageResourceState
-        enum: true
-      texture:
-        type: Low::Renderer::Texture
-      loaded_mips:
-        type: Low::Util::List<uint8_t>
-        getter_name: loaded_mips
-        private_setter: true
     functions:
       make:
         static: true
-        return_type: ImageResource
+        return_type: TextureResource
         return_handle: true
         parameters:
           - name: path
             type: Util::String
+
+  Texture:
+    properties:
+      gpu:
+        type: GpuTexture
+        handle: true
+      resource:
+        type: TextureResource
+        handle: true
+      staging:
+        type: TextureStaging
+        handle: true
+      state:
+        type: Low::Renderer::TextureState
+        enum: true
+    functions:
+      make_gpu_ready:
+        static: true
+        return_type: Low::Renderer::Texture
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+
+  TextureStaging:
+    properties:
+      mip0:
+        type: Low::Renderer::TexturePixels
+        handle: true
+      mip1:
+        type: Low::Renderer::TexturePixels
+        handle: true
+      mip2:
+        type: Low::Renderer::TexturePixels
+        handle: true
+      mip3:
+        type: Low::Renderer::TexturePixels
+        handle: true
+    functions:
+      get_pixels_for_miplevel:
+        return_type: Low::Renderer::TexturePixels
+        return_handle: true
+        parameters:
+          - name: mipLevel
+            type: uint8_t
+
+  TexturePixels:
+    properties:
+      dimensions:
+        type: Low::Math::UVector2
+      channels:
+        type: uint8_t
+      format:
+        type: Low::Util::Resource::Image2DFormat
+      pixel_data:
+        type: Low::Util::List<uint8_t>
+      data_size:
+        type: uint64_t
+      state:
+        type: Low::Renderer::TextureState
+        enum: true
+
+  GpuTexture:
+    dynamic_increase: false
+    properties:
+      data_handle:
+        type: uint64_t
+      imgui_texture_id:
+        type: ImTextureID
+        no_ref: true
+      full_mip_count:
+        type: uint8_t
+      loaded_mips:
+        type: Low::Util::List<uint8_t>
+        getter_name: loaded_mips
+        private_setter: true
+

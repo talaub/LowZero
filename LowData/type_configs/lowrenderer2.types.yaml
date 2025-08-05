@@ -357,14 +357,6 @@ types:
         parameters:
           - name: name
             type: Util::Name
-  Texture:
-    dynamic_increase: false
-    properties:
-      data_handle:
-        type: uint64_t
-      imgui_texture_id:
-        type: ImTextureID
-        no_ref: true
   RenderStep:
     dynamic_increase: false
     properties:

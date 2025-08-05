@@ -9,10 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "imgui.h"
-#include "LowRendererGpuTexture.h"
-#include "LowRendererTextureStaging.h"
-#include "LowRendererTextureResource.h"
+#include "LowUtilResource.h"
 #include "LowRendererTextureState.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -21,38 +18,40 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API TextureData
+    struct LOW_RENDERER2_API TexturePixelsData
     {
-      GpuTexture gpu;
-      TextureResource resource;
-      TextureStaging staging;
+      Low::Math::UVector2 dimensions;
+      uint8_t channels;
+      Low::Util::Resource::Image2DFormat format;
+      Low::Util::List<uint8_t> pixel_data;
+      uint64_t data_size;
       Low::Renderer::TextureState state;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(TextureData);
+        return sizeof(TexturePixelsData);
       }
     };
 
-    struct LOW_RENDERER2_API Texture : public Low::Util::Handle
+    struct LOW_RENDERER2_API TexturePixels : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Texture> ms_LivingInstances;
+      static Low::Util::List<TexturePixels> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Texture();
-      Texture(uint64_t p_Id);
-      Texture(Texture &p_Copy);
+      TexturePixels();
+      TexturePixels(uint64_t p_Id);
+      TexturePixels(TexturePixels &p_Copy);
 
-      static Texture make(Low::Util::Name p_Name);
+      static TexturePixels make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Texture(const Texture &p_Copy)
+      explicit TexturePixels(const TexturePixels &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -66,12 +65,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Texture *living_instances()
+      static TexturePixels *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static Texture find_by_index(uint32_t p_Index);
+      static TexturePixels find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -90,13 +89,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      Texture duplicate(Low::Util::Name p_Name) const;
-      static Texture duplicate(Texture p_Handle,
-                               Low::Util::Name p_Name);
+      TexturePixels duplicate(Low::Util::Name p_Name) const;
+      static TexturePixels duplicate(TexturePixels p_Handle,
+                                     Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static Texture find_by_name(Low::Util::Name p_Name);
+      static TexturePixels find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -107,34 +106,40 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Texture::TYPE_ID &&
+        return p_Handle.get_type() == TexturePixels::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Texture l_Texture = p_Handle.get_id();
-        l_Texture.destroy();
+        TexturePixels l_TexturePixels = p_Handle.get_id();
+        l_TexturePixels.destroy();
       }
 
-      GpuTexture get_gpu() const;
-      void set_gpu(GpuTexture p_Value);
+      Low::Math::UVector2 &get_dimensions() const;
+      void set_dimensions(Low::Math::UVector2 &p_Value);
+      void set_dimensions(u32 p_X, u32 p_Y);
+      void set_dimensions_x(u32 p_Value);
+      void set_dimensions_y(u32 p_Value);
 
-      TextureResource get_resource() const;
-      void set_resource(TextureResource p_Value);
+      uint8_t get_channels() const;
+      void set_channels(uint8_t p_Value);
 
-      TextureStaging get_staging() const;
-      void set_staging(TextureStaging p_Value);
+      Low::Util::Resource::Image2DFormat &get_format() const;
+      void set_format(Low::Util::Resource::Image2DFormat &p_Value);
+
+      Low::Util::List<uint8_t> &get_pixel_data() const;
+      void set_pixel_data(Low::Util::List<uint8_t> &p_Value);
+
+      uint64_t get_data_size() const;
+      void set_data_size(uint64_t p_Value);
 
       Low::Renderer::TextureState get_state() const;
       void set_state(Low::Renderer::TextureState p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
-
-      static Low::Renderer::Texture
-      make_gpu_ready(Low::Util::Name p_Name);
 
     private:
       static uint32_t ms_Capacity;

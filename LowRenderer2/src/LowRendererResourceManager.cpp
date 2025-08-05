@@ -12,6 +12,7 @@
 #include "LowRendererGpuMesh.h"
 #include "LowRendererGpuSubmesh.h"
 #include "LowRendererSubmeshGeometry.h"
+#include "LowRendererTextureStaging.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
@@ -54,7 +55,7 @@ namespace Low {
       struct
       {
         Util::Set<Mesh> meshes;
-        Util::Set<ImageResource> images;
+        Util::Set<Texture> textures;
       } g_LoadSchedules;
 
       struct UploadEntry
@@ -75,8 +76,8 @@ namespace Low {
         {
           struct
           {
-            ImageResource imageResource;
-          } image;
+            Texture texture;
+          } texture;
           struct
           {
             Mesh mesh;
@@ -86,9 +87,9 @@ namespace Low {
           } mesh;
         } data;
 
-        bool is_image_upload()
+        bool is_texture_upload()
         {
-          return ImageResource::is_alive(data.image.imageResource);
+          return Texture::is_alive(data.texture.texture);
         }
 
         bool is_mesh_upload()
@@ -109,22 +110,23 @@ namespace Low {
           g_UploadSchedules(g_UploadEntryComparator,
                             g_UploadSchedulesContainer);
 
-      static bool image_can_load(ImageResource p_ImageResource)
+      static bool texture_can_load(Texture p_Texture)
       {
-        return p_ImageResource.get_state() ==
-               ImageResourceState::UNLOADED;
+        return p_Texture.get_state() == TextureState::UNLOADED &&
+               p_Texture.get_resource().is_alive() &&
+               !p_Texture.get_gpu().is_alive();
       }
 
-      bool load_image_resource(ImageResource p_ImageResource)
+      bool load_texture(Texture p_Texture)
       {
-        // Skip out on scheduling the load for this image resource
+        // Skip out on scheduling the load for this texture
         // because it is either already loaded or in the process of
         // being loaded/unloaded
-        if (!image_can_load(p_ImageResource)) {
+        if (!texture_can_load(p_Texture)) {
           return false;
         }
 
-        g_LoadSchedules.images.insert(p_ImageResource);
+        g_LoadSchedules.textures.insert(p_Texture);
 
         return true;
       }
@@ -138,7 +140,8 @@ namespace Low {
       {
         return p_Mesh.get_state() == MeshState::UNLOADED &&
                !p_Mesh.get_geometry().is_alive() &&
-               !p_Mesh.get_gpu().is_alive();
+               !p_Mesh.get_gpu().is_alive() &&
+               p_Mesh.get_resource().is_alive();
       }
 
       bool load_mesh(Mesh p_Mesh)
@@ -161,19 +164,15 @@ namespace Low {
         return true;
       }
 
-      static bool
-      image_schedule_gpu_upload(ImageResource p_ImageResource)
+      static bool texture_schedule_gpu_upload(Texture p_Texture)
       {
-        Util::Resource::ImageMipMaps &l_ImageMipmaps =
-            p_ImageResource.get_resource_image();
-
-        Math::UVector2 l_Dimension =
-            p_ImageResource.get_resource_image().mip0.dimensions;
+        const Math::UVector2 l_Dimensions =
+            p_Texture.get_staging().get_mip0().get_dimensions();
 
         for (int i = IMAGE_MIPMAP_COUNT - 1; i >= 0; --i) {
           UploadEntry i_Entry;
           i_Entry.uploadedSize = 0;
-          i_Entry.data.image.imageResource = p_ImageResource;
+          i_Entry.data.texture.texture = p_Texture;
           i_Entry.progressPriority = 0;
           i_Entry.lodPriority = i;
           i_Entry.waitPriority = 0;
@@ -182,55 +181,96 @@ namespace Low {
         }
 
         Vulkan::Image l_Image =
-            Vulkan::Image::make(p_ImageResource.get_name());
+            Vulkan::Image::make(p_Texture.get_name());
 
         VkExtent3D l_Extent;
         // Uses the mip0 extent since it's the full resolution
-        l_Extent.width = l_ImageMipmaps.mip0.dimensions.x;
-        l_Extent.height = l_ImageMipmaps.mip0.dimensions.y;
+        l_Extent.width = l_Dimensions.x;
+        l_Extent.height = l_Dimensions.y;
         l_Extent.depth = 1;
 
+        // TODO: Fetch format - format is hardcoded here :/
         Vulkan::ImageUtil::create(l_Image, l_Extent,
                                   VK_FORMAT_R8G8B8A8_UNORM,
                                   VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
-        Texture l_Texture = Texture::make(p_ImageResource.get_name());
-        l_Texture.set_data_handle(l_Image.get_id());
-
-        p_ImageResource.set_texture(l_Texture);
+        if (GpuTexture::living_count() >=
+            GpuTexture::get_capacity()) {
+          // We have too many gpu textures living and we have to
+          // unload one first in order to be able to create this one.
+          // TODO: Implement
+          LOW_NOT_IMPLEMENTED;
+        }
+        GpuTexture l_GpuTexture =
+            GpuTexture::make(p_Texture.get_name());
+        p_Texture.set_gpu(l_GpuTexture);
+        l_GpuTexture.set_data_handle(l_Image.get_id());
+        // TODO: Don't hardcode it to 4
+        l_GpuTexture.set_full_mip_count(IMAGE_MIPMAP_COUNT);
 
         // TODO: Should be changed to transfer command buffer
         Vulkan::ImageUtil::cmd_transition(
             Vulkan::Global::get_current_command_buffer(), l_Image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-        p_ImageResource.set_state(ImageResourceState::UPLOADINGTOGPU);
+        p_Texture.set_state(TextureState::UPLOADINGTOGPU);
         return true;
       }
 
-      static bool
-      image_schedule_memory_load(ImageResource p_ImageResource)
+      static TexturePixels
+      create_texture_pixels(Util::Name p_Name,
+                            Util::Resource::Image2D &p_Image2D)
       {
-        // Small hack. Passing the ImageResource in there directly
-        // does not work for some reason so we're passing in the ID
-        // and converting it back to a ImageResource in the job
-        u64 l_ImageResourceId = p_ImageResource.get_id();
-        // Overall this schedules a job that will load the image data
-        // into the Util::Resource::ImageMipMaps instance stored on
-        // the MeshResource and we'll set the state of the
-        // ImageResource to MEMORYLOADED once this is done.
-        Util::JobManager::default_pool().enqueue(
-            [l_ImageResourceId]() {
-              ImageResource l_ImageResource = l_ImageResourceId;
-              Util::Resource::load_image_mipmaps(
-                  l_ImageResource.get_path(),
-                  l_ImageResource.get_resource_image());
-              l_ImageResource.set_state(
-                  ImageResourceState::MEMORYLOADED);
-            });
+        TexturePixels l_Pixels = TexturePixels::make(N(Mip0));
+        l_Pixels.set_state(TextureState::MEMORYLOADED);
+        // TODO: Maybe not force 4 channels and not hardcode format
+        l_Pixels.set_channels(4);
+        l_Pixels.set_format(p_Image2D.format);
+        l_Pixels.set_data_size(p_Image2D.size);
+        l_Pixels.set_pixel_data(p_Image2D.data);
+        l_Pixels.set_dimensions(p_Image2D.dimensions);
 
-        p_ImageResource.set_state(
-            ImageResourceState::LOADINGTOMEMORY);
+        return l_Pixels;
+      }
+
+      static bool texture_schedule_memory_load(Texture p_Texture)
+      {
+        // Small hack. Passing the texture in there directly
+        // does not work for some reason so we're passing in the ID
+        // and converting it back to a texture in the job
+        u64 l_TextureId = p_Texture.get_id();
+        // Overall this schedules a job that will load the image data
+        // into the texturestaging instance stored on
+        // the texture and we'll set the state of the
+        // texture to MEMORYLOADED once this is done.
+        Util::JobManager::default_pool().enqueue([l_TextureId]() {
+          Texture l_Texture = l_TextureId;
+          Util::Resource::ImageMipMaps l_MipMaps;
+          Util::Resource::load_image_mipmaps(
+              l_Texture.get_resource().get_path(), l_MipMaps);
+
+          TextureStaging l_Staging =
+              TextureStaging::make(l_Texture.get_name());
+          l_Texture.set_staging(l_Staging);
+
+          // Copy pixel data for all mips
+          {
+            // TODO: Remove requirement for all miplevels to be
+            // present
+            l_Staging.set_mip0(
+                create_texture_pixels(N(Mip0), l_MipMaps.mip0));
+            l_Staging.set_mip1(
+                create_texture_pixels(N(Mip1), l_MipMaps.mip1));
+            l_Staging.set_mip2(
+                create_texture_pixels(N(Mip2), l_MipMaps.mip2));
+            l_Staging.set_mip3(
+                create_texture_pixels(N(Mip3), l_MipMaps.mip3));
+          }
+
+          l_Texture.set_state(TextureState::MEMORYLOADED);
+        });
+
+        p_Texture.set_state(TextureState::LOADINGTOMEMORY);
         return true;
       }
 
@@ -366,33 +406,31 @@ namespace Low {
         return true;
       }
 
-      static bool images_tick(float p_Delta)
+      static bool textures_tick(float p_Delta)
       {
-        for (auto it = g_LoadSchedules.images.begin();
-             it != g_LoadSchedules.images.end();) {
-          if (it->get_state() == ImageResourceState::MEMORYLOADED) {
-            // As soon as we see that the imageresource has
+        for (auto it = g_LoadSchedules.textures.begin();
+             it != g_LoadSchedules.textures.end();) {
+          if (it->get_state() == TextureState::MEMORYLOADED) {
+            // As soon as we see that the texture has
             // successfully been loaded to memory we'll start
             // uploading the data to the GPU
-            if (image_schedule_gpu_upload(*it)) {
-              it = g_LoadSchedules.images.erase(it);
+            if (texture_schedule_gpu_upload(*it)) {
+              it = g_LoadSchedules.textures.erase(it);
             } else {
-              LOW_LOG_ERROR << "Failed to schedule image '"
+              LOW_LOG_ERROR << "Failed to schedule texture '"
                             << it->get_name() << "' upload to gpu."
                             << LOW_LOG_END;
               it++;
             }
             continue;
-          } else if (it->get_state() ==
-                     ImageResourceState::UNLOADED) {
-            // If the ImageResource is scheduled to be loaded but
+          } else if (it->get_state() == TextureState::UNLOADED) {
+            // If the texture is scheduled to be loaded but
             // currently still marked as unloaded we will try to
             // schedule the memory load.
-            if (!image_schedule_memory_load(*it)) {
-              LOW_LOG_ERROR << "Failed to schedule ImageResource '"
-                            << it->get_name()
-                            << "' for loading to memory."
-                            << LOW_LOG_END;
+            if (!texture_schedule_memory_load(*it)) {
+              LOW_LOG_ERROR
+                  << "Failed to schedule texture '" << it->get_name()
+                  << "' for loading to memory." << LOW_LOG_END;
             }
             continue;
           }
@@ -602,32 +640,19 @@ namespace Low {
         return false;
       }
 
-      static bool image_upload(UploadEntry &p_UploadEntry)
+      static bool texture_upload(UploadEntry &p_UploadEntry)
       {
-        ImageResource l_ImageResource =
-            p_UploadEntry.data.image.imageResource;
+        Texture l_Texture = p_UploadEntry.data.texture.texture;
 
-        Util::Resource::Image2D &l_Mip =
-            l_ImageResource.get_resource_image().mip0;
+        // Get the correct texturepixels for the miplevel
+        TexturePixels l_Mip =
+            l_Texture.get_staging().get_pixels_for_miplevel(
+                p_UploadEntry.lodPriority);
 
-        // Fetch the correct Util::Resource::Image2D instance for the
-        // mip level requested
-        switch (p_UploadEntry.lodPriority) {
-        case 1:
-          l_Mip = l_ImageResource.get_resource_image().mip1;
-          break;
-        case 2:
-          l_Mip = l_ImageResource.get_resource_image().mip2;
-          break;
-        case 3:
-          l_Mip = l_ImageResource.get_resource_image().mip3;
-          break;
-        }
-
-        const u64 l_FullSize = l_Mip.size;
+        const u64 l_FullSize = l_Mip.get_data_size();
         const u64 l_UploadedSize = p_UploadEntry.uploadedSize;
 
-        u8 *l_ImageData = (u8 *)l_Mip.data.data();
+        u8 *l_ImageData = (u8 *)l_Mip.get_pixel_data().data();
 
         const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
 
@@ -655,17 +680,17 @@ namespace Low {
 
         {
           Vulkan::Image l_Image =
-              l_ImageResource.get_texture().get_data_handle();
+              l_Texture.get_gpu().get_data_handle();
 
           VkImage l_VkImage = l_Image.get_allocated_image().image;
 
           int32_t l_ImagePixelOffset =
               static_cast<int32_t>(l_UploadedSize) /
-              IMAGE_CHANNEL_COUNT;
+              l_Mip.get_channels();
           u32 l_PixelUpload = static_cast<u32>(l_FrameUploadSpace) /
-                              IMAGE_CHANNEL_COUNT;
+                              l_Mip.get_channels();
 
-          const u32 l_ImageWidth = l_Mip.dimensions.x;
+          const u32 l_ImageWidth = l_Mip.get_dimensions().x;
 
           Util::List<VkBufferImageCopy> l_Regions;
 
@@ -699,7 +724,7 @@ namespace Low {
 
             l_ImagePixelOffset += i_PixelsCopiedThisRegion;
             l_StagingOffset +=
-                i_PixelsCopiedThisRegion * IMAGE_CHANNEL_COUNT;
+                i_PixelsCopiedThisRegion * l_Mip.get_channels();
             l_PixelUpload -= i_PixelsCopiedThisRegion;
           }
 
@@ -732,13 +757,22 @@ namespace Low {
 
       static bool conclude_resource_upload(UploadEntry &p_UploadEntry)
       {
-        if (p_UploadEntry.is_image_upload()) {
-          p_UploadEntry.data.image.imageResource.set_state(
-              ImageResourceState::LOADED);
+        if (p_UploadEntry.is_texture_upload()) {
+          Texture l_Texture = p_UploadEntry.data.texture.texture;
+          GpuTexture l_GpuTexture = l_Texture.get_gpu();
+          TextureStaging l_Staging = l_Texture.get_staging();
 
-          Vulkan::Image l_Image =
-              p_UploadEntry.data.image.imageResource.get_texture()
-                  .get_data_handle();
+          // We can set it to laoded even though we might load some
+          // miplevels later, because it allows us to use the texture
+          // already even though not all miplevels may be loaded yet
+          l_Texture.set_state(TextureState::LOADED);
+
+          // We can safely destroy the texturepixels of this mip level
+          // because it will not be needed any longer
+          l_Staging.get_pixels_for_miplevel(p_UploadEntry.lodPriority)
+              .destroy();
+
+          Vulkan::Image l_Image = l_GpuTexture.get_data_handle();
 
           VkImage l_VkImage = l_Image.get_allocated_image().image;
 
@@ -752,15 +786,21 @@ namespace Low {
           // Add the loaded mip to the list of mips loaded and sort
           // said list so that it is easier later on to find the
           // lowest and highest mip loaded for this specific image
-          p_UploadEntry.data.image.imageResource.loaded_mips()
-              .push_back(p_UploadEntry.lodPriority);
-          std::sort(
-              p_UploadEntry.data.image.imageResource.loaded_mips()
-                  .begin(),
-              p_UploadEntry.data.image.imageResource.loaded_mips()
-                  .end());
+          l_GpuTexture.loaded_mips().push_back(
+              p_UploadEntry.lodPriority);
+          std::sort(l_GpuTexture.loaded_mips().begin(),
+                    l_GpuTexture.loaded_mips().end());
 
-          LOW_LOG_DEBUG << "Image fully loaded" << LOW_LOG_END;
+          if (l_GpuTexture.loaded_mips().size() >=
+              l_GpuTexture.get_full_mip_count()) {
+            // If this is the case we have successfully loaded the
+            // last mip level of this texture
+            // So we will delete the staging all together since we
+            // don't need it anymore
+            // At this point all texturepixels associated with this
+            // staging should already be destroyed
+            l_Staging.destroy();
+          }
         } else if (p_UploadEntry.is_mesh_upload()) {
           GpuSubmesh l_GpuSubmesh =
               p_UploadEntry.data.mesh.gpuSubmesh;
@@ -793,9 +833,9 @@ namespace Low {
       static bool upload_resource(UploadEntry &p_UploadEntry)
       {
         volatile int i = 0;
-        if (p_UploadEntry.is_image_upload() &&
+        if (p_UploadEntry.is_texture_upload() &&
             p_UploadEntry.progressPriority < 100) {
-          return image_upload(p_UploadEntry);
+          return texture_upload(p_UploadEntry);
         } else if (p_UploadEntry.is_mesh_upload() &&
                    p_UploadEntry.progressPriority < 100) {
           return mesh_upload(p_UploadEntry);
@@ -830,7 +870,7 @@ namespace Low {
       void tick(float p_Delta)
       {
         _LOW_ASSERT(meshes_tick(p_Delta));
-        _LOW_ASSERT(images_tick(p_Delta));
+        _LOW_ASSERT(textures_tick(p_Delta));
         _LOW_ASSERT(uploads_tick(p_Delta));
       }
     } // namespace ResourceManager

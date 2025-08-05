@@ -10,7 +10,7 @@ namespace Low {
       bool upload_mesh(Mesh p_Mesh);
       // bool unload_mesh_resource(MeshResource p_MeshResource);
 
-      bool load_image_resource(ImageResource p_ImageResource);
+      bool load_texture(Texture p_Texture);
 
       void tick(float p_Delta);
     } // namespace ResourceManager

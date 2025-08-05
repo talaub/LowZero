@@ -9,11 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "imgui.h"
-#include "LowRendererGpuTexture.h"
-#include "LowRendererTextureStaging.h"
-#include "LowRendererTextureResource.h"
-#include "LowRendererTextureState.h"
+#include <imgui.h>
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -21,38 +17,38 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API TextureData
+    struct LOW_RENDERER2_API GpuTextureData
     {
-      GpuTexture gpu;
-      TextureResource resource;
-      TextureStaging staging;
-      Low::Renderer::TextureState state;
+      uint64_t data_handle;
+      ImTextureID imgui_texture_id;
+      uint8_t full_mip_count;
+      Low::Util::List<uint8_t> loaded_mips;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(TextureData);
+        return sizeof(GpuTextureData);
       }
     };
 
-    struct LOW_RENDERER2_API Texture : public Low::Util::Handle
+    struct LOW_RENDERER2_API GpuTexture : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Texture> ms_LivingInstances;
+      static Low::Util::List<GpuTexture> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Texture();
-      Texture(uint64_t p_Id);
-      Texture(Texture &p_Copy);
+      GpuTexture();
+      GpuTexture(uint64_t p_Id);
+      GpuTexture(GpuTexture &p_Copy);
 
-      static Texture make(Low::Util::Name p_Name);
+      static GpuTexture make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Texture(const Texture &p_Copy)
+      explicit GpuTexture(const GpuTexture &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -66,12 +62,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Texture *living_instances()
+      static GpuTexture *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static Texture find_by_index(uint32_t p_Index);
+      static GpuTexture find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -90,13 +86,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      Texture duplicate(Low::Util::Name p_Name) const;
-      static Texture duplicate(Texture p_Handle,
-                               Low::Util::Name p_Name);
+      GpuTexture duplicate(Low::Util::Name p_Name) const;
+      static GpuTexture duplicate(GpuTexture p_Handle,
+                                  Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static Texture find_by_name(Low::Util::Name p_Name);
+      static GpuTexture find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -107,41 +103,39 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Texture::TYPE_ID &&
+        return p_Handle.get_type() == GpuTexture::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Texture l_Texture = p_Handle.get_id();
-        l_Texture.destroy();
+        GpuTexture l_GpuTexture = p_Handle.get_id();
+        l_GpuTexture.destroy();
       }
 
-      GpuTexture get_gpu() const;
-      void set_gpu(GpuTexture p_Value);
+      uint64_t get_data_handle() const;
+      void set_data_handle(uint64_t p_Value);
 
-      TextureResource get_resource() const;
-      void set_resource(TextureResource p_Value);
+      ImTextureID get_imgui_texture_id() const;
+      void set_imgui_texture_id(ImTextureID p_Value);
 
-      TextureStaging get_staging() const;
-      void set_staging(TextureStaging p_Value);
+      uint8_t get_full_mip_count() const;
+      void set_full_mip_count(uint8_t p_Value);
 
-      Low::Renderer::TextureState get_state() const;
-      void set_state(Low::Renderer::TextureState p_Value);
+      Low::Util::List<uint8_t> &loaded_mips() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static Low::Renderer::Texture
-      make_gpu_ready(Low::Util::Name p_Name);
-
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
-      static void increase_budget();
+      void set_loaded_mips(Low::Util::List<uint8_t> &p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::GpuTexture> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
