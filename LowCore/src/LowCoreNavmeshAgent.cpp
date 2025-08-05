@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 #include "LowCoreTransform.h"
@@ -113,6 +114,8 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -156,6 +159,7 @@ namespace Low {
         l_TypeInfo.serialize = &NavmeshAgent::serialize;
         l_TypeInfo.deserialize = &NavmeshAgent::deserialize;
         l_TypeInfo.find_by_index = &NavmeshAgent::_find_by_index;
+        l_TypeInfo.notify = &NavmeshAgent::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &NavmeshAgent::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -536,6 +540,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void NavmeshAgent::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 NavmeshAgent::observe(Low::Util::Name p_Observable,
+                                Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void NavmeshAgent::notify(Low::Util::Handle p_Observed,
+                                Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void NavmeshAgent::_notify(Low::Util::Handle p_Observer,
+                                 Low::Util::Handle p_Observed,
+                                 Low::Util::Name p_Observable)
+      {
+        NavmeshAgent l_NavmeshAgent = p_Observer.get_id();
+        l_NavmeshAgent.notify(p_Observed, p_Observable);
+      }
+
       float NavmeshAgent::get_speed() const
       {
         _LOW_ASSERT(is_alive());
@@ -578,6 +617,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_speed
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_speed
+
+        broadcast_observable(N(speed));
       }
 
       float NavmeshAgent::get_height() const
@@ -622,6 +663,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_height
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_height
+
+        broadcast_observable(N(height));
       }
 
       float NavmeshAgent::get_radius() const
@@ -666,6 +709,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_radius
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_radius
+
+        broadcast_observable(N(radius));
       }
 
       Low::Math::Vector3 &NavmeshAgent::get_offset() const
@@ -737,6 +782,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_offset
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_offset
+
+        broadcast_observable(N(offset));
       }
 
       int NavmeshAgent::get_agent_index() const
@@ -766,6 +813,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_agent_index
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_agent_index
+
+        broadcast_observable(N(agent_index));
       }
 
       Low::Core::Entity NavmeshAgent::get_entity() const
@@ -795,6 +844,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId NavmeshAgent::get_unique_id() const
@@ -825,6 +876,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       void NavmeshAgent::set_target_position(

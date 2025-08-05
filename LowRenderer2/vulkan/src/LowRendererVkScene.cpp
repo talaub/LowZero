@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererGlobals.h"
@@ -90,6 +91,8 @@ namespace Low {
         BufferUtil::destroy_buffer(get_point_light_buffer());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -130,6 +133,7 @@ namespace Low {
         l_TypeInfo.serialize = &Scene::serialize;
         l_TypeInfo.deserialize = &Scene::deserialize;
         l_TypeInfo.find_by_index = &Scene::_find_by_index;
+        l_TypeInfo.notify = &Scene::_notify;
         l_TypeInfo.find_by_name = &Scene::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Scene::_make;
@@ -354,6 +358,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void
+      Scene::broadcast_observable(Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 Scene::observe(Low::Util::Name p_Observable,
+                         Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void Scene::notify(Low::Util::Handle p_Observed,
+                         Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void Scene::_notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable)
+      {
+        Scene l_Scene = p_Observer.get_id();
+        l_Scene.notify(p_Observed, p_Observable);
+      }
+
       bool *Scene::get_point_light_slots() const
       {
         _LOW_ASSERT(is_alive());
@@ -378,6 +417,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_slots
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_slots
+
+        broadcast_observable(N(point_light_slots));
       }
 
       AllocatedBuffer &Scene::get_point_light_buffer() const
@@ -405,6 +446,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
+
+        broadcast_observable(N(point_light_buffer));
       }
 
       Low::Util::Name Scene::get_name() const
@@ -431,6 +474,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+        broadcast_observable(N(name));
       }
 
       uint32_t Scene::create_instance()

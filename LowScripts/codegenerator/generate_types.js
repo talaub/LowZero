@@ -469,7 +469,24 @@ function generate_header(p_Type) {
   t += empty();
 
   t += line(`bool is_alive() const;`, n);
-
+  t += empty();
+  t += line(
+    `u64 observe(Low::Util::Name p_Observable, Low::Util::Handle p_Observer) const;`,
+    n,
+  );
+  t += line(
+    `void notify(Low::Util::Handle p_Observed, Low::Util::Name p_Observable);`,
+    n,
+  );
+  t += line(
+    `void broadcast_observable(Low::Util::Name p_Observable) const;`,
+    n,
+  );
+  t += empty();
+  t += line(
+    `static void _notify(Low::Util::Handle p_Observer, Low::Util::Handle p_Observed, Low::Util::Name p_Observable);`,
+    n,
+  );
   t += empty();
   t += line(`static uint32_t get_capacity();`);
   t += empty();
@@ -709,6 +726,7 @@ function generate_source(p_Type) {
   t += include("LowUtilProfiler.h", n);
   t += include("LowUtilConfig.h", n);
   t += include("LowUtilSerialization.h", n);
+  t += include("LowUtilObserverManager.h", n);
   t += empty();
   if (p_Type.component) {
     t += include(`LowCorePrefabInstance.h`);
@@ -962,6 +980,8 @@ function generate_source(p_Type) {
   t += l_CustomCode;
   t += line(l_DestroyEndMarker);
   t += empty();
+  t += line(`broadcast_observable(OBSERVABLE_DESTROY);`);
+  t += empty();
   if (p_Type.unique_id) {
     t += line(`Low::Util::remove_unique_id(get_unique_id());`);
     t += empty();
@@ -1027,6 +1047,7 @@ function generate_source(p_Type) {
   t += line(`l_TypeInfo.serialize = &${p_Type.name}::serialize;`);
   t += line(`l_TypeInfo.deserialize = &${p_Type.name}::deserialize;`);
   t += line(`l_TypeInfo.find_by_index = &${p_Type.name}::_find_by_index;`);
+  t += line(`l_TypeInfo.notify = &${p_Type.name}::_notify;`);
   if (p_Type.component) {
     t += line(`l_TypeInfo.make_default = nullptr;`);
     t += line(`l_TypeInfo.make_component = &${p_Type.name}::_make;`);
@@ -1663,6 +1684,74 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
 
+  t += line(
+    `void ${p_Type.name}::broadcast_observable(Low::Util::Name p_Observable) const {`,
+    n,
+  );
+
+  t += line(`Low::Util::ObserverKey l_Key;`);
+  t += line(`l_Key.handleId = get_id();`);
+  t += line(`l_Key.observableName = p_Observable.m_Index;`);
+  t += empty();
+  t += line(`Low::Util::notify(l_Key);`);
+  t += line("}");
+  t += empty();
+
+  t += line(
+    `u64 ${p_Type.name}::observe(Low::Util::Name p_Observable, Low::Util::Handle p_Observer) const {`,
+    n,
+  );
+
+  t += line(`Low::Util::ObserverKey l_Key;`);
+  t += line(`l_Key.handleId = get_id();`);
+  t += line(`l_Key.observableName = p_Observable.m_Index;`);
+  t += empty();
+  t += line(`return Low::Util::observe(l_Key, p_Observer);`);
+
+  t += line("}");
+  t += empty();
+
+  const l_NotifyMarkerName = `CUSTOM:NOTIFY`;
+
+  const l_NotifyBeginMarker = get_marker_begin(l_NotifyMarkerName);
+  const l_NotifyEndMarker = get_marker_end(l_NotifyMarkerName);
+
+  const l_NotifyBeginMarkerIndex = find_begin_marker_end(
+    l_OldCode,
+    l_NotifyMarkerName,
+  );
+
+  let l_NotifyCustomCode = "";
+
+  if (l_NotifyBeginMarkerIndex >= 0) {
+    const l_NotifyEndMarkerIndex = find_end_marker_start(
+      l_OldCode,
+      l_NotifyMarkerName,
+    );
+
+    l_NotifyCustomCode = l_OldCode.substring(
+      l_NotifyBeginMarkerIndex,
+      l_NotifyEndMarkerIndex,
+    );
+  }
+  t += line(
+    `void ${p_Type.name}::notify(Low::Util::Handle p_Observed, Low::Util::Name p_Observable) {`,
+  );
+  t += line(l_NotifyBeginMarker);
+  t += l_NotifyCustomCode;
+  t += line(l_NotifyEndMarker);
+  t += line("}");
+
+  t += empty();
+
+  t += line(
+    `void ${p_Type.name}::_notify(Low::Util::Handle p_Observer, Low::Util::Handle p_Observed, Low::Util::Name p_Observable) {`,
+  );
+  t += line(`${p_Type.name} l_${p_Type.name} = p_Observer.get_id();`);
+  t += line(`l_${p_Type.name}.notify(p_Observed, p_Observable);`);
+  t += line("}");
+  t += empty();
+
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     if (!i_Prop.no_getter && !i_Prop.no_data) {
       t += line(
@@ -1892,6 +1981,8 @@ function generate_source(p_Type) {
       t += line(i_SetterBeginMarker);
       t += i_CustomCode;
       t += line(i_SetterEndMarker);
+      t += empty();
+      t += line(`broadcast_observable(N(${i_PropName}));`);
       if (i_Prop.dirty_flag && !i_Prop.dirty_flag_no_check) {
         t += line("}");
       }

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
@@ -88,6 +89,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -129,6 +132,7 @@ namespace Low {
       l_TypeInfo.serialize = &MaterialType::serialize;
       l_TypeInfo.deserialize = &MaterialType::deserialize;
       l_TypeInfo.find_by_index = &MaterialType::_find_by_index;
+      l_TypeInfo.notify = &MaterialType::_notify;
       l_TypeInfo.find_by_name = &MaterialType::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &MaterialType::_make;
@@ -417,6 +421,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void MaterialType::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 MaterialType::observe(Low::Util::Name p_Observable,
+                              Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void MaterialType::notify(Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void MaterialType::_notify(Low::Util::Handle p_Observer,
+                               Low::Util::Handle p_Observed,
+                               Low::Util::Name p_Observable)
+    {
+      MaterialType l_MaterialType = p_Observer.get_id();
+      l_MaterialType.notify(p_Observed, p_Observable);
+    }
+
     GraphicsPipelineConfig &MaterialType::get_gbuffer_pipeline() const
     {
       _LOW_ASSERT(is_alive());
@@ -447,6 +486,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_pipeline
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_pipeline
+
+      broadcast_observable(N(gbuffer_pipeline));
     }
 
     GraphicsPipelineConfig &MaterialType::get_depth_pipeline() const
@@ -479,6 +520,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_pipeline
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline
+
+      broadcast_observable(N(depth_pipeline));
     }
 
     bool MaterialType::is_internal() const
@@ -513,6 +556,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_internal
+
+      broadcast_observable(N(internal));
     }
 
     Util::List<MaterialTypeProperty> &
@@ -546,6 +591,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_properties
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_properties
+
+      broadcast_observable(N(properties));
     }
 
     Low::Util::Name MaterialType::get_name() const
@@ -575,6 +622,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     uint32_t MaterialType::create_instance()

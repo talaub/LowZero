@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
@@ -113,6 +114,8 @@ namespace Low {
           }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+          broadcast_observable(OBSERVABLE_DESTROY);
+
           Low::Util::remove_unique_id(get_unique_id());
 
           WRITE_LOCK(l_Lock);
@@ -157,6 +160,7 @@ namespace Low {
           l_TypeInfo.serialize = &Text::serialize;
           l_TypeInfo.deserialize = &Text::deserialize;
           l_TypeInfo.find_by_index = &Text::_find_by_index;
+          l_TypeInfo.notify = &Text::_notify;
           l_TypeInfo.make_default = nullptr;
           l_TypeInfo.make_component = &Text::_make;
           l_TypeInfo.duplicate_default = nullptr;
@@ -534,6 +538,41 @@ namespace Low {
           return l_Handle;
         }
 
+        void
+        Text::broadcast_observable(Low::Util::Name p_Observable) const
+        {
+          Low::Util::ObserverKey l_Key;
+          l_Key.handleId = get_id();
+          l_Key.observableName = p_Observable.m_Index;
+
+          Low::Util::notify(l_Key);
+        }
+
+        u64 Text::observe(Low::Util::Name p_Observable,
+                          Low::Util::Handle p_Observer) const
+        {
+          Low::Util::ObserverKey l_Key;
+          l_Key.handleId = get_id();
+          l_Key.observableName = p_Observable.m_Index;
+
+          return Low::Util::observe(l_Key, p_Observer);
+        }
+
+        void Text::notify(Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable)
+        {
+          // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+          // LOW_CODEGEN::END::CUSTOM:NOTIFY
+        }
+
+        void Text::_notify(Low::Util::Handle p_Observer,
+                           Low::Util::Handle p_Observed,
+                           Low::Util::Name p_Observable)
+        {
+          Text l_Text = p_Observer.get_id();
+          l_Text.notify(p_Observed, p_Observable);
+        }
+
         Low::Util::String &Text::get_text() const
         {
           _LOW_ASSERT(is_alive());
@@ -567,6 +606,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_text
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_text
+
+          broadcast_observable(N(text));
         }
 
         Low::Core::Font Text::get_font() const
@@ -602,6 +643,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_font
+
+          broadcast_observable(N(font));
         }
 
         Low::Math::Color &Text::get_color() const
@@ -638,6 +681,8 @@ namespace Low {
           }
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_color
+
+          broadcast_observable(N(color));
         }
 
         float Text::get_size() const
@@ -667,6 +712,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_size
+
+          broadcast_observable(N(size));
         }
 
         TextContentFitOptions Text::get_content_fit_approach() const
@@ -699,6 +746,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content_fit_approach
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_content_fit_approach
+
+          broadcast_observable(N(content_fit_approach));
         }
 
         Low::Core::UI::Element Text::get_element() const
@@ -728,6 +777,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_element
+
+          broadcast_observable(N(element));
         }
 
         Low::Util::UniqueId Text::get_unique_id() const
@@ -757,6 +808,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+          broadcast_observable(N(unique_id));
         }
 
         uint32_t Text::create_instance()

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
@@ -103,6 +104,8 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -146,6 +149,7 @@ namespace Low {
         l_TypeInfo.serialize = &PointLight::serialize;
         l_TypeInfo.deserialize = &PointLight::deserialize;
         l_TypeInfo.find_by_index = &PointLight::_find_by_index;
+        l_TypeInfo.notify = &PointLight::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &PointLight::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -402,6 +406,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void PointLight::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 PointLight::observe(Low::Util::Name p_Observable,
+                              Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void PointLight::notify(Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void PointLight::_notify(Low::Util::Handle p_Observer,
+                               Low::Util::Handle p_Observed,
+                               Low::Util::Name p_Observable)
+      {
+        PointLight l_PointLight = p_Observer.get_id();
+        l_PointLight.notify(p_Observed, p_Observable);
+      }
+
       Low::Math::ColorRGB &PointLight::get_color() const
       {
         _LOW_ASSERT(is_alive());
@@ -444,6 +483,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
+
+        broadcast_observable(N(color));
       }
 
       float PointLight::get_intensity() const
@@ -488,6 +529,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_intensity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_intensity
+
+        broadcast_observable(N(intensity));
       }
 
       Low::Core::Entity PointLight::get_entity() const
@@ -517,6 +560,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId PointLight::get_unique_id() const
@@ -547,6 +592,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       uint32_t PointLight::create_instance()

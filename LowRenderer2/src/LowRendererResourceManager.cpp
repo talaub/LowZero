@@ -8,6 +8,10 @@
 #include "LowRendererSubmesh.h"
 #include "LowRendererMeshInfo.h"
 #include "LowRendererVulkan.h"
+#include "LowRendererMeshGeometry.h"
+#include "LowRendererGpuMesh.h"
+#include "LowRendererGpuSubmesh.h"
+#include "LowRendererSubmeshGeometry.h"
 
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
@@ -31,7 +35,7 @@ namespace Low {
         };
         u64 priority;
 
-        MeshResource meshResource;
+        Mesh mesh;
 
         u32 submeshCount;
       };
@@ -49,7 +53,7 @@ namespace Low {
 
       struct
       {
-        Util::Set<MeshResource> meshes;
+        Util::Set<Mesh> meshes;
         Util::Set<ImageResource> images;
       } g_LoadSchedules;
 
@@ -75,11 +79,10 @@ namespace Low {
           } image;
           struct
           {
-            MeshResource meshResource;
-            Submesh submesh;
-            MeshInfo meshInfo;
+            Mesh mesh;
+            SubmeshGeometry submeshGeometry;
+            GpuSubmesh gpuSubmesh;
             u32 submeshIndex;
-            u32 meshInfoIndex;
           } mesh;
         } data;
 
@@ -90,7 +93,7 @@ namespace Low {
 
         bool is_mesh_upload()
         {
-          return MeshResource::is_alive(data.mesh.meshResource);
+          return Mesh::is_alive(data.mesh.mesh);
         }
       };
 
@@ -131,31 +134,30 @@ namespace Low {
         return true;
       }
 
-      static bool mesh_can_load(MeshResource p_MeshResource)
+      static bool mesh_can_load(Mesh p_Mesh)
       {
-        return p_MeshResource.get_state() ==
-               MeshResourceState::UNLOADED;
+        return p_Mesh.get_state() == MeshState::UNLOADED &&
+               !p_Mesh.get_geometry().is_alive() &&
+               !p_Mesh.get_gpu().is_alive();
       }
 
-      bool load_mesh_resource(MeshResource p_MeshResource)
+      bool load_mesh(Mesh p_Mesh)
       {
         // Skip out on scheduling the load for this mesh resource
         // because it is either already loaded or in the process of
         // being loaded/unloaded
-        if (!mesh_can_load(p_MeshResource)) {
+        if (!mesh_can_load(p_Mesh)) {
           return false;
         }
 
-        g_LoadSchedules.meshes.insert(p_MeshResource);
+        g_LoadSchedules.meshes.insert(p_Mesh);
 
         return true;
       }
 
-      bool unload_mesh_resource(MeshResource p_MeshResource)
+      bool unload_mesh(Mesh p_Mesh)
       {
-        // TODO: Implement
-        LOW_ASSERT(false, "Tried to unload mesh resource but the "
-                          "method is not yet implemented");
+        LOW_NOT_IMPLEMENTED;
         return true;
       }
 
@@ -232,101 +234,105 @@ namespace Low {
         return true;
       }
 
-      static bool
-      mesh_schedule_memory_load(MeshResource p_MeshResource)
+      static bool mesh_schedule_memory_load(Mesh p_Mesh)
       {
-        // Small hack. Passing the MeshResource in there directly does
+        // Small hack. Passing the mesh in there directly does
         // not work for some reason so we're passing in the ID and
-        // converting it back to a MeshResource in the job
-        u64 l_MeshResourceId = p_MeshResource.get_id();
+        // converting it back to a mesh in the job
+        u64 l_MeshId = p_Mesh.get_id();
         // Overall this schedules a job that will load the mesh data
-        // into the Util::Resource::Mesh instance stored on the
-        // MeshResource and we'll set the state of the MeshResource to
-        // MEMORYLOADED once this is done.
-        Util::JobManager::default_pool().enqueue(
-            [l_MeshResourceId]() {
-              MeshResource l_MeshResource = l_MeshResourceId;
-              Util::Resource::load_mesh(
-                  l_MeshResource.get_path(),
-                  l_MeshResource.get_resource_mesh());
+        // into the meshgeometry and we'll set the state of the mesh
+        // to MEMORYLOADED once this is done.
+        Util::JobManager::default_pool().enqueue([l_MeshId]() {
+          Mesh l_Mesh = l_MeshId;
+          MeshGeometry l_MeshGeometry =
+              MeshGeometry::make(l_Mesh.get_name());
+          l_Mesh.set_geometry(l_MeshGeometry);
 
-              for (auto it = l_MeshResource.get_resource_mesh()
-                                 .submeshes.begin();
-                   it !=
-                   l_MeshResource.get_resource_mesh().submeshes.end();
-                   ++it) {
-                Submesh i_Submesh = Submesh::make(it->name);
-                i_Submesh.set_meshinfo_count(it->meshInfos.size());
-                i_Submesh.set_state(MeshResourceState::MEMORYLOADED);
-                i_Submesh.set_uploaded_meshinfo_count(0);
+          Util::Resource::Mesh l_ResourceMesh;
 
-                for (auto mit = it->meshInfos.begin();
-                     mit != it->meshInfos.end(); ++mit) {
-                  MeshInfo i_MeshInfo = MeshInfo::make(i_Submesh);
-                  i_MeshInfo.set_vertex_count(mit->vertices.size());
-                  i_MeshInfo.set_index_count(mit->indices.size());
-                  i_MeshInfo.set_uploaded_vertex_count(0);
-                  i_MeshInfo.set_uploaded_index_count(0);
-                  i_MeshInfo.set_state(
-                      MeshResourceState::MEMORYLOADED);
-                  i_Submesh.get_meshinfos().push_back(i_MeshInfo);
-                }
-                l_MeshResource.get_submeshes().push_back(i_Submesh);
-              }
+          Util::Resource::load_mesh(l_Mesh.get_resource().get_path(),
+                                    l_ResourceMesh);
 
-              l_MeshResource.set_state(
-                  MeshResourceState::MEMORYLOADED);
-            });
+          u32 l_SubmeshCount = 0u;
 
-        p_MeshResource.set_state(MeshResourceState::LOADINGTOMEMORY);
+          for (auto it = l_ResourceMesh.submeshes.begin();
+               it != l_ResourceMesh.submeshes.end(); ++it) {
+            for (auto mit = it->meshInfos.begin();
+                 mit != it->meshInfos.end(); ++mit) {
+              SubmeshGeometry i_SubmeshGeometry =
+                  SubmeshGeometry::make(it->name);
+              i_SubmeshGeometry.set_vertex_count(
+                  mit->vertices.size());
+              i_SubmeshGeometry.set_index_count(mit->indices.size());
+              i_SubmeshGeometry.set_state(MeshState::MEMORYLOADED);
+              i_SubmeshGeometry.set_vertices(mit->vertices);
+              i_SubmeshGeometry.set_indices(mit->indices);
+              l_MeshGeometry.get_submeshes().push_back(
+                  i_SubmeshGeometry);
+              l_SubmeshCount++;
+            }
+          }
+
+          l_MeshGeometry.set_submesh_count(l_SubmeshCount);
+
+          l_Mesh.set_state(MeshState::MEMORYLOADED);
+        });
+
+        p_Mesh.set_state(MeshState::LOADINGTOMEMORY);
         return true;
       }
 
-      static bool
-      mesh_schedule_gpu_upload(MeshResource p_MeshResource)
+      static bool mesh_schedule_gpu_upload(Mesh p_Mesh)
       {
-        p_MeshResource.set_submesh_count(
-            p_MeshResource.get_resource_mesh().submeshes.size());
-        p_MeshResource.set_uploaded_submesh_count(0);
+        LOW_ASSERT(!p_Mesh.get_gpu().is_alive(),
+                   "This mesh already has a GPU entry.");
+        LOW_ASSERT(p_Mesh.get_geometry().is_alive(),
+                   "This mesh cannot be uploaded to the gpu because "
+                   "it does not have any geometry.");
+        LOW_ASSERT(p_Mesh.get_state() == MeshState::MEMORYLOADED,
+                   "This mesh cannot be uploaded to the gpu because "
+                   "it is not marked as memory loaded.");
 
-        u32 l_FullMeshInfoCount = 0;
+        GpuMesh l_GpuMesh = GpuMesh::make(p_Mesh.get_name());
+        l_GpuMesh.set_uploaded_submesh_count(0);
+
+        p_Mesh.set_gpu(l_GpuMesh);
 
         int l_Index = 0;
-        for (auto it =
-                 p_MeshResource.get_resource_mesh().submeshes.begin();
-             it != p_MeshResource.get_resource_mesh().submeshes.end();
+        for (auto it = p_Mesh.get_geometry().get_submeshes().begin();
+             it != p_Mesh.get_geometry().get_submeshes().end();
              ++it) {
 
-          int i_MeshIndex = 0;
+          LOW_ASSERT(it->is_alive(),
+                     "Cannot upload dead submesh geometry to gpu.");
+          GpuSubmesh i_GpuSubmesh = GpuSubmesh::make(it->get_name());
+          i_GpuSubmesh.set_state(MeshState::MEMORYLOADED);
+          i_GpuSubmesh.set_vertex_count(it->get_vertex_count());
+          i_GpuSubmesh.set_index_count(it->get_index_count());
+          i_GpuSubmesh.set_uploaded_vertex_count(0);
+          i_GpuSubmesh.set_uploaded_index_count(0);
 
-          for (auto mit = it->meshInfos.begin();
-               mit != it->meshInfos.end(); ++mit) {
+          l_GpuMesh.get_submeshes().push_back(i_GpuSubmesh);
 
-            UploadEntry i_Entry;
-            i_Entry.data.mesh.meshResource = p_MeshResource;
-            i_Entry.data.mesh.submeshIndex = l_Index;
-            i_Entry.data.mesh.meshInfoIndex = i_MeshIndex;
-            i_Entry.data.mesh.submesh =
-                p_MeshResource.get_submeshes()[l_Index];
-            i_Entry.data.mesh.meshInfo =
-                i_Entry.data.mesh.submesh
-                    .get_meshinfos()[i_MeshIndex];
-            i_Entry.progressPriority = 0;
-            i_Entry.lodPriority = 0;
-            i_Entry.waitPriority = 0;
-            i_Entry.resourcePriority = 0;
-            i_Entry.uploadedSize = 0;
-            g_UploadSchedules.emplace(i_Entry);
-
-            i_MeshIndex++;
-            l_FullMeshInfoCount++;
-          }
+          UploadEntry i_Entry;
+          i_Entry.data.mesh.mesh = p_Mesh;
+          i_Entry.data.mesh.submeshIndex = l_Index;
+          i_Entry.data.mesh.gpuSubmesh = i_GpuSubmesh;
+          i_Entry.data.mesh.submeshGeometry = it->get_id();
+          i_Entry.progressPriority = 0;
+          i_Entry.lodPriority = 0;
+          i_Entry.waitPriority = 0;
+          i_Entry.resourcePriority = 0;
+          i_Entry.uploadedSize = 0;
+          g_UploadSchedules.emplace(i_Entry);
 
           l_Index++;
         }
 
-        p_MeshResource.set_full_meshinfo_count(l_FullMeshInfoCount);
-        p_MeshResource.set_state(MeshResourceState::UPLOADINGTOGPU);
+        p_Mesh.get_gpu().set_submesh_count(l_Index);
+
+        p_Mesh.set_state(MeshState::UPLOADINGTOGPU);
         return true;
       }
 
@@ -334,25 +340,24 @@ namespace Low {
       {
         for (auto it = g_LoadSchedules.meshes.begin();
              it != g_LoadSchedules.meshes.end(); ++it) {
-          if (it->get_state() == MeshResourceState::MEMORYLOADED) {
-            // As soon as we see that the meshresource has
+          if (it->get_state() == MeshState::MEMORYLOADED) {
+            // As soon as we see that the mesh has
             // successfully been loaded to memory we'll start
             // uploading the data to the GPU
             if (!mesh_schedule_gpu_upload(*it)) {
-              LOW_LOG_ERROR << "Failed to schedule MeshResource '"
+              LOW_LOG_ERROR << "Failed to schedule Mesh '"
                             << it->get_name() << "' upload to gpu."
                             << LOW_LOG_END;
             }
             continue;
-          } else if (it->get_state() == MeshResourceState::UNLOADED) {
-            // If the MeshResource is scheduled to be loaded but
+          } else if (it->get_state() == MeshState::UNLOADED) {
+            // If the mesh is scheduled to be loaded but
             // currently still marked as unloaded we will try to
             // schedule the memory load.
             if (!mesh_schedule_memory_load(*it)) {
-              LOW_LOG_ERROR << "Failed to schedule MeshResource '"
-                            << it->get_name()
-                            << "' for loading to memory."
-                            << LOW_LOG_END;
+              LOW_LOG_ERROR
+                  << "Failed to schedule mesh '" << it->get_name()
+                  << "' for loading to memory." << LOW_LOG_END;
             }
             continue;
           }
@@ -409,7 +414,7 @@ namespace Low {
             return false;
           }
 
-          unload_mesh_resource(g_MeshEntries.top().meshResource);
+          unload_mesh(g_MeshEntries.top().mesh);
         }
 
         return true;
@@ -443,22 +448,21 @@ namespace Low {
 
       static bool mesh_upload(UploadEntry &p_UploadEntry)
       {
-        MeshInfo l_RendererMeshInfo =
-            p_UploadEntry.data.mesh.meshInfo;
-        Submesh l_RendererSubmesh = p_UploadEntry.data.mesh.submesh;
-        {
+        SubmeshGeometry l_SubmeshGeometry =
+            p_UploadEntry.data.mesh.submeshGeometry;
+        GpuSubmesh l_GpuSubmesh = p_UploadEntry.data.mesh.gpuSubmesh;
 
-          if (l_RendererMeshInfo.get_state() ==
-              MeshResourceState::MEMORYLOADED) {
-            l_RendererMeshInfo.set_state(
-                MeshResourceState::UPLOADINGTOGPU);
+        {
+          if (l_SubmeshGeometry.get_state() ==
+              MeshState::MEMORYLOADED) {
+            l_SubmeshGeometry.set_state(MeshState::UPLOADINGTOGPU);
 
             u32 l_VertexStart;
             u32 l_IndexStart;
             if (!request_mesh_buffer_space(
                     p_UploadEntry,
-                    l_RendererMeshInfo.get_vertex_count(),
-                    l_RendererMeshInfo.get_index_count(),
+                    l_SubmeshGeometry.get_vertex_count(),
+                    l_SubmeshGeometry.get_index_count(),
                     &l_VertexStart, &l_IndexStart)) {
               LOW_LOG_WARN << "Could not load mesh since mesh buffer "
                               "space could not be reserved"
@@ -466,38 +470,27 @@ namespace Low {
               return true;
             }
 
-            l_RendererMeshInfo.set_vertex_start(l_VertexStart);
-            l_RendererMeshInfo.set_index_start(l_IndexStart);
-          }
+            l_GpuSubmesh.set_state(MeshState::UPLOADINGTOGPU);
 
-          if (l_RendererSubmesh.get_state() ==
-              MeshResourceState::MEMORYLOADED) {
-            l_RendererSubmesh.set_state(
-                MeshResourceState::UPLOADINGTOGPU);
+            l_GpuSubmesh.set_vertex_start(l_VertexStart);
+            l_GpuSubmesh.set_index_start(l_IndexStart);
           }
         }
 
-        MeshResource l_MeshResource =
-            p_UploadEntry.data.mesh.meshResource;
-        Util::Resource::Submesh &l_Submesh =
-            l_MeshResource.get_resource_mesh()
-                .submeshes[p_UploadEntry.data.mesh.submeshIndex];
-        Util::Resource::MeshInfo &l_MeshInfo =
-            l_Submesh
-                .meshInfos[p_UploadEntry.data.mesh.meshInfoIndex];
+        Mesh l_Mesh = p_UploadEntry.data.mesh.mesh;
 
-        u64 l_VertexDataSize = l_MeshInfo.vertices.size() *
-                               sizeof(Low::Util::Resource::Vertex);
-        u64 l_IndexDataSize =
-            l_MeshInfo.indices.size() * MESH_INDEX_SIZE;
+        const u64 l_VertexDataSize =
+            l_SubmeshGeometry.get_vertex_count() *
+            sizeof(Low::Util::Resource::Vertex);
+        const u64 l_IndexDataSize =
+            l_SubmeshGeometry.get_index_count() * MESH_INDEX_SIZE;
 
-        if (p_UploadEntry.data.mesh.meshInfo
-                .get_uploaded_vertex_count() <
-            l_MeshInfo.vertices.size()) {
+        if (l_GpuSubmesh.get_uploaded_vertex_count() <
+            l_GpuSubmesh.get_vertex_count()) {
           const u64 l_FullSize = l_VertexDataSize;
           const u64 l_UploadedSize = p_UploadEntry.uploadedSize;
 
-          u8 *l_Data = (u8 *)l_MeshInfo.vertices.data();
+          u8 *l_Data = (u8 *)l_SubmeshGeometry.get_vertices().data();
 
           const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
 
@@ -527,8 +520,7 @@ namespace Low {
 
           VkBufferCopy l_CopyRegion{};
           l_CopyRegion.srcOffset = l_StagingOffset;
-          l_CopyRegion.dstOffset =
-              l_RendererMeshInfo.get_vertex_start();
+          l_CopyRegion.dstOffset = l_GpuSubmesh.get_vertex_start();
           l_CopyRegion.size = l_FrameUploadSpace;
           // TODO: Change to transfer queue command buffer
           vkCmdCopyBuffer(
@@ -540,21 +532,21 @@ namespace Low {
               1, &l_CopyRegion);
 
           p_UploadEntry.uploadedSize += l_FrameUploadSpace;
-          p_UploadEntry.data.mesh.meshInfo.set_uploaded_vertex_count(
-              p_UploadEntry.uploadedSize /
-              sizeof(Util::Resource::Vertex));
+          p_UploadEntry.data.mesh.gpuSubmesh
+              .set_uploaded_vertex_count(
+                  p_UploadEntry.uploadedSize /
+                  sizeof(Util::Resource::Vertex));
           p_UploadEntry.progressPriority = l_UploadProgressPercent;
 
           return l_FrameUploadSpace > 0.0f;
-        } else if (p_UploadEntry.data.mesh.meshInfo
-                       .get_uploaded_index_count() <
-                   l_MeshInfo.indices.size()) {
+        } else if (l_GpuSubmesh.get_uploaded_index_count() <
+                   l_GpuSubmesh.get_index_count()) {
           const u64 l_FullSize = l_IndexDataSize;
           const u64 l_UploadedSize =
-              l_RendererMeshInfo.get_uploaded_index_count() *
+              l_GpuSubmesh.get_uploaded_index_count() *
               MESH_INDEX_SIZE;
 
-          u8 *l_Data = (u8 *)l_MeshInfo.indices.data();
+          u8 *l_Data = (u8 *)l_SubmeshGeometry.get_indices().data();
 
           const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
 
@@ -587,8 +579,7 @@ namespace Low {
 
           VkBufferCopy l_CopyRegion{};
           l_CopyRegion.srcOffset = l_StagingOffset;
-          l_CopyRegion.dstOffset =
-              l_RendererMeshInfo.get_index_start();
+          l_CopyRegion.dstOffset = l_GpuSubmesh.get_index_start();
           l_CopyRegion.size = l_FrameUploadSpace;
           // TODO: Change to transfer queue command buffer
           vkCmdCopyBuffer(
@@ -599,7 +590,7 @@ namespace Low {
               1, &l_CopyRegion);
 
           p_UploadEntry.uploadedSize += l_FrameUploadSpace;
-          p_UploadEntry.data.mesh.meshInfo.set_uploaded_index_count(
+          p_UploadEntry.data.mesh.gpuSubmesh.set_uploaded_index_count(
               p_UploadEntry.uploadedSize / MESH_INDEX_SIZE);
           p_UploadEntry.progressPriority = l_UploadProgressPercent;
 
@@ -771,30 +762,28 @@ namespace Low {
 
           LOW_LOG_DEBUG << "Image fully loaded" << LOW_LOG_END;
         } else if (p_UploadEntry.is_mesh_upload()) {
-          MeshInfo l_MeshInfo = p_UploadEntry.data.mesh.meshInfo;
-          Submesh l_Submesh = p_UploadEntry.data.mesh.submesh;
-          MeshResource l_MeshResource =
-              p_UploadEntry.data.mesh.meshResource;
-          // At this point one mesh info has been fully
-          // uploaded to we set it to LOADED before
-          // checking if the assigned submesh and
-          // meshresource have now been completely
-          // uploaded.
-          l_MeshInfo.set_state(MeshResourceState::LOADED);
-          l_Submesh.set_uploaded_meshinfo_count(
-              l_Submesh.get_uploaded_meshinfo_count() + 1);
+          GpuSubmesh l_GpuSubmesh =
+              p_UploadEntry.data.mesh.gpuSubmesh;
+          SubmeshGeometry l_SubmeshGeometry =
+              p_UploadEntry.data.mesh.submeshGeometry;
+          Mesh l_Mesh = p_UploadEntry.data.mesh.mesh;
+          // At this point one submesh has been fully
+          // uploaded to we set it to LOADED
 
-          if (l_Submesh.get_uploaded_meshinfo_count() >=
-              l_Submesh.get_meshinfo_count()) {
-            l_Submesh.set_state(MeshResourceState::LOADED);
+          l_SubmeshGeometry.set_state(MeshState::LOADED);
+          l_GpuSubmesh.set_state(MeshState::LOADED);
 
-            l_MeshResource.set_uploaded_submesh_count(
-                l_MeshResource.get_uploaded_submesh_count() + 1);
+          l_Mesh.get_gpu().set_uploaded_submesh_count(
+              l_Mesh.get_gpu().get_uploaded_submesh_count() + 1);
 
-            if (l_MeshResource.get_uploaded_submesh_count() ==
-                l_MeshResource.get_submesh_count()) {
-              l_MeshResource.set_state(MeshResourceState::LOADED);
-            }
+          // We can now safely destroy the submesh geometry because it
+          // is now longer needed
+          l_SubmeshGeometry.destroy();
+
+          if (l_Mesh.get_gpu().get_uploaded_submesh_count() >=
+              l_Mesh.get_gpu().get_submesh_count()) {
+            l_Mesh.set_state(MeshState::LOADED);
+            l_Mesh.get_geometry().destroy();
           }
         }
 

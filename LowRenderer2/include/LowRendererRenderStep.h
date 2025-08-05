@@ -12,6 +12,8 @@
 #define RENDERSTEP_SOLID_MATERIAL_NAME N(solid_material)
 #define RENDERSTEP_LIGHTING_NAME N(phong_lighting)
 #define RENDERSTEP_LIGHTCULLING_NAME N(basic_light_culling)
+#define RENDERSTEP_SSAO_NAME N(basic_ssao)
+#define RENDERSTEP_CAVITIES_NAME N(cavities)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -23,6 +25,7 @@ namespace Low {
 
     struct LOW_RENDERER2_API RenderStepData
     {
+      Low::Util::Function<bool(RenderStep)> setup_callback;
       Low::Util::Function<bool(Low::Renderer::RenderStep,
                                Low::Renderer::RenderView)>
           prepare_callback;
@@ -85,6 +88,16 @@ namespace Low {
 
       bool is_alive() const;
 
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Handle p_Observer) const;
+      void notify(Low::Util::Handle p_Observed,
+                  Low::Util::Name p_Observable);
+      void broadcast_observable(Low::Util::Name p_Observable) const;
+
+      static void _notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable);
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
@@ -116,6 +129,11 @@ namespace Low {
         RenderStep l_RenderStep = p_Handle.get_id();
         l_RenderStep.destroy();
       }
+
+      Low::Util::Function<bool(RenderStep)>
+      get_setup_callback() const;
+      void set_setup_callback(
+          Low::Util::Function<bool(RenderStep)> p_Value);
 
       Low::Util::Function<bool(Low::Renderer::RenderStep,
                                Low::Renderer::RenderView)>
@@ -161,6 +179,7 @@ namespace Low {
                              Low::Renderer::RenderView p_RenderView);
       bool execute(float p_DeltaTime,
                    Low::Renderer::RenderView p_RenderView);
+      bool setup();
 
     private:
       static uint32_t ms_Capacity;

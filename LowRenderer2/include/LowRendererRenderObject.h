@@ -9,7 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererMeshResource.h"
+#include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -23,7 +23,7 @@ namespace Low {
     struct LOW_RENDERER2_API RenderObjectData
     {
       Low::Math::Matrix4x4 world_transform;
-      Low::Renderer::MeshResource mesh_resource;
+      Low::Renderer::Mesh mesh;
       bool uploaded;
       uint32_t slot;
       uint64_t render_scene_handle;
@@ -82,6 +82,16 @@ namespace Low {
 
       bool is_alive() const;
 
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Handle p_Observer) const;
+      void notify(Low::Util::Handle p_Observed,
+                  Low::Util::Name p_Observable);
+      void broadcast_observable(Low::Util::Name p_Observable) const;
+
+      static void _notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable);
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
@@ -117,7 +127,7 @@ namespace Low {
       Low::Math::Matrix4x4 &get_world_transform() const;
       void set_world_transform(Low::Math::Matrix4x4 &p_Value);
 
-      Low::Renderer::MeshResource get_mesh_resource() const;
+      Low::Renderer::Mesh get_mesh() const;
 
       bool is_uploaded() const;
       void set_uploaded(bool p_Value);
@@ -141,15 +151,14 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static RenderObject
-      make(RenderScene p_RenderScene,
-           Low::Renderer::MeshResource p_MeshResource);
+      static RenderObject make(RenderScene p_RenderScene,
+                               Low::Renderer::Mesh p_Mesh);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_mesh_resource(Low::Renderer::MeshResource p_Value);
+      void set_mesh(Low::Renderer::Mesh p_Value);
       void set_render_scene_handle(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

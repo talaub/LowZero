@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowUtilResource.h"
 #include "LowUtilJobManager.h"
@@ -109,6 +110,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -155,6 +158,7 @@ namespace Low {
       l_TypeInfo.serialize = &MeshResource::serialize;
       l_TypeInfo.deserialize = &MeshResource::deserialize;
       l_TypeInfo.find_by_index = &MeshResource::_find_by_index;
+      l_TypeInfo.notify = &MeshResource::_notify;
       l_TypeInfo.find_by_name = &MeshResource::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &MeshResource::_make;
@@ -543,6 +547,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void MeshResource::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 MeshResource::observe(Low::Util::Name p_Observable,
+                              Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void MeshResource::notify(Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void MeshResource::_notify(Low::Util::Handle p_Observer,
+                               Low::Util::Handle p_Observed,
+                               Low::Util::Name p_Observable)
+    {
+      MeshResource l_MeshResource = p_Observer.get_id();
+      l_MeshResource.notify(p_Observed, p_Observable);
+    }
+
     Util::String &MeshResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
@@ -576,6 +615,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
+
+      broadcast_observable(N(path));
     }
 
     Util::List<Submesh> &MeshResource::get_submeshes() const
@@ -617,6 +658,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
+
+      broadcast_observable(N(reference_count));
     }
 
     Renderer::Skeleton MeshResource::get_skeleton() const
@@ -646,6 +689,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_skeleton
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_skeleton
+
+      broadcast_observable(N(skeleton));
     }
 
     ResourceState MeshResource::get_state() const
@@ -675,6 +720,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
+
+      broadcast_observable(N(state));
     }
 
     Low::Util::Name MeshResource::get_name() const
@@ -704,6 +751,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     MeshResource MeshResource::make(Util::String &p_Path)

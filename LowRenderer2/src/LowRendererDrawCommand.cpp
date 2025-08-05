@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererRenderScene.h"
@@ -57,9 +58,9 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, DrawCommand, world_transform,
                               Low::Math::Matrix4x4))
           Low::Math::Matrix4x4();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, DrawCommand, mesh_info,
-                              Low::Renderer::MeshInfo))
-          Low::Renderer::MeshInfo();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, DrawCommand, submesh,
+                              Low::Renderer::GpuSubmesh))
+          Low::Renderer::GpuSubmesh();
       new (&ACCESSOR_TYPE_SOA(l_Handle, DrawCommand, render_object,
                               Low::Renderer::RenderObject))
           Low::Renderer::RenderObject();
@@ -89,6 +90,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+      broadcast_observable(OBSERVABLE_DESTROY);
 
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -130,6 +133,7 @@ namespace Low {
       l_TypeInfo.serialize = &DrawCommand::serialize;
       l_TypeInfo.deserialize = &DrawCommand::deserialize;
       l_TypeInfo.find_by_index = &DrawCommand::_find_by_index;
+      l_TypeInfo.notify = &DrawCommand::_notify;
       l_TypeInfo.find_by_name = &DrawCommand::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &DrawCommand::_make;
@@ -174,32 +178,33 @@ namespace Low {
         // End property: world_transform
       }
       {
-        // Property: mesh_info
+        // Property: submesh
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(mesh_info);
+        l_PropertyInfo.name = N(submesh);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(DrawCommandData, mesh_info);
+            offsetof(DrawCommandData, submesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::MeshInfo::TYPE_ID;
+        l_PropertyInfo.handleType =
+            Low::Renderer::GpuSubmesh::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           DrawCommand l_Handle = p_Handle.get_id();
-          l_Handle.get_mesh_info();
-          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, DrawCommand,
-                                            mesh_info,
-                                            Low::Renderer::MeshInfo);
+          l_Handle.get_submesh();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, DrawCommand, submesh,
+              Low::Renderer::GpuSubmesh);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           DrawCommand l_Handle = p_Handle.get_id();
-          *((Low::Renderer::MeshInfo *)p_Data) =
-              l_Handle.get_mesh_info();
+          *((Low::Renderer::GpuSubmesh *)p_Data) =
+              l_Handle.get_submesh();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: mesh_info
+        // End property: submesh
       }
       {
         // Property: slot
@@ -401,11 +406,11 @@ namespace Low {
         }
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_MeshInfo);
+          l_ParameterInfo.name = N(p_Submesh);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::MeshInfo::TYPE_ID;
+              Low::Renderer::GpuSubmesh::TYPE_ID;
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -490,8 +495,8 @@ namespace Low {
 
       DrawCommand l_Handle = make(p_Name);
       l_Handle.set_world_transform(get_world_transform());
-      if (get_mesh_info().is_alive()) {
-        l_Handle.set_mesh_info(get_mesh_info());
+      if (get_submesh().is_alive()) {
+        l_Handle.set_submesh(get_submesh());
       }
       l_Handle.set_slot(get_slot());
       if (get_render_object().is_alive()) {
@@ -548,6 +553,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void DrawCommand::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 DrawCommand::observe(Low::Util::Name p_Observable,
+                             Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void DrawCommand::notify(Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void DrawCommand::_notify(Low::Util::Handle p_Observer,
+                              Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+    {
+      DrawCommand l_DrawCommand = p_Observer.get_id();
+      l_DrawCommand.notify(p_Observed, p_Observable);
+    }
+
     Low::Math::Matrix4x4 &DrawCommand::get_world_transform() const
     {
       _LOW_ASSERT(is_alive());
@@ -578,34 +618,38 @@ namespace Low {
         ms_Dirty.insert(get_id());
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_world_transform
+
+      broadcast_observable(N(world_transform));
     }
 
-    Low::Renderer::MeshInfo DrawCommand::get_mesh_info() const
+    Low::Renderer::GpuSubmesh DrawCommand::get_submesh() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_info
-      // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_info
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh
+      // LOW_CODEGEN::END::CUSTOM:GETTER_submesh
 
       READ_LOCK(l_ReadLock);
-      return TYPE_SOA(DrawCommand, mesh_info,
-                      Low::Renderer::MeshInfo);
+      return TYPE_SOA(DrawCommand, submesh,
+                      Low::Renderer::GpuSubmesh);
     }
-    void DrawCommand::set_mesh_info(Low::Renderer::MeshInfo p_Value)
+    void DrawCommand::set_submesh(Low::Renderer::GpuSubmesh p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_info
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_info
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_submesh
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(DrawCommand, mesh_info, Low::Renderer::MeshInfo) =
+      TYPE_SOA(DrawCommand, submesh, Low::Renderer::GpuSubmesh) =
           p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_info
-      // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_info
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh
+      // LOW_CODEGEN::END::CUSTOM:SETTER_submesh
+
+      broadcast_observable(N(submesh));
     }
 
     uint32_t DrawCommand::get_slot() const
@@ -632,6 +676,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
+
+      broadcast_observable(N(slot));
     }
 
     Low::Renderer::RenderObject DrawCommand::get_render_object() const
@@ -661,6 +707,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
+
+      broadcast_observable(N(render_object));
     }
 
     Low::Renderer::Material DrawCommand::get_material() const
@@ -691,6 +739,8 @@ namespace Low {
         ms_Dirty.insert(get_id());
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_material
+
+      broadcast_observable(N(material));
     }
 
     bool DrawCommand::is_uploaded() const
@@ -722,6 +772,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
+
+      broadcast_observable(N(uploaded));
     }
 
     uint64_t DrawCommand::get_render_scene_handle() const
@@ -748,6 +800,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene_handle
+
+      broadcast_observable(N(render_scene_handle));
     }
 
     Low::Util::Name DrawCommand::get_name() const
@@ -774,12 +828,14 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     DrawCommand
     DrawCommand::make(Low::Renderer::RenderObject p_RenderObject,
                       Low::Renderer::RenderScene p_RenderScene,
-                      Low::Renderer::MeshInfo p_MeshInfo)
+                      Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       DrawCommand l_DrawCommand =
@@ -788,7 +844,7 @@ namespace Low {
       _LOW_ASSERT(p_RenderScene.is_alive());
 
       l_DrawCommand.set_render_object(p_RenderObject);
-      l_DrawCommand.set_mesh_info(p_MeshInfo);
+      l_DrawCommand.set_submesh(p_Submesh);
       l_DrawCommand.set_render_scene_handle(p_RenderScene.get_id());
 
       if (p_RenderObject.is_alive()) {
@@ -811,14 +867,13 @@ namespace Low {
         struct
         {
           u32 materialIndex;
-          u32 meshInfoIndex;
+          u32 submeshIndex;
         };
         u64 sortIndex;
       } l_SortIndexAssembler;
 
       l_SortIndexAssembler.materialIndex = get_material().get_index();
-      l_SortIndexAssembler.meshInfoIndex =
-          get_mesh_info().get_index();
+      l_SortIndexAssembler.submeshIndex = get_submesh().get_index();
 
       return l_SortIndexAssembler.sortIndex;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_sort_index
@@ -870,11 +925,11 @@ namespace Low {
             l_Capacity * sizeof(Low::Math::Matrix4x4));
       }
       {
-        memcpy(&l_NewBuffer[offsetof(DrawCommandData, mesh_info) *
+        memcpy(&l_NewBuffer[offsetof(DrawCommandData, submesh) *
                             (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(DrawCommandData, mesh_info) *
+               &ms_Buffer[offsetof(DrawCommandData, submesh) *
                           (l_Capacity)],
-               l_Capacity * sizeof(Low::Renderer::MeshInfo));
+               l_Capacity * sizeof(Low::Renderer::GpuSubmesh));
       }
       {
         memcpy(&l_NewBuffer[offsetof(DrawCommandData, slot) *

@@ -1,7 +1,6 @@
 #include "LowRendererVkViewInfo.h"
 
 #include <algorithm>
-#include <vulkan/vulkan_core.h>
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -9,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererVulkan.h"
@@ -154,6 +154,8 @@ namespace Low {
         }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -194,6 +196,7 @@ namespace Low {
         l_TypeInfo.serialize = &ViewInfo::serialize;
         l_TypeInfo.deserialize = &ViewInfo::deserialize;
         l_TypeInfo.find_by_index = &ViewInfo::_find_by_index;
+        l_TypeInfo.notify = &ViewInfo::_notify;
         l_TypeInfo.find_by_name = &ViewInfo::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &ViewInfo::_make;
@@ -717,6 +720,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void ViewInfo::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 ViewInfo::observe(Low::Util::Name p_Observable,
+                            Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void ViewInfo::notify(Low::Util::Handle p_Observed,
+                            Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void ViewInfo::_notify(Low::Util::Handle p_Observer,
+                             Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+      {
+        ViewInfo l_ViewInfo = p_Observer.get_id();
+        l_ViewInfo.notify(p_Observed, p_Observable);
+      }
+
       AllocatedBuffer &ViewInfo::get_view_data_buffer() const
       {
         _LOW_ASSERT(is_alive());
@@ -742,6 +780,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_data_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_data_buffer
+
+        broadcast_observable(N(view_data_buffer));
       }
 
       VkDescriptorSet ViewInfo::get_view_data_descriptor_set() const
@@ -771,6 +811,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_data_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_data_descriptor_set
+
+        broadcast_observable(N(view_data_descriptor_set));
       }
 
       VkDescriptorSet &ViewInfo::get_lighting_descriptor_set() const
@@ -800,6 +842,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lighting_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_lighting_descriptor_set
+
+        broadcast_observable(N(lighting_descriptor_set));
       }
 
       Low::Util::List<StagingBuffer> &
@@ -830,6 +874,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging_buffers
         // LOW_CODEGEN::END::CUSTOM:SETTER_staging_buffers
+
+        broadcast_observable(N(staging_buffers));
       }
 
       bool ViewInfo::is_initialized() const
@@ -861,6 +907,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
+
+        broadcast_observable(N(initialized));
       }
 
       VkDescriptorSet &ViewInfo::get_gbuffer_descriptor_set() const
@@ -890,6 +938,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_descriptor_set
+
+        broadcast_observable(N(gbuffer_descriptor_set));
       }
 
       AllocatedBuffer &
@@ -920,6 +970,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_cluster_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_cluster_buffer
+
+        broadcast_observable(N(point_light_cluster_buffer));
       }
 
       AllocatedBuffer &ViewInfo::get_point_light_buffer() const
@@ -948,6 +1000,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
+
+        broadcast_observable(N(point_light_buffer));
       }
 
       Low::Math::UVector3 &ViewInfo::get_light_clusters() const
@@ -976,6 +1030,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_clusters
         // LOW_CODEGEN::END::CUSTOM:SETTER_light_clusters
+
+        broadcast_observable(N(light_clusters));
       }
 
       uint32_t ViewInfo::get_light_cluster_count() const
@@ -1002,6 +1058,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_cluster_count
         // LOW_CODEGEN::END::CUSTOM:SETTER_light_cluster_count
+
+        broadcast_observable(N(light_cluster_count));
       }
 
       Low::Util::Name ViewInfo::get_name() const
@@ -1028,6 +1086,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+        broadcast_observable(N(name));
       }
 
       uint32_t ViewInfo::create_instance()

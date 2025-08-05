@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowRendererInterface.h"
 
@@ -86,6 +87,8 @@ namespace Low {
         Backend::callbacks().pipeline_cleanup(get_pipeline());
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -127,6 +130,7 @@ namespace Low {
         l_TypeInfo.serialize = &ComputePipeline::serialize;
         l_TypeInfo.deserialize = &ComputePipeline::deserialize;
         l_TypeInfo.find_by_index = &ComputePipeline::_find_by_index;
+        l_TypeInfo.notify = &ComputePipeline::_notify;
         l_TypeInfo.find_by_name = &ComputePipeline::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &ComputePipeline::_make;
@@ -389,6 +393,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void ComputePipeline::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 ComputePipeline::observe(Low::Util::Name p_Observable,
+                                   Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void ComputePipeline::notify(Low::Util::Handle p_Observed,
+                                   Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void ComputePipeline::_notify(Low::Util::Handle p_Observer,
+                                    Low::Util::Handle p_Observed,
+                                    Low::Util::Name p_Observable)
+      {
+        ComputePipeline l_ComputePipeline = p_Observer.get_id();
+        l_ComputePipeline.notify(p_Observed, p_Observable);
+      }
+
       Backend::Pipeline &ComputePipeline::get_pipeline() const
       {
         _LOW_ASSERT(is_alive());
@@ -428,6 +467,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+        broadcast_observable(N(name));
       }
 
       ComputePipeline

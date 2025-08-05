@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCoreRegion.h"
 #include "LowCoreTransform.h"
@@ -140,6 +141,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       Low::Util::remove_unique_id(get_unique_id());
 
       WRITE_LOCK(l_Lock);
@@ -183,6 +186,7 @@ namespace Low {
       l_TypeInfo.serialize = &Prefab::serialize;
       l_TypeInfo.deserialize = &Prefab::deserialize;
       l_TypeInfo.find_by_index = &Prefab::_find_by_index;
+      l_TypeInfo.notify = &Prefab::_notify;
       l_TypeInfo.find_by_name = &Prefab::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Prefab::_make;
@@ -616,6 +620,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void
+    Prefab::broadcast_observable(Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 Prefab::observe(Low::Util::Name p_Observable,
+                        Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void Prefab::notify(Low::Util::Handle p_Observed,
+                        Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void Prefab::_notify(Low::Util::Handle p_Observer,
+                         Low::Util::Handle p_Observed,
+                         Low::Util::Name p_Observable)
+    {
+      Prefab l_Prefab = p_Observer.get_id();
+      l_Prefab.notify(p_Observed, p_Observable);
+    }
+
     Util::Handle Prefab::get_parent() const
     {
       _LOW_ASSERT(is_alive());
@@ -643,6 +682,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_parent
+
+      broadcast_observable(N(parent));
     }
 
     Util::List<Util::Handle> &Prefab::get_children() const
@@ -672,6 +713,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_children
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_children
+
+      broadcast_observable(N(children));
     }
 
     Util::Map<uint16_t, Util::Map<Util::Name, Util::Variant>> &
@@ -712,6 +755,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_components
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_components
+
+      broadcast_observable(N(components));
     }
 
     Low::Util::UniqueId Prefab::get_unique_id() const
@@ -741,6 +786,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+      broadcast_observable(N(unique_id));
     }
 
     Low::Util::Name Prefab::get_name() const
@@ -770,6 +817,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     Prefab Prefab::make(Entity &p_Entity)

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowUtilString.h"
 #include "LowRendererBackend.h"
@@ -119,6 +120,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -161,6 +164,7 @@ namespace Low {
       l_TypeInfo.serialize = &GraphicsStepConfig::serialize;
       l_TypeInfo.deserialize = &GraphicsStepConfig::deserialize;
       l_TypeInfo.find_by_index = &GraphicsStepConfig::_find_by_index;
+      l_TypeInfo.notify = &GraphicsStepConfig::_notify;
       l_TypeInfo.find_by_name = &GraphicsStepConfig::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &GraphicsStepConfig::_make;
@@ -802,6 +806,42 @@ namespace Low {
       return l_Handle;
     }
 
+    void GraphicsStepConfig::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64
+    GraphicsStepConfig::observe(Low::Util::Name p_Observable,
+                                Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void GraphicsStepConfig::notify(Low::Util::Handle p_Observed,
+                                    Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void GraphicsStepConfig::_notify(Low::Util::Handle p_Observer,
+                                     Low::Util::Handle p_Observed,
+                                     Low::Util::Name p_Observable)
+    {
+      GraphicsStepConfig l_GraphicsStepConfig = p_Observer.get_id();
+      l_GraphicsStepConfig.notify(p_Observed, p_Observable);
+    }
+
     GraphicsStepCallbacks &GraphicsStepConfig::get_callbacks() const
     {
       _LOW_ASSERT(is_alive());
@@ -832,6 +872,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_callbacks
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_callbacks
+
+      broadcast_observable(N(callbacks));
     }
 
     Util::List<ResourceConfig> &
@@ -879,6 +921,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_config
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions_config
+
+      broadcast_observable(N(dimensions_config));
     }
 
     Util::List<GraphicsPipelineConfig> &
@@ -940,6 +984,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rendertargets_clearcolor
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_rendertargets_clearcolor
+
+      broadcast_observable(N(rendertargets_clearcolor));
     }
 
     PipelineResourceBindingConfig &
@@ -973,6 +1019,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_rendertarget
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_rendertarget
+
+      broadcast_observable(N(depth_rendertarget));
     }
 
     bool GraphicsStepConfig::is_use_depth() const
@@ -1007,6 +1055,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_use_depth
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_use_depth
+
+      broadcast_observable(N(use_depth));
     }
 
     bool GraphicsStepConfig::is_depth_clear() const
@@ -1041,6 +1091,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_clear
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_clear
+
+      broadcast_observable(N(depth_clear));
     }
 
     bool GraphicsStepConfig::is_depth_test() const
@@ -1075,6 +1127,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_test
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_test
+
+      broadcast_observable(N(depth_test));
     }
 
     bool GraphicsStepConfig::is_depth_write() const
@@ -1109,6 +1163,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_write
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_write
+
+      broadcast_observable(N(depth_write));
     }
 
     uint8_t GraphicsStepConfig::get_depth_compare_operation() const
@@ -1141,6 +1197,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_compare_operation
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_compare_operation
+
+      broadcast_observable(N(depth_compare_operation));
     }
 
     PipelineResourceBindingConfig &
@@ -1174,6 +1232,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
+
+      broadcast_observable(N(output_image));
     }
 
     Low::Util::Name GraphicsStepConfig::get_name() const
@@ -1203,6 +1263,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     GraphicsStepConfig

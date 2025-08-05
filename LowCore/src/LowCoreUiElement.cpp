@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCoreUiDisplay.h"
 
@@ -136,6 +137,8 @@ namespace Low {
         }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -179,6 +182,7 @@ namespace Low {
         l_TypeInfo.serialize = &Element::serialize;
         l_TypeInfo.deserialize = &Element::deserialize;
         l_TypeInfo.find_by_index = &Element::_find_by_index;
+        l_TypeInfo.notify = &Element::_notify;
         l_TypeInfo.find_by_name = &Element::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Element::_make;
@@ -695,6 +699,41 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
 
+      void Element::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 Element::observe(Low::Util::Name p_Observable,
+                           Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void Element::notify(Low::Util::Handle p_Observed,
+                           Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void Element::_notify(Low::Util::Handle p_Observer,
+                            Low::Util::Handle p_Observed,
+                            Low::Util::Name p_Observable)
+      {
+        Element l_Element = p_Observer.get_id();
+        l_Element.notify(p_Observed, p_Observable);
+      }
+
       Util::Map<uint16_t, Util::Handle> &
       Element::get_components() const
       {
@@ -747,6 +786,8 @@ namespace Low {
           }
         }
         // LOW_CODEGEN::END::CUSTOM:SETTER_view
+
+        broadcast_observable(N(view));
       }
 
       bool Element::is_click_passthrough() const
@@ -781,6 +822,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_click_passthrough
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_click_passthrough
+
+        broadcast_observable(N(click_passthrough));
       }
 
       Low::Util::UniqueId Element::get_unique_id() const
@@ -810,6 +853,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       Low::Util::Name Element::get_name() const
@@ -839,6 +884,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+        broadcast_observable(N(name));
       }
 
       Element Element::make(Low::Util::Name p_Name,

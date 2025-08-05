@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 #include "LowCoreTransform.h"
@@ -111,6 +112,8 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -154,6 +157,7 @@ namespace Low {
         l_TypeInfo.serialize = &PrefabInstance::serialize;
         l_TypeInfo.deserialize = &PrefabInstance::deserialize;
         l_TypeInfo.find_by_index = &PrefabInstance::_find_by_index;
+        l_TypeInfo.notify = &PrefabInstance::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &PrefabInstance::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -501,6 +505,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void PrefabInstance::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 PrefabInstance::observe(Low::Util::Name p_Observable,
+                                  Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void PrefabInstance::notify(Low::Util::Handle p_Observed,
+                                  Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void PrefabInstance::_notify(Low::Util::Handle p_Observer,
+                                   Low::Util::Handle p_Observed,
+                                   Low::Util::Name p_Observable)
+      {
+        PrefabInstance l_PrefabInstance = p_Observer.get_id();
+        l_PrefabInstance.notify(p_Observed, p_Observable);
+      }
+
       Prefab PrefabInstance::get_prefab() const
       {
         _LOW_ASSERT(is_alive());
@@ -528,6 +567,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_prefab
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_prefab
+
+        broadcast_observable(N(prefab));
       }
 
       Util::Map<uint16_t, Util::List<Util::Name>> &
@@ -564,6 +605,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_overrides
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_overrides
+
+        broadcast_observable(N(overrides));
       }
 
       Low::Core::Entity PrefabInstance::get_entity() const
@@ -593,6 +636,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId PrefabInstance::get_unique_id() const
@@ -624,6 +669,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       void PrefabInstance::update_component_from_prefab(

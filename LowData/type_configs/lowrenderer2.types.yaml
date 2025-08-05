@@ -16,8 +16,8 @@ types:
     properties:
       world_transform:
         type: Low::Math::Matrix4x4
-      mesh_info:
-        type: Low::Renderer::MeshInfo
+      submesh:
+        type: Low::Renderer::GpuSubmesh
         handle: true
         private_setter: true
       slot:
@@ -45,8 +45,8 @@ types:
           - name: renderScene
             type: Low::Renderer::RenderScene
             handle: true
-          - name: meshInfo
-            type: Low::Renderer::MeshInfo
+          - name: submesh
+            type: Low::Renderer::GpuSubmesh
             handle: true
       get_sort_index:
         constant: true
@@ -62,8 +62,8 @@ types:
       world_transform:
         type: Low::Math::Matrix4x4
         dirty_flag: dirty
-      mesh_resource:
-        type: Low::Renderer::MeshResource
+      mesh:
+        type: Low::Renderer::Mesh
         handle: true
         private_setter: true
       uploaded:
@@ -89,8 +89,8 @@ types:
           - name: renderScene
             type: RenderScene
             handle: true
-          - name: meshResource
-            type: Low::Renderer::MeshResource
+          - name: mesh
+            type: Low::Renderer::Mesh
             handle: true
   RenderScene:
     skip_name_serialization: true
@@ -142,6 +142,9 @@ types:
         type: Low::Renderer::Texture
         handle: true
       gbuffer_depth:
+        type: Low::Renderer::Texture
+        handle: true
+      gbuffer_viewposition:
         type: Low::Renderer::Texture
         handle: true
       lit_image:
@@ -365,6 +368,9 @@ types:
   RenderStep:
     dynamic_increase: false
     properties:
+      setup_callback:
+        type: Low::Util::Function<bool(RenderStep)>
+        no_ref: true
       prepare_callback:
         type: Low::Util::Function<bool(Low::Renderer::RenderStep, Low::Renderer::RenderView)>
         no_ref: true
@@ -406,6 +412,8 @@ types:
           - name: renderView
             type: Low::Renderer::RenderView
             handle: true
+      setup:
+        return_type: bool
   PointLight:
     private_make: true
     dirty_flags:
@@ -438,3 +446,24 @@ types:
           - name: renderScene
             type: Low::Renderer::RenderScene
             handle: true
+  UiDrawCommand:
+    properties:
+      texture:
+        type: Texture
+        handle: true
+      position:
+        type: Low::Math::Vector3
+      size:
+        type: Low::Math::Vector2
+      rotation2D:
+        type: float
+      color:
+        type: Low::Math::Color
+      uv_rect:
+        type: Low::Math::Vector4
+
+  UiCanvas:
+    properties:
+      draw_commands:
+        type: Low::Util::List<Low::Renderer::UiDrawCommand>
+      

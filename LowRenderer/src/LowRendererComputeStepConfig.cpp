@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowRendererComputeStep.h"
 
@@ -93,6 +94,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -134,6 +137,7 @@ namespace Low {
       l_TypeInfo.serialize = &ComputeStepConfig::serialize;
       l_TypeInfo.deserialize = &ComputeStepConfig::deserialize;
       l_TypeInfo.find_by_index = &ComputeStepConfig::_find_by_index;
+      l_TypeInfo.notify = &ComputeStepConfig::_notify;
       l_TypeInfo.find_by_name = &ComputeStepConfig::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &ComputeStepConfig::_make;
@@ -461,6 +465,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void ComputeStepConfig::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 ComputeStepConfig::observe(Low::Util::Name p_Observable,
+                                   Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void ComputeStepConfig::notify(Low::Util::Handle p_Observed,
+                                   Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void ComputeStepConfig::_notify(Low::Util::Handle p_Observer,
+                                    Low::Util::Handle p_Observed,
+                                    Low::Util::Name p_Observable)
+    {
+      ComputeStepConfig l_ComputeStepConfig = p_Observer.get_id();
+      l_ComputeStepConfig.notify(p_Observed, p_Observable);
+    }
+
     ComputeStepCallbacks &ComputeStepConfig::get_callbacks() const
     {
       _LOW_ASSERT(is_alive());
@@ -491,6 +530,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_callbacks
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_callbacks
+
+      broadcast_observable(N(callbacks));
     }
 
     Util::List<ResourceConfig> &
@@ -552,6 +593,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
+
+      broadcast_observable(N(output_image));
     }
 
     Low::Util::Name ComputeStepConfig::get_name() const
@@ -581,6 +624,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     ComputeStepConfig

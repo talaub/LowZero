@@ -2,7 +2,7 @@ project(LowEngineZero)
 
 option(ENGINE_BUILD "Enable engine release build")
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.5)
 
 set(LOW_YEAR_VERSION 2025)
 set(LOW_MAJOR_VERSION 7)
@@ -67,6 +67,10 @@ set(CMAKE_DEBUG_POSTFIX "")
 FILE(GLOB SUBFOLDERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 SET(SUBPROJECTS "")
 SET(FOUND "")
+
+add_compile_definitions(
+  GLM_ENABLE_EXPERIMENTAL
+)
 
 if (ENGINE_BUILD)
 add_compile_definitions(

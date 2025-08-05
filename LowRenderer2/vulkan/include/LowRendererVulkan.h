@@ -16,6 +16,10 @@
 
 #define VK_FRAME_OVERLAP 2
 
+#define VK_RENDERDOC_SECTION_BEGIN(NAME, COLOR)                      \
+  Global::renderdoc_section_begin(NAME, COLOR)
+#define VK_RENDERDOC_SECTION_END() Global::renderdoc_section_end()
+
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
@@ -154,6 +158,14 @@ namespace Low {
         get_current_texture_update_queue();
 
         bool advance_frame_count();
+
+        void renderdoc_section_begin(Util::String p_SectionLabel,
+                                     Math::ColorRGB p_Color);
+        void renderdoc_section_end();
+
+        bool blur_image_1(Texture p_ImageToBlur, Texture p_TempImage,
+                          Texture p_OutImage,
+                          Math::UVector2 p_Dimensions);
       } // namespace Global
 
       struct Context;

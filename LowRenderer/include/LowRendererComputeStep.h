@@ -88,6 +88,16 @@ namespace Low {
 
       bool is_alive() const;
 
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Handle p_Observer) const;
+      void notify(Low::Util::Handle p_Observed,
+                  Low::Util::Name p_Observable);
+      void broadcast_observable(Low::Util::Name p_Observable) const;
+
+      static void _notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable);
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;

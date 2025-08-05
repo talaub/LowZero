@@ -85,6 +85,8 @@ namespace Low {
             return VK_FORMAT_R16G16B16A16_SFLOAT;
           case ImageFormat::R16_SFLOAT:
             return VK_FORMAT_R16_SFLOAT;
+          case ImageFormat::RGB16_SFLOAT:
+            return VK_FORMAT_R16G16B16_SFLOAT;
           case ImageFormat::DEPTH:
             return VK_FORMAT_D32_SFLOAT;
           }
@@ -661,140 +663,11 @@ namespace Low {
       }
 
       static bool draw_render_entries(Context &p_Context,
-                                      float p_Delta,
-                                      RenderView p_RenderView)
-      {
-        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
-
-        ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
-
-        VkClearValue l_ClearColorValue = {};
-        l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-
-        Image l_AlbedoImage =
-            p_RenderView.get_gbuffer_albedo().get_data_handle();
-        Image l_NormalsImage =
-            p_RenderView.get_gbuffer_normals().get_data_handle();
-
-        Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
-        l_ColorAttachments.resize(2);
-        l_ColorAttachments[0] = InitUtil::attachment_info(
-            l_AlbedoImage.get_allocated_image().imageView,
-            &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
-        l_ColorAttachments[1] = InitUtil::attachment_info(
-            l_NormalsImage.get_allocated_image().imageView,
-            &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
-
-        VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
-            {p_RenderView.get_dimensions().x,
-             p_RenderView.get_dimensions().y},
-            l_ColorAttachments.data(), l_ColorAttachments.size(),
-            nullptr);
-        vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
-
-        vkCmdBindIndexBuffer(
-            l_Cmd, Global::get_mesh_index_buffer().m_Buffer.buffer, 0,
-            VK_INDEX_TYPE_UINT32);
-
-        vkCmdBindPipeline(
-            l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
-            g_Pipelines.solidBasePipeline.get_pipeline());
-
-        VkDescriptorSet l_Set = Global::get_global_descriptor_set();
-
-        vkCmdBindDescriptorSets(l_Cmd,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                g_Pipelines.solidBasePipelineLayout,
-                                0, 1, &l_Set, 0, nullptr);
-
-        VkDescriptorSet l_DescriptorSet =
-            l_ViewInfo.get_view_data_descriptor_set();
-
-        vkCmdBindDescriptorSets(l_Cmd,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                g_Pipelines.solidBasePipelineLayout,
-                                1, 1, &l_DescriptorSet, 0, nullptr);
-
-        // set dynamic viewport and scissor
-        VkViewport l_Viewport = {};
-        l_Viewport.x = 0;
-        l_Viewport.y = 0;
-        l_Viewport.width =
-            static_cast<float>(p_Context.swapchain.drawExtent.width);
-        l_Viewport.height =
-            static_cast<float>(p_Context.swapchain.drawExtent.height);
-        l_Viewport.minDepth = 0.f;
-        l_Viewport.maxDepth = 1.f;
-
-        vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
-
-        VkRect2D l_Scissor = {};
-        l_Scissor.offset.x = 0;
-        l_Scissor.offset.y = 0;
-        l_Scissor.extent.width = p_Context.swapchain.drawExtent.width;
-        l_Scissor.extent.height =
-            p_Context.swapchain.drawExtent.height;
-
-        vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
-
-        for (auto it = p_RenderView.get_render_scene()
-                           .get_draw_commands()
-                           .begin();
-             it != p_RenderView.get_render_scene()
-                       .get_draw_commands()
-                       .end();) {
-          if (!it->get_render_object().is_alive()) {
-            it = p_RenderView.get_render_scene()
-                     .get_draw_commands()
-                     .erase(it);
-            continue;
-          }
-
-          if (it->get_render_object()
-                  .get_mesh_resource()
-                  .get_state() != MeshResourceState::LOADED) {
-            it++;
-            continue;
-          }
-
-          MeshInfo i_MeshInfo = it->get_mesh_info();
-
-          LOW_ASSERT(i_MeshInfo.is_alive(),
-                     "Mesh info of mesh entry not alive anymore. "
-                     "This should not happen if the corresponding "
-                     "RenderObject is still alive.");
-
-          RenderEntryPushConstant i_PushConstants;
-          i_PushConstants.renderObjectSlot = it->get_slot();
-
-          vkCmdPushConstants(
-              l_Cmd, g_Pipelines.solidBasePipelineLayout,
-              VK_SHADER_STAGE_ALL_GRAPHICS, 0,
-              sizeof(RenderEntryPushConstant), &i_PushConstants);
-
-          vkCmdDrawIndexed(l_Cmd, i_MeshInfo.get_index_count(), 1,
-                           i_MeshInfo.get_index_start(), 0, 0);
-
-          it++;
-        }
-
-        vkCmdEndRendering(l_Cmd);
-
-        return true;
-      }
-
-      static bool draw_render_entries(Context &p_Context,
                                       float p_Delta)
       {
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
 
-          /*
-          if (!draw_render_entries(p_Context, p_Delta,
-                                   i_RenderView)) {
-            return false;
-          }
-          */
           for (u32 j = 0; j < i_RenderView.get_steps().size(); ++j) {
             RenderStep i_RenderStep = i_RenderView.get_steps()[j];
 
@@ -823,17 +696,17 @@ namespace Low {
 
         draw_render_entries(p_Context, p_Delta);
 
+        VK_RENDERDOC_SECTION_BEGIN("Blit to swapchain",
+                                   SINGLE_ARG({0.8f, 0.8f, 0.8f}));
         // TODO: Change this - this is just for testing
         {
           RenderView l_RenderView = RenderView::living_instances()[0];
           ViewInfo l_ViewInfo = l_RenderView.get_view_info_handle();
 
-          /*
           ImageUtil::cmd_transition(
-              l_Cmd, l_ViewInfo.get_gbuffer_albedo().image,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              l_Cmd, l_RenderView.get_lit_image().get_data_handle(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-              */
 
           Image l_LitImage =
               l_RenderView.get_lit_image().get_data_handle();
@@ -844,12 +717,10 @@ namespace Low {
               p_Context.swapchain.drawExtent,
               p_Context.swapchain.drawExtent);
 
-          /*
           ImageUtil::cmd_transition(
-              l_Cmd, l_ViewInfo.get_gbuffer_albedo().image,
+              l_Cmd, l_RenderView.get_lit_image().get_data_handle(),
               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-              */
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
         ImageUtil::Internal::cmd_transition(
@@ -862,6 +733,8 @@ namespace Low {
                 .images[p_Context.swapchain.imageIndex],
             VK_IMAGE_LAYOUT_UNDEFINED,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        VK_RENDERDOC_SECTION_END();
 
         return true;
       }
@@ -890,6 +763,18 @@ namespace Low {
 
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView.get_gbuffer_normals()
+                    .get_imgui_texture_id());
+
+            ImageUtil::destroy(l_Image);
+            l_Image.destroy();
+          }
+          {
+            Image l_Image = p_RenderView.get_gbuffer_viewposition()
+                                .get_data_handle();
+
+            ImGui_ImplVulkan_RemoveTexture(
+                (VkDescriptorSet)p_RenderView
+                    .get_gbuffer_viewposition()
                     .get_imgui_texture_id());
 
             ImageUtil::destroy(l_Image);
@@ -976,6 +861,8 @@ namespace Low {
         VkExtent3D l_Extent{p_RenderView.get_dimensions().x,
                             p_RenderView.get_dimensions().y, 1.0f};
 
+        const VkFormat l_ImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+
         {
           if (!p_RenderView.get_gbuffer_albedo().is_alive()) {
             p_RenderView.set_gbuffer_albedo(Texture::make(N(Albedo)));
@@ -990,8 +877,7 @@ namespace Low {
                 l_Image.get_id());
           }
 
-          ImageUtil::create(l_Image, l_Extent,
-                            VK_FORMAT_R16G16B16A16_SFLOAT,
+          ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                 VK_IMAGE_USAGE_STORAGE_BIT |
@@ -1018,8 +904,35 @@ namespace Low {
                 l_Image.get_id());
           }
 
-          ImageUtil::create(l_Image, l_Extent,
-                            VK_FORMAT_R16G16B16A16_SFLOAT,
+          ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        {
+          if (!p_RenderView.get_gbuffer_viewposition().is_alive()) {
+            p_RenderView.set_gbuffer_viewposition(
+                Texture::make(N(ViewPosition)));
+          }
+
+          Image l_Image = p_RenderView.get_gbuffer_viewposition()
+                              .get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(ViewPosition));
+            p_RenderView.get_gbuffer_viewposition().set_data_handle(
+                l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                 VK_IMAGE_USAGE_STORAGE_BIT |
@@ -1170,6 +1083,8 @@ namespace Low {
           l_FrameData.viewProjectionMatrix =
               l_FrameData.projectionMatrix * l_FrameData.viewMatrix;
 
+          l_FrameData.gbufferIndices.w =
+              p_RenderView.get_gbuffer_viewposition().get_index();
           l_FrameData.gbufferIndices.z =
               p_RenderView.get_gbuffer_depth().get_index();
           l_FrameData.gbufferIndices.x =
@@ -1563,7 +1478,10 @@ namespace Low {
 
       bool tick(float p_Delta)
       {
+        VK_RENDERDOC_SECTION_BEGIN("ImGui",
+                                   SINGLE_ARG({0.1f, 0.1f, 0.1f}));
         ImGui::Render();
+        VK_RENDERDOC_SECTION_END();
 
         if (!g_Context.requireResize) {
           LOWR_VK_ASSERT_RETURN(draw(g_Context, p_Delta),

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererRenderView.h"
@@ -52,6 +53,9 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = RenderStep::TYPE_ID;
 
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderStep, setup_callback,
+                              Low::Util::Function<bool(RenderStep)>))
+          Low::Util::Function<bool(RenderStep)>();
       new (&ACCESSOR_TYPE_SOA(
           l_Handle, RenderStep, prepare_callback,
           SINGLE_ARG(
@@ -92,6 +96,8 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_setup_callback(
+          [&](RenderStep p_RenderStep) -> bool { return true; });
       l_Handle.set_prepare_callback(
           [&](RenderStep p_RenderStep,
               RenderView p_RenderView) -> bool { return true; });
@@ -116,6 +122,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+      broadcast_observable(OBSERVABLE_DESTROY);
 
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -157,6 +165,7 @@ namespace Low {
       l_TypeInfo.serialize = &RenderStep::serialize;
       l_TypeInfo.deserialize = &RenderStep::deserialize;
       l_TypeInfo.find_by_index = &RenderStep::_find_by_index;
+      l_TypeInfo.notify = &RenderStep::_notify;
       l_TypeInfo.find_by_name = &RenderStep::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &RenderStep::_make;
@@ -168,6 +177,38 @@ namespace Low {
       l_TypeInfo.get_living_count = &RenderStep::living_count;
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
+      {
+        // Property: setup_callback
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(setup_callback);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderStepData, setup_callback);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.get_setup_callback();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderStep, setup_callback,
+              Low::Util::Function<bool(RenderStep)>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderStep l_Handle = p_Handle.get_id();
+          l_Handle.set_setup_callback(
+              *(Low::Util::Function<bool(RenderStep)> *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderStep l_Handle = p_Handle.get_id();
+          *((Low::Util::Function<bool(RenderStep)> *)p_Data) =
+              l_Handle.get_setup_callback();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: setup_callback
+      }
       {
         // Property: prepare_callback
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
@@ -436,6 +477,15 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: execute
       }
+      {
+        // Function: setup
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(setup);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: setup
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -505,6 +555,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       RenderStep l_Handle = make(p_Name);
+      l_Handle.set_setup_callback(get_setup_callback());
       l_Handle.set_prepare_callback(get_prepare_callback());
       l_Handle.set_teardown_callback(get_teardown_callback());
       l_Handle.set_execute_callback(get_execute_callback());
@@ -554,6 +605,8 @@ namespace Low {
     {
       RenderStep l_Handle = RenderStep::make(N(RenderStep));
 
+      if (p_Node["setup_callback"]) {
+      }
       if (p_Node["prepare_callback"]) {
       }
       if (p_Node["teardown_callback"]) {
@@ -570,6 +623,73 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
+    }
+
+    void RenderStep::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 RenderStep::observe(Low::Util::Name p_Observable,
+                            Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void RenderStep::notify(Low::Util::Handle p_Observed,
+                            Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void RenderStep::_notify(Low::Util::Handle p_Observer,
+                             Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+    {
+      RenderStep l_RenderStep = p_Observer.get_id();
+      l_RenderStep.notify(p_Observed, p_Observable);
+    }
+
+    Low::Util::Function<bool(RenderStep)>
+    RenderStep::get_setup_callback() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_setup_callback
+      // LOW_CODEGEN::END::CUSTOM:GETTER_setup_callback
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderStep, setup_callback,
+                      Low::Util::Function<bool(RenderStep)>);
+    }
+    void RenderStep::set_setup_callback(
+        Low::Util::Function<bool(RenderStep)> p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_setup_callback
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_setup_callback
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderStep, setup_callback,
+               Low::Util::Function<bool(RenderStep)>) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_setup_callback
+      // LOW_CODEGEN::END::CUSTOM:SETTER_setup_callback
+
+      broadcast_observable(N(setup_callback));
     }
 
     Low::Util::Function<bool(Low::Renderer::RenderStep,
@@ -610,6 +730,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_prepare_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_prepare_callback
+
+      broadcast_observable(N(prepare_callback));
     }
 
     Low::Util::Function<bool(Low::Renderer::RenderStep,
@@ -650,6 +772,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_teardown_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_teardown_callback
+
+      broadcast_observable(N(teardown_callback));
     }
 
     Low::Util::Function<bool(Low::Renderer::RenderStep, float,
@@ -687,6 +811,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_execute_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_execute_callback
+
+      broadcast_observable(N(execute_callback));
     }
 
     Low::Util::Function<bool(Low::Renderer::RenderStep,
@@ -729,6 +855,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resolution_update_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_resolution_update_callback
+
+      broadcast_observable(N(resolution_update_callback));
     }
 
     Low::Util::Name RenderStep::get_name() const
@@ -755,6 +883,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     bool RenderStep::prepare(Low::Renderer::RenderView p_RenderView)
@@ -788,6 +918,13 @@ namespace Low {
       return get_execute_callback()(get_id(), p_DeltaTime,
                                     p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
+    }
+
+    bool RenderStep::setup()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_setup
+      return get_setup_callback()(get_id());
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_setup
     }
 
     uint32_t RenderStep::create_instance()

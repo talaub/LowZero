@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
@@ -75,6 +76,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -116,6 +119,7 @@ namespace Low {
       l_TypeInfo.serialize = &Mesh::serialize;
       l_TypeInfo.deserialize = &Mesh::deserialize;
       l_TypeInfo.find_by_index = &Mesh::_find_by_index;
+      l_TypeInfo.notify = &Mesh::_notify;
       l_TypeInfo.find_by_name = &Mesh::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Mesh::_make;
@@ -488,6 +492,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void
+    Mesh::broadcast_observable(Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 Mesh::observe(Low::Util::Name p_Observable,
+                      Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void Mesh::notify(Low::Util::Handle p_Observed,
+                      Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void Mesh::_notify(Low::Util::Handle p_Observer,
+                       Low::Util::Handle p_Observed,
+                       Low::Util::Name p_Observable)
+    {
+      Mesh l_Mesh = p_Observer.get_id();
+      l_Mesh.notify(p_Observed, p_Observable);
+    }
+
     uint32_t Mesh::get_vertex_buffer_start() const
     {
       _LOW_ASSERT(is_alive());
@@ -515,6 +554,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_buffer_start
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_buffer_start
+
+      broadcast_observable(N(vertex_buffer_start));
     }
 
     uint32_t Mesh::get_vertex_count() const
@@ -544,6 +585,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_count
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_count
+
+      broadcast_observable(N(vertex_count));
     }
 
     uint32_t Mesh::get_index_buffer_start() const
@@ -573,6 +616,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_buffer_start
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_buffer_start
+
+      broadcast_observable(N(index_buffer_start));
     }
 
     uint32_t Mesh::get_index_count() const
@@ -602,6 +647,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_count
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_count
+
+      broadcast_observable(N(index_count));
     }
 
     uint32_t Mesh::get_vertexweight_buffer_start() const
@@ -631,6 +678,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_buffer_start
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertexweight_buffer_start
+
+      broadcast_observable(N(vertexweight_buffer_start));
     }
 
     uint32_t Mesh::get_vertexweight_count() const
@@ -660,6 +709,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertexweight_count
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertexweight_count
+
+      broadcast_observable(N(vertexweight_count));
     }
 
     Low::Util::Name Mesh::get_name() const
@@ -689,6 +740,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     uint32_t Mesh::create_instance()

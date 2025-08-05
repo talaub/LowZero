@@ -47,6 +47,8 @@
 #define LOCK_UNLOCK(lockname)
 #endif
 
+#define OBSERVABLE_DESTROY N(destroy)
+
 namespace Low {
   namespace Util {
     struct Variant;
@@ -155,6 +157,7 @@ namespace Low {
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
         uint32_t (*get_living_count)();
+        void (*notify)(Handle, Handle, Name);
       };
 
       struct EnumEntryInfo

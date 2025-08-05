@@ -34,6 +34,15 @@
 
 #define LOW_LOG_END Low::Util::Log::LogLineEnd::LINE_END
 
+#define LOW_NOT_IMPLEMENTED                                          \
+  LOW_LOG_ERROR << "Function '" << __FUNCTION__                      \
+                << "' not yet implemented." << LOW_LOG_END;          \
+  __debugbreak();
+
+#define LOW_NOT_IMPLEMENTED_WARN                                     \
+  LOW_LOG_WARN << "Function '" << __FUNCTION__                       \
+               << "' not yet implemented." << LOW_LOG_END
+
 namespace Low {
   namespace Util {
     struct LOW_EXPORT Handle;

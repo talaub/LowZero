@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererDrawCommand.h"
@@ -82,6 +83,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -122,6 +125,7 @@ namespace Low {
       l_TypeInfo.serialize = &RenderScene::serialize;
       l_TypeInfo.deserialize = &RenderScene::deserialize;
       l_TypeInfo.find_by_index = &RenderScene::_find_by_index;
+      l_TypeInfo.notify = &RenderScene::_notify;
       l_TypeInfo.find_by_name = &RenderScene::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &RenderScene::_make;
@@ -382,6 +386,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void RenderScene::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 RenderScene::observe(Low::Util::Name p_Observable,
+                             Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void RenderScene::notify(Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void RenderScene::_notify(Low::Util::Handle p_Observer,
+                              Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+    {
+      RenderScene l_RenderScene = p_Observer.get_id();
+      l_RenderScene.notify(p_Observed, p_Observable);
+    }
+
     Low::Util::List<DrawCommand> &
     RenderScene::get_draw_commands() const
     {
@@ -423,6 +462,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pointlight_deleted_slots
       // LOW_CODEGEN::END::CUSTOM:SETTER_pointlight_deleted_slots
+
+      broadcast_observable(N(pointlight_deleted_slots));
     }
 
     uint64_t RenderScene::get_data_handle() const
@@ -449,6 +490,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
+
+      broadcast_observable(N(data_handle));
     }
 
     Low::Util::Name RenderScene::get_name() const
@@ -475,6 +518,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     bool RenderScene::insert_draw_command(

@@ -95,6 +95,33 @@ namespace Low {
           return l_Info;
         }
 
+        GraphicsPipelineBuilder
+        GraphicsPipelineBuilder::prepare_fullscreen_effect(
+            VkPipelineLayout p_Layout, Util::String p_ShaderPath,
+            VkFormat p_OutImageFormat)
+        {
+          PipelineUtil::GraphicsPipelineBuilder l_Builder;
+          l_Builder.set_shaders("fullscreen_triangle.vert",
+                                p_ShaderPath);
+          l_Builder.pipelineLayout = p_Layout;
+          l_Builder.set_input_topology(
+              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+          l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+          l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                  VK_FRONT_FACE_CLOCKWISE);
+          l_Builder.set_multismapling_none();
+          l_Builder.disable_blending();
+          l_Builder.disable_depth_test();
+
+          l_Builder.colorAttachmentFormats.clear();
+          l_Builder.colorAttachmentFormats.push_back(
+              p_OutImageFormat);
+
+          l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+          return l_Builder;
+        }
+
         void GraphicsPipelineBuilder::clear()
         {
           inputAssembly = {};

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererVulkanImage.h"
@@ -78,6 +79,8 @@ namespace Low {
         // TODO: Schedule image for deletion
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         WRITE_LOCK(l_Lock);
         ms_Slots[this->m_Data.m_Index].m_Occupied = false;
         ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -118,6 +121,7 @@ namespace Low {
         l_TypeInfo.serialize = &Image::serialize;
         l_TypeInfo.deserialize = &Image::deserialize;
         l_TypeInfo.find_by_index = &Image::_find_by_index;
+        l_TypeInfo.notify = &Image::_notify;
         l_TypeInfo.find_by_name = &Image::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Image::_make;
@@ -353,6 +357,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void
+      Image::broadcast_observable(Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 Image::observe(Low::Util::Name p_Observable,
+                         Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void Image::notify(Low::Util::Handle p_Observed,
+                         Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void Image::_notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable)
+      {
+        Image l_Image = p_Observer.get_id();
+        l_Image.notify(p_Observed, p_Observable);
+      }
+
       AllocatedImage &Image::get_allocated_image() const
       {
         _LOW_ASSERT(is_alive());
@@ -377,6 +416,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_allocated_image
         // LOW_CODEGEN::END::CUSTOM:SETTER_allocated_image
+
+        broadcast_observable(N(allocated_image));
       }
 
       bool Image::is_depth() const
@@ -408,6 +449,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth
         // LOW_CODEGEN::END::CUSTOM:SETTER_depth
+
+        broadcast_observable(N(depth));
       }
 
       Low::Util::Name Image::get_name() const
@@ -434,6 +477,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+        broadcast_observable(N(name));
       }
 
       bool Image::unload()

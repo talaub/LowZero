@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -72,6 +73,9 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, gbuffer_depth,
                               Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderView, gbuffer_viewposition,
+          Low::Renderer::Texture)) Low::Renderer::Texture();
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, lit_image,
                               Low::Renderer::Texture))
           Low::Renderer::Texture();
@@ -115,6 +119,8 @@ namespace Low {
       }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -155,6 +161,7 @@ namespace Low {
       l_TypeInfo.serialize = &RenderView::serialize;
       l_TypeInfo.deserialize = &RenderView::deserialize;
       l_TypeInfo.find_by_index = &RenderView::_find_by_index;
+      l_TypeInfo.notify = &RenderView::_notify;
       l_TypeInfo.find_by_name = &RenderView::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &RenderView::_make;
@@ -445,6 +452,38 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: gbuffer_depth
+      }
+      {
+        // Property: gbuffer_viewposition
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(gbuffer_viewposition);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, gbuffer_viewposition);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_gbuffer_viewposition();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            gbuffer_viewposition,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_gbuffer_viewposition(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_gbuffer_viewposition();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: gbuffer_viewposition
       }
       {
         // Property: lit_image
@@ -742,6 +781,9 @@ namespace Low {
       if (get_gbuffer_depth().is_alive()) {
         l_Handle.set_gbuffer_depth(get_gbuffer_depth());
       }
+      if (get_gbuffer_viewposition().is_alive()) {
+        l_Handle.set_gbuffer_viewposition(get_gbuffer_viewposition());
+      }
       if (get_lit_image().is_alive()) {
         l_Handle.set_lit_image(get_lit_image());
       }
@@ -792,6 +834,41 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+    }
+
+    void RenderView::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 RenderView::observe(Low::Util::Name p_Observable,
+                            Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void RenderView::notify(Low::Util::Handle p_Observed,
+                            Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void RenderView::_notify(Low::Util::Handle p_Observer,
+                             Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+    {
+      RenderView l_RenderView = p_Observer.get_id();
+      l_RenderView.notify(p_Observed, p_Observable);
     }
 
     Low::Math::Vector3 &RenderView::get_camera_position() const
@@ -852,6 +929,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_position
         // LOW_CODEGEN::END::CUSTOM:SETTER_camera_position
+
+        broadcast_observable(N(camera_position));
       }
     }
 
@@ -913,6 +992,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_direction
         // LOW_CODEGEN::END::CUSTOM:SETTER_camera_direction
+
+        broadcast_observable(N(camera_direction));
       }
     }
 
@@ -940,6 +1021,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_target_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_target_handle
+
+      broadcast_observable(N(render_target_handle));
     }
 
     uint64_t RenderView::get_view_info_handle() const
@@ -966,6 +1049,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_info_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_view_info_handle
+
+      broadcast_observable(N(view_info_handle));
     }
 
     Low::Math::UVector2 &RenderView::get_dimensions() const
@@ -1017,6 +1102,8 @@ namespace Low {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
         // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
+
+        broadcast_observable(N(dimensions));
       }
     }
 
@@ -1047,6 +1134,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene
+
+      broadcast_observable(N(render_scene));
     }
 
     Low::Renderer::Texture RenderView::get_gbuffer_albedo() const
@@ -1076,6 +1165,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_albedo
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_albedo
+
+      broadcast_observable(N(gbuffer_albedo));
     }
 
     Low::Renderer::Texture RenderView::get_gbuffer_normals() const
@@ -1105,6 +1196,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_normals
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_normals
+
+      broadcast_observable(N(gbuffer_normals));
     }
 
     Low::Renderer::Texture RenderView::get_gbuffer_depth() const
@@ -1133,6 +1226,40 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_depth
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_depth
+
+      broadcast_observable(N(gbuffer_depth));
+    }
+
+    Low::Renderer::Texture
+    RenderView::get_gbuffer_viewposition() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_viewposition
+      // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_viewposition
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, gbuffer_viewposition,
+                      Low::Renderer::Texture);
+    }
+    void RenderView::set_gbuffer_viewposition(
+        Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_viewposition
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_viewposition
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(RenderView, gbuffer_viewposition,
+               Low::Renderer::Texture) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_viewposition
+      // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_viewposition
+
+      broadcast_observable(N(gbuffer_viewposition));
     }
 
     Low::Renderer::Texture RenderView::get_lit_image() const
@@ -1160,6 +1287,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lit_image
       // LOW_CODEGEN::END::CUSTOM:SETTER_lit_image
+
+      broadcast_observable(N(lit_image));
     }
 
     Low::Util::List<Low::Renderer::RenderStep> &
@@ -1203,6 +1332,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_step_data
       // LOW_CODEGEN::END::CUSTOM:SETTER_step_data
+
+      broadcast_observable(N(step_data));
     }
 
     bool RenderView::is_camera_dirty() const
@@ -1234,6 +1365,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_dirty
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_dirty
+
+      broadcast_observable(N(camera_dirty));
     }
 
     void RenderView::mark_camera_dirty()
@@ -1276,6 +1409,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_dirty
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions_dirty
+
+      broadcast_observable(N(dimensions_dirty));
     }
 
     void RenderView::mark_dimensions_dirty()
@@ -1313,6 +1448,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     void RenderView::add_step(Low::Renderer::RenderStep p_Step)
@@ -1433,6 +1570,15 @@ namespace Low {
         memcpy(&l_NewBuffer[offsetof(RenderViewData, gbuffer_depth) *
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(RenderViewData, gbuffer_depth) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Renderer::Texture));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(RenderViewData,
+                                     gbuffer_viewposition) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderViewData,
+                                   gbuffer_viewposition) *
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Renderer::Texture));
       }

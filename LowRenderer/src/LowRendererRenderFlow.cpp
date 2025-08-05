@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowRendererComputeStep.h"
 #include "LowRendererGraphicsStep.h"
@@ -116,6 +117,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -157,6 +160,7 @@ namespace Low {
       l_TypeInfo.serialize = &RenderFlow::serialize;
       l_TypeInfo.deserialize = &RenderFlow::deserialize;
       l_TypeInfo.find_by_index = &RenderFlow::_find_by_index;
+      l_TypeInfo.notify = &RenderFlow::_notify;
       l_TypeInfo.find_by_name = &RenderFlow::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &RenderFlow::_make;
@@ -968,6 +972,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void RenderFlow::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 RenderFlow::observe(Low::Util::Name p_Observable,
+                            Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void RenderFlow::notify(Low::Util::Handle p_Observed,
+                            Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void RenderFlow::_notify(Low::Util::Handle p_Observer,
+                             Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+    {
+      RenderFlow l_RenderFlow = p_Observer.get_id();
+      l_RenderFlow.notify(p_Observed, p_Observable);
+    }
+
     Interface::Context RenderFlow::get_context() const
     {
       _LOW_ASSERT(is_alive());
@@ -995,6 +1034,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
+
+      broadcast_observable(N(context));
     }
 
     Math::UVector2 &RenderFlow::get_dimensions() const
@@ -1036,6 +1077,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
+
+      broadcast_observable(N(output_image));
     }
 
     Util::List<Util::Handle> &RenderFlow::get_steps() const
@@ -1065,6 +1108,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_steps
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_steps
+
+      broadcast_observable(N(steps));
     }
 
     ResourceRegistry &RenderFlow::get_resources() const
@@ -1108,6 +1153,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_info_buffer
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_frame_info_buffer
+
+      broadcast_observable(N(frame_info_buffer));
     }
 
     Interface::PipelineResourceSignature
@@ -1141,6 +1188,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource_signature
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_resource_signature
+
+      broadcast_observable(N(resource_signature));
     }
 
     Math::Vector3 &RenderFlow::get_camera_position() const
@@ -1198,6 +1247,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_position
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_position
+
+      broadcast_observable(N(camera_position));
     }
 
     Math::Vector3 &RenderFlow::get_camera_direction() const
@@ -1255,6 +1306,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_direction
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_direction
+
+      broadcast_observable(N(camera_direction));
     }
 
     float RenderFlow::get_camera_fov() const
@@ -1284,6 +1337,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_fov
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_fov
+
+      broadcast_observable(N(camera_fov));
     }
 
     float RenderFlow::get_camera_near_plane() const
@@ -1313,6 +1368,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_near_plane
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_near_plane
+
+      broadcast_observable(N(camera_near_plane));
     }
 
     float RenderFlow::get_camera_far_plane() const
@@ -1342,6 +1399,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_far_plane
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_far_plane
+
+      broadcast_observable(N(camera_far_plane));
     }
 
     Math::Matrix4x4 &RenderFlow::get_projection_matrix() const
@@ -1372,6 +1431,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_projection_matrix
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_projection_matrix
+
+      broadcast_observable(N(projection_matrix));
     }
 
     Math::Matrix4x4 &RenderFlow::get_view_matrix() const
@@ -1401,6 +1462,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_matrix
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_view_matrix
+
+      broadcast_observable(N(view_matrix));
     }
 
     DirectionalLight &RenderFlow::get_directional_light() const
@@ -1432,6 +1495,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light
+
+      broadcast_observable(N(directional_light));
     }
 
     Util::List<PointLight> &RenderFlow::get_point_lights() const
@@ -1474,6 +1539,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     RenderFlow RenderFlow::make(Util::Name p_Name,

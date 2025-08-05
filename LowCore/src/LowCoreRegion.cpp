@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCoreEntity.h"
 #include "LowUtilFileIO.h"
@@ -105,6 +106,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       Low::Util::remove_unique_id(get_unique_id());
 
       WRITE_LOCK(l_Lock);
@@ -148,6 +151,7 @@ namespace Low {
       l_TypeInfo.serialize = &Region::serialize;
       l_TypeInfo.deserialize = &Region::deserialize;
       l_TypeInfo.find_by_index = &Region::_find_by_index;
+      l_TypeInfo.notify = &Region::_notify;
       l_TypeInfo.find_by_name = &Region::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Region::_make;
@@ -603,6 +607,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void
+    Region::broadcast_observable(Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 Region::observe(Low::Util::Name p_Observable,
+                        Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void Region::notify(Low::Util::Handle p_Observed,
+                        Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void Region::_notify(Low::Util::Handle p_Observer,
+                         Low::Util::Handle p_Observed,
+                         Low::Util::Name p_Observable)
+    {
+      Region l_Region = p_Observer.get_id();
+      l_Region.notify(p_Observed, p_Observable);
+    }
+
     bool Region::is_loaded() const
     {
       _LOW_ASSERT(is_alive());
@@ -635,6 +674,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
+
+      broadcast_observable(N(loaded));
     }
 
     bool Region::is_streaming_enabled() const
@@ -669,6 +710,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_enabled
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_enabled
+
+      broadcast_observable(N(streaming_enabled));
     }
 
     Math::Vector3 &Region::get_streaming_position() const
@@ -726,6 +769,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_position
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_position
+
+      broadcast_observable(N(streaming_position));
     }
 
     float Region::get_streaming_radius() const
@@ -755,6 +800,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_streaming_radius
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_streaming_radius
+
+      broadcast_observable(N(streaming_radius));
     }
 
     Util::Set<Util::UniqueId> &Region::get_entities() const
@@ -797,6 +844,8 @@ namespace Low {
 
       p_Value.get_regions().insert(get_unique_id());
       // LOW_CODEGEN::END::CUSTOM:SETTER_scene
+
+      broadcast_observable(N(scene));
     }
 
     Low::Util::UniqueId Region::get_unique_id() const
@@ -826,6 +875,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+      broadcast_observable(N(unique_id));
     }
 
     Low::Util::Name Region::get_name() const
@@ -855,6 +906,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     void Region::serialize_entities(Util::Yaml::Node &p_Node)

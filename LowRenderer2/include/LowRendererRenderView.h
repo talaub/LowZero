@@ -31,6 +31,7 @@ namespace Low {
       Low::Renderer::Texture gbuffer_albedo;
       Low::Renderer::Texture gbuffer_normals;
       Low::Renderer::Texture gbuffer_depth;
+      Low::Renderer::Texture gbuffer_viewposition;
       Low::Renderer::Texture lit_image;
       Low::Util::List<Low::Renderer::RenderStep> steps;
       Low::Util::List<RenderStepDataPtr> step_data;
@@ -84,6 +85,16 @@ namespace Low {
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
+
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Handle p_Observer) const;
+      void notify(Low::Util::Handle p_Observed,
+                  Low::Util::Name p_Observable);
+      void broadcast_observable(Low::Util::Name p_Observable) const;
+
+      static void _notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable);
 
       static uint32_t get_capacity();
 
@@ -154,6 +165,9 @@ namespace Low {
 
       Low::Renderer::Texture get_gbuffer_depth() const;
       void set_gbuffer_depth(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_gbuffer_viewposition() const;
+      void set_gbuffer_viewposition(Low::Renderer::Texture p_Value);
 
       Low::Renderer::Texture get_lit_image() const;
       void set_lit_image(Low::Renderer::Texture p_Value);

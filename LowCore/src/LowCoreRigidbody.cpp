@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 #include "LowCorePhysicsSystem.h"
@@ -130,6 +131,8 @@ namespace Low {
         set_initialized(false);
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -173,6 +176,7 @@ namespace Low {
         l_TypeInfo.serialize = &Rigidbody::serialize;
         l_TypeInfo.deserialize = &Rigidbody::deserialize;
         l_TypeInfo.find_by_index = &Rigidbody::_find_by_index;
+        l_TypeInfo.notify = &Rigidbody::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Rigidbody::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -569,6 +573,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void Rigidbody::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 Rigidbody::observe(Low::Util::Name p_Observable,
+                             Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void Rigidbody::notify(Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void Rigidbody::_notify(Low::Util::Handle p_Observer,
+                              Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+      {
+        Rigidbody l_Rigidbody = p_Observer.get_id();
+        l_Rigidbody.notify(p_Observed, p_Observable);
+      }
+
       bool Rigidbody::is_fixed() const
       {
         _LOW_ASSERT(is_alive());
@@ -617,6 +656,8 @@ namespace Low {
 
         get_rigid_dynamic().set_fixed(p_Value);
         // LOW_CODEGEN::END::CUSTOM:SETTER_fixed
+
+        broadcast_observable(N(fixed));
       }
 
       bool Rigidbody::is_gravity() const
@@ -667,6 +708,8 @@ namespace Low {
 
         get_rigid_dynamic().set_gravity(p_Value);
         // LOW_CODEGEN::END::CUSTOM:SETTER_gravity
+
+        broadcast_observable(N(gravity));
       }
 
       float Rigidbody::get_mass() const
@@ -712,6 +755,8 @@ namespace Low {
 
         get_rigid_dynamic().set_mass(p_Value);
         // LOW_CODEGEN::END::CUSTOM:SETTER_mass
+
+        broadcast_observable(N(mass));
       }
 
       bool Rigidbody::is_initialized() const
@@ -746,6 +791,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
+
+        broadcast_observable(N(initialized));
       }
 
       PhysicsRigidDynamic &Rigidbody::get_rigid_dynamic() const
@@ -839,6 +886,8 @@ namespace Low {
         }
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_shape
+
+        broadcast_observable(N(shape));
       }
 
       Low::Core::Entity Rigidbody::get_entity() const
@@ -868,6 +917,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId Rigidbody::get_unique_id() const
@@ -897,6 +948,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       uint32_t Rigidbody::create_instance()

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include "LowUtilContainers.h"
 
@@ -66,6 +67,11 @@ namespace Low {
                            bool p_Project = false);
 
           void update_shaders();
+
+          static GraphicsPipelineBuilder
+          prepare_fullscreen_effect(VkPipelineLayout p_Layout,
+                                    Util::String p_ShaderPath,
+                                    VkFormat p_OutImageFormat);
 
         private:
           void set_shaders(VkShaderModule p_VertexShader,

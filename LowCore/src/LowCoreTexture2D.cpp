@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowUtilResource.h"
 #include "LowUtilJobManager.h"
@@ -106,6 +107,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -152,6 +155,7 @@ namespace Low {
       l_TypeInfo.serialize = &Texture2D::serialize;
       l_TypeInfo.deserialize = &Texture2D::deserialize;
       l_TypeInfo.find_by_index = &Texture2D::_find_by_index;
+      l_TypeInfo.notify = &Texture2D::_notify;
       l_TypeInfo.find_by_name = &Texture2D::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Texture2D::_make;
@@ -480,6 +484,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void Texture2D::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 Texture2D::observe(Low::Util::Name p_Observable,
+                           Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void Texture2D::notify(Low::Util::Handle p_Observed,
+                           Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void Texture2D::_notify(Low::Util::Handle p_Observer,
+                            Low::Util::Handle p_Observed,
+                            Low::Util::Name p_Observable)
+    {
+      Texture2D l_Texture2D = p_Observer.get_id();
+      l_Texture2D.notify(p_Observed, p_Observable);
+    }
+
     Util::String &Texture2D::get_path() const
     {
       _LOW_ASSERT(is_alive());
@@ -513,6 +552,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
+
+      broadcast_observable(N(path));
     }
 
     Renderer::Texture2D Texture2D::get_renderer_texture() const
@@ -544,6 +585,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_texture
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_texture
+
+      broadcast_observable(N(renderer_texture));
     }
 
     uint32_t Texture2D::get_reference_count() const
@@ -573,6 +616,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_reference_count
+
+      broadcast_observable(N(reference_count));
     }
 
     ResourceState Texture2D::get_state() const
@@ -602,6 +647,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
+
+      broadcast_observable(N(state));
     }
 
     Low::Util::Name Texture2D::get_name() const
@@ -631,6 +678,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     Texture2D Texture2D::make(Util::String &p_Path)

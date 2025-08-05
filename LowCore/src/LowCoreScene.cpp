@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCoreRegion.h"
 
@@ -94,6 +95,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       Low::Util::remove_unique_id(get_unique_id());
 
       WRITE_LOCK(l_Lock);
@@ -137,6 +140,7 @@ namespace Low {
       l_TypeInfo.serialize = &Scene::serialize;
       l_TypeInfo.deserialize = &Scene::deserialize;
       l_TypeInfo.find_by_index = &Scene::_find_by_index;
+      l_TypeInfo.notify = &Scene::_notify;
       l_TypeInfo.find_by_name = &Scene::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Scene::_make;
@@ -424,6 +428,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void
+    Scene::broadcast_observable(Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 Scene::observe(Low::Util::Name p_Observable,
+                       Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void Scene::notify(Low::Util::Handle p_Observed,
+                       Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void Scene::_notify(Low::Util::Handle p_Observer,
+                        Low::Util::Handle p_Observed,
+                        Low::Util::Name p_Observable)
+    {
+      Scene l_Scene = p_Observer.get_id();
+      l_Scene.notify(p_Observed, p_Observable);
+    }
+
     Low::Util::Set<Util::UniqueId> &Scene::get_regions() const
     {
       _LOW_ASSERT(is_alive());
@@ -468,6 +507,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded
+
+      broadcast_observable(N(loaded));
     }
 
     Low::Util::UniqueId Scene::get_unique_id() const
@@ -497,6 +538,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+      broadcast_observable(N(unique_id));
     }
 
     Low::Util::Name Scene::get_name() const
@@ -526,6 +569,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     void Scene::load()

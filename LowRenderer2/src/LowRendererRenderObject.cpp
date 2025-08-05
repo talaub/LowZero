@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererRenderScene.h"
@@ -59,9 +60,9 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, world_transform,
                               Low::Math::Matrix4x4))
           Low::Math::Matrix4x4();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, mesh_resource,
-                              Low::Renderer::MeshResource))
-          Low::Renderer::MeshResource();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, mesh,
+                              Low::Renderer::Mesh))
+          Low::Renderer::Mesh();
       ACCESSOR_TYPE_SOA(l_Handle, RenderObject, uploaded, bool) =
           false;
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, material,
@@ -93,6 +94,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       // LOW_CODEGEN::END::CUSTOM:DESTROY
+
+      broadcast_observable(OBSERVABLE_DESTROY);
 
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
@@ -134,6 +137,7 @@ namespace Low {
       l_TypeInfo.serialize = &RenderObject::serialize;
       l_TypeInfo.deserialize = &RenderObject::deserialize;
       l_TypeInfo.find_by_index = &RenderObject::_find_by_index;
+      l_TypeInfo.notify = &RenderObject::_notify;
       l_TypeInfo.find_by_name = &RenderObject::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &RenderObject::_make;
@@ -178,33 +182,29 @@ namespace Low {
         // End property: world_transform
       }
       {
-        // Property: mesh_resource
+        // Property: mesh
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-        l_PropertyInfo.name = N(mesh_resource);
+        l_PropertyInfo.name = N(mesh);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset =
-            offsetof(RenderObjectData, mesh_resource);
+        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType =
-            Low::Renderer::MeshResource::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
-          l_Handle.get_mesh_resource();
+          l_Handle.get_mesh();
           return (void *)&ACCESSOR_TYPE_SOA(
-              p_Handle, RenderObject, mesh_resource,
-              Low::Renderer::MeshResource);
+              p_Handle, RenderObject, mesh, Low::Renderer::Mesh);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
-          *((Low::Renderer::MeshResource *)p_Data) =
-              l_Handle.get_mesh_resource();
+          *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_mesh();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-        // End property: mesh_resource
+        // End property: mesh
       }
       {
         // Property: uploaded
@@ -420,11 +420,10 @@ namespace Low {
         }
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-          l_ParameterInfo.name = N(p_MeshResource);
+          l_ParameterInfo.name = N(p_Mesh);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType =
-              Low::Renderer::MeshResource::TYPE_ID;
+          l_ParameterInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -500,8 +499,8 @@ namespace Low {
 
       RenderObject l_Handle = make(p_Name);
       l_Handle.set_world_transform(get_world_transform());
-      if (get_mesh_resource().is_alive()) {
-        l_Handle.set_mesh_resource(get_mesh_resource());
+      if (get_mesh().is_alive()) {
+        l_Handle.set_mesh(get_mesh());
       }
       l_Handle.set_uploaded(is_uploaded());
       l_Handle.set_slot(get_slot());
@@ -556,6 +555,41 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
 
+    void RenderObject::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 RenderObject::observe(Low::Util::Name p_Observable,
+                              Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void RenderObject::notify(Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void RenderObject::_notify(Low::Util::Handle p_Observer,
+                               Low::Util::Handle p_Observed,
+                               Low::Util::Name p_Observable)
+    {
+      RenderObject l_RenderObject = p_Observer.get_id();
+      l_RenderObject.notify(p_Observed, p_Observable);
+    }
+
     Low::Math::Matrix4x4 &RenderObject::get_world_transform() const
     {
       _LOW_ASSERT(is_alive());
@@ -588,37 +622,37 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
         ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_transform
+
+        broadcast_observable(N(world_transform));
       }
     }
 
-    Low::Renderer::MeshResource
-    RenderObject::get_mesh_resource() const
+    Low::Renderer::Mesh RenderObject::get_mesh() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_resource
-      // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_resource
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
+      // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
       READ_LOCK(l_ReadLock);
-      return TYPE_SOA(RenderObject, mesh_resource,
-                      Low::Renderer::MeshResource);
+      return TYPE_SOA(RenderObject, mesh, Low::Renderer::Mesh);
     }
-    void RenderObject::set_mesh_resource(
-        Low::Renderer::MeshResource p_Value)
+    void RenderObject::set_mesh(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_resource
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_resource
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(RenderObject, mesh_resource,
-               Low::Renderer::MeshResource) = p_Value;
+      TYPE_SOA(RenderObject, mesh, Low::Renderer::Mesh) = p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_resource
-      // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_resource
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+      // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
+
+      broadcast_observable(N(mesh));
     }
 
     bool RenderObject::is_uploaded() const
@@ -650,6 +684,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
+
+      broadcast_observable(N(uploaded));
     }
 
     uint32_t RenderObject::get_slot() const
@@ -676,6 +712,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
+
+      broadcast_observable(N(slot));
     }
 
     uint64_t RenderObject::get_render_scene_handle() const
@@ -702,6 +740,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene_handle
+
+      broadcast_observable(N(render_scene_handle));
     }
 
     Low::Renderer::Material RenderObject::get_material() const
@@ -735,6 +775,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
         ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:SETTER_material
+
+        broadcast_observable(N(material));
       }
     }
 
@@ -783,6 +825,8 @@ namespace Low {
         ms_Dirty.insert(get_id());
       }
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+      broadcast_observable(N(dirty));
     }
 
     void RenderObject::mark_dirty()
@@ -820,21 +864,22 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
-    RenderObject
-    RenderObject::make(RenderScene p_RenderScene,
-                       Low::Renderer::MeshResource p_MeshResource)
+    RenderObject RenderObject::make(RenderScene p_RenderScene,
+                                    Low::Renderer::Mesh p_Mesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       _LOW_ASSERT(p_RenderScene.is_alive());
 
       RenderObject l_Handle = make(N(RenderObject));
       l_Handle.set_render_scene_handle(p_RenderScene.get_id());
-      l_Handle.set_mesh_resource(p_MeshResource);
+      l_Handle.set_mesh(p_Mesh);
 
       LOW_ASSERT(
-          p_MeshResource.is_alive(),
+          p_Mesh.is_alive(),
           "Cannot initialize render object without valid mesh");
 
       return l_Handle;
@@ -887,12 +932,11 @@ namespace Low {
             l_Capacity * sizeof(Low::Math::Matrix4x4));
       }
       {
-        memcpy(
-            &l_NewBuffer[offsetof(RenderObjectData, mesh_resource) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(RenderObjectData, mesh_resource) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(Low::Renderer::MeshResource));
+        memcpy(&l_NewBuffer[offsetof(RenderObjectData, mesh) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(RenderObjectData, mesh) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Renderer::Mesh));
       }
       {
         memcpy(&l_NewBuffer[offsetof(RenderObjectData, uploaded) *

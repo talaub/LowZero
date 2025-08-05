@@ -243,6 +243,13 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     i_Type.module = l_Config.module;
     i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Type.api_file = `${i_Type.module}Api.h`;
+
+    if (!i_Type.observables) {
+      i_Type.observables = [];
+    }
+
+    i_Type.observables.push({ name: "destroy" });
+
     if (l_Config.api_file) {
       i_Type.api_file = l_Config.api_file;
     }
@@ -313,6 +320,9 @@ function process_file(p_Path, p_FileName, p_Project = false) {
 
     const l_DirtyFlags = [];
     for (let [i_PropName, i_Prop] of Object.entries(i_Type.properties)) {
+      i_Type.observables.push({
+        name: i_PropName,
+      });
       if (!i_Prop.dirty_flag) {
         continue;
       }

@@ -1,13 +1,14 @@
 #pragma once
 
-#include "LowRendererMeshResource.h"
+#include "LowRendererMesh.h"
 #include "LowRendererImageResource.h"
 
 namespace Low {
   namespace Renderer {
     namespace ResourceManager {
-      bool load_mesh_resource(MeshResource p_MeshResource);
-      bool unload_mesh_resource(MeshResource p_MeshResource);
+      bool load_mesh(Mesh p_Mesh);
+      bool upload_mesh(Mesh p_Mesh);
+      // bool unload_mesh_resource(MeshResource p_MeshResource);
 
       bool load_image_resource(ImageResource p_ImageResource);
 

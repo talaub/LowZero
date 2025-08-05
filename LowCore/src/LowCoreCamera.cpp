@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
@@ -99,6 +100,8 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -142,6 +145,7 @@ namespace Low {
         l_TypeInfo.serialize = &Camera::serialize;
         l_TypeInfo.deserialize = &Camera::deserialize;
         l_TypeInfo.find_by_index = &Camera::_find_by_index;
+        l_TypeInfo.notify = &Camera::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Camera::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -395,6 +399,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void
+      Camera::broadcast_observable(Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 Camera::observe(Low::Util::Name p_Observable,
+                          Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void Camera::notify(Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void Camera::_notify(Low::Util::Handle p_Observer,
+                           Low::Util::Handle p_Observed,
+                           Low::Util::Name p_Observable)
+      {
+        Camera l_Camera = p_Observer.get_id();
+        l_Camera.notify(p_Observed, p_Observable);
+      }
+
       bool Camera::is_active() const
       {
         _LOW_ASSERT(is_alive());
@@ -427,6 +466,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_active
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_active
+
+        broadcast_observable(N(active));
       }
 
       float Camera::get_fov() const
@@ -471,6 +512,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_fov
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_fov
+
+        broadcast_observable(N(fov));
       }
 
       Low::Core::Entity Camera::get_entity() const
@@ -500,6 +543,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId Camera::get_unique_id() const
@@ -529,6 +574,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       void Camera::activate()

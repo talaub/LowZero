@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
@@ -86,6 +87,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -127,6 +130,7 @@ namespace Low {
       l_TypeInfo.serialize = &SkeletalAnimation::serialize;
       l_TypeInfo.deserialize = &SkeletalAnimation::deserialize;
       l_TypeInfo.find_by_index = &SkeletalAnimation::_find_by_index;
+      l_TypeInfo.notify = &SkeletalAnimation::_notify;
       l_TypeInfo.find_by_name = &SkeletalAnimation::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &SkeletalAnimation::_make;
@@ -400,6 +404,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void SkeletalAnimation::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 SkeletalAnimation::observe(Low::Util::Name p_Observable,
+                                   Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void SkeletalAnimation::notify(Low::Util::Handle p_Observed,
+                                   Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void SkeletalAnimation::_notify(Low::Util::Handle p_Observer,
+                                    Low::Util::Handle p_Observed,
+                                    Low::Util::Name p_Observable)
+    {
+      SkeletalAnimation l_SkeletalAnimation = p_Observer.get_id();
+      l_SkeletalAnimation.notify(p_Observed, p_Observable);
+    }
+
     float SkeletalAnimation::get_duration() const
     {
       _LOW_ASSERT(is_alive());
@@ -427,6 +466,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_duration
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_duration
+
+      broadcast_observable(N(duration));
     }
 
     float SkeletalAnimation::get_ticks_per_second() const
@@ -456,6 +497,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ticks_per_second
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_ticks_per_second
+
+      broadcast_observable(N(ticks_per_second));
     }
 
     Util::List<Util::Resource::AnimationChannel> &
@@ -499,6 +542,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     uint32_t SkeletalAnimation::create_instance()

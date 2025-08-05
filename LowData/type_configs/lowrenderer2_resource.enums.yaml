@@ -5,7 +5,7 @@ namespace:
   - Renderer
 dll_macro: LOW_RENDERER2_API
 enums:
-  MeshResourceState:
+  MeshState:
     options:
       - name: Unknown
       - name: Unloaded

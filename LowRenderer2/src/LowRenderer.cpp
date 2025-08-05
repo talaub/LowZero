@@ -16,6 +16,13 @@
 #include "LowRendererDrawCommand.h"
 #include "LowRendererRenderStep.h"
 #include "LowRendererPointLight.h"
+#include "LowRendererSubmeshGeometry.h"
+#include "LowRendererMesh.h"
+#include "LowRendererMeshGeometry.h"
+#include "LowRendererGpuSubmesh.h"
+#include "LowRendererGpuMesh.h"
+#include "LowRendererUiDrawCommand.h"
+#include "LowRendererUiCanvas.h"
 
 #include "LowUtilAssert.h"
 
@@ -35,21 +42,35 @@ namespace Low {
       RenderScene::initialize();
       RenderView::initialize();
       RenderObject::initialize();
+      Mesh::initialize();
+      MeshGeometry::initialize();
+      SubmeshGeometry::initialize();
+      GpuMesh::initialize();
+      GpuSubmesh::initialize();
       MeshResource::initialize();
       ImageResource::initialize();
       Material::initialize();
       Texture::initialize();
       DrawCommand::initialize();
       PointLight::initialize();
+      UiCanvas::initialize();
+      UiDrawCommand::initialize();
     }
 
     static void cleanup_types()
     {
+      UiDrawCommand::cleanup();
+      UiCanvas::cleanup();
       PointLight::cleanup();
       RenderView::cleanup();
       RenderObject::cleanup();
       ImageResource::cleanup();
       MeshResource::cleanup();
+      GpuSubmesh::cleanup();
+      GpuMesh::cleanup();
+      SubmeshGeometry::cleanup();
+      MeshGeometry::cleanup();
+      Mesh::cleanup();
       Material::cleanup();
       Texture::cleanup();
       RenderScene::cleanup();
@@ -214,8 +235,8 @@ namespace Low {
           continue;
         }
 
-        if (i_RenderObject.get_mesh_resource().get_state() !=
-            MeshResourceState::LOADED) {
+        if (i_RenderObject.get_mesh().get_state() !=
+            MeshState::LOADED) {
           // If the renderobject's meshresource has not been loaded
           // yet we reschedule its update so that we can initialize
           // everything properly
@@ -224,24 +245,20 @@ namespace Low {
         }
 
         if (i_RenderObject.get_draw_commands().empty()) {
-          MeshResource i_MeshResource =
-              i_RenderObject.get_mesh_resource();
+          Mesh i_Mesh = i_RenderObject.get_mesh();
+          GpuMesh i_GpuMesh = i_Mesh.get_gpu();
 
-          for (auto sit = i_MeshResource.get_submeshes().begin();
-               sit != i_MeshResource.get_submeshes().end(); ++sit) {
-            Submesh i_Submesh = *sit;
-            for (auto mit = sit->get_meshinfos().begin();
-                 mit != sit->get_meshinfos().end(); ++mit) {
-              MeshInfo i_MeshInfo = *mit;
+          for (auto sit = i_GpuMesh.get_submeshes().begin();
+               sit != i_GpuMesh.get_submeshes().end(); ++sit) {
+            GpuSubmesh i_GpuSubmesh = *sit;
 
-              DrawCommand i_DrawCommand = DrawCommand::make(
-                  i_RenderObject,
-                  i_RenderObject.get_render_scene_handle(),
-                  i_MeshInfo);
+            DrawCommand i_DrawCommand = DrawCommand::make(
+                i_RenderObject,
+                i_RenderObject.get_render_scene_handle(),
+                i_GpuSubmesh);
 
-              i_RenderObject.get_draw_commands().push_back(
-                  i_DrawCommand);
-            }
+            i_RenderObject.get_draw_commands().push_back(
+                i_DrawCommand);
           }
         }
 
@@ -409,6 +426,18 @@ namespace Low {
 
       LOW_ASSERT(Vulkan::prepare_tick(p_Delta),
                  "Failed to prepare tick Vulkan renderer");
+
+      {
+        // Setup rendersteps
+        static bool l_IsInitialized = false;
+        if (!l_IsInitialized) {
+          l_IsInitialized = true;
+          for (u32 i = 0; i < RenderStep::living_count(); ++i) {
+            LOW_ASSERT(RenderStep::living_instances()[i].setup(),
+                       "Failed to setup renderstep.");
+          }
+        }
+      }
     }
 
     void tick(float p_Delta)
@@ -510,15 +539,29 @@ namespace Low {
       }
       ImGui::End();
 
-      ImGui::Begin("Texture");
-      ImGui::Image(
-          Texture::living_instances()[2].get_imgui_texture_id(),
-          ImVec2(256, 256));
+      ImGui::Begin("Normals");
+      ImGui::Image(RenderView::living_instances()[0]
+                       .get_gbuffer_normals()
+                       .get_imgui_texture_id(),
+                   ImVec2(256, 256));
       ImGui::End();
       ImGui::Begin("Depth");
-      ImGui::Image(
-          Texture::living_instances()[3].get_imgui_texture_id(),
-          ImVec2(256, 256));
+      ImGui::Image(RenderView::living_instances()[0]
+                       .get_gbuffer_depth()
+                       .get_imgui_texture_id(),
+                   ImVec2(256, 256));
+      ImGui::End();
+      ImGui::Begin("View Position");
+      ImGui::Image(RenderView::living_instances()[0]
+                       .get_gbuffer_viewposition()
+                       .get_imgui_texture_id(),
+                   ImVec2(256, 256));
+      ImGui::End();
+      ImGui::Begin("Albedo");
+      ImGui::Image(RenderView::living_instances()[0]
+                       .get_gbuffer_albedo()
+                       .get_imgui_texture_id(),
+                   ImVec2(256, 256));
       ImGui::End();
 
       if (l_ImageInit) {
@@ -543,14 +586,15 @@ namespace Low {
           "Failed to check for window resize in Vulkan renderer");
     }
 
-    MeshResource load_mesh(Util::String p_MeshPath)
+    Mesh load_mesh(Util::String p_MeshPath)
     {
       MeshResource l_MeshResource = MeshResource::make(p_MeshPath);
+      Mesh l_Mesh = Mesh::make(l_MeshResource.get_name());
+      l_Mesh.set_resource(l_MeshResource);
 
-      _LOW_ASSERT(
-          ResourceManager::load_mesh_resource(l_MeshResource));
+      _LOW_ASSERT(ResourceManager::load_mesh(l_Mesh));
 
-      return l_MeshResource;
+      return l_Mesh;
     }
 
     ImageResource load_image(Util::String p_ImagePath)

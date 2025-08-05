@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowMathQuaternionUtil.h"
 
@@ -131,6 +132,8 @@ namespace Low {
           set_parent(0);
           // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+          broadcast_observable(OBSERVABLE_DESTROY);
+
           Low::Util::remove_unique_id(get_unique_id());
 
           WRITE_LOCK(l_Lock);
@@ -175,6 +178,7 @@ namespace Low {
           l_TypeInfo.serialize = &Display::serialize;
           l_TypeInfo.deserialize = &Display::deserialize;
           l_TypeInfo.find_by_index = &Display::_find_by_index;
+          l_TypeInfo.notify = &Display::_notify;
           l_TypeInfo.make_default = nullptr;
           l_TypeInfo.make_component = &Display::_make;
           l_TypeInfo.duplicate_default = nullptr;
@@ -890,6 +894,41 @@ namespace Low {
           return l_Handle;
         }
 
+        void Display::broadcast_observable(
+            Low::Util::Name p_Observable) const
+        {
+          Low::Util::ObserverKey l_Key;
+          l_Key.handleId = get_id();
+          l_Key.observableName = p_Observable.m_Index;
+
+          Low::Util::notify(l_Key);
+        }
+
+        u64 Display::observe(Low::Util::Name p_Observable,
+                             Low::Util::Handle p_Observer) const
+        {
+          Low::Util::ObserverKey l_Key;
+          l_Key.handleId = get_id();
+          l_Key.observableName = p_Observable.m_Index;
+
+          return Low::Util::observe(l_Key, p_Observer);
+        }
+
+        void Display::notify(Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+        {
+          // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+          // LOW_CODEGEN::END::CUSTOM:NOTIFY
+        }
+
+        void Display::_notify(Low::Util::Handle p_Observer,
+                              Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+        {
+          Display l_Display = p_Observer.get_id();
+          l_Display.notify(p_Observed, p_Observable);
+        }
+
         Low::Math::Vector2 &Display::pixel_position() const
         {
           _LOW_ASSERT(is_alive());
@@ -944,6 +983,8 @@ namespace Low {
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
 
             // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_position
+
+            broadcast_observable(N(pixel_position));
           }
         }
 
@@ -979,6 +1020,8 @@ namespace Low {
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
 
             // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
+
+            broadcast_observable(N(rotation));
           }
         }
 
@@ -1035,6 +1078,8 @@ namespace Low {
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
 
             // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_scale
+
+            broadcast_observable(N(pixel_scale));
           }
         }
 
@@ -1070,6 +1115,8 @@ namespace Low {
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer
 
             // LOW_CODEGEN::END::CUSTOM:SETTER_layer
+
+            broadcast_observable(N(layer));
           }
         }
 
@@ -1123,6 +1170,8 @@ namespace Low {
               set_parent_uid(0);
             }
             // LOW_CODEGEN::END::CUSTOM:SETTER_parent
+
+            broadcast_observable(N(parent));
           }
         }
 
@@ -1158,6 +1207,8 @@ namespace Low {
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
 
             // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
+
+            broadcast_observable(N(parent_uid));
           }
         }
 
@@ -1226,6 +1277,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_position
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_position
+
+          broadcast_observable(N(absolute_pixel_position));
         }
 
         float Display::get_absolute_rotation()
@@ -1256,6 +1309,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_rotation
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_rotation
+
+          broadcast_observable(N(absolute_rotation));
         }
 
         Low::Math::Vector2 &Display::get_absolute_pixel_scale()
@@ -1309,6 +1364,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_pixel_scale
+
+          broadcast_observable(N(absolute_pixel_scale));
         }
 
         uint32_t Display::get_absolute_layer()
@@ -1339,6 +1396,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_layer
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_absolute_layer
+
+          broadcast_observable(N(absolute_layer));
         }
 
         Low::Math::Matrix4x4 &Display::get_world_matrix()
@@ -1371,6 +1430,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
+
+          broadcast_observable(N(world_matrix));
         }
 
         bool Display::is_world_updated() const
@@ -1405,6 +1466,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_updated
+
+          broadcast_observable(N(world_updated));
         }
 
         Low::Core::UI::Element Display::get_element() const
@@ -1435,6 +1498,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_element
+
+          broadcast_observable(N(element));
         }
 
         Low::Util::UniqueId Display::get_unique_id() const
@@ -1464,6 +1529,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+          broadcast_observable(N(unique_id));
         }
 
         bool Display::is_dirty() const
@@ -1498,6 +1565,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+          broadcast_observable(N(dirty));
         }
 
         void Display::mark_dirty()
@@ -1558,6 +1627,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
+
+          broadcast_observable(N(world_dirty));
         }
 
         void Display::mark_world_dirty()

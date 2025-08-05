@@ -9,9 +9,6 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowUtilResource.h"
-#include "LowRendererMeshResourceState.h"
-#include "LowRendererSubmesh.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -22,12 +19,6 @@ namespace Low {
     struct LOW_RENDERER2_API MeshResourceData
     {
       Util::String path;
-      Util::Resource::Mesh resource_mesh;
-      MeshResourceState state;
-      uint32_t submesh_count;
-      uint32_t uploaded_submesh_count;
-      Low::Util::List<Submesh> submeshes;
-      uint32_t full_meshinfo_count;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -80,6 +71,16 @@ namespace Low {
 
       bool is_alive() const;
 
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Handle p_Observer) const;
+      void notify(Low::Util::Handle p_Observed,
+                  Low::Util::Name p_Observable);
+      void broadcast_observable(Low::Util::Name p_Observable) const;
+
+      static void _notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable);
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
@@ -113,23 +114,6 @@ namespace Low {
       }
 
       Util::String &get_path() const;
-
-      Util::Resource::Mesh &get_resource_mesh() const;
-
-      MeshResourceState get_state() const;
-      void set_state(MeshResourceState p_Value);
-
-      uint32_t get_submesh_count() const;
-      void set_submesh_count(uint32_t p_Value);
-
-      uint32_t get_uploaded_submesh_count() const;
-      void set_uploaded_submesh_count(uint32_t p_Value);
-
-      Low::Util::List<Submesh> &get_submeshes() const;
-      void set_submeshes(Low::Util::List<Submesh> &p_Value);
-
-      uint32_t get_full_meshinfo_count() const;
-      void set_full_meshinfo_count(uint32_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

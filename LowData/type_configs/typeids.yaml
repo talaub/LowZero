@@ -64,6 +64,12 @@ LowRenderer2:
   Scene: 63
   RenderStep: 64
   PointLight: 65
+  MeshGeometry: 66
+  SubmeshGeometry: 67
+  GpuMesh: 68
+  GpuSubmesh: 69
+  UiDrawCommand: 70
+  UiCanvas: 71
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

@@ -20,6 +20,7 @@ namespace Low {
     {
       UNDEFINED,
       RGBA16_SFLOAT,
+      RGB16_SFLOAT,
       R16_SFLOAT,
       DEPTH
     };

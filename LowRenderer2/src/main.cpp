@@ -17,6 +17,7 @@
 #include "LowRendererMaterialType.h"
 #include "LowRendererRenderStep.h"
 #include "LowRendererPointLight.h"
+#include "LowRendererMesh.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -45,7 +46,7 @@ Low::Renderer::MaterialType g_SolidBaseMaterialType;
 Low::Renderer::Material g_TestMaterial;
 
 Low::Math::Vector3 g_Position(0.0f);
-Low::Math::Quaternion g_Rotation(1.0f, 0.0f, 0.0f, 0.0f);
+Low::Math::Quaternion g_Rotation(0.0f, 0.0f, 1.0f, 0.0f);
 Low::Math::Vector3 g_Scale(1.0f);
 
 Low::Renderer::PointLight g_PointLight;
@@ -144,10 +145,9 @@ void init()
   Low::Renderer::initialize();
   {
     Low::Util::String l_BasePath = Low::Util::get_project().dataPath;
-    l_BasePath += "/_internal/assets/meshes/cube.glb";
+    l_BasePath += "/_internal/assets/meshes/spaceship.glb";
 
-    Low::Renderer::MeshResource l_MeshResource =
-        Low::Renderer::load_mesh(l_BasePath);
+    Low::Renderer::Mesh l_Mesh = Low::Renderer::load_mesh(l_BasePath);
 
     Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
@@ -175,6 +175,8 @@ void init()
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
         RENDERSTEP_LIGHTCULLING_NAME));
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
+        RENDERSTEP_SSAO_NAME));
+    g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
         RENDERSTEP_LIGHTING_NAME));
 
     g_SolidBaseMaterialType =
@@ -199,8 +201,8 @@ void init()
     g_RenderView.set_camera_position(p);
     g_RenderView.set_camera_direction(d);
 
-    g_RenderObject = Low::Renderer::RenderObject::make(
-        g_RenderScene, l_MeshResource);
+    g_RenderObject =
+        Low::Renderer::RenderObject::make(g_RenderScene, l_Mesh);
     g_RenderObject.set_material(g_TestMaterial);
     g_RenderObject.set_world_transform(l_LocalMatrix);
   }

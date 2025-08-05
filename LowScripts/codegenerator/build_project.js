@@ -204,7 +204,7 @@ function build_project(p_FullProjectPath) {
 
   process.chdir(p_FullProjectPath);
   console.log("⚙️ Running CMake...");
-  const child = spawnSync("cmake", ["-B", "build", "-DRELEASE_BUILD=OFF"]);
+  const child = spawnSync("cmake", ["-B", "build", "-DRELEASE_BUILD=OFF", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]);
 
   const l_ErrorString = child.stderr.toString();
   if (l_ErrorString.includes("CMake Error")) {

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #define SET_PROPERTY(type)                                           \
@@ -93,6 +94,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -133,6 +136,7 @@ namespace Low {
       l_TypeInfo.serialize = &Material::serialize;
       l_TypeInfo.deserialize = &Material::deserialize;
       l_TypeInfo.find_by_index = &Material::_find_by_index;
+      l_TypeInfo.notify = &Material::_notify;
       l_TypeInfo.find_by_name = &Material::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Material::_make;
@@ -692,6 +696,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void
+    Material::broadcast_observable(Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 Material::observe(Low::Util::Name p_Observable,
+                          Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void Material::notify(Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void Material::_notify(Low::Util::Handle p_Observer,
+                           Low::Util::Handle p_Observed,
+                           Low::Util::Name p_Observable)
+    {
+      Material l_Material = p_Observer.get_id();
+      l_Material.notify(p_Observed, p_Observable);
+    }
+
     MaterialType Material::get_material_type() const
     {
       _LOW_ASSERT(is_alive());
@@ -716,6 +755,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_type
       // LOW_CODEGEN::END::CUSTOM:SETTER_material_type
+
+      broadcast_observable(N(material_type));
     }
 
     Util::List<uint8_t> &Material::data() const
@@ -758,6 +799,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+      broadcast_observable(N(dirty));
     }
 
     Low::Util::Name Material::get_name() const
@@ -784,6 +827,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     Material

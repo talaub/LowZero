@@ -9,7 +9,7 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererMeshInfo.h"
+#include "LowRendererGpuSubmesh.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererRenderObject.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -23,7 +23,7 @@ namespace Low {
     struct LOW_RENDERER2_API DrawCommandData
     {
       Low::Math::Matrix4x4 world_transform;
-      Low::Renderer::MeshInfo mesh_info;
+      Low::Renderer::GpuSubmesh submesh;
       uint32_t slot;
       Low::Renderer::RenderObject render_object;
       Low::Renderer::Material material;
@@ -81,6 +81,16 @@ namespace Low {
 
       bool is_alive() const;
 
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Handle p_Observer) const;
+      void notify(Low::Util::Handle p_Observed,
+                  Low::Util::Name p_Observable);
+      void broadcast_observable(Low::Util::Name p_Observable) const;
+
+      static void _notify(Low::Util::Handle p_Observer,
+                          Low::Util::Handle p_Observed,
+                          Low::Util::Name p_Observable);
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
@@ -116,7 +126,7 @@ namespace Low {
       Low::Math::Matrix4x4 &get_world_transform() const;
       void set_world_transform(Low::Math::Matrix4x4 &p_Value);
 
-      Low::Renderer::MeshInfo get_mesh_info() const;
+      Low::Renderer::GpuSubmesh get_submesh() const;
 
       uint32_t get_slot() const;
       void set_slot(uint32_t p_Value);
@@ -139,14 +149,14 @@ namespace Low {
       static DrawCommand
       make(Low::Renderer::RenderObject p_RenderObject,
            Low::Renderer::RenderScene p_RenderScene,
-           Low::Renderer::MeshInfo p_MeshInfo);
+           Low::Renderer::GpuSubmesh p_Submesh);
       uint64_t get_sort_index() const;
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_mesh_info(Low::Renderer::MeshInfo p_Value);
+      void set_submesh(Low::Renderer::GpuSubmesh p_Value);
       void set_render_object(Low::Renderer::RenderObject p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

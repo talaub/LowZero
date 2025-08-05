@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
@@ -108,6 +109,8 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -152,6 +155,7 @@ namespace Low {
         l_TypeInfo.serialize = &DirectionalLight::serialize;
         l_TypeInfo.deserialize = &DirectionalLight::deserialize;
         l_TypeInfo.find_by_index = &DirectionalLight::_find_by_index;
+        l_TypeInfo.notify = &DirectionalLight::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &DirectionalLight::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -420,6 +424,42 @@ namespace Low {
         return l_Handle;
       }
 
+      void DirectionalLight::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64
+      DirectionalLight::observe(Low::Util::Name p_Observable,
+                                Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void DirectionalLight::notify(Low::Util::Handle p_Observed,
+                                    Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void DirectionalLight::_notify(Low::Util::Handle p_Observer,
+                                     Low::Util::Handle p_Observed,
+                                     Low::Util::Name p_Observable)
+      {
+        DirectionalLight l_DirectionalLight = p_Observer.get_id();
+        l_DirectionalLight.notify(p_Observed, p_Observable);
+      }
+
       Low::Math::ColorRGB &DirectionalLight::get_color() const
       {
         _LOW_ASSERT(is_alive());
@@ -463,6 +503,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
+
+        broadcast_observable(N(color));
       }
 
       float DirectionalLight::get_intensity() const
@@ -507,6 +549,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_intensity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_intensity
+
+        broadcast_observable(N(intensity));
       }
 
       Low::Core::Entity DirectionalLight::get_entity() const
@@ -537,6 +581,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId DirectionalLight::get_unique_id() const
@@ -569,6 +615,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       uint32_t DirectionalLight::create_instance()

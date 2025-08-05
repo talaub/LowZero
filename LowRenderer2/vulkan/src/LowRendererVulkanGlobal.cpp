@@ -52,8 +52,8 @@ namespace Low {
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 #ifdef _WIN32
-            //__debugbreak(); // Windows
-            // LOW_LOG_DEBUG << "Test" << LOW_LOG_END;
+            __debugbreak(); // Windows
+                            // LOW_LOG_DEBUG << "Test" << LOW_LOG_END;
 #else
             raise(SIGTRAP); // Unix-like
 #endif
@@ -117,6 +117,20 @@ namespace Low {
         VkDescriptorSet *g_TextureDescriptorSets;
 
         VkPipelineLayout g_LightingPipelineLayout;
+
+        VkPipelineLayout g_BlurPipelineLayout;
+
+        struct BlurPushConstants
+        {
+          Math::Vector2 texelSize;
+          u32 inputTextureIndex;
+        };
+
+        struct
+        {
+          Pipeline x_1;
+          Pipeline y_1;
+        } g_BlurPipelines;
 
         Low::Util::Queue<TextureUpdate> &
         get_texture_update_queue(u32 p_FrameIndex)
@@ -484,6 +498,50 @@ namespace Low {
           return true;
         }
 
+        static bool blur_pipelines_init()
+        {
+          Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+          l_DescriptorSetLayouts.push_back(
+              get_global_descriptor_set_layout());
+          l_DescriptorSetLayouts.push_back(
+              get_texture_descriptor_set_layout());
+
+          VkPipelineLayoutCreateInfo l_Layout{};
+          l_Layout.sType =
+              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+          l_Layout.pNext = nullptr;
+          l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+          l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+
+          VkPushConstantRange l_PushConstant{};
+          l_PushConstant.offset = 0;
+          l_PushConstant.size = sizeof(BlurPushConstants);
+          l_PushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+          l_Layout.pPushConstantRanges = &l_PushConstant;
+          l_Layout.pushConstantRangeCount = 1;
+
+          LOWR_VK_CHECK_RETURN(
+              vkCreatePipelineLayout(get_device(), &l_Layout, nullptr,
+                                     &g_BlurPipelineLayout));
+
+          {
+            g_BlurPipelines.x_1 =
+                PipelineUtil::GraphicsPipelineBuilder::
+                    prepare_fullscreen_effect(g_BlurPipelineLayout,
+                                              "blur_x_1.frag",
+                                              VK_FORMAT_R8_UNORM)
+                        .register_pipeline();
+            g_BlurPipelines.y_1 =
+                PipelineUtil::GraphicsPipelineBuilder::
+                    prepare_fullscreen_effect(g_BlurPipelineLayout,
+                                              "blur_y_1.frag",
+                                              VK_FORMAT_R8_UNORM)
+                        .register_pipeline();
+          }
+          return true;
+        }
+
         static bool samplers_init()
         {
           {
@@ -790,6 +848,9 @@ namespace Low {
                 &g_LightingPipelineLayout));
           }
 
+          LOWR_VK_ASSERT(blur_pipelines_init(),
+                         "Could not initialize blur pipelines");
+
           return true;
         }
 
@@ -868,6 +929,186 @@ namespace Low {
           vkDestroyInstance(g_Instance, nullptr);
 
           return true;
+        }
+
+        bool blur_image_1(Texture p_ImageToBlur, Texture p_TempImage,
+                          Texture p_OutImage,
+                          Math::UVector2 p_Dimensions)
+        {
+          VkCommandBuffer l_Cmd = get_current_command_buffer();
+
+          VkClearValue l_ClearColorValue = {};
+          l_ClearColorValue.color = {{1.0f, 1.0f, 1.0f, 1.0f}};
+
+          Math::Vector2 l_InverseDimensions;
+          l_InverseDimensions.x = 1.0f / float(p_Dimensions.x);
+          l_InverseDimensions.y = 1.0f / float(p_Dimensions.y);
+
+          Util::List<VkDescriptorSet> l_DescriptorSets;
+          l_DescriptorSets.resize(2);
+          l_DescriptorSets[0] = get_global_descriptor_set();
+          l_DescriptorSets[1] = get_current_texture_descriptor_set();
+
+          VkViewport l_Viewport = {};
+          l_Viewport.x = 0;
+          l_Viewport.y = 0;
+          l_Viewport.width = static_cast<float>(p_Dimensions.x);
+          l_Viewport.height = static_cast<float>(p_Dimensions.y);
+          l_Viewport.minDepth = 0.f;
+          l_Viewport.maxDepth = 1.f;
+
+          VkRect2D l_Scissor = {};
+          l_Scissor.offset.x = 0;
+          l_Scissor.offset.y = 0;
+          l_Scissor.extent.width = p_Dimensions.x;
+          l_Scissor.extent.height = p_Dimensions.y;
+
+          Samplers &l_Samplers = get_samplers();
+
+          Image l_TempImage = p_TempImage.get_data_handle();
+          Image l_ImageToBlur = p_ImageToBlur.get_data_handle();
+          Image l_OutImage = p_OutImage.get_data_handle();
+
+          {
+            ImageUtil::cmd_transition(
+                l_Cmd, l_TempImage,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_TempImage.get_allocated_image().imageView,
+                &l_ClearColorValue,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {p_Dimensions.x, p_Dimensions.y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              g_BlurPipelines.x_1.get_pipeline());
+
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_BlurPipelineLayout, 0, l_DescriptorSets.size(),
+                l_DescriptorSets.data(), 0, nullptr);
+
+            BlurPushConstants l_PushConstants;
+            l_PushConstants.texelSize = l_InverseDimensions;
+            l_PushConstants.inputTextureIndex =
+                p_ImageToBlur.get_index();
+
+            vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
+                               VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                               sizeof(BlurPushConstants),
+                               &l_PushConstants);
+
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_TempImage,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          {
+            ImageUtil::cmd_transition(
+                l_Cmd, l_OutImage,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_OutImage.get_allocated_image().imageView,
+                &l_ClearColorValue,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {p_Dimensions.x, p_Dimensions.y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              g_BlurPipelines.y_1.get_pipeline());
+
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_BlurPipelineLayout, 0, l_DescriptorSets.size(),
+                l_DescriptorSets.data(), 0, nullptr);
+
+            BlurPushConstants l_PushConstants;
+            l_PushConstants.texelSize = l_InverseDimensions;
+            l_PushConstants.inputTextureIndex =
+                p_TempImage.get_index();
+
+            vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
+                               VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                               sizeof(BlurPushConstants),
+                               &l_PushConstants);
+
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_OutImage,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          return true;
+        }
+
+        void renderdoc_section_begin(Util::String p_SectionLabel,
+                                     Math::ColorRGB p_Color)
+        {
+          VkCommandBuffer l_CommandBuffer =
+              get_current_command_buffer();
+
+          VkDebugUtilsLabelEXT markerInfo = {};
+          markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+          markerInfo.pLabelName = p_SectionLabel.c_str();
+          markerInfo.color[0] = p_Color.r;
+          markerInfo.color[1] = p_Color.g;
+          markerInfo.color[2] = p_Color.b;
+          markerInfo.color[3] = 1.0f;
+
+          auto l_Function =
+              (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetInstanceProcAddr(
+                  get_instance(), "vkCmdBeginDebugUtilsLabelEXT");
+
+          if (l_Function != nullptr) {
+            l_Function(l_CommandBuffer, &markerInfo);
+          }
+        }
+
+        void renderdoc_section_end()
+        {
+          VkCommandBuffer l_CommandBuffer =
+              get_current_command_buffer();
+
+          auto l_Function =
+              (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetInstanceProcAddr(
+                  get_instance(), "vkCmdEndDebugUtilsLabelEXT");
+
+          if (l_Function != nullptr) {
+            l_Function(l_CommandBuffer);
+          }
         }
       } // namespace Global
     }   // namespace Vulkan

@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
@@ -131,6 +132,8 @@ namespace Low {
         set_parent(0);
         // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+        broadcast_observable(OBSERVABLE_DESTROY);
+
         Low::Util::remove_unique_id(get_unique_id());
 
         WRITE_LOCK(l_Lock);
@@ -174,6 +177,7 @@ namespace Low {
         l_TypeInfo.serialize = &Transform::serialize;
         l_TypeInfo.deserialize = &Transform::deserialize;
         l_TypeInfo.find_by_index = &Transform::_find_by_index;
+        l_TypeInfo.notify = &Transform::_notify;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Transform::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -770,6 +774,41 @@ namespace Low {
         return l_Handle;
       }
 
+      void Transform::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64 Transform::observe(Low::Util::Name p_Observable,
+                             Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void Transform::notify(Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void Transform::_notify(Low::Util::Handle p_Observer,
+                              Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+      {
+        Transform l_Transform = p_Observer.get_id();
+        l_Transform.notify(p_Observed, p_Observable);
+      }
+
       Low::Math::Vector3 &Transform::position() const
       {
         _LOW_ASSERT(is_alive());
@@ -845,6 +884,8 @@ namespace Low {
 
           set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_position
+
+          broadcast_observable(N(position));
         }
       }
 
@@ -897,6 +938,8 @@ namespace Low {
 
           set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
+
+          broadcast_observable(N(rotation));
         }
       }
 
@@ -975,6 +1018,8 @@ namespace Low {
 
           set_world_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:SETTER_scale
+
+          broadcast_observable(N(scale));
         }
       }
 
@@ -1028,6 +1073,8 @@ namespace Low {
             set_parent_uid(0);
           }
           // LOW_CODEGEN::END::CUSTOM:SETTER_parent
+
+          broadcast_observable(N(parent));
         }
       }
 
@@ -1063,6 +1110,8 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
 
           // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
+
+          broadcast_observable(N(parent_uid));
         }
       }
 
@@ -1137,6 +1186,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_position
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_position
+
+        broadcast_observable(N(world_position));
       }
 
       Low::Math::Quaternion &Transform::get_world_rotation()
@@ -1170,6 +1221,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_rotation
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_rotation
+
+        broadcast_observable(N(world_rotation));
       }
 
       Low::Math::Vector3 &Transform::get_world_scale()
@@ -1228,6 +1281,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_scale
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_scale
+
+        broadcast_observable(N(world_scale));
       }
 
       Low::Math::Matrix4x4 &Transform::get_world_matrix()
@@ -1260,6 +1315,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_matrix
+
+        broadcast_observable(N(world_matrix));
       }
 
       bool Transform::is_world_updated() const
@@ -1294,6 +1351,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_updated
+
+        broadcast_observable(N(world_updated));
       }
 
       Low::Core::Entity Transform::get_entity() const
@@ -1323,6 +1382,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_entity
+
+        broadcast_observable(N(entity));
       }
 
       Low::Util::UniqueId Transform::get_unique_id() const
@@ -1352,6 +1413,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
+
+        broadcast_observable(N(unique_id));
       }
 
       bool Transform::is_dirty() const
@@ -1386,6 +1449,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+        broadcast_observable(N(dirty));
       }
 
       void Transform::mark_dirty()
@@ -1441,6 +1506,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_dirty
+
+        broadcast_observable(N(world_dirty));
       }
 
       void Transform::mark_world_dirty()

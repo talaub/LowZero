@@ -8,6 +8,7 @@
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
@@ -103,6 +104,8 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
+      broadcast_observable(OBSERVABLE_DESTROY);
+
       WRITE_LOCK(l_Lock);
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
@@ -144,6 +147,7 @@ namespace Low {
       l_TypeInfo.serialize = &ComputeStep::serialize;
       l_TypeInfo.deserialize = &ComputeStep::deserialize;
       l_TypeInfo.find_by_index = &ComputeStep::_find_by_index;
+      l_TypeInfo.notify = &ComputeStep::_notify;
       l_TypeInfo.find_by_name = &ComputeStep::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &ComputeStep::_make;
@@ -704,6 +708,41 @@ namespace Low {
       return l_Handle;
     }
 
+    void ComputeStep::broadcast_observable(
+        Low::Util::Name p_Observable) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      Low::Util::notify(l_Key);
+    }
+
+    u64 ComputeStep::observe(Low::Util::Name p_Observable,
+                             Low::Util::Handle p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
+    void ComputeStep::notify(Low::Util::Handle p_Observed,
+                             Low::Util::Name p_Observable)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+      // LOW_CODEGEN::END::CUSTOM:NOTIFY
+    }
+
+    void ComputeStep::_notify(Low::Util::Handle p_Observer,
+                              Low::Util::Handle p_Observed,
+                              Low::Util::Name p_Observable)
+    {
+      ComputeStep l_ComputeStep = p_Observer.get_id();
+      l_ComputeStep.notify(p_Observed, p_Observable);
+    }
+
     Util::Map<RenderFlow, ResourceRegistry> &
     ComputeStep::get_resources() const
     {
@@ -746,6 +785,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_config
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_config
+
+      broadcast_observable(N(config));
     }
 
     Util::Map<RenderFlow, Util::List<Interface::ComputePipeline>> &
@@ -811,6 +852,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_context
+
+      broadcast_observable(N(context));
     }
 
     Resource::Image ComputeStep::get_output_image() const
@@ -840,6 +883,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_output_image
+
+      broadcast_observable(N(output_image));
     }
 
     Low::Util::Name ComputeStep::get_name() const
@@ -869,6 +914,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+      broadcast_observable(N(name));
     }
 
     ComputeStep ComputeStep::make(Util::Name p_Name,
