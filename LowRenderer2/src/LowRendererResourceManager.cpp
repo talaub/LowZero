@@ -17,6 +17,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilAssert.h"
+#include "LowUtilSerialization.h"
 
 #include <iostream>
 #include <vulkan/vulkan_core.h>
@@ -291,23 +292,51 @@ namespace Low {
 
           Util::Resource::Mesh l_ResourceMesh;
 
-          Util::Resource::load_mesh(l_Mesh.get_resource().get_path(),
-                                    l_ResourceMesh);
+          Util::Resource::load_mesh(
+              l_Mesh.get_resource().get_mesh_path(), l_ResourceMesh);
 
           u32 l_SubmeshCount = 0u;
+
+          Util::Yaml::Node l_SidecarNode = Util::Yaml::load_file(
+              l_Mesh.get_resource().get_sidecar_path().c_str());
+
+          Util::UnorderedMap<Util::Name, Util::Yaml::Node>
+              l_SubmeshNodes;
+
+          l_MeshGeometry.set_aabb(
+              Util::Serialization::deserialize_aabb(
+                  l_SidecarNode["aabb"]));
+          /*
+          l_MeshGeometry.set_bounding_sphere(
+              Util::Serialization::deserialize_aabb(
+                  l_SidecarNode["aabb"]));
+                  */
 
           for (auto it = l_ResourceMesh.submeshes.begin();
                it != l_ResourceMesh.submeshes.end(); ++it) {
             for (auto mit = it->meshInfos.begin();
                  mit != it->meshInfos.end(); ++mit) {
               SubmeshGeometry i_SubmeshGeometry =
-                  SubmeshGeometry::make(it->name);
+                  SubmeshGeometry::make(mit->name);
               i_SubmeshGeometry.set_vertex_count(
                   mit->vertices.size());
               i_SubmeshGeometry.set_index_count(mit->indices.size());
               i_SubmeshGeometry.set_state(MeshState::MEMORYLOADED);
               i_SubmeshGeometry.set_vertices(mit->vertices);
               i_SubmeshGeometry.set_indices(mit->indices);
+
+              const char *i_NameBuffer =
+                  i_SubmeshGeometry.get_name().c_str();
+
+              i_SubmeshGeometry.set_aabb(
+                  Util::Serialization::deserialize_aabb(
+                      l_SidecarNode["submeshes"][i_NameBuffer]
+                                   ["aabb"]));
+              i_SubmeshGeometry.set_bounding_sphere(
+                  Util::Serialization::deserialize_sphere(
+                      l_SidecarNode["submeshes"][i_NameBuffer]
+                                   ["bounding_sphere"]));
+
               l_MeshGeometry.get_submeshes().push_back(
                   i_SubmeshGeometry);
               l_SubmeshCount++;

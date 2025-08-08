@@ -14,7 +14,7 @@ namespace Low {
 
     void check_window_resize(float p_Delta);
 
-    Mesh load_mesh(Util::String p_MeshPath);
+    void load_mesh(Mesh p_Mesh);
     Texture load_texture(Util::String p_ImagePath);
   } // namespace Renderer
 } // namespace Low

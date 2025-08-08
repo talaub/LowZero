@@ -14,6 +14,7 @@ namespace Low {
     {
       String dataPath;
       String rootPath;
+      String assetCachePath;
 
       String engineRootPath;
       String engineDataPath;

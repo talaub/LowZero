@@ -54,6 +54,8 @@ add_dependencies(LowRenderer2
   LowMath 
   SDL2-static
   vk-bootstrap
+  freetype
+  assimp
 )
 
 STRING(REGEX REPLACE "\\\\" "/" VULKAN_SDK_PATH $ENV{VK_SDK_PATH}) 
@@ -102,4 +104,6 @@ target_link_libraries(LowRenderer2 PRIVATE
   LowUtil
   LowMath
   vk-bootstrap
+  freetype
+  assimp
 )

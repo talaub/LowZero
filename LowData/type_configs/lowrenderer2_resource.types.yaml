@@ -23,6 +23,14 @@ types:
       gpu:
         type: Low::Renderer::GpuMesh
         handle: true
+    functions:
+      make_from_resource_config:
+        static: true
+        return_type: Mesh
+        return_handle: true
+        parameters:
+          - name: config
+            type: MeshResourceConfig
 
   MeshGeometry:
     no_auto_serialize: true
@@ -32,6 +40,10 @@ types:
         type: uint32_t
       submeshes:
         type: Low::Util::List<SubmeshGeometry>
+      aabb:
+        type: Low::Math::AABB
+      bounding_sphere:
+        type: Low::Math::Sphere
 
   SubmeshGeometry:
     skip_name_serialization: true
@@ -56,6 +68,10 @@ types:
         type: Low::Math::Matrix4x4
       local_transform:
         type: Low::Math::Matrix4x4
+      aabb:
+        type: Low::Math::AABB
+      bounding_sphere:
+        type: Low::Math::Sphere
 
   MeshResource:
     private_make: true
@@ -67,6 +83,21 @@ types:
       path:
         type: Util::String
         private_setter: true
+      mesh_path:
+        type: Util::String
+        private_setter: true
+      sidecar_path:
+        type: Util::String
+        private_setter: true
+      source_file:
+        type: Util::String
+        private_setter: true
+      mesh_id:
+        type: u64
+        private_setter: true
+      asset_hash:
+        type: u64
+        private_setter: true
     functions:
       make:
         static: true
@@ -75,6 +106,14 @@ types:
         parameters:
           - name: path
             type: Util::String
+      make_from_config:
+        static: true
+        return_type: MeshResource
+        return_handle: true
+        parameters:
+          - name: config
+            type: MeshResourceConfig
+
 
   GpuMesh:
     no_auto_serialize: true
@@ -86,6 +125,10 @@ types:
         type: uint32_t
       submeshes:
         type: Low::Util::List<GpuSubmesh>
+      aabb:
+        type: Low::Math::AABB
+      bounding_sphere:
+        type: Low::Math::Sphere
 
   GpuSubmesh:
     skip_name_serialization: true
@@ -114,6 +157,10 @@ types:
         type: Low::Math::Matrix4x4
       local_transform:
         type: Low::Math::Matrix4x4
+      aabb:
+        type: Low::Math::AABB
+      bounding_sphere:
+        type: Low::Math::Sphere
 
   TextureResource:
     private_make: true

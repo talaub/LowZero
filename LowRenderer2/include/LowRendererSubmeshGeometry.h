@@ -28,6 +28,8 @@ namespace Low {
       Low::Math::Matrix4x4 transform;
       Low::Math::Matrix4x4 parent_transform;
       Low::Math::Matrix4x4 local_transform;
+      Low::Math::AABB aabb;
+      Low::Math::Sphere bounding_sphere;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -145,6 +147,12 @@ namespace Low {
 
       Low::Math::Matrix4x4 &get_local_transform() const;
       void set_local_transform(Low::Math::Matrix4x4 &p_Value);
+
+      Low::Math::AABB &get_aabb() const;
+      void set_aabb(Low::Math::AABB &p_Value);
+
+      Low::Math::Sphere &get_bounding_sphere() const;
+      void set_bounding_sphere(Low::Math::Sphere &p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

@@ -425,9 +425,8 @@ namespace Low {
     TextureResource TextureResource::make(Util::String &p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-         for (auto it = ms_LivingInstances.begin();
-                      it != ms_LivingInstances.end(); ++it)
-      {
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
           return *it;
         }

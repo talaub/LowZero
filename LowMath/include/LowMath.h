@@ -124,6 +124,18 @@ namespace Low {
       };
     };
 
+    struct Bounds
+    {
+      Vector3 min;
+      Vector3 max;
+    };
+
+    struct AABB
+    {
+      Bounds bounds;
+      Vector3 center;
+    };
+
     namespace Util {
       LOW_EXPORT float lerp(float p_Start, float p_End,
                             float p_Delta);

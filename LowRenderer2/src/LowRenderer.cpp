@@ -28,6 +28,8 @@
 #include "LowRendererTextureStaging.h"
 
 #include "LowUtilAssert.h"
+#include "LowUtilFileSystem.h"
+#include "LowUtilHashing.h"
 
 #include "imgui_impl_vulkan.h"
 #include <vulkan/vulkan_core.h>
@@ -86,6 +88,77 @@ namespace Low {
       Texture::cleanup();
     }
 
+    static bool
+    parse_mesh_resource_config(Util::String p_Path,
+                               Util::Yaml::Node &p_Node,
+                               MeshResourceConfig &p_Config)
+    {
+      LOWR_ASSERT_RETURN(p_Node["version"], "Could not find version");
+      const u32 l_Version = p_Node["version"].as<u32>();
+
+      if (l_Version == 1) {
+        LOWR_ASSERT_RETURN(p_Node["name"],
+                           "Could not find mesh name");
+        p_Config.name =
+            LOW_YAML_AS_NAME(p_Node["name"]);
+
+        LOWR_ASSERT_RETURN(p_Node["mesh_id"],
+                           "Could not find mesh id");
+        p_Config.meshId = Util::string_to_hash(
+            LOW_YAML_AS_STRING(p_Node["mesh_id"]));
+
+        LOWR_ASSERT_RETURN(p_Node["asset_hash"],
+                           "Could not find asset hash");
+        p_Config.assetHash = Util::string_to_hash(
+            LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+
+        LOWR_ASSERT_RETURN(p_Node["source_file"],
+                           "Could not find source file");
+        p_Config.sourceFile =
+            LOW_YAML_AS_STRING(p_Node["source_file"]);
+
+        p_Config.sidecarPath =
+            Util::get_project().assetCachePath + "\\" +
+            Util::hash_to_string(p_Config.meshId) + ".mesh.yaml";
+        p_Config.meshPath =
+            Util::get_project().assetCachePath + "\\" +
+            Util::hash_to_string(p_Config.meshId) + ".glb";
+
+        p_Config.path = p_Path;
+        return true;
+      }
+
+      LOWR_ASSERT_RETURN(
+          false, "Version of mesh resource config not supported");
+      return false;
+    }
+
+    static bool preload_resources()
+    {
+      {
+        Util::List<Util::String> l_MeshResources;
+        Util::FileSystem::collect_files_with_suffix(
+            Util::get_project().dataPath.c_str(),
+            ".meshresource.yaml", l_MeshResources);
+
+        for (auto it = l_MeshResources.begin();
+             it != l_MeshResources.end(); ++it) {
+          Util::Yaml::Node i_ResourceNode =
+              Util::Yaml::load_file(it->c_str());
+          MeshResourceConfig i_ResourceConfig;
+
+          LOWR_ASSERT_RETURN(
+              parse_mesh_resource_config(*it, i_ResourceNode,
+                                         i_ResourceConfig),
+              "Failed to pass mesh resource config.");
+
+          Mesh::make_from_resource_config(i_ResourceConfig);
+        }
+      }
+
+      return true;
+    }
+
     void initialize()
     {
       initialize_types();
@@ -122,6 +195,8 @@ namespace Low {
 
       vkCreateSampler(Low::Renderer::Vulkan::Global::get_device(),
                       &sampl, nullptr, &g_TestSampler);
+
+      LOW_ASSERT(preload_resources(), "Failed to preload resources.");
     }
 
     void cleanup()
@@ -592,15 +667,9 @@ namespace Low {
           "Failed to check for window resize in Vulkan renderer");
     }
 
-    Mesh load_mesh(Util::String p_MeshPath)
+    void load_mesh(Mesh p_Mesh)
     {
-      MeshResource l_MeshResource = MeshResource::make(p_MeshPath);
-      Mesh l_Mesh = Mesh::make(l_MeshResource.get_name());
-      l_Mesh.set_resource(l_MeshResource);
-
-      _LOW_ASSERT(ResourceManager::load_mesh(l_Mesh));
-
-      return l_Mesh;
+      _LOW_ASSERT(ResourceManager::load_mesh(p_Mesh));
     }
 
     Texture load_texture(Util::String p_ImagePath)

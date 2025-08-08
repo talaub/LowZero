@@ -5,7 +5,7 @@ option(ENGINE_BUILD "Enable engine release build")
 cmake_minimum_required(VERSION 3.5)
 
 set(LOW_YEAR_VERSION 2025)
-set(LOW_MAJOR_VERSION 7)
+set(LOW_MAJOR_VERSION 8)
 set(LOW_MINOR_VERSION 1)
 
 SET(LOW_SOURCE_PATH ${CMAKE_SOURCE_DIR})

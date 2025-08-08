@@ -14,11 +14,27 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct MeshResourceConfig
+    {
+      Util::Name name;
+      u64 meshId;
+      u64 assetHash;
+      Util::String sourceFile;
+      Util::String sidecarPath;
+      Util::String path;
+      Util::String meshPath;
+    };
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API MeshResourceData
     {
       Util::String path;
+      Util::String mesh_path;
+      Util::String sidecar_path;
+      Util::String source_file;
+      uint64_t mesh_id;
+      uint64_t asset_hash;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -115,10 +131,22 @@ namespace Low {
 
       Util::String &get_path() const;
 
+      Util::String &get_mesh_path() const;
+
+      Util::String &get_sidecar_path() const;
+
+      Util::String &get_source_file() const;
+
+      uint64_t &get_mesh_id() const;
+
+      uint64_t &get_asset_hash() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       static MeshResource make(Util::String &p_Path);
+      static MeshResource
+      make_from_config(MeshResourceConfig &p_Config);
 
     private:
       static uint32_t ms_Capacity;
@@ -126,6 +154,14 @@ namespace Low {
       static void increase_budget();
       void set_path(Util::String &p_Value);
       void set_path(const char *p_Value);
+      void set_mesh_path(Util::String &p_Value);
+      void set_mesh_path(const char *p_Value);
+      void set_sidecar_path(Util::String &p_Value);
+      void set_sidecar_path(const char *p_Value);
+      void set_source_file(Util::String &p_Value);
+      void set_source_file(const char *p_Value);
+      void set_mesh_id(uint64_t &p_Value);
+      void set_asset_hash(uint64_t &p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

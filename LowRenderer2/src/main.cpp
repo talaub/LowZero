@@ -18,6 +18,7 @@
 #include "LowRendererRenderStep.h"
 #include "LowRendererPointLight.h"
 #include "LowRendererMesh.h"
+#include "LowRendererResourceImporter.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -145,9 +146,10 @@ void init()
   Low::Renderer::initialize();
   {
     Low::Util::String l_BasePath = Low::Util::get_project().dataPath;
-    l_BasePath += "/_internal/assets/meshes/spaceship.glb";
 
-    Low::Renderer::Mesh l_Mesh = Low::Renderer::load_mesh(l_BasePath);
+    Low::Renderer::Mesh l_Mesh =
+        Low::Renderer::Mesh::find_by_name(N(spaceship));
+    Low::Renderer::load_mesh(l_Mesh);
 
     Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
@@ -216,6 +218,14 @@ void cleanup()
 int main(int argc, char *argv[])
 {
   Low::Util::initialize();
+
+  if (false) {
+    Low::Renderer::ResourceImporter::import_mesh("E:\\spaceship.obj",
+                                                 "spaceship");
+
+    Low::Util::cleanup();
+    return 0;
+  }
 
   SDL_Init(SDL_INIT_VIDEO);
 

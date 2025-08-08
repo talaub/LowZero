@@ -35,6 +35,10 @@ namespace Low {
                                 Math::Cone &p_Value);
       void LOW_EXPORT serialize(Yaml::Node &p_Node,
                                 Math::Cylinder &p_Value);
+      void LOW_EXPORT serialize(Yaml::Node &p_Node,
+                                Math::Bounds &p_Value);
+      void LOW_EXPORT serialize(Yaml::Node &p_Node,
+                                Math::AABB &p_Value);
 
       void LOW_EXPORT serialize_handle(Yaml::Node &p_Node,
                                        Handle p_Handle);
@@ -57,7 +61,10 @@ namespace Low {
       deserialize_uvector2(Yaml::Node &p_Node);
 
       Math::Box LOW_EXPORT deserialize_box(Yaml::Node &p_Node);
+      Math::Sphere LOW_EXPORT deserialize_sphere(Yaml::Node &p_Node);
       Math::Shape LOW_EXPORT deserialize_shape(Yaml::Node &p_Node);
+      Math::Bounds LOW_EXPORT deserialize_bounds(Yaml::Node &p_Node);
+      Math::AABB LOW_EXPORT deserialize_aabb(Yaml::Node &p_Node);
 
       Variant LOW_EXPORT deserialize_variant(Yaml::Node &p_Node);
 

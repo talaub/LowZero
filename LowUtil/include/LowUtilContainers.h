@@ -4,6 +4,7 @@
 #include <EASTL/set.h>
 #include <EASTL/array.h>
 #include <EASTL/map.h>
+#include <EASTL/unordered_map.h>
 #include <EASTL/optional.h>
 #include <EASTL/stack.h>
 #include <EASTL/queue.h>
@@ -27,6 +28,8 @@ namespace Low {
     using Map = eastl::map<K, V, eastl::less<K>>;
     template <typename K, typename V>
     using MultiMap = eastl::multimap<K, V, eastl::less<K>>;
+    template <typename K, typename V>
+    using UnorderedMap = eastl::unordered_map<K, V>;
 
     template <typename T> using Set = eastl::set<T, eastl::less<T>>;
 
@@ -35,7 +38,8 @@ namespace Low {
     template <typename T> using Deque = eastl::deque<T>;
 
     template <typename T,
-              class _Pr = eastl::less<typename eastl::vector<T>::value_type>>
+              class _Pr =
+                  eastl::less<typename eastl::vector<T>::value_type>>
     using PriorityQueue =
         eastl::priority_queue<T, eastl::vector<T>, _Pr>;
 

@@ -6,12 +6,13 @@
 namespace Low {
   namespace Math {
     namespace VectorUtil {
-      LOW_EXPORT float magnitude_squared(Vector3 &p_Vector);
-      LOW_EXPORT float magnitude(Vector3 &p_Vector);
+      LOW_EXPORT float magnitude_squared(const Vector3 &p_Vector);
+      LOW_EXPORT float magnitude(const Vector3 &p_Vector);
 
-      LOW_EXPORT float distance_squared(Vector3 &p_Start,
-                                        Vector3 &p_End);
-      LOW_EXPORT float distance(Vector3 &p_Start, Vector3 &p_End);
+      LOW_EXPORT float distance_squared(const Vector3 &p_Start,
+                                        const Vector3 &p_End);
+      LOW_EXPORT float distance(const Vector3 &p_Start,
+                                const Vector3 &p_End);
 
       LOW_EXPORT Math::Vector3
       rotate_by_quaternion(Math::Vector3 &p_Vec,

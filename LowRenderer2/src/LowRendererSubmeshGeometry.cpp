@@ -72,6 +72,11 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, SubmeshGeometry,
                               local_transform, Low::Math::Matrix4x4))
           Low::Math::Matrix4x4();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, SubmeshGeometry, aabb,
+                              Low::Math::AABB)) Low::Math::AABB();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, SubmeshGeometry,
+                              bounding_sphere, Low::Math::Sphere))
+          Low::Math::Sphere();
       ACCESSOR_TYPE_SOA(l_Handle, SubmeshGeometry, name,
                         Low::Util::Name) = Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -394,6 +399,66 @@ namespace Low {
         // End property: local_transform
       }
       {
+        // Property: aabb
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(aabb);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SubmeshGeometryData, aabb);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.get_aabb();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SubmeshGeometry,
+                                            aabb, Low::Math::AABB);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.set_aabb(*(Low::Math::AABB *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          *((Low::Math::AABB *)p_Data) = l_Handle.get_aabb();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: aabb
+      }
+      {
+        // Property: bounding_sphere
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(bounding_sphere);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(SubmeshGeometryData, bounding_sphere);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.get_bounding_sphere();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, SubmeshGeometry,
+                                            bounding_sphere,
+                                            Low::Math::Sphere);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          l_Handle.set_bounding_sphere(*(Low::Math::Sphere *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          SubmeshGeometry l_Handle = p_Handle.get_id();
+          *((Low::Math::Sphere *)p_Data) =
+              l_Handle.get_bounding_sphere();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: bounding_sphere
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -503,6 +568,8 @@ namespace Low {
       l_Handle.set_transform(get_transform());
       l_Handle.set_parent_transform(get_parent_transform());
       l_Handle.set_local_transform(get_local_transform());
+      l_Handle.set_aabb(get_aabb());
+      l_Handle.set_bounding_sphere(get_bounding_sphere());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -827,6 +894,65 @@ namespace Low {
       broadcast_observable(N(local_transform));
     }
 
+    Low::Math::AABB &SubmeshGeometry::get_aabb() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_aabb
+      // LOW_CODEGEN::END::CUSTOM:GETTER_aabb
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(SubmeshGeometry, aabb, Low::Math::AABB);
+    }
+    void SubmeshGeometry::set_aabb(Low::Math::AABB &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_aabb
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_aabb
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(SubmeshGeometry, aabb, Low::Math::AABB) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_aabb
+      // LOW_CODEGEN::END::CUSTOM:SETTER_aabb
+
+      broadcast_observable(N(aabb));
+    }
+
+    Low::Math::Sphere &SubmeshGeometry::get_bounding_sphere() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bounding_sphere
+      // LOW_CODEGEN::END::CUSTOM:GETTER_bounding_sphere
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(SubmeshGeometry, bounding_sphere,
+                      Low::Math::Sphere);
+    }
+    void
+    SubmeshGeometry::set_bounding_sphere(Low::Math::Sphere &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bounding_sphere
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_bounding_sphere
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(SubmeshGeometry, bounding_sphere, Low::Math::Sphere) =
+          p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bounding_sphere
+      // LOW_CODEGEN::END::CUSTOM:SETTER_bounding_sphere
+
+      broadcast_observable(N(bounding_sphere));
+    }
+
     Low::Util::Name SubmeshGeometry::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -972,6 +1098,22 @@ namespace Low {
                                    local_transform) *
                           (l_Capacity)],
                l_Capacity * sizeof(Low::Math::Matrix4x4));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(SubmeshGeometryData, aabb) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(SubmeshGeometryData, aabb) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Math::AABB));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(SubmeshGeometryData,
+                                     bounding_sphere) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(SubmeshGeometryData,
+                                   bounding_sphere) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Low::Math::Sphere));
       }
       {
         memcpy(&l_NewBuffer[offsetof(SubmeshGeometryData, name) *

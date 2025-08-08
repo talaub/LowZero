@@ -55,6 +55,16 @@ namespace Low {
 
       new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, path,
                               Util::String)) Util::String();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, mesh_path,
+                              Util::String)) Util::String();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, sidecar_path,
+                              Util::String)) Util::String();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, source_file,
+                              Util::String)) Util::String();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, mesh_id,
+                              uint64_t)) uint64_t();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, asset_hash,
+                              uint64_t)) uint64_t();
       ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -156,6 +166,136 @@ namespace Low {
         // End property: path
       }
       {
+        // Property: mesh_path
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(mesh_path);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, mesh_path);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_mesh_path();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
+                                            mesh_path, Util::String);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) = l_Handle.get_mesh_path();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: mesh_path
+      }
+      {
+        // Property: sidecar_path
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(sidecar_path);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, sidecar_path);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_sidecar_path();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshResource, sidecar_path, Util::String);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) = l_Handle.get_sidecar_path();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: sidecar_path
+      }
+      {
+        // Property: source_file
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(source_file);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, source_file);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_source_file();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MeshResource, source_file, Util::String);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((Util::String *)p_Data) = l_Handle.get_source_file();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: source_file
+      }
+      {
+        // Property: mesh_id
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(mesh_id);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, mesh_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_mesh_id();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
+                                            mesh_id, uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_mesh_id();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: mesh_id
+      }
+      {
+        // Property: asset_hash
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(asset_hash);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResourceData, asset_hash);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MeshResource l_Handle = p_Handle.get_id();
+          l_Handle.get_asset_hash();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
+                                            asset_hash, uint64_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MeshResource l_Handle = p_Handle.get_id();
+          *((uint64_t *)p_Data) = l_Handle.get_asset_hash();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: asset_hash
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -199,6 +339,23 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
+      }
+      {
+        // Function: make_from_config
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_from_config);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = MeshResource::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Config);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_from_config
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -270,6 +427,11 @@ namespace Low {
 
       MeshResource l_Handle = make(p_Name);
       l_Handle.set_path(get_path());
+      l_Handle.set_mesh_path(get_mesh_path());
+      l_Handle.set_sidecar_path(get_sidecar_path());
+      l_Handle.set_source_file(get_source_file());
+      l_Handle.set_mesh_id(get_mesh_id());
+      l_Handle.set_asset_hash(get_asset_hash());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -385,6 +547,164 @@ namespace Low {
       broadcast_observable(N(path));
     }
 
+    Util::String &MeshResource::get_mesh_path() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_path
+      // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_path
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MeshResource, mesh_path, Util::String);
+    }
+    void MeshResource::set_mesh_path(const char *p_Value)
+    {
+      Low::Util::String l_Val(p_Value);
+      set_mesh_path(l_Val);
+    }
+
+    void MeshResource::set_mesh_path(Util::String &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_path
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_path
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MeshResource, mesh_path, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_path
+      // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_path
+
+      broadcast_observable(N(mesh_path));
+    }
+
+    Util::String &MeshResource::get_sidecar_path() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_sidecar_path
+      // LOW_CODEGEN::END::CUSTOM:GETTER_sidecar_path
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MeshResource, sidecar_path, Util::String);
+    }
+    void MeshResource::set_sidecar_path(const char *p_Value)
+    {
+      Low::Util::String l_Val(p_Value);
+      set_sidecar_path(l_Val);
+    }
+
+    void MeshResource::set_sidecar_path(Util::String &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_sidecar_path
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_sidecar_path
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MeshResource, sidecar_path, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_sidecar_path
+      // LOW_CODEGEN::END::CUSTOM:SETTER_sidecar_path
+
+      broadcast_observable(N(sidecar_path));
+    }
+
+    Util::String &MeshResource::get_source_file() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_source_file
+      // LOW_CODEGEN::END::CUSTOM:GETTER_source_file
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MeshResource, source_file, Util::String);
+    }
+    void MeshResource::set_source_file(const char *p_Value)
+    {
+      Low::Util::String l_Val(p_Value);
+      set_source_file(l_Val);
+    }
+
+    void MeshResource::set_source_file(Util::String &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_source_file
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_source_file
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MeshResource, source_file, Util::String) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_source_file
+      // LOW_CODEGEN::END::CUSTOM:SETTER_source_file
+
+      broadcast_observable(N(source_file));
+    }
+
+    uint64_t &MeshResource::get_mesh_id() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_id
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MeshResource, mesh_id, uint64_t);
+    }
+    void MeshResource::set_mesh_id(uint64_t &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_id
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MeshResource, mesh_id, uint64_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_id
+      // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_id
+
+      broadcast_observable(N(mesh_id));
+    }
+
+    uint64_t &MeshResource::get_asset_hash() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_asset_hash
+      // LOW_CODEGEN::END::CUSTOM:GETTER_asset_hash
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MeshResource, asset_hash, uint64_t);
+    }
+    void MeshResource::set_asset_hash(uint64_t &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_asset_hash
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_asset_hash
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MeshResource, asset_hash, uint64_t) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_asset_hash
+      // LOW_CODEGEN::END::CUSTOM:SETTER_asset_hash
+
+      broadcast_observable(N(asset_hash));
+    }
+
     Low::Util::Name MeshResource::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -433,6 +753,22 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
+    MeshResource
+    MeshResource::make_from_config(MeshResourceConfig &p_Config)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_config
+      MeshResource l_MeshResource = MeshResource::make(p_Config.name);
+      l_MeshResource.set_path(p_Config.path);
+      l_MeshResource.set_mesh_id(p_Config.meshId);
+      l_MeshResource.set_asset_hash(p_Config.assetHash);
+      l_MeshResource.set_source_file(p_Config.sourceFile);
+      l_MeshResource.set_sidecar_path(p_Config.sidecarPath);
+      l_MeshResource.set_mesh_path(p_Config.meshPath);
+
+      return l_MeshResource;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
+    }
+
     uint32_t MeshResource::create_instance()
     {
       uint32_t l_Index = 0u;
@@ -476,6 +812,41 @@ namespace Low {
                &ms_Buffer[offsetof(MeshResourceData, path) *
                           (l_Capacity)],
                l_Capacity * sizeof(Util::String));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, mesh_path) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, mesh_path) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::String));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, sidecar_path) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, sidecar_path) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::String));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, source_file) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, source_file) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(Util::String));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, mesh_id) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, mesh_id) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint64_t));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MeshResourceData, asset_hash) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MeshResourceData, asset_hash) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint64_t));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshResourceData, name) *

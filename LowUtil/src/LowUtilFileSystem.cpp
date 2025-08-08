@@ -261,9 +261,11 @@ namespace Low {
               FileWatcher &l_bf = get_file_watcher(b);
 
               String aName =
-                  ((Name *)l_Pos->second.get_return(l_af.handle))->c_str();
+                  ((Name *)l_Pos->second.get_return(l_af.handle))
+                      ->c_str();
               String bName =
-                  ((Name *)l_Pos->second.get_return(l_bf.handle))->c_str();
+                  ((Name *)l_Pos->second.get_return(l_bf.handle))
+                      ->c_str();
 
               std::transform(
                   aName.begin(), aName.end(), aName.begin(),
@@ -316,6 +318,37 @@ namespace Low {
         tick_files(p_Delta);
         late_tick_directories(p_Delta);
       }
+
+      void collect_files_with_suffix(const char *p_DirectoryPath,
+                                     const char *p_Suffix,
+                                     List<String> &p_OutFiles)
+      {
+        List<String> l_Entries;
+        FileIO::list_directory(p_DirectoryPath, l_Entries);
+
+        for (auto &l_Entry : l_Entries) {
+          String i_FullPath = l_Entry.c_str();
+
+          if (FileIO::is_directory(i_FullPath.c_str())) {
+            collect_files_with_suffix(i_FullPath.c_str(), p_Suffix,
+                                      p_OutFiles);
+          } else {
+            if (StringHelper::ends_with(i_FullPath, p_Suffix)) {
+              p_OutFiles.push_back(i_FullPath);
+            }
+          }
+        }
+      }
+
+      List<String> get_files_with_suffix(const char *p_DirectoryPath,
+                                         const char *p_Suffix)
+      {
+        List<String> l_Result;
+        collect_files_with_suffix(p_DirectoryPath, p_Suffix,
+                                  l_Result);
+        return l_Result;
+      }
     } // namespace FileSystem
-  }   // namespace Util
+
+  } // namespace Util
 } // namespace Low

@@ -295,6 +295,23 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
+      {
+        // Function: make_from_resource_config
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_from_resource_config);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Mesh::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Config);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_from_resource_config
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -589,6 +606,17 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    Mesh Mesh::make_from_resource_config(MeshResourceConfig &p_Config)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_resource_config
+      Mesh l_Mesh = Mesh::make(p_Config.name);
+      l_Mesh.set_resource(MeshResource::make_from_config(p_Config));
+      l_Mesh.set_state(MeshState::UNLOADED);
+
+      return l_Mesh;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_resource_config
     }
 
     uint32_t Mesh::create_instance()

@@ -56,6 +56,12 @@ namespace Low {
       FileWatcher LOW_EXPORT &
       get_file_watcher(WatchHandle p_WatchHandle);
       bool LOW_EXPORT file_watcher_exists(WatchHandle p_WatchHandle);
+
+      List<String> LOW_EXPORT get_files_with_suffix(
+          const char *p_DirectoryPath, const char *p_Suffix);
+      void LOW_EXPORT collect_files_with_suffix(
+          const char *p_DirectoryPath, const char *p_Suffix,
+          List<String> &p_OutFiles);
     } // namespace FileSystem
   }   // namespace Util
 } // namespace Low

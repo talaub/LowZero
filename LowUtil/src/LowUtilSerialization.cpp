@@ -2,6 +2,8 @@
 
 #include "LowUtilAssert.h"
 
+#define SHORT_VECTORS 1
+
 namespace Low {
   namespace Util {
     namespace Serialization {
@@ -23,9 +25,15 @@ namespace Low {
 
       void serialize(Yaml::Node &p_Node, Math::Vector3 &p_Value)
       {
+#if SHORT_VECTORS
+        p_Node.push_back(p_Value.x);
+        p_Node.push_back(p_Value.y);
+        p_Node.push_back(p_Value.z);
+#else
         p_Node["x"] = p_Value.x;
         p_Node["y"] = p_Value.y;
         p_Node["z"] = p_Value.z;
+#endif
       }
 
       void serialize(Yaml::Node &p_Node, Math::Vector2 &p_Value)
@@ -38,6 +46,24 @@ namespace Low {
       {
         p_Node["x"] = p_Value.x;
         p_Node["y"] = p_Value.y;
+      }
+
+      void serialize(Yaml::Node &p_Node, Math::AABB &p_AABB)
+      {
+        serialize(p_Node["bounds"], p_AABB.bounds);
+        serialize(p_Node["center"], p_AABB.center);
+      }
+
+      void serialize(Yaml::Node &p_Node, Math::Bounds &p_Bounds)
+      {
+        serialize(p_Node["min"], p_Bounds.min);
+        serialize(p_Node["max"], p_Bounds.max);
+      }
+
+      void serialize(Yaml::Node &p_Node, Math::Sphere &p_Sphere)
+      {
+        serialize(p_Node["position"], p_Sphere.position);
+        p_Node["radius"] = p_Sphere.radius;
       }
 
       void serialize(Yaml::Node &p_Node, Math::Box &p_Box)
@@ -104,8 +130,8 @@ namespace Low {
 
           p_Node["type"] = "Handle";
           UniqueId l_UniqueId;
-              l_TypeInfo.properties[N(unique_id)].get(
-                  l_Handle, &l_UniqueId);
+          l_TypeInfo.properties[N(unique_id)].get(l_Handle,
+                                                  &l_UniqueId);
           p_Node["value"] = l_UniqueId;
         } else {
           LOW_ASSERT(false, "Cannot serialize variant of this type");
@@ -134,15 +160,16 @@ namespace Low {
             l_TypeInfo.properties.end()) {
           // Type has unique id
           UniqueId l_UniqueId;
-		  l_TypeInfo.properties[N(unique_id)].get(
-			  p_Handle, &l_UniqueId);
+          l_TypeInfo.properties[N(unique_id)].get(p_Handle,
+                                                  &l_UniqueId);
 
           p_Node["uniqueid"] = l_UniqueId;
         } else if (l_TypeInfo.properties.find(N(name)) !=
                    l_TypeInfo.properties.end()) {
           p_Node["typeid"] = l_TypeInfo.typeId;
           p_Node["name"] =
-              ((Name *)l_TypeInfo.properties[N(name)].get_return(p_Handle))
+              ((Name *)l_TypeInfo.properties[N(name)].get_return(
+                   p_Handle))
                   ->c_str();
         } else {
           LOW_ASSERT(false, "The type does not have sufficient "
@@ -200,9 +227,15 @@ namespace Low {
       Math::Vector3 deserialize_vector3(Yaml::Node &p_Node)
       {
         Math::Vector3 l_Result;
-        l_Result.x = p_Node["x"].as<float>();
-        l_Result.y = p_Node["y"].as<float>();
-        l_Result.z = p_Node["z"].as<float>();
+        if (p_Node.IsSequence()) {
+          l_Result.x = p_Node[0].as<float>();
+          l_Result.y = p_Node[1].as<float>();
+          l_Result.z = p_Node[2].as<float>();
+        } else {
+          l_Result.x = p_Node["x"].as<float>();
+          l_Result.y = p_Node["y"].as<float>();
+          l_Result.z = p_Node["z"].as<float>();
+        }
 
         return l_Result;
       }
@@ -225,6 +258,26 @@ namespace Low {
         return l_Result;
       }
 
+      Math::Bounds deserialize_bounds(Yaml::Node &p_Node)
+      {
+        Math::Bounds l_Bounds;
+
+        l_Bounds.min = deserialize_vector3(p_Node["min"]);
+        l_Bounds.max = deserialize_vector3(p_Node["max"]);
+
+        return l_Bounds;
+      }
+
+      Math::AABB deserialize_aabb(Yaml::Node &p_Node)
+      {
+        Math::AABB l_AABB;
+
+        l_AABB.center = deserialize_vector3(p_Node["center"]);
+        l_AABB.bounds = deserialize_bounds(p_Node["bounds"]);
+
+        return l_AABB;
+      }
+
       Math::Box deserialize_box(Yaml::Node &p_Node)
       {
         Math::Box l_Result;
@@ -238,12 +291,25 @@ namespace Low {
         return l_Result;
       }
 
+      Math::Sphere deserialize_sphere(Yaml::Node &p_Node)
+      {
+        Math::Sphere l_Result;
+
+        l_Result.position = deserialize_vector3(p_Node["position"]);
+        l_Result.radius = p_Node["radius"].as<float>();
+
+        return l_Result;
+      }
+
       Math::Shape deserialize_shape(Yaml::Node &p_Node)
       {
         Math::Shape l_Shape;
         if (p_Node["box"]) {
           l_Shape.type = Math::ShapeType::BOX;
           l_Shape.box = deserialize_box(p_Node["box"]);
+        } else if (p_Node["sphere"]) {
+          l_Shape.type = Math::ShapeType::SPHERE;
+          l_Shape.sphere = deserialize_sphere(p_Node["sphere"]);
         } else {
           LOW_ASSERT(false, "Could not deserialize shape");
         }

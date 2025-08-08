@@ -22,6 +22,8 @@ namespace Low {
       uint32_t uploaded_submesh_count;
       uint32_t submesh_count;
       Low::Util::List<GpuSubmesh> submeshes;
+      Low::Math::AABB aabb;
+      Low::Math::Sphere bounding_sphere;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -121,6 +123,12 @@ namespace Low {
 
       Low::Util::List<GpuSubmesh> &get_submeshes() const;
       void set_submeshes(Low::Util::List<GpuSubmesh> &p_Value);
+
+      Low::Math::AABB &get_aabb() const;
+      void set_aabb(Low::Math::AABB &p_Value);
+
+      Low::Math::Sphere &get_bounding_sphere() const;
+      void set_bounding_sphere(Low::Math::Sphere &p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

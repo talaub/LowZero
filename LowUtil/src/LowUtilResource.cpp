@@ -93,6 +93,8 @@ namespace Low {
         LOW_ASSERT(p_AiMesh->HasTangentsAndBitangents(),
                    "Mesh has no tangent/bitangent information");
 
+        p_MeshInfo.name = LOW_NAME(p_AiMesh->mName.C_Str());
+
         p_MeshInfo.vertices.resize(p_AiMesh->mNumVertices);
         for (uint32_t i = 0u; i < p_AiMesh->mNumVertices; ++i) {
           p_MeshInfo.vertices[i].position = {
@@ -297,6 +299,8 @@ namespace Low {
         p_Mesh.bones.clear();
         p_Mesh.animations.clear();
         p_Mesh.boneCount = 0;
+
+        LOW_LOG_DEBUG << "Loading: " << p_FilePath << LOW_LOG_END;
 
         Assimp::Importer l_Importer;
 

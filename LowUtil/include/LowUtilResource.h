@@ -88,6 +88,7 @@ namespace Low {
 
       struct MeshInfo
       {
+        Util::Name name;
         List<Vertex> vertices;
         List<uint32_t> indices;
         List<BoneVertexWeight> boneInfluences;

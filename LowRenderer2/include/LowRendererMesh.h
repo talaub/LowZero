@@ -131,6 +131,9 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
+      static Mesh
+      make_from_resource_config(MeshResourceConfig &p_Config);
+
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
