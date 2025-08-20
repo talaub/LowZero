@@ -30,6 +30,11 @@ namespace Low {
         bool active;
       };
 
+      struct RenderEntryPushConstant
+      {
+        u32 renderObjectSlot;
+      };
+
       struct AllocatedBuffer
       {
         VkBuffer buffer;
@@ -113,7 +118,7 @@ namespace Low {
         vkb::Device get_vkbdevice();
         VkSurfaceKHR get_surface();
         VmaAllocator get_allocator();
-        DescriptorUtil::DescriptorAllocator &
+        DescriptorUtil::DescriptorAllocatorGrowable &
         get_global_descriptor_allocator();
 
         DynamicBuffer &get_mesh_vertex_buffer();

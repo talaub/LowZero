@@ -21,11 +21,14 @@
 #include "LowRendererGpuMesh.h"
 #include "LowRendererUiDrawCommand.h"
 #include "LowRendererUiCanvas.h"
+#include "LowRendererUiRenderObject.h"
 #include "LowRendererTexture.h"
 #include "LowRendererTextureResource.h"
 #include "LowRendererGpuTexture.h"
 #include "LowRendererTexturePixels.h"
 #include "LowRendererTextureStaging.h"
+#include "LowRendererMaterialTypeFamily.h"
+#include "LowRendererPrimitives.h"
 
 #include "LowUtilAssert.h"
 #include "LowUtilFileSystem.h"
@@ -39,6 +42,23 @@ namespace Low {
 
     VkSampler g_TestSampler;
     Low::Renderer::Texture g_Texture;
+
+    Texture g_DefaultTexture;
+
+    Texture get_default_texture()
+    {
+      return g_DefaultTexture;
+    }
+
+    static void initialize_enums()
+    {
+      MaterialTypeFamilyEnumHelper::initialize();
+    }
+
+    static void cleanup_enums()
+    {
+      MaterialTypeFamilyEnumHelper::cleanup();
+    }
 
     static void initialize_types()
     {
@@ -55,6 +75,7 @@ namespace Low {
       DrawCommand::initialize();
       PointLight::initialize();
       UiCanvas::initialize();
+      UiRenderObject::initialize();
       UiDrawCommand::initialize();
       Texture::initialize();
       TextureResource::initialize();
@@ -67,6 +88,7 @@ namespace Low {
     static void cleanup_types()
     {
       UiDrawCommand::cleanup();
+      UiRenderObject::cleanup();
       UiCanvas::cleanup();
       PointLight::cleanup();
       RenderView::cleanup();
@@ -99,8 +121,7 @@ namespace Low {
       if (l_Version == 1) {
         LOWR_ASSERT_RETURN(p_Node["name"],
                            "Could not find mesh name");
-        p_Config.name =
-            LOW_YAML_AS_NAME(p_Node["name"]);
+        p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
 
         LOWR_ASSERT_RETURN(p_Node["mesh_id"],
                            "Could not find mesh id");
@@ -161,6 +182,7 @@ namespace Low {
 
     void initialize()
     {
+      initialize_enums();
       initialize_types();
       LOW_ASSERT(Vulkan::initialize(),
                  "Failed to initialize Vulkan renderer");
@@ -171,6 +193,10 @@ namespace Low {
         l_BasePath += "/resources/img2d/test.ktx";
 
         g_Texture = Low::Renderer::load_texture(l_BasePath);
+      }
+
+      {
+        g_DefaultTexture = Texture::make_gpu_ready(N(Default));
       }
 
       VkSamplerCreateInfo sampl{};
@@ -197,6 +223,8 @@ namespace Low {
                       &sampl, nullptr, &g_TestSampler);
 
       LOW_ASSERT(preload_resources(), "Failed to preload resources.");
+
+      initialize_primitives();
     }
 
     void cleanup()
@@ -207,6 +235,7 @@ namespace Low {
                        nullptr);
 
       cleanup_types();
+      cleanup_enums();
 
       LOW_ASSERT(Vulkan::cleanup(),
                  "Failed to cleanup Vulkan renderer");
@@ -450,6 +479,35 @@ namespace Low {
       return true;
     }
 
+    static bool initialize_ui_renderobjects(float p_Delta)
+    {
+      for (auto it = UiRenderObject::ms_NeedInitialization.begin();
+           it != UiRenderObject::ms_NeedInitialization.end();) {
+        if (it->get_mesh().get_state() != MeshState::LOADED) {
+          ++it;
+          continue;
+        }
+
+        // Create ui draw commands and assign to canvas
+        {
+          GpuMesh i_GpuMesh = it->get_mesh().get_gpu();
+
+          for (auto sit = i_GpuMesh.get_submeshes().begin();
+               sit != i_GpuMesh.get_submeshes().end(); ++sit) {
+            GpuSubmesh i_GpuSubmesh = *sit;
+
+            UiDrawCommand i_DrawCommand = UiDrawCommand::make(
+                it->get_id(), it->get_canvas_handle(), i_GpuSubmesh);
+
+            it->get_draw_commands().push_back(i_DrawCommand);
+          }
+        }
+        it = UiRenderObject::ms_NeedInitialization.erase(it);
+      }
+
+      return true;
+    }
+
     static bool upload_material(float p_Delta, Material p_Material)
     {
       size_t l_StagingOffset = 0;
@@ -527,6 +585,7 @@ namespace Low {
       static bool l_ImageInit = false;
       ResourceManager::tick(p_Delta);
       update_drawcommand_buffer(p_Delta);
+      initialize_ui_renderobjects(p_Delta);
       tick_materials(p_Delta);
       if (!l_ImageInit) {
         if (g_Texture.get_state() == TextureState::LOADED) {
@@ -605,7 +664,8 @@ namespace Low {
           split += ImGui::GetIO().MouseDelta.x;
 
         ImGui::SetCursorPosX(
-            split + splitter_thickness); // Position right of splitter
+            split + splitter_thickness); // Position right of
+        splitter
             */
 
         // Right panel: value column

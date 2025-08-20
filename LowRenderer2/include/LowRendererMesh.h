@@ -26,6 +26,7 @@ namespace Low {
       MeshState state;
       Low::Renderer::MeshGeometry geometry;
       Low::Renderer::GpuMesh gpu;
+      bool unloadable;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -127,6 +128,10 @@ namespace Low {
 
       Low::Renderer::GpuMesh get_gpu() const;
       void set_gpu(Low::Renderer::GpuMesh p_Value);
+
+      bool is_unloadable() const;
+      void set_unloadable(bool p_Value);
+      void toggle_unloadable();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

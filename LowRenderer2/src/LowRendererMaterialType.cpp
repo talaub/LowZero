@@ -68,6 +68,9 @@ namespace Low {
                               depth_pipeline_config,
                               Low::Renderer::GraphicsPipelineConfig))
           Low::Renderer::GraphicsPipelineConfig();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, family,
+                              Low::Renderer::MaterialTypeFamily))
+          Low::Renderer::MaterialTypeFamily();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, name,
                         Low::Util::Name) = Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -85,17 +88,6 @@ namespace Low {
             GraphicsPipelineCullMode::BACK;
         l_Handle.get_draw_pipeline_config().frontFace =
             GraphicsPipelineFrontFace::COUNTER_CLOCKWISE;
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
-        l_Handle.get_draw_pipeline_config()
-            .colorAttachmentFormats.push_back(
-                ImageFormat::RGBA16_SFLOAT);
-        l_Handle.get_draw_pipeline_config().depthFormat =
-            ImageFormat::DEPTH;
         // l_Handle.get_draw_pipeline_config().depthFormat
       }
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -359,6 +351,35 @@ namespace Low {
         // End property: depth_pipeline_config
       }
       {
+        // Property: family
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(family);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialTypeData, family);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+        l_PropertyInfo.handleType = Low::Renderer::
+            MaterialTypeFamilyEnumHelper::get_enum_id();
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          MaterialType l_Handle = p_Handle.get_id();
+          l_Handle.get_family();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, MaterialType, family,
+              Low::Renderer::MaterialTypeFamily);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          MaterialType l_Handle = p_Handle.get_id();
+          *((Low::Renderer::MaterialTypeFamily *)p_Data) =
+              l_Handle.get_family();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: family
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -385,6 +406,31 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
+      }
+      {
+        // Function: make
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType =
+            Low::Renderer::MaterialType::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Family);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+          l_ParameterInfo.handleType = Low::Renderer::
+              MaterialTypeFamilyEnumHelper::get_enum_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make
       }
       {
         // Function: calculate_offsets
@@ -658,6 +704,7 @@ namespace Low {
       l_Handle.set_draw_pipeline_handle(get_draw_pipeline_handle());
       l_Handle.set_depth_pipeline_handle(get_depth_pipeline_handle());
       l_Handle.set_initialized(is_initialized());
+      l_Handle.set_family(get_family());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -687,6 +734,10 @@ namespace Low {
       p_Node["draw_pipeline_handle"] = get_draw_pipeline_handle();
       p_Node["depth_pipeline_handle"] = get_depth_pipeline_handle();
       p_Node["initialized"] = is_initialized();
+      Low::Util::Serialization::serialize_enum(
+          p_Node["family"],
+          Low::Renderer::MaterialTypeFamilyEnumHelper::get_enum_id(),
+          static_cast<uint8_t>(get_family()));
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -725,6 +776,12 @@ namespace Low {
       if (p_Node["draw_pipeline_config"]) {
       }
       if (p_Node["depth_pipeline_config"]) {
+      }
+      if (p_Node["family"]) {
+        l_Handle.set_family(
+            static_cast<Low::Renderer::MaterialTypeFamily>(
+                Low::Util::Serialization::deserialize_enum(
+                    p_Node["family"])));
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -933,6 +990,37 @@ namespace Low {
                       Low::Renderer::GraphicsPipelineConfig);
     }
 
+    Low::Renderer::MaterialTypeFamily MaterialType::get_family() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_family
+      // LOW_CODEGEN::END::CUSTOM:GETTER_family
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(MaterialType, family,
+                      Low::Renderer::MaterialTypeFamily);
+    }
+    void MaterialType::set_family(
+        Low::Renderer::MaterialTypeFamily p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_family
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_family
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(MaterialType, family,
+               Low::Renderer::MaterialTypeFamily) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_family
+      // LOW_CODEGEN::END::CUSTOM:SETTER_family
+
+      broadcast_observable(N(family));
+    }
+
     Low::Util::Name MaterialType::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -959,6 +1047,38 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    Low::Renderer::MaterialType
+    MaterialType::make(Low::Util::Name p_Name,
+                       Low::Renderer::MaterialTypeFamily p_Family)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+      MaterialType l_Handle = make(p_Name);
+      l_Handle.set_family(p_Family);
+
+      if (p_Family == MaterialTypeFamily::SOLID) {
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+        l_Handle.get_draw_pipeline_config().depthFormat =
+            ImageFormat::DEPTH;
+      } else if (p_Family == MaterialTypeFamily::UI) {
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+
+        l_Handle.get_draw_pipeline_config().depthTest = false;
+      }
+
+      return l_Handle;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
     void MaterialType::calculate_offsets()
@@ -1261,6 +1381,14 @@ namespace Low {
                           (l_Capacity)],
                l_Capacity *
                    sizeof(Low::Renderer::GraphicsPipelineConfig));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(MaterialTypeData, family) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(MaterialTypeData, family) *
+                          (l_Capacity)],
+               l_Capacity *
+                   sizeof(Low::Renderer::MaterialTypeFamily));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MaterialTypeData, name) *

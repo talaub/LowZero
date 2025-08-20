@@ -62,6 +62,7 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Mesh, gpu,
                               Low::Renderer::GpuMesh))
           Low::Renderer::GpuMesh();
+      ACCESSOR_TYPE_SOA(l_Handle, Mesh, unloadable, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, Mesh, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -72,6 +73,7 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       l_Handle.set_state(MeshState::UNLOADED);
+      l_Handle.set_unloadable(true);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -268,6 +270,34 @@ namespace Low {
         // End property: gpu
       }
       {
+        // Property: unloadable
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(unloadable);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(MeshData, unloadable);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.is_unloadable();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Mesh,
+                                            unloadable, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Mesh l_Handle = p_Handle.get_id();
+          l_Handle.set_unloadable(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Mesh l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_unloadable();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: unloadable
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -390,6 +420,7 @@ namespace Low {
       if (get_gpu().is_alive()) {
         l_Handle.set_gpu(get_gpu());
       }
+      l_Handle.set_unloadable(is_unloadable());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -580,6 +611,39 @@ namespace Low {
       broadcast_observable(N(gpu));
     }
 
+    bool Mesh::is_unloadable() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unloadable
+      // LOW_CODEGEN::END::CUSTOM:GETTER_unloadable
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Mesh, unloadable, bool);
+    }
+    void Mesh::toggle_unloadable()
+    {
+      set_unloadable(!is_unloadable());
+    }
+
+    void Mesh::set_unloadable(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unloadable
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_unloadable
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(Mesh, unloadable, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unloadable
+      // LOW_CODEGEN::END::CUSTOM:SETTER_unloadable
+
+      broadcast_observable(N(unloadable));
+    }
+
     Low::Util::Name Mesh::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -680,6 +744,13 @@ namespace Low {
                             (l_Capacity + l_CapacityIncrease)],
                &ms_Buffer[offsetof(MeshData, gpu) * (l_Capacity)],
                l_Capacity * sizeof(Low::Renderer::GpuMesh));
+      }
+      {
+        memcpy(
+            &l_NewBuffer[offsetof(MeshData, unloadable) *
+                         (l_Capacity + l_CapacityIncrease)],
+            &ms_Buffer[offsetof(MeshData, unloadable) * (l_Capacity)],
+            l_Capacity * sizeof(bool));
       }
       {
         memcpy(&l_NewBuffer[offsetof(MeshData, name) *

@@ -30,6 +30,7 @@ namespace Low {
         AllocatedBuffer point_light_buffer;
         Low::Math::UVector3 light_clusters;
         uint32_t light_cluster_count;
+        AllocatedBuffer ui_drawcommand_buffer;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -154,6 +155,9 @@ namespace Low {
 
         uint32_t get_light_cluster_count() const;
         void set_light_cluster_count(uint32_t p_Value);
+
+        AllocatedBuffer &get_ui_drawcommand_buffer() const;
+        void set_ui_drawcommand_buffer(AllocatedBuffer &p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

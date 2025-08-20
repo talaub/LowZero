@@ -14,6 +14,7 @@
 #define RENDERSTEP_LIGHTCULLING_NAME N(basic_light_culling)
 #define RENDERSTEP_SSAO_NAME N(basic_ssao)
 #define RENDERSTEP_CAVITIES_NAME N(cavities)
+#define RENDERSTEP_UI_NAME N(ui)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

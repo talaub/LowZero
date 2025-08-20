@@ -102,8 +102,8 @@ namespace Low {
 
         Samplers g_Samplers;
 
-        DescriptorUtil::DescriptorAllocator
-            g_GlobalDescriptorAllocator;
+        DescriptorUtil::DescriptorAllocatorGrowable
+            g_GlobalDescriptorAllocatorGrowable;
         VkDescriptorPool g_ImguiPool;
 
         VkDescriptorSetLayout g_ViewInfoDescriptorSetLayout;
@@ -273,10 +273,10 @@ namespace Low {
         {
           return g_TransferQueueFamily;
         }
-        DescriptorUtil::DescriptorAllocator &
+        DescriptorUtil::DescriptorAllocatorGrowable &
         get_global_descriptor_allocator()
         {
-          return g_GlobalDescriptorAllocator;
+          return g_GlobalDescriptorAllocatorGrowable;
         }
 
         bool advance_frame_count()
@@ -788,12 +788,14 @@ namespace Low {
           LOWR_VK_ASSERT(samplers_init(),
                          "Could not initialize global samplers");
 
-          Util::List<
-              DescriptorUtil::DescriptorAllocator::PoolSizeRatio>
-              l_Sizes = {{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1}};
+          Util::List<DescriptorUtil::PoolSizeRatio> l_Sizes = {
+              {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 30},
+              {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 50},
+              {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100},
+              {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100}};
 
-          g_GlobalDescriptorAllocator.init_pool(g_Device, 10,
-                                                l_Sizes);
+          g_GlobalDescriptorAllocatorGrowable.init(g_Device, 10,
+                                                   l_Sizes);
 
           LOWR_VK_ASSERT(initialize_global_descriptors(),
                          "Could not initialize global descriptors");
@@ -810,6 +812,8 @@ namespace Low {
             l_Builder.add_binding(2,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(3,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(4,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             g_ViewInfoDescriptorSetLayout =
                 l_Builder.build(Global::get_device(),

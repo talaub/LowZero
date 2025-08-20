@@ -3,3 +3,4 @@ LowRenderer2:
   ImageResourceState: 2
   MeshState: 3
   TextureState: 4
+  MaterialTypeFamily: 5

@@ -11,6 +11,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererUiCanvas.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -86,6 +87,10 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, RenderView, step_data,
                               Low::Util::List<RenderStepDataPtr>))
           Low::Util::List<RenderStepDataPtr>();
+      new (&ACCESSOR_TYPE_SOA(
+          l_Handle, RenderView, ui_canvases,
+          Low::Util::List<Low::Renderer::UiCanvas>))
+          Low::Util::List<Low::Renderer::UiCanvas>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_dirty, bool) =
           false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, dimensions_dirty,
@@ -576,6 +581,34 @@ namespace Low {
         // End property: step_data
       }
       {
+        // Property: ui_canvases
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ui_canvases);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderViewData, ui_canvases);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.get_ui_canvases();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderView, ui_canvases,
+              Low::Util::List<Low::Renderer::UiCanvas>);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          *((Low::Util::List<Low::Renderer::UiCanvas> *)p_Data) =
+              l_Handle.get_ui_canvases();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ui_canvases
+      }
+      {
         // Property: camera_dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(camera_dirty);
@@ -694,6 +727,24 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: add_step_by_name
+      }
+      {
+        // Function: add_ui_canvas
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(add_ui_canvas);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Canvas);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::UiCanvas::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: add_ui_canvas
       }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
@@ -1336,6 +1387,19 @@ namespace Low {
       broadcast_observable(N(step_data));
     }
 
+    Low::Util::List<Low::Renderer::UiCanvas> &
+    RenderView::get_ui_canvases() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_canvases
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ui_canvases
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(RenderView, ui_canvases,
+                      Low::Util::List<Low::Renderer::UiCanvas>);
+    }
+
     bool RenderView::is_camera_dirty() const
     {
       _LOW_ASSERT(is_alive());
@@ -1466,6 +1530,13 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step_by_name
       add_step(RenderStep::find_by_name(p_StepName));
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_step_by_name
+    }
+
+    void RenderView::add_ui_canvas(Low::Renderer::UiCanvas p_Canvas)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_ui_canvas
+      get_ui_canvases().push_back(p_Canvas);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_ui_canvas
     }
 
     uint32_t RenderView::create_instance()
@@ -1621,6 +1692,23 @@ namespace Low {
           *i_ValPtr =
               ACCESSOR_TYPE_SOA(i_RenderView, RenderView, step_data,
                                 Low::Util::List<RenderStepDataPtr>);
+        }
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          RenderView i_RenderView = *it;
+
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(RenderViewData, ui_canvases) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Low::Util::List<
+                                   Low::Renderer::UiCanvas>))])
+              Low::Util::List<Low::Renderer::UiCanvas>();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_RenderView, RenderView, ui_canvases,
+              Low::Util::List<Low::Renderer::UiCanvas>);
         }
       }
       {

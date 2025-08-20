@@ -19,7 +19,9 @@ namespace Low {
 
     struct LOW_RENDERER2_API UiCanvasData
     {
-      Low::Util::List<Low::Renderer::UiDrawCommand> draw_commands;
+      uint32_t z_sorting;
+      Low::Util::List<UiDrawCommand> draw_commands;
+      bool z_dirty;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -111,10 +113,15 @@ namespace Low {
         l_UiCanvas.destroy();
       }
 
-      Low::Util::List<Low::Renderer::UiDrawCommand> &
-      get_draw_commands() const;
-      void set_draw_commands(
-          Low::Util::List<Low::Renderer::UiDrawCommand> &p_Value);
+      uint32_t get_z_sorting() const;
+      void set_z_sorting(uint32_t p_Value);
+
+      Low::Util::List<UiDrawCommand> &get_draw_commands() const;
+
+      bool is_z_dirty() const;
+      void set_z_dirty(bool p_Value);
+      void toggle_z_dirty();
+      void mark_z_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);

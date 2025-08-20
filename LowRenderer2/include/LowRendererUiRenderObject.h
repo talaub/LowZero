@@ -9,9 +9,8 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowRendererGpuSubmesh.h"
+#include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
-#include "LowRendererUiRenderObject.h"
 #include "LowRendererTexture.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -19,11 +18,11 @@ namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     struct UiCanvas;
+    struct UiDrawCommand;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API UiDrawCommandData
+    struct LOW_RENDERER2_API UiRenderObjectData
     {
-      Low::Renderer::UiRenderObject render_object;
       uint64_t canvas_handle;
       Texture texture;
       Low::Math::Vector3 position;
@@ -33,36 +32,37 @@ namespace Low {
       Low::Math::Vector4 uv_rect;
       Material material;
       uint32_t z_sorting;
-      Low::Renderer::GpuSubmesh submesh;
+      Low::Renderer::Mesh mesh;
+      Low::Util::List<UiDrawCommand> draw_commands;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(UiDrawCommandData);
+        return sizeof(UiRenderObjectData);
       }
     };
 
-    struct LOW_RENDERER2_API UiDrawCommand : public Low::Util::Handle
+    struct LOW_RENDERER2_API UiRenderObject : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<UiDrawCommand> ms_LivingInstances;
+      static Low::Util::List<UiRenderObject> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      UiDrawCommand();
-      UiDrawCommand(uint64_t p_Id);
-      UiDrawCommand(UiDrawCommand &p_Copy);
+      UiRenderObject();
+      UiRenderObject(uint64_t p_Id);
+      UiRenderObject(UiRenderObject &p_Copy);
 
     private:
-      static UiDrawCommand make(Low::Util::Name p_Name);
+      static UiRenderObject make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
 
     public:
-      explicit UiDrawCommand(const UiDrawCommand &p_Copy)
+      explicit UiRenderObject(const UiRenderObject &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -76,12 +76,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static UiDrawCommand *living_instances()
+      static UiRenderObject *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static UiDrawCommand find_by_index(uint32_t p_Index);
+      static UiRenderObject find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -100,13 +100,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      UiDrawCommand duplicate(Low::Util::Name p_Name) const;
-      static UiDrawCommand duplicate(UiDrawCommand p_Handle,
-                                     Low::Util::Name p_Name);
+      UiRenderObject duplicate(Low::Util::Name p_Name) const;
+      static UiRenderObject duplicate(UiRenderObject p_Handle,
+                                      Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static UiDrawCommand find_by_name(Low::Util::Name p_Name);
+      static UiRenderObject find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -117,22 +117,18 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == UiDrawCommand::TYPE_ID &&
+        return p_Handle.get_type() == UiRenderObject::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        UiDrawCommand l_UiDrawCommand = p_Handle.get_id();
-        l_UiDrawCommand.destroy();
+        UiRenderObject l_UiRenderObject = p_Handle.get_id();
+        l_UiRenderObject.destroy();
       }
 
-      Low::Renderer::UiRenderObject get_render_object() const;
-      void set_render_object(Low::Renderer::UiRenderObject p_Value);
-
       uint64_t get_canvas_handle() const;
-      void set_canvas_handle(uint64_t p_Value);
 
       Texture get_texture() const;
       void set_texture(Texture p_Value);
@@ -165,7 +161,9 @@ namespace Low {
       uint32_t get_z_sorting() const;
       void set_z_sorting(uint32_t p_Value);
 
-      Low::Renderer::GpuSubmesh get_submesh() const;
+      Low::Renderer::Mesh get_mesh() const;
+
+      Low::Util::List<UiDrawCommand> &get_draw_commands() const;
 
       void mark_dirty();
 
@@ -174,18 +172,20 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static UiDrawCommand
-      make(Low::Renderer::UiRenderObject p_RenderObject,
-           Low::Renderer::UiCanvas p_Canvas,
-           Low::Renderer::GpuSubmesh p_Submesh);
+      static UiRenderObject make(UiCanvas p_Canvas,
+                                 Low::Renderer::Mesh p_Mesh);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      void set_submesh(Low::Renderer::GpuSubmesh p_Value);
+      void set_canvas_handle(uint64_t p_Value);
+      void set_mesh(Low::Renderer::Mesh p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::UiRenderObject>
+          ms_NeedInitialization;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

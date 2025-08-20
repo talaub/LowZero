@@ -18,6 +18,7 @@ namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     typedef void *RenderStepDataPtr;
+    struct UiCanvas;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API RenderViewData
@@ -35,6 +36,7 @@ namespace Low {
       Low::Renderer::Texture lit_image;
       Low::Util::List<Low::Renderer::RenderStep> steps;
       Low::Util::List<RenderStepDataPtr> step_data;
+      Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
       bool camera_dirty;
       bool dimensions_dirty;
       Low::Util::Name name;
@@ -177,6 +179,9 @@ namespace Low {
       Low::Util::List<RenderStepDataPtr> &get_step_data() const;
       void set_step_data(Low::Util::List<RenderStepDataPtr> &p_Value);
 
+      Low::Util::List<Low::Renderer::UiCanvas> &
+      get_ui_canvases() const;
+
       bool is_camera_dirty() const;
       void set_camera_dirty(bool p_Value);
       void toggle_camera_dirty();
@@ -192,6 +197,7 @@ namespace Low {
 
       void add_step(Low::Renderer::RenderStep p_Step);
       void add_step_by_name(Low::Util::Name p_StepName);
+      void add_ui_canvas(Low::Renderer::UiCanvas p_Canvas);
 
     private:
       static uint32_t ms_Capacity;

@@ -23,6 +23,8 @@ types:
       gpu:
         type: Low::Renderer::GpuMesh
         handle: true
+      unloadable:
+        type: bool
     functions:
       make_from_resource_config:
         static: true

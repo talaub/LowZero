@@ -1,0 +1,11 @@
+module: LowRenderer2
+prefix: LowRenderer
+namespace:
+  - Low
+  - Renderer
+dll_macro: LOW_RENDERER2_API
+enums:
+  MaterialTypeFamily:
+    options:
+      - name: Solid
+      - name: Ui

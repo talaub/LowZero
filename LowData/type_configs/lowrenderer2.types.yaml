@@ -156,6 +156,12 @@ types:
       step_data:
         type: Low::Util::List<RenderStepDataPtr>
         private_set: true
+      ui_canvases:
+        type: Low::Util::List<Low::Renderer::UiCanvas>
+        no_setter: true
+        #textures:
+        #type: Low::Util::UnorderedMap<Low::Util::Name, Low::Renderer::Texture>
+        #no_setter: true
     functions:
       add_step:
         return_type: void
@@ -168,9 +174,15 @@ types:
         parameters:
           - name: stepName
             type: Low::Util::Name
-
+      add_ui_canvas:
+        return_type: void
+        parameters:
+          - name: canvas
+            type: Low::Renderer::UiCanvas
+            handle: true
 
   MaterialType:
+    private_make: true
     properties:
       transparent:
         type: bool
@@ -190,7 +202,21 @@ types:
       depth_pipeline_config:
         type: Low::Renderer::GraphicsPipelineConfig
         no_setter: true
+      family:
+        type: Low::Renderer::MaterialTypeFamily
+        enum: true
+        private_setter: true
     functions:
+      make:
+        static: true
+        return_type: Low::Renderer::MaterialType
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: family
+            type: Low::Renderer::MaterialTypeFamily
+            enum: true
       calculate_offsets:
         return_type: void
         private: true
@@ -439,23 +465,138 @@ types:
             type: Low::Renderer::RenderScene
             handle: true
   UiDrawCommand:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    private_make: true
+    dirty_flags:
+      dirty:
+        no_data: true
+      z_dirty:
+        no_data: true
     properties:
+      render_object:
+        type: Low::Renderer::UiRenderObject
+        handle: true
+      canvas_handle:
+        type: uint64_t
       texture:
         type: Texture
         handle: true
+        dirty_flag: dirty
       position:
         type: Low::Math::Vector3
+        dirty_flag: dirty
       size:
         type: Low::Math::Vector2
+        dirty_flag: dirty
       rotation2D:
         type: float
+        dirty_flag: dirty
       color:
         type: Low::Math::Color
+        dirty_flag: dirty
       uv_rect:
         type: Low::Math::Vector4
+        dirty_flag: dirty
+      material:
+        type: Material
+        handle: true
+        dirty_flag: dirty
+      z_sorting:
+        type: uint32_t
+        dirty_flag:
+          - dirty
+          - z_dirty
+      submesh:
+        type: Low::Renderer::GpuSubmesh
+        handle: true
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: UiDrawCommand
+        return_handle: true
+        parameters:
+          - name: renderObject
+            type: Low::Renderer::UiRenderObject
+            handle: true
+          - name: canvas
+            type: Low::Renderer::UiCanvas
+            handle: true
+          - name: submesh
+            type: Low::Renderer::GpuSubmesh
+            handle: true
+  UiRenderObject:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    private_make: true
+    dirty_flags:
+      z_dirty:
+        no_data: true
+      dirty:
+        no_data: true
+    properties:
+      canvas_handle:
+        type: uint64_t
+        private_setter: true
+      texture:
+        type: Texture
+        handle: true
+        dirty_flag: dirty
+      position:
+        type: Low::Math::Vector3
+        dirty_flag: dirty
+      size:
+        type: Low::Math::Vector2
+        dirty_flag: dirty
+      rotation2D:
+        type: float
+        dirty_flag: dirty
+      color:
+        type: Low::Math::Color
+        dirty_flag: dirty
+      uv_rect:
+        type: Low::Math::Vector4
+        dirty_flag: dirty
+      material:
+        type: Material
+        handle: true
+        dirty_flag: dirty
+      z_sorting:
+        type: uint32_t
+        dirty_flag:
+          - dirty
+          - z_dirty
+      mesh:
+        type: Low::Renderer::Mesh
+        handle: true
+        private_setter: true
+      draw_commands:
+        type: Low::Util::List<UiDrawCommand>
+        no_setter: true
+    functions:
+      make:
+        static: true
+        return_type: UiRenderObject
+        return_handle: true
+        parameters:
+          - name: canvas
+            type: UiCanvas
+            handle: true
+          - name: mesh
+            type: Low::Renderer::Mesh
+            handle: true
 
   UiCanvas:
     properties:
+      z_sorting:
+        type: uint32_t
+        dirty_flag: z_dirty
       draw_commands:
-        type: Low::Util::List<Low::Renderer::UiDrawCommand>
+        type: Low::Util::List<UiDrawCommand>
+        no_setter: true
       

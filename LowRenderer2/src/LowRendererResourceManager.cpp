@@ -28,6 +28,8 @@ namespace Low {
   namespace Renderer {
     namespace ResourceManager {
 
+      static bool mesh_schedule_gpu_upload(Mesh p_Mesh);
+
       struct MeshEntry
       {
         union
@@ -147,6 +149,18 @@ namespace Low {
 
       bool load_mesh(Mesh p_Mesh)
       {
+        if (p_Mesh.is_alive() &&
+            p_Mesh.get_state() == MeshState::MEMORYLOADED &&
+            p_Mesh.get_geometry().is_alive()) {
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              mesh_schedule_gpu_upload(p_Mesh),
+              "Failed to schedule mesh for GPU upload. Mesh was "
+              "submitted for load to resource manager but is already "
+              "marked as memoryloaded.");
+
+          return true;
+        }
         // Skip out on scheduling the load for this mesh resource
         // because it is either already loaded or in the process of
         // being loaded/unloaded
@@ -161,6 +175,7 @@ namespace Low {
 
       bool unload_mesh(Mesh p_Mesh)
       {
+        // TODO: Check for mesh being unloadable
         LOW_NOT_IMPLEMENTED;
         return true;
       }
@@ -481,6 +496,8 @@ namespace Low {
             return false;
           }
 
+          // TODO: Check if mesh is actually unloadable
+
           unload_mesh(g_MeshEntries.top().mesh);
         }
 
@@ -587,7 +604,9 @@ namespace Low {
 
           VkBufferCopy l_CopyRegion{};
           l_CopyRegion.srcOffset = l_StagingOffset;
-          l_CopyRegion.dstOffset = l_GpuSubmesh.get_vertex_start();
+          l_CopyRegion.dstOffset = (l_GpuSubmesh.get_vertex_start() *
+                                    sizeof(Util::Resource::Vertex)) +
+                                   l_UploadedSize;
           l_CopyRegion.size = l_FrameUploadSpace;
           // TODO: Change to transfer queue command buffer
           vkCmdCopyBuffer(
@@ -646,7 +665,9 @@ namespace Low {
 
           VkBufferCopy l_CopyRegion{};
           l_CopyRegion.srcOffset = l_StagingOffset;
-          l_CopyRegion.dstOffset = l_GpuSubmesh.get_index_start();
+          l_CopyRegion.dstOffset =
+              (l_GpuSubmesh.get_index_start() * MESH_INDEX_SIZE) +
+              l_UploadedSize;
           l_CopyRegion.size = l_FrameUploadSpace;
           // TODO: Change to transfer queue command buffer
           vkCmdCopyBuffer(
@@ -831,6 +852,8 @@ namespace Low {
             l_Staging.destroy();
           }
         } else if (p_UploadEntry.is_mesh_upload()) {
+          const char *l_Name =
+              p_UploadEntry.data.mesh.mesh.get_name().c_str();
           GpuSubmesh l_GpuSubmesh =
               p_UploadEntry.data.mesh.gpuSubmesh;
           SubmeshGeometry l_SubmeshGeometry =

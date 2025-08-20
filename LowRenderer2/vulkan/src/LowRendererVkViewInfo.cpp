@@ -85,6 +85,9 @@ namespace Low {
         new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, light_clusters,
                                 Low::Math::UVector3))
             Low::Math::UVector3();
+        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
+                                ui_drawcommand_buffer,
+                                AllocatedBuffer)) AllocatedBuffer();
         ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, name, Low::Util::Name) =
             Low::Util::Name(0u);
         LOCK_UNLOCK(l_Lock);
@@ -148,6 +151,7 @@ namespace Low {
         BufferUtil::destroy_buffer(get_view_data_buffer());
         BufferUtil::destroy_buffer(get_point_light_cluster_buffer());
         BufferUtil::destroy_buffer(get_point_light_buffer());
+        BufferUtil::destroy_buffer(get_ui_drawcommand_buffer());
 
         for (u32 i = 0u; i < Global::get_frame_overlap(); ++i) {
           BufferUtil::destroy_buffer(get_staging_buffers()[i].buffer);
@@ -531,6 +535,39 @@ namespace Low {
           // End property: light_cluster_count
         }
         {
+          // Property: ui_drawcommand_buffer
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(ui_drawcommand_buffer);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfoData, ui_drawcommand_buffer);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.get_ui_drawcommand_buffer();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              ui_drawcommand_buffer,
+                                              AllocatedBuffer);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_ui_drawcommand_buffer(
+                *(AllocatedBuffer *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            *((AllocatedBuffer *)p_Data) =
+                l_Handle.get_ui_drawcommand_buffer();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: ui_drawcommand_buffer
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -641,6 +678,8 @@ namespace Low {
         l_Handle.set_point_light_buffer(get_point_light_buffer());
         l_Handle.set_light_clusters(get_light_clusters());
         l_Handle.set_light_cluster_count(get_light_cluster_count());
+        l_Handle.set_ui_drawcommand_buffer(
+            get_ui_drawcommand_buffer());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -709,6 +748,8 @@ namespace Low {
         if (p_Node["light_cluster_count"]) {
           l_Handle.set_light_cluster_count(
               p_Node["light_cluster_count"].as<uint32_t>());
+        }
+        if (p_Node["ui_drawcommand_buffer"]) {
         }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -1062,6 +1103,37 @@ namespace Low {
         broadcast_observable(N(light_cluster_count));
       }
 
+      AllocatedBuffer &ViewInfo::get_ui_drawcommand_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_drawcommand_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_ui_drawcommand_buffer
+
+        READ_LOCK(l_ReadLock);
+        return TYPE_SOA(ViewInfo, ui_drawcommand_buffer,
+                        AllocatedBuffer);
+      }
+      void
+      ViewInfo::set_ui_drawcommand_buffer(AllocatedBuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_drawcommand_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_drawcommand_buffer
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(ViewInfo, ui_drawcommand_buffer, AllocatedBuffer) =
+            p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_drawcommand_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_ui_drawcommand_buffer
+
+        broadcast_observable(N(ui_drawcommand_buffer));
+      }
+
       Low::Util::Name ViewInfo::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -1218,6 +1290,15 @@ namespace Low {
               &ms_Buffer[offsetof(ViewInfoData, light_cluster_count) *
                          (l_Capacity)],
               l_Capacity * sizeof(uint32_t));
+        }
+        {
+          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
+                                       ui_drawcommand_buffer) *
+                              (l_Capacity + l_CapacityIncrease)],
+                 &ms_Buffer[offsetof(ViewInfoData,
+                                     ui_drawcommand_buffer) *
+                            (l_Capacity)],
+                 l_Capacity * sizeof(AllocatedBuffer));
         }
         {
           memcpy(

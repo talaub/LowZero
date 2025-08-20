@@ -10,6 +10,7 @@
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererHelper.h"
+#include "LowRendererMaterialTypeFamily.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -41,6 +42,7 @@ namespace Low {
       bool initialized;
       Low::Renderer::GraphicsPipelineConfig draw_pipeline_config;
       Low::Renderer::GraphicsPipelineConfig depth_pipeline_config;
+      Low::Renderer::MaterialTypeFamily family;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -64,8 +66,11 @@ namespace Low {
       MaterialType(uint64_t p_Id);
       MaterialType(MaterialType &p_Copy);
 
+    private:
       static MaterialType make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+
+    public:
       explicit MaterialType(const MaterialType &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -152,9 +157,14 @@ namespace Low {
       Low::Renderer::GraphicsPipelineConfig &
       get_depth_pipeline_config() const;
 
+      Low::Renderer::MaterialTypeFamily get_family() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
+      static Low::Renderer::MaterialType
+      make(Low::Util::Name p_Name,
+           Low::Renderer::MaterialTypeFamily p_Family);
       bool get_input(Low::Util::Name p_Name,
                      MaterialTypeInput *p_Input);
       void finalize();
@@ -175,6 +185,7 @@ namespace Low {
       static uint32_t create_instance();
       static void increase_budget();
       Util::List<MaterialTypeInput> &get_inputs() const;
+      void set_family(Low::Renderer::MaterialTypeFamily p_Value);
       void calculate_offsets();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

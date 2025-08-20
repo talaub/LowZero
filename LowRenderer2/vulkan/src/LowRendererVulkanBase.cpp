@@ -315,7 +315,7 @@ namespace Low {
               Global::get_device(),
               p_Context.drawImageDescriptorLayout, nullptr);
 
-          Global::get_global_descriptor_allocator().destroy_pool(
+          Global::get_global_descriptor_allocator().destroy_pools(
               Global::get_device());
           return true;
         }

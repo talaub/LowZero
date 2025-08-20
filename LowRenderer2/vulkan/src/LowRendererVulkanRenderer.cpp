@@ -13,6 +13,8 @@
 #include "LowRendererDrawCommand.h"
 #include "LowRendererTexture.h"
 
+#include "LowRenderer.h"
+
 #include "LowUtil.h"
 #include "LowUtilResource.h"
 
@@ -42,7 +44,6 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       Context g_Context;
-      Texture g_DefaultTexture;
 
       Vulkan::Pipeline create_pipeline_from_config(
           const GraphicsPipelineConfig &p_Config,
@@ -54,11 +55,6 @@ namespace Low {
         Math::Vector4 data2;
         Math::Vector4 data3;
         Math::Vector4 data4;
-      };
-
-      struct RenderEntryPushConstant
-      {
-        u32 renderObjectSlot;
       };
 
       struct
@@ -416,9 +412,9 @@ namespace Low {
 
       static bool initialize_default_texture()
       {
-        g_DefaultTexture = Texture::make_gpu_ready(N(Default));
         Vulkan::Image l_Image = Vulkan::Image::make(N(Default));
-        g_DefaultTexture.get_gpu().set_data_handle(l_Image.get_id());
+        get_default_texture().get_gpu().set_data_handle(
+            l_Image.get_id());
 
         Math::UVector2 l_Dimensions(128.0f);
 
@@ -517,7 +513,7 @@ namespace Low {
           for (u32 j = 0; j < GpuTexture::get_capacity(); ++j) {
             if (!GpuTexture::find_by_index(j).is_alive()) {
               Global::get_texture_update_queue(i).push(
-                  {g_DefaultTexture.get_gpu(), j});
+                  {get_default_texture().get_gpu(), j});
             }
           }
         }
@@ -717,10 +713,14 @@ namespace Low {
                                  .get_gpu()
                                  .get_data_handle();
 
+          VkExtent2D l_SourceExtent;
+          l_SourceExtent.width = l_RenderView.get_dimensions().x;
+          l_SourceExtent.height = l_RenderView.get_dimensions().y;
+
           ImageUtil::Internal::cmd_copy2D(
               l_Cmd, l_LitImage.get_allocated_image().image,
               g_Context.swapchain.drawImage.image,
-              p_Context.swapchain.drawExtent,
+              l_SourceExtent,
               p_Context.swapchain.drawExtent);
 
           ImageUtil::cmd_transition(
@@ -869,6 +869,30 @@ namespace Low {
             l_Writer.write_buffer(
                 3, p_ViewInfo.get_point_light_buffer().buffer,
                 sizeof(PointLightInfo) * POINTLIGHT_COUNT, 0,
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.update_set(
+                Global::get_device(),
+                p_ViewInfo.get_view_data_descriptor_set());
+          }
+        }
+
+        // Update UI draw command buffer
+        {
+          if (!p_ViewInfo.is_initialized()) {
+            AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
+                sizeof(UiDrawCommandUpload) * UI_DRAWCOMMAND_COUNT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VMA_MEMORY_USAGE_GPU_ONLY);
+            p_ViewInfo.set_ui_drawcommand_buffer(l_Buffer);
+
+            DescriptorUtil::DescriptorWriter l_Writer;
+
+            l_Writer.write_buffer(
+                4, p_ViewInfo.get_ui_drawcommand_buffer().buffer,
+                sizeof(UiDrawCommandUpload) * UI_DRAWCOMMAND_COUNT, 0,
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.update_set(

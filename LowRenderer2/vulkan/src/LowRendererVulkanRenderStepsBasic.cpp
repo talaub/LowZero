@@ -2,6 +2,7 @@
 
 #include "LowRendererRenderStep.h"
 #include "LowRendererRenderView.h"
+#include "LowRendererUiCanvas.h"
 
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -24,17 +25,14 @@
 #include "LowRendererVulkanPipeline.h"
 #include "LowRendererVulkanBuffer.h"
 
+#include <EASTL/sort.h>
+
 #define GET_STEP_DATA(renderview, renderstep)                        \
   renderview.get_step_data()[renderstep.get_index()]
 
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
-
-      struct RenderEntryPushConstant
-      {
-        u32 renderObjectSlot;
-      };
 
       static bool initialize_solid_material_renderstep()
       {
@@ -63,15 +61,19 @@ namespace Low {
           l_ClearColorValueDepth.depthStencil.stencil =
               0; // Stencil clear value
 
-          Image l_AlbedoImage =
-              p_RenderView.get_gbuffer_albedo().get_gpu().get_data_handle();
-          Image l_NormalsImage =
-              p_RenderView.get_gbuffer_normals().get_gpu().get_data_handle();
-          Image l_DepthImage =
-              p_RenderView.get_gbuffer_depth().get_gpu().get_data_handle();
+          Image l_AlbedoImage = p_RenderView.get_gbuffer_albedo()
+                                    .get_gpu()
+                                    .get_data_handle();
+          Image l_NormalsImage = p_RenderView.get_gbuffer_normals()
+                                     .get_gpu()
+                                     .get_data_handle();
+          Image l_DepthImage = p_RenderView.get_gbuffer_depth()
+                                   .get_gpu()
+                                   .get_data_handle();
           Image l_ViewPositionImage =
               p_RenderView.get_gbuffer_viewposition()
-                  .get_gpu().get_data_handle();
+                  .get_gpu()
+                  .get_data_handle();
 
           {
             VkViewport l_Viewport = {};
@@ -99,23 +101,30 @@ namespace Low {
             // Transfer the gbuffer images
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_gbuffer_albedo().get_gpu().get_data_handle(),
+                p_RenderView.get_gbuffer_albedo()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_gbuffer_normals().get_gpu().get_data_handle(),
+                p_RenderView.get_gbuffer_normals()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
                 p_RenderView.get_gbuffer_viewposition()
-                    .get_gpu().get_data_handle(),
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_gbuffer_depth().get_gpu().get_data_handle(),
+                p_RenderView.get_gbuffer_depth()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
           }
@@ -244,7 +253,8 @@ namespace Low {
                                &i_PushConstants);
 
             vkCmdDrawIndexed(l_Cmd, i_GpuSubmesh.get_index_count(), 1,
-                             i_GpuSubmesh.get_index_start(), 0, 0);
+                             i_GpuSubmesh.get_index_start(),
+                             i_GpuSubmesh.get_vertex_start(), 0);
 
             it++;
           }
@@ -255,23 +265,30 @@ namespace Low {
             // Transfer the gbuffer images
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_gbuffer_albedo().get_gpu().get_data_handle(),
+                p_RenderView.get_gbuffer_albedo()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_gbuffer_normals().get_gpu().get_data_handle(),
+                p_RenderView.get_gbuffer_normals()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
                 p_RenderView.get_gbuffer_viewposition()
-                    .get_gpu().get_data_handle(),
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
-                p_RenderView.get_gbuffer_depth().get_gpu().get_data_handle(),
+                p_RenderView.get_gbuffer_depth()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
@@ -354,15 +371,19 @@ namespace Low {
           ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
           ImageUtil::cmd_transition(
-              l_Cmd, p_RenderView.get_lit_image().get_gpu().get_data_handle(),
+              l_Cmd,
+              p_RenderView.get_lit_image()
+                  .get_gpu()
+                  .get_data_handle(),
               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
           VkClearValue l_ClearColorValue = {};
           l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
-          Image l_LitImage =
-              p_RenderView.get_lit_image().get_gpu().get_data_handle();
+          Image l_LitImage = p_RenderView.get_lit_image()
+                                 .get_gpu()
+                                 .get_data_handle();
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
           l_ColorAttachments.resize(1);
@@ -431,7 +452,10 @@ namespace Low {
             vkCmdEndRendering(l_Cmd);
 
             ImageUtil::cmd_transition(
-                l_Cmd, p_RenderView.get_lit_image().get_gpu().get_data_handle(),
+                l_Cmd,
+                p_RenderView.get_lit_image()
+                    .get_gpu()
+                    .get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
           }
@@ -468,8 +492,9 @@ namespace Low {
               VkCommandBuffer l_Cmd =
                   Global::get_current_command_buffer();
 
-              VK_RENDERDOC_SECTION_BEGIN("Pointlight culling",
-                                         SINGLE_ARG({0.0f, 1.0f, 0.8f}));
+              VK_RENDERDOC_SECTION_BEGIN(
+                  "Pointlight culling",
+                  SINGLE_ARG({0.0f, 1.0f, 0.8f}));
 
               ViewInfo l_ViewInfo =
                   p_RenderView.get_view_info_handle();
@@ -546,6 +571,8 @@ namespace Low {
         RenderStep l_RenderStep =
             RenderStep::make(RENDERSTEP_SSAO_NAME);
 
+        const u8 l_Scale = 2;
+
         const Math::UVector2 l_NoiseDimensions(4);
 
         l_RenderStep.set_setup_callback([l_NoiseDimensions](
@@ -613,7 +640,8 @@ namespace Low {
           }
 
           {
-            g_BaseSsaoStepData.noise = Texture::make_gpu_ready(N(SsaoKernel));
+            g_BaseSsaoStepData.noise =
+                Texture::make_gpu_ready(N(SsaoKernel));
             Vulkan::Image l_Image =
                 Vulkan::Image::make(N(SsaoKernel));
             g_BaseSsaoStepData.noise.get_gpu().set_data_handle(
@@ -811,9 +839,12 @@ namespace Low {
             });
 
         l_RenderStep.set_resolution_update_callback(
-            [](RenderStep p_RenderStep,
-               Math::UVector2 p_NewDimensions,
-               RenderView p_RenderView) -> bool {
+            [l_Scale](RenderStep p_RenderStep,
+                      Math::UVector2 p_NewDimensions,
+                      RenderView p_RenderView) -> bool {
+              VkCommandBuffer l_Cmd =
+                  Global::get_current_command_buffer();
+
               BaseSsaoStepData *l_Data =
                   (BaseSsaoStepData *)GET_STEP_DATA(p_RenderView,
                                                     p_RenderStep);
@@ -826,16 +857,39 @@ namespace Low {
                     "renderstep because ssao "
                     "output texture was not alive.");
 
-                Vulkan::Image l_Image = l_Texture.get_gpu().get_data_handle();
+                Vulkan::Image l_Image =
+                    l_Texture.get_gpu().get_data_handle();
 
                 if (l_Image.is_alive()) {
                   ImGui_ImplVulkan_RemoveTexture(
-                      (VkDescriptorSet)
-                          l_Texture.get_gpu().get_imgui_texture_id());
+                      (VkDescriptorSet)l_Texture.get_gpu()
+                          .get_imgui_texture_id());
 
                   ImageUtil::destroy(l_Image);
                   l_Image.destroy();
                 }
+
+                l_Image = Vulkan::Image::make(N(SsaoOut));
+                l_Texture.get_gpu().set_data_handle(l_Image.get_id());
+
+                VkExtent3D l_Extent;
+                l_Extent.width = p_NewDimensions.x / l_Scale;
+                l_Extent.height = p_NewDimensions.y / l_Scale;
+                l_Extent.depth = 1;
+
+                LOWR_VK_ASSERT_RETURN(
+                    Vulkan::ImageUtil::create(
+                        l_Image, l_Extent, VK_FORMAT_R8_UNORM,
+                        VK_IMAGE_USAGE_SAMPLED_BIT |
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                        false),
+                    "Failed to create ssao out image.");
+
+                ImageUtil::cmd_transition(
+                    l_Cmd,
+                    l_Data->texture.get_gpu().get_data_handle(),
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
               }
               {
                 Texture l_Texture = l_Data->tempBlurTexture;
@@ -844,28 +898,59 @@ namespace Low {
                                       "renderstep because ssao "
                                       "blur texture was not alive.");
 
-                Vulkan::Image l_Image = l_Texture.get_gpu().get_data_handle();
+                Vulkan::Image l_Image =
+                    l_Texture.get_gpu().get_data_handle();
 
                 if (l_Image.is_alive()) {
                   ImGui_ImplVulkan_RemoveTexture(
-                      (VkDescriptorSet)
-                          l_Texture.get_gpu().get_imgui_texture_id());
+                      (VkDescriptorSet)l_Texture.get_gpu()
+                          .get_imgui_texture_id());
 
                   ImageUtil::destroy(l_Image);
                   l_Image.destroy();
+                }
+
+                if (!l_Image.is_alive()) {
+                  l_Data->tempBlurTexture.get_gpu().set_data_handle(
+                      Vulkan::Image::make(N(SsaoBlur)));
+
+                  VkExtent3D l_Extent;
+                  l_Extent.width = p_NewDimensions.x / l_Scale;
+                  l_Extent.height = p_NewDimensions.y / l_Scale;
+                  l_Extent.depth = 1;
+
+                  LOWR_VK_ASSERT_RETURN(
+                      Vulkan::ImageUtil::create(
+                          l_Data->tempBlurTexture.get_gpu()
+                              .get_data_handle(),
+                          l_Extent, VK_FORMAT_R8_UNORM,
+                          VK_IMAGE_USAGE_SAMPLED_BIT |
+                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                          false),
+                      "Failed to create ssao blur image.");
+
+                  ImageUtil::cmd_transition(
+                      l_Cmd,
+                      l_Data->tempBlurTexture.get_gpu()
+                          .get_data_handle(),
+                      VK_IMAGE_LAYOUT_UNDEFINED,
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 }
               }
               return true;
             });
 
-        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+        l_RenderStep.set_execute_callback([l_Scale,
+                                           l_NoiseDimensions](
+                                              RenderStep p_RenderStep,
                                               float p_Delta,
                                               RenderView p_RenderView)
                                               -> bool {
           VkCommandBuffer l_Cmd =
               Global::get_current_command_buffer();
 
-          VK_RENDERDOC_SECTION_BEGIN("Base SSAO", SINGLE_ARG({1.0f, 0.0f, 1.0f}));
+          VK_RENDERDOC_SECTION_BEGIN("Base SSAO",
+                                     SINGLE_ARG({1.0f, 0.0f, 1.0f}));
 
           ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
@@ -882,9 +967,8 @@ namespace Low {
 
           Math::UVector2 l_Dimensions = p_RenderView.get_dimensions();
 
-          Vulkan::Image l_Image = l_Texture.get_gpu().get_data_handle();
-
-          const u8 l_Scale = 2;
+          Vulkan::Image l_Image =
+              l_Texture.get_gpu().get_data_handle();
 
           if (!l_Image.is_alive()) {
             l_Image = Vulkan::Image::make(N(SsaoOut));
@@ -923,7 +1007,8 @@ namespace Low {
 
               LOWR_VK_ASSERT_RETURN(
                   Vulkan::ImageUtil::create(
-                      l_Data->tempBlurTexture.get_gpu().get_data_handle(),
+                      l_Data->tempBlurTexture.get_gpu()
+                          .get_data_handle(),
                       l_Extent, VK_FORMAT_R8_UNORM,
                       VK_IMAGE_USAGE_SAMPLED_BIT |
                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -931,7 +1016,8 @@ namespace Low {
                   "Failed to create ssao blur image.");
 
               ImageUtil::cmd_transition(
-                  l_Cmd, l_Data->tempBlurTexture.get_gpu().get_data_handle(),
+                  l_Cmd,
+                  l_Data->tempBlurTexture.get_gpu().get_data_handle(),
                   VK_IMAGE_LAYOUT_UNDEFINED,
                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
@@ -1071,6 +1157,262 @@ namespace Low {
         return true;
       }
 
+      bool initialize_ui_renderstep()
+      {
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_UI_NAME);
+
+        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          VK_RENDERDOC_SECTION_BEGIN("Draw UI",
+                                     SINGLE_ARG({0.1f, 0.5f, 0.1f}));
+
+          struct Entry
+          {
+            MaterialType materialType;
+            GpuSubmesh submesh;
+            u32 amount;
+          };
+
+          Util::List<Entry> l_Entries;
+
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+          eastl::sort(
+              p_RenderView.get_ui_canvases().begin(),
+              p_RenderView.get_ui_canvases().end(),
+              [](UiCanvas p_Canvas0, UiCanvas p_Canvas1) -> bool {
+                return p_Canvas0.get_z_sorting() <
+                       p_Canvas1.get_z_sorting();
+              });
+
+          Util::List<UiDrawCommandUpload> l_DrawCommandUploads;
+
+          for (auto it = p_RenderView.get_ui_canvases().begin();
+               it != p_RenderView.get_ui_canvases().end(); ++it) {
+            UiCanvas i_Canvas = it->get_id();
+            if (i_Canvas.is_z_dirty()) {
+              eastl::sort(i_Canvas.get_draw_commands().begin(),
+                          i_Canvas.get_draw_commands().end(),
+                          [](UiDrawCommand p_DC0,
+                             UiDrawCommand p_DC1) -> bool {
+                            return p_DC0.get_z_sorting() <
+                                   p_DC1.get_z_sorting();
+                          });
+
+              i_Canvas.set_z_dirty(false);
+            }
+
+            for (auto dit = i_Canvas.get_draw_commands().begin();
+                 dit != i_Canvas.get_draw_commands().end();) {
+              UiDrawCommand i_DrawCommand = dit->get_id();
+
+              if (!i_DrawCommand.is_alive()) {
+                dit = i_Canvas.get_draw_commands().erase(dit);
+                continue;
+              }
+
+              if (l_Entries.empty()) {
+                l_Entries.push_back(
+                    {i_DrawCommand.get_material().get_material_type(),
+                     i_DrawCommand.get_submesh(), 1});
+              } else {
+                if (l_Entries.end()->materialType ==
+                        i_DrawCommand.get_material()
+                            .get_material_type() &&
+                    l_Entries.end()->submesh ==
+                        i_DrawCommand.get_submesh()) {
+                  l_Entries.end()->amount++;
+                } else {
+                  l_Entries.push_back({i_DrawCommand.get_material()
+                                           .get_material_type(),
+                                       i_DrawCommand.get_submesh(),
+                                       1});
+                }
+              }
+
+              UiDrawCommandUpload i_Upload;
+              i_Upload.size = i_DrawCommand.get_size();
+              i_Upload.position = i_DrawCommand.get_position();
+              i_Upload.rotation2D =
+                  glm::radians(-i_DrawCommand.get_rotation2D());
+              i_Upload.textureIndex = 0;
+              if (i_DrawCommand.get_texture().is_alive() &&
+                  i_DrawCommand.get_texture().get_state() ==
+                      TextureState::LOADED) {
+                i_Upload.textureIndex =
+                    i_DrawCommand.get_texture().get_gpu().get_index();
+              }
+              i_Upload.materialIndex = 0;
+              if (i_DrawCommand.get_material().is_alive()) {
+                i_Upload.materialIndex =
+                    i_DrawCommand.get_material().get_index();
+              }
+
+              i_Upload.uvRect = i_DrawCommand.get_uv_rect();
+
+              l_DrawCommandUploads.push_back(i_Upload);
+
+              ++dit;
+            }
+          }
+
+          // Upload the UI draw command data
+          {
+            size_t l_StagingOffset = 0;
+
+            const u64 l_DrawCommandSize =
+                sizeof(UiDrawCommandUpload) *
+                l_DrawCommandUploads.size();
+
+            if (l_DrawCommandSize == 0) {
+              return true;
+            }
+
+            // TODO: This does not go on the resource staging
+            // buffer but a frame staging buffer of some sort
+            const u64 l_FrameUploadSpace =
+                request_resource_staging_buffer_space(
+                    l_DrawCommandSize, &l_StagingOffset);
+
+            LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
+                                      l_DrawCommandSize,
+                                  "Did not have enough staging "
+                                  "buffer space to upload "
+                                  "UI draw commands.");
+
+            LOWR_VK_ASSERT_RETURN(resource_staging_buffer_write(
+                                      l_DrawCommandUploads.data(),
+                                      l_FrameUploadSpace,
+                                      l_StagingOffset),
+                                  "Failed to write ui draw command "
+                                  "data to staging buffer");
+
+            VkBufferCopy l_CopyRegion{};
+            l_CopyRegion.srcOffset = l_StagingOffset;
+            l_CopyRegion.dstOffset = 0;
+            l_CopyRegion.size = l_FrameUploadSpace;
+            // This probably has to be done on the graphics
+            // queue so we can leave it as is
+            vkCmdCopyBuffer(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_resource_staging_buffer()
+                    .buffer.buffer,
+                l_ViewInfo.get_ui_drawcommand_buffer().buffer, 1,
+                &l_CopyRegion);
+          }
+
+          // Render UI
+          if (!l_Entries.empty() &&
+              Global::get_frame_number() > 100) {
+            GpuSubmesh l_CurrentGpuSubmesh = Util::Handle::DEAD;
+            MaterialType l_CurrentMaterialType = Util::Handle::DEAD;
+
+            u32 l_Offset = 0u;
+
+            Image l_LitImage = p_RenderView.get_lit_image()
+                                   .get_gpu()
+                                   .get_data_handle();
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_LitImage,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_LitImage.get_allocated_image().imageView, nullptr,
+                VK_IMAGE_LAYOUT_GENERAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {p_RenderView.get_dimensions().x,
+                 p_RenderView.get_dimensions().y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindIndexBuffer(
+                l_Cmd,
+                Global::get_mesh_index_buffer().m_Buffer.buffer, 0,
+                VK_INDEX_TYPE_UINT32);
+
+            for (auto it = l_Entries.begin(); it != l_Entries.end();
+                 ++it) {
+
+              if (it->materialType != l_CurrentMaterialType) {
+                l_CurrentMaterialType = it->materialType;
+                Pipeline i_Pipeline =
+                    l_CurrentMaterialType.get_draw_pipeline_handle();
+
+                // Switch pipeline
+                vkCmdBindPipeline(l_Cmd,
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  i_Pipeline.get_pipeline());
+
+                // Bind descriptor sets
+                {
+                  VkDescriptorSet l_Set =
+                      Global::get_global_descriptor_set();
+
+                  vkCmdBindDescriptorSets(
+                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      i_Pipeline.get_layout(), 0, 1, &l_Set, 0,
+                      nullptr);
+
+                  {
+                    VkDescriptorSet l_TextureSet =
+                        Global::get_current_texture_descriptor_set();
+                    vkCmdBindDescriptorSets(
+                        l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                        i_Pipeline.get_layout(), 1, 1, &l_TextureSet,
+                        0, nullptr);
+                  }
+
+                  VkDescriptorSet l_DescriptorSet =
+                      l_ViewInfo.get_view_data_descriptor_set();
+
+                  vkCmdBindDescriptorSets(
+                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      i_Pipeline.get_layout(), 2, 1, &l_DescriptorSet,
+                      0, nullptr);
+                }
+              }
+
+              if (it->submesh != l_CurrentGpuSubmesh) {
+                l_CurrentGpuSubmesh = it->submesh;
+                // TODO: change offset?
+              }
+
+              vkCmdDrawIndexed(
+                  l_Cmd, it->submesh.get_index_count(), it->amount, 0,
+                  it->submesh.get_vertex_start(), l_Offset);
+
+              l_Offset += it->amount;
+            }
+
+            vkCmdEndRendering(l_Cmd);
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_LitImage,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          VK_RENDERDOC_SECTION_END();
+
+          return true;
+        });
+
+        return true;
+      }
+
       bool initialize_basic_rendersteps()
       {
         LOWR_VK_ASSERT_RETURN(
@@ -1088,6 +1430,8 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             initialize_base_ssao_renderstep(),
             "Failed to initialize base ssao renderstep");
+        LOWR_VK_ASSERT_RETURN(initialize_ui_renderstep(),
+                              "Failed to initialize UI renderstep");
         return true;
       }
     } // namespace Vulkan

@@ -52,10 +52,10 @@ namespace Low {
       l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
       l_Handle.m_Data.m_Type = UiCanvas::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(
-          l_Handle, UiCanvas, draw_commands,
-          Low::Util::List<Low::Renderer::UiDrawCommand>))
-          Low::Util::List<Low::Renderer::UiDrawCommand>();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, UiCanvas, draw_commands,
+                              Low::Util::List<UiDrawCommand>))
+          Low::Util::List<UiDrawCommand>();
+      ACCESSOR_TYPE_SOA(l_Handle, UiCanvas, z_dirty, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, UiCanvas, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -132,6 +132,34 @@ namespace Low {
       l_TypeInfo.component = false;
       l_TypeInfo.uiComponent = false;
       {
+        // Property: z_sorting
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(z_sorting);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(UiCanvasData, z_sorting);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiCanvas l_Handle = p_Handle.get_id();
+          l_Handle.get_z_sorting();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiCanvas,
+                                            z_sorting, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiCanvas l_Handle = p_Handle.get_id();
+          l_Handle.set_z_sorting(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiCanvas l_Handle = p_Handle.get_id();
+          *((uint32_t *)p_Data) = l_Handle.get_z_sorting();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: z_sorting
+      }
+      {
         // Property: draw_commands
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(draw_commands);
@@ -146,22 +174,46 @@ namespace Low {
           l_Handle.get_draw_commands();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, UiCanvas, draw_commands,
-              Low::Util::List<Low::Renderer::UiDrawCommand>);
+              Low::Util::List<UiDrawCommand>);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          UiCanvas l_Handle = p_Handle.get_id();
-          l_Handle.set_draw_commands(*(
-              Low::Util::List<Low::Renderer::UiDrawCommand> *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiCanvas l_Handle = p_Handle.get_id();
-          *((Low::Util::List<Low::Renderer::UiDrawCommand> *)p_Data) =
+          *((Low::Util::List<UiDrawCommand> *)p_Data) =
               l_Handle.get_draw_commands();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: draw_commands
+      }
+      {
+        // Property: z_dirty
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(z_dirty);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(UiCanvasData, z_dirty);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiCanvas l_Handle = p_Handle.get_id();
+          l_Handle.is_z_dirty();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiCanvas,
+                                            z_dirty, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiCanvas l_Handle = p_Handle.get_id();
+          l_Handle.set_z_dirty(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiCanvas l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_z_dirty();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: z_dirty
       }
       {
         // Property: name
@@ -259,7 +311,8 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       UiCanvas l_Handle = make(p_Name);
-      l_Handle.set_draw_commands(get_draw_commands());
+      l_Handle.set_z_sorting(get_z_sorting());
+      l_Handle.set_z_dirty(is_z_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -284,6 +337,7 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
+      p_Node["z_sorting"] = get_z_sorting();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -303,6 +357,9 @@ namespace Low {
     {
       UiCanvas l_Handle = UiCanvas::make(N(UiCanvas));
 
+      if (p_Node["z_sorting"]) {
+        l_Handle.set_z_sorting(p_Node["z_sorting"].as<uint32_t>());
+      }
       if (p_Node["draw_commands"]) {
       }
       if (p_Node["name"]) {
@@ -350,7 +407,40 @@ namespace Low {
       l_UiCanvas.notify(p_Observed, p_Observable);
     }
 
-    Low::Util::List<Low::Renderer::UiDrawCommand> &
+    uint32_t UiCanvas::get_z_sorting() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
+      // LOW_CODEGEN::END::CUSTOM:GETTER_z_sorting
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(UiCanvas, z_sorting, uint32_t);
+    }
+    void UiCanvas::set_z_sorting(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_sorting
+
+      if (get_z_sorting() != p_Value) {
+        // Set dirty flags
+        mark_z_dirty();
+
+        // Set new value
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(UiCanvas, z_sorting, uint32_t) = p_Value;
+        LOCK_UNLOCK(l_WriteLock);
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_sorting
+        // LOW_CODEGEN::END::CUSTOM:SETTER_z_sorting
+
+        broadcast_observable(N(z_sorting));
+      }
+    }
+
+    Low::Util::List<UiDrawCommand> &
     UiCanvas::get_draw_commands() const
     {
       _LOW_ASSERT(is_alive());
@@ -360,27 +450,51 @@ namespace Low {
 
       READ_LOCK(l_ReadLock);
       return TYPE_SOA(UiCanvas, draw_commands,
-                      Low::Util::List<Low::Renderer::UiDrawCommand>);
+                      Low::Util::List<UiDrawCommand>);
     }
-    void UiCanvas::set_draw_commands(
-        Low::Util::List<Low::Renderer::UiDrawCommand> &p_Value)
+
+    bool UiCanvas::is_z_dirty() const
     {
       _LOW_ASSERT(is_alive());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_draw_commands
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_draw_commands
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_dirty
+      // LOW_CODEGEN::END::CUSTOM:GETTER_z_dirty
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(UiCanvas, z_dirty, bool);
+    }
+    void UiCanvas::toggle_z_dirty()
+    {
+      set_z_dirty(!is_z_dirty());
+    }
+
+    void UiCanvas::set_z_dirty(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_dirty
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_dirty
 
       // Set new value
       WRITE_LOCK(l_WriteLock);
-      TYPE_SOA(UiCanvas, draw_commands,
-               Low::Util::List<Low::Renderer::UiDrawCommand>) =
-          p_Value;
+      TYPE_SOA(UiCanvas, z_dirty, bool) = p_Value;
       LOCK_UNLOCK(l_WriteLock);
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_draw_commands
-      // LOW_CODEGEN::END::CUSTOM:SETTER_draw_commands
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
+      // LOW_CODEGEN::END::CUSTOM:SETTER_z_dirty
 
-      broadcast_observable(N(draw_commands));
+      broadcast_observable(N(z_dirty));
+    }
+
+    void UiCanvas::mark_z_dirty()
+    {
+      if (!is_z_dirty()) {
+        WRITE_LOCK(l_WriteLock);
+        TYPE_SOA(UiCanvas, z_dirty, bool) = true;
+        LOCK_UNLOCK(l_WriteLock);
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+        // LOW_CODEGEN::END::CUSTOM:MARK_z_dirty
+      }
     }
 
     Low::Util::Name UiCanvas::get_name() const
@@ -448,6 +562,13 @@ namespace Low {
       memcpy(l_NewSlots, ms_Slots,
              l_Capacity * sizeof(Low::Util::Instances::Slot));
       {
+        memcpy(&l_NewBuffer[offsetof(UiCanvasData, z_sorting) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(UiCanvasData, z_sorting) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(uint32_t));
+      }
+      {
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           UiCanvas i_UiCanvas = *it;
@@ -456,13 +577,19 @@ namespace Low {
               &l_NewBuffer[offsetof(UiCanvasData, draw_commands) *
                                (l_Capacity + l_CapacityIncrease) +
                            (it->get_index() *
-                            sizeof(Low::Util::List<
-                                   Low::Renderer::UiDrawCommand>))])
-              Low::Util::List<Low::Renderer::UiDrawCommand>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(
-              i_UiCanvas, UiCanvas, draw_commands,
-              Low::Util::List<Low::Renderer::UiDrawCommand>);
+                            sizeof(Low::Util::List<UiDrawCommand>))])
+              Low::Util::List<UiDrawCommand>();
+          *i_ValPtr =
+              ACCESSOR_TYPE_SOA(i_UiCanvas, UiCanvas, draw_commands,
+                                Low::Util::List<UiDrawCommand>);
         }
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(UiCanvasData, z_dirty) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(UiCanvasData, z_dirty) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
       }
       {
         memcpy(

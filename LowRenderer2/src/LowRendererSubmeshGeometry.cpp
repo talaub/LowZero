@@ -86,6 +86,11 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_vertex_count(0);
+      l_Handle.set_index_count(0);
+      l_Handle.set_transform(LOW_MATRIX4x4_IDENTITY);
+      l_Handle.set_parent_transform(LOW_MATRIX4x4_IDENTITY);
+      l_Handle.set_local_transform(LOW_MATRIX4x4_IDENTITY);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;

@@ -7,6 +7,11 @@
 #include <assimp/postprocess.h>
 #include "../../LowDependencies/assimp/code/Common/BaseProcess.h"
 
+#include <gli/gli.hpp>
+#include <gli/make_texture.hpp>
+#include <gli/save_ktx.hpp>
+#include <gli/generate_mipmaps.hpp>
+
 #include "LowUtil.h"
 #include "LowUtilString.h"
 #include "LowUtilFileIO.h"
@@ -14,6 +19,10 @@
 #include "LowUtilYaml.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilHashing.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include "../../LowDependencies/stb/stb_image.h"
 
 #define LOWR_IMP_ASSERT(cond, text)                                  \
   {                                                                  \
@@ -54,134 +63,139 @@ namespace Low {
         }
       };
 
-      static bool
-      calculate_bounding_sphere(const aiMesh *p_Mesh,
-                                Math::Sphere &p_BoundingSphere)
-      {
-        using namespace Low::Math;
+      namespace MeshImport {
 
-        LOWR_IMP_ASSERT_RETURN(
-            p_Mesh && p_Mesh->mNumVertices > 0,
-            "Mesh must not be null and must have vertices");
+        static bool
+        calculate_bounding_sphere(const aiMesh *p_Mesh,
+                                  Math::Sphere &p_BoundingSphere)
+        {
+          using namespace Low::Math;
 
-        Vector3 l_Center = Vector3(0.0f);
-        u32 l_NumVertices = p_Mesh->mNumVertices;
-
-        // Compute centroid
-        for (u32 i = 0; i < l_NumVertices; ++i) {
-          const aiVector3D &l_V = p_Mesh->mVertices[i];
-          l_Center += Vector3(l_V.x, l_V.y, l_V.z);
-        }
-        l_Center /= static_cast<float>(l_NumVertices);
-
-        // Compute maximum squared distance from center
-        float l_MaxDistanceSquared = 0.0f;
-        for (u32 i = 0; i < l_NumVertices; ++i) {
-          const aiVector3D &i_V = p_Mesh->mVertices[i];
-          const Vector3 i_Position(i_V.x, i_V.y, i_V.z);
-          const float i_DistanceSq =
-              VectorUtil::distance_squared(l_Center, i_Position);
-
-          if (i_DistanceSq > l_MaxDistanceSquared) {
-            l_MaxDistanceSquared = i_DistanceSq;
-          }
-        }
-
-        p_BoundingSphere.position = l_Center;
-        p_BoundingSphere.radius = glm::sqrt(l_MaxDistanceSquared);
-
-        return true;
-      }
-
-      static bool
-      calculate_bounding_volumes(const aiMesh *p_Mesh,
-                                 Math::Sphere &p_BoundingSphere,
-                                 Math::AABB &p_AABB)
-      {
-        Math::Vector3 l_Min(LOW_FLOAT_MAX, LOW_FLOAT_MAX,
-                            LOW_FLOAT_MAX);
-        Math::Vector3 l_Max(LOW_FLOAT_MIN, LOW_FLOAT_MIN,
-                            LOW_FLOAT_MIN);
-
-        for (u32 i = 0; i < p_Mesh->mNumVertices; ++i) {
-          aiVector3D i_Vertex = p_Mesh->mVertices[i];
-          l_Min.x = LOW_MATH_MIN(l_Min.x, i_Vertex.x);
-          l_Min.y = LOW_MATH_MIN(l_Min.y, i_Vertex.y);
-          l_Min.z = LOW_MATH_MIN(l_Min.z, i_Vertex.z);
-
-          l_Max.x = LOW_MATH_MAX(l_Max.x, i_Vertex.x);
-          l_Max.y = LOW_MATH_MAX(l_Max.y, i_Vertex.y);
-          l_Max.z = LOW_MATH_MAX(l_Max.z, i_Vertex.z);
-        }
-
-        p_AABB.bounds.min = l_Min;
-        p_AABB.bounds.max = l_Max;
-
-        p_AABB.center = (l_Min + l_Max) * 0.5f;
-
-        LOWR_IMP_ASSERT_RETURN(
-            calculate_bounding_sphere(p_Mesh, p_BoundingSphere),
-            "Failed to calculate bounding sphere for mesh");
-
-        return true;
-      }
-
-      bool populate_sidecar_info(const aiScene *p_Scene,
-                                 Util::String p_Name,
-                                 Util::Yaml::Node &p_Node)
-      {
-        using namespace Low::Math;
-        using namespace Low::Util;
-
-        p_Node["version"] = 1;
-        p_Node["mesh_name"] = p_Name.c_str();
-        p_Node["scene_name"] = p_Scene->mName.C_Str();
-
-        Math::AABB l_AABB;
-        l_AABB.bounds.min = Vector3(LOW_FLOAT_MAX);
-        l_AABB.bounds.max = Vector3(LOW_FLOAT_MIN);
-        for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
-          aiMesh *i_Submesh = p_Scene->mMeshes[i];
-
-          Yaml::Node i_Node;
-          i_Node["name"] = i_Submesh->mName.C_Str();
-
-          Math::AABB i_AABB;
-          Math::Sphere i_BoundingSphere;
           LOWR_IMP_ASSERT_RETURN(
-              calculate_bounding_volumes(i_Submesh, i_BoundingSphere,
-                                         i_AABB),
-              "Failed to calculate mesh bounding volumes.");
+              p_Mesh && p_Mesh->mNumVertices > 0,
+              "Mesh must not be null and must have vertices");
 
-          l_AABB.bounds.min =
-              glm::min(l_AABB.bounds.min, i_AABB.bounds.min);
-          l_AABB.bounds.max =
-              glm::max(l_AABB.bounds.max, i_AABB.bounds.max);
+          Vector3 l_Center = Vector3(0.0f);
+          u32 l_NumVertices = p_Mesh->mNumVertices;
 
-          Serialization::serialize(i_Node["aabb"], i_AABB);
-          Serialization::serialize(i_Node["bounding_sphere"],
-                                   i_BoundingSphere);
+          // Compute centroid
+          for (u32 i = 0; i < l_NumVertices; ++i) {
+            const aiVector3D &l_V = p_Mesh->mVertices[i];
+            l_Center += Vector3(l_V.x, l_V.y, l_V.z);
+          }
+          l_Center /= static_cast<float>(l_NumVertices);
 
-          p_Node["submeshes"][i_Submesh->mName.C_Str()] = i_Node;
+          // Compute maximum squared distance from center
+          float l_MaxDistanceSquared = 0.0f;
+          for (u32 i = 0; i < l_NumVertices; ++i) {
+            const aiVector3D &i_V = p_Mesh->mVertices[i];
+            const Vector3 i_Position(i_V.x, i_V.y, i_V.z);
+            const float i_DistanceSq =
+                VectorUtil::distance_squared(l_Center, i_Position);
+
+            if (i_DistanceSq > l_MaxDistanceSquared) {
+              l_MaxDistanceSquared = i_DistanceSq;
+            }
+          }
+
+          p_BoundingSphere.position = l_Center;
+          p_BoundingSphere.radius = glm::sqrt(l_MaxDistanceSquared);
+
+          return true;
         }
 
-        l_AABB.center =
-            (l_AABB.bounds.min + l_AABB.bounds.max) * 0.5f;
+        static bool
+        calculate_bounding_volumes(const aiMesh *p_Mesh,
+                                   Math::Sphere &p_BoundingSphere,
+                                   Math::AABB &p_AABB)
+        {
+          Math::Vector3 l_Min(LOW_FLOAT_MAX, LOW_FLOAT_MAX,
+                              LOW_FLOAT_MAX);
+          Math::Vector3 l_Max(LOW_FLOAT_MIN, LOW_FLOAT_MIN,
+                              LOW_FLOAT_MIN);
 
-        Serialization::serialize(p_Node["aabb"], l_AABB);
-        return true;
-      }
+          for (u32 i = 0; i < p_Mesh->mNumVertices; ++i) {
+            aiVector3D i_Vertex = p_Mesh->mVertices[i];
+            l_Min.x = LOW_MATH_MIN(l_Min.x, i_Vertex.x);
+            l_Min.y = LOW_MATH_MIN(l_Min.y, i_Vertex.y);
+            l_Min.z = LOW_MATH_MIN(l_Min.z, i_Vertex.z);
 
-      static bool is_reimport()
-      {
-        // TODO: IMPLEMENT
-        return false;
-      }
+            l_Max.x = LOW_MATH_MAX(l_Max.x, i_Vertex.x);
+            l_Max.y = LOW_MATH_MAX(l_Max.y, i_Vertex.y);
+            l_Max.z = LOW_MATH_MAX(l_Max.z, i_Vertex.z);
+          }
+
+          p_AABB.bounds.min = l_Min;
+          p_AABB.bounds.max = l_Max;
+
+          p_AABB.center = (l_Min + l_Max) * 0.5f;
+
+          LOWR_IMP_ASSERT_RETURN(
+              calculate_bounding_sphere(p_Mesh, p_BoundingSphere),
+              "Failed to calculate bounding sphere for mesh");
+
+          return true;
+        }
+
+        bool populate_sidecar_info(const aiScene *p_Scene,
+                                   Util::String p_Name,
+                                   Util::Yaml::Node &p_Node)
+        {
+          using namespace Low::Math;
+          using namespace Low::Util;
+
+          p_Node["version"] = 1;
+          p_Node["mesh_name"] = p_Name.c_str();
+          p_Node["scene_name"] = p_Scene->mName.C_Str();
+
+          Math::AABB l_AABB;
+          l_AABB.bounds.min = Vector3(LOW_FLOAT_MAX);
+          l_AABB.bounds.max = Vector3(LOW_FLOAT_MIN);
+          for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
+            aiMesh *i_Submesh = p_Scene->mMeshes[i];
+
+            Yaml::Node i_Node;
+            i_Node["name"] = i_Submesh->mName.C_Str();
+
+            Math::AABB i_AABB;
+            Math::Sphere i_BoundingSphere;
+            LOWR_IMP_ASSERT_RETURN(
+                calculate_bounding_volumes(i_Submesh,
+                                           i_BoundingSphere, i_AABB),
+                "Failed to calculate mesh bounding volumes.");
+
+            l_AABB.bounds.min =
+                glm::min(l_AABB.bounds.min, i_AABB.bounds.min);
+            l_AABB.bounds.max =
+                glm::max(l_AABB.bounds.max, i_AABB.bounds.max);
+
+            Serialization::serialize(i_Node["aabb"], i_AABB);
+            Serialization::serialize(i_Node["bounding_sphere"],
+                                     i_BoundingSphere);
+
+            p_Node["submeshes"][i_Submesh->mName.C_Str()] = i_Node;
+          }
+
+          l_AABB.center =
+              (l_AABB.bounds.min + l_AABB.bounds.max) * 0.5f;
+
+          Serialization::serialize(p_Node["aabb"], l_AABB);
+          return true;
+        }
+
+        static bool is_reimport()
+        {
+          // TODO: IMPLEMENT
+          return false;
+        }
+      } // namespace MeshImport
 
       bool import_mesh(Util::String p_ImportPath,
                        Util::String p_OutputPath)
       {
         Assimp::Importer l_Importer;
+
+        using namespace MeshImport;
 
         Util::FileIO::File l_File = Util::FileIO::open(
             p_ImportPath.c_str(), Util::FileIO::FileMode::READ_BYTES);
@@ -269,6 +283,18 @@ namespace Low {
         Util::Yaml::write_file(l_SidecarPath.c_str(), l_SidecarInfo);
         Util::Yaml::write_file(l_ResourcePath.c_str(),
                                l_ResourceNode);
+
+        return true;
+      }
+
+      bool import_image(Util::String p_ImportPath,
+                        Util::String p_OutputPath)
+      {
+        int l_Width, l_Height, l_Channels;
+
+        const uint8_t *l_Data =
+            stbi_load(p_ImportPath.c_str(), &l_Width, &l_Height,
+                      &l_Channels, 0);
 
         return true;
       }

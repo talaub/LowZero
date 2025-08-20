@@ -19,6 +19,10 @@
 #include "LowRendererPointLight.h"
 #include "LowRendererMesh.h"
 #include "LowRendererResourceImporter.h"
+#include "LowRendererPrimitives.h"
+
+#include "LowRendererUiCanvas.h"
+#include "LowRendererUiRenderObject.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -43,8 +47,13 @@ Low::Renderer::RenderScene g_RenderScene;
 
 Low::Renderer::RenderObject g_RenderObject;
 
+Low::Renderer::UiRenderObject g_UiRenderObject;
+
 Low::Renderer::MaterialType g_SolidBaseMaterialType;
 Low::Renderer::Material g_TestMaterial;
+
+Low::Renderer::MaterialType g_UiMaterialType;
+Low::Renderer::Material g_UiMaterial;
 
 Low::Math::Vector3 g_Position(0.0f);
 Low::Math::Quaternion g_Rotation(0.0f, 0.0f, 1.0f, 0.0f);
@@ -180,22 +189,60 @@ void init()
         RENDERSTEP_SSAO_NAME));
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
         RENDERSTEP_LIGHTING_NAME));
+    g_RenderView.add_step(
+        Low::Renderer::RenderStep::find_by_name(RENDERSTEP_UI_NAME));
 
-    g_SolidBaseMaterialType =
-        Low::Renderer::MaterialType::make(N(solid_base));
-    g_SolidBaseMaterialType.add_input(
-        N(base_color), Low::Renderer::MaterialTypeInputType::VECTOR3);
-    g_SolidBaseMaterialType.finalize();
+    {
+      g_SolidBaseMaterialType = Low::Renderer::MaterialType::make(
+          N(solid_base), Low::Renderer::MaterialTypeFamily::SOLID);
+      g_SolidBaseMaterialType.add_input(
+          N(base_color),
+          Low::Renderer::MaterialTypeInputType::VECTOR3);
+      g_SolidBaseMaterialType.finalize();
 
-    g_SolidBaseMaterialType.set_draw_vertex_shader_path(
-        "solid_base.vert");
-    g_SolidBaseMaterialType.set_draw_fragment_shader_path(
-        "solid_base.frag");
+      g_SolidBaseMaterialType.set_draw_vertex_shader_path(
+          "solid_base.vert");
+      g_SolidBaseMaterialType.set_draw_fragment_shader_path(
+          "solid_base.frag");
+    }
+
+    {
+      g_UiMaterialType = Low::Renderer::MaterialType::make(
+          N(ui), Low::Renderer::MaterialTypeFamily::UI);
+      g_UiMaterialType.finalize();
+
+      g_UiMaterialType.set_draw_vertex_shader_path("base_ui.vert");
+      g_UiMaterialType.set_draw_fragment_shader_path("base_ui.frag");
+    }
+
+    g_UiMaterial = Low::Renderer::Material::make(N(UiMaterial),
+                                                 g_UiMaterialType);
 
     g_TestMaterial = Low::Renderer::Material::make(
         N(TestMaterial), g_SolidBaseMaterialType);
     g_TestMaterial.set_property_vector3(
         N(base_color), Low::Math::Vector3(1.0f, 0.0f, 0.0f));
+
+    {
+      using namespace Low::Renderer;
+      UiCanvas l_Canvas = UiCanvas::make(N(TestCanvas));
+      g_RenderView.add_ui_canvas(l_Canvas);
+
+      g_UiRenderObject = UiRenderObject::make(
+          l_Canvas, Low::Renderer::get_primitives().unitQuad);
+
+      g_UiRenderObject.set_position_x(100.0f);
+      g_UiRenderObject.set_position_y(110.0f);
+
+      g_UiRenderObject.set_texture(get_default_texture());
+
+      g_UiRenderObject.set_rotation2D(0.0f);
+      g_UiRenderObject.set_z_sorting(0);
+      g_UiRenderObject.set_size(Low::Math::Vector2(50.0f, 55.0f));
+      // g_UiRenderObject.set_texture()
+
+      g_UiRenderObject.set_material(g_UiMaterial);
+    }
 
     Low::Math::Vector3 p(0.0f, 0.0f, -14.0f);
     Low::Math::Vector3 d(0.0f, 0.0f, 1.0f);

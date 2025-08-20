@@ -46,6 +46,8 @@ types:
         type: Low::Math::UVector3
       light_cluster_count:
         type: uint32_t
+      ui_drawcommand_buffer:
+        type: AllocatedBuffer
   Scene:
     properties:
       point_light_slots:

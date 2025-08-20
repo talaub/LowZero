@@ -24,14 +24,15 @@ namespace Low {
                 VkDescriptorSetLayoutCreateFlags p_Flags = 0);
         };
 
-        struct DescriptorAllocator
-        {
           struct PoolSizeRatio
           {
             VkDescriptorType type;
             float ratio;
           };
 
+
+        struct DescriptorAllocator
+        {
           VkDescriptorPool m_Pool;
 
           void init_pool(VkDevice p_Device, u32 p_MaxSets,
@@ -45,12 +46,6 @@ namespace Low {
 
         struct DescriptorAllocatorGrowable
         {
-          struct PoolSizeRatio
-          {
-            VkDescriptorType type;
-            float ratio;
-          };
-
           void init(VkDevice p_Deivice, u32 p_InitialSets,
                     Util::Span<PoolSizeRatio> p_PoolRatio);
           void clear_pools(VkDevice p_Device);

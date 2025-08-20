@@ -19,8 +19,9 @@ namespace Low {
         {
           int l_Width, l_Height, l_Channels;
 
-          const uint8_t *l_Data = stbi_load(p_FilePath.c_str(), &l_Width,
-                                            &l_Height, &l_Channels, 0);
+          const uint8_t *l_Data =
+              stbi_load(p_FilePath.c_str(), &l_Width, &l_Height,
+                        &l_Channels, 0);
 
           p_Image.dimensions.x = l_Width;
           p_Image.dimensions.y = l_Height;
@@ -60,8 +61,9 @@ namespace Low {
           for (uint64_t y = 0ull; y < p_Image.dimensions.y; ++y) {
             for (uint64_t x = 0ull; x < p_Image.dimensions.x; ++x) {
 
-              Pixel i_Data = *(Pixel *)&p_Image.data
-                                  .data()[((y * p_Image.dimensions.x) + x) * 4];
+              Pixel i_Data =
+                  *(Pixel *)&p_Image.data
+                       .data()[((y * p_Image.dimensions.x) + x) * 4];
 
               gli::extent2d l_Extent;
               l_Extent.x = static_cast<uint32_t>(x);
@@ -74,7 +76,8 @@ namespace Low {
           gli::texture2d l_TextureMipmaps =
               gli::generate_mipmaps(l_Texture, gli::FILTER_LINEAR);
 
-          gli::save_ktx(l_TextureMipmaps, (p_OutputPath + ".ktx").c_str());
+          gli::save_ktx(l_TextureMipmaps,
+                        (p_OutputPath + ".ktx").c_str());
         }
       } // namespace Image
     }   // namespace ResourceProcessor

@@ -16,5 +16,7 @@ namespace Low {
 
     void load_mesh(Mesh p_Mesh);
     Texture load_texture(Util::String p_ImagePath);
+
+    Texture get_default_texture();
   } // namespace Renderer
 } // namespace Low
