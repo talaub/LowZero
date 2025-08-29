@@ -286,18 +286,6 @@ namespace Low {
 
         return true;
       }
-
-      bool import_image(Util::String p_ImportPath,
-                        Util::String p_OutputPath)
-      {
-        int l_Width, l_Height, l_Channels;
-
-        const uint8_t *l_Data =
-            stbi_load(p_ImportPath.c_str(), &l_Width, &l_Height,
-                      &l_Channels, 0);
-
-        return true;
-      }
     } // namespace ResourceImporter
   }   // namespace Renderer
 } // namespace Low

@@ -29,6 +29,13 @@ namespace Low {
 
           l_EnumInfo.entries.push_back(l_Entry);
         }
+        {
+          Low::Util::RTTI::EnumEntryInfo l_Entry;
+          l_Entry.name = N(DebugGeometry);
+          l_Entry.value = 2;
+
+          l_EnumInfo.entries.push_back(l_Entry);
+        }
 
         Low::Util::register_enum_info(5, l_EnumInfo);
       }
@@ -45,6 +52,9 @@ namespace Low {
         }
         if (p_Value == MaterialTypeFamily::UI) {
           return N(Ui);
+        }
+        if (p_Value == MaterialTypeFamily::DEBUGGEOMETRY) {
+          return N(DebugGeometry);
         }
 
         LOW_ASSERT(
@@ -69,6 +79,9 @@ namespace Low {
         if (p_Name == N(Ui)) {
           return Low::Renderer::MaterialTypeFamily::UI;
         }
+        if (p_Name == N(DebugGeometry)) {
+          return Low::Renderer::MaterialTypeFamily::DEBUGGEOMETRY;
+        }
 
         LOW_ASSERT(
             false,
@@ -88,7 +101,7 @@ namespace Low {
 
       u8 get_entry_count()
       {
-        return 2;
+        return 3;
       }
     } // namespace MaterialTypeFamilyEnumHelper
   }   // namespace Renderer

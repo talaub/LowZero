@@ -14,6 +14,7 @@
 #include "LowRendererSubmeshGeometry.h"
 #include "LowRendererTextureStaging.h"
 
+#include "LowUtil.h"
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilAssert.h"
@@ -59,6 +60,7 @@ namespace Low {
       {
         Util::Set<Mesh> meshes;
         Util::Set<Texture> textures;
+        Util::Set<Font> fonts;
       } g_LoadSchedules;
 
       struct UploadEntry
@@ -134,8 +136,10 @@ namespace Low {
         return true;
       }
 
-      bool unload_image_resource(ImageResource p_ImageResource)
+      bool load_font(Font p_Font)
       {
+        g_LoadSchedules.fonts.insert(p_Font);
+
         return true;
       }
 
@@ -180,6 +184,22 @@ namespace Low {
         return true;
       }
 
+      static VkFormat
+      get_vk_format(Util::Resource::Image2DFormat p_Format)
+      {
+        switch (p_Format) {
+        case Util::Resource::Image2DFormat::R8:
+          return VK_FORMAT_R8_UNORM;
+        case Util::Resource::Image2DFormat::RGBA8:
+          return VK_FORMAT_R8G8B8A8_UNORM;
+        case Util::Resource::Image2DFormat::RGB8:
+          return VK_FORMAT_R8G8B8_UNORM;
+        }
+        LOW_ASSERT(false, "Unsupported util format");
+
+        return VK_FORMAT_UNDEFINED;
+      }
+
       static bool texture_schedule_gpu_upload(Texture p_Texture)
       {
         const Math::UVector2 l_Dimensions =
@@ -205,10 +225,11 @@ namespace Low {
         l_Extent.height = l_Dimensions.y;
         l_Extent.depth = 1;
 
-        // TODO: Fetch format - format is hardcoded here :/
-        Vulkan::ImageUtil::create(l_Image, l_Extent,
-                                  VK_FORMAT_R8G8B8A8_UNORM,
-                                  VK_IMAGE_USAGE_SAMPLED_BIT, true);
+        Vulkan::ImageUtil::create(
+            l_Image, l_Extent,
+            get_vk_format(
+                p_Texture.get_staging().get_mip0().get_format()),
+            VK_IMAGE_USAGE_SAMPLED_BIT, true);
 
         if (GpuTexture::living_count() >=
             GpuTexture::get_capacity()) {
@@ -247,6 +268,36 @@ namespace Low {
         l_Pixels.set_dimensions(p_Image2D.dimensions);
 
         return l_Pixels;
+      }
+
+      static bool font_schedule_memory_load(Font p_Font)
+      {
+        u64 l_FontId = p_Font.get_id();
+        Util::JobManager::default_pool().enqueue([l_FontId]() {
+          Font l_Font = l_FontId;
+
+          Util::Yaml::Node l_Sidecar = Util::Yaml::load_file(
+              l_Font.get_resource().get_sidecar_path().c_str());
+
+          Util::Yaml::Node &l_Glyphs = l_Sidecar["glyphs"];
+
+          for (auto it = l_Glyphs.begin();
+               it != l_Glyphs.end(); ++it) {
+            Util::Yaml::Node &i_Node = *it;
+            Glyph i_Glyph;
+            char i_Codepoint = i_Node["codepoint"].as<u8>();
+            i_Glyph.uvMin = Util::Serialization::deserialize_vector2(
+                i_Node["uv_min"]);
+            i_Glyph.uvMax = Util::Serialization::deserialize_vector2(
+                i_Node["uv_max"]);
+
+            l_Font.get_glyphs()[i_Codepoint] = i_Glyph;
+          }
+
+          g_LoadSchedules.textures.insert(l_Font.get_texture());
+        });
+
+        return true;
       }
 
       static bool texture_schedule_memory_load(Texture p_Texture)
@@ -476,6 +527,30 @@ namespace Low {
                   << "Failed to schedule texture '" << it->get_name()
                   << "' for loading to memory." << LOW_LOG_END;
             }
+            continue;
+          }
+        }
+
+        return true;
+      }
+
+      static bool fonts_tick(float p_Delta)
+      {
+        for (auto it = g_LoadSchedules.fonts.begin();
+             it != g_LoadSchedules.fonts.end();) {
+          if (it->get_texture().get_state() ==
+              TextureState::UNLOADED) {
+            // If the font is scheduled to be loaded but
+            // currently still marked as unloaded we will try to
+            // schedule the memory load.
+            if (!font_schedule_memory_load(*it)) {
+              LOW_LOG_ERROR
+                  << "Failed to schedule font '" << it->get_name()
+                  << "' for loading to memory." << LOW_LOG_END;
+            }
+
+            it = g_LoadSchedules.fonts.erase(it);
+
             continue;
           }
         }
@@ -734,10 +809,12 @@ namespace Low {
 
           VkImage l_VkImage = l_Image.get_allocated_image().image;
 
+          const u32 l_Channels = l_Mip.get_channels();
+
           int32_t l_ImagePixelOffset =
               static_cast<int32_t>(l_UploadedSize) /
               l_Mip.get_channels();
-          u32 l_PixelUpload = static_cast<u32>(l_FrameUploadSpace) /
+          u64 l_PixelUpload = static_cast<u64>(l_FrameUploadSpace) /
                               l_Mip.get_channels();
 
           const u32 l_ImageWidth = l_Mip.get_dimensions().x;
@@ -766,16 +843,25 @@ namespace Low {
                 i_PixelsAlreadyPresentInRow, i_RowsAlreadyCopied,
                 0}; // Start row-by-pixel offset here.
 
-            u32 i_PixelsCopiedThisRegion =
+            u64 i_PixelsCopiedThisRegion =
                 l_ImageWidth - i_PixelsAlreadyPresentInRow;
+
+            if (i_PixelsCopiedThisRegion > l_PixelUpload) {
+              i_PixelsCopiedThisRegion = l_PixelUpload;
+            }
             i_Region.imageExtent = {
-                i_PixelsCopiedThisRegion, 1,
+                static_cast<u32>(i_PixelsCopiedThisRegion), 1,
                 1}; // Exact only small portions uploaded
 
             l_ImagePixelOffset += i_PixelsCopiedThisRegion;
             l_StagingOffset +=
                 i_PixelsCopiedThisRegion * l_Mip.get_channels();
-            l_PixelUpload -= i_PixelsCopiedThisRegion;
+
+            if (i_PixelsCopiedThisRegion > l_PixelUpload) {
+              l_PixelUpload = 0;
+            } else {
+              l_PixelUpload -= i_PixelsCopiedThisRegion;
+            }
           }
 
           if (!l_Regions.empty()) {
@@ -921,6 +1007,7 @@ namespace Low {
 
       void tick(float p_Delta)
       {
+        _LOW_ASSERT(fonts_tick(p_Delta));
         _LOW_ASSERT(meshes_tick(p_Delta));
         _LOW_ASSERT(textures_tick(p_Delta));
         _LOW_ASSERT(uploads_tick(p_Delta));

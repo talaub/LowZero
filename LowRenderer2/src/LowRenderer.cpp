@@ -29,6 +29,8 @@
 #include "LowRendererTextureStaging.h"
 #include "LowRendererMaterialTypeFamily.h"
 #include "LowRendererPrimitives.h"
+#include "LowRendererFont.h"
+#include "LowRendererFontResource.h"
 
 #include "LowUtilAssert.h"
 #include "LowUtilFileSystem.h"
@@ -43,11 +45,18 @@ namespace Low {
     VkSampler g_TestSampler;
     Low::Renderer::Texture g_Texture;
 
+    MaterialTypes g_MaterialTypes;
+
     Texture g_DefaultTexture;
 
     Texture get_default_texture()
     {
       return g_DefaultTexture;
+    }
+
+    MaterialTypes &get_material_types()
+    {
+      return g_MaterialTypes;
     }
 
     static void initialize_enums()
@@ -83,10 +92,14 @@ namespace Low {
       TexturePixels::initialize();
       GpuTexture::initialize();
       RenderStep::initialize();
+      Font::initialize();
+      FontResource::initialize();
     }
 
     static void cleanup_types()
     {
+      FontResource::cleanup();
+      Font::cleanup();
       UiDrawCommand::cleanup();
       UiRenderObject::cleanup();
       UiCanvas::cleanup();
@@ -108,6 +121,155 @@ namespace Low {
       TextureStaging::cleanup();
       GpuTexture::cleanup();
       Texture::cleanup();
+    }
+
+    static bool initialize_material_types()
+    {
+      const float l_DebugGeometryLineWidth = 3.0f;
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(solid_base), Low::Renderer::MaterialTypeFamily::SOLID);
+        l_MT.add_input(N(base_color),
+                       Low::Renderer::MaterialTypeInputType::VECTOR3);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("solid_base.vert");
+        l_MT.set_draw_fragment_shader_path("solid_base.frag");
+
+        g_MaterialTypes.solidBase = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(debug_geometry),
+            Low::Renderer::MaterialTypeFamily::DEBUGGEOMETRY);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("debug_geometry.vert");
+        l_MT.set_draw_fragment_shader_path("debug_geometry.frag");
+
+        g_MaterialTypes.debugGeometry = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(debug_geometry_no_depth),
+            Low::Renderer::MaterialTypeFamily::DEBUGGEOMETRY);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("debug_geometry.vert");
+        l_MT.set_draw_fragment_shader_path("debug_geometry.frag");
+
+        l_MT.get_draw_pipeline_config().depthTest = false;
+        l_MT.get_draw_pipeline_config().depthFormat =
+            ImageFormat::DEPTH;
+
+        g_MaterialTypes.debugGeometryNoDepth = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(debug_geometry_wireframe),
+            Low::Renderer::MaterialTypeFamily::DEBUGGEOMETRY);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("debug_geometry.vert");
+        l_MT.set_draw_fragment_shader_path("debug_geometry.frag");
+
+        l_MT.get_draw_pipeline_config().wireframe = true;
+        l_MT.get_draw_pipeline_config().lineStrength =
+            l_DebugGeometryLineWidth;
+
+        g_MaterialTypes.debugGeometryWireframe = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(debug_geometry_no_depth_wireframe),
+            Low::Renderer::MaterialTypeFamily::DEBUGGEOMETRY);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("debug_geometry.vert");
+        l_MT.set_draw_fragment_shader_path("debug_geometry.frag");
+
+        l_MT.get_draw_pipeline_config().depthTest = false;
+        l_MT.get_draw_pipeline_config().depthFormat =
+            ImageFormat::DEPTH;
+        l_MT.get_draw_pipeline_config().wireframe = true;
+        l_MT.get_draw_pipeline_config().lineStrength =
+            l_DebugGeometryLineWidth;
+
+        g_MaterialTypes.debugGeometryNoDepthWireframe = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(ui_base), Low::Renderer::MaterialTypeFamily::UI);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("base_ui.vert");
+        l_MT.set_draw_fragment_shader_path("base_ui.frag");
+
+        g_MaterialTypes.uiBase = l_MT;
+      }
+
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(ui_text), Low::Renderer::MaterialTypeFamily::UI);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("base_ui.vert");
+        l_MT.set_draw_fragment_shader_path("ui_text.frag");
+
+        g_MaterialTypes.uiText = l_MT;
+      }
+
+      return true;
+    }
+
+    static bool
+    parse_font_resource_config(Util::String p_Path,
+                               Util::Yaml::Node &p_Node,
+                               FontResourceConfig &p_Config)
+    {
+      LOWR_ASSERT_RETURN(p_Node["version"], "Could not find version");
+      const u32 l_Version = p_Node["version"].as<u32>();
+
+      if (l_Version == 1) {
+        LOWR_ASSERT_RETURN(p_Node["name"],
+                           "Could not find font name");
+        p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
+
+        LOWR_ASSERT_RETURN(p_Node["font_id"],
+                           "Could not find font id");
+        p_Config.fontId = Util::string_to_hash(
+            LOW_YAML_AS_STRING(p_Node["font_id"]));
+
+        LOWR_ASSERT_RETURN(p_Node["asset_hash"],
+                           "Could not find asset hash");
+        p_Config.assetHash = Util::string_to_hash(
+            LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+
+        LOWR_ASSERT_RETURN(p_Node["source_file"],
+                           "Could not find source file");
+        p_Config.sourceFile =
+            LOW_YAML_AS_STRING(p_Node["source_file"]);
+
+        p_Config.sidecarPath =
+            Util::get_project().assetCachePath + "\\" +
+            Util::hash_to_string(p_Config.fontId) + ".font.yaml";
+        p_Config.fontPath =
+            Util::get_project().assetCachePath + "\\" +
+            Util::hash_to_string(p_Config.fontId) + ".msdf.ktx";
+
+        p_Config.path = p_Path;
+        return true;
+      }
+
+      LOWR_ASSERT_RETURN(
+          false, "Version of font resource config not supported");
+      return false;
     }
 
     static bool
@@ -177,6 +339,27 @@ namespace Low {
         }
       }
 
+      {
+        Util::List<Util::String> l_Resources;
+        Util::FileSystem::collect_files_with_suffix(
+            Util::get_project().dataPath.c_str(),
+            ".fontresource.yaml", l_Resources);
+
+        for (auto it = l_Resources.begin(); it != l_Resources.end();
+             ++it) {
+          Util::Yaml::Node i_ResourceNode =
+              Util::Yaml::load_file(it->c_str());
+          FontResourceConfig i_ResourceConfig;
+
+          LOWR_ASSERT_RETURN(
+              parse_font_resource_config(*it, i_ResourceNode,
+                                         i_ResourceConfig),
+              "Failed to pass font resource config.");
+
+          Font::make_from_resource_config(i_ResourceConfig);
+        }
+      }
+
       return true;
     }
 
@@ -225,6 +408,9 @@ namespace Low {
       LOW_ASSERT(preload_resources(), "Failed to preload resources.");
 
       initialize_primitives();
+
+      LOW_ASSERT(initialize_material_types(),
+                 "Failed to initialize material types.");
     }
 
     void cleanup()
@@ -251,9 +437,9 @@ namespace Low {
 
         if (!i_DrawCommand.is_alive() ||
             i_DrawCommand.get_render_object().is_dirty()) {
-          // We will skip dead draw commands as well as ones that have
-          // a dirty renderobject because then they will be updated
-          // later together with their render object
+          // We will skip dead draw commands as well as ones that
+          // have a dirty renderobject because then they will be
+          // updated later together with their render object
           continue;
         }
 
@@ -281,8 +467,8 @@ namespace Low {
           u32 i_Slot = 0;
           if (!Vulkan::Global::get_drawcommand_buffer().reserve(
                   1, &i_Slot)) {
-            // Could not reserve space in the draw command buffer for
-            // another entry
+            // Could not reserve space in the draw command buffer
+            // for another entry
             l_Result = false;
             break;
           }

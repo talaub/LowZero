@@ -4,9 +4,24 @@
 
 #include "LowRendererMesh.h"
 #include "LowRendererTexture.h"
+#include "LowRendererMaterialType.h"
 
 namespace Low {
   namespace Renderer {
+    struct MaterialTypes
+    {
+      MaterialType solidBase;
+      MaterialType uiBase;
+      MaterialType uiText;
+      MaterialType debugGeometry;
+      MaterialType debugGeometryNoDepth;
+
+      MaterialType debugGeometryWireframe;
+      MaterialType debugGeometryNoDepthWireframe;
+    };
+
+    MaterialTypes &get_material_types();
+
     void initialize();
     void cleanup();
     void prepare_tick(float p_Delta);

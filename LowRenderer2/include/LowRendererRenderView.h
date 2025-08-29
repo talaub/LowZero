@@ -12,6 +12,8 @@
 #include "LowRendererRenderScene.h"
 #include "LowRendererTexture.h"
 #include "LowRendererRenderStep.h"
+#include "LowRendererGpuSubmesh.h"
+#include "LowRendererMaterialType.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -19,6 +21,16 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     typedef void *RenderStepDataPtr;
     struct UiCanvas;
+
+    struct DebugGeometryDraw
+    {
+      GpuSubmesh submesh;
+      Math::Matrix4x4 transform;
+      Math::Color color;
+
+      bool depthTest;
+      bool wireframe;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API RenderViewData
@@ -37,6 +49,8 @@ namespace Low {
       Low::Util::List<Low::Renderer::RenderStep> steps;
       Low::Util::List<RenderStepDataPtr> step_data;
       Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
+      Low::Util::List<Low::Renderer::DebugGeometryDraw>
+          debug_geometry;
       bool camera_dirty;
       bool dimensions_dirty;
       Low::Util::Name name;
@@ -182,6 +196,9 @@ namespace Low {
       Low::Util::List<Low::Renderer::UiCanvas> &
       get_ui_canvases() const;
 
+      Low::Util::List<Low::Renderer::DebugGeometryDraw> &
+      get_debug_geometry() const;
+
       bool is_camera_dirty() const;
       void set_camera_dirty(bool p_Value);
       void toggle_camera_dirty();
@@ -198,6 +215,8 @@ namespace Low {
       void add_step(Low::Renderer::RenderStep p_Step);
       void add_step_by_name(Low::Util::Name p_StepName);
       void add_ui_canvas(Low::Renderer::UiCanvas p_Canvas);
+      void add_debug_geometry(
+          Low::Renderer::DebugGeometryDraw &p_DebugGeometryDraw);
 
     private:
       static uint32_t ms_Capacity;

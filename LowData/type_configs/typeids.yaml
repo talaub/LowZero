@@ -75,6 +75,8 @@ LowRenderer2:
   GpuTexture: 74
   TextureStaging: 75
   UiRenderObject: 76
+  Font: 77
+  FontResource: 78
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

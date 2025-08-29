@@ -11,6 +11,7 @@ namespace Low {
     {
       SOLID,
       UI,
+      DEBUGGEOMETRY,
     };
 
     namespace MaterialTypeFamilyEnumHelper {

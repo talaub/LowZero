@@ -32,12 +32,35 @@ namespace Low {
             (double)from.d4);
       }
 
+      static u32 get_channel_count(const gli::texture2d &tex)
+      {
+        return gli::component_count(tex.format());
+      }
+
+      static Image2DFormat get_format(const gli::texture2d &p_Tex)
+      {
+        auto it = p_Tex.format();
+        switch (p_Tex.format()) {
+        case gli::FORMAT_RGBA8_SRGB_PACK8:
+        case gli::FORMAT_RGBA8_UNORM_PACK8:
+          return Image2DFormat::RGBA8;
+        case gli::FORMAT_RGB8_UNORM_PACK8:
+          return Image2DFormat::RGB8;
+        case gli::FORMAT_R8_UNORM_PACK8:
+          return Image2DFormat::R8;
+        }
+
+        LOW_ASSERT(false, "Unknown GLI format");
+
+        return Image2DFormat::R8;
+      }
+
       static void load_mipmap(Image2D &p_Image,
                               gli::texture2d p_Texture, u8 p_MipLevel)
       {
         LOW_ASSERT(p_MipLevel < 4, "Requested miplevel out of range");
 
-        const uint32_t l_Channels = 4u;
+        const uint32_t l_Channels = get_channel_count(p_Texture);
         p_Image.data.resize(p_Texture.levels());
 
         p_Image.dimensions.x = p_Texture.extent(p_MipLevel).x;
@@ -50,7 +73,7 @@ namespace Low {
 
         p_Image.size = p_Image.data.size();
 
-        p_Image.format = Image2DFormat::RGBA8;
+        p_Image.format = get_format(p_Texture);
         p_Image.miplevel = p_MipLevel;
       }
 

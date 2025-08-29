@@ -139,10 +139,10 @@ namespace Low {
             Convert::front_face(p_Config.frontFace));
         l_Builder.set_multismapling_none();
 
-        l_Builder.disable_blending();
-
-        if (!p_Config.depthTest) {
-          l_Builder.disable_depth_test();
+        if (p_Config.alphaBlending) {
+          l_Builder.set_blending_alpha();
+        } else {
+          l_Builder.disable_blending();
         }
 
         l_Builder.colorAttachmentFormats.clear();
@@ -156,6 +156,15 @@ namespace Low {
 
         l_Builder.set_depth_format(
             Convert::image_format(p_Config.depthFormat));
+
+        if (!p_Config.depthTest) {
+          l_Builder.disable_depth_test();
+        }
+
+        if (p_Config.wireframe) {
+          l_Builder.set_polygon_mode(VK_POLYGON_MODE_LINE,
+                                     p_Config.lineStrength);
+        }
 
         return l_Builder.register_pipeline();
       }
@@ -719,8 +728,7 @@ namespace Low {
 
           ImageUtil::Internal::cmd_copy2D(
               l_Cmd, l_LitImage.get_allocated_image().image,
-              g_Context.swapchain.drawImage.image,
-              l_SourceExtent,
+              g_Context.swapchain.drawImage.image, l_SourceExtent,
               p_Context.swapchain.drawExtent);
 
           ImageUtil::cmd_transition(
@@ -1208,6 +1216,10 @@ namespace Low {
                 1, i_Scene.get_point_light_buffer().buffer,
                 sizeof(PointLightInfo) * POINTLIGHT_COUNT, 0,
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Writer.write_buffer(
+                5, i_ViewInfo.get_debug_geometry_buffer().buffer,
+                sizeof(DebugGeometryUpload) * DEBUG_GEOMETRY_COUNT, 0,
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.update_set(
                 Global::get_device(),
@@ -1470,6 +1482,8 @@ namespace Low {
 
             Pipeline i_DrawPipeline =
                 i_MaterialType.get_draw_pipeline_handle();
+
+            // TODO: Choose different layout based on family
 
             if (!i_DrawPipeline.is_alive()) {
               i_MaterialType.set_draw_pipeline_handle(

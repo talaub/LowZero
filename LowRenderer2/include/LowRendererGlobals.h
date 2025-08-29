@@ -9,6 +9,8 @@
 
 #define UI_DRAWCOMMAND_COUNT 1024
 
+#define DEBUG_GEOMETRY_COUNT 1024
+
 #include "LowMath.h"
 #include "LowRendererRenderObject.h"
 
@@ -17,6 +19,18 @@ namespace Low {
     struct DrawCommandUpload
     {
       alignas(16) Low::Math::Matrix4x4 world_transform;
+    };
+
+    struct DebugGeometryUpload
+    {
+      DebugGeometryUpload(Math::Matrix4x4 p_WorldTransform,
+                          Math::Color p_Color)
+          : world_transform(p_WorldTransform), color(p_Color)
+      {
+      }
+
+      alignas(16) Low::Math::Matrix4x4 world_transform;
+      alignas(16) Math::Color color;
     };
 
     struct UiDrawCommandUpload

@@ -56,6 +56,10 @@ add_dependencies(LowRenderer2
   vk-bootstrap
   freetype
   assimp
+  msdfgen-core
+  msdfgen-ext
+  msdf-atlas-gen
+  #Freetype::Freetype
 )
 
 STRING(REGEX REPLACE "\\\\" "/" VULKAN_SDK_PATH $ENV{VK_SDK_PATH}) 
@@ -106,4 +110,8 @@ target_link_libraries(LowRenderer2 PRIVATE
   vk-bootstrap
   freetype
   assimp
+  msdfgen-core
+  msdfgen-ext
+  msdf-atlas-gen
+  #Freetype::Freetype
 )

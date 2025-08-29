@@ -88,6 +88,8 @@ namespace Low {
             GraphicsPipelineCullMode::BACK;
         l_Handle.get_draw_pipeline_config().frontFace =
             GraphicsPipelineFrontFace::COUNTER_CLOCKWISE;
+
+        l_Handle.get_draw_pipeline_config().wireframe = false;
         // l_Handle.get_draw_pipeline_config().depthFormat
       }
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -1069,12 +1071,24 @@ namespace Low {
                 ImageFormat::RGBA16_SFLOAT);
         l_Handle.get_draw_pipeline_config().depthFormat =
             ImageFormat::DEPTH;
+
+        l_Handle.get_draw_pipeline_config().alphaBlending = false;
       } else if (p_Family == MaterialTypeFamily::UI) {
         l_Handle.get_draw_pipeline_config()
             .colorAttachmentFormats.push_back(
                 ImageFormat::RGBA16_SFLOAT);
 
+        l_Handle.get_draw_pipeline_config().alphaBlending = true;
         l_Handle.get_draw_pipeline_config().depthTest = false;
+      } else if (p_Family == MaterialTypeFamily::DEBUGGEOMETRY) {
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(
+                ImageFormat::RGBA16_SFLOAT);
+
+        l_Handle.get_draw_pipeline_config().alphaBlending = true;
+        l_Handle.get_draw_pipeline_config().depthTest = true;
+        l_Handle.get_draw_pipeline_config().depthFormat =
+            ImageFormat::DEPTH;
       }
 
       return l_Handle;

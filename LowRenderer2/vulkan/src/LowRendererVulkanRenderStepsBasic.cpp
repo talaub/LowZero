@@ -12,6 +12,7 @@
 
 #include "LowUtil.h"
 
+#include "LowRenderer.h"
 #include "LowRendererVulkanRenderer.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererVkImage.h"
@@ -566,6 +567,8 @@ namespace Low {
         float power;
       };
 
+#define KERNEL_VECTOR Low::Math::Vector4
+
       bool initialize_base_ssao_renderstep()
       {
         RenderStep l_RenderStep =
@@ -583,7 +586,7 @@ namespace Low {
           {
             g_BaseSsaoStepData.kernelBuffer =
                 BufferUtil::create_buffer(
-                    sizeof(Low::Math::Vector3) * l_KernelSize,
+                    sizeof(KERNEL_VECTOR) * l_KernelSize,
                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
                         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                     VMA_MEMORY_USAGE_GPU_ONLY);
@@ -591,19 +594,23 @@ namespace Low {
 
           {
             const size_t l_KernelDataSize =
-                l_KernelSize * sizeof(Low::Math::Vector3);
+                l_KernelSize * sizeof(KERNEL_VECTOR);
 
-            Low::Util::List<Low::Math::Vector3> l_SsaoKernel;
+            Low::Util::List<KERNEL_VECTOR> l_SsaoKernel;
             for (int i = 0; i < l_KernelSize; ++i) {
-              Math::Vector3 i_Sample(
+#if 1
+              KERNEL_VECTOR i_Sample(
                   (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
                   (rand() / float(RAND_MAX)) * 2.0f - 1.0f,
-                  rand() / float(RAND_MAX));
+                  rand() / float(RAND_MAX), 0.0f);
               i_Sample = glm::normalize(i_Sample);
               i_Sample *= rand() / float(RAND_MAX);
               float i_Scale = float(i) / float(l_KernelSize);
               i_Scale = glm::mix(0.1f, 1.0f, i_Scale * i_Scale);
               i_Sample *= i_Scale;
+#else
+              KERNEL_VECTOR i_Sample(1.0f, 2.0f, 3.0f, 4.0f);
+#endif
               l_SsaoKernel.push_back(i_Sample);
             }
 
@@ -749,7 +756,7 @@ namespace Low {
             DescriptorUtil::DescriptorWriter l_Writer;
             l_Writer.write_buffer(
                 0, g_BaseSsaoStepData.kernelBuffer.buffer,
-                sizeof(Low::Math::Vector3) * l_KernelSize, 0,
+                sizeof(KERNEL_VECTOR) * l_KernelSize, 0,
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             l_Writer.write_image(
                 1,
@@ -1083,12 +1090,16 @@ namespace Low {
           }
 
           BaseSsaoPushConstants l_PushConstants;
+
+          Math::UVector2 d = p_RenderView.get_dimensions();
+          Math::UVector2 nd = l_NoiseDimensions;
+
           l_PushConstants.noiseScale.x =
-              float(p_RenderView.get_dimensions().x) /
-              float(l_NoiseDimensions.x);
+              1.0f / (float(p_RenderView.get_dimensions().x) /
+                      float(l_NoiseDimensions.x));
           l_PushConstants.noiseScale.y =
-              float(p_RenderView.get_dimensions().y) /
-              float(l_NoiseDimensions.y);
+              1.0f / (float(p_RenderView.get_dimensions().y) /
+                      float(l_NoiseDimensions.y));
           l_PushConstants.radius = 0.5f;
           l_PushConstants.bias = 0.025f;
           l_PushConstants.power = 1.0f;
@@ -1308,8 +1319,7 @@ namespace Low {
           }
 
           // Render UI
-          if (!l_Entries.empty() &&
-              Global::get_frame_number() > 100) {
+          if (!l_Entries.empty()) {
             GpuSubmesh l_CurrentGpuSubmesh = Util::Handle::DEAD;
             MaterialType l_CurrentMaterialType = Util::Handle::DEAD;
 
@@ -1391,7 +1401,8 @@ namespace Low {
               }
 
               vkCmdDrawIndexed(
-                  l_Cmd, it->submesh.get_index_count(), it->amount, 0,
+                  l_Cmd, it->submesh.get_index_count(), it->amount,
+                  it->submesh.get_index_start(),
                   it->submesh.get_vertex_start(), l_Offset);
 
               l_Offset += it->amount;
@@ -1410,6 +1421,221 @@ namespace Low {
           return true;
         });
 
+        return true;
+      }
+
+      static MaterialType get_material_type(DebugGeometryDraw &p_Draw)
+      {
+        if (p_Draw.depthTest) {
+          if (p_Draw.wireframe) {
+            return get_material_types().debugGeometryWireframe;
+          }
+          return get_material_types().debugGeometry;
+        } else {
+          if (p_Draw.wireframe) {
+            return get_material_types().debugGeometryNoDepthWireframe;
+          }
+          return get_material_types().debugGeometryNoDepth;
+        }
+      }
+
+      bool initialize_debug_geometry_renderstep()
+      {
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_DEBUG_GEOMETRY_NAME);
+
+        l_RenderStep.set_execute_callback([&](RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VK_RENDERDOC_SECTION_BEGIN(
+              "Draw debug geometry",
+              SINGLE_ARG({0.4f, 0.227f, 0.717f}));
+
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+          // TODO: Sort debug geometry entries
+
+          Util::List<DebugGeometryUpload> l_Uploads;
+          for (auto it = p_RenderView.get_debug_geometry().begin();
+               it != p_RenderView.get_debug_geometry().end(); ++it) {
+            l_Uploads.emplace_back(it->transform, it->color);
+          }
+
+          {
+            size_t l_StagingOffset = 0;
+
+            const u64 l_DrawCommandSize =
+                sizeof(DebugGeometryUpload) * l_Uploads.size();
+
+            if (l_DrawCommandSize == 0) {
+              return true;
+            }
+
+            // TODO: This does not go on the resource staging
+            // buffer but a frame staging buffer of some sort
+            const u64 l_FrameUploadSpace =
+                request_resource_staging_buffer_space(
+                    l_DrawCommandSize, &l_StagingOffset);
+
+            LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
+                                      l_DrawCommandSize,
+                                  "Did not have enough staging "
+                                  "buffer space to upload "
+                                  "debug geometry draw commands.");
+
+            LOWR_VK_ASSERT_RETURN(
+                resource_staging_buffer_write(l_Uploads.data(),
+                                              l_FrameUploadSpace,
+                                              l_StagingOffset),
+                "Failed to write debug geometry draw command "
+                "data to staging buffer");
+
+            VkBufferCopy l_CopyRegion{};
+            l_CopyRegion.srcOffset = l_StagingOffset;
+            l_CopyRegion.dstOffset = 0;
+            l_CopyRegion.size = l_FrameUploadSpace;
+            // This probably has to be done on the graphics
+            // queue so we can leave it as is
+            vkCmdCopyBuffer(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_resource_staging_buffer()
+                    .buffer.buffer,
+                l_ViewInfo.get_debug_geometry_buffer().buffer, 1,
+                &l_CopyRegion);
+          }
+
+          Image l_LitImage = p_RenderView.get_lit_image()
+                                 .get_gpu()
+                                 .get_data_handle();
+
+          Image l_DepthImage = p_RenderView.get_gbuffer_depth()
+                                   .get_gpu()
+                                   .get_data_handle();
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_LitImage,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+          ImageUtil::cmd_transition(
+              l_Cmd, l_DepthImage,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+          Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+          l_ColorAttachments.resize(1);
+          l_ColorAttachments[0] = InitUtil::attachment_info(
+              l_LitImage.get_allocated_image().imageView, nullptr,
+              VK_IMAGE_LAYOUT_GENERAL);
+
+          VkRenderingAttachmentInfo l_DepthAttachment =
+              InitUtil::attachment_info(
+                  l_DepthImage.get_allocated_image().imageView,
+                  nullptr, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {p_RenderView.get_dimensions().x,
+               p_RenderView.get_dimensions().y},
+              l_ColorAttachments.data(), l_ColorAttachments.size(),
+              &l_DepthAttachment);
+
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+          vkCmdBindIndexBuffer(
+              l_Cmd, Global::get_mesh_index_buffer().m_Buffer.buffer,
+              0, VK_INDEX_TYPE_UINT32);
+
+          MaterialType l_CurrentMaterialType = Util::Handle::DEAD;
+
+          for (u32 i = 0u;
+               i < p_RenderView.get_debug_geometry().size(); ++i) {
+            DebugGeometryDraw &i_Draw =
+                p_RenderView.get_debug_geometry()[i];
+
+            if (i_Draw.submesh.get_state() != MeshState::LOADED) {
+              continue;
+            }
+
+            MaterialType i_MaterialType = get_material_type(i_Draw);
+
+            if (!i_MaterialType.is_alive()) {
+              continue;
+            }
+
+            Pipeline i_Pipeline =
+                i_MaterialType.get_draw_pipeline_handle();
+
+            if (l_CurrentMaterialType != i_MaterialType) {
+              l_CurrentMaterialType = i_MaterialType;
+
+              // Switch pipeline
+              vkCmdBindPipeline(l_Cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                i_Pipeline.get_pipeline());
+
+              // Bind descriptor sets
+              {
+                VkDescriptorSet l_Set =
+                    Global::get_global_descriptor_set();
+
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    i_Pipeline.get_layout(), 0, 1, &l_Set, 0,
+                    nullptr);
+
+                {
+                  VkDescriptorSet l_TextureSet =
+                      Global::get_current_texture_descriptor_set();
+                  vkCmdBindDescriptorSets(
+                      l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      i_Pipeline.get_layout(), 1, 1, &l_TextureSet, 0,
+                      nullptr);
+                }
+
+                VkDescriptorSet l_DescriptorSet =
+                    l_ViewInfo.get_view_data_descriptor_set();
+
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    i_Pipeline.get_layout(), 2, 1, &l_DescriptorSet,
+                    0, nullptr);
+              }
+            }
+
+            // TODO: Change to custom Debug geometry push constant
+            RenderEntryPushConstant i_PushConstants;
+            i_PushConstants.renderObjectSlot = i;
+
+            vkCmdPushConstants(l_Cmd, i_Pipeline.get_layout(),
+                               VK_SHADER_STAGE_ALL_GRAPHICS, 0,
+                               sizeof(RenderEntryPushConstant),
+                               &i_PushConstants);
+
+            vkCmdDrawIndexed(l_Cmd, i_Draw.submesh.get_index_count(),
+                             1, i_Draw.submesh.get_index_start(),
+                             i_Draw.submesh.get_vertex_start(), 0);
+          }
+
+          vkCmdEndRendering(l_Cmd);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_LitImage,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          ImageUtil::cmd_transition(
+              l_Cmd, l_DepthImage,
+              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+          p_RenderView.get_debug_geometry().clear();
+
+          VK_RENDERDOC_SECTION_END();
+
+          return true;
+        });
         return true;
       }
 
@@ -1432,6 +1658,9 @@ namespace Low {
             "Failed to initialize base ssao renderstep");
         LOWR_VK_ASSERT_RETURN(initialize_ui_renderstep(),
                               "Failed to initialize UI renderstep");
+        LOWR_VK_ASSERT_RETURN(
+            initialize_debug_geometry_renderstep(),
+            "Failed to initialize debug geometry renderstep");
         return true;
       }
     } // namespace Vulkan

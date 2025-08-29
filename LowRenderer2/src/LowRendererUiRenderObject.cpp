@@ -964,6 +964,9 @@ namespace Low {
         LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uv_rect
+        if (get_draw_commands().size() == 1) {
+          get_draw_commands()[0].set_uv_rect(p_Value);
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_uv_rect
 
         broadcast_observable(N(uv_rect));

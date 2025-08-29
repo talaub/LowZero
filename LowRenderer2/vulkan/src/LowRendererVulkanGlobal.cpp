@@ -36,7 +36,7 @@ namespace Low {
         const bool g_ValidationEnabled = false;
 #endif
 
-#define RESOURCE_STAGING_BUFFER_SIZE (LOW_MEGABYTE_I * 16)
+#define RESOURCE_STAGING_BUFFER_SIZE (LOW_MEGABYTE_I * 32)
 
         VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -738,14 +738,20 @@ namespace Low {
 
           // Begin initialize gpu
           // vulkan 1.3 features
-          VkPhysicalDeviceVulkan13Features l_Features{};
+          VkPhysicalDeviceVulkan13Features l_Features{
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
           l_Features.dynamicRendering = true;
           l_Features.synchronization2 = true;
 
           // vulkan 1.2 features
-          VkPhysicalDeviceVulkan12Features l_Features12{};
+          VkPhysicalDeviceVulkan12Features l_Features12{
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
           l_Features12.bufferDeviceAddress = true;
           l_Features12.descriptorIndexing = true;
+
+          VkPhysicalDeviceFeatures l_ExtensionFeatures{};
+          l_ExtensionFeatures.fillModeNonSolid = VK_TRUE;
+          l_ExtensionFeatures.wideLines = VK_TRUE;
 
           // use vkbootstrap to select a gpu.
           // We want a gpu that can write to the SDL surface and
@@ -755,6 +761,7 @@ namespace Low {
               l_GpuSelector.set_minimum_version(1, 3)
                   .set_required_features_13(l_Features)
                   .set_required_features_12(l_Features12)
+                  .set_required_features(l_ExtensionFeatures)
                   .set_surface(g_Surface)
                   .select()
                   .value();
@@ -814,6 +821,8 @@ namespace Low {
             l_Builder.add_binding(3,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(4,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(5,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             g_ViewInfoDescriptorSetLayout =
                 l_Builder.build(Global::get_device(),

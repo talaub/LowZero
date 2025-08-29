@@ -259,3 +259,63 @@ types:
         getter_name: loaded_mips
         private_setter: true
 
+  Font:
+    properties:
+      texture:
+        type: Low::Renderer::Texture
+        handle: true
+      resource:
+        type: Low::Renderer::FontResource
+        handle: true
+      glyphs:
+        type: Low::Util::UnorderedMap<char, Glyph>
+    functions:
+      is_fully_loaded:
+        return_type: bool
+      make_from_resource_config:
+        static: true
+        return_type: Font
+        return_handle: true
+        parameters:
+          - name: config
+            type: FontResourceConfig
+  FontResource:
+    private_make: true
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+      font_path:
+        type: Util::String
+        private_setter: true
+      sidecar_path:
+        type: Util::String
+        private_setter: true
+      source_file:
+        type: Util::String
+        private_setter: true
+      font_id:
+        type: u64
+        private_setter: true
+      asset_hash:
+        type: u64
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: FontResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+      make_from_config:
+        static: true
+        return_type: FontResource
+        return_handle: true
+        parameters:
+          - name: config
+            type: FontResourceConfig

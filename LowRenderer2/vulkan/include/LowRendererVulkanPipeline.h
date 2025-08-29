@@ -48,6 +48,8 @@ namespace Low {
 
           void clear();
 
+          void set_blending_alpha();
+
           VkPipeline build_pipeline(VkDevice p_Device);
 
           Pipeline register_pipeline();

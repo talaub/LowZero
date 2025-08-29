@@ -20,6 +20,7 @@
 #include "LowRendererMesh.h"
 #include "LowRendererResourceImporter.h"
 #include "LowRendererPrimitives.h"
+#include "LowRendererResourceManager.h"
 
 #include "LowRendererUiCanvas.h"
 #include "LowRendererUiRenderObject.h"
@@ -47,12 +48,11 @@ Low::Renderer::RenderScene g_RenderScene;
 
 Low::Renderer::RenderObject g_RenderObject;
 
+Low::Renderer::Font g_Font;
 Low::Renderer::UiRenderObject g_UiRenderObject;
 
-Low::Renderer::MaterialType g_SolidBaseMaterialType;
 Low::Renderer::Material g_TestMaterial;
 
-Low::Renderer::MaterialType g_UiMaterialType;
 Low::Renderer::Material g_UiMaterial;
 
 Low::Math::Vector3 g_Position(0.0f);
@@ -76,6 +76,26 @@ void draw()
 {
   Low::Renderer::prepare_tick(0.1f);
 
+  static bool l_FontInit = false;
+
+  if (!l_FontInit && g_Font.is_alive() && g_Font.is_fully_loaded()) {
+    using namespace Low;
+
+    const char l_Char = ',';
+
+    Math::Vector4 l_UvRect;
+    l_UvRect.x = g_Font.get_glyphs()[l_Char].uvMin.x;
+    l_UvRect.y = g_Font.get_glyphs()[l_Char].uvMin.y;
+    l_UvRect.z = g_Font.get_glyphs()[l_Char].uvMax.x;
+    l_UvRect.w = g_Font.get_glyphs()[l_Char].uvMax.y;
+
+    LOW_LOG_PROFILE << l_UvRect << LOW_LOG_END;
+
+    g_UiRenderObject.set_uv_rect(l_UvRect);
+
+    l_FontInit = true;
+  }
+
   ImGui::Begin("Cube");
   if (ImGui::DragFloat3("Position", (float *)&g_Position)) {
     Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
@@ -87,6 +107,29 @@ void draw()
     g_RenderObject.set_world_transform(l_LocalMatrix);
   }
   ImGui::End();
+
+  if (Low::Renderer::get_primitives().unitCube.get_state() ==
+      Low::Renderer::MeshState::LOADED) {
+    using namespace Low;
+    using namespace Low::Renderer;
+    DebugGeometryDraw l_Draw;
+    l_Draw.depthTest = true;
+    l_Draw.wireframe = true;
+    l_Draw.submesh =
+        get_primitives().unitCube.get_gpu().get_submeshes()[0];
+    l_Draw.color = Math::Color(1.0f, 0.0f, 0.0f, 0.5f);
+
+    Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+    l_LocalMatrix = glm::translate(l_LocalMatrix, {1.0f, 1.0f, 1.0f});
+    l_LocalMatrix *=
+        glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+    l_LocalMatrix = glm::scale(l_LocalMatrix, {1.0f, 1.0f, 1.0f});
+
+    l_Draw.transform = l_LocalMatrix;
+
+    g_RenderView.add_debug_geometry(l_Draw);
+  }
 
   {
     ImGui::Begin("Light");
@@ -170,12 +213,15 @@ void init()
 
     {
       g_PointLight = Low::Renderer::PointLight::make(g_RenderScene);
-      g_PointLight.set_world_position(0.0f, 5.0f, 0.0f);
-      g_PointLight.set_range(5.0f);
+      g_PointLight.set_world_position(0.0f, 1.0f, -10.0f);
+      g_PointLight.set_range(20.0f);
       g_PointLight.set_intensity(1.0f);
       Low::Math::ColorRGB l_Color(1.0f, 1.0f, 1.0f);
       g_PointLight.set_color(l_Color);
     }
+
+    Low::Renderer::MaterialTypes &l_MaterialTypes =
+        Low::Renderer::get_material_types();
 
     g_RenderView = Low::Renderer::RenderView::make("Default");
     g_RenderView.set_dimensions(g_Dimensions);
@@ -189,37 +235,15 @@ void init()
         RENDERSTEP_SSAO_NAME));
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
         RENDERSTEP_LIGHTING_NAME));
+    g_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
     g_RenderView.add_step(
         Low::Renderer::RenderStep::find_by_name(RENDERSTEP_UI_NAME));
 
-    {
-      g_SolidBaseMaterialType = Low::Renderer::MaterialType::make(
-          N(solid_base), Low::Renderer::MaterialTypeFamily::SOLID);
-      g_SolidBaseMaterialType.add_input(
-          N(base_color),
-          Low::Renderer::MaterialTypeInputType::VECTOR3);
-      g_SolidBaseMaterialType.finalize();
-
-      g_SolidBaseMaterialType.set_draw_vertex_shader_path(
-          "solid_base.vert");
-      g_SolidBaseMaterialType.set_draw_fragment_shader_path(
-          "solid_base.frag");
-    }
-
-    {
-      g_UiMaterialType = Low::Renderer::MaterialType::make(
-          N(ui), Low::Renderer::MaterialTypeFamily::UI);
-      g_UiMaterialType.finalize();
-
-      g_UiMaterialType.set_draw_vertex_shader_path("base_ui.vert");
-      g_UiMaterialType.set_draw_fragment_shader_path("base_ui.frag");
-    }
-
-    g_UiMaterial = Low::Renderer::Material::make(N(UiMaterial),
-                                                 g_UiMaterialType);
+    g_UiMaterial = Low::Renderer::Material::make(
+        N(UiMaterial), l_MaterialTypes.uiText);
 
     g_TestMaterial = Low::Renderer::Material::make(
-        N(TestMaterial), g_SolidBaseMaterialType);
+        N(TestMaterial), l_MaterialTypes.solidBase);
     g_TestMaterial.set_property_vector3(
         N(base_color), Low::Math::Vector3(1.0f, 0.0f, 0.0f));
 
@@ -231,15 +255,48 @@ void init()
       g_UiRenderObject = UiRenderObject::make(
           l_Canvas, Low::Renderer::get_primitives().unitQuad);
 
-      g_UiRenderObject.set_position_x(100.0f);
-      g_UiRenderObject.set_position_y(110.0f);
+      g_UiRenderObject.set_position_x(800.0f);
+      g_UiRenderObject.set_position_y(400.0f);
 
       g_UiRenderObject.set_texture(get_default_texture());
 
       g_UiRenderObject.set_rotation2D(0.0f);
       g_UiRenderObject.set_z_sorting(0);
-      g_UiRenderObject.set_size(Low::Math::Vector2(50.0f, 55.0f));
-      // g_UiRenderObject.set_texture()
+
+#if 1
+      g_UiRenderObject.set_size(Low::Math::Vector2(150.0f, 150.0f));
+      Low::Util::String l_TexturePath =
+          Low::Util::get_project().dataPath;
+      l_TexturePath += "\\resources\\img2d\\buff.ktx";
+
+      Texture l_Texture = Texture::make(N(TestTexture));
+      l_Texture.set_resource(TextureResource::make(l_TexturePath));
+
+      ResourceManager::load_texture(l_Texture);
+      g_UiRenderObject.set_texture(l_Texture);
+
+      g_Font = Font::living_instances()[0];
+
+      g_UiRenderObject.set_texture(g_Font.get_texture());
+
+      /*
+      Texture l_TextureFont = Texture::make(N(TestTexture));
+      {
+        Low::Util::String l_TexturePath =
+            Low::Util::get_project().assetCachePath;
+        l_TexturePath += "\\test.msdf.ktx";
+        l_TextureFont.set_resource(
+            TextureResource::make(l_TexturePath));
+
+        ResourceManager::load_texture(l_TextureFont);
+        g_UiRenderObject.set_texture(l_TextureFont);
+      }
+      */
+
+      ResourceManager::load_font(g_Font);
+#else
+      g_UiRenderObject.set_size(Low::Math::Vector2(50.0f, 50.0f));
+#endif
 
       g_UiRenderObject.set_material(g_UiMaterial);
     }
@@ -270,6 +327,12 @@ int main(int argc, char *argv[])
     Low::Renderer::ResourceImporter::import_mesh("E:\\spaceship.obj",
                                                  "spaceship");
 
+    Low::Util::cleanup();
+    return 0;
+  }
+  if (false) {
+    Low::Renderer::ResourceImporter::import_font("E:\\roboto.ttf",
+                                                 "roboto");
     Low::Util::cleanup();
     return 0;
   }

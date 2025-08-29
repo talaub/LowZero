@@ -159,9 +159,9 @@ types:
       ui_canvases:
         type: Low::Util::List<Low::Renderer::UiCanvas>
         no_setter: true
-        #textures:
-        #type: Low::Util::UnorderedMap<Low::Util::Name, Low::Renderer::Texture>
-        #no_setter: true
+      debug_geometry:
+        type: Low::Util::List<Low::Renderer::DebugGeometryDraw>
+        no_setter: true
     functions:
       add_step:
         return_type: void
@@ -180,6 +180,11 @@ types:
           - name: canvas
             type: Low::Renderer::UiCanvas
             handle: true
+      add_debug_geometry:
+        return_type: void
+        parameters:
+          - name: debugGeometryDraw
+            type: Low::Renderer::DebugGeometryDraw
 
   MaterialType:
     private_make: true

@@ -14,15 +14,44 @@ add_subdirectory(glfw)
 add_subdirectory(gli)
 add_subdirectory(assimp)
 add_subdirectory(EASTL)
-set(FT_DISABLE_ZLIB ON)
-set(FT_DISABLE_BZIP2 ON)
-set(FT_DISABLE_PNG ON)
+set(FT_DISABLE_ZLIB    ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_BZIP2   ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_PNG     ON CACHE BOOL "" FORCE)
+set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS  OFF CACHE BOOL "" FORCE)
 add_subdirectory(freetype)
 add_subdirectory(SDL)
 set(VK_BOOTSTRAP_TEST OFF)
 set(VK_BOOTSTRAP_INSTALL OFF)
 add_subdirectory(vk-bootstrap)
 
+# Some FreeType trees export 'freetype' (lowercase). Provide the alias msdfgen expects:
+if (NOT TARGET Freetype::Freetype AND TARGET freetype)
+  add_library(Freetype::Freetype ALIAS freetype)
+endif()
+
+# --- msdfgen (needs to be AFTER freetype) --------------------------
+set(MSDFGEN_USE_VCPKG                OFF CACHE BOOL "" FORCE)
+set(MSDFGEN_INSTALL                 OFF CACHE BOOL "" FORCE)
+set(MSDFGEN_BUILD_STANDALONE OFF CACHE BOOL "" FORCE)
+set(MSDFGEN_BUILD_MSDFGEN_STANDALONE OFF CACHE BOOL "" FORCE)
+set(MSDFGEN_USE_FREETYPE ON CACHE BOOL "" FORCE)
+# Turn off optional deps that trigger find_package
+set(MSDFGEN_DISABLE_SVG ON  CACHE BOOL "" FORCE)   # <- avoids tinyxml2
+set(MSDFGEN_DISABLE_PNG ON  CACHE BOOL "" FORCE)  # <- avoids libpng
+set(MSDFGEN_USE_SKIA OFF  CACHE BOOL "" FORCE)  # <- avoids skia
+
+# IMPORTANT: enable FreeType; DO NOT set CORE_ONLY
+set(MSDFGEN_USE_FREETYPE             ON CACHE BOOL "" FORCE)
+# remove/avoid: set(MSDFGEN_CORE_ONLY ON)
+
+add_subdirectory(msdfgen) # exports msdfgen-core, msdfgen-freetype (and msdfgen-ext)
+# msdf-atlas-gen (library only)
+set(MSDF_ATLAS_BUILD_STANDALONE OFF CACHE BOOL "" FORCE)
+set(MSDF_ATLAS_MSDFGEN_EXTERNAL ON CACHE BOOL "" FORCE)
+set(MSDF_ATLAS_USE_VCPKG OFF CACHE BOOL "" FORCE)
+set(MSDF_ATLAS_USE_SKIA OFF CACHE BOOL "" FORCE)
+add_subdirectory(msdf-atlas-gen)
 
 set_target_properties(EASTL PROPERTIES FOLDER "Dependencies")
 set_target_properties(gli_dummy PROPERTIES FOLDER "Dependencies")
@@ -31,6 +60,8 @@ set_target_properties(freetype PROPERTIES FOLDER "Dependencies")
 set_target_properties(uninstall PROPERTIES FOLDER "Dependencies")
 set_target_properties(zlibstatic PROPERTIES FOLDER "Dependencies")
 set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "Dependencies")
+set_target_properties(msdfgen-core PROPERTIES FOLDER "Dependencies")
+set_target_properties(msdfgen-ext PROPERTIES FOLDER "Dependencies")
 
 set_target_properties(yaml-cpp PROPERTIES FOLDER "Dependencies")
 #set_target_properties(yaml-cpp-parse PROPERTIES FOLDER "Dependencies/yaml")

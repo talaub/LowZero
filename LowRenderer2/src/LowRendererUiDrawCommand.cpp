@@ -86,6 +86,8 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_uv_rect(
+          Low::Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f));
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -1178,6 +1180,7 @@ namespace Low {
       l_DrawCommand.set_texture(p_RenderObject.get_texture());
       l_DrawCommand.set_size(p_RenderObject.get_size());
       l_DrawCommand.set_rotation2D(p_RenderObject.get_rotation2D());
+      l_DrawCommand.set_uv_rect(p_RenderObject.get_uv_rect());
 
       l_DrawCommand.mark_z_dirty();
 

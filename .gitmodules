@@ -59,3 +59,15 @@
 [submodule "LowDependencies/imgui2"]
 	path = LowDependencies/imgui2
 	url = https://github.com/ocornut/imgui.git
+[submodule "LowDependencies/msdfgen"]
+	path = LowDependencies/msdfgen
+	url = https://github.com/Chlumsky/msdfgen.git
+[submodule "LowDependencies/msdf-atlas-gen"]
+	path = LowDependencies/msdf-atlas-gen
+	url = https://github.com/Chlumsky/msdf-atlas-gen.git
+[submodule "LowDependencies/--force"]
+	path = LowDependencies/--force
+	url = https://github.com/pnggroup/libpng.git
+[submodule "LowDependencies/libpng"]
+	path = LowDependencies/libpng
+	url = https://github.com/pnggroup/libpng.git

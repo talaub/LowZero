@@ -13,6 +13,7 @@ namespace Low {
       enum class Image2DFormat
       {
         RGBA8,
+        RGB8,
         R8
       };
 

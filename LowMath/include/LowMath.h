@@ -47,6 +47,9 @@
 #define LOW_MATH_MIN(x, y) (x < y ? x : y)
 #define LOW_MATH_ABS(x) (x < 0 ? -x : x)
 
+#define LOW_MATH_CLAMP(x, lower, upper)                              \
+  (((x) < (lower)) ? (lower) : (((x) > (upper)) ? (upper) : (x)))
+
 #define LOW_VECTOR3_UP Low::Math::Vector3(0.0f, 1.0f, 0.0f)
 #define LOW_VECTOR3_FRONT Low::Math::Vector3(0.0f, 0.0f, -1.0f)
 #define LOW_VECTOR3_RIGHT Low::Math::Vector3(1.0f, 0.0f, 0.0f)

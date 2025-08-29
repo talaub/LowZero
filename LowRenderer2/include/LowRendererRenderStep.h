@@ -15,6 +15,7 @@
 #define RENDERSTEP_SSAO_NAME N(basic_ssao)
 #define RENDERSTEP_CAVITIES_NAME N(cavities)
 #define RENDERSTEP_UI_NAME N(ui)
+#define RENDERSTEP_DEBUG_GEOMETRY_NAME N(debug_geometry)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

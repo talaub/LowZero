@@ -34,6 +34,9 @@ namespace Low {
       GraphicsPipelineFrontFace frontFace;
       Util::List<ImageFormat> colorAttachmentFormats;
       ImageFormat depthFormat;
+      bool alphaBlending;
+      bool wireframe;
+      float lineStrength;
     };
   } // namespace Renderer
 } // namespace Low

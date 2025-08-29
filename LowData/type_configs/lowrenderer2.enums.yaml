@@ -9,3 +9,4 @@ enums:
     options:
       - name: Solid
       - name: Ui
+      - name: DebugGeometry
