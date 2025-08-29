@@ -619,6 +619,9 @@ function generate_header(p_Type) {
             func_line += write(", ");
           }
           const i_Param = i_Func.parameters[i];
+          if (i_Param["const"]) {
+            func_line += write("const ");
+          }
           func_line += write(`${i_Param.accessor_type} ${i_Param.name}`);
         }
       }
@@ -2065,6 +2068,9 @@ function generate_source(p_Type) {
             t += write(", ");
           }
           const i_Param = i_Func.parameters[i];
+          if (i_Param["const"]) {
+            t += write("const ");
+          }
           t += write(`${i_Param.accessor_type} ${i_Param.name}`);
         }
       }

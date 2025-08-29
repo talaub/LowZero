@@ -387,19 +387,8 @@ namespace Low {
         StagingBuffer &l_ResourceStagingBuffer =
             Global::get_current_resource_staging_buffer();
 
-        const size_t l_AvailableSpace =
-            l_ResourceStagingBuffer.size -
-            l_ResourceStagingBuffer.occupied;
-
-        *p_OutOffset = l_ResourceStagingBuffer.occupied;
-
-        if (l_AvailableSpace >= p_RequestedSize) {
-          l_ResourceStagingBuffer.occupied += p_RequestedSize;
-          return p_RequestedSize;
-        }
-
-        l_ResourceStagingBuffer.occupied += l_AvailableSpace;
-        return l_AvailableSpace;
+        return l_ResourceStagingBuffer.request_space(p_RequestedSize,
+                                                     p_OutOffset);
       }
 
       bool resource_staging_buffer_write(void *p_Data,
@@ -409,14 +398,8 @@ namespace Low {
         StagingBuffer &l_ResourceStagingBuffer =
             Global::get_current_resource_staging_buffer();
 
-        // Converting the buffer to u8 so that it is easier for us to
-        // offset the upload point into the buffer by p_Offset
-        u8 *l_Buffer =
-            (u8 *)l_ResourceStagingBuffer.buffer.info.pMappedData;
-
-        memcpy((void *)&(l_Buffer[p_Offset]), p_Data, p_DataSize);
-
-        return true;
+        return l_ResourceStagingBuffer.write(p_Data, p_DataSize,
+                                             p_Offset);
       }
 
       static bool initialize_default_texture()
@@ -1107,18 +1090,18 @@ namespace Low {
                                              RenderView p_RenderView,
                                              ViewInfo p_ViewInfo)
       {
-        const int CURRENT_FRAME_INDEX =
-            Global::get_current_frame_index();
+        size_t l_StagingOffset = 0;
 
-        StagingBuffer &l_StagingBuffer =
-            p_ViewInfo.get_staging_buffers()[CURRENT_FRAME_INDEX];
+        const u64 l_FrameInfoSize = sizeof(ViewInfoFrameData);
 
-        l_StagingBuffer.occupied = 0u;
+        const u64 l_FrameUploadSpace =
+            p_ViewInfo.request_current_staging_buffer_space(
+                l_FrameInfoSize, &l_StagingOffset);
 
-        u8 *l_Buffer = (u8 *)p_ViewInfo
-                           .get_staging_buffers()[CURRENT_FRAME_INDEX]
-                           .buffer.info.pMappedData;
-
+        LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >= l_FrameInfoSize,
+                              "Did not have enough staging "
+                              "buffer space to upload "
+                              "view info frame data.");
         {
           ViewInfoFrameData l_FrameData;
 
@@ -1174,21 +1157,19 @@ namespace Low {
           l_FrameData.lightClusters.w =
               p_ViewInfo.get_light_cluster_count();
 
-          memcpy((void *)&(l_Buffer[l_StagingBuffer.occupied]),
-                 &l_FrameData, sizeof(ViewInfoFrameData));
+          p_ViewInfo.write_current_staging_buffer(
+              &l_FrameData, l_FrameUploadSpace, l_StagingOffset);
 
           VkBufferCopy l_CopyRegion{};
-          l_CopyRegion.srcOffset = l_StagingBuffer.occupied;
-          l_CopyRegion.dstOffset = l_StagingBuffer.occupied;
-          l_CopyRegion.size = sizeof(ViewInfoFrameData);
+          l_CopyRegion.srcOffset = l_StagingOffset;
+          l_CopyRegion.dstOffset = 0;
+          l_CopyRegion.size = l_FrameUploadSpace;
 
           vkCmdCopyBuffer(
               Vulkan::Global::get_current_command_buffer(),
-              l_StagingBuffer.buffer.buffer,
+              p_ViewInfo.get_current_staging_buffer().buffer.buffer,
               p_ViewInfo.get_view_data_buffer().buffer, 1,
               &l_CopyRegion);
-
-          l_StagingBuffer.occupied += sizeof(ViewInfoFrameData);
         }
 
         return true;
@@ -1225,6 +1206,9 @@ namespace Low {
                 Global::get_device(),
                 i_ViewInfo.get_view_data_descriptor_set());
           }
+
+          // Reset the current staging buffer
+          i_ViewInfo.get_current_staging_buffer().occupied = 0;
 
           if (i_RenderView.is_dimensions_dirty()) {
             i_RenderView.set_camera_dirty(true);
@@ -1334,11 +1318,10 @@ namespace Low {
             // Upload the pointlight to the buffer
 
             size_t l_StagingOffset = 0;
-            // TODO: Reconsider if that needs to be on the resource
-            // staging buffer
             const u64 l_FrameUploadSpace =
-                Vulkan::request_resource_staging_buffer_space(
-                    sizeof(DrawCommandUpload), &l_StagingOffset);
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .request_space(sizeof(PointLightInfo),
+                                   &l_StagingOffset);
 
             if (l_FrameUploadSpace < sizeof(PointLightInfo)) {
               // We don't have enough space on the staging buffer to
@@ -1358,11 +1341,10 @@ namespace Low {
             i_Info.color.a = i_PointLight.get_intensity();
             i_Info.active = true;
 
-            // TODO: Check if this has to be the resource staging
-            // buffer
             LOW_ASSERT(
-                Vulkan::resource_staging_buffer_write(
-                    &i_Info, sizeof(PointLightInfo), l_StagingOffset),
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .write(&i_Info, sizeof(PointLightInfo),
+                           l_StagingOffset),
                 "Failed to write pointlight data to staging "
                 "buffer");
 
@@ -1375,12 +1357,11 @@ namespace Low {
             // TODO: Change to transfer queue command buffer - or
             // leave this specifically on the graphics queue not sure
             // tbh
-            // TODO: Also adjust the staging buffer if necessary
             // TODO: Check if it's possible to batch all these
             // together per renderscene
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
-                Vulkan::Global::get_current_resource_staging_buffer()
+                Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 i_Scene.get_point_light_buffer().buffer, 1,
                 &i_CopyRegion);
@@ -1404,11 +1385,10 @@ namespace Low {
                i_RenderScene.get_pointlight_deleted_slots().end();
                ++it) {
             size_t l_StagingOffset = 0;
-            // TODO: Reconsider if that needs to be on the resource
-            // staging buffer
             const u64 l_FrameUploadSpace =
-                Vulkan::request_resource_staging_buffer_space(
-                    sizeof(DrawCommandUpload), &l_StagingOffset);
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .request_space(sizeof(PointLightInfo),
+                                   &l_StagingOffset);
 
             if (l_FrameUploadSpace < sizeof(PointLightInfo)) {
               // We don't have enough space on the staging buffer to
@@ -1428,11 +1408,10 @@ namespace Low {
             i_Info.color.a = 0;
             i_Info.active = false;
 
-            // TODO: Check if this has to be the resource staging
-            // buffer
             LOW_ASSERT(
-                Vulkan::resource_staging_buffer_write(
-                    &i_Info, sizeof(PointLightInfo), l_StagingOffset),
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .write(&i_Info, sizeof(PointLightInfo),
+                           l_StagingOffset),
                 "Failed to write pointlight data to staging "
                 "buffer");
 
@@ -1448,12 +1427,11 @@ namespace Low {
             // TODO: Change to transfer queue command buffer - or
             // leave this specifically on the graphics queue not sure
             // tbh
-            // TODO: Also adjust the staging buffer if necessary
             // TODO: Check if it's possible to batch all these
             // together per renderscene
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
-                Vulkan::Global::get_current_resource_staging_buffer()
+                Vulkan::Global::get_current_frame_staging_buffer()
                     .buffer.buffer,
                 i_Scene.get_point_light_buffer().buffer,
                 i_Copies.size(), i_Copies.data());

@@ -47,6 +47,12 @@ namespace Low {
         AllocatedBuffer buffer;
         size_t size;
         size_t occupied;
+
+        size_t request_space(const size_t p_RequestedSize,
+                             size_t *p_OutOffset);
+
+        bool write(void *p_Data, const size_t p_DataSize,
+                   const size_t p_Offset);
       };
 
       struct DynamicBufferFreeSlot
@@ -142,6 +148,7 @@ namespace Low {
         VkCommandBuffer get_current_command_buffer();
         VkCommandPool get_current_command_pool();
         StagingBuffer &get_current_resource_staging_buffer();
+        StagingBuffer &get_current_frame_staging_buffer();
 
         VkDescriptorSetLayout get_view_info_descriptor_set_layout();
         VkDescriptorSetLayout get_gbuffer_descriptor_set_layout();

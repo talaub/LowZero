@@ -29,6 +29,36 @@
 namespace Low {
   namespace Renderer {
     namespace Vulkan {
+
+      size_t
+      StagingBuffer::request_space(const size_t p_RequestedSize,
+                                   size_t *p_OutOffset)
+      {
+        const size_t l_AvailableSpace = size - occupied;
+
+        *p_OutOffset = occupied;
+
+        if (l_AvailableSpace >= p_RequestedSize) {
+          occupied += p_RequestedSize;
+          return p_RequestedSize;
+        }
+
+        occupied += l_AvailableSpace;
+        return l_AvailableSpace;
+      }
+
+      bool StagingBuffer::write(void *p_Data, const size_t p_DataSize,
+                                const size_t p_Offset)
+      {
+        // Converting the buffer to u8 so that it is easier for us to
+        // offset the upload point into the buffer by p_Offset
+        u8 *l_Buffer = (u8 *)buffer.info.pMappedData;
+
+        memcpy((void *)&(l_Buffer[p_Offset]), p_Data, p_DataSize);
+
+        return true;
+      }
+
       namespace Global {
 #ifdef LOW_RENDERER_VALIDATION_ENABLED
         const bool g_ValidationEnabled = true;
@@ -37,6 +67,7 @@ namespace Low {
 #endif
 
 #define RESOURCE_STAGING_BUFFER_SIZE (LOW_MEGABYTE_I * 32)
+#define FRAME_STAGING_BUFFER_SIZE (LOW_MEGABYTE_I * 2)
 
         VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
             VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -70,7 +101,10 @@ namespace Low {
           StagingBuffer resourceStagingBuffer;
           VkDescriptorSet textureDescriptorSet;
 
-          Low::Util::Queue<TextureUpdate> textureUpdateQueue;
+          StagingBuffer frameStagingBuffer;
+
+              Low::Util::Queue<TextureUpdate>
+                  textureUpdateQueue;
         };
 
         u32 g_FrameOverlap;
@@ -211,6 +245,10 @@ namespace Low {
         StagingBuffer &get_current_resource_staging_buffer()
         {
           return g_Frames[g_CurrentFrameIndex].resourceStagingBuffer;
+        }
+        StagingBuffer &get_current_frame_staging_buffer()
+        {
+          return g_Frames[g_CurrentFrameIndex].frameStagingBuffer;
         }
         DynamicBuffer &get_mesh_vertex_buffer()
         {
@@ -695,6 +733,17 @@ namespace Low {
             }
 
             {
+              g_Frames[i].frameStagingBuffer.buffer =
+                  BufferUtil::create_buffer(
+                      FRAME_STAGING_BUFFER_SIZE,
+                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                      VMA_MEMORY_USAGE_CPU_TO_GPU);
+              g_Frames[i].frameStagingBuffer.size =
+                  FRAME_STAGING_BUFFER_SIZE;
+              g_Frames[i].frameStagingBuffer.occupied = 0u;
+            }
+
+            {
               g_Frames[i].textureDescriptorSet =
                   Global::get_global_descriptor_allocator().allocate(
                       Global::get_device(),
@@ -880,6 +929,10 @@ namespace Low {
             BufferUtil::destroy_buffer(
                 g_Frames[i].resourceStagingBuffer.buffer);
             g_Frames[i].resourceStagingBuffer.size = 0;
+
+            BufferUtil::destroy_buffer(
+                g_Frames[i].frameStagingBuffer.buffer);
+            g_Frames[i].frameStagingBuffer.size = 0;
           }
 
           g_Frames.clear();

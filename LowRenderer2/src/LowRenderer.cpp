@@ -444,11 +444,10 @@ namespace Low {
         }
 
         size_t l_StagingOffset = 0;
-        // TODO: Reconsider if that needs to be on the resource
-        // staging buffer
         const u64 l_FrameUploadSpace =
-            Vulkan::request_resource_staging_buffer_space(
-                sizeof(DrawCommandUpload), &l_StagingOffset);
+            Vulkan::Global::get_current_frame_staging_buffer()
+                .request_space(sizeof(DrawCommandUpload),
+                               &l_StagingOffset);
 
         if (l_FrameUploadSpace < sizeof(DrawCommandUpload)) {
           // We don't have enough space on the staging buffer to
@@ -492,9 +491,8 @@ namespace Low {
                      "Failed so add draw command to render scene");
         }
 
-        // TODO: Check if this has to be the resource staging buffer
         LOW_ASSERT(
-            Vulkan::resource_staging_buffer_write(
+            Vulkan::Global::get_current_frame_staging_buffer().write(
                 &i_Upload, sizeof(DrawCommandUpload),
                 l_StagingOffset),
             "Failed to write draw command data to staging buffer");
@@ -507,10 +505,9 @@ namespace Low {
 
         // TODO: Change to transfer queue command buffer - or leave
         // this specifically on the graphics queue not sure tbh
-        // TODO: Also adjust the staging buffer if necessary
         vkCmdCopyBuffer(
             Vulkan::Global::get_current_command_buffer(),
-            Vulkan::Global::get_current_resource_staging_buffer()
+            Vulkan::Global::get_current_frame_staging_buffer()
                 .buffer.buffer,
             Vulkan::Global::get_drawcommand_buffer().m_Buffer.buffer,
             1, &i_CopyRegion);
@@ -564,12 +561,11 @@ namespace Low {
             i_RenderObject.get_draw_commands();
 
         size_t l_StagingOffset = 0;
-        // TODO: Reconsider if that needs to be on the resource
-        // staging buffer
         const u64 l_FrameUploadSpace =
-            Vulkan::request_resource_staging_buffer_space(
-                sizeof(DrawCommandUpload) * i_DrawCommands.size(),
-                &l_StagingOffset);
+            Vulkan::Global::get_current_frame_staging_buffer()
+                .request_space(sizeof(DrawCommandUpload) *
+                                   i_DrawCommands.size(),
+                               &l_StagingOffset);
 
         if (l_FrameUploadSpace <
             (sizeof(DrawCommandUpload) * i_DrawCommands.size())) {
@@ -623,7 +619,7 @@ namespace Low {
         }
 
         LOW_ASSERT(
-            Vulkan::resource_staging_buffer_write(
+            Vulkan::Global::get_current_frame_staging_buffer().write(
                 i_Uploads.data(),
                 sizeof(DrawCommandUpload) * i_Uploads.size(),
                 l_StagingOffset),
@@ -640,7 +636,7 @@ namespace Low {
         // TODO: Also adjust the staging buffer if necessary
         vkCmdCopyBuffer(
             Vulkan::Global::get_current_command_buffer(),
-            Vulkan::Global::get_current_resource_staging_buffer()
+            Vulkan::Global::get_current_frame_staging_buffer()
                 .buffer.buffer,
             Vulkan::Global::get_drawcommand_buffer().m_Buffer.buffer,
             1, &i_CopyRegion);

@@ -166,6 +166,13 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
+        StagingBuffer &get_current_staging_buffer();
+        size_t request_current_staging_buffer_space(
+            const size_t p_RequestedSize, size_t *p_OutOffset);
+        bool write_current_staging_buffer(void *p_Data,
+                                          const size_t p_DataSize,
+                                          const size_t p_Offset);
+
       private:
         static uint32_t ms_Capacity;
         static uint32_t create_instance();

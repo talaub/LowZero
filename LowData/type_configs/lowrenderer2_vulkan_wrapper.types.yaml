@@ -50,6 +50,28 @@ types:
         type: AllocatedBuffer
       debug_geometry_buffer:
         type: AllocatedBuffer
+    functions:
+      get_current_staging_buffer:
+        return_type: StagingBuffer
+      request_current_staging_buffer_space:
+        return_type: size_t
+        parameters:
+          - name: requestedSize
+            type: size_t
+            const: true
+          - name: outOffset
+            type: size_t*
+      write_current_staging_buffer:
+        return_type: bool
+        parameters:
+          - name: data
+            type: void*
+          - name: dataSize
+            type: size_t
+            const: true
+          - name: offset
+            type: size_t
+            const: true
   Scene:
     properties:
       point_light_slots:

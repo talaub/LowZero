@@ -642,6 +642,76 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
         }
+        {
+          // Function: get_current_staging_buffer
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_current_staging_buffer);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_current_staging_buffer
+        }
+        {
+          // Function: request_current_staging_buffer_space
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name =
+              N(request_current_staging_buffer_space);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_RequestedSize);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_OutOffset);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: request_current_staging_buffer_space
+        }
+        {
+          // Function: write_current_staging_buffer
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(write_current_staging_buffer);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Data);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_DataSize);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Offset);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: write_current_staging_buffer
+        }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
 
@@ -1242,6 +1312,37 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
+      }
+
+      StagingBuffer &ViewInfo::get_current_staging_buffer()
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_staging_buffer
+        return get_staging_buffers()
+            [Global::get_current_frame_index()];
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_current_staging_buffer
+      }
+
+      size_t ViewInfo::request_current_staging_buffer_space(
+          const size_t p_RequestedSize, size_t *p_OutOffset)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_request_current_staging_buffer_space
+        StagingBuffer &l_StagingBuffer = get_current_staging_buffer();
+
+        return l_StagingBuffer.request_space(p_RequestedSize,
+                                             p_OutOffset);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_request_current_staging_buffer_space
+      }
+
+      bool
+      ViewInfo::write_current_staging_buffer(void *p_Data,
+                                             const size_t p_DataSize,
+                                             const size_t p_Offset)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write_current_staging_buffer
+        StagingBuffer &l_StagingBuffer = get_current_staging_buffer();
+
+        return l_StagingBuffer.write(p_Data, p_DataSize, p_Offset);
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_write_current_staging_buffer
       }
 
       uint32_t ViewInfo::create_instance()

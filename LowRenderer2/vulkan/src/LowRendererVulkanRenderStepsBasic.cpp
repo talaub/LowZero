@@ -1288,7 +1288,7 @@ namespace Low {
             // TODO: This does not go on the resource staging
             // buffer but a frame staging buffer of some sort
             const u64 l_FrameUploadSpace =
-                request_resource_staging_buffer_space(
+                l_ViewInfo.request_current_staging_buffer_space(
                     l_DrawCommandSize, &l_StagingOffset);
 
             LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
@@ -1297,12 +1297,12 @@ namespace Low {
                                   "buffer space to upload "
                                   "UI draw commands.");
 
-            LOWR_VK_ASSERT_RETURN(resource_staging_buffer_write(
-                                      l_DrawCommandUploads.data(),
-                                      l_FrameUploadSpace,
-                                      l_StagingOffset),
-                                  "Failed to write ui draw command "
-                                  "data to staging buffer");
+            LOWR_VK_ASSERT_RETURN(
+                l_ViewInfo.write_current_staging_buffer(
+                    l_DrawCommandUploads.data(), l_FrameUploadSpace,
+                    l_StagingOffset),
+                "Failed to write ui draw command "
+                "data to staging buffer");
 
             VkBufferCopy l_CopyRegion{};
             l_CopyRegion.srcOffset = l_StagingOffset;
@@ -1312,8 +1312,7 @@ namespace Low {
             // queue so we can leave it as is
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
-                Vulkan::Global::get_current_resource_staging_buffer()
-                    .buffer.buffer,
+                l_ViewInfo.get_current_staging_buffer().buffer.buffer,
                 l_ViewInfo.get_ui_drawcommand_buffer().buffer, 1,
                 &l_CopyRegion);
           }
@@ -1475,10 +1474,8 @@ namespace Low {
               return true;
             }
 
-            // TODO: This does not go on the resource staging
-            // buffer but a frame staging buffer of some sort
             const u64 l_FrameUploadSpace =
-                request_resource_staging_buffer_space(
+                l_ViewInfo.request_current_staging_buffer_space(
                     l_DrawCommandSize, &l_StagingOffset);
 
             LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
@@ -1488,9 +1485,9 @@ namespace Low {
                                   "debug geometry draw commands.");
 
             LOWR_VK_ASSERT_RETURN(
-                resource_staging_buffer_write(l_Uploads.data(),
-                                              l_FrameUploadSpace,
-                                              l_StagingOffset),
+                l_ViewInfo.write_current_staging_buffer(
+                    l_Uploads.data(), l_FrameUploadSpace,
+                    l_StagingOffset),
                 "Failed to write debug geometry draw command "
                 "data to staging buffer");
 
@@ -1502,8 +1499,7 @@ namespace Low {
             // queue so we can leave it as is
             vkCmdCopyBuffer(
                 Vulkan::Global::get_current_command_buffer(),
-                Vulkan::Global::get_current_resource_staging_buffer()
-                    .buffer.buffer,
+                l_ViewInfo.get_current_staging_buffer().buffer.buffer,
                 l_ViewInfo.get_debug_geometry_buffer().buffer, 1,
                 &l_CopyRegion);
           }
