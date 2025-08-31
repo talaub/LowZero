@@ -10,6 +10,7 @@ types:
   Mesh:
     no_auto_serialize: true
     no_auto_deserialize: true
+    reference_counted: true
     properties:
       resource:
         type: Low::Renderer::MeshResource
@@ -184,6 +185,7 @@ types:
             type: Util::String
 
   Texture:
+    reference_counted: true
     properties:
       gpu:
         type: GpuTexture
@@ -260,6 +262,7 @@ types:
         private_setter: true
 
   Font:
+    reference_counted: true
     properties:
       texture:
         type: Low::Renderer::Texture
@@ -269,6 +272,8 @@ types:
         handle: true
       glyphs:
         type: Low::Util::UnorderedMap<char, Glyph>
+      sidecar_loaded:
+        type: bool
     functions:
       is_fully_loaded:
         return_type: bool

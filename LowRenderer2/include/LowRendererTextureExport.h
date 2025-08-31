@@ -10,52 +10,55 @@
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererTexture.h"
-#include "LowRendererFontResource.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    struct Glyph
+    enum class TextureExportState
     {
-      Math::Vector2 uvMin;
-      Math::Vector2 uvMax;
+      SCHEDULED,
+      COPIED,
+      DONE
     };
+
+    struct TextureExport;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API FontData
+    struct LOW_RENDERER2_API TextureExportData
     {
+      Low::Util::String path;
       Low::Renderer::Texture texture;
-      Low::Renderer::FontResource resource;
-      Low::Util::UnorderedMap<char, Glyph> glyphs;
-      bool sidecar_loaded;
-      Low::Util::Set<u64> references;
+      Low::Renderer::TextureExportState state;
+      Low::Util::Function<bool(Low::Renderer::TextureExport)>
+          finish_callback;
+      uint64_t data_handle;
       Low::Util::Name name;
 
       static size_t get_size()
       {
-        return sizeof(FontData);
+        return sizeof(TextureExportData);
       }
     };
 
-    struct LOW_RENDERER2_API Font : public Low::Util::Handle
+    struct LOW_RENDERER2_API TextureExport : public Low::Util::Handle
     {
     public:
       static std::shared_mutex ms_BufferMutex;
       static uint8_t *ms_Buffer;
       static Low::Util::Instances::Slot *ms_Slots;
 
-      static Low::Util::List<Font> ms_LivingInstances;
+      static Low::Util::List<TextureExport> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      Font();
-      Font(uint64_t p_Id);
-      Font(Font &p_Copy);
+      TextureExport();
+      TextureExport(uint64_t p_Id);
+      TextureExport(TextureExport &p_Copy);
 
-      static Font make(Low::Util::Name p_Name);
+      static TextureExport make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-      explicit Font(const Font &p_Copy)
+      explicit TextureExport(const TextureExport &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -69,12 +72,12 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static Font *living_instances()
+      static TextureExport *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static Font find_by_index(uint32_t p_Index);
+      static TextureExport find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
@@ -89,20 +92,17 @@ namespace Low {
                           Low::Util::Handle p_Observed,
                           Low::Util::Name p_Observable);
 
-      void reference(const u64 p_Id);
-      void dereference(const u64 p_Id);
-      u32 references() const;
-
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      Font duplicate(Low::Util::Name p_Name) const;
-      static Font duplicate(Font p_Handle, Low::Util::Name p_Name);
+      TextureExport duplicate(Low::Util::Name p_Name) const;
+      static TextureExport duplicate(TextureExport p_Handle,
+                                     Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static Font find_by_name(Low::Util::Name p_Name);
+      static TextureExport find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -113,42 +113,43 @@ namespace Low {
       static bool is_alive(Low::Util::Handle p_Handle)
       {
         READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Font::TYPE_ID &&
+        return p_Handle.get_type() == TextureExport::TYPE_ID &&
                p_Handle.check_alive(ms_Slots, get_capacity());
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        Font l_Font = p_Handle.get_id();
-        l_Font.destroy();
+        TextureExport l_TextureExport = p_Handle.get_id();
+        l_TextureExport.destroy();
       }
+
+      Low::Util::String &get_path() const;
+      void set_path(Low::Util::String &p_Value);
+      void set_path(const char *p_Value);
 
       Low::Renderer::Texture get_texture() const;
       void set_texture(Low::Renderer::Texture p_Value);
 
-      Low::Renderer::FontResource get_resource() const;
-      void set_resource(Low::Renderer::FontResource p_Value);
+      Low::Renderer::TextureExportState get_state() const;
+      void set_state(Low::Renderer::TextureExportState p_Value);
 
-      Low::Util::UnorderedMap<char, Glyph> &get_glyphs() const;
-      void set_glyphs(Low::Util::UnorderedMap<char, Glyph> &p_Value);
+      Low::Util::Function<bool(Low::Renderer::TextureExport)> &
+      get_finish_callback() const;
+      void set_finish_callback(
+          Low::Util::Function<bool(Low::Renderer::TextureExport)>
+              &p_Value);
 
-      bool is_sidecar_loaded() const;
-      void set_sidecar_loaded(bool p_Value);
-      void toggle_sidecar_loaded();
+      uint64_t get_data_handle() const;
+      void set_data_handle(uint64_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
-
-      bool is_fully_loaded();
-      static Font
-      make_from_resource_config(FontResourceConfig &p_Config);
 
     private:
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
-      Low::Util::Set<u64> &get_references() const;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

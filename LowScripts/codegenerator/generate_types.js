@@ -488,6 +488,12 @@ function generate_header(p_Type) {
     n,
   );
   t += empty();
+  if (p_Type.reference_counted) {
+    t += line(`void reference(const u64 p_Id);`);
+    t += line(`void dereference(const u64 p_Id);`);
+    t += line(`u32 references() const;`);
+    t += empty();
+  }
   t += line(`static uint32_t get_capacity();`);
   t += empty();
   t += line(`void serialize(Low::Util::Yaml::Node& p_Node) const;`, n);
@@ -713,6 +719,8 @@ function generate_header(p_Type) {
 function generate_source(p_Type) {
   let t = "";
   let n = 0;
+
+  const l_GetReferences = `(TYPE_SOA(${p_Type.name}, references, Low::Util::Set<u64>))`;
 
   let l_OldCode = "";
   if (fs.existsSync(p_Type.source_file_path)) {
@@ -1754,6 +1762,89 @@ function generate_source(p_Type) {
   t += line(`l_${p_Type.name}.notify(p_Observed, p_Observable);`);
   t += line("}");
   t += empty();
+
+  if (p_Type.reference_counted) {
+    t += line(`void ${p_Type.name}::reference(const u64 p_Id) {`);
+    t += line(`_LOW_ASSERT(is_alive());`);
+    t += empty();
+    t += line(`WRITE_LOCK(l_WriteLock);`);
+    t += line(`const u32 l_OldReferences = ${l_GetReferences}.size();`);
+    t += empty();
+    t += line(`${l_GetReferences}.insert(p_Id);`);
+    t += empty();
+    t += line(`const u32 l_References = ${l_GetReferences}.size();`);
+    t += line(`LOCK_UNLOCK(l_WriteLock);`);
+    t += empty();
+    t += line(`if (l_OldReferences != l_References) {`);
+    if (true) {
+      const l_MarkerName = `CUSTOM:NEW_REFERENCE`;
+
+      const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+      const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+      const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+      let l_CustomCode = "";
+
+      if (l_BeginMarkerIndex >= 0) {
+        const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+        l_CustomCode = l_OldCode.substring(
+          l_BeginMarkerIndex,
+          l_EndMarkerIndex,
+        );
+      }
+      t += line(l_CustomBeginMarker);
+      t += l_CustomCode;
+      t += line(l_CustomEndMarker);
+    }
+    t += line("}");
+    t += line(`}`);
+    t += empty();
+
+    t += line(`void ${p_Type.name}::dereference(const u64 p_Id) {`);
+    t += line(`_LOW_ASSERT(is_alive());`);
+    t += empty();
+    t += line(`WRITE_LOCK(l_WriteLock);`);
+    t += line(`const u32 l_OldReferences = ${l_GetReferences}.size();`);
+    t += empty();
+    t += line(`${l_GetReferences}.erase(p_Id);`);
+    t += empty();
+    t += line(`const u32 l_References = ${l_GetReferences}.size();`);
+    t += line(`LOCK_UNLOCK(l_WriteLock);`);
+    t += empty();
+    t += line(`if (l_OldReferences != l_References) {`);
+    if (true) {
+      const l_MarkerName = `CUSTOM:REFERENCE_REMOVED`;
+
+      const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+      const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+      const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+      let l_CustomCode = "";
+
+      if (l_BeginMarkerIndex >= 0) {
+        const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+        l_CustomCode = l_OldCode.substring(
+          l_BeginMarkerIndex,
+          l_EndMarkerIndex,
+        );
+      }
+      t += line(l_CustomBeginMarker);
+      t += l_CustomCode;
+      t += line(l_CustomEndMarker);
+    }
+    t += line("}");
+    t += line(`}`);
+    t += empty();
+
+    t += line(`u32 ${p_Type.name}::references() const {`);
+    t += line("return get_references().size();");
+    t += line(`}`);
+    t += empty();
+  }
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     if (!i_Prop.no_getter && !i_Prop.no_data) {

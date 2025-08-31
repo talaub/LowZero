@@ -12,6 +12,8 @@
 #include "LowRendererVkViewInfo.h"
 #include "LowRendererDrawCommand.h"
 #include "LowRendererTexture.h"
+#include "LowRendererTextureExport.h"
+#include "LowRendererVkTexExport.h"
 
 #include "LowRenderer.h"
 
@@ -39,6 +41,12 @@
 
 #define POINTLIGHTS_PER_CLUSTER 32u
 #define LIGHT_CLUSTER_DEPTH 24u
+
+// #define STB_IMAGE_WRITE_IMPLEMENTATION
+// #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include "../../LowDependencies/stb/stb_image.h"
+#include "../../LowDependencies/stb/stb_image_write.h"
 
 namespace Low {
   namespace Renderer {
@@ -373,10 +381,12 @@ namespace Low {
       {
         Pipeline::initialize();
         Image::initialize();
+        TexExport::initialize();
       }
 
       static void cleanup_types()
       {
+        TexExport::cleanup();
         Pipeline::cleanup();
         Image::cleanup();
       }
@@ -1443,6 +1453,49 @@ namespace Low {
         return l_Result;
       }
 
+      static float half_to_float(uint16_t half)
+      {
+        uint16_t h = half;
+        uint32_t sign = (h >> 15) & 0x00000001;
+        uint32_t exp = (h >> 10) & 0x0000001f;
+        uint32_t mant = h & 0x000003ff;
+
+        uint32_t f;
+        if (exp == 0) {
+          if (mant == 0) {
+            // Zero
+            f = sign << 31;
+          } else {
+            // Subnormal
+            while ((mant & 0x00000400) == 0) {
+              mant <<= 1;
+              exp -= 1;
+            }
+            exp += 1;
+            mant &= ~0x00000400;
+            f = (sign << 31) | ((exp + (127 - 15)) << 23) |
+                (mant << 13);
+          }
+        } else if (exp == 31) {
+          // Inf/NaN
+          f = (sign << 31) | 0x7f800000 | (mant << 13);
+        } else {
+          // Normalized
+          f = (sign << 31) | ((exp + (127 - 15)) << 23) |
+              (mant << 13);
+        }
+
+        float result;
+        memcpy(&result, &f, sizeof(result));
+        return result;
+      }
+
+      static uint8_t float_to_unorm8(float f)
+      {
+        return static_cast<uint8_t>(glm::clamp(f, 0.0f, 1.0f) *
+                                    255.0f);
+      }
+
       bool prepare_tick(float p_Delta)
       {
         static bool l_Initialized = false;
@@ -1490,6 +1543,112 @@ namespace Low {
 
         update_dirty_textures(p_Delta);
 
+        // Handle Texture exports
+        {
+          Util::List<TextureExport> l_ExportsToDelete;
+
+          for (u32 i = 0; i < TextureExport::living_count(); ++i) {
+            TextureExport i_Export =
+                TextureExport::living_instances()[i];
+
+            if (i_Export.get_state() == TextureExportState::COPIED) {
+
+              TexExport i_TexExport = i_Export.get_data_handle();
+
+              if (i_TexExport.get_frame_index() !=
+                  Global::get_current_frame_index()) {
+                continue;
+              }
+
+              Image i_Image =
+                  i_Export.get_texture().get_gpu().get_data_handle();
+
+              // Map buffer and write PNG
+              {
+                const u64 l_ImageSize =
+                    i_TexExport.get_staging_buffer().info.size;
+
+                const u32 l_Width =
+                    i_Image.get_allocated_image().extent.width;
+                const u32 l_Height =
+                    i_Image.get_allocated_image().extent.height;
+
+                // TODO: Check channel count
+                u32 l_Channels = 4;
+                u32 l_PixelSize = sizeof(u8);
+
+                if (i_Image.get_allocated_image().format ==
+                    VK_FORMAT_R16G16B16A16_SFLOAT) {
+                  l_PixelSize = sizeof(u16);
+                }
+
+                _LOW_ASSERT(l_ImageSize == l_Width * l_Height *
+                                               l_Channels *
+                                               l_PixelSize);
+
+                // Flip image vertically and write
+                Util::List<u8> l_Pixels;
+                l_Pixels.resize(l_Width * l_Height * l_Channels);
+
+                if (i_Image.get_allocated_image().format ==
+                    VK_FORMAT_R16G16B16A16_SFLOAT) {
+
+                  u16 *l_Data = reinterpret_cast<u16 *>(
+                      i_TexExport.get_staging_buffer()
+                          .info.pMappedData);
+
+                  for (u32 j = 0; j < l_Width * l_Height; ++j) {
+
+                    float r = half_to_float(l_Data[j * 4 + 0]);
+                    float g = half_to_float(l_Data[j * 4 + 1]);
+                    float b = half_to_float(l_Data[j * 4 + 2]);
+                    float a = half_to_float(l_Data[j * 4 + 3]);
+
+                    l_Pixels[j * 4 + 0] = float_to_unorm8(r);
+                    l_Pixels[j * 4 + 1] = float_to_unorm8(g);
+                    l_Pixels[j * 4 + 2] = float_to_unorm8(b);
+                    l_Pixels[j * 4 + 3] = float_to_unorm8(a);
+                  }
+
+                } else {
+                  uint8_t *l_Data = reinterpret_cast<uint8_t *>(
+                      i_TexExport.get_staging_buffer()
+                          .info.pMappedData);
+
+                  for (u64 j = 0; j < l_ImageSize; ++j) {
+                    l_Pixels[j] = l_Data[j];
+                  }
+                }
+
+                /*
+                Util::List<uint8_t> l_FlippedPixels;
+                l_FlippedPixels.resize(l_Width * l_Height *
+                                       l_Channels);
+
+                for (uint32_t i_Row = 0; i_Row < l_Height; ++i_Row) {
+                  memcpy(
+                      &l_FlippedPixels[i_Row * l_Width * l_Channels],
+                      &l_Pixels[(l_Height - i_Row - 1) * l_Width *
+                                l_Channels],
+                      l_Width * l_Channels);
+                }
+                */
+
+                stbi_write_png(i_Export.get_path().c_str(), l_Width,
+                               l_Height, l_Channels, l_Pixels.data(),
+                               l_Width * l_Channels);
+              }
+
+              l_ExportsToDelete.push_back(i_Export);
+            }
+          }
+
+          for (auto it = l_ExportsToDelete.begin();
+               it != l_ExportsToDelete.end(); ++it) {
+            it->destroy();
+          }
+        }
+
         {
           DescriptorUtil::DescriptorWriter l_Writer;
 
@@ -1533,6 +1692,11 @@ namespace Low {
         return l_Result;
       }
 
+      bool copy_image_to_staging_buffer()
+      {
+        return true;
+      }
+
       bool tick(float p_Delta)
       {
         VK_RENDERDOC_SECTION_BEGIN("ImGui",
@@ -1543,6 +1707,96 @@ namespace Low {
         if (!g_Context.requireResize) {
           LOWR_VK_ASSERT_RETURN(draw(g_Context, p_Delta),
                                 "Failed to draw vulkan renderer");
+
+          // Handle Texture exports
+          {
+            VkCommandBuffer l_Cmd =
+                Global::get_current_command_buffer();
+
+            for (u32 i = 0; i < TextureExport::living_count(); ++i) {
+              TextureExport i_Export =
+                  TextureExport::living_instances()[i];
+
+              if (!i_Export.get_texture().is_alive() ||
+                  i_Export.get_texture().get_state() !=
+                      TextureState::LOADED) {
+                continue;
+              }
+
+              if (i_Export.get_state() ==
+                  TextureExportState::SCHEDULED) {
+
+                TexExport i_TexExport =
+                    TexExport::make(i_Export.get_name());
+                i_Export.set_data_handle(i_TexExport.get_id());
+
+                i_TexExport.set_frame_index(
+                    Global::get_current_frame_index());
+
+                Texture i_Texture = i_Export.get_texture();
+                Image i_Image = i_Texture.get_gpu().get_data_handle();
+
+                const u32 l_Width =
+                    i_Image.get_allocated_image().extent.width;
+                const u32 l_Height =
+                    i_Image.get_allocated_image().extent.height;
+                // TODO: Check channel count
+                u32 l_Channels = 4;
+                u32 l_PixelSize = sizeof(u8);
+
+                if (i_Image.get_allocated_image().format ==
+                    VK_FORMAT_R16G16B16A16_SFLOAT) {
+                  l_PixelSize = sizeof(u16);
+                }
+
+                const u64 l_ImageSize =
+                    l_Width * l_Height * l_Channels * l_PixelSize;
+
+                LOW_LOG_DEBUG << "IMAGESIZE: " << l_ImageSize
+                              << LOW_LOG_END;
+
+                i_TexExport.set_staging_buffer(
+                    BufferUtil::create_buffer(
+                        l_ImageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                        VMA_MEMORY_USAGE_GPU_TO_CPU));
+
+                i_Export.observe(OBSERVABLE_DESTROY,
+                                 i_TexExport.get_id());
+
+                ImageUtil::cmd_transition(
+                    l_Cmd, i_Image,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+                // Copy image to buffer
+                {
+                  VkBufferImageCopy l_Region = {};
+                  l_Region.bufferOffset = 0;
+                  l_Region.bufferRowLength = 0;
+                  l_Region.bufferImageHeight = 0;
+                  l_Region.imageSubresource.aspectMask =
+                      VK_IMAGE_ASPECT_COLOR_BIT;
+                  l_Region.imageSubresource.mipLevel = 0;
+                  l_Region.imageSubresource.baseArrayLayer = 0;
+                  l_Region.imageSubresource.layerCount = 1;
+                  l_Region.imageExtent = {l_Width, l_Height, 1};
+
+                  vkCmdCopyImageToBuffer(
+                      l_Cmd, i_Image.get_allocated_image().image,
+                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                      i_TexExport.get_staging_buffer().buffer, 1,
+                      &l_Region);
+                }
+
+                ImageUtil::cmd_transition(
+                    l_Cmd, i_Image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+                i_Export.set_state(TextureExportState::COPIED);
+              }
+            }
+          }
 
           Base::context_present(g_Context);
         }

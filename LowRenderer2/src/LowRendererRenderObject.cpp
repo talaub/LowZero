@@ -93,6 +93,9 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      if (get_mesh().is_alive()) {
+        get_mesh().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       broadcast_observable(OBSERVABLE_DESTROY);
@@ -642,6 +645,9 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+      if (get_mesh().is_alive()) {
+        get_mesh().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
       // Set new value
@@ -650,6 +656,9 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+      if (p_Value.is_alive()) {
+        p_Value.reference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
 
       broadcast_observable(N(mesh));

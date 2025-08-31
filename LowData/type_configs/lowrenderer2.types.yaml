@@ -605,3 +605,17 @@ types:
         type: Low::Util::List<UiDrawCommand>
         no_setter: true
       
+  TextureExport:
+    properties:
+      path:
+        type: Low::Util::String
+      texture:
+        type: Low::Renderer::Texture
+        handle: true
+      state:
+        type: Low::Renderer::TextureExportState
+        no_ref: true
+      finish_callback:
+        type: Low::Util::Function<bool(Low::Renderer::TextureExport)>
+      data_handle:
+        type: uint64_t

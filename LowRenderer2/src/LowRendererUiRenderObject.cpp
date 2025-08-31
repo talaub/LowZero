@@ -101,6 +101,12 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      if (get_mesh().is_alive()) {
+        get_mesh().dereference(get_id());
+      }
+      if (get_texture().is_alive()) {
+        get_texture().dereference(get_id());
+      }
       // TODO: remove ui draw commands from canvas
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
@@ -738,6 +744,9 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+      if (get_texture().is_alive()) {
+        get_texture().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
       if (get_texture() != p_Value) {
@@ -750,6 +759,9 @@ namespace Low {
         LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+        if (p_Value.is_alive()) {
+          p_Value.reference(get_id());
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_texture
 
         broadcast_observable(N(texture));
@@ -1055,6 +1067,9 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+      if (get_mesh().is_alive()) {
+        get_mesh().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
       // Set new value
@@ -1063,6 +1078,9 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+      if (p_Value.is_alive()) {
+        p_Value.reference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
 
       broadcast_observable(N(mesh));

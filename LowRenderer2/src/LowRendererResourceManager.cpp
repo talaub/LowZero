@@ -131,6 +131,8 @@ namespace Low {
           return false;
         }
 
+        p_Texture.set_state(TextureState::SCHEDULEDTOLOAD);
+
         g_LoadSchedules.textures.insert(p_Texture);
 
         return true;
@@ -171,6 +173,8 @@ namespace Low {
         if (!mesh_can_load(p_Mesh)) {
           return false;
         }
+
+        p_Mesh.set_state(MeshState::SCHEDULEDTOLOAD);
 
         g_LoadSchedules.meshes.insert(p_Mesh);
 
@@ -281,8 +285,8 @@ namespace Low {
 
           Util::Yaml::Node &l_Glyphs = l_Sidecar["glyphs"];
 
-          for (auto it = l_Glyphs.begin();
-               it != l_Glyphs.end(); ++it) {
+          for (auto it = l_Glyphs.begin(); it != l_Glyphs.end();
+               ++it) {
             Util::Yaml::Node &i_Node = *it;
             Glyph i_Glyph;
             char i_Codepoint = i_Node["codepoint"].as<u8>();
@@ -294,7 +298,12 @@ namespace Low {
             l_Font.get_glyphs()[i_Codepoint] = i_Glyph;
           }
 
-          g_LoadSchedules.textures.insert(l_Font.get_texture());
+          l_Font.set_sidecar_loaded(true);
+
+          if (l_Font.get_texture().get_state() ==
+              TextureState::UNLOADED) {
+            load_texture(l_Font.get_texture());
+          }
         });
 
         return true;
@@ -302,6 +311,10 @@ namespace Low {
 
       static bool texture_schedule_memory_load(Texture p_Texture)
       {
+        LOW_ASSERT(p_Texture.get_state() ==
+                       TextureState::SCHEDULEDTOLOAD,
+                   "Texture is either not scheduled for loading or "
+                   "already loading/loaded.");
         // Small hack. Passing the texture in there directly
         // does not work for some reason so we're passing in the ID
         // and converting it back to a texture in the job
@@ -343,6 +356,9 @@ namespace Low {
 
       static bool mesh_schedule_memory_load(Mesh p_Mesh)
       {
+        LOW_ASSERT(p_Mesh.get_state() == MeshState::SCHEDULEDTOLOAD,
+                   "Mesh is either not scheduled for loading or "
+                   "already loading/loaded.");
         // Small hack. Passing the mesh in there directly does
         // not work for some reason so we're passing in the ID and
         // converting it back to a mesh in the job
@@ -474,7 +490,7 @@ namespace Low {
       static bool meshes_tick(float p_Delta)
       {
         for (auto it = g_LoadSchedules.meshes.begin();
-             it != g_LoadSchedules.meshes.end(); ++it) {
+             it != g_LoadSchedules.meshes.end();) {
           if (it->get_state() == MeshState::MEMORYLOADED) {
             // As soon as we see that the mesh has
             // successfully been loaded to memory we'll start
@@ -484,8 +500,9 @@ namespace Low {
                             << it->get_name() << "' upload to gpu."
                             << LOW_LOG_END;
             }
+            ++it;
             continue;
-          } else if (it->get_state() == MeshState::UNLOADED) {
+          } else if (it->get_state() == MeshState::SCHEDULEDTOLOAD) {
             // If the mesh is scheduled to be loaded but
             // currently still marked as unloaded we will try to
             // schedule the memory load.
@@ -494,7 +511,14 @@ namespace Low {
                   << "Failed to schedule mesh '" << it->get_name()
                   << "' for loading to memory." << LOW_LOG_END;
             }
+            ++it;
             continue;
+          } else if (it->get_state() == MeshState::LOADED ||
+                     it->get_state() == MeshState::UNLOADED ||
+                     it->get_state() == MeshState::UNKNOWN) {
+            it = g_LoadSchedules.meshes.erase(it);
+          } else {
+            it++;
           }
         }
 
@@ -505,6 +529,7 @@ namespace Low {
       {
         for (auto it = g_LoadSchedules.textures.begin();
              it != g_LoadSchedules.textures.end();) {
+          TextureState i_State = it->get_state();
           if (it->get_state() == TextureState::MEMORYLOADED) {
             // As soon as we see that the texture has
             // successfully been loaded to memory we'll start
@@ -518,7 +543,8 @@ namespace Low {
               it++;
             }
             continue;
-          } else if (it->get_state() == TextureState::UNLOADED) {
+          } else if (it->get_state() ==
+                     TextureState::SCHEDULEDTOLOAD) {
             // If the texture is scheduled to be loaded but
             // currently still marked as unloaded we will try to
             // schedule the memory load.
@@ -527,7 +553,14 @@ namespace Low {
                   << "Failed to schedule texture '" << it->get_name()
                   << "' for loading to memory." << LOW_LOG_END;
             }
+            ++it;
             continue;
+          } else if (it->get_state() == TextureState::LOADED ||
+                     it->get_state() == TextureState::UNLOADED ||
+                     it->get_state() == TextureState::UNKNOWN) {
+            it = g_LoadSchedules.textures.erase(it);
+          } else {
+            it++;
           }
         }
 
@@ -538,11 +571,8 @@ namespace Low {
       {
         for (auto it = g_LoadSchedules.fonts.begin();
              it != g_LoadSchedules.fonts.end();) {
-          if (it->get_texture().get_state() ==
-              TextureState::UNLOADED) {
-            // If the font is scheduled to be loaded but
-            // currently still marked as unloaded we will try to
-            // schedule the memory load.
+          if (!it->is_sidecar_loaded()) {
+            // TODO: Introduce state enum to fonts and use it here
             if (!font_schedule_memory_load(*it)) {
               LOW_LOG_ERROR
                   << "Failed to schedule font '" << it->get_name()
@@ -552,6 +582,8 @@ namespace Low {
             it = g_LoadSchedules.fonts.erase(it);
 
             continue;
+          } else {
+            it = g_LoadSchedules.fonts.erase(it);
           }
         }
 

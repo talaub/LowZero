@@ -19,6 +19,7 @@ LowRenderer:
   SkeletalAnimation: 29
   Skeleton: 30
   Font: 41
+  TextureExport: 79
 LowCore:
   Entity: 18
   Region: 19
@@ -77,6 +78,8 @@ LowRenderer2:
   UiRenderObject: 76
   Font: 77
   FontResource: 78
+  TextureExport: 80
+  TexExport: 81
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

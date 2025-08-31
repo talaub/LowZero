@@ -79,3 +79,10 @@ types:
         private_setter: true
       point_light_buffer:
         type: AllocatedBuffer
+
+  TexExport:
+    properties:
+      staging_buffer:
+        type: AllocatedBuffer
+      frame_index:
+        type: uint32_t

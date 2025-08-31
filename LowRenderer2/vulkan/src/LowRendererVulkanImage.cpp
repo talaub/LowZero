@@ -334,6 +334,119 @@ namespace Low {
         {
           return Internal::destroy(p_Image.get_allocated_image());
         }
+
+        void cmd_save_image_to_png(VkImage p_Image, uint32_t p_Width,
+                                   uint32_t p_Height,
+                                   const char *p_Path)
+        {
+          /*
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          // TODO: Check channel count
+          VkDeviceSize l_ImageSize = p_Width * p_Height * 4;
+
+          // Create staging buffer
+          VkBuffer l_StagingBuffer;
+          VkDeviceMemory l_StagingMemory;
+
+          // Buffer creation and memory allocation (omitting error
+          // handling)
+          {
+            VkBufferCreateInfo l_BufferInfo = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+            l_BufferInfo.size = l_ImageSize;
+            l_BufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            l_BufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+            vkCreateBuffer(Global::get_device(), &l_BufferInfo,
+                           nullptr, &l_StagingBuffer);
+
+            VkMemoryRequirements l_Reqs;
+            vkGetBufferMemoryRequirements(Global::get_device()),
+          l_StagingBuffer, &l_Reqs);
+
+            VkMemoryAllocateInfo l_AllocInfo = {
+                VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+            l_AllocInfo.allocationSize = l_Reqs.size;
+            l_AllocInfo.memoryTypeIndex = find_memory_type(
+                Global::get_physical_device(), l_Reqs.memoryTypeBits,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+            vkAllocateMemory(Global::get_device(), &l_AllocInfo,
+                             nullptr, &l_StagingMemory);
+            vkBindBufferMemory(Global::get_device(), l_StagingBuffer,
+                               l_StagingMemory, 0);
+          }
+
+          // Transition image layout
+          Internal::cmd_transition(
+              l_Cmd, p_Image,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // or whatever
+                                                        // your layout
+                                                        // is
+              VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+          // Copy image to buffer
+          {
+            VkBufferImageCopy l_Region = {};
+            l_Region.bufferOffset = 0;
+            l_Region.bufferRowLength = 0;
+            l_Region.bufferImageHeight = 0;
+            l_Region.imageSubresource.aspectMask =
+                VK_IMAGE_ASPECT_COLOR_BIT;
+            l_Region.imageSubresource.mipLevel = 0;
+            l_Region.imageSubresource.baseArrayLayer = 0;
+            l_Region.imageSubresource.layerCount = 1;
+            l_Region.imageExtent = {p_Width, p_Height, 1};
+
+            vkCmdCopyImageToBuffer(
+                l_Cmd, p_Image,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, l_StagingBuffer,
+                1, &l_Region);
+          }
+
+          // Submit and wait
+          {
+            vkEndCommandBuffer(l_Cmd);
+
+            VkSubmitInfo l_SubmitInfo = {
+                VK_STRUCTURE_TYPE_SUBMIT_INFO};
+            l_SubmitInfo.commandBufferCount = 1;
+            l_SubmitInfo.pCommandBuffers = &p_CommandBuffer;
+
+            vkQueueSubmit(p_Queue, 1, &l_SubmitInfo, VK_NULL_HANDLE);
+            vkQueueWaitIdle(p_Queue);
+          }
+
+          // Map buffer and write PNG
+          {
+            void *l_Data;
+            vkMapMemory(p_Device, l_StagingMemory, 0, l_ImageSize, 0,
+                        &l_Data);
+
+            // Flip image vertically and write
+            uint8_t *l_Pixels = reinterpret_cast<uint8_t *>(l_Data);
+            Util::List<uint8_t> l_FlippedPixels;
+            l_FlippedPixels.resize(l_ImageSize);
+
+            for (uint32_t i_Row = 0; i_Row < p_Height; ++i_Row) {
+              memcpy(&l_FlippedPixels[i_Row * p_Width * 4],
+                     &l_Pixels[(p_Height - i_Row - 1) * p_Width * 4],
+                     p_Width * 4);
+            }
+
+            stbi_write_png(p_Path, p_Width, p_Height, 4,
+                           l_FlippedPixels.data(), p_Width * 4);
+
+            vkUnmapMemory(p_Device, l_StagingMemory);
+          }
+
+          vkFreeMemory(p_Device, l_StagingMemory, nullptr);
+          vkDestroyBuffer(p_Device, l_StagingBuffer, nullptr);
+          */
+        }
       } // namespace ImageUtil
     }   // namespace Vulkan
   }     // namespace Renderer

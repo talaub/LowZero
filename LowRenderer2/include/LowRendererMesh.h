@@ -27,6 +27,7 @@ namespace Low {
       Low::Renderer::MeshGeometry geometry;
       Low::Renderer::GpuMesh gpu;
       bool unloadable;
+      Low::Util::Set<u64> references;
       Low::Util::Name name;
 
       static size_t get_size()
@@ -86,6 +87,10 @@ namespace Low {
                           Low::Util::Handle p_Observed,
                           Low::Util::Name p_Observable);
 
+      void reference(const u64 p_Id);
+      void dereference(const u64 p_Id);
+      u32 references() const;
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
@@ -143,6 +148,7 @@ namespace Low {
       static uint32_t ms_Capacity;
       static uint32_t create_instance();
       static void increase_budget();
+      Low::Util::Set<u64> &get_references() const;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

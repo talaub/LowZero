@@ -12,6 +12,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererVkImage.h"
+#include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -61,6 +62,9 @@ namespace Low {
       new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, state,
                               Low::Renderer::TextureState))
           Low::Renderer::TextureState();
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture, references,
+                              Low::Util::Set<u64>))
+          Low::Util::Set<u64>();
       ACCESSOR_TYPE_SOA(l_Handle, Texture, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -262,6 +266,25 @@ namespace Low {
         // End property: state
       }
       {
+        // Property: references
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(references);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(TextureData, references);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          return nullptr;
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: references
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -460,6 +483,8 @@ namespace Low {
             Low::Util::Serialization::deserialize_enum(
                 p_Node["state"])));
       }
+      if (p_Node["references"]) {
+      }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
       }
@@ -503,6 +528,57 @@ namespace Low {
     {
       Texture l_Texture = p_Observer.get_id();
       l_Texture.notify(p_Observed, p_Observable);
+    }
+
+    void Texture::reference(const u64 p_Id)
+    {
+      _LOW_ASSERT(is_alive());
+
+      WRITE_LOCK(l_WriteLock);
+      const u32 l_OldReferences =
+          (TYPE_SOA(Texture, references, Low::Util::Set<u64>)).size();
+
+      (TYPE_SOA(Texture, references, Low::Util::Set<u64>))
+          .insert(p_Id);
+
+      const u32 l_References =
+          (TYPE_SOA(Texture, references, Low::Util::Set<u64>)).size();
+      LOCK_UNLOCK(l_WriteLock);
+
+      if (l_OldReferences != l_References) {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+        if (l_References > 0 &&
+            get_state() == TextureState::UNLOADED) {
+          ResourceManager::load_texture(get_id());
+        }
+        // LOW_CODEGEN::END::CUSTOM:NEW_REFERENCE
+      }
+    }
+
+    void Texture::dereference(const u64 p_Id)
+    {
+      _LOW_ASSERT(is_alive());
+
+      WRITE_LOCK(l_WriteLock);
+      const u32 l_OldReferences =
+          (TYPE_SOA(Texture, references, Low::Util::Set<u64>)).size();
+
+      (TYPE_SOA(Texture, references, Low::Util::Set<u64>))
+          .erase(p_Id);
+
+      const u32 l_References =
+          (TYPE_SOA(Texture, references, Low::Util::Set<u64>)).size();
+      LOCK_UNLOCK(l_WriteLock);
+
+      if (l_OldReferences != l_References) {
+        // LOW_CODEGEN:BEGIN:CUSTOM:REFERENCE_REMOVED
+        // LOW_CODEGEN::END::CUSTOM:REFERENCE_REMOVED
+      }
+    }
+
+    u32 Texture::references() const
+    {
+      return get_references().size();
     }
 
     GpuTexture Texture::get_gpu() const
@@ -617,6 +693,17 @@ namespace Low {
       broadcast_observable(N(state));
     }
 
+    Low::Util::Set<u64> &Texture::get_references() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
+      // LOW_CODEGEN::END::CUSTOM:GETTER_references
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Texture, references, Low::Util::Set<u64>);
+    }
+
     Low::Util::Name Texture::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -726,6 +813,21 @@ namespace Low {
                          (l_Capacity + l_CapacityIncrease)],
             &ms_Buffer[offsetof(TextureData, state) * (l_Capacity)],
             l_Capacity * sizeof(Low::Renderer::TextureState));
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          Texture i_Texture = *it;
+
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(TextureData, references) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Low::Util::Set<u64>))])
+              Low::Util::Set<u64>();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(
+              i_Texture, Texture, references, Low::Util::Set<u64>);
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(TextureData, name) *

@@ -280,6 +280,14 @@ function process_file(p_Path, p_FileName, p_Project = false) {
       i_Type.dynamic_increase = true;
     }
 
+    if (i_Type.reference_counted) {
+      i_Type.properties.references = {
+        type: "Low::Util::Set<u64>",
+        no_setter: true,
+        private_getter: true,
+      };
+    }
+
     i_Type.namespace_string = "";
 
     if (i_Type.component) {

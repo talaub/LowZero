@@ -24,6 +24,7 @@
 
 #include "LowRendererUiCanvas.h"
 #include "LowRendererUiRenderObject.h"
+#include "LowRendererTextureExport.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -72,16 +73,31 @@ namespace Low {
   //
 Low::Math::UVector2 g_Dimensions{1700, 900};
 
+uint64_t frames = 0;
+
 void draw()
 {
+  frames++;
   Low::Renderer::prepare_tick(0.1f);
 
   static bool l_FontInit = false;
 
+#if 0
+  if (frames == 200) {
+    using namespace Low;
+    using namespace Low::Renderer;
+    TextureExport l_Export = TextureExport::make(N(Test));
+    l_Export.set_texture(g_RenderView.get_lit_image());
+    l_Export.set_path("E:\\screenshot.png");
+
+    LOW_LOG_DEBUG << "EXPORT" << LOW_LOG_END;
+  }
+#endif
+
   if (!l_FontInit && g_Font.is_alive() && g_Font.is_fully_loaded()) {
     using namespace Low;
 
-    const char l_Char = ',';
+    const char l_Char = 'C';
 
     Math::Vector4 l_UvRect;
     l_UvRect.x = g_Font.get_glyphs()[l_Char].uvMin.x;
@@ -201,7 +217,6 @@ void init()
 
     Low::Renderer::Mesh l_Mesh =
         Low::Renderer::Mesh::find_by_name(N(spaceship));
-    Low::Renderer::load_mesh(l_Mesh);
 
     Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
@@ -272,10 +287,11 @@ void init()
       Texture l_Texture = Texture::make(N(TestTexture));
       l_Texture.set_resource(TextureResource::make(l_TexturePath));
 
-      ResourceManager::load_texture(l_Texture);
       g_UiRenderObject.set_texture(l_Texture);
 
       g_Font = Font::living_instances()[0];
+
+      ResourceManager::load_font(g_Font);
 
       g_UiRenderObject.set_texture(g_Font.get_texture());
 
@@ -288,12 +304,10 @@ void init()
         l_TextureFont.set_resource(
             TextureResource::make(l_TexturePath));
 
-        ResourceManager::load_texture(l_TextureFont);
         g_UiRenderObject.set_texture(l_TextureFont);
       }
       */
 
-      ResourceManager::load_font(g_Font);
 #else
       g_UiRenderObject.set_size(Low::Math::Vector2(50.0f, 50.0f));
 #endif

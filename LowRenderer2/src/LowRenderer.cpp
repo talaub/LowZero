@@ -31,6 +31,7 @@
 #include "LowRendererPrimitives.h"
 #include "LowRendererFont.h"
 #include "LowRendererFontResource.h"
+#include "LowRendererTextureExport.h"
 
 #include "LowUtilAssert.h"
 #include "LowUtilFileSystem.h"
@@ -94,10 +95,12 @@ namespace Low {
       RenderStep::initialize();
       Font::initialize();
       FontResource::initialize();
+      TextureExport::initialize();
     }
 
     static void cleanup_types()
     {
+      TextureExport::cleanup();
       FontResource::cleanup();
       Font::cleanup();
       UiDrawCommand::cleanup();
@@ -371,11 +374,13 @@ namespace Low {
                  "Failed to initialize Vulkan renderer");
 
       {
+        /*
         Low::Util::String l_BasePath =
             Low::Util::get_project().dataPath;
         l_BasePath += "/resources/img2d/test.ktx";
 
         g_Texture = Low::Renderer::load_texture(l_BasePath);
+        */
       }
 
       {
@@ -770,7 +775,8 @@ namespace Low {
       initialize_ui_renderobjects(p_Delta);
       tick_materials(p_Delta);
       if (!l_ImageInit) {
-        if (g_Texture.get_state() == TextureState::LOADED) {
+        if (g_Texture.is_alive() &&
+            g_Texture.get_state() == TextureState::LOADED) {
           l_ImageInit = true;
         }
       }

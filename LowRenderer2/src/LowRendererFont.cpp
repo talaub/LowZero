@@ -11,6 +11,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -61,6 +62,10 @@ namespace Low {
           l_Handle, Font, glyphs,
           SINGLE_ARG(Low::Util::UnorderedMap<char, Glyph>)))
           Low::Util::UnorderedMap<char, Glyph>();
+      ACCESSOR_TYPE_SOA(l_Handle, Font, sidecar_loaded, bool) = false;
+      new (&ACCESSOR_TYPE_SOA(l_Handle, Font, references,
+                              Low::Util::Set<u64>))
+          Low::Util::Set<u64>();
       ACCESSOR_TYPE_SOA(l_Handle, Font, name, Low::Util::Name) =
           Low::Util::Name(0u);
       LOCK_UNLOCK(l_Lock);
@@ -70,6 +75,7 @@ namespace Low {
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_sidecar_loaded(false);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -80,6 +86,9 @@ namespace Low {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      if (get_texture().is_alive()) {
+        get_texture().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       broadcast_observable(OBSERVABLE_DESTROY);
@@ -228,6 +237,54 @@ namespace Low {
         // End property: glyphs
       }
       {
+        // Property: sidecar_loaded
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(sidecar_loaded);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(FontData, sidecar_loaded);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.is_sidecar_loaded();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font,
+                                            sidecar_loaded, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.set_sidecar_loaded(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Font l_Handle = p_Handle.get_id();
+          *((bool *)p_Data) = l_Handle.is_sidecar_loaded();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: sidecar_loaded
+      }
+      {
+        // Property: references
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(references);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(FontData, references);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          return nullptr;
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {};
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {};
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: references
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -356,6 +413,7 @@ namespace Low {
         l_Handle.set_resource(get_resource());
       }
       l_Handle.set_glyphs(get_glyphs());
+      l_Handle.set_sidecar_loaded(is_sidecar_loaded());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -385,6 +443,7 @@ namespace Low {
       if (get_resource().is_alive()) {
         get_resource().serialize(p_Node["resource"]);
       }
+      p_Node["sidecar_loaded"] = is_sidecar_loaded();
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -415,6 +474,12 @@ namespace Low {
                 .get_id());
       }
       if (p_Node["glyphs"]) {
+      }
+      if (p_Node["sidecar_loaded"]) {
+        l_Handle.set_sidecar_loaded(
+            p_Node["sidecar_loaded"].as<bool>());
+      }
+      if (p_Node["references"]) {
       }
       if (p_Node["name"]) {
         l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -461,6 +526,54 @@ namespace Low {
       l_Font.notify(p_Observed, p_Observable);
     }
 
+    void Font::reference(const u64 p_Id)
+    {
+      _LOW_ASSERT(is_alive());
+
+      WRITE_LOCK(l_WriteLock);
+      const u32 l_OldReferences =
+          (TYPE_SOA(Font, references, Low::Util::Set<u64>)).size();
+
+      (TYPE_SOA(Font, references, Low::Util::Set<u64>)).insert(p_Id);
+
+      const u32 l_References =
+          (TYPE_SOA(Font, references, Low::Util::Set<u64>)).size();
+      LOCK_UNLOCK(l_WriteLock);
+
+      if (l_OldReferences != l_References) {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+        if (l_References > 0) {
+          ResourceManager::load_font(get_id());
+        }
+        // LOW_CODEGEN::END::CUSTOM:NEW_REFERENCE
+      }
+    }
+
+    void Font::dereference(const u64 p_Id)
+    {
+      _LOW_ASSERT(is_alive());
+
+      WRITE_LOCK(l_WriteLock);
+      const u32 l_OldReferences =
+          (TYPE_SOA(Font, references, Low::Util::Set<u64>)).size();
+
+      (TYPE_SOA(Font, references, Low::Util::Set<u64>)).erase(p_Id);
+
+      const u32 l_References =
+          (TYPE_SOA(Font, references, Low::Util::Set<u64>)).size();
+      LOCK_UNLOCK(l_WriteLock);
+
+      if (l_OldReferences != l_References) {
+        // LOW_CODEGEN:BEGIN:CUSTOM:REFERENCE_REMOVED
+        // LOW_CODEGEN::END::CUSTOM:REFERENCE_REMOVED
+      }
+    }
+
+    u32 Font::references() const
+    {
+      return get_references().size();
+    }
+
     Low::Renderer::Texture Font::get_texture() const
     {
       _LOW_ASSERT(is_alive());
@@ -476,6 +589,9 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+      if (get_texture().is_alive()) {
+        get_texture().dereference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
       // Set new value
@@ -484,6 +600,9 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+      if (p_Value.is_alive()) {
+        p_Value.reference(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_texture
 
       broadcast_observable(N(texture));
@@ -550,6 +669,50 @@ namespace Low {
       broadcast_observable(N(glyphs));
     }
 
+    bool Font::is_sidecar_loaded() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_sidecar_loaded
+      // LOW_CODEGEN::END::CUSTOM:GETTER_sidecar_loaded
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Font, sidecar_loaded, bool);
+    }
+    void Font::toggle_sidecar_loaded()
+    {
+      set_sidecar_loaded(!is_sidecar_loaded());
+    }
+
+    void Font::set_sidecar_loaded(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_sidecar_loaded
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_sidecar_loaded
+
+      // Set new value
+      WRITE_LOCK(l_WriteLock);
+      TYPE_SOA(Font, sidecar_loaded, bool) = p_Value;
+      LOCK_UNLOCK(l_WriteLock);
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_sidecar_loaded
+      // LOW_CODEGEN::END::CUSTOM:SETTER_sidecar_loaded
+
+      broadcast_observable(N(sidecar_loaded));
+    }
+
+    Low::Util::Set<u64> &Font::get_references() const
+    {
+      _LOW_ASSERT(is_alive());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
+      // LOW_CODEGEN::END::CUSTOM:GETTER_references
+
+      READ_LOCK(l_ReadLock);
+      return TYPE_SOA(Font, references, Low::Util::Set<u64>);
+    }
+
     Low::Util::Name Font::get_name() const
     {
       _LOW_ASSERT(is_alive());
@@ -582,7 +745,8 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_fully_loaded
       return get_texture().is_alive() &&
-             get_texture().get_state() == TextureState::LOADED;
+             get_texture().get_state() == TextureState::LOADED &&
+             is_sidecar_loaded();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_is_fully_loaded
     }
 
@@ -656,6 +820,28 @@ namespace Low {
                &ms_Buffer[offsetof(FontData, glyphs) * (l_Capacity)],
                l_Capacity *
                    sizeof(Low::Util::UnorderedMap<char, Glyph>));
+      }
+      {
+        memcpy(&l_NewBuffer[offsetof(FontData, sidecar_loaded) *
+                            (l_Capacity + l_CapacityIncrease)],
+               &ms_Buffer[offsetof(FontData, sidecar_loaded) *
+                          (l_Capacity)],
+               l_Capacity * sizeof(bool));
+      }
+      {
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          Font i_Font = *it;
+
+          auto *i_ValPtr = new (
+              &l_NewBuffer[offsetof(FontData, references) *
+                               (l_Capacity + l_CapacityIncrease) +
+                           (it->get_index() *
+                            sizeof(Low::Util::Set<u64>))])
+              Low::Util::Set<u64>();
+          *i_ValPtr = ACCESSOR_TYPE_SOA(i_Font, Font, references,
+                                        Low::Util::Set<u64>);
+        }
       }
       {
         memcpy(&l_NewBuffer[offsetof(FontData, name) *
