@@ -100,7 +100,7 @@ function get_property_type(p_Type) {
   return "UNKNOWN";
 }
 
-function write_header_imports(p_Imports) {}
+function write_header_imports(p_Imports) { }
 
 const g_EnumType = "uint8_t";
 
@@ -463,6 +463,8 @@ function generate_header(p_Type) {
   t += line("return ms_LivingInstances.data();");
   t += line("}");
   t += empty();
+  t += line(`static ${p_Type.name} create_handle_by_index(u32 p_Index);`);
+  t += empty();
 
   t += line(`static ${p_Type.name} find_by_index(uint32_t p_Index);`);
   t += line(`static Low::Util::Handle _find_by_index(uint32_t p_Index);`);
@@ -472,6 +474,10 @@ function generate_header(p_Type) {
   t += empty();
   t += line(
     `u64 observe(Low::Util::Name p_Observable, Low::Util::Handle p_Observer) const;`,
+    n,
+  );
+  t += line(
+    `u64 observe(Low::Util::Name p_Observable, Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)> p_Observer) const;`,
     n,
   );
   t += line(
@@ -615,6 +621,11 @@ function generate_header(p_Type) {
   if (p_Type.functions) {
     for (let [i_FuncName, i_Func] of Object.entries(p_Type.functions)) {
       let func_line = "";
+      if (i_Func.description) {
+        func_line += line('/*!')
+        func_line += line(i_Func.description)
+        func_line += line('*/')
+      }
       if (i_Func.static) {
         func_line += write("static ");
       }
@@ -1001,6 +1012,8 @@ function generate_source(p_Type) {
   t += line("ms_Slots[this->m_Data.m_Index].m_Occupied = false;");
   t += line("ms_Slots[this->m_Data.m_Index].m_Generation++;");
   t += empty();
+
+  /*
   t += line(`const ${p_Type.name} *l_Instances = living_instances();`);
   t += line(`bool l_LivingInstanceFound = false;`);
   t += line(`for (uint32_t i = 0u; i < living_count(); ++i) {`);
@@ -1008,6 +1021,16 @@ function generate_source(p_Type) {
   t += line(`ms_LivingInstances.erase(ms_LivingInstances.begin() + i);`);
   t += line(`l_LivingInstanceFound = true;`);
   t += line(`break;`);
+  t += line("}");
+  t += line("}");
+  */
+  t += line(
+    `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();) {`,
+  );
+  t += line(`if (it->get_id() == get_id()) {`);
+  t += line(`it = ms_LivingInstances.erase(it);`);
+  t += line("} else {");
+  t += line("it++;");
   t += line("}");
   t += line("}");
   //t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
@@ -1324,6 +1347,22 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
 
+  t += line(
+    `${p_Type.name} ${p_Type.name}::create_handle_by_index(u32 p_Index) {`,
+  );
+  t += line(`if(p_Index < get_capacity()){`);
+  t += line(`return find_by_index(p_Index);`);
+  t += line("}");
+  t += empty();
+  t += line(`${p_Type.name} l_Handle;`);
+  t += line(`l_Handle.m_Data.m_Index = p_Index;`);
+  t += line(`l_Handle.m_Data.m_Generation = 0;`);
+  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::TYPE_ID;`);
+  t += empty();
+  t += line("return l_Handle;");
+  t += line("}");
+  t += empty();
+
   t += line(`bool ${p_Type.name}::is_alive() const {`);
   t += line(`READ_LOCK(l_Lock);`);
   t += line(
@@ -1341,6 +1380,7 @@ function generate_source(p_Type) {
       `Low::Util::Handle ${p_Type.name}::_find_by_name(Low::Util::Name p_Name) {`,
       n,
     );
+
     t += line("return find_by_name(p_Name).get_id();");
     t += line("}");
     t += empty();
@@ -1349,6 +1389,28 @@ function generate_source(p_Type) {
       `${p_Type.name} ${p_Type.name}::find_by_name(Low::Util::Name p_Name) {`,
       n,
     );
+
+    if (true) {
+      t += empty();
+      const l_MarkerName = `CUSTOM:FIND_BY_NAME`;
+
+      const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+      const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+      const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+      let l_CustomCode = "";
+
+      if (l_BeginMarkerIndex >= 0) {
+        const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+        l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+      }
+      t += line(l_CustomBeginMarker);
+      t += l_CustomCode;
+      t += line(l_CustomEndMarker);
+      t += empty();
+    }
     t += line(
       `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`,
     );
@@ -1356,7 +1418,7 @@ function generate_source(p_Type) {
     t += line(`return *it;`);
     t += line("}");
     t += line("}");
-    t += line("return 0ull;");
+    t += line("return Low::Util::Handle::DEAD;");
     t += line("}");
   }
   t += empty();
@@ -1705,6 +1767,19 @@ function generate_source(p_Type) {
   t += line(`l_Key.observableName = p_Observable.m_Index;`);
   t += empty();
   t += line(`Low::Util::notify(l_Key);`);
+  t += line("}");
+  t += empty();
+
+  t += line(
+    `u64 ${p_Type.name}::observe(Low::Util::Name p_Observable, Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)> p_Observer) const {`,
+    n,
+  );
+  t += line(`Low::Util::ObserverKey l_Key;`);
+  t += line(`l_Key.handleId = get_id();`);
+  t += line(`l_Key.observableName = p_Observable.m_Index;`);
+  t += empty();
+  t += line(`return Low::Util::observe(l_Key, p_Observer);`);
+
   t += line("}");
   t += empty();
 

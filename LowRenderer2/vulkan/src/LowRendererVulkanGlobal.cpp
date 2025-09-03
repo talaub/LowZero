@@ -103,8 +103,7 @@ namespace Low {
 
           StagingBuffer frameStagingBuffer;
 
-              Low::Util::Queue<TextureUpdate>
-                  textureUpdateQueue;
+          Low::Util::Queue<TextureUpdate> textureUpdateQueue;
         };
 
         u32 g_FrameOverlap;
@@ -332,6 +331,8 @@ namespace Low {
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(1,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(2,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             g_GlobalDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
@@ -355,6 +356,11 @@ namespace Low {
                 Global::get_drawcommand_buffer().m_ElementSize *
                     Global::get_drawcommand_buffer().m_ElementCount,
                 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.write_buffer(
+                2, get_material_data_buffer().buffer,
+                get_material_data_buffer().info.size, 0,
+                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.update_set(Global::get_device(),
                                 get_global_descriptor_set());

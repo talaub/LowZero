@@ -20,6 +20,13 @@
 #include "LowUtilSerialization.h"
 #include "LowUtilHashing.h"
 
+#include "LowRendererRenderView.h"
+#include "LowRendererRenderObject.h"
+#include "LowRendererRenderScene.h"
+#include "LowRendererResourceManager.h"
+#include "LowRendererRenderStep.h"
+#include "LowRenderer.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include "../../LowDependencies/stb/stb_image.h"
@@ -151,6 +158,9 @@ namespace Low {
           Math::AABB l_AABB;
           l_AABB.bounds.min = Vector3(LOW_FLOAT_MAX);
           l_AABB.bounds.max = Vector3(LOW_FLOAT_MIN);
+
+          Math::Sphere l_BoundingSphere;
+
           for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
             aiMesh *i_Submesh = p_Scene->mMeshes[i];
 
@@ -163,6 +173,9 @@ namespace Low {
                 calculate_bounding_volumes(i_Submesh,
                                            i_BoundingSphere, i_AABB),
                 "Failed to calculate mesh bounding volumes.");
+
+            // TODO: REMOVE!!! This is a hack for testing
+            l_BoundingSphere = i_BoundingSphere;
 
             l_AABB.bounds.min =
                 glm::min(l_AABB.bounds.min, i_AABB.bounds.min);
@@ -180,6 +193,9 @@ namespace Low {
               (l_AABB.bounds.min + l_AABB.bounds.max) * 0.5f;
 
           Serialization::serialize(p_Node["aabb"], l_AABB);
+          // TODO: Calculate bounding sphere for whole mesh
+          Serialization::serialize(p_Node["bounding_sphere"],
+                                   l_BoundingSphere);
           return true;
         }
 
@@ -189,6 +205,49 @@ namespace Low {
           return false;
         }
       } // namespace MeshImport
+
+      static void create_thumbnail_picture(Mesh p_Mesh)
+      {
+        Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
+
+        l_LocalMatrix =
+            glm::translate(l_LocalMatrix, Math::Vector3(0.0f));
+        l_LocalMatrix *=
+            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f));
+        l_LocalMatrix =
+            glm::scale(l_LocalMatrix, Math::Vector3(1.0f));
+
+        RenderScene l_RenderScene = RenderScene::make(N(Thumbnail));
+        RenderView l_RenderView = RenderView::make(N(Thumbnail));
+        l_RenderView.set_render_scene(l_RenderScene);
+        l_RenderView.set_dimensions(Math::UVector2(500, 500));
+        l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
+        l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
+        l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
+        l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
+
+        RenderObject l_RenderObject =
+            RenderObject::make(l_RenderScene, p_Mesh);
+        l_RenderObject.set_material(get_default_material());
+        l_RenderObject.set_world_transform(l_LocalMatrix);
+
+        ThumbnailCreationSchedule l_Schedule;
+        l_Schedule.mesh = p_Mesh;
+        l_Schedule.material = Util::Handle::DEAD;
+        l_Schedule.scene = l_RenderScene;
+        l_Schedule.view = l_RenderView;
+        l_Schedule.object = l_RenderObject;
+
+        l_Schedule.path = Util::get_project().editorImagesPath +
+                          "\\mesh_" +
+                          Util::hash_to_string(
+                              p_Mesh.get_resource().get_mesh_id()) +
+                          ".png";
+
+        l_Schedule.viewDirection = Math::Vector3(0.2f, -0.1f, -1.0f);
+
+        submit_thumbnail_creation(l_Schedule);
+      }
 
       bool import_mesh(Util::String p_ImportPath,
                        Util::String p_OutputPath)
@@ -208,9 +267,11 @@ namespace Low {
         Util::List<Util::String> l_Lines;
         Util::StringHelper::split(l_Content, '\n', l_Lines);
 
+        const bool l_Reimport = is_reimport();
+
         const u64 l_AssetHash = Util::fnv1a_64(l_Content.c_str());
         // TODO: Fix reimport
-        const u64 l_MeshId = is_reimport() ? 0 : l_AssetHash;
+        const u64 l_MeshId = l_Reimport ? 0 : l_AssetHash;
 
         l_Content = "";
         for (uint32_t i = 0; i < l_Lines.size(); ++i) {
@@ -283,6 +344,20 @@ namespace Low {
         Util::Yaml::write_file(l_SidecarPath.c_str(), l_SidecarInfo);
         Util::Yaml::write_file(l_ResourcePath.c_str(),
                                l_ResourceNode);
+
+        // TODO: FIX REIMPORT
+        if (!l_Reimport) {
+          MeshResourceConfig l_Config;
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              ResourceManager::parse_mesh_resource_config(
+                  l_ResourcePath, l_ResourceNode, l_Config),
+              "Failed to parse resource config on mesh import");
+
+          Mesh l_Mesh = Mesh::make_from_resource_config(l_Config);
+
+          create_thumbnail_picture(l_Mesh);
+        }
 
         return true;
       }

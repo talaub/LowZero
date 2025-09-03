@@ -1,5 +1,7 @@
 #include "LowRendererVulkanRenderer.h"
 
+#include "LowRendererEditorImageGpu.h"
+#include "LowRendererTextureState.h"
 #include "LowRendererVulkanBase.h"
 #include "LowRendererCompatibility.h"
 
@@ -14,6 +16,7 @@
 #include "LowRendererTexture.h"
 #include "LowRendererTextureExport.h"
 #include "LowRendererVkTexExport.h"
+#include "LowRendererEditorImage.h"
 
 #include "LowRenderer.h"
 
@@ -667,6 +670,11 @@ namespace Low {
       {
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
           RenderView i_RenderView = RenderView::living_instances()[i];
+          ViewInfo i_ViewInfo = i_RenderView.get_view_info_handle();
+          if (!i_ViewInfo.is_alive() ||
+              !i_ViewInfo.is_initialized()) {
+            continue;
+          }
 
           for (u32 j = 0; j < i_RenderView.get_steps().size(); ++j) {
             RenderStep i_RenderStep = i_RenderView.get_steps()[j];
@@ -1242,6 +1250,52 @@ namespace Low {
         return true;
       }
 
+      bool update_dirty_editor_images(float p_Delta)
+      {
+        Samplers &l_Samplers = Global::get_samplers();
+
+        for (auto it = EditorImageGpu::ms_Dirty.begin();
+             it != EditorImageGpu::ms_Dirty.end();) {
+
+          EditorImageGpu i_Gpu = *it;
+          if (!i_Gpu.is_alive()) {
+            it = EditorImageGpu::ms_Dirty.erase(it);
+            continue;
+          }
+
+          EditorImage i_EditorImage = i_Gpu.get_editor_image_handle();
+
+          if (!i_EditorImage.is_alive()) {
+            it = EditorImageGpu::ms_Dirty.erase(it);
+            continue;
+          }
+
+          if (i_EditorImage.get_state() != TextureState::LOADED) {
+            ++it;
+            continue;
+          }
+
+          Image i_Image = i_Gpu.get_data_handle();
+
+          if (!i_Image.is_alive()) {
+            ++it;
+            continue;
+          }
+
+          i_Gpu.set_imgui_texture_id(
+              (ImTextureID)ImGui_ImplVulkan_AddTexture(
+                  l_Samplers.no_lod_nearest_repeat_black,
+                  i_Image.get_allocated_image().imageView,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+
+          i_Gpu.set_imgui_texture_initialized(true);
+
+          it = EditorImageGpu::ms_Dirty.erase(it);
+        }
+
+        return true;
+      }
+
       bool update_dirty_textures(float p_Delta)
       {
         Samplers &l_Samplers = Global::get_samplers();
@@ -1542,6 +1596,7 @@ namespace Low {
         prepare_render_views(p_Delta);
 
         update_dirty_textures(p_Delta);
+        update_dirty_editor_images(p_Delta);
 
         // Handle Texture exports
         {
@@ -1638,6 +1693,10 @@ namespace Low {
                                l_Height, l_Channels, l_Pixels.data(),
                                l_Width * l_Channels);
               }
+
+              LOW_ASSERT(
+                  i_Export.finish(),
+                  "Failed to call finish callback on TextureExport");
 
               l_ExportsToDelete.push_back(i_Export);
             }
@@ -1819,15 +1878,12 @@ namespace Low {
             g_Context.swapchain.drawExtent.height};
 
         if (l_Dimensions.x > 0 && l_Dimensions.y > 0) {
-          for (u32 i = 0u; i < RenderView::living_count(); ++i) {
-            RenderView i_RenderView =
-                RenderView::living_instances()[i];
-            i_RenderView.set_dimensions(l_Dimensions);
-          }
+          RenderView i_RenderView = RenderView::living_instances()[0];
+          i_RenderView.set_dimensions(l_Dimensions);
         }
 
         return true;
       }
     } // namespace Vulkan
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

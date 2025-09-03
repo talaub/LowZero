@@ -103,13 +103,12 @@ namespace Low {
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-      const Texture *l_Instances = living_instances();
-      bool l_LivingInstanceFound = false;
-      for (uint32_t i = 0u; i < living_count(); ++i) {
-        if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
-          ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
-          l_LivingInstanceFound = true;
-          break;
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end();) {
+        if (it->get_id() == get_id()) {
+          it = ms_LivingInstances.erase(it);
+        } else {
+          it++;
         }
       }
     }
@@ -328,6 +327,15 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_gpu_ready
       }
+      {
+        // Function: get_editor_image
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_editor_image);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = EditorImage::TYPE_ID;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_editor_image
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -363,6 +371,20 @@ namespace Low {
       return l_Handle;
     }
 
+    Texture Texture::create_handle_by_index(u32 p_Index)
+    {
+      if (p_Index < get_capacity()) {
+        return find_by_index(p_Index);
+      }
+
+      Texture l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = 0;
+      l_Handle.m_Data.m_Type = Texture::TYPE_ID;
+
+      return l_Handle;
+    }
+
     bool Texture::is_alive() const
     {
       READ_LOCK(l_Lock);
@@ -382,13 +404,17 @@ namespace Low {
 
     Texture Texture::find_by_name(Low::Util::Name p_Name)
     {
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+      // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
       }
-      return 0ull;
+      return Low::Util::Handle::DEAD;
     }
 
     Texture Texture::duplicate(Low::Util::Name p_Name) const
@@ -505,6 +531,18 @@ namespace Low {
       Low::Util::notify(l_Key);
     }
 
+    u64 Texture::observe(
+        Low::Util::Name p_Observable,
+        Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)>
+            p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
     u64 Texture::observe(Low::Util::Name p_Observable,
                          Low::Util::Handle p_Observer) const
     {
@@ -604,6 +642,9 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gpu
+      if (p_Value.is_alive()) {
+        p_Value.set_texture_handle(get_id());
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_gpu
 
       broadcast_observable(N(gpu));
@@ -688,6 +729,9 @@ namespace Low {
       LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+      if (p_Value == TextureState::LOADED) {
+        broadcast_observable(N(TEXTURE_LOADED));
+      }
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
 
       broadcast_observable(N(state));
@@ -749,6 +793,13 @@ namespace Low {
 
       return l_Texture;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_gpu_ready
+    }
+
+    EditorImage Texture::get_editor_image()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_editor_image
     }
 
     uint32_t Texture::create_instance()

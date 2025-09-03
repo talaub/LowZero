@@ -11,11 +11,13 @@
 
 #include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include "LowRendererTexture.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    struct PendingTextureBinding;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API MaterialData
@@ -70,6 +72,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static Material create_handle_by_index(u32 p_Index);
+
       static Material find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -77,6 +81,10 @@ namespace Low {
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -138,6 +146,8 @@ namespace Low {
                                 Math::Vector2 &p_Value);
       void set_property_float(Util::Name p_Name, float p_Value);
       void set_property_u32(Util::Name p_Name, uint32_t p_Value);
+      void set_property_texture(Util::Name p_Name,
+                                Low::Renderer::Texture p_Value);
       Low::Math::Vector4 &
       get_property_vector4(Util::Name p_Name) const;
       Low::Math::Vector3 &
@@ -146,6 +156,8 @@ namespace Low {
       get_property_vector2(Util::Name p_Name) const;
       float get_property_float(Util::Name p_Name) const;
       uint32_t get_property_u32(Util::Name p_Name) const;
+      Low::Renderer::Texture
+      get_property_texture(Util::Name p_Name) const;
 
     private:
       static uint32_t ms_Capacity;
@@ -154,10 +166,19 @@ namespace Low {
       Util::List<uint8_t> &data() const;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Util::List<PendingTextureBinding>
+          ms_PendingTextureBindings;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+    struct PendingTextureBinding
+    {
+      Util::Name propertyName;
+      Material material;
+      Texture texture;
+    };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer

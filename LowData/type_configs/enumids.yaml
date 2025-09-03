@@ -4,3 +4,4 @@ LowRenderer2:
   MeshState: 3
   TextureState: 4
   MaterialTypeFamily: 5
+  EditorImageType: 6

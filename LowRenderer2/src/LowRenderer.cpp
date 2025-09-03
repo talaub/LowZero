@@ -1,5 +1,7 @@
 #include "LowRenderer.h"
 
+#include "LowRendererEditorImageGpu.h"
+#include "LowRendererEditorImageStaging.h"
 #include "LowRendererVulkanRenderer.h"
 #include "LowRendererBase.h"
 #include "LowRendererResourceManager.h"
@@ -32,10 +34,14 @@
 #include "LowRendererFont.h"
 #include "LowRendererFontResource.h"
 #include "LowRendererTextureExport.h"
+#include "LowRendererEditorImage.h"
 
+#include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilFileSystem.h"
 #include "LowUtilHashing.h"
+#include "LowUtilFileIO.h"
+#include "LowUtilString.h"
 
 #include "imgui_impl_vulkan.h"
 #include <vulkan/vulkan_core.h>
@@ -48,11 +54,24 @@ namespace Low {
 
     MaterialTypes g_MaterialTypes;
 
+    Util::List<ThumbnailCreationSchedule>
+        g_ThumbnailCreationSchedules;
+
     Texture g_DefaultTexture;
+    Material g_DefaultMaterial;
+    Material g_DefaultMaterialTexture;
 
     Texture get_default_texture()
     {
       return g_DefaultTexture;
+    }
+    Material get_default_material()
+    {
+      return g_DefaultMaterial;
+    }
+    Material get_default_material_texture()
+    {
+      return g_DefaultMaterialTexture;
     }
 
     MaterialTypes &get_material_types()
@@ -96,10 +115,16 @@ namespace Low {
       Font::initialize();
       FontResource::initialize();
       TextureExport::initialize();
+      EditorImage::initialize();
+      EditorImageStaging::initialize();
+      EditorImageGpu::initialize();
     }
 
     static void cleanup_types()
     {
+      EditorImageGpu::cleanup();
+      EditorImageStaging::cleanup();
+      EditorImage::cleanup();
       TextureExport::cleanup();
       FontResource::cleanup();
       Font::cleanup();
@@ -126,6 +151,28 @@ namespace Low {
       Texture::cleanup();
     }
 
+    static bool initialize_default_materials()
+    {
+      {
+        g_DefaultMaterial =
+            Material::make(N(Default), g_MaterialTypes.solidBase);
+
+        g_DefaultMaterial.set_property_vector3(
+            N(base_color), Math::ColorRGB(0.8f, 0.8f, 0.8f));
+      }
+
+      {
+        g_DefaultMaterialTexture = Material::make(
+            N(DefaultTexture), g_MaterialTypes.solidBase);
+
+        g_DefaultMaterialTexture.set_property_vector3(
+            N(base_color), Math::ColorRGB(0.8f, 0.8f, 0.8f));
+        g_DefaultMaterialTexture.set_property_texture(
+            N(albedo), get_default_texture());
+      }
+      return true;
+    }
+
     static bool initialize_material_types()
     {
       const float l_DebugGeometryLineWidth = 3.0f;
@@ -135,6 +182,8 @@ namespace Low {
             N(solid_base), Low::Renderer::MaterialTypeFamily::SOLID);
         l_MT.add_input(N(base_color),
                        Low::Renderer::MaterialTypeInputType::VECTOR3);
+        l_MT.add_input(N(albedo),
+                       Low::Renderer::MaterialTypeInputType::TEXTURE);
         l_MT.finalize();
 
         l_MT.set_draw_vertex_shader_path("solid_base.vert");
@@ -275,52 +324,25 @@ namespace Low {
       return false;
     }
 
-    static bool
-    parse_mesh_resource_config(Util::String p_Path,
-                               Util::Yaml::Node &p_Node,
-                               MeshResourceConfig &p_Config)
-    {
-      LOWR_ASSERT_RETURN(p_Node["version"], "Could not find version");
-      const u32 l_Version = p_Node["version"].as<u32>();
-
-      if (l_Version == 1) {
-        LOWR_ASSERT_RETURN(p_Node["name"],
-                           "Could not find mesh name");
-        p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
-
-        LOWR_ASSERT_RETURN(p_Node["mesh_id"],
-                           "Could not find mesh id");
-        p_Config.meshId = Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["mesh_id"]));
-
-        LOWR_ASSERT_RETURN(p_Node["asset_hash"],
-                           "Could not find asset hash");
-        p_Config.assetHash = Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["asset_hash"]));
-
-        LOWR_ASSERT_RETURN(p_Node["source_file"],
-                           "Could not find source file");
-        p_Config.sourceFile =
-            LOW_YAML_AS_STRING(p_Node["source_file"]);
-
-        p_Config.sidecarPath =
-            Util::get_project().assetCachePath + "\\" +
-            Util::hash_to_string(p_Config.meshId) + ".mesh.yaml";
-        p_Config.meshPath =
-            Util::get_project().assetCachePath + "\\" +
-            Util::hash_to_string(p_Config.meshId) + ".glb";
-
-        p_Config.path = p_Path;
-        return true;
-      }
-
-      LOWR_ASSERT_RETURN(
-          false, "Version of mesh resource config not supported");
-      return false;
-    }
-
     static bool preload_resources()
     {
+      {
+        Util::List<Util::String> l_FilePaths;
+
+        Util::FileIO::list_directory(
+            Util::get_project().editorImagesPath.c_str(),
+            l_FilePaths);
+        Util::String l_Ending = ".png";
+
+        for (Util::String &i_Path : l_FilePaths) {
+          if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+            EditorImage i_EditorImage =
+                EditorImage::make(N(EditorImage));
+            i_EditorImage.set_path(i_Path);
+          }
+        }
+      }
+
       {
         Util::List<Util::String> l_MeshResources;
         Util::FileSystem::collect_files_with_suffix(
@@ -334,8 +356,8 @@ namespace Low {
           MeshResourceConfig i_ResourceConfig;
 
           LOWR_ASSERT_RETURN(
-              parse_mesh_resource_config(*it, i_ResourceNode,
-                                         i_ResourceConfig),
+              ResourceManager::parse_mesh_resource_config(
+                  *it, i_ResourceNode, i_ResourceConfig),
               "Failed to pass mesh resource config.");
 
           Mesh::make_from_resource_config(i_ResourceConfig);
@@ -416,6 +438,9 @@ namespace Low {
 
       LOW_ASSERT(initialize_material_types(),
                  "Failed to initialize material types.");
+
+      LOW_ASSERT(initialize_default_materials(),
+                 "Failed to initialize default materials");
     }
 
     void cleanup()
@@ -485,8 +510,13 @@ namespace Low {
         _LOW_ASSERT(i_DrawCommand.is_uploaded());
 
         DrawCommandUpload i_Upload;
-        i_Upload.world_transform =
-            i_DrawCommand.get_world_transform();
+        i_Upload.worldTransform = i_DrawCommand.get_world_transform();
+
+        i_Upload.materialIndex = get_default_material().get_index();
+        if (i_DrawCommand.get_material().is_alive()) {
+          i_Upload.materialIndex =
+              i_DrawCommand.get_material().get_index();
+        }
 
         RenderScene i_RenderScene =
             i_DrawCommand.get_render_scene_handle();
@@ -557,6 +587,11 @@ namespace Low {
                 i_RenderObject.get_render_scene_handle(),
                 i_GpuSubmesh);
 
+            if (!i_DrawCommand.get_material().is_alive()) {
+              i_DrawCommand.set_material(
+                  i_RenderObject.get_material());
+            }
+
             i_RenderObject.get_draw_commands().push_back(
                 i_DrawCommand);
           }
@@ -617,8 +652,14 @@ namespace Low {
               i_RenderObject.get_world_transform());
 
           DrawCommandUpload i_Upload;
-          i_Upload.world_transform =
+          i_Upload.worldTransform =
               i_DrawCommand.get_world_transform();
+
+          i_Upload.materialIndex = get_default_material().get_index();
+          if (i_DrawCommand.get_material().is_alive()) {
+            i_Upload.materialIndex =
+                i_DrawCommand.get_material().get_index();
+          }
 
           i_Uploads.push_back(i_Upload);
         }
@@ -730,6 +771,24 @@ namespace Low {
 
     static void tick_materials(float p_Delta)
     {
+      for (auto it = Material::ms_PendingTextureBindings.begin();
+           it != Material::ms_PendingTextureBindings.end();) {
+        if (!it->texture.is_alive() || !it->material.is_alive()) {
+          it = Material::ms_PendingTextureBindings.erase(it);
+          continue;
+        }
+
+        if (it->texture.get_state() == TextureState::LOADED) {
+          it->material.set_property_texture(it->propertyName,
+                                            it->texture);
+
+          it = Material::ms_PendingTextureBindings.erase(it);
+          continue;
+        }
+
+        ++it;
+      }
+
       for (u32 i = 0; i < Material::living_count(); ++i) {
         Material i_Material = Material::living_instances()[i];
 
@@ -766,6 +825,61 @@ namespace Low {
       }
     }
 
+    static bool tick_thumbnail_creation(float p_Delta)
+    {
+      for (auto it = g_ThumbnailCreationSchedules.begin();
+           it != g_ThumbnailCreationSchedules.end();) {
+        if (it->state == ThumbnailCreationState::SCHEDULED) {
+          if (it->mesh.get_state() != MeshState::LOADED) {
+            ++it;
+            continue;
+          }
+          // TODO: test if material is loaded
+          if (it->material.is_alive() /* &&
+              it->material.get_state() != MaterialState::LOADED */) {
+            ++it;
+            continue;
+          }
+
+          if (!it->view.get_lit_image().is_alive()) {
+            ++it;
+            continue;
+          }
+
+          Math::Sphere i_Sphere =
+              it->mesh.get_gpu().get_bounding_sphere();
+
+          Math::Vector3 i_Direction =
+              glm::normalize(it->viewDirection);
+
+          it->view.set_camera_direction(i_Direction);
+          it->view.set_camera_position(
+              i_Sphere.position -
+              (i_Direction * (i_Sphere.radius + 8.0f)));
+
+          TextureExport i_Export = TextureExport::make(N(Thumbnail));
+          i_Export.set_path(it->path);
+          i_Export.set_texture(it->view.get_lit_image());
+          it->textureExport = i_Export;
+
+          it->state = ThumbnailCreationState::SUBMITTED;
+          ++it;
+        } else if (it->state == ThumbnailCreationState::SUBMITTED) {
+          if (it->textureExport.is_alive()) {
+            ++it;
+            continue;
+          }
+
+          it->object.destroy();
+          it->view.destroy();
+          it->scene.destroy();
+
+          it = g_ThumbnailCreationSchedules.erase(it);
+        }
+      }
+      return true;
+    }
+
     void tick(float p_Delta)
     {
 
@@ -787,6 +901,34 @@ namespace Low {
           l_RenderView.get_camera_position();
       ImGui::DragFloat3("Position", (float *)&l_CameraPosition);
       l_RenderView.set_camera_position(l_CameraPosition);
+
+      {
+        RenderObject l_RenderObject =
+            RenderObject::living_instances()[0];
+
+        static bool l_Test = true;
+
+        if (!l_Test &&
+            l_RenderObject.get_mesh().get_gpu().is_alive()) {
+          Math::Sphere l_Sphere = l_RenderObject.get_mesh()
+                                      .get_gpu()
+                                      .get_bounding_sphere();
+
+          l_Test = true;
+
+          Math::Vector3 l_Direction(0.2f, -0.1f, 1.0f);
+          l_Direction = glm::normalize(l_Direction);
+
+          LOW_LOG_DEBUG << l_Sphere.position << LOW_LOG_END;
+          LOW_LOG_DEBUG << l_Sphere.radius << LOW_LOG_END;
+
+          l_RenderView.set_camera_direction(l_Direction);
+          l_RenderView.set_camera_position(
+              l_Sphere.position -
+              (l_Direction * (l_Sphere.radius + 8.0f)));
+        }
+        // MARK
+      }
 
       {
         static float value = 0;
@@ -906,6 +1048,9 @@ namespace Low {
 
       LOW_ASSERT(Vulkan::tick(p_Delta),
                  "Failed to tick Vulkan renderer");
+
+      LOW_ASSERT(tick_thumbnail_creation(p_Delta),
+                 "Failed to tick thumbnail creation");
     }
 
     void check_window_resize(float p_Delta)
@@ -929,6 +1074,13 @@ namespace Low {
       _LOW_ASSERT(ResourceManager::load_texture(l_Texture));
 
       return l_Texture;
+    }
+
+    void
+    submit_thumbnail_creation(ThumbnailCreationSchedule p_Schedule)
+    {
+      p_Schedule.state = ThumbnailCreationState::SCHEDULED;
+      g_ThumbnailCreationSchedules.push_back(p_Schedule);
     }
   } // namespace Renderer
 } // namespace Low

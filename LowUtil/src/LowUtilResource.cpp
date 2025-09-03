@@ -323,8 +323,6 @@ namespace Low {
         p_Mesh.animations.clear();
         p_Mesh.boneCount = 0;
 
-        LOW_LOG_DEBUG << "Loading: " << p_FilePath << LOW_LOG_END;
-
         Assimp::Importer l_Importer;
 
         const aiScene *l_AiScene = l_Importer.ReadFile(

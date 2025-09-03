@@ -185,6 +185,8 @@ types:
         parameters:
           - name: debugGeometryDraw
             type: Low::Renderer::DebugGeometryDraw
+        description: Add a new debug geometry draw element to this renderview.
+          This element will be rendered for once frame before being cleared again.
 
   MaterialType:
     private_make: true
@@ -358,6 +360,14 @@ types:
             type: Util::Name
           - name: value
             type: uint32_t
+      set_property_texture:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Low::Renderer::Texture
+            handle: true
       get_property_vector4:
         return_type: Low::Math::Vector4
         constant: true
@@ -384,6 +394,13 @@ types:
             type: Util::Name
       get_property_u32:
         return_type: uint32_t
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_texture:
+        return_type: Low::Renderer::Texture
+        return_handle: true
         constant: true
         parameters:
           - name: name
@@ -617,5 +634,9 @@ types:
         no_ref: true
       finish_callback:
         type: Low::Util::Function<bool(Low::Renderer::TextureExport)>
+        no_ref: true
       data_handle:
         type: uint64_t
+    functions:
+      finish:
+        return_type: bool

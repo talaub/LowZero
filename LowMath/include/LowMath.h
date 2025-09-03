@@ -60,6 +60,7 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
+typedef int32_t i32;
 
 namespace Low {
   namespace Math {
@@ -162,5 +163,5 @@ namespace Low {
       LOW_EXPORT bool random_percent(u8 p_Percent);
       LOW_EXPORT bool random_percent(float p_Percent);
     } // namespace Util
-  }   // namespace Math
+  } // namespace Math
 } // namespace Low

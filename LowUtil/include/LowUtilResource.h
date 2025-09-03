@@ -136,5 +136,5 @@ namespace Low {
 
       LOW_EXPORT void load_mesh(String p_FilePath, Mesh &p_Mesh);
     } // namespace Resource
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

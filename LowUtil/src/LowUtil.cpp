@@ -17,6 +17,7 @@ namespace Low {
       g_Project.dataPath = "./data";
       g_Project.rootPath = "./";
       g_Project.assetCachePath = "./data/.asset_cache";
+      g_Project.editorImagesPath = "./data/.editor_images";
 
       g_Project.engineRootPath = "./";
       g_Project.engineDataPath = "./LowData";

@@ -42,5 +42,8 @@ namespace Low {
 
       LOW_EXPORT void append(String &p_String, int p_Appendix);
     } // namespace StringHelper
-  }   // namespace Util
+    namespace PathHelper {
+      String get_base_name_no_ext(const String p_Path);
+    }
+  } // namespace Util
 } // namespace Low

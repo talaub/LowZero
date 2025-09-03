@@ -245,5 +245,5 @@ namespace Low {
         return p_Start + (p_End - p_Start) * p_Delta;
       }
     } // namespace VectorUtil
-  }   // namespace Math
+  } // namespace Math
 } // namespace Low

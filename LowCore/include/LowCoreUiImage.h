@@ -76,6 +76,8 @@ namespace Low {
             return ms_LivingInstances.data();
           }
 
+          static Image create_handle_by_index(u32 p_Index);
+
           static Image find_by_index(uint32_t p_Index);
           static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -83,6 +85,10 @@ namespace Low {
 
           u64 observe(Low::Util::Name p_Observable,
                       Low::Util::Handle p_Observer) const;
+          u64 observe(Low::Util::Name p_Observable,
+                      Low::Util::Function<void(Low::Util::Handle,
+                                               Low::Util::Name)>
+                          p_Observer) const;
           void notify(Low::Util::Handle p_Observed,
                       Low::Util::Name p_Observable);
           void
@@ -148,6 +154,6 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
       } // namespace Component
-    }   // namespace UI
-  }     // namespace Core
+    } // namespace UI
+  } // namespace Core
 } // namespace Low

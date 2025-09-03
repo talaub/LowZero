@@ -101,6 +101,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static GraphicsStep create_handle_by_index(u32 p_Index);
+
       static GraphicsStep find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -108,6 +110,10 @@ namespace Low {
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -155,8 +161,9 @@ namespace Low {
       Util::Map<RenderFlow, Util::List<Interface::GraphicsPipeline>> &
       get_pipelines() const;
 
-      Util::Map<Util::Name, Util::Map<Mesh, Util::List<RenderObject>>>
-          &get_renderobjects() const;
+      Util::Map<Util::Name,
+                Util::Map<Mesh, Util::List<RenderObject>>> &
+      get_renderobjects() const;
 
       Util::Map<Util::Name, Util::List<RenderObject>> &
       get_skinned_renderobjects() const;

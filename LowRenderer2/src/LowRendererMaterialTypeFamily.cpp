@@ -104,5 +104,5 @@ namespace Low {
         return 3;
       }
     } // namespace MaterialTypeFamilyEnumHelper
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

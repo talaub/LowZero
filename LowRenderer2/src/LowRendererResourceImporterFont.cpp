@@ -88,6 +88,16 @@ namespace Low {
             ay1 = p_AtlasDimensions.y - ay0;
             ay0 = p_AtlasDimensions.y - say1;
 
+            double l, b, r, t;
+            it->getQuadPlaneBounds(
+                l, b, r,
+                t); // em units, relative to baseline & pen position
+
+            Math::Vector2 l_Bearing(l, t);
+            Math::Vector2 l_Size(r - l, t - b);
+
+            const double l_Advance = it->getAdvance();
+
             // Normalize to UVs:
             Math::Vector2 uvMin = {
                 float(ax0 / double(p_AtlasDimensions.x)),
@@ -98,6 +108,12 @@ namespace Low {
 
             Util::String i_CodePointString =
                 "" + (char)it->getCodepoint();
+
+            i_Glyph["advance"] = l_Advance;
+
+            Util::Serialization::serialize(i_Glyph["bearing"],
+                                           l_Bearing);
+            Util::Serialization::serialize(i_Glyph["size"], l_Size);
 
             Util::Serialization::serialize(i_Glyph["uv_min"], uvMin);
             Util::Serialization::serialize(i_Glyph["uv_max"], uvMax);
@@ -295,5 +311,5 @@ namespace Low {
         return success;
       }
     } // namespace ResourceImporter
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

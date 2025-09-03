@@ -23,11 +23,14 @@
   return l_Value;
 
 #include "LowRendererGlobals.h"
+#include "LowRendererGpuTexture.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+    Util::List<PendingTextureBinding>
+        Material::ms_PendingTextureBindings;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Material::TYPE_ID = 59;
@@ -100,13 +103,12 @@ namespace Low {
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-      const Material *l_Instances = living_instances();
-      bool l_LivingInstanceFound = false;
-      for (uint32_t i = 0u; i < living_count(); ++i) {
-        if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
-          ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
-          l_LivingInstanceFound = true;
-          break;
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end();) {
+        if (it->get_id() == get_id()) {
+          it = ms_LivingInstances.erase(it);
+        } else {
+          it++;
         }
       }
     }
@@ -403,6 +405,31 @@ namespace Low {
         // End function: set_property_u32
       }
       {
+        // Function: set_property_texture
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(set_property_texture);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Value);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::Texture::TYPE_ID;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: set_property_texture
+      }
+      {
         // Function: get_property_vector4
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_property_vector4);
@@ -482,6 +509,22 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_property_u32
       }
+      {
+        // Function: get_property_texture
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_property_texture);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_property_texture
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -517,6 +560,20 @@ namespace Low {
       return l_Handle;
     }
 
+    Material Material::create_handle_by_index(u32 p_Index)
+    {
+      if (p_Index < get_capacity()) {
+        return find_by_index(p_Index);
+      }
+
+      Material l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = 0;
+      l_Handle.m_Data.m_Type = Material::TYPE_ID;
+
+      return l_Handle;
+    }
+
     bool Material::is_alive() const
     {
       READ_LOCK(l_Lock);
@@ -536,13 +593,17 @@ namespace Low {
 
     Material Material::find_by_name(Low::Util::Name p_Name)
     {
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+      // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
       }
-      return 0ull;
+      return Low::Util::Handle::DEAD;
     }
 
     Material Material::duplicate(Low::Util::Name p_Name) const
@@ -706,6 +767,18 @@ namespace Low {
       Low::Util::notify(l_Key);
     }
 
+    u64 Material::observe(
+        Low::Util::Name p_Observable,
+        Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)>
+            p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
+    }
+
     u64 Material::observe(Low::Util::Name p_Observable,
                           Low::Util::Handle p_Observer) const
     {
@@ -842,6 +915,21 @@ namespace Low {
       Material l_Material = make(p_Name);
       l_Material.set_material_type(p_MaterialType);
 
+      {
+        Util::List<Util::Name> l_Names;
+        p_MaterialType.fill_input_names(l_Names);
+
+        for (u32 i = 0; i < l_Names.size(); ++i) {
+          Util::Name i_Name = l_Names[i];
+
+          if (p_MaterialType.get_input_type(i_Name) ==
+              MaterialTypeInputType::TEXTURE) {
+            l_Material.set_property_texture(i_Name,
+                                            Util::Handle::DEAD);
+          }
+        }
+      }
+
       return l_Material;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
@@ -902,6 +990,60 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_property_u32
     }
 
+    void
+    Material::set_property_texture(Util::Name p_Name,
+                                   Low::Renderer::Texture p_Value)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property_texture
+      _LOW_ASSERT(get_material_type().get_input_type(p_Name) ==
+                  MaterialTypeInputType::TEXTURE);
+
+      Texture l_OldTexture = get_property_texture(p_Name);
+
+      if (l_OldTexture.is_alive()) {
+        l_OldTexture.dereference(get_id());
+      }
+
+      if (p_Value.is_alive()) {
+        p_Value.reference(get_id());
+      }
+
+      u32 l_Index = GpuTexture::get_capacity() + 5;
+
+      for (auto it = ms_PendingTextureBindings.begin();
+           it != ms_PendingTextureBindings.end();) {
+        if (it->propertyName == p_Name &&
+            it->material.get_id() == get_id()) {
+          it = ms_PendingTextureBindings.erase(it);
+        } else {
+          ++it;
+        }
+      }
+
+      if (p_Value.is_alive() &&
+          p_Value.get_state() == TextureState::LOADED) {
+        l_Index = p_Value.get_gpu().get_index();
+
+      } else if (p_Value.is_alive()) {
+        PendingTextureBinding l_Binding;
+        l_Binding.propertyName = p_Name;
+        l_Binding.material = get_id();
+        l_Binding.texture = p_Value;
+        ms_PendingTextureBindings.push_back(l_Binding);
+      }
+
+      {
+        const float l_FloatIndex = l_Index;
+
+        const u32 l_Offset =
+            get_material_type().get_input_offset(p_Name);
+        set_dirty(true);
+        memcpy(&((u8 *)get_data())[l_Offset], &l_FloatIndex,
+               sizeof(float));
+      }
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_property_texture
+    }
+
     Low::Math::Vector4 &
     Material::get_property_vector4(Util::Name p_Name) const
     {
@@ -949,6 +1091,31 @@ namespace Low {
       // MaterialTypeInputType::);
       GET_PROPERTY(u32);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_property_u32
+    }
+
+    Low::Renderer::Texture
+    Material::get_property_texture(Util::Name p_Name) const
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_property_texture
+      _LOW_ASSERT(get_material_type().get_input_type(p_Name) ==
+                  MaterialTypeInputType::TEXTURE);
+
+      const u32 l_Offset =
+          get_material_type().get_input_offset(p_Name);
+      float l_Value;
+      memcpy(&l_Value, &((u8 *)get_data())[l_Offset], sizeof(float));
+
+      const u32 l_Index = l_Value;
+
+      GpuTexture l_GpuTexture =
+          GpuTexture::create_handle_by_index(l_Index);
+
+      if (l_GpuTexture.is_alive()) {
+        return l_GpuTexture.get_texture_handle();
+      }
+
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_property_texture
     }
 
     uint32_t Material::create_instance()

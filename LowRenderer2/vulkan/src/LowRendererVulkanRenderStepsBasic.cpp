@@ -1660,5 +1660,5 @@ namespace Low {
         return true;
       }
     } // namespace Vulkan
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

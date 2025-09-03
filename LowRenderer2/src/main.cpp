@@ -1,3 +1,4 @@
+#include "LowRendererTextureState.h"
 #include "LowUtilLogger.h"
 #include "LowUtil.h"
 
@@ -25,6 +26,7 @@
 #include "LowRendererUiCanvas.h"
 #include "LowRendererUiRenderObject.h"
 #include "LowRendererTextureExport.h"
+#include "LowRendererEditorImage.h"
 
 #include "imgui_impl_sdl2.h"
 
@@ -83,6 +85,13 @@ void draw()
   static bool l_FontInit = false;
 
 #if 0
+  if (frames == 120) {
+    Low::Renderer::ResourceImporter::import_mesh("E:\\spaceship.obj",
+                                                 "spaceship");
+  }
+#endif
+
+#if 0
   if (frames == 200) {
     using namespace Low;
     using namespace Low::Renderer;
@@ -110,6 +119,27 @@ void draw()
     g_UiRenderObject.set_uv_rect(l_UvRect);
 
     l_FontInit = true;
+  }
+
+  {
+    using namespace Low;
+    using namespace Low::Renderer;
+    if (EditorImage::living_count() > 0) {
+      EditorImage l_EditorImage = EditorImage::living_instances()[0];
+
+      if (l_EditorImage.get_state() == TextureState::LOADED &&
+          l_EditorImage.get_gpu().is_imgui_texture_initialized()) {
+        LOW_LOG_DEBUG << "Rendering editor image" << LOW_LOG_END;
+        ImGui::Begin("Editor Image");
+        ImGui::Image(l_EditorImage.get_gpu().get_imgui_texture_id(),
+                     ImVec2(256, 256));
+        ImGui::End();
+      } else if (l_EditorImage.get_state() ==
+                 TextureState::UNLOADED) {
+        LOW_LOG_DEBUG << "Loading editor image" << LOW_LOG_END;
+        ResourceManager::load_editor_image(l_EditorImage);
+      }
+    }
   }
 
   ImGui::Begin("Cube");
@@ -323,7 +353,8 @@ void init()
 
     g_RenderObject =
         Low::Renderer::RenderObject::make(g_RenderScene, l_Mesh);
-    g_RenderObject.set_material(g_TestMaterial);
+    g_RenderObject.set_material(
+        Low::Renderer::get_default_material_texture());
     g_RenderObject.set_world_transform(l_LocalMatrix);
   }
 }

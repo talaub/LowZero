@@ -20,6 +20,7 @@ namespace Low {
     struct LOW_RENDERER2_API GpuTextureData
     {
       uint64_t data_handle;
+      uint64_t texture_handle;
       ImTextureID imgui_texture_id;
       uint8_t full_mip_count;
       Low::Util::List<uint8_t> loaded_mips;
@@ -67,6 +68,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static GpuTexture create_handle_by_index(u32 p_Index);
+
       static GpuTexture find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -74,6 +77,10 @@ namespace Low {
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -116,6 +123,9 @@ namespace Low {
 
       uint64_t get_data_handle() const;
       void set_data_handle(uint64_t p_Value);
+
+      uint64_t get_texture_handle() const;
+      void set_texture_handle(uint64_t p_Value);
 
       ImTextureID get_imgui_texture_id() const;
       void set_imgui_texture_id(ImTextureID p_Value);

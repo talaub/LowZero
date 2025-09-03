@@ -258,6 +258,15 @@ namespace Low {
         return l_Result;
       }
 
+      Math::IVector2 deserialize_ivector2(Yaml::Node &p_Node)
+      {
+        Math::IVector2 l_Result;
+        l_Result.x = p_Node["x"].as<i32>();
+        l_Result.y = p_Node["y"].as<i32>();
+
+        return l_Result;
+      }
+
       Math::Bounds deserialize_bounds(Yaml::Node &p_Node)
       {
         Math::Bounds l_Bounds;
@@ -369,5 +378,5 @@ namespace Low {
             LOW_YAML_AS_NAME(p_Node["enum_value"]));
       }
     } // namespace Serialization
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

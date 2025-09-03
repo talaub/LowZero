@@ -1,6 +1,9 @@
 #include "LowRendererResourceManager.h"
 
+#include "LowRendererEditorImageGpu.h"
+#include "LowRendererEditorImageStaging.h"
 #include "LowRendererMeshResourceState.h"
+#include "LowRendererTextureState.h"
 #include "LowRendererVulkanRenderer.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVkImage.h"
@@ -13,15 +16,22 @@
 #include "LowRendererGpuSubmesh.h"
 #include "LowRendererSubmeshGeometry.h"
 #include "LowRendererTextureStaging.h"
+#include "LowRendererBase.h"
 
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilAssert.h"
+#include "LowUtilResource.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilHashing.h"
 
 #include <iostream>
 #include <vulkan/vulkan_core.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_STATIC
+#include "../../LowDependencies/stb/stb_image.h"
 
 #define MESH_INDEX_SIZE sizeof(u32)
 
@@ -35,10 +45,13 @@ namespace Low {
       {
         union
         {
-          u32 lodPriority;
-          u32 resourcePriority;
+          struct
+          {
+            u32 lodPriority;
+            u32 resourcePriority;
+          };
+          u64 priority;
         };
-        u64 priority;
 
         Mesh mesh;
 
@@ -61,6 +74,7 @@ namespace Low {
         Util::Set<Mesh> meshes;
         Util::Set<Texture> textures;
         Util::Set<Font> fonts;
+        Util::Set<EditorImage> editorImages;
       } g_LoadSchedules;
 
       struct UploadEntry
@@ -90,16 +104,23 @@ namespace Low {
             GpuSubmesh gpuSubmesh;
             u32 submeshIndex;
           } mesh;
+          struct
+          {
+            EditorImage ei;
+          } editorImage;
         } data;
 
         bool is_texture_upload()
         {
           return Texture::is_alive(data.texture.texture);
         }
-
         bool is_mesh_upload()
         {
           return Mesh::is_alive(data.mesh.mesh);
+        }
+        bool is_editor_image_upload()
+        {
+          return EditorImage::is_alive(data.editorImage.ei);
         }
       };
 
@@ -188,6 +209,18 @@ namespace Low {
         return true;
       }
 
+      bool load_editor_image(EditorImage p_EditorImage)
+      {
+        if (p_EditorImage.get_state() == TextureState::UNLOADED) {
+          g_LoadSchedules.editorImages.insert(p_EditorImage);
+
+          p_EditorImage.set_state(TextureState::SCHEDULEDTOLOAD);
+
+          return true;
+        }
+        return false;
+      }
+
       static VkFormat
       get_vk_format(Util::Resource::Image2DFormat p_Format)
       {
@@ -258,6 +291,48 @@ namespace Low {
         return true;
       }
 
+      static bool
+      editor_image_schedule_gpu_upload(EditorImage p_EditorImage)
+      {
+        const Math::UVector2 l_Dimensions =
+            p_EditorImage.get_staging().get_dimensions();
+
+        UploadEntry i_Entry;
+        i_Entry.uploadedSize = 0;
+        i_Entry.data.editorImage.ei = p_EditorImage;
+        i_Entry.progressPriority = 0;
+        i_Entry.lodPriority = 0;
+        i_Entry.waitPriority = 0;
+        i_Entry.resourcePriority = 1;
+        g_UploadSchedules.emplace(i_Entry);
+
+        Vulkan::Image l_Image =
+            Vulkan::Image::make(p_EditorImage.get_name());
+
+        VkExtent3D l_Extent;
+        l_Extent.width = l_Dimensions.x;
+        l_Extent.height = l_Dimensions.y;
+        l_Extent.depth = 1;
+
+        Vulkan::ImageUtil::create(
+            l_Image, l_Extent,
+            get_vk_format(p_EditorImage.get_staging().get_format()),
+            VK_IMAGE_USAGE_SAMPLED_BIT, true);
+
+        EditorImageGpu l_Gpu =
+            EditorImageGpu::make(p_EditorImage.get_name());
+        p_EditorImage.set_gpu(l_Gpu);
+        l_Gpu.set_data_handle(l_Image.get_id());
+
+        // TODO: Should be changed to transfer command buffer
+        Vulkan::ImageUtil::cmd_transition(
+            Vulkan::Global::get_current_command_buffer(), l_Image,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+        p_EditorImage.set_state(TextureState::UPLOADINGTOGPU);
+        return true;
+      }
+
       static TexturePixels
       create_texture_pixels(Util::Name p_Name,
                             Util::Resource::Image2D &p_Image2D)
@@ -294,6 +369,14 @@ namespace Low {
                 i_Node["uv_min"]);
             i_Glyph.uvMax = Util::Serialization::deserialize_vector2(
                 i_Node["uv_max"]);
+
+            i_Glyph.bearing =
+                Util::Serialization::deserialize_vector2(
+                    i_Node["bearing"]);
+            i_Glyph.size = Util::Serialization::deserialize_vector2(
+                i_Node["size"]);
+
+            i_Glyph.advance = i_Node["advance"].as<float>();
 
             l_Font.get_glyphs()[i_Codepoint] = i_Glyph;
           }
@@ -354,6 +437,61 @@ namespace Low {
         return true;
       }
 
+      static bool
+      edtior_image_schedule_memory_load(EditorImage p_EditorImage)
+      {
+        LOW_ASSERT(
+            p_EditorImage.get_state() ==
+                TextureState::SCHEDULEDTOLOAD,
+            "EditorImage is either not scheduled for loading or "
+            "already loading/loaded.");
+        u64 l_EditorImageId = p_EditorImage.get_id();
+
+        Util::JobManager::default_pool().enqueue([l_EditorImageId]() {
+          EditorImage l_EditorImage = l_EditorImageId;
+
+          EditorImageStaging l_Staging =
+              EditorImageStaging::make(l_EditorImage.get_name());
+          l_EditorImage.set_staging(l_Staging);
+
+          int l_Width, l_Height, l_Channels;
+
+          const uint8_t *l_Data =
+              stbi_load(l_EditorImage.get_path().c_str(), &l_Width,
+                        &l_Height, &l_Channels, 0);
+
+          l_Staging.set_channels(l_Channels);
+          l_Staging.set_data_size(l_Width * l_Height * l_Channels);
+          l_Staging.set_dimensions_x(l_Width);
+          l_Staging.set_dimensions_y(l_Height);
+
+          l_Staging.set_format(Util::Resource::Image2DFormat::RGBA8);
+
+          l_Staging.get_pixel_data().resize(l_Width * l_Height * 4);
+
+          for (uint32_t y = 0u; y < l_Height; ++y) {
+            for (uint32_t x = 0u; x < l_Width; ++x) {
+              uint32_t c = 0;
+              for (; c < l_Channels; ++c) {
+                l_Staging
+                    .get_pixel_data()[(((y * l_Width) + x) * 4) + c] =
+                    l_Data[(((y * l_Width) + x) * l_Channels) + c];
+              }
+              for (; c < 4; ++c) {
+                l_Staging
+                    .get_pixel_data()[(((y * l_Width) + x) * 4) + c] =
+                    255;
+              }
+            }
+          }
+
+          l_EditorImage.set_state(TextureState::MEMORYLOADED);
+        });
+
+        p_EditorImage.set_state(TextureState::LOADINGTOMEMORY);
+        return true;
+      }
+
       static bool mesh_schedule_memory_load(Mesh p_Mesh)
       {
         LOW_ASSERT(p_Mesh.get_state() == MeshState::SCHEDULEDTOLOAD,
@@ -388,11 +526,11 @@ namespace Low {
           l_MeshGeometry.set_aabb(
               Util::Serialization::deserialize_aabb(
                   l_SidecarNode["aabb"]));
-          /*
-          l_MeshGeometry.set_bounding_sphere(
-              Util::Serialization::deserialize_aabb(
-                  l_SidecarNode["aabb"]));
-                  */
+          if (l_SidecarNode["bounding_sphere"]) {
+            l_MeshGeometry.set_bounding_sphere(
+                Util::Serialization::deserialize_sphere(
+                    l_SidecarNode["bounding_sphere"]));
+          }
 
           for (auto it = l_ResourceMesh.submeshes.begin();
                it != l_ResourceMesh.submeshes.end(); ++it) {
@@ -448,6 +586,10 @@ namespace Low {
         GpuMesh l_GpuMesh = GpuMesh::make(p_Mesh.get_name());
         l_GpuMesh.set_uploaded_submesh_count(0);
 
+        l_GpuMesh.set_bounding_sphere(
+            p_Mesh.get_geometry().get_bounding_sphere());
+        l_GpuMesh.set_aabb(p_Mesh.get_geometry().get_aabb());
+
         p_Mesh.set_gpu(l_GpuMesh);
 
         int l_Index = 0;
@@ -463,6 +605,9 @@ namespace Low {
           i_GpuSubmesh.set_index_count(it->get_index_count());
           i_GpuSubmesh.set_uploaded_vertex_count(0);
           i_GpuSubmesh.set_uploaded_index_count(0);
+
+          i_GpuSubmesh.set_bounding_sphere(it->get_bounding_sphere());
+          i_GpuSubmesh.set_aabb(it->get_aabb());
 
           l_GpuMesh.get_submeshes().push_back(i_GpuSubmesh);
 
@@ -587,6 +732,42 @@ namespace Low {
           }
         }
 
+        return true;
+      }
+
+      static bool editor_images_tick(float p_Delta)
+      {
+        for (auto it = g_LoadSchedules.editorImages.begin();
+             it != g_LoadSchedules.editorImages.end();) {
+          TextureState i_State = it->get_state();
+          if (it->get_state() == TextureState::MEMORYLOADED) {
+            if (editor_image_schedule_gpu_upload(*it)) {
+              it = g_LoadSchedules.editorImages.erase(it);
+            } else {
+              LOW_LOG_ERROR << "Failed to schedule edtior image '"
+                            << it->get_name() << "' upload to gpu."
+                            << LOW_LOG_END;
+              it++;
+            }
+            continue;
+          } else if (it->get_state() ==
+                     TextureState::SCHEDULEDTOLOAD) {
+            if (!edtior_image_schedule_memory_load(*it)) {
+              LOW_LOG_ERROR << "Failed to schedule editor_image '"
+                            << it->get_name()
+                            << "' for loading to memory."
+                            << LOW_LOG_END;
+            }
+            ++it;
+            continue;
+          } else if (it->get_state() == TextureState::LOADED ||
+                     it->get_state() == TextureState::UNLOADED ||
+                     it->get_state() == TextureState::UNKNOWN) {
+            it = g_LoadSchedules.editorImages.erase(it);
+          } else {
+            it++;
+          }
+        }
         return true;
       }
 
@@ -923,6 +1104,127 @@ namespace Low {
         return l_FrameUploadSpace > 0;
       }
 
+      static bool editor_image_upload(UploadEntry &p_UploadEntry)
+      {
+        EditorImage l_EditorImage = p_UploadEntry.data.editorImage.ei;
+
+        EditorImageStaging l_Staging = l_EditorImage.get_staging();
+
+        const u64 l_FullSize = l_Staging.get_data_size();
+        const u64 l_UploadedSize = p_UploadEntry.uploadedSize;
+
+        u8 *l_ImageData = (u8 *)l_Staging.get_pixel_data().data();
+
+        const u64 l_SpaceRequired = l_FullSize - l_UploadedSize;
+
+        size_t l_StagingOffset = 0;
+
+        // Request staging buffer space
+        const u64 l_FrameUploadSpace =
+            Vulkan::request_resource_staging_buffer_space(
+                l_SpaceRequired, &l_StagingOffset);
+
+        // Starting to calculate and set the progress percent of the
+        // resource. This is important so that resources that are
+        // almost done uploading get finished first.
+        const float l_UploadProgress =
+            (((float)l_UploadedSize) + ((float)l_FrameUploadSpace)) /
+            ((float)l_FullSize);
+        const u8 l_UploadProgressPercent =
+            Math::Util::floor(l_UploadProgress * 100.0f);
+
+        // Upload data to staging buffer
+        LOW_ASSERT(Vulkan::resource_staging_buffer_write(
+                       &l_ImageData[l_UploadedSize],
+                       l_FrameUploadSpace, l_StagingOffset),
+                   "Failed to write image data to staging buffer");
+
+        {
+          Vulkan::Image l_Image =
+              l_EditorImage.get_gpu().get_data_handle();
+
+          VkImage l_VkImage = l_Image.get_allocated_image().image;
+
+          const u32 l_Channels = l_Staging.get_channels();
+
+          int32_t l_ImagePixelOffset =
+              static_cast<int32_t>(l_UploadedSize) / l_Channels;
+          u64 l_PixelUpload =
+              static_cast<u64>(l_FrameUploadSpace) / l_Channels;
+
+          const u32 l_ImageWidth = l_Staging.get_dimensions().x;
+
+          Util::List<VkBufferImageCopy> l_Regions;
+
+          while (l_PixelUpload > 0) {
+            VkBufferImageCopy &i_Region = l_Regions.emplace_back();
+
+            i_Region.bufferOffset = l_StagingOffset;
+
+            i_Region.imageSubresource.aspectMask =
+                VK_IMAGE_ASPECT_COLOR_BIT;
+            i_Region.imageSubresource.mipLevel =
+                p_UploadEntry.lodPriority;
+            i_Region.imageSubresource.baseArrayLayer = 0;
+            i_Region.imageSubresource.layerCount =
+                1; // No cubemap etc.
+
+            int32_t i_PixelsAlreadyPresentInRow =
+                l_ImagePixelOffset % l_ImageWidth;
+            int32_t i_RowsAlreadyCopied =
+                l_ImagePixelOffset / l_ImageWidth;
+
+            i_Region.imageOffset = {
+                i_PixelsAlreadyPresentInRow, i_RowsAlreadyCopied,
+                0}; // Start row-by-pixel offset here.
+
+            u64 i_PixelsCopiedThisRegion =
+                l_ImageWidth - i_PixelsAlreadyPresentInRow;
+
+            if (i_PixelsCopiedThisRegion > l_PixelUpload) {
+              i_PixelsCopiedThisRegion = l_PixelUpload;
+            }
+            i_Region.imageExtent = {
+                static_cast<u32>(i_PixelsCopiedThisRegion), 1,
+                1}; // Exact only small portions uploaded
+
+            l_ImagePixelOffset += i_PixelsCopiedThisRegion;
+            l_StagingOffset += i_PixelsCopiedThisRegion * l_Channels;
+
+            if (i_PixelsCopiedThisRegion > l_PixelUpload) {
+              l_PixelUpload = 0;
+            } else {
+              l_PixelUpload -= i_PixelsCopiedThisRegion;
+            }
+          }
+
+          if (!l_Regions.empty()) {
+            // TODO: Change to transfer queue command buffer
+
+            Vulkan::ImageUtil::cmd_transition(
+                Vulkan::Global::get_current_command_buffer(), l_Image,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+            vkCmdCopyBufferToImage(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_resource_staging_buffer()
+                    .buffer.buffer,
+                l_VkImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                l_Regions.size(), l_Regions.data());
+
+            Vulkan::ImageUtil::cmd_transition(
+                Vulkan::Global::get_current_command_buffer(), l_Image,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+        }
+
+        p_UploadEntry.uploadedSize += l_FrameUploadSpace;
+
+        p_UploadEntry.progressPriority = l_UploadProgressPercent;
+
+        return l_FrameUploadSpace > 0;
+      }
+
       static bool conclude_resource_upload(UploadEntry &p_UploadEntry)
       {
         if (p_UploadEntry.is_texture_upload()) {
@@ -969,6 +1271,26 @@ namespace Low {
             // staging should already be destroyed
             l_Staging.destroy();
           }
+        } else if (p_UploadEntry.is_editor_image_upload()) {
+          EditorImage l_EditorImage =
+              p_UploadEntry.data.editorImage.ei;
+          EditorImageGpu l_Gpu = l_EditorImage.get_gpu();
+          EditorImageStaging l_Staging = l_EditorImage.get_staging();
+
+          l_EditorImage.set_state(TextureState::LOADED);
+
+          l_Staging.destroy();
+
+          Vulkan::Image l_Image = l_Gpu.get_data_handle();
+
+          VkImage l_VkImage = l_Image.get_allocated_image().image;
+
+          // TODO: Check if this can stay graphics queue command
+          // buffer or needs changing. Maybe we also need additional
+          // synchronization
+          Vulkan::ImageUtil::cmd_transition(
+              Vulkan::Global::get_current_command_buffer(), l_Image,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         } else if (p_UploadEntry.is_mesh_upload()) {
           const char *l_Name =
               p_UploadEntry.data.mesh.mesh.get_name().c_str();
@@ -1009,6 +1331,9 @@ namespace Low {
         } else if (p_UploadEntry.is_mesh_upload() &&
                    p_UploadEntry.progressPriority < 100) {
           return mesh_upload(p_UploadEntry);
+        } else if (p_UploadEntry.is_editor_image_upload() &&
+                   p_UploadEntry.progressPriority < 100) {
+          return editor_image_upload(p_UploadEntry);
         }
 
         LOW_ASSERT(false, "ResourceManager encountered unknown "
@@ -1042,8 +1367,50 @@ namespace Low {
         _LOW_ASSERT(fonts_tick(p_Delta));
         _LOW_ASSERT(meshes_tick(p_Delta));
         _LOW_ASSERT(textures_tick(p_Delta));
+        _LOW_ASSERT(editor_images_tick(p_Delta));
         _LOW_ASSERT(uploads_tick(p_Delta));
       }
+
+      bool parse_mesh_resource_config(Util::String p_Path,
+                                      Util::Yaml::Node &p_Node,
+                                      MeshResourceConfig &p_Config)
+      {
+        LOWR_ASSERT_RETURN(p_Node["version"],
+                           "Could not find version");
+        const u32 l_Version = p_Node["version"].as<u32>();
+
+        if (l_Version == 1) {
+          LOWR_ASSERT_RETURN(p_Node["name"],
+                             "Could not find mesh name");
+          p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
+
+          LOWR_ASSERT_RETURN(p_Node["mesh_id"],
+                             "Could not find mesh id");
+          p_Config.meshId = Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["mesh_id"]));
+
+          LOWR_ASSERT_RETURN(p_Node["asset_hash"],
+                             "Could not find asset hash");
+          p_Config.assetHash = Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+
+          LOWR_ASSERT_RETURN(p_Node["source_file"],
+                             "Could not find source file");
+          p_Config.sourceFile =
+              LOW_YAML_AS_STRING(p_Node["source_file"]);
+
+          p_Config.sidecarPath =
+              Util::get_project().assetCachePath + "\\" +
+              Util::hash_to_string(p_Config.meshId) + ".mesh.yaml";
+          p_Config.meshPath =
+              Util::get_project().assetCachePath + "\\" +
+              Util::hash_to_string(p_Config.meshId) + ".glb";
+
+          p_Config.path = p_Path;
+          return true;
+        }
+        return true;
+      }
     } // namespace ResourceManager
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

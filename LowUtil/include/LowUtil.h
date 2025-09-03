@@ -15,6 +15,7 @@ namespace Low {
       String dataPath;
       String rootPath;
       String assetCachePath;
+      String editorImagesPath;
 
       String engineRootPath;
       String engineDataPath;

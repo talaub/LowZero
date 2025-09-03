@@ -150,5 +150,5 @@ namespace Low {
         return 7;
       }
     } // namespace MeshStateEnumHelper
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

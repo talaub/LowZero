@@ -26,6 +26,8 @@ types:
         handle: true
       unloadable:
         type: bool
+        description: Tracks if, once this mesh is loaded,
+          it can be automatically unloaded by the ResourceManager
     functions:
       make_from_resource_config:
         static: true
@@ -34,6 +36,9 @@ types:
         parameters:
           - name: config
             type: MeshResourceConfig
+      get_editor_image:
+        return_type: EditorImage
+        return_handle: true
 
   MeshGeometry:
     no_auto_serialize: true
@@ -207,6 +212,9 @@ types:
         parameters:
           - name: name
             type: Low::Util::Name
+      get_editor_image:
+        return_type: EditorImage
+        return_handle: true
 
   TextureStaging:
     properties:
@@ -251,6 +259,8 @@ types:
     properties:
       data_handle:
         type: uint64_t
+      texture_handle:
+        type: uint64_t
       imgui_texture_id:
         type: ImTextureID
         no_ref: true
@@ -284,6 +294,9 @@ types:
         parameters:
           - name: config
             type: FontResourceConfig
+      get_editor_image:
+        return_type: EditorImage
+        return_handle: true
   FontResource:
     private_make: true
     skip_name_serialization: true
@@ -324,3 +337,43 @@ types:
         parameters:
           - name: config
             type: FontResourceConfig
+
+  EditorImage:
+    properties:
+      path: 
+        type: Low::Util::String
+      gpu:
+        type: Low::Renderer::EditorImageGpu
+        handle: true
+      staging:
+        type: Low::Renderer::EditorImageStaging
+        handle: true
+      state:
+        type: Low::Renderer::TextureState
+        enum: true
+
+  EditorImageStaging:
+    properties:
+      dimensions:
+        type: Low::Math::UVector2
+      channels:
+        type: uint8_t
+      format:
+        type: Low::Util::Resource::Image2DFormat
+        no_ref: true
+      pixel_data:
+        type: Low::Util::List<uint8_t>
+      data_size:
+        type: uint64_t
+
+  EditorImageGpu:
+    properties:
+      imgui_texture_initialized:
+        type: bool
+      data_handle:
+        type: uint64_t
+      editor_image_handle:
+        type: uint64_t
+      imgui_texture_id:
+        type: ImTextureID
+        no_ref: true

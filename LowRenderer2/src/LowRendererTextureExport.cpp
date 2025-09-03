@@ -75,6 +75,8 @@ namespace Low {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       l_Handle.set_state(TextureExportState::SCHEDULED);
+      l_Handle.set_finish_callback(
+          [](TextureExport p_Export) -> bool { return true; });
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -93,13 +95,12 @@ namespace Low {
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-      const TextureExport *l_Instances = living_instances();
-      bool l_LivingInstanceFound = false;
-      for (uint32_t i = 0u; i < living_count(); ++i) {
-        if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
-          ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
-          l_LivingInstanceFound = true;
-          break;
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end();) {
+        if (it->get_id() == get_id()) {
+          it = ms_LivingInstances.erase(it);
+        } else {
+          it++;
         }
       }
     }
@@ -323,6 +324,15 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
+      {
+        // Function: finish
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(finish);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_FunctionInfo.handleType = 0;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: finish
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -358,6 +368,20 @@ namespace Low {
       return l_Handle;
     }
 
+    TextureExport TextureExport::create_handle_by_index(u32 p_Index)
+    {
+      if (p_Index < get_capacity()) {
+        return find_by_index(p_Index);
+      }
+
+      TextureExport l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = 0;
+      l_Handle.m_Data.m_Type = TextureExport::TYPE_ID;
+
+      return l_Handle;
+    }
+
     bool TextureExport::is_alive() const
     {
       READ_LOCK(l_Lock);
@@ -378,13 +402,17 @@ namespace Low {
 
     TextureExport TextureExport::find_by_name(Low::Util::Name p_Name)
     {
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+      // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
       }
-      return 0ull;
+      return Low::Util::Handle::DEAD;
     }
 
     TextureExport
@@ -483,6 +511,18 @@ namespace Low {
       l_Key.observableName = p_Observable.m_Index;
 
       Low::Util::notify(l_Key);
+    }
+
+    u64 TextureExport::observe(
+        Low::Util::Name p_Observable,
+        Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)>
+            p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
     }
 
     u64 TextureExport::observe(Low::Util::Name p_Observable,
@@ -604,7 +644,7 @@ namespace Low {
       broadcast_observable(N(state));
     }
 
-    Low::Util::Function<bool(Low::Renderer::TextureExport)> &
+    Low::Util::Function<bool(Low::Renderer::TextureExport)>
     TextureExport::get_finish_callback() const
     {
       _LOW_ASSERT(is_alive());
@@ -619,7 +659,7 @@ namespace Low {
     }
     void TextureExport::set_finish_callback(
         Low::Util::Function<bool(Low::Renderer::TextureExport)>
-            &p_Value)
+            p_Value)
     {
       _LOW_ASSERT(is_alive());
 
@@ -694,6 +734,13 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
+    }
+
+    bool TextureExport::finish()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_finish
+      return get_finish_callback()(get_id());
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_finish
     }
 
     uint32_t TextureExport::create_instance()

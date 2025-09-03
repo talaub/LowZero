@@ -18,7 +18,8 @@ namespace Low {
   namespace Renderer {
     struct DrawCommandUpload
     {
-      alignas(16) Low::Math::Matrix4x4 world_transform;
+      alignas(16) Low::Math::Matrix4x4 worldTransform;
+      alignas(16) u32 materialIndex;
     };
 
     struct DebugGeometryUpload

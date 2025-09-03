@@ -248,7 +248,7 @@ namespace Low {
             return g_Material;
           }
         } // namespace Text
-      }   // namespace System
-    }     // namespace UI
-  }       // namespace Core
+      } // namespace System
+    } // namespace UI
+  } // namespace Core
 } // namespace Low

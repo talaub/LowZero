@@ -152,5 +152,5 @@ namespace Low {
         return 7;
       }
     } // namespace TextureStateEnumHelper
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

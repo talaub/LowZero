@@ -59,6 +59,8 @@ namespace Low {
       deserialize_vector2(Yaml::Node &p_Node);
       Math::UVector2 LOW_EXPORT
       deserialize_uvector2(Yaml::Node &p_Node);
+      Math::IVector2 LOW_EXPORT
+      deserialize_ivector2(Yaml::Node &p_Node);
 
       Math::Box LOW_EXPORT deserialize_box(Yaml::Node &p_Node);
       Math::Sphere LOW_EXPORT deserialize_sphere(Yaml::Node &p_Node);
@@ -72,5 +74,5 @@ namespace Low {
 
       Handle LOW_EXPORT deserialize_handle(Yaml::Node &p_Node);
     } // namespace Serialization
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

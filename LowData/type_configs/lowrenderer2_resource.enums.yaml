@@ -23,3 +23,8 @@ enums:
       - name: MemoryLoaded
       - name: UploadingToGpu
       - name: Loaded
+  EditorImageType:
+    options:
+      - name: Mesh
+      - name: Icon
+      - name: Texture

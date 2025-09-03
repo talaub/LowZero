@@ -95,13 +95,12 @@ namespace Low {
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-      const MaterialType *l_Instances = living_instances();
-      bool l_LivingInstanceFound = false;
-      for (uint32_t i = 0u; i < living_count(); ++i) {
-        if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
-          ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
-          l_LivingInstanceFound = true;
-          break;
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end();) {
+        if (it->get_id() == get_id()) {
+          it = ms_LivingInstances.erase(it);
+        } else {
+          it++;
         }
       }
     }
@@ -332,6 +331,20 @@ namespace Low {
       return l_Handle;
     }
 
+    MaterialType MaterialType::create_handle_by_index(u32 p_Index)
+    {
+      if (p_Index < get_capacity()) {
+        return find_by_index(p_Index);
+      }
+
+      MaterialType l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = 0;
+      l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+
+      return l_Handle;
+    }
+
     bool MaterialType::is_alive() const
     {
       READ_LOCK(l_Lock);
@@ -352,13 +365,17 @@ namespace Low {
 
     MaterialType MaterialType::find_by_name(Low::Util::Name p_Name)
     {
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+      // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
       }
-      return 0ull;
+      return Low::Util::Handle::DEAD;
     }
 
     MaterialType MaterialType::duplicate(Low::Util::Name p_Name) const
@@ -429,6 +446,18 @@ namespace Low {
       l_Key.observableName = p_Observable.m_Index;
 
       Low::Util::notify(l_Key);
+    }
+
+    u64 MaterialType::observe(
+        Low::Util::Name p_Observable,
+        Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)>
+            p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
     }
 
     u64 MaterialType::observe(Low::Util::Name p_Observable,

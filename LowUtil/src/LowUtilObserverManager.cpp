@@ -26,6 +26,19 @@ namespace Low {
     std::unordered_map<ObserverKey, List<Observer>, ObserverKeyHash>
         g_Observers;
 
+    u64
+    observe(const ObserverKey &key,
+            Util::Function<void(Util::Handle, Util::Name)> p_Function)
+    {
+      Observer l_Observer;
+      l_Observer.id = g_GlobalIdCounter++;
+      l_Observer.function = p_Function;
+      l_Observer.type = ObserverType::FUNCTION;
+      g_Observers[key].push_back(l_Observer);
+
+      return l_Observer.id;
+    }
+
     u64 observe(const ObserverKey &key, Handle p_Handle)
     {
       Observer l_Observer;

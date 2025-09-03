@@ -29,6 +29,9 @@ namespace Low {
     };
 
     u64 LOW_EXPORT observe(const ObserverKey &key, Handle);
+    u64 LOW_EXPORT observe(
+        const ObserverKey &key,
+        Util::Function<void(Util::Handle, Util::Name)> p_Function);
 
     void LOW_EXPORT notify(const ObserverKey &key);
 

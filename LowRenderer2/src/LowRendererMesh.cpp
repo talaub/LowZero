@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowRendererEditorImage.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -12,6 +13,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 #include "LowRendererResourceManager.h"
+#include "LowUtilHashing.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -106,13 +108,12 @@ namespace Low {
       ms_Slots[this->m_Data.m_Index].m_Occupied = false;
       ms_Slots[this->m_Data.m_Index].m_Generation++;
 
-      const Mesh *l_Instances = living_instances();
-      bool l_LivingInstanceFound = false;
-      for (uint32_t i = 0u; i < living_count(); ++i) {
-        if (l_Instances[i].m_Data.m_Index == m_Data.m_Index) {
-          ms_LivingInstances.erase(ms_LivingInstances.begin() + i);
-          l_LivingInstanceFound = true;
-          break;
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end();) {
+        if (it->get_id() == get_id()) {
+          it = ms_LivingInstances.erase(it);
+        } else {
+          it++;
         }
       }
     }
@@ -365,6 +366,15 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_from_resource_config
       }
+      {
+        // Function: get_editor_image
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(get_editor_image);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = EditorImage::TYPE_ID;
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: get_editor_image
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -400,6 +410,20 @@ namespace Low {
       return l_Handle;
     }
 
+    Mesh Mesh::create_handle_by_index(u32 p_Index)
+    {
+      if (p_Index < get_capacity()) {
+        return find_by_index(p_Index);
+      }
+
+      Mesh l_Handle;
+      l_Handle.m_Data.m_Index = p_Index;
+      l_Handle.m_Data.m_Generation = 0;
+      l_Handle.m_Data.m_Type = Mesh::TYPE_ID;
+
+      return l_Handle;
+    }
+
     bool Mesh::is_alive() const
     {
       READ_LOCK(l_Lock);
@@ -419,13 +443,17 @@ namespace Low {
 
     Mesh Mesh::find_by_name(Low::Util::Name p_Name)
     {
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+      // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
           return *it;
         }
       }
-      return 0ull;
+      return Low::Util::Handle::DEAD;
     }
 
     Mesh Mesh::duplicate(Low::Util::Name p_Name) const
@@ -495,6 +523,18 @@ namespace Low {
       l_Key.observableName = p_Observable.m_Index;
 
       Low::Util::notify(l_Key);
+    }
+
+    u64 Mesh::observe(
+        Low::Util::Name p_Observable,
+        Low::Util::Function<void(Low::Util::Handle, Low::Util::Name)>
+            p_Observer) const
+    {
+      Low::Util::ObserverKey l_Key;
+      l_Key.handleId = get_id();
+      l_Key.observableName = p_Observable.m_Index;
+
+      return Low::Util::observe(l_Key, p_Observer);
     }
 
     u64 Mesh::observe(Low::Util::Name p_Observable,
@@ -763,6 +803,19 @@ namespace Low {
 
       return l_Mesh;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_resource_config
+    }
+
+    EditorImage Mesh::get_editor_image()
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
+      if (get_resource().is_alive()) {
+        Util::String l_ImageName = "mesh_";
+        l_ImageName +=
+            Util::hash_to_string(get_resource().get_mesh_id());
+      return EditorImage::find_by_name(LOW_NAME(l_ImageName.c_str()));
+      }
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_editor_image
     }
 
     uint32_t Mesh::create_instance()

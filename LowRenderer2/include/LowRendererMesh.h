@@ -13,6 +13,7 @@
 #include "LowRendererMeshGeometry.h"
 #include "LowRendererGpuMesh.h"
 #include "LowRendererMeshState.h"
+#include "LowRendererEditorImage.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -72,6 +73,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static Mesh create_handle_by_index(u32 p_Index);
+
       static Mesh find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -79,6 +82,10 @@ namespace Low {
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -143,6 +150,7 @@ namespace Low {
 
       static Mesh
       make_from_resource_config(MeshResourceConfig &p_Config);
+      EditorImage get_editor_image();
 
     private:
       static uint32_t ms_Capacity;

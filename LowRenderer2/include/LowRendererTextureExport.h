@@ -77,6 +77,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static TextureExport create_handle_by_index(u32 p_Index);
+
       static TextureExport find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -84,6 +86,10 @@ namespace Low {
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -134,17 +140,19 @@ namespace Low {
       Low::Renderer::TextureExportState get_state() const;
       void set_state(Low::Renderer::TextureExportState p_Value);
 
-      Low::Util::Function<bool(Low::Renderer::TextureExport)> &
+      Low::Util::Function<bool(Low::Renderer::TextureExport)>
       get_finish_callback() const;
       void set_finish_callback(
           Low::Util::Function<bool(Low::Renderer::TextureExport)>
-              &p_Value);
+              p_Value);
 
       uint64_t get_data_handle() const;
       void set_data_handle(uint64_t p_Value);
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
+
+      bool finish();
 
     private:
       static uint32_t ms_Capacity;

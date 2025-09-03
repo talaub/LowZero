@@ -63,6 +63,28 @@ namespace Low {
       }
     } // namespace StringHelper
 
+    namespace PathHelper {
+      String get_base_name_no_ext(const String p_Path)
+      {
+        // Find the last slash or backslash
+        size_t lastSlash = p_Path.find_last_of("\\/");
+        size_t start =
+            (lastSlash == eastl::string::npos) ? 0 : lastSlash + 1;
+
+        // Extract just the filename (with extensions)
+        eastl::string filename = p_Path.substr(start);
+
+        // Find the first dot in the filename
+        size_t dotPos = filename.find('.');
+        if (dotPos != eastl::string::npos) {
+          // Keep only the part before the first dot
+          filename = filename.substr(0, dotPos);
+        }
+
+        return filename;
+      }
+    } // namespace PathHelper
+
     String StringBuilder::get() const
     {
       return m_String;

@@ -97,6 +97,8 @@ namespace Low {
         return ms_LivingInstances.data();
       }
 
+      static RenderView create_handle_by_index(u32 p_Index);
+
       static RenderView find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -104,6 +106,10 @@ namespace Low {
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -215,6 +221,11 @@ namespace Low {
       void add_step(Low::Renderer::RenderStep p_Step);
       void add_step_by_name(Low::Util::Name p_StepName);
       void add_ui_canvas(Low::Renderer::UiCanvas p_Canvas);
+      /*!
+      Add a new debug geometry draw element to this renderview. This
+      element will be rendered for once frame before being cleared
+      again.
+      */
       void add_debug_geometry(
           Low::Renderer::DebugGeometryDraw &p_DebugGeometryDraw);
 

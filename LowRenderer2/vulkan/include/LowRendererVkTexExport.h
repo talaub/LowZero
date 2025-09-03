@@ -66,6 +66,8 @@ namespace Low {
           return ms_LivingInstances.data();
         }
 
+        static TexExport create_handle_by_index(u32 p_Index);
+
         static TexExport find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
@@ -73,6 +75,10 @@ namespace Low {
 
         u64 observe(Low::Util::Name p_Observable,
                     Low::Util::Handle p_Observer) const;
+        u64 observe(Low::Util::Name p_Observable,
+                    Low::Util::Function<void(Low::Util::Handle,
+                                             Low::Util::Name)>
+                        p_Observer) const;
         void notify(Low::Util::Handle p_Observed,
                     Low::Util::Name p_Observable);
         void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -137,5 +143,5 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Vulkan
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low
