@@ -350,5 +350,5 @@ namespace Low {
         l_Importer.FreeScene();
       }
     } // namespace Resource
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

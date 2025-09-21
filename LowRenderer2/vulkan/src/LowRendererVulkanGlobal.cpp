@@ -879,6 +879,8 @@ namespace Low {
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(5,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(6,
+                                  VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
             g_ViewInfoDescriptorSetLayout =
                 l_Builder.build(Global::get_device(),
                                 VK_SHADER_STAGE_ALL_GRAPHICS |
@@ -1184,6 +1186,6 @@ namespace Low {
           }
         }
       } // namespace Global
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

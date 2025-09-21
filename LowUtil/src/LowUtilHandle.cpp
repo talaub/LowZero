@@ -6,6 +6,7 @@
 #include "LowUtilVariant.h"
 #include "LowUtilString.h"
 
+#include <atomic>
 #include <stdint.h>
 #include <stdlib.h>
 #include <vcruntime_string.h>
@@ -192,18 +193,6 @@ namespace Low {
       return Handle::is_registered_type(get_type());
     }
 
-    bool Handle::check_alive(Instances::Slot *p_Slots,
-                             uint32_t p_Capacity) const
-    {
-      if (m_Data.m_Index >= p_Capacity) {
-        return false;
-      }
-
-      return p_Slots[m_Data.m_Index].m_Occupied &&
-             p_Slots[m_Data.m_Index].m_Generation ==
-                 m_Data.m_Generation;
-    }
-
     void Handle::register_type_info(uint16_t p_TypeId,
                                     RTTI::TypeInfo &p_TypeInfo)
     {
@@ -333,8 +322,10 @@ namespace Low {
 
     namespace Instances {
 
-      void initialize_buffer(uint8_t **p_Buffer, size_t p_ElementSize,
-                             size_t p_ElementCount, Slot **p_Slots)
+      void initialize_buffer(uint8_t **p_Buffer,
+                             const size_t p_ElementSize,
+                             const size_t p_ElementCount,
+                             Slot **p_Slots)
       {
         void *l_Buffer =
             calloc(p_ElementCount * p_ElementSize, sizeof(uint8_t));
@@ -350,6 +341,20 @@ namespace Low {
           (*p_Slots)[i_Iter].m_Generation = 0;
         }
       }
+
+      void initialize_page(Page *p_Page, const size_t p_ElementSize,
+                           const size_t p_ElementCount)
+      {
+        p_Page->size = p_ElementCount;
+
+        initialize_buffer(&p_Page->buffer, p_ElementSize,
+                          p_ElementCount, &p_Page->slots);
+
+        p_Page->lockWords = new std::atomic<u64>[p_ElementCount];
+        for (size_t i = 0; i < p_ElementCount; ++i) {
+          p_Page->lockWords[i].store(0, std::memory_order_relaxed);
+        }
+      }
     } // namespace Instances
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

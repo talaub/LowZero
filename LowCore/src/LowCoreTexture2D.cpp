@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -45,11 +46,13 @@ namespace Low {
 
     const uint16_t Texture2D::TYPE_ID = 22;
     uint32_t Texture2D::ms_Capacity = 0u;
-    uint8_t *Texture2D::ms_Buffer = 0;
-    std::shared_mutex Texture2D::ms_BufferMutex;
-    Low::Util::Instances::Slot *Texture2D::ms_Slots = 0;
-    Low::Util::List<Texture2D> Texture2D::ms_LivingInstances =
-        Low::Util::List<Texture2D>();
+    uint32_t Texture2D::ms_PageSize = 0u;
+    Low::Util::SharedMutex Texture2D::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        Texture2D::ms_PagesLock(Texture2D::ms_PagesMutex,
+                                std::defer_lock);
+    Low::Util::List<Texture2D> Texture2D::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *> Texture2D::ms_Pages;
 
     Texture2D::Texture2D() : Low::Util::Handle(0ull)
     {
@@ -69,24 +72,31 @@ namespace Low {
 
     Texture2D Texture2D::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       Texture2D l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, path,
-                              Util::String)) Util::String();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, renderer_texture,
-                              Renderer::Texture2D))
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Texture2D, path,
+                                 Util::String)) Util::String();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, Texture2D, renderer_texture, Renderer::Texture2D))
           Renderer::Texture2D();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, Texture2D, state,
-                              ResourceState)) ResourceState();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Texture2D, state,
+                                 ResourceState)) ResourceState();
       ACCESSOR_TYPE_SOA(l_Handle, Texture2D, name, Low::Util::Name) =
           Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -103,16 +113,27 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<Texture2D> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -121,11 +142,12 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void Texture2D::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       g_Image2Ds.resize(TEXTURE_COUNT);
@@ -138,12 +160,21 @@ namespace Low {
       ms_Capacity =
           Low::Util::Config::get_capacity(N(LowCore), N(Texture2D));
 
-      initialize_buffer(&ms_Buffer, Texture2DData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_Texture2D);
-      LOW_PROFILE_ALLOC(type_slots_Texture2D);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, Texture2D::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Texture2D);
@@ -171,12 +202,13 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(Texture2DData, path);
+        l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           l_Handle.get_path();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, path,
                                             Util::String);
@@ -186,6 +218,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           *((Util::String *)p_Data) = l_Handle.get_path();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -197,12 +230,13 @@ namespace Low {
         l_PropertyInfo.name = N(renderer_texture);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(Texture2DData, renderer_texture);
+            offsetof(Texture2D::Data, renderer_texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Renderer::Texture2D::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           l_Handle.get_renderer_texture();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
                                             renderer_texture,
@@ -213,6 +247,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           *((Renderer::Texture2D *)p_Data) =
               l_Handle.get_renderer_texture();
         };
@@ -225,7 +260,7 @@ namespace Low {
         l_PropertyInfo.name = N(reference_count);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(Texture2DData, reference_count);
+            offsetof(Texture2D::Data, reference_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -244,12 +279,13 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(Texture2DData, state);
+        l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D,
                                             state, ResourceState);
@@ -262,6 +298,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           *((ResourceState *)p_Data) = l_Handle.get_state();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -272,12 +309,13 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(Texture2DData, name);
+        l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Texture2D, name,
                                             Low::Util::Name);
@@ -290,6 +328,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           Texture2D l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Texture2D> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -366,13 +405,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_Texture2D);
-      LOW_PROFILE_FREE(type_slots_Texture2D);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle Texture2D::_find_by_index(uint32_t p_Index)
@@ -386,8 +431,18 @@ namespace Low {
 
       Texture2D l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -408,9 +463,22 @@ namespace Low {
 
     bool Texture2D::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != Texture2D::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == Texture2D::TYPE_ID &&
-             check_alive(ms_Slots, Texture2D::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t Texture2D::get_capacity()
@@ -551,12 +619,12 @@ namespace Low {
     Util::String &Texture2D::get_path() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, path, Util::String);
     }
     void Texture2D::set_path(const char *p_Value)
@@ -568,15 +636,14 @@ namespace Low {
     void Texture2D::set_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, path, Util::String) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
 
@@ -588,28 +655,27 @@ namespace Low {
     Renderer::Texture2D Texture2D::get_renderer_texture() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_texture
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_texture
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, renderer_texture,
                       Renderer::Texture2D);
     }
     void Texture2D::set_renderer_texture(Renderer::Texture2D p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_texture
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_texture
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, renderer_texture, Renderer::Texture2D) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_texture
 
@@ -621,26 +687,25 @@ namespace Low {
     uint32_t Texture2D::get_reference_count() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_reference_count
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_reference_count
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, reference_count, uint32_t);
     }
     void Texture2D::set_reference_count(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_reference_count
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_reference_count
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, reference_count, uint32_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_reference_count
 
@@ -652,26 +717,25 @@ namespace Low {
     ResourceState Texture2D::get_state() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, state, ResourceState);
     }
     void Texture2D::set_state(ResourceState p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, state, ResourceState) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
 
@@ -683,26 +747,25 @@ namespace Low {
     Low::Util::Name Texture2D::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(Texture2D, name, Low::Util::Name);
     }
     void Texture2D::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(Texture2D, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -736,6 +799,7 @@ namespace Low {
 
     bool Texture2D::is_loaded()
     {
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_is_loaded
 
       return get_state() == ResourceState::LOADED;
@@ -744,6 +808,7 @@ namespace Low {
 
     void Texture2D::load()
     {
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load
 
       LOW_ASSERT(is_alive(), "Texture2D was not alive on load");
@@ -805,6 +870,7 @@ namespace Low {
 
     void Texture2D::unload()
     {
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
 
       set_reference_count(get_reference_count() - 1);
@@ -821,6 +887,7 @@ namespace Low {
 
     void Texture2D::_unload()
     {
+      Low::Util::HandleLock<Texture2D> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION__unload
 
       if (!is_loaded()) {
@@ -860,93 +927,81 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_update
     }
 
-    uint32_t Texture2D::create_instance()
+    uint32_t Texture2D::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void Texture2D::increase_budget()
+    u32 Texture2D::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for Texture2D.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, Texture2D::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer = (uint8_t *)malloc(
-          (l_Capacity + l_CapacityIncrease) * sizeof(Texture2DData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(Texture2DData, path) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(Texture2DData, path) * (l_Capacity)],
-            l_Capacity * sizeof(Util::String));
+    bool Texture2D::get_page_for_index(const u32 p_Index,
+                                       u32 &p_PageIndex,
+                                       u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(Texture2DData, renderer_texture) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(Texture2DData, renderer_texture) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(Renderer::Texture2D));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(Texture2DData, reference_count) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(Texture2DData, reference_count) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(Texture2DData, state) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(Texture2DData, state) * (l_Capacity)],
-            l_Capacity * sizeof(ResourceState));
-      }
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(Texture2DData, name) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(Texture2DData, name) * (l_Capacity)],
-            l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for Texture2D from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

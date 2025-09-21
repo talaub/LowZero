@@ -3,6 +3,7 @@ const os = require("os");
 const exec = require("child_process").execSync;
 const YAML = require("yaml");
 const { assert } = require("console");
+const { isArray } = require("util");
 
 const g_Directory = `${__dirname}\\..\\..\\misteda\\data\\_internal\\type_configs`;
 
@@ -327,6 +328,18 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     }
 
     const l_DirtyFlags = [];
+    if (i_Type.dirty_flags) {
+      if (Array.isArray(i_Type.dirty_flags)) {
+        for (let flag of i_Type.dirty_flags) {
+          l_DirtyFlags.push(flag);
+        }
+      }
+      else {
+        for (let flag in i_Type.dirty_flags) {
+          l_DirtyFlags.push(flag);
+        }
+      }
+    }
     for (let [i_PropName, i_Prop] of Object.entries(i_Type.properties)) {
       i_Type.observables.push({
         name: i_PropName,
@@ -683,6 +696,10 @@ function is_reference_type(t) {
       "int32_t",
       "int64_t",
       "size_t",
+      "u64",
+      "u32",
+      "u16",
+      "u8",
       "Util::UniqueId",
       "Low::Util::UniqueId",
     ].includes(t) && !t.includes("*")

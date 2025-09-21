@@ -28,3 +28,9 @@ enums:
       - name: Mesh
       - name: Icon
       - name: Texture
+  MaterialState:
+    options:
+      - name: Unknown
+      - name: MemoryLoaded
+      - name: UploadingToGpu
+      - name: Loaded

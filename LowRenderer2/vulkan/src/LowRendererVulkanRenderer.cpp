@@ -1,7 +1,9 @@
 #include "LowRendererVulkanRenderer.h"
 
+#include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererTextureState.h"
+#include "LowRendererVulkan.h"
 #include "LowRendererVulkanBase.h"
 #include "LowRendererCompatibility.h"
 
@@ -30,6 +32,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include "glm/ext/quaternion_geometric.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
@@ -94,6 +97,8 @@ namespace Low {
             return VK_FORMAT_R16_SFLOAT;
           case ImageFormat::RGB16_SFLOAT:
             return VK_FORMAT_R16G16B16_SFLOAT;
+          case ImageFormat::R32_UINT:
+            return VK_FORMAT_R32_UINT;
           case ImageFormat::DEPTH:
             return VK_FORMAT_D32_SFLOAT;
           }
@@ -385,10 +390,14 @@ namespace Low {
         Pipeline::initialize();
         Image::initialize();
         TexExport::initialize();
+        Scene::initialize();
+        ViewInfo::initialize();
       }
 
       static void cleanup_types()
       {
+        ViewInfo::cleanup();
+        Scene::cleanup();
         TexExport::cleanup();
         Pipeline::cleanup();
         Image::cleanup();
@@ -757,6 +766,69 @@ namespace Low {
         return true;
       }
 
+      static bool prepare_render_view_directional_light(
+          float p_Delta, RenderView p_RenderView, ViewInfo p_ViewInfo)
+      {
+        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
+
+        RenderScene l_RenderScene = p_RenderView.get_render_scene();
+
+        const Math::Matrix4x4 l_ViewMatrix =
+            glm::lookAt(p_RenderView.get_camera_position(),
+                        p_RenderView.get_camera_position() +
+                            p_RenderView.get_camera_direction(),
+                        LOW_VECTOR3_UP);
+
+        Math::Vector4 l_Direction =
+            l_ViewMatrix *
+            Math::Vector4(
+                l_RenderScene.get_directional_light_direction().x,
+                l_RenderScene.get_directional_light_direction().y,
+                l_RenderScene.get_directional_light_direction().z,
+                0.0f);
+
+        l_Direction = glm::normalize(l_Direction);
+
+        DirectionalLightInfo l_LightInfo;
+        l_LightInfo.direction = l_Direction;
+        l_LightInfo.color.r =
+            l_RenderScene.get_directional_light_color().r;
+        l_LightInfo.color.g =
+            l_RenderScene.get_directional_light_color().g;
+        l_LightInfo.color.b =
+            l_RenderScene.get_directional_light_color().b;
+        l_LightInfo.color.a =
+            l_RenderScene.get_directional_light_intensity();
+
+        size_t l_StagingOffset = 0;
+        const u64 l_FrameUploadSpace =
+            p_ViewInfo.request_current_staging_buffer_space(
+                sizeof(DirectionalLightInfo), &l_StagingOffset);
+
+        LOWR_VK_ASSERT_RETURN(l_FrameUploadSpace >=
+                                  sizeof(DirectionalLightInfo),
+                              "Did not have enough staging "
+                              "buffer space to upload "
+                              "directional light info frame data.");
+        {
+          p_ViewInfo.write_current_staging_buffer(
+              &l_LightInfo, l_FrameUploadSpace, l_StagingOffset);
+
+          VkBufferCopy l_CopyRegion{};
+          l_CopyRegion.srcOffset = l_StagingOffset;
+          l_CopyRegion.dstOffset = 0;
+          l_CopyRegion.size = l_FrameUploadSpace;
+
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              p_ViewInfo.get_current_staging_buffer().buffer.buffer,
+              p_ViewInfo.get_directional_light_buffer().buffer, 1,
+              &l_CopyRegion);
+        }
+
+        return true;
+      }
+
       static bool prepare_render_view_dimensions(
           float p_Delta, RenderView p_RenderView, ViewInfo p_ViewInfo)
       {
@@ -798,6 +870,19 @@ namespace Low {
             ImGui_ImplVulkan_RemoveTexture(
                 (VkDescriptorSet)p_RenderView
                     .get_gbuffer_viewposition()
+                    .get_gpu()
+                    .get_imgui_texture_id());
+
+            ImageUtil::destroy(l_Image);
+            l_Image.destroy();
+          }
+          {
+            Image l_Image = p_RenderView.get_object_map()
+                                .get_gpu()
+                                .get_data_handle();
+
+            ImGui_ImplVulkan_RemoveTexture(
+                (VkDescriptorSet)p_RenderView.get_object_map()
                     .get_gpu()
                     .get_imgui_texture_id());
 
@@ -998,6 +1083,43 @@ namespace Low {
                                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        {
+          if (!p_RenderView.get_object_map().is_alive()) {
+            p_RenderView.set_object_map(
+                Texture::make_gpu_ready(N(ObjectMap)));
+          }
+
+          Image l_Image = p_RenderView.get_object_map()
+                              .get_gpu()
+                              .get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(ObjectMap));
+            p_RenderView.get_object_map().get_gpu().set_data_handle(
+                l_Image.get_id());
+          } else {
+            BufferUtil::destroy_buffer(
+                p_ViewInfo.get_object_id_buffer());
+          }
+
+          ImageUtil::create(l_Image, l_Extent, VK_FORMAT_R32_UINT,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
+
+          p_ViewInfo.set_object_id_buffer(BufferUtil::create_buffer(
+              sizeof(u32) * l_Extent.width * l_Extent.height,
+              VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+              VMA_MEMORY_USAGE_GPU_TO_CPU));
 
           ImageUtil::cmd_transition(
               l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -1219,6 +1341,10 @@ namespace Low {
                 5, i_ViewInfo.get_debug_geometry_buffer().buffer,
                 sizeof(DebugGeometryUpload) * DEBUG_GEOMETRY_COUNT, 0,
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Writer.write_buffer(
+                6, i_ViewInfo.get_directional_light_buffer().buffer,
+                sizeof(DirectionalLightInfo), 0,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 
             l_Writer.update_set(
                 Global::get_device(),
@@ -1227,6 +1353,12 @@ namespace Low {
 
           // Reset the current staging buffer
           i_ViewInfo.get_current_staging_buffer().occupied = 0;
+
+          LOWR_VK_ASSERT_RETURN(
+              prepare_render_view_directional_light(
+                  p_Delta, i_RenderView, i_ViewInfo),
+              "Failed to update directional light info for render "
+              "view");
 
           if (i_RenderView.is_dimensions_dirty()) {
             i_RenderView.set_camera_dirty(true);

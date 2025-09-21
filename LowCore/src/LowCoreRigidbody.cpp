@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -27,11 +28,14 @@ namespace Low {
 
       const uint16_t Rigidbody::TYPE_ID = 31;
       uint32_t Rigidbody::ms_Capacity = 0u;
-      uint8_t *Rigidbody::ms_Buffer = 0;
-      std::shared_mutex Rigidbody::ms_BufferMutex;
-      Low::Util::Instances::Slot *Rigidbody::ms_Slots = 0;
-      Low::Util::List<Rigidbody> Rigidbody::ms_LivingInstances =
-          Low::Util::List<Rigidbody>();
+      uint32_t Rigidbody::ms_PageSize = 0u;
+      Low::Util::SharedMutex Rigidbody::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          Rigidbody::ms_PagesLock(Rigidbody::ms_PagesMutex,
+                                  std::defer_lock);
+      Low::Util::List<Rigidbody> Rigidbody::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          Rigidbody::ms_Pages;
 
       Rigidbody::Rigidbody() : Low::Util::Handle(0ull)
       {
@@ -60,30 +64,37 @@ namespace Low {
       Rigidbody Rigidbody::make(Low::Core::Entity p_Entity,
                                 Low::Util::UniqueId p_UniqueId)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         Rigidbody l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
 
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, fixed, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, gravity, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, mass, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, initialized, bool) =
             false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, rigid_dynamic,
-                                PhysicsRigidDynamic))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, rigid_dynamic,
+                                   PhysicsRigidDynamic))
             PhysicsRigidDynamic();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, physics_shape,
-                                PhysicsShape)) PhysicsShape();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, shape,
-                                Math::Shape)) Math::Shape();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Rigidbody, entity,
-                                Low::Core::Entity))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, physics_shape,
+                                   PhysicsShape)) PhysicsShape();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, shape,
+                                   Math::Shape)) Math::Shape();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Rigidbody, entity,
+                                   Low::Core::Entity))
             Low::Core::Entity();
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -123,22 +134,33 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        {
+          Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        System::Physics::remove_rigid_dynamic(get_rigid_dynamic());
-        get_rigid_dynamic().destroy();
-        get_physics_shape().destroy();
-        set_initialized(false);
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
+          System::Physics::remove_rigid_dynamic(get_rigid_dynamic());
+          get_rigid_dynamic().destroy();
+          get_physics_shape().destroy();
+          set_initialized(false);
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
+        }
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
         Low::Util::remove_unique_id(get_unique_id());
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -147,11 +169,12 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void Rigidbody::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -159,12 +182,21 @@ namespace Low {
         ms_Capacity =
             Low::Util::Config::get_capacity(N(LowCore), N(Rigidbody));
 
-        initialize_buffer(&ms_Buffer, RigidbodyData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_Rigidbody);
-        LOW_PROFILE_ALLOC(type_slots_Rigidbody);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, Rigidbody::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Rigidbody);
@@ -191,12 +223,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(fixed);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, fixed);
+          l_PropertyInfo.dataOffset =
+              offsetof(Rigidbody::Data, fixed);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.is_fixed();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
                                               fixed, bool);
@@ -209,6 +243,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_fixed();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -220,12 +255,13 @@ namespace Low {
           l_PropertyInfo.name = N(gravity);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(RigidbodyData, gravity);
+              offsetof(Rigidbody::Data, gravity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.is_gravity();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
                                               gravity, bool);
@@ -238,6 +274,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_gravity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -248,12 +285,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(mass);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, mass);
+          l_PropertyInfo.dataOffset = offsetof(Rigidbody::Data, mass);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.get_mass();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
                                               mass, float);
@@ -266,6 +304,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((float *)p_Data) = l_Handle.get_mass();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -277,12 +316,13 @@ namespace Low {
           l_PropertyInfo.name = N(initialized);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(RigidbodyData, initialized);
+              offsetof(Rigidbody::Data, initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.is_initialized();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
                                               initialized, bool);
@@ -292,6 +332,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_initialized();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -303,13 +344,14 @@ namespace Low {
           l_PropertyInfo.name = N(rigid_dynamic);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(RigidbodyData, rigid_dynamic);
+              offsetof(Rigidbody::Data, rigid_dynamic);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.get_rigid_dynamic();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
                                               rigid_dynamic,
@@ -320,6 +362,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((PhysicsRigidDynamic *)p_Data) =
                 l_Handle.get_rigid_dynamic();
           };
@@ -332,7 +375,7 @@ namespace Low {
           l_PropertyInfo.name = N(physics_shape);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(RigidbodyData, physics_shape);
+              offsetof(Rigidbody::Data, physics_shape);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
@@ -352,12 +395,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(shape);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, shape);
+          l_PropertyInfo.dataOffset =
+              offsetof(Rigidbody::Data, shape);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::SHAPE;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.get_shape();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Rigidbody,
                                               shape, Math::Shape);
@@ -370,6 +415,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((Math::Shape *)p_Data) = l_Handle.get_shape();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -380,12 +426,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(RigidbodyData, entity);
+          l_PropertyInfo.dataOffset =
+              offsetof(Rigidbody::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Rigidbody, entity, Low::Core::Entity);
@@ -398,6 +446,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -409,12 +458,13 @@ namespace Low {
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(RigidbodyData, unique_id);
+              offsetof(Rigidbody::Data, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Rigidbody, unique_id, Low::Util::UniqueId);
@@ -424,6 +474,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Rigidbody l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Rigidbody> l_HandleLock(l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -439,13 +490,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_Rigidbody);
-        LOW_PROFILE_FREE(type_slots_Rigidbody);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle Rigidbody::_find_by_index(uint32_t p_Index)
@@ -459,8 +516,18 @@ namespace Low {
 
         Rigidbody l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -481,9 +548,22 @@ namespace Low {
 
       bool Rigidbody::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != Rigidbody::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == Rigidbody::TYPE_ID &&
-               check_alive(ms_Slots, Rigidbody::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t Rigidbody::get_capacity()
@@ -533,7 +613,8 @@ namespace Low {
         p_Node["mass"] = get_mass();
         Low::Util::Serialization::serialize(p_Node["shape"],
                                             get_shape());
-        p_Node["unique_id"] = get_unique_id();
+        p_Node["_unique_id"] =
+            Low::Util::hash_to_string(get_unique_id()).c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -551,14 +632,16 @@ namespace Low {
       Rigidbody::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
       {
-        Rigidbody l_Handle = Rigidbody::make(p_Creator.get_id());
-
+        Low::Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
-          Low::Util::remove_unique_id(l_Handle.get_unique_id());
-          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-          Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                        l_Handle.get_id());
+          l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
+        } else if (p_Node["_unique_id"]) {
+          l_HandleUniqueId = Low::Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
         }
+
+        Rigidbody l_Handle =
+            Rigidbody::make(p_Creator.get_id(), l_HandleUniqueId);
 
         if (p_Node["fixed"]) {
           l_Handle.set_fixed(p_Node["fixed"].as<bool>());
@@ -637,12 +720,12 @@ namespace Low {
       bool Rigidbody::is_fixed() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_fixed
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_fixed
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, fixed, bool);
       }
       void Rigidbody::toggle_fixed()
@@ -653,15 +736,14 @@ namespace Low {
       void Rigidbody::set_fixed(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_fixed
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_fixed
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, fixed, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -689,12 +771,12 @@ namespace Low {
       bool Rigidbody::is_gravity() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gravity
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_gravity
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, gravity, bool);
       }
       void Rigidbody::toggle_gravity()
@@ -705,15 +787,14 @@ namespace Low {
       void Rigidbody::set_gravity(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gravity
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_gravity
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, gravity, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -741,26 +822,25 @@ namespace Low {
       float Rigidbody::get_mass() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mass
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_mass
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, mass, float);
       }
       void Rigidbody::set_mass(float p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mass
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mass
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, mass, float) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -788,12 +868,12 @@ namespace Low {
       bool Rigidbody::is_initialized() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, initialized, bool);
       }
       void Rigidbody::toggle_initialized()
@@ -804,15 +884,14 @@ namespace Low {
       void Rigidbody::set_initialized(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, initialized, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
 
@@ -824,12 +903,12 @@ namespace Low {
       PhysicsRigidDynamic &Rigidbody::get_rigid_dynamic() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rigid_dynamic
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_rigid_dynamic
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, rigid_dynamic,
                         PhysicsRigidDynamic);
       }
@@ -837,38 +916,37 @@ namespace Low {
       PhysicsShape &Rigidbody::get_physics_shape() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_physics_shape
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_physics_shape
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, physics_shape, PhysicsShape);
       }
 
       Math::Shape &Rigidbody::get_shape() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_shape
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_shape
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, shape, Math::Shape);
       }
       void Rigidbody::set_shape(Math::Shape &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_shape
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_shape
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, shape, Math::Shape) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -919,26 +997,25 @@ namespace Low {
       Low::Core::Entity Rigidbody::get_entity() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, entity, Low::Core::Entity);
       }
       void Rigidbody::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, entity, Low::Core::Entity) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -950,26 +1027,25 @@ namespace Low {
       Low::Util::UniqueId Rigidbody::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId);
       }
       void Rigidbody::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Rigidbody> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Rigidbody, unique_id, Low::Util::UniqueId) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -978,121 +1054,83 @@ namespace Low {
         broadcast_observable(N(unique_id));
       }
 
-      uint32_t Rigidbody::create_instance()
+      uint32_t Rigidbody::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void Rigidbody::increase_budget()
+      u32 Rigidbody::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for Rigidbody.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, Rigidbody::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer =
-            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                              sizeof(RigidbodyData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, fixed) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, fixed) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
+      bool Rigidbody::get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, gravity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, gravity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, mass) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, mass) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(float));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, initialized) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, initialized) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, rigid_dynamic) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, rigid_dynamic) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(PhysicsRigidDynamic));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, physics_shape) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, physics_shape) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(PhysicsShape));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, shape) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, shape) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Math::Shape));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, entity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, entity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::Entity));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(RigidbodyData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(RigidbodyData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG << "Auto-increased budget for Rigidbody from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

@@ -16,6 +16,9 @@
 #include <future>
 #include <functional>
 
+#include <shared_mutex>
+#include <mutex>
+
 #include "LowUtilMemory.h"
 
 namespace Low {

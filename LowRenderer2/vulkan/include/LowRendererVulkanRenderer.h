@@ -5,7 +5,6 @@
 #include "vulkan/vulkan.h"
 
 #include "LowRendererRenderObject.h"
-#include "LowRendererMeshInfo.h"
 
 namespace Low {
   namespace Renderer {

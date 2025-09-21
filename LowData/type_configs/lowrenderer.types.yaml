@@ -543,39 +543,3 @@ types:
       properties:
         type: Util::List<MaterialTypeProperty>
 
-  Material:
-    dynamic_increase: false
-    private_make: true
-    header_imports:
-      - LowRendererMaterialType.h
-      - LowRendererContext.h
-      - LowUtilVariant.h
-    source_imports:
-      - LowRendererTexture2D.h
-    properties:
-      material_type:
-        type: MaterialType
-        handle: true
-      context:
-        type: Interface::Context
-        handle: true
-        private_setter: true
-        private_getter: true
-    functions:
-      make:
-        return_type: Material
-        return_handle: true
-        static: true
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: context
-            type: Interface::Context
-            handle: true
-      set_property:
-        return_type: void
-        parameters:
-          - name: propertyName
-            type: Util::Name
-          - name: value
-            type: Util::Variant

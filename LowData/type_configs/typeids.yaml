@@ -83,6 +83,12 @@ LowRenderer2:
   EditorImage: 82
   EditorImageStaging: 83
   EditorImageGpu: 84
+  TestType: 85
+  MaterialResource: 86
+  GpuMaterial: 87
+  Model: 88
+  ModelResource: 89
+  AdaptiveRenderObject: 90
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

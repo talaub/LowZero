@@ -1265,6 +1265,7 @@ namespace Low {
           ImGui::CreateContext();
           ImGuiIO &io = ImGui::GetIO();
           (void)io;
+          io.IniFilename = "loweditor.ini";
           io.ConfigFlags |=
               ImGuiConfigFlags_DockingEnable; // Enable Docking
           io.ConfigFlags |=
@@ -4711,7 +4712,7 @@ namespace Low {
         p_Callbacks.imgui_image_render = &vk_imgui_image_render;
       }
     } // namespace Vulkan
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low
 
 #undef SKIP_DEBUG_LEVEL

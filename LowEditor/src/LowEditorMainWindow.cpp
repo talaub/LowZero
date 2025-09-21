@@ -28,6 +28,7 @@
 #include "LowEditorThemes.h"
 #include "LowEditorTypeManagerWidget.h"
 #include "LowEditorScriptingErrorWidget.h"
+#include "LowEditorAppearanceWidget.h"
 #include "LowEditor.h"
 
 #include "LowUtil.h"
@@ -161,7 +162,8 @@ namespace Low {
     }
 
     void register_editor_widget(Low::Util::String p_Path,
-                                Widget *p_Widget, bool p_DefaultOpen)
+                                Widget *p_Widget, bool p_DefaultOpen,
+                                bool p_AddToViewMenu)
     {
       Util::List<Util::String> l_Parts;
       Util::StringHelper::split(p_Path, '/', l_Parts);
@@ -171,6 +173,7 @@ namespace Low {
       l_Widget.name = l_Parts.back().c_str();
       l_Widget.open = p_DefaultOpen;
       l_Widget.widget = p_Widget;
+      l_Widget.viewMenu = p_AddToViewMenu;
 
       g_Widgets[p_Path] = l_Widget;
 
@@ -272,6 +275,9 @@ namespace Low {
         for (auto it = p_MenuEntry.widgets.begin();
              it != p_MenuEntry.widgets.end(); ++it) {
           EditorWidget &i_Widget = g_Widgets[*it];
+          if (!i_Widget.viewMenu) {
+            continue;
+          }
           if (ImGui::MenuItem(i_Widget.name.c_str(), nullptr,
                               i_Widget.open)) {
             i_Widget.open = !i_Widget.open;
@@ -357,6 +363,11 @@ namespace Low {
           ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
+          if (ImGui::MenuItem("Appearance")) {
+            g_Widgets["Appearance"].open =
+                !g_Widgets["Appearance"].open;
+            save_user_settings();
+          }
           if (ImGui::BeginMenu("Themes")) {
             if (themes_render_menu()) {
               save_user_settings();
@@ -598,6 +609,8 @@ namespace Low {
       register_editor_widget("UI-Views", new UiWidget(), false);
       register_editor_widget("Scripting errors",
                              new ScriptingErrorWidget, false);
+      register_editor_widget("Appearance", new AppearanceWidget,
+                             false, false);
 
       for (auto &it : get_type_metadata()) {
         if (it.second.editor.manager) {
@@ -719,5 +732,5 @@ namespace Low {
       }
 
     } // namespace Helper
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

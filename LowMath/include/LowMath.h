@@ -162,6 +162,8 @@ namespace Low {
       LOW_EXPORT float random_range_int(int p_Min, int p_Max);
       LOW_EXPORT bool random_percent(u8 p_Percent);
       LOW_EXPORT bool random_percent(float p_Percent);
+
+      LOW_EXPORT u32 next_power_of_two(u32 p_Value);
     } // namespace Util
   } // namespace Math
 } // namespace Low

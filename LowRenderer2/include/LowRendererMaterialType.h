@@ -7,7 +7,6 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererHelper.h"
 #include "LowRendererMaterialTypeFamily.h"
@@ -34,30 +33,33 @@ namespace Low {
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MaterialTypeData
-    {
-      bool transparent;
-      uint64_t draw_pipeline_handle;
-      uint64_t depth_pipeline_handle;
-      Util::List<MaterialTypeInput> inputs;
-      bool initialized;
-      Low::Renderer::GraphicsPipelineConfig draw_pipeline_config;
-      Low::Renderer::GraphicsPipelineConfig depth_pipeline_config;
-      Low::Renderer::MaterialTypeFamily family;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(MaterialTypeData);
-      }
-    };
-
     struct LOW_RENDERER2_API MaterialType : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        bool transparent;
+        uint64_t draw_pipeline_handle;
+        uint64_t depth_pipeline_handle;
+        Util::List<MaterialTypeInput> inputs;
+        bool initialized;
+        Low::Renderer::GraphicsPipelineConfig draw_pipeline_config;
+        Low::Renderer::GraphicsPipelineConfig depth_pipeline_config;
+        Low::Renderer::MaterialTypeFamily family;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<MaterialType> ms_LivingInstances;
 
@@ -132,9 +134,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == MaterialType::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        MaterialType l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -186,11 +187,17 @@ namespace Low {
       void set_draw_fragment_shader_path(Low::Util::String p_Path);
       void set_depth_vertex_shader_path(Low::Util::String p_Path);
       void set_depth_fragment_shader_path(Low::Util::String p_Path);
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       Util::List<MaterialTypeInput> &get_inputs() const;
       void set_family(Low::Renderer::MaterialTypeFamily p_Value);
       void calculate_offsets();

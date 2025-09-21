@@ -12,9 +12,10 @@ namespace Low {
 
       bool LOW_RENDERER2_API import_mesh(Util::String p_ImportPath,
                                          Util::String p_OutputPath);
-
       bool LOW_RENDERER2_API import_font(Util::String p_ImportPath,
                                          Util::String p_OutputPath);
+      bool LOW_RENDERER2_API import_texture(
+          Util::String p_ImportPath, Util::String p_OutputPath);
     } // namespace ResourceImporter
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

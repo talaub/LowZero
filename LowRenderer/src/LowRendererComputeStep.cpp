@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -22,11 +23,14 @@ namespace Low {
 
     const uint16_t ComputeStep::TYPE_ID = 10;
     uint32_t ComputeStep::ms_Capacity = 0u;
-    uint8_t *ComputeStep::ms_Buffer = 0;
-    std::shared_mutex ComputeStep::ms_BufferMutex;
-    Low::Util::Instances::Slot *ComputeStep::ms_Slots = 0;
-    Low::Util::List<ComputeStep> ComputeStep::ms_LivingInstances =
-        Low::Util::List<ComputeStep>();
+    uint32_t ComputeStep::ms_PageSize = 0u;
+    Low::Util::SharedMutex ComputeStep::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        ComputeStep::ms_PagesLock(ComputeStep::ms_PagesMutex,
+                                  std::defer_lock);
+    Low::Util::List<ComputeStep> ComputeStep::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        ComputeStep::ms_Pages;
 
     ComputeStep::ComputeStep() : Low::Util::Handle(0ull)
     {
@@ -46,28 +50,37 @@ namespace Low {
 
     ComputeStep ComputeStep::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       ComputeStep l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = ComputeStep::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, ComputeStep, resources,
           SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>)))
           Util::Map<RenderFlow, ResourceRegistry>();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStep, config,
-                              ComputeStepConfig)) ComputeStepConfig();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ComputeStep, config,
+                                 ComputeStepConfig))
+          ComputeStepConfig();
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, ComputeStep, pipelines,
           SINGLE_ARG(
               Util::Map<RenderFlow,
                         Util::List<Interface::ComputePipeline>>)))
           Util::Map<RenderFlow,
                     Util::List<Interface::ComputePipeline>>();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, ComputeStep, signatures,
           SINGLE_ARG(
               Util::Map<
@@ -76,14 +89,13 @@ namespace Low {
           Util::Map<
               RenderFlow,
               Util::List<Interface::PipelineResourceSignature>>();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStep, context,
-                              Interface::Context))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ComputeStep, context,
+                                 Interface::Context))
           Interface::Context();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, ComputeStep, output_image,
-                              Resource::Image)) Resource::Image();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ComputeStep, output_image,
+                                 Resource::Image)) Resource::Image();
       ACCESSOR_TYPE_SOA(l_Handle, ComputeStep, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -100,16 +112,27 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -118,11 +141,12 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void ComputeStep::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -130,12 +154,21 @@ namespace Low {
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer),
                                                     N(ComputeStep));
 
-      initialize_buffer(&ms_Buffer, ComputeStepData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_ComputeStep);
-      LOW_PROFILE_ALLOC(type_slots_ComputeStep);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, ComputeStep::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(ComputeStep);
@@ -164,12 +197,13 @@ namespace Low {
         l_PropertyInfo.name = N(resources);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ComputeStepData, resources);
+            offsetof(ComputeStep::Data, resources);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_resources();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, resources,
@@ -180,6 +214,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((Util::Map<RenderFlow, ResourceRegistry> *)p_Data) =
               l_Handle.get_resources();
         };
@@ -191,12 +226,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(config);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, config);
+        l_PropertyInfo.dataOffset =
+            offsetof(ComputeStep::Data, config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = ComputeStepConfig::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_config();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, config, ComputeStepConfig);
@@ -206,6 +243,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((ComputeStepConfig *)p_Data) = l_Handle.get_config();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -217,12 +255,13 @@ namespace Low {
         l_PropertyInfo.name = N(pipelines);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ComputeStepData, pipelines);
+            offsetof(ComputeStep::Data, pipelines);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_pipelines();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, pipelines,
@@ -235,6 +274,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((Util::Map<RenderFlow,
                        Util::List<Interface::ComputePipeline>> *)
                 p_Data) = l_Handle.get_pipelines();
@@ -248,12 +288,13 @@ namespace Low {
         l_PropertyInfo.name = N(signatures);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ComputeStepData, signatures);
+            offsetof(ComputeStep::Data, signatures);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_signatures();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, signatures,
@@ -267,6 +308,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((Util::Map<
               RenderFlow,
               Util::List<Interface::PipelineResourceSignature>> *)
@@ -281,12 +323,13 @@ namespace Low {
         l_PropertyInfo.name = N(context);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ComputeStepData, context);
+            offsetof(ComputeStep::Data, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_context();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, context, Interface::Context);
@@ -296,6 +339,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((Interface::Context *)p_Data) = l_Handle.get_context();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -307,12 +351,13 @@ namespace Low {
         l_PropertyInfo.name = N(output_image);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(ComputeStepData, output_image);
+            offsetof(ComputeStep::Data, output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_output_image();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, ComputeStep, output_image, Resource::Image);
@@ -325,6 +370,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((Resource::Image *)p_Data) = l_Handle.get_output_image();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -335,12 +381,13 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(ComputeStepData, name);
+        l_PropertyInfo.dataOffset = offsetof(ComputeStep::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ComputeStep,
                                             name, Low::Util::Name);
@@ -353,6 +400,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           ComputeStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<ComputeStep> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -550,13 +598,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_ComputeStep);
-      LOW_PROFILE_FREE(type_slots_ComputeStep);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle ComputeStep::_find_by_index(uint32_t p_Index)
@@ -570,8 +624,18 @@ namespace Low {
 
       ComputeStep l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = ComputeStep::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -592,9 +656,22 @@ namespace Low {
 
     bool ComputeStep::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != ComputeStep::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == ComputeStep::TYPE_ID &&
-             check_alive(ms_Slots, ComputeStep::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t ComputeStep::get_capacity()
@@ -776,12 +853,12 @@ namespace Low {
     ComputeStep::get_resources() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resources
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_resources
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           ComputeStep, resources,
           SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
@@ -790,26 +867,25 @@ namespace Low {
     ComputeStepConfig ComputeStep::get_config() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_config
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_config
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, config, ComputeStepConfig);
     }
     void ComputeStep::set_config(ComputeStepConfig p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_config
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_config
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, config, ComputeStepConfig) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_config
 
@@ -822,12 +898,12 @@ namespace Low {
     ComputeStep::get_pipelines() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pipelines
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_pipelines
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           ComputeStep, pipelines,
           SINGLE_ARG(
@@ -840,12 +916,12 @@ namespace Low {
     ComputeStep::get_signatures() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_signatures
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_signatures
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           ComputeStep, signatures,
           SINGLE_ARG(
@@ -857,26 +933,25 @@ namespace Low {
     Interface::Context ComputeStep::get_context() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_context
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_context
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, context, Interface::Context);
     }
     void ComputeStep::set_context(Interface::Context p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_context
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_context
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, context, Interface::Context) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_context
 
@@ -888,26 +963,25 @@ namespace Low {
     Resource::Image ComputeStep::get_output_image() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_output_image
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_output_image
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, output_image, Resource::Image);
     }
     void ComputeStep::set_output_image(Resource::Image p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_output_image
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_output_image
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, output_image, Resource::Image) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_output_image
 
@@ -919,26 +993,25 @@ namespace Low {
     Low::Util::Name ComputeStep::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(ComputeStep, name, Low::Util::Name);
     }
     void ComputeStep::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(ComputeStep, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -964,6 +1037,7 @@ namespace Low {
 
     void ComputeStep::prepare(RenderFlow p_RenderFlow)
     {
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
 
       Util::Map<RenderFlow, ResourceRegistry> &l_Resources =
@@ -993,6 +1067,7 @@ namespace Low {
 
     void ComputeStep::execute(RenderFlow p_RenderFlow)
     {
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
 
       LOW_ASSERT(get_resources().find(p_RenderFlow) !=
@@ -1023,6 +1098,7 @@ namespace Low {
 
     void ComputeStep::update_dimensions(RenderFlow p_RenderFlow)
     {
+      Low::Util::HandleLock<ComputeStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions
 
       get_resources()[p_RenderFlow].update_dimensions(p_RenderFlow);
@@ -1291,151 +1367,81 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_default_execute
     }
 
-    uint32_t ComputeStep::create_instance()
+    uint32_t ComputeStep::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void ComputeStep::increase_budget()
+    u32 ComputeStep::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for ComputeStep.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, ComputeStep::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(ComputeStepData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          ComputeStep i_ComputeStep = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(ComputeStepData, resources) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Util::Map<RenderFlow,
-                                             ResourceRegistry>))])
-              Util::Map<RenderFlow, ResourceRegistry>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(
-              i_ComputeStep, ComputeStep, resources,
-              SINGLE_ARG(Util::Map<RenderFlow, ResourceRegistry>));
-        }
+    bool ComputeStep::get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, config) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, config) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(ComputeStepConfig));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          ComputeStep i_ComputeStep = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer
-                  [offsetof(ComputeStepData, pipelines) *
-                       (l_Capacity + l_CapacityIncrease) +
-                   (it->get_index() *
-                    sizeof(Util::Map<
-                           RenderFlow,
-                           Util::List<Interface::ComputePipeline>>))])
-              Util::Map<RenderFlow,
-                        Util::List<Interface::ComputePipeline>>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(
-              i_ComputeStep, ComputeStep, pipelines,
-              SINGLE_ARG(
-                  Util::Map<RenderFlow,
-                            Util::List<Interface::ComputePipeline>>));
-        }
-      }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          ComputeStep i_ComputeStep = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer
-                  [offsetof(ComputeStepData, signatures) *
-                       (l_Capacity + l_CapacityIncrease) +
-                   (it->get_index() *
-                    sizeof(Util::Map<
-                           RenderFlow,
-                           Util::List<
-                               Interface::
-                                   PipelineResourceSignature>>))])
-              Util::Map<
-                  RenderFlow,
-                  Util::List<Interface::PipelineResourceSignature>>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(
-              i_ComputeStep, ComputeStep, signatures,
-              SINGLE_ARG(Util::Map<
-                         RenderFlow,
-                         Util::List<
-                             Interface::PipelineResourceSignature>>));
-        }
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, context) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, context) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Interface::Context));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, output_image) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, output_image) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Resource::Image));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(ComputeStepData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(ComputeStepData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for ComputeStep from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

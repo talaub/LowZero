@@ -5,3 +5,4 @@ LowRenderer2:
   TextureState: 4
   MaterialTypeFamily: 5
   EditorImageType: 6
+  MaterialState: 7

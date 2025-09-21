@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -23,11 +24,14 @@ namespace Low {
 
       const uint16_t TexExport::TYPE_ID = 81;
       uint32_t TexExport::ms_Capacity = 0u;
-      uint8_t *TexExport::ms_Buffer = 0;
-      std::shared_mutex TexExport::ms_BufferMutex;
-      Low::Util::Instances::Slot *TexExport::ms_Slots = 0;
-      Low::Util::List<TexExport> TexExport::ms_LivingInstances =
-          Low::Util::List<TexExport>();
+      uint32_t TexExport::ms_PageSize = 0u;
+      Low::Util::SharedMutex TexExport::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          TexExport::ms_PagesLock(TexExport::ms_PagesMutex,
+                                  std::defer_lock);
+      Low::Util::List<TexExport> TexExport::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          TexExport::ms_Pages;
 
       TexExport::TexExport() : Low::Util::Handle(0ull)
       {
@@ -47,19 +51,27 @@ namespace Low {
 
       TexExport TexExport::make(Low::Util::Name p_Name)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         TexExport l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = TexExport::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, TexExport, staging_buffer,
-                                AllocatedBuffer)) AllocatedBuffer();
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
+
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TexExport,
+                                   staging_buffer, AllocatedBuffer))
+            AllocatedBuffer();
         ACCESSOR_TYPE_SOA(l_Handle, TexExport, name,
                           Low::Util::Name) = Low::Util::Name(0u);
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -75,16 +87,27 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-        BufferUtil::destroy_buffer(get_staging_buffer());
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
+        {
+          Low::Util::HandleLock<TexExport> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          BufferUtil::destroy_buffer(get_staging_buffer());
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
+        }
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -93,23 +116,33 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void TexExport::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                       N(TexExport));
 
-        initialize_buffer(&ms_Buffer, TexExportData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_TexExport);
-        LOW_PROFILE_ALLOC(type_slots_TexExport);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, TexExport::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(TexExport);
@@ -138,13 +171,14 @@ namespace Low {
           l_PropertyInfo.name = N(staging_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TexExportData, staging_buffer);
+              offsetof(TexExport::Data, staging_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             TexExport l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
             l_Handle.get_staging_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, TexExport, staging_buffer, AllocatedBuffer);
@@ -157,6 +191,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             TexExport l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
             *((AllocatedBuffer *)p_Data) =
                 l_Handle.get_staging_buffer();
           };
@@ -169,12 +204,13 @@ namespace Low {
           l_PropertyInfo.name = N(frame_index);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TexExportData, frame_index);
+              offsetof(TexExport::Data, frame_index);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             TexExport l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
             l_Handle.get_frame_index();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexExport,
                                               frame_index, uint32_t);
@@ -187,6 +223,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             TexExport l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
             *((uint32_t *)p_Data) = l_Handle.get_frame_index();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -197,12 +234,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TexExportData, name);
+          l_PropertyInfo.dataOffset = offsetof(TexExport::Data, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             TexExport l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexExport,
                                               name, Low::Util::Name);
@@ -215,6 +253,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             TexExport l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<TexExport> l_HandleLock(l_Handle);
             *((Low::Util::Name *)p_Data) = l_Handle.get_name();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -229,13 +268,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_TexExport);
-        LOW_PROFILE_FREE(type_slots_TexExport);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle TexExport::_find_by_index(uint32_t p_Index)
@@ -249,8 +294,18 @@ namespace Low {
 
         TexExport l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = TexExport::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -271,9 +326,22 @@ namespace Low {
 
       bool TexExport::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != TexExport::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == TexExport::TYPE_ID &&
-               check_alive(ms_Slots, TexExport::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t TexExport::get_capacity()
@@ -425,25 +493,24 @@ namespace Low {
       AllocatedBuffer &TexExport::get_staging_buffer() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_staging_buffer
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(TexExport, staging_buffer, AllocatedBuffer);
       }
       void TexExport::set_staging_buffer(AllocatedBuffer &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging_buffer
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(TexExport, staging_buffer, AllocatedBuffer) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_staging_buffer
@@ -454,24 +521,23 @@ namespace Low {
       uint32_t TexExport::get_frame_index() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_index
         // LOW_CODEGEN::END::CUSTOM:GETTER_frame_index
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(TexExport, frame_index, uint32_t);
       }
       void TexExport::set_frame_index(uint32_t p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_index
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_index
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(TexExport, frame_index, uint32_t) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_index
         // LOW_CODEGEN::END::CUSTOM:SETTER_frame_index
@@ -482,24 +548,23 @@ namespace Low {
       Low::Util::Name TexExport::get_name() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(TexExport, name, Low::Util::Name);
       }
       void TexExport::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(TexExport, name, Low::Util::Name) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -507,80 +572,83 @@ namespace Low {
         broadcast_observable(N(name));
       }
 
-      uint32_t TexExport::create_instance()
+      uint32_t TexExport::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void TexExport::increase_budget()
+      u32 TexExport::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for TexExport.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, TexExport::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer =
-            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                              sizeof(TexExportData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(TexExportData, staging_buffer) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TexExportData, staging_buffer) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(AllocatedBuffer));
+      bool TexExport::get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(TexExportData, frame_index) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TexExportData, frame_index) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(uint32_t));
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(TexExportData, name) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TexExportData, name) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::Name));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG << "Auto-increased budget for TexExport from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

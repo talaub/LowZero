@@ -10,7 +10,6 @@
 #include "LowRendererExposedObjects.h"
 #include "LowCoreResource.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -21,26 +20,29 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_CORE_API Texture2DData
-    {
-      Util::String path;
-      Renderer::Texture2D renderer_texture;
-      uint32_t reference_count;
-      ResourceState state;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(Texture2DData);
-      }
-    };
-
     struct LOW_CORE_API Texture2D : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        Util::String path;
+        Renderer::Texture2D renderer_texture;
+        uint32_t reference_count;
+        ResourceState state;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<Texture2D> ms_LivingInstances;
 
@@ -115,9 +117,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Texture2D::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        Texture2D l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -142,11 +143,17 @@ namespace Low {
       void load();
       void unload();
       static void update();
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       void set_path(Util::String &p_Value);
       void set_path(const char *p_Value);
       void set_renderer_texture(Renderer::Texture2D p_Value);

@@ -11,7 +11,6 @@
 
 #include "LowMath.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -24,38 +23,42 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-        struct LOW_CORE_API DisplayData
-        {
-          Low::Math::Vector2 pixel_position;
-          float rotation;
-          Low::Math::Vector2 pixel_scale;
-          uint32_t layer;
-          uint64_t parent;
-          uint64_t parent_uid;
-          Low::Util::List<uint64_t> children;
-          Low::Math::Vector2 absolute_pixel_position;
-          float absolute_rotation;
-          Low::Math::Vector2 absolute_pixel_scale;
-          uint32_t absolute_layer;
-          Low::Math::Matrix4x4 world_matrix;
-          bool world_updated;
-          Low::Core::UI::Element element;
-          Low::Util::UniqueId unique_id;
-          bool dirty;
-          bool world_dirty;
-
-          static size_t get_size()
-          {
-            return sizeof(DisplayData);
-          }
-        };
-
         struct LOW_CORE_API Display : public Low::Util::Handle
         {
         public:
-          static std::shared_mutex ms_BufferMutex;
-          static uint8_t *ms_Buffer;
-          static Low::Util::Instances::Slot *ms_Slots;
+          struct Data
+          {
+          public:
+            Low::Math::Vector2 pixel_position;
+            float rotation;
+            Low::Math::Vector2 pixel_scale;
+            uint32_t layer;
+            uint64_t parent;
+            uint64_t parent_uid;
+            Low::Util::List<uint64_t> children;
+            Low::Math::Vector2 absolute_pixel_position;
+            float absolute_rotation;
+            Low::Math::Vector2 absolute_pixel_scale;
+            uint32_t absolute_layer;
+            Low::Math::Matrix4x4 world_matrix;
+            bool world_updated;
+            Low::Core::UI::Element element;
+            Low::Util::UniqueId unique_id;
+            bool dirty;
+            bool world_dirty;
+
+            static size_t get_size()
+            {
+              return sizeof(Data);
+            }
+          };
+
+        public:
+          static Low::Util::UniqueLock<Low::Util::SharedMutex>
+              ms_PagesLock;
+          static Low::Util::SharedMutex ms_PagesMutex;
+          static Low::Util::List<Low::Util::Instances::Page *>
+              ms_Pages;
 
           static Low::Util::List<Display> ms_LivingInstances;
 
@@ -128,9 +131,8 @@ namespace Low {
                       Low::Util::Handle p_Creator);
           static bool is_alive(Low::Util::Handle p_Handle)
           {
-            READ_LOCK(l_Lock);
-            return p_Handle.get_type() == Display::TYPE_ID &&
-                   p_Handle.check_alive(ms_Slots, get_capacity());
+            Display l_Handle = p_Handle.get_id();
+            return l_Handle.is_alive();
           }
 
           static void destroy(Low::Util::Handle p_Handle)
@@ -197,11 +199,17 @@ namespace Low {
           void recalculate_world_transform();
           float get_absolute_layer_float();
           bool point_is_in_bounding_box(Low::Math::Vector2 &p_Point);
+          static bool get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex);
 
         private:
-          static uint32_t ms_Capacity;
-          static uint32_t create_instance();
-          static void increase_budget();
+          static u32 ms_Capacity;
+          static u32 ms_PageSize;
+          static u32 create_instance(
+              u32 &p_PageIndex, u32 &p_SlotIndex,
+              Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+          static u32 create_page();
           void set_parent_uid(uint64_t p_Value);
           void
           set_absolute_pixel_position(Low::Math::Vector2 &p_Value);

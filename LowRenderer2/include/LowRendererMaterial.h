@@ -8,10 +8,12 @@
 #include "LowUtilYaml.h"
 
 #include "LowRendererMaterialType.h"
+#include "LowRendererMaterialState.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererTexture.h"
+#include "LowRendererGpuMaterial.h"
+#include "LowRendererMaterialResource.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -20,25 +22,33 @@ namespace Low {
     struct PendingTextureBinding;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MaterialData
-    {
-      MaterialType material_type;
-      Util::List<uint8_t> data;
-      bool dirty;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(MaterialData);
-      }
-    };
-
     struct LOW_RENDERER2_API Material : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        MaterialState state;
+        MaterialType material_type;
+        Low::Renderer::MaterialResource resource;
+        Low::Renderer::GpuMaterial gpu;
+        Low::Util::Map<Low::Util::Name, Low::Util::Variant>
+            properties;
+        Low::Util::Set<u64> references;
+        Low::Util::UniqueId unique_id;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<Material> ms_LivingInstances;
 
@@ -51,6 +61,8 @@ namespace Low {
     private:
       static Material make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+      static Material make(Low::Util::Name p_Name,
+                           Low::Util::UniqueId p_UniqueId);
 
     public:
       explicit Material(const Material &p_Copy)
@@ -93,6 +105,10 @@ namespace Low {
                           Low::Util::Handle p_Observed,
                           Low::Util::Name p_Observable);
 
+      void reference(const u64 p_Id);
+      void dereference(const u64 p_Id);
+      u32 references() const;
+
       static uint32_t get_capacity();
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
@@ -113,9 +129,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Material::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        Material l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -125,11 +140,23 @@ namespace Low {
         l_Material.destroy();
       }
 
+      MaterialState get_state() const;
+      void set_state(MaterialState p_Value);
+
       MaterialType get_material_type() const;
 
-      bool is_dirty() const;
-      void set_dirty(bool p_Value);
-      void toggle_dirty();
+      Low::Renderer::MaterialResource get_resource() const;
+      void set_resource(Low::Renderer::MaterialResource p_Value);
+
+      Low::Renderer::GpuMaterial get_gpu() const;
+      void set_gpu(Low::Renderer::GpuMaterial p_Value);
+
+      Low::Util::Map<Low::Util::Name, Low::Util::Variant> &
+      get_properties() const;
+
+      Low::Util::UniqueId get_unique_id() const;
+
+      void mark_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -137,7 +164,10 @@ namespace Low {
       static Material
       make(Low::Util::Name p_Name,
            Low::Renderer::MaterialType p_MaterialType);
-      void *get_data() const;
+      static Material
+      make_gpu_ready(Low::Util::Name p_Name,
+                     Low::Renderer::MaterialType p_MaterialType);
+      void update_gpu();
       void set_property_vector4(Util::Name p_Name,
                                 Math::Vector4 &p_Value);
       void set_property_vector3(Util::Name p_Name,
@@ -158,17 +188,26 @@ namespace Low {
       uint32_t get_property_u32(Util::Name p_Name) const;
       Low::Renderer::Texture
       get_property_texture(Util::Name p_Name) const;
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       void set_material_type(MaterialType p_Value);
-      Util::List<uint8_t> &data() const;
+      Low::Util::Set<u64> &get_references() const;
+      void set_unique_id(Low::Util::UniqueId p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
     public:
       static Util::List<PendingTextureBinding>
           ms_PendingTextureBindings;
+      static Util::Mutex ms_PendingTextureBindingsMutex;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 

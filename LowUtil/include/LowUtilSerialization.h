@@ -4,12 +4,18 @@
 
 #include "LowUtilYaml.h"
 #include "LowUtilVariant.h"
+#include "LowUtilHashing.h"
 
 #include "LowMath.h"
 
 #define LOW_SERIALIZATION_HANDLE_FROM_UNIQUE_ID(x)                   \
   Low::Util::find_handle_by_unique_id(x.as<Low::Util::UniqueId>())   \
       .get_id()
+
+#define LOW_SERIALIZATION_GET_HASH(x)                                \
+  Low::Util::string_to_hash(LOW_YAML_AS_STRING(x))
+#define LOW_SERIALIZATION_SET_HASH(x, y)                             \
+  x = Low::Util::hash_to_string(y).c_str()
 
 namespace Low {
   namespace Util {

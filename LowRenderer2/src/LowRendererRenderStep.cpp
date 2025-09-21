@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -21,11 +22,14 @@ namespace Low {
 
     const uint16_t RenderStep::TYPE_ID = 64;
     uint32_t RenderStep::ms_Capacity = 0u;
-    uint8_t *RenderStep::ms_Buffer = 0;
-    std::shared_mutex RenderStep::ms_BufferMutex;
-    Low::Util::Instances::Slot *RenderStep::ms_Slots = 0;
-    Low::Util::List<RenderStep> RenderStep::ms_LivingInstances =
-        Low::Util::List<RenderStep>();
+    uint32_t RenderStep::ms_PageSize = 0u;
+    Low::Util::SharedMutex RenderStep::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        RenderStep::ms_PagesLock(RenderStep::ms_PagesMutex,
+                                 std::defer_lock);
+    Low::Util::List<RenderStep> RenderStep::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        RenderStep::ms_Pages;
 
     RenderStep::RenderStep() : Low::Util::Handle(0ull)
     {
@@ -45,39 +49,48 @@ namespace Low {
 
     RenderStep RenderStep::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       RenderStep l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = RenderStep::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderStep, setup_callback,
-                              Low::Util::Function<bool(RenderStep)>))
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderStep, setup_callback,
+          Low::Util::Function<bool(RenderStep)>))
           Low::Util::Function<bool(RenderStep)>();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderStep, prepare_callback,
           SINGLE_ARG(
               Low::Util::Function<bool(Low::Renderer::RenderStep,
                                        Low::Renderer::RenderView)>)))
           Low::Util::Function<bool(Low::Renderer::RenderStep,
                                    Low::Renderer::RenderView)>();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderStep, teardown_callback,
           SINGLE_ARG(
               Low::Util::Function<bool(Low::Renderer::RenderStep,
                                        Low::Renderer::RenderView)>)))
           Low::Util::Function<bool(Low::Renderer::RenderStep,
                                    Low::Renderer::RenderView)>();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderStep, execute_callback,
           SINGLE_ARG(Low::Util::Function<bool(
                          Low::Renderer::RenderStep, float,
                          Low::Renderer::RenderView)>)))
           Low::Util::Function<bool(Low::Renderer::RenderStep, float,
                                    Low::Renderer::RenderView)>();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderStep, resolution_update_callback,
           SINGLE_ARG(Low::Util::Function<bool(
                          Low::Renderer::RenderStep,
@@ -89,7 +102,6 @@ namespace Low {
               Low::Renderer::RenderView)>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderStep, name, Low::Util::Name) =
           Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -120,15 +132,26 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<RenderStep> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -137,23 +160,25 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void RenderStep::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(RenderStep));
 
-      initialize_buffer(&ms_Buffer, RenderStepData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_RenderStep);
-      LOW_PROFILE_ALLOC(type_slots_RenderStep);
+      ms_PageSize = ms_Capacity;
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, RenderStep::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderStep);
@@ -182,12 +207,13 @@ namespace Low {
         l_PropertyInfo.name = N(setup_callback);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderStepData, setup_callback);
+            offsetof(RenderStep::Data, setup_callback);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           l_Handle.get_setup_callback();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderStep, setup_callback,
@@ -202,6 +228,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           *((Low::Util::Function<bool(RenderStep)> *)p_Data) =
               l_Handle.get_setup_callback();
         };
@@ -214,12 +241,13 @@ namespace Low {
         l_PropertyInfo.name = N(prepare_callback);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderStepData, prepare_callback);
+            offsetof(RenderStep::Data, prepare_callback);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           l_Handle.get_prepare_callback();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderStep, prepare_callback,
@@ -238,6 +266,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           *((Low::Util::Function<bool(Low::Renderer::RenderStep,
                                       Low::Renderer::RenderView)> *)
                 p_Data) = l_Handle.get_prepare_callback();
@@ -251,12 +280,13 @@ namespace Low {
         l_PropertyInfo.name = N(teardown_callback);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderStepData, teardown_callback);
+            offsetof(RenderStep::Data, teardown_callback);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           l_Handle.get_teardown_callback();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderStep, teardown_callback,
@@ -275,6 +305,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           *((Low::Util::Function<bool(Low::Renderer::RenderStep,
                                       Low::Renderer::RenderView)> *)
                 p_Data) = l_Handle.get_teardown_callback();
@@ -288,12 +319,13 @@ namespace Low {
         l_PropertyInfo.name = N(execute_callback);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderStepData, execute_callback);
+            offsetof(RenderStep::Data, execute_callback);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           l_Handle.get_execute_callback();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderStep, execute_callback,
@@ -312,6 +344,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           *((Low::Util::Function<bool(
                  Low::Renderer::RenderStep, float,
                  Low::Renderer::RenderView)> *)p_Data) =
@@ -326,12 +359,13 @@ namespace Low {
         l_PropertyInfo.name = N(resolution_update_callback);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderStepData, resolution_update_callback);
+            offsetof(RenderStep::Data, resolution_update_callback);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           l_Handle.get_resolution_update_callback();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderStep, resolution_update_callback,
@@ -352,6 +386,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           *((Low::Util::Function<bool(
                  Low::Renderer::RenderStep,
                  Low::Math::UVector2 p_NewDimensions,
@@ -366,12 +401,13 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderStepData, name);
+        l_PropertyInfo.dataOffset = offsetof(RenderStep::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderStep,
                                             name, Low::Util::Name);
@@ -384,6 +420,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderStep l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderStep> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -494,13 +531,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_RenderStep);
-      LOW_PROFILE_FREE(type_slots_RenderStep);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle RenderStep::_find_by_index(uint32_t p_Index)
@@ -514,8 +557,18 @@ namespace Low {
 
       RenderStep l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = RenderStep::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -536,9 +589,22 @@ namespace Low {
 
     bool RenderStep::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != RenderStep::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == RenderStep::TYPE_ID &&
-             check_alive(ms_Slots, RenderStep::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t RenderStep::get_capacity()
@@ -693,11 +759,11 @@ namespace Low {
     RenderStep::get_setup_callback() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_setup_callback
       // LOW_CODEGEN::END::CUSTOM:GETTER_setup_callback
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderStep, setup_callback,
                       Low::Util::Function<bool(RenderStep)>);
     }
@@ -705,15 +771,14 @@ namespace Low {
         Low::Util::Function<bool(RenderStep)> p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_setup_callback
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_setup_callback
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderStep, setup_callback,
                Low::Util::Function<bool(RenderStep)>) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_setup_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_setup_callback
@@ -726,11 +791,11 @@ namespace Low {
     RenderStep::get_prepare_callback() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_prepare_callback
       // LOW_CODEGEN::END::CUSTOM:GETTER_prepare_callback
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           RenderStep, prepare_callback,
           SINGLE_ARG(
@@ -743,19 +808,18 @@ namespace Low {
             p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_prepare_callback
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_prepare_callback
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(
           RenderStep, prepare_callback,
           SINGLE_ARG(
               Low::Util::Function<bool(Low::Renderer::RenderStep,
                                        Low::Renderer::RenderView)>)) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_prepare_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_prepare_callback
@@ -768,11 +832,11 @@ namespace Low {
     RenderStep::get_teardown_callback() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_teardown_callback
       // LOW_CODEGEN::END::CUSTOM:GETTER_teardown_callback
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           RenderStep, teardown_callback,
           SINGLE_ARG(
@@ -785,19 +849,18 @@ namespace Low {
             p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_teardown_callback
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_teardown_callback
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(
           RenderStep, teardown_callback,
           SINGLE_ARG(
               Low::Util::Function<bool(Low::Renderer::RenderStep,
                                        Low::Renderer::RenderView)>)) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_teardown_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_teardown_callback
@@ -810,11 +873,11 @@ namespace Low {
     RenderStep::get_execute_callback() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_execute_callback
       // LOW_CODEGEN::END::CUSTOM:GETTER_execute_callback
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderStep, execute_callback,
                       SINGLE_ARG(Low::Util::Function<bool(
                                      Low::Renderer::RenderStep, float,
@@ -826,17 +889,16 @@ namespace Low {
             p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_execute_callback
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_execute_callback
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderStep, execute_callback,
                SINGLE_ARG(Low::Util::Function<bool(
                               Low::Renderer::RenderStep, float,
                               Low::Renderer::RenderView)>)) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_execute_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_execute_callback
@@ -850,11 +912,11 @@ namespace Low {
     RenderStep::get_resolution_update_callback() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resolution_update_callback
       // LOW_CODEGEN::END::CUSTOM:GETTER_resolution_update_callback
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(
           RenderStep, resolution_update_callback,
           SINGLE_ARG(Low::Util::Function<bool(
@@ -869,18 +931,17 @@ namespace Low {
             p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resolution_update_callback
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resolution_update_callback
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderStep, resolution_update_callback,
                SINGLE_ARG(Low::Util::Function<bool(
                               Low::Renderer::RenderStep,
                               Low::Math::UVector2 p_NewDimensions,
                               Low::Renderer::RenderView)>)) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resolution_update_callback
       // LOW_CODEGEN::END::CUSTOM:SETTER_resolution_update_callback
@@ -891,24 +952,23 @@ namespace Low {
     Low::Util::Name RenderStep::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderStep, name, Low::Util::Name);
     }
     void RenderStep::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderStep, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -918,6 +978,7 @@ namespace Low {
 
     bool RenderStep::prepare(Low::Renderer::RenderView p_RenderView)
     {
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
       return get_prepare_callback()(get_id(), p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
@@ -925,6 +986,7 @@ namespace Low {
 
     bool RenderStep::teardown(Low::Renderer::RenderView p_RenderView)
     {
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_teardown
       return get_teardown_callback()(get_id(), p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_teardown
@@ -934,6 +996,7 @@ namespace Low {
         Low::Math::UVector2 &p_NewDimensions,
         Low::Renderer::RenderView p_RenderView)
     {
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_resolution
       return get_resolution_update_callback()(
           get_id(), p_NewDimensions, p_RenderView);
@@ -943,6 +1006,7 @@ namespace Low {
     bool RenderStep::execute(float p_DeltaTime,
                              Low::Renderer::RenderView p_RenderView)
     {
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
       return get_execute_callback()(get_id(), p_DeltaTime,
                                     p_RenderView);
@@ -951,24 +1015,81 @@ namespace Low {
 
     bool RenderStep::setup()
     {
+      Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_setup
       return get_setup_callback()(get_id());
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_setup
     }
 
-    uint32_t RenderStep::create_instance()
+    uint32_t RenderStep::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      LOW_ASSERT(l_Index < get_capacity(),
-                 "Budget blown for type RenderStep");
-      ms_Slots[l_Index].m_Occupied = true;
+      LOW_ASSERT(l_FoundIndex, "Budget blown for type RenderStep");
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
+    }
+
+    u32 RenderStep::create_page()
+    {
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for RenderStep.");
+
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, RenderStep::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
+
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
+
+    bool RenderStep::get_page_for_index(const u32 p_Index,
+                                        u32 &p_PageIndex,
+                                        u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
+      }
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
+      }
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

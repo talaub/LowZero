@@ -33,6 +33,8 @@ types:
         type: bool
       render_scene_handle:
         type: uint64_t
+      object_id:
+        type: uint32_t
     functions:
       make:
         static: true
@@ -80,6 +82,9 @@ types:
       draw_commands:
         type: Low::Util::List<DrawCommand>
         no_setter: true
+      object_id:
+        type: uint32_t
+        dirty_flag: dirty
     functions:
       make:
         static: true
@@ -106,6 +111,12 @@ types:
         private_setter: true
       data_handle:
         type: uint64_t
+      directional_light_direction:
+        type: Low::Math::Vector3
+      directional_light_color:
+        type: Low::Math::ColorRGB
+      directional_light_intensity:
+        type: float
     functions:
       insert_draw_command:
         return_type: bool
@@ -145,6 +156,9 @@ types:
         type: Low::Renderer::Texture
         handle: true
       gbuffer_viewposition:
+        type: Low::Renderer::Texture
+        handle: true
+      object_map:
         type: Low::Renderer::Texture
         handle: true
       lit_image:
@@ -187,6 +201,12 @@ types:
             type: Low::Renderer::DebugGeometryDraw
         description: Add a new debug geometry draw element to this renderview.
           This element will be rendered for once frame before being cleared again.
+      read_object_id_px:
+        return_type: uint32_t
+        parameters:
+          - name: pixelPosition
+            type: const Low::Math::UVector2
+            no_ref: true
 
   MaterialType:
     private_make: true
@@ -291,120 +311,6 @@ types:
             no_ref: true
 
 
-  Material:
-    dynamic_increase: false
-    private_make: true
-    header_imports:
-      - LowRendererMaterialType.h
-    properties:
-      material_type:
-        type: MaterialType
-        handle: true
-        private_setter: true
-        skip_serialization: true
-        skip_deserialization: true
-      data:
-        type: Util::List<uint8_t>
-        private_getter: true
-        no_setter: true
-        getter_name: data
-        skip_serialization: true
-      dirty:
-        type: bool
-    functions:
-      make:
-        return_type: Material
-        return_handle: true
-        static: true
-        parameters:
-          - name: name
-            type: Low::Util::Name
-          - name: materialType
-            type: Low::Renderer::MaterialType
-            handle: true
-      get_data:
-        return_type: void*
-        constant: true
-      set_property_vector4:
-        return_type: void
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: value
-            type: Math::Vector4
-      set_property_vector3:
-        return_type: void
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: value
-            type: Math::Vector3
-      set_property_vector2:
-        return_type: void
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: value
-            type: Math::Vector2
-      set_property_float:
-        return_type: void
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: value
-            type: float
-      set_property_u32:
-        return_type: void
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: value
-            type: uint32_t
-      set_property_texture:
-        return_type: void
-        parameters:
-          - name: name
-            type: Util::Name
-          - name: value
-            type: Low::Renderer::Texture
-            handle: true
-      get_property_vector4:
-        return_type: Low::Math::Vector4
-        constant: true
-        parameters:
-          - name: name
-            type: Util::Name
-      get_property_vector3:
-        return_type: Low::Math::Vector3
-        constant: true
-        parameters:
-          - name: name
-            type: Util::Name
-      get_property_vector2:
-        return_type: Low::Math::Vector2
-        constant: true
-        parameters:
-          - name: name
-            type: Util::Name
-      get_property_float:
-        return_type: float
-        constant: true
-        parameters:
-          - name: name
-            type: Util::Name
-      get_property_u32:
-        return_type: uint32_t
-        constant: true
-        parameters:
-          - name: name
-            type: Util::Name
-      get_property_texture:
-        return_type: Low::Renderer::Texture
-        return_handle: true
-        constant: true
-        parameters:
-          - name: name
-            type: Util::Name
   RenderStep:
     dynamic_increase: false
     properties:
@@ -640,3 +546,36 @@ types:
     functions:
       finish:
         return_type: bool
+
+  AdaptiveRenderObject:
+    private_make: true
+    properties:
+      model:
+        type: Low::Renderer::Model
+        handle: true
+        private_setter: true
+      world_transform:
+        type: Low::Math::Matrix4x4
+        dirty_flag: dirty
+      render_scene_handle:
+        type: uint64_t
+        private_setter: true
+      material:
+        type: Low::Renderer::Material
+        handle: true
+        dirty_flag: dirty
+      object_id:
+        type: uint32_t
+        dirty_flag: dirty
+    functions:
+      make:
+        return_type: AdaptiveRenderObject
+        return_handle: true
+        static: true
+        parameters:
+          - name: scene
+            type: Low::Renderer::RenderScene
+            handle: true
+          - name: model
+            type: Low::Renderer::Model
+            handle: true

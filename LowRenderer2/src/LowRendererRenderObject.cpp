@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -24,11 +25,14 @@ namespace Low {
 
     const uint16_t RenderObject::TYPE_ID = 52;
     uint32_t RenderObject::ms_Capacity = 0u;
-    uint8_t *RenderObject::ms_Buffer = 0;
-    std::shared_mutex RenderObject::ms_BufferMutex;
-    Low::Util::Instances::Slot *RenderObject::ms_Slots = 0;
-    Low::Util::List<RenderObject> RenderObject::ms_LivingInstances =
-        Low::Util::List<RenderObject>();
+    uint32_t RenderObject::ms_PageSize = 0u;
+    Low::Util::SharedMutex RenderObject::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        RenderObject::ms_PagesLock(RenderObject::ms_PagesMutex,
+                                   std::defer_lock);
+    Low::Util::List<RenderObject> RenderObject::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        RenderObject::ms_Pages;
 
     RenderObject::RenderObject() : Low::Util::Handle(0ull)
     {
@@ -49,32 +53,40 @@ namespace Low {
 
     RenderObject RenderObject::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       RenderObject l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = RenderObject::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, world_transform,
-                              Low::Math::Matrix4x4))
-          Low::Math::Matrix4x4();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, mesh,
-                              Low::Renderer::Mesh))
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderObject, world_transform,
+          Low::Math::Matrix4x4)) Low::Math::Matrix4x4();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderObject, mesh,
+                                 Low::Renderer::Mesh))
           Low::Renderer::Mesh();
       ACCESSOR_TYPE_SOA(l_Handle, RenderObject, uploaded, bool) =
           false;
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, material,
-                              Low::Renderer::Material))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderObject, material,
+                                 Low::Renderer::Material))
           Low::Renderer::Material();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderObject, draw_commands,
-                              Low::Util::List<DrawCommand>))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderObject,
+                                 draw_commands,
+                                 Low::Util::List<DrawCommand>))
           Low::Util::List<DrawCommand>();
       ACCESSOR_TYPE_SOA(l_Handle, RenderObject, dirty, bool) = false;
       ACCESSOR_TYPE_SOA(l_Handle, RenderObject, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -83,6 +95,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       l_Handle.set_dirty(true);
       l_Handle.set_uploaded(false);
+      l_Handle.set_object_id(LOW_UINT32_MAX);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -92,25 +105,36 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      for (auto it = get_draw_commands().begin();
-           it != get_draw_commands().end(); ++it) {
-        if (it->is_alive()) {
-          it->destroy();
+      {
+        Low::Util::HandleLock<RenderObject> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        for (auto it = get_draw_commands().begin();
+             it != get_draw_commands().end(); ++it) {
+          if (it->is_alive()) {
+            it->destroy();
+          }
         }
-      }
 
-      if (get_mesh().is_alive()) {
-        get_mesh().dereference(get_id());
+        if (get_mesh().is_alive()) {
+          get_mesh().dereference(get_id());
+        }
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -119,23 +143,33 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void RenderObject::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(RenderObject));
 
-      initialize_buffer(&ms_Buffer, RenderObjectData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_RenderObject);
-      LOW_PROFILE_ALLOC(type_slots_RenderObject);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, RenderObject::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderObject);
@@ -164,12 +198,13 @@ namespace Low {
         l_PropertyInfo.name = N(world_transform);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderObjectData, world_transform);
+            offsetof(RenderObject::Data, world_transform);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_world_transform();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
                                             world_transform,
@@ -184,6 +219,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((Low::Math::Matrix4x4 *)p_Data) =
               l_Handle.get_world_transform();
         };
@@ -195,12 +231,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(mesh);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, mesh);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_mesh();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderObject, mesh, Low::Renderer::Mesh);
@@ -210,6 +248,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_mesh();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -221,12 +260,13 @@ namespace Low {
         l_PropertyInfo.name = N(uploaded);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderObjectData, uploaded);
+            offsetof(RenderObject::Data, uploaded);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.is_uploaded();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
                                             uploaded, bool);
@@ -239,6 +279,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_uploaded();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -249,12 +290,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(slot);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, slot);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, slot);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_slot();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
                                             slot, uint32_t);
@@ -267,6 +310,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((uint32_t *)p_Data) = l_Handle.get_slot();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -278,12 +322,13 @@ namespace Low {
         l_PropertyInfo.name = N(render_scene_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderObjectData, render_scene_handle);
+            offsetof(RenderObject::Data, render_scene_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_render_scene_handle();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderObject, render_scene_handle, uint64_t);
@@ -293,6 +338,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_render_scene_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -304,12 +350,13 @@ namespace Low {
         l_PropertyInfo.name = N(material);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderObjectData, material);
+            offsetof(RenderObject::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType = Low::Renderer::Material::TYPE_ID;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_material();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
                                             material,
@@ -323,6 +370,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((Low::Renderer::Material *)p_Data) =
               l_Handle.get_material();
         };
@@ -335,12 +383,13 @@ namespace Low {
         l_PropertyInfo.name = N(draw_commands);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderObjectData, draw_commands);
+            offsetof(RenderObject::Data, draw_commands);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_draw_commands();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderObject, draw_commands,
@@ -351,6 +400,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((Low::Util::List<DrawCommand> *)p_Data) =
               l_Handle.get_draw_commands();
         };
@@ -358,16 +408,49 @@ namespace Low {
         // End property: draw_commands
       }
       {
+        // Property: object_id
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(object_id);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, object_id);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
+          l_Handle.get_object_id();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
+                                            object_id, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_object_id(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
+          *((uint32_t *)p_Data) = l_Handle.get_object_id();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: object_id
+      }
+      {
         // Property: dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(dirty);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, dirty);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, dirty);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.is_dirty();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
                                             dirty, bool);
@@ -380,6 +463,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_dirty();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -390,12 +474,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderObjectData, name);
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderObject::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderObject,
                                             name, Low::Util::Name);
@@ -408,6 +494,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderObject> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -447,13 +534,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_RenderObject);
-      LOW_PROFILE_FREE(type_slots_RenderObject);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle RenderObject::_find_by_index(uint32_t p_Index)
@@ -467,8 +560,18 @@ namespace Low {
 
       RenderObject l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = RenderObject::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -489,9 +592,22 @@ namespace Low {
 
     bool RenderObject::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != RenderObject::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == RenderObject::TYPE_ID &&
-             check_alive(ms_Slots, RenderObject::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t RenderObject::get_capacity()
@@ -535,6 +651,7 @@ namespace Low {
       if (get_material().is_alive()) {
         l_Handle.set_material(get_material());
       }
+      l_Handle.set_object_id(get_object_id());
       l_Handle.set_dirty(is_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
@@ -632,11 +749,11 @@ namespace Low {
     Low::Math::Matrix4x4 &RenderObject::get_world_transform() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_transform
       // LOW_CODEGEN::END::CUSTOM:GETTER_world_transform
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, world_transform,
                       Low::Math::Matrix4x4);
     }
@@ -644,6 +761,7 @@ namespace Low {
     RenderObject::set_world_transform(Low::Math::Matrix4x4 &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_transform
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_transform
@@ -653,10 +771,8 @@ namespace Low {
         mark_dirty();
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderObject, world_transform,
                  Low::Math::Matrix4x4) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
         ms_Dirty.insert(get_id());
@@ -669,16 +785,17 @@ namespace Low {
     Low::Renderer::Mesh RenderObject::get_mesh() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, mesh, Low::Renderer::Mesh);
     }
     void RenderObject::set_mesh(Low::Renderer::Mesh p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
       if (get_mesh().is_alive()) {
@@ -687,9 +804,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderObject, mesh, Low::Renderer::Mesh) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
       if (p_Value.is_alive()) {
@@ -703,11 +818,11 @@ namespace Low {
     bool RenderObject::is_uploaded() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, uploaded, bool);
     }
     void RenderObject::toggle_uploaded()
@@ -718,14 +833,13 @@ namespace Low {
     void RenderObject::set_uploaded(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderObject, uploaded, bool) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
@@ -736,24 +850,23 @@ namespace Low {
     uint32_t RenderObject::get_slot() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
       // LOW_CODEGEN::END::CUSTOM:GETTER_slot
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, slot, uint32_t);
     }
     void RenderObject::set_slot(uint32_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderObject, slot, uint32_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
@@ -764,24 +877,23 @@ namespace Low {
     uint64_t RenderObject::get_render_scene_handle() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_scene_handle
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, render_scene_handle, uint64_t);
     }
     void RenderObject::set_render_scene_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene_handle
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_scene_handle
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderObject, render_scene_handle, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene_handle
@@ -792,19 +904,21 @@ namespace Low {
     Low::Renderer::Material RenderObject::get_material() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
       // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, material,
                       Low::Renderer::Material);
     }
     void RenderObject::set_material(Low::Renderer::Material p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+      Material l_OldMaterial = get_material();
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
       if (get_material() != p_Value) {
@@ -812,12 +926,16 @@ namespace Low {
         mark_dirty();
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderObject, material, Low::Renderer::Material) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+        if (l_OldMaterial.is_alive()) {
+          l_OldMaterial.dereference(get_id());
+        }
+        if (get_material().is_alive()) {
+          get_material().reference(get_id());
+        }
         ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:SETTER_material
 
@@ -829,23 +947,55 @@ namespace Low {
     RenderObject::get_draw_commands() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, draw_commands,
                       Low::Util::List<DrawCommand>);
+    }
+
+    uint32_t RenderObject::get_object_id() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_id
+      // LOW_CODEGEN::END::CUSTOM:GETTER_object_id
+
+      return TYPE_SOA(RenderObject, object_id, uint32_t);
+    }
+    void RenderObject::set_object_id(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_id
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_object_id
+
+      if (get_object_id() != p_Value) {
+        // Set dirty flags
+        mark_dirty();
+
+        // Set new value
+        TYPE_SOA(RenderObject, object_id, uint32_t) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_object_id
+        // LOW_CODEGEN::END::CUSTOM:SETTER_object_id
+
+        broadcast_observable(N(object_id));
+      }
     }
 
     bool RenderObject::is_dirty() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
       // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, dirty, bool);
     }
     void RenderObject::toggle_dirty()
@@ -856,14 +1006,13 @@ namespace Low {
     void RenderObject::set_dirty(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderObject, dirty, bool) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
       if (p_Value) {
@@ -877,9 +1026,7 @@ namespace Low {
     void RenderObject::mark_dirty()
     {
       if (!is_dirty()) {
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(RenderObject, dirty, bool) = true;
-        LOCK_UNLOCK(l_WriteLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
@@ -888,24 +1035,23 @@ namespace Low {
     Low::Util::Name RenderObject::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderObject, name, Low::Util::Name);
     }
     void RenderObject::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderObject, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -931,133 +1077,81 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
-    uint32_t RenderObject::create_instance()
+    uint32_t RenderObject::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void RenderObject::increase_budget()
+    u32 RenderObject::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for RenderObject.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, RenderObject::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(RenderObjectData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(RenderObjectData, world_transform) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(RenderObjectData, world_transform) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(Low::Math::Matrix4x4));
+    bool RenderObject::get_page_for_index(const u32 p_Index,
+                                          u32 &p_PageIndex,
+                                          u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData, mesh) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData, mesh) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Renderer::Mesh));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData, uploaded) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData, uploaded) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(bool));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData, slot) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData, slot) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint32_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData,
-                                     render_scene_handle) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData,
-                                   render_scene_handle) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData, material) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData, material) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Renderer::Material));
-      }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          RenderObject i_RenderObject = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(RenderObjectData, draw_commands) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Low::Util::List<DrawCommand>))])
-              Low::Util::List<DrawCommand>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(i_RenderObject, RenderObject,
-                                        draw_commands,
-                                        Low::Util::List<DrawCommand>);
-        }
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData, dirty) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData, dirty) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(bool));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderObjectData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderObjectData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for RenderObject from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

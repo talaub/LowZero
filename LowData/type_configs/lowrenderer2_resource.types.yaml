@@ -11,6 +11,7 @@ types:
     no_auto_serialize: true
     no_auto_deserialize: true
     reference_counted: true
+    unique_id: true
     properties:
       resource:
         type: Low::Renderer::MeshResource
@@ -28,6 +29,8 @@ types:
         type: bool
         description: Tracks if, once this mesh is loaded,
           it can be automatically unloaded by the ResourceManager
+      submesh_count:
+        type: uint32_t
     functions:
       make_from_resource_config:
         static: true
@@ -180,6 +183,21 @@ types:
       path:
         type: Util::String
         private_setter: true
+      texture_path:
+        type: Util::String
+        private_setter: true
+      sidecar_path:
+        type: Util::String
+        private_setter: true
+      source_file:
+        type: Util::String
+        private_setter: true
+      texture_id:
+        type: u64
+        private_setter: true
+      asset_hash:
+        type: u64
+        private_setter: true
     functions:
       make:
         static: true
@@ -188,9 +206,17 @@ types:
         parameters:
           - name: path
             type: Util::String
+      make_from_config:
+        static: true
+        return_type: TextureResource
+        return_handle: true
+        parameters:
+          - name: config
+            type: TextureResourceConfig
 
   Texture:
     reference_counted: true
+    unique_id: true
     properties:
       gpu:
         type: GpuTexture
@@ -215,6 +241,13 @@ types:
       get_editor_image:
         return_type: EditorImage
         return_handle: true
+      make_from_resource_config:
+        static: true
+        return_type: Texture
+        return_handle: true
+        parameters:
+          - name: config
+            type: TextureResourceConfig
 
   TextureStaging:
     properties:
@@ -273,6 +306,7 @@ types:
 
   Font:
     reference_counted: true
+    unique_id: true
     properties:
       texture:
         type: Low::Renderer::Texture
@@ -377,3 +411,223 @@ types:
       imgui_texture_id:
         type: ImTextureID
         no_ref: true
+
+  Material:
+    private_make: true
+    unique_id: true
+    reference_counted: true
+    dirty_flags:
+      dirty:
+        no_data: true
+    header_imports:
+      - LowRendererMaterialType.h
+      - LowRendererMaterialState.h
+    properties:
+      state:
+        type: MaterialState
+        enum: true
+        skip_serialization: true
+        skip_deserialization: true
+      material_type:
+        type: MaterialType
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      resource:
+        type: Low::Renderer::MaterialResource
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      gpu:
+        type: Low::Renderer::GpuMaterial
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      properties:
+        type: Low::Util::Map<Low::Util::Name, Low::Util::Variant>
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      make:
+        return_type: Material
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: materialType
+            type: Low::Renderer::MaterialType
+            handle: true
+      make_gpu_ready:
+        return_type: Material
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: materialType
+            type: Low::Renderer::MaterialType
+            handle: true
+      update_gpu:
+        return_type: void
+      set_property_vector4:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Math::Vector4
+      set_property_vector3:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Math::Vector3
+      set_property_vector2:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Math::Vector2
+      set_property_float:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: float
+      set_property_u32:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: uint32_t
+      set_property_texture:
+        return_type: void
+        parameters:
+          - name: name
+            type: Util::Name
+          - name: value
+            type: Low::Renderer::Texture
+            handle: true
+      get_property_vector4:
+        return_type: Low::Math::Vector4
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_vector3:
+        return_type: Low::Math::Vector3
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_vector2:
+        return_type: Low::Math::Vector2
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_float:
+        return_type: float
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_u32:
+        return_type: uint32_t
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+      get_property_texture:
+        return_type: Low::Renderer::Texture
+        return_handle: true
+        constant: true
+        parameters:
+          - name: name
+            type: Util::Name
+
+  MaterialResource:
+    private_make: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: MaterialResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+
+  GpuMaterial:
+    dynamic_increase: false
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    dirty_flags:
+      - dirty
+    properties:
+      material_handle:
+        type: u64
+      data:
+        type: Util::List<uint8_t>
+        private_getter: true
+        no_setter: true
+        getter_name: data
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      get_data:
+        return_type: void*
+        constant: true
+        const: true
+
+  Model:
+    unique_id: true
+    properties:
+      resource:
+        type: Low::Renderer::ModelResource
+        handle: true
+      lod0:
+        type: Low::Renderer::Mesh
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      lod1:
+        type: Low::Renderer::Mesh
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      lod2:
+        type: Low::Renderer::Mesh
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+      lod3:
+        type: Low::Renderer::Mesh
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+
+  ModelResource:
+    private_make: true
+    properties:
+      path:
+        type: Util::String
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_type: ModelResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String

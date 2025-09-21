@@ -60,12 +60,12 @@ struct PixelRGBA
 namespace Low {
   namespace Renderer {
     namespace ResourceImporter {
-      bool is_reimport()
+      static bool is_reimport()
       {
         return false;
       }
 
-      bool populate_sidecar_info(
+      static bool populate_sidecar_info(
           FT_Face p_Face, const Math::UVector2 p_AtlasDimensions,
           std::vector<msdf_atlas::GlyphGeometry> p_Glyphs,
           Util::Yaml::Node &p_Node)

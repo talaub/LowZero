@@ -67,6 +67,12 @@ namespace Low {
         VkDescriptorSetLayout layout;
       };
 
+      struct alignas(16) DirectionalLightInfo
+      {
+        Math::Vector4 color;
+        Math::Vector3 direction;
+      };
+
       struct alignas(16) ViewInfoFrameData
       {
         alignas(16) Math::Matrix4x4 viewMatrix;
@@ -241,5 +247,5 @@ namespace Low {
       };
 
     } // namespace Vulkan
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -28,11 +29,14 @@ namespace Low {
 
       const uint16_t ViewInfo::TYPE_ID = 55;
       uint32_t ViewInfo::ms_Capacity = 0u;
-      uint8_t *ViewInfo::ms_Buffer = 0;
-      std::shared_mutex ViewInfo::ms_BufferMutex;
-      Low::Util::Instances::Slot *ViewInfo::ms_Slots = 0;
-      Low::Util::List<ViewInfo> ViewInfo::ms_LivingInstances =
-          Low::Util::List<ViewInfo>();
+      uint32_t ViewInfo::ms_PageSize = 0u;
+      Low::Util::SharedMutex ViewInfo::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ViewInfo::ms_PagesLock(ViewInfo::ms_PagesMutex,
+                                 std::defer_lock);
+      Low::Util::List<ViewInfo> ViewInfo::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          ViewInfo::ms_Pages;
 
       ViewInfo::ViewInfo() : Low::Util::Handle(0ull)
       {
@@ -52,48 +56,63 @@ namespace Low {
 
       ViewInfo ViewInfo::make(Low::Util::Name p_Name)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         ViewInfo l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = ViewInfo::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, view_data_buffer,
-                                AllocatedBuffer)) AllocatedBuffer();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                view_data_descriptor_set,
-                                VkDescriptorSet)) VkDescriptorSet();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                lighting_descriptor_set,
-                                VkDescriptorSet)) VkDescriptorSet();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, staging_buffers,
-                                Low::Util::List<StagingBuffer>))
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
+
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo,
+                                   view_data_buffer, AllocatedBuffer))
+            AllocatedBuffer();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, directional_light_buffer,
+            AllocatedBuffer)) AllocatedBuffer();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, view_data_descriptor_set,
+            VkDescriptorSet)) VkDescriptorSet();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, lighting_descriptor_set,
+            VkDescriptorSet)) VkDescriptorSet();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo,
+                                   staging_buffers,
+                                   Low::Util::List<StagingBuffer>))
             Low::Util::List<StagingBuffer>();
         ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, initialized, bool) =
             false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                gbuffer_descriptor_set,
-                                VkDescriptorSet)) VkDescriptorSet();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                point_light_cluster_buffer,
-                                AllocatedBuffer)) AllocatedBuffer();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                point_light_buffer, AllocatedBuffer))
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, gbuffer_descriptor_set,
+            VkDescriptorSet)) VkDescriptorSet();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, point_light_cluster_buffer,
+            AllocatedBuffer)) AllocatedBuffer();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, point_light_buffer, AllocatedBuffer))
             AllocatedBuffer();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, light_clusters,
-                                Low::Math::UVector3))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo, light_clusters,
+                                   Low::Math::UVector3))
             Low::Math::UVector3();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                ui_drawcommand_buffer,
-                                AllocatedBuffer)) AllocatedBuffer();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, ViewInfo,
-                                debug_geometry_buffer,
-                                AllocatedBuffer)) AllocatedBuffer();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, ui_drawcommand_buffer,
+            AllocatedBuffer)) AllocatedBuffer();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, ViewInfo, debug_geometry_buffer,
+            AllocatedBuffer)) AllocatedBuffer();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo,
+                                   object_id_buffer, AllocatedBuffer))
+            AllocatedBuffer();
         ACCESSOR_TYPE_SOA(l_Handle, ViewInfo, name, Low::Util::Name) =
             Low::Util::Name(0u);
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -108,6 +127,16 @@ namespace Low {
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
               VMA_MEMORY_USAGE_GPU_ONLY);
           l_Handle.set_view_data_buffer(l_Buffer);
+        }
+
+        {
+          AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
+              sizeof(DirectionalLightInfo),
+              VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+              VMA_MEMORY_USAGE_GPU_ONLY);
+          l_Handle.set_directional_light_buffer(l_Buffer);
         }
 
         {
@@ -160,24 +189,40 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-        BufferUtil::destroy_buffer(get_view_data_buffer());
-        BufferUtil::destroy_buffer(get_point_light_cluster_buffer());
-        BufferUtil::destroy_buffer(get_point_light_buffer());
-        BufferUtil::destroy_buffer(get_ui_drawcommand_buffer());
-        BufferUtil::destroy_buffer(get_debug_geometry_buffer());
+        {
+          Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          BufferUtil::destroy_buffer(get_view_data_buffer());
+          BufferUtil::destroy_buffer(get_directional_light_buffer());
+          BufferUtil::destroy_buffer(
+              get_point_light_cluster_buffer());
+          BufferUtil::destroy_buffer(get_point_light_buffer());
+          BufferUtil::destroy_buffer(get_ui_drawcommand_buffer());
+          BufferUtil::destroy_buffer(get_debug_geometry_buffer());
 
-        for (u32 i = 0u; i < Global::get_frame_overlap(); ++i) {
-          BufferUtil::destroy_buffer(get_staging_buffers()[i].buffer);
+          BufferUtil::destroy_buffer(get_object_id_buffer());
+
+          for (u32 i = 0u; i < Global::get_frame_overlap(); ++i) {
+            BufferUtil::destroy_buffer(
+                get_staging_buffers()[i].buffer);
+          }
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -186,23 +231,33 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void ViewInfo::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                       N(ViewInfo));
 
-        initialize_buffer(&ms_Buffer, ViewInfoData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_ViewInfo);
-        LOW_PROFILE_ALLOC(type_slots_ViewInfo);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, ViewInfo::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(ViewInfo);
@@ -231,13 +286,14 @@ namespace Low {
           l_PropertyInfo.name = N(view_data_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, view_data_buffer);
+              offsetof(ViewInfo::Data, view_data_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_view_data_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               view_data_buffer,
@@ -251,6 +307,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((AllocatedBuffer *)p_Data) =
                 l_Handle.get_view_data_buffer();
           };
@@ -258,18 +315,54 @@ namespace Low {
           // End property: view_data_buffer
         }
         {
-          // Property: view_data_descriptor_set
+          // Property: directional_light_buffer
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(view_data_descriptor_set);
+          l_PropertyInfo.name = N(directional_light_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, view_data_descriptor_set);
+              offsetof(ViewInfo::Data, directional_light_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
+            l_Handle.get_directional_light_buffer();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ViewInfo, directional_light_buffer,
+                AllocatedBuffer);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_directional_light_buffer(
+                *(AllocatedBuffer *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
+            *((AllocatedBuffer *)p_Data) =
+                l_Handle.get_directional_light_buffer();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: directional_light_buffer
+        }
+        {
+          // Property: view_data_descriptor_set
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(view_data_descriptor_set);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfo::Data, view_data_descriptor_set);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_view_data_descriptor_set();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, ViewInfo, view_data_descriptor_set,
@@ -284,6 +377,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((VkDescriptorSet *)p_Data) =
                 l_Handle.get_view_data_descriptor_set();
           };
@@ -296,13 +390,14 @@ namespace Low {
           l_PropertyInfo.name = N(lighting_descriptor_set);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, lighting_descriptor_set);
+              offsetof(ViewInfo::Data, lighting_descriptor_set);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_lighting_descriptor_set();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               lighting_descriptor_set,
@@ -317,6 +412,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((VkDescriptorSet *)p_Data) =
                 l_Handle.get_lighting_descriptor_set();
           };
@@ -329,13 +425,14 @@ namespace Low {
           l_PropertyInfo.name = N(staging_buffers);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, staging_buffers);
+              offsetof(ViewInfo::Data, staging_buffers);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_staging_buffers();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, ViewInfo, staging_buffers,
@@ -350,6 +447,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((Low::Util::List<StagingBuffer> *)p_Data) =
                 l_Handle.get_staging_buffers();
           };
@@ -362,12 +460,13 @@ namespace Low {
           l_PropertyInfo.name = N(initialized);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, initialized);
+              offsetof(ViewInfo::Data, initialized);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.is_initialized();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               initialized, bool);
@@ -380,6 +479,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_initialized();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -391,13 +491,14 @@ namespace Low {
           l_PropertyInfo.name = N(gbuffer_descriptor_set);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, gbuffer_descriptor_set);
+              offsetof(ViewInfo::Data, gbuffer_descriptor_set);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_gbuffer_descriptor_set();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               gbuffer_descriptor_set,
@@ -412,6 +513,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((VkDescriptorSet *)p_Data) =
                 l_Handle.get_gbuffer_descriptor_set();
           };
@@ -424,13 +526,14 @@ namespace Low {
           l_PropertyInfo.name = N(point_light_cluster_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, point_light_cluster_buffer);
+              offsetof(ViewInfo::Data, point_light_cluster_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_point_light_cluster_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, ViewInfo, point_light_cluster_buffer,
@@ -445,6 +548,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((AllocatedBuffer *)p_Data) =
                 l_Handle.get_point_light_cluster_buffer();
           };
@@ -457,13 +561,14 @@ namespace Low {
           l_PropertyInfo.name = N(point_light_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, point_light_buffer);
+              offsetof(ViewInfo::Data, point_light_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_point_light_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               point_light_buffer,
@@ -478,6 +583,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((AllocatedBuffer *)p_Data) =
                 l_Handle.get_point_light_buffer();
           };
@@ -490,13 +596,14 @@ namespace Low {
           l_PropertyInfo.name = N(light_clusters);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, light_clusters);
+              offsetof(ViewInfo::Data, light_clusters);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_light_clusters();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               light_clusters,
@@ -511,6 +618,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((Low::Math::UVector3 *)p_Data) =
                 l_Handle.get_light_clusters();
           };
@@ -523,12 +631,13 @@ namespace Low {
           l_PropertyInfo.name = N(light_cluster_count);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, light_cluster_count);
+              offsetof(ViewInfo::Data, light_cluster_count);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_light_cluster_count();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, ViewInfo, light_cluster_count, uint32_t);
@@ -541,6 +650,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((uint32_t *)p_Data) =
                 l_Handle.get_light_cluster_count();
           };
@@ -553,13 +663,14 @@ namespace Low {
           l_PropertyInfo.name = N(ui_drawcommand_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, ui_drawcommand_buffer);
+              offsetof(ViewInfo::Data, ui_drawcommand_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_ui_drawcommand_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               ui_drawcommand_buffer,
@@ -574,6 +685,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((AllocatedBuffer *)p_Data) =
                 l_Handle.get_ui_drawcommand_buffer();
           };
@@ -586,13 +698,14 @@ namespace Low {
           l_PropertyInfo.name = N(debug_geometry_buffer);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewInfoData, debug_geometry_buffer);
+              offsetof(ViewInfo::Data, debug_geometry_buffer);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_debug_geometry_buffer();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               debug_geometry_buffer,
@@ -607,6 +720,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((AllocatedBuffer *)p_Data) =
                 l_Handle.get_debug_geometry_buffer();
           };
@@ -614,16 +728,51 @@ namespace Low {
           // End property: debug_geometry_buffer
         }
         {
+          // Property: object_id_buffer
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(object_id_buffer);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ViewInfo::Data, object_id_buffer);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
+            l_Handle.get_object_id_buffer();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
+                                              object_id_buffer,
+                                              AllocatedBuffer);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ViewInfo l_Handle = p_Handle.get_id();
+            l_Handle.set_object_id_buffer(*(AllocatedBuffer *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
+            *((AllocatedBuffer *)p_Data) =
+                l_Handle.get_object_id_buffer();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: object_id_buffer
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewInfoData, name);
+          l_PropertyInfo.dataOffset = offsetof(ViewInfo::Data, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, ViewInfo,
                                               name, Low::Util::Name);
@@ -636,6 +785,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             ViewInfo l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ViewInfo> l_HandleLock(l_Handle);
             *((Low::Util::Name *)p_Data) = l_Handle.get_name();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -720,13 +870,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_ViewInfo);
-        LOW_PROFILE_FREE(type_slots_ViewInfo);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle ViewInfo::_find_by_index(uint32_t p_Index)
@@ -740,8 +896,18 @@ namespace Low {
 
         ViewInfo l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = ViewInfo::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -762,9 +928,22 @@ namespace Low {
 
       bool ViewInfo::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != ViewInfo::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == ViewInfo::TYPE_ID &&
-               check_alive(ms_Slots, ViewInfo::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t ViewInfo::get_capacity()
@@ -799,6 +978,8 @@ namespace Low {
 
         ViewInfo l_Handle = make(p_Name);
         l_Handle.set_view_data_buffer(get_view_data_buffer());
+        l_Handle.set_directional_light_buffer(
+            get_directional_light_buffer());
         l_Handle.set_view_data_descriptor_set(
             get_view_data_descriptor_set());
         l_Handle.set_lighting_descriptor_set(
@@ -816,6 +997,7 @@ namespace Low {
             get_ui_drawcommand_buffer());
         l_Handle.set_debug_geometry_buffer(
             get_debug_geometry_buffer());
+        l_Handle.set_object_id_buffer(get_object_id_buffer());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -864,6 +1046,8 @@ namespace Low {
 
         if (p_Node["view_data_buffer"]) {
         }
+        if (p_Node["directional_light_buffer"]) {
+        }
         if (p_Node["view_data_descriptor_set"]) {
         }
         if (p_Node["lighting_descriptor_set"]) {
@@ -888,6 +1072,8 @@ namespace Low {
         if (p_Node["ui_drawcommand_buffer"]) {
         }
         if (p_Node["debug_geometry_buffer"]) {
+        }
+        if (p_Node["object_id_buffer"]) {
         }
         if (p_Node["name"]) {
           l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
@@ -950,25 +1136,24 @@ namespace Low {
       AllocatedBuffer &ViewInfo::get_view_data_buffer() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_data_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_data_buffer
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, view_data_buffer, AllocatedBuffer);
       }
       void ViewInfo::set_view_data_buffer(AllocatedBuffer &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_data_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_data_buffer
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, view_data_buffer, AllocatedBuffer) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_data_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_data_buffer
@@ -976,14 +1161,44 @@ namespace Low {
         broadcast_observable(N(view_data_buffer));
       }
 
+      AllocatedBuffer &ViewInfo::get_directional_light_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_buffer
+
+        return TYPE_SOA(ViewInfo, directional_light_buffer,
+                        AllocatedBuffer);
+      }
+      void
+      ViewInfo::set_directional_light_buffer(AllocatedBuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_buffer
+
+        // Set new value
+        TYPE_SOA(ViewInfo, directional_light_buffer,
+                 AllocatedBuffer) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_buffer
+
+        broadcast_observable(N(directional_light_buffer));
+      }
+
       VkDescriptorSet ViewInfo::get_view_data_descriptor_set() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_data_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_data_descriptor_set
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, view_data_descriptor_set,
                         VkDescriptorSet);
       }
@@ -991,15 +1206,14 @@ namespace Low {
       ViewInfo::set_view_data_descriptor_set(VkDescriptorSet p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_data_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_data_descriptor_set
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, view_data_descriptor_set,
                  VkDescriptorSet) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_data_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_data_descriptor_set
@@ -1010,11 +1224,11 @@ namespace Low {
       VkDescriptorSet &ViewInfo::get_lighting_descriptor_set() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lighting_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:GETTER_lighting_descriptor_set
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, lighting_descriptor_set,
                         VkDescriptorSet);
       }
@@ -1022,15 +1236,14 @@ namespace Low {
       ViewInfo::set_lighting_descriptor_set(VkDescriptorSet &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lighting_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_lighting_descriptor_set
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, lighting_descriptor_set, VkDescriptorSet) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lighting_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_lighting_descriptor_set
@@ -1042,11 +1255,11 @@ namespace Low {
       ViewInfo::get_staging_buffers() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging_buffers
         // LOW_CODEGEN::END::CUSTOM:GETTER_staging_buffers
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, staging_buffers,
                         Low::Util::List<StagingBuffer>);
       }
@@ -1054,15 +1267,14 @@ namespace Low {
           Low::Util::List<StagingBuffer> &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging_buffers
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging_buffers
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, staging_buffers,
                  Low::Util::List<StagingBuffer>) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging_buffers
         // LOW_CODEGEN::END::CUSTOM:SETTER_staging_buffers
@@ -1073,11 +1285,11 @@ namespace Low {
       bool ViewInfo::is_initialized() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, initialized, bool);
       }
       void ViewInfo::toggle_initialized()
@@ -1088,14 +1300,13 @@ namespace Low {
       void ViewInfo::set_initialized(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, initialized, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
@@ -1106,11 +1317,11 @@ namespace Low {
       VkDescriptorSet &ViewInfo::get_gbuffer_descriptor_set() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_descriptor_set
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, gbuffer_descriptor_set,
                         VkDescriptorSet);
       }
@@ -1118,15 +1329,14 @@ namespace Low {
       ViewInfo::set_gbuffer_descriptor_set(VkDescriptorSet &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_descriptor_set
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, gbuffer_descriptor_set, VkDescriptorSet) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_descriptor_set
         // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_descriptor_set
@@ -1138,11 +1348,11 @@ namespace Low {
       ViewInfo::get_point_light_cluster_buffer() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_cluster_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_cluster_buffer
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, point_light_cluster_buffer,
                         AllocatedBuffer);
       }
@@ -1150,15 +1360,14 @@ namespace Low {
           AllocatedBuffer &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_cluster_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_cluster_buffer
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, point_light_cluster_buffer,
                  AllocatedBuffer) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_cluster_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_cluster_buffer
@@ -1169,26 +1378,25 @@ namespace Low {
       AllocatedBuffer &ViewInfo::get_point_light_buffer() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_buffer
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, point_light_buffer,
                         AllocatedBuffer);
       }
       void ViewInfo::set_point_light_buffer(AllocatedBuffer &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_buffer
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, point_light_buffer, AllocatedBuffer) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
@@ -1199,26 +1407,25 @@ namespace Low {
       Low::Math::UVector3 &ViewInfo::get_light_clusters() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_light_clusters
         // LOW_CODEGEN::END::CUSTOM:GETTER_light_clusters
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, light_clusters,
                         Low::Math::UVector3);
       }
       void ViewInfo::set_light_clusters(Low::Math::UVector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_light_clusters
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_light_clusters
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, light_clusters, Low::Math::UVector3) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_clusters
         // LOW_CODEGEN::END::CUSTOM:SETTER_light_clusters
@@ -1229,24 +1436,23 @@ namespace Low {
       uint32_t ViewInfo::get_light_cluster_count() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_light_cluster_count
         // LOW_CODEGEN::END::CUSTOM:GETTER_light_cluster_count
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, light_cluster_count, uint32_t);
       }
       void ViewInfo::set_light_cluster_count(uint32_t p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_light_cluster_count
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_light_cluster_count
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, light_cluster_count, uint32_t) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_cluster_count
         // LOW_CODEGEN::END::CUSTOM:SETTER_light_cluster_count
@@ -1257,11 +1463,11 @@ namespace Low {
       AllocatedBuffer &ViewInfo::get_ui_drawcommand_buffer() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_drawcommand_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_ui_drawcommand_buffer
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, ui_drawcommand_buffer,
                         AllocatedBuffer);
       }
@@ -1269,15 +1475,14 @@ namespace Low {
       ViewInfo::set_ui_drawcommand_buffer(AllocatedBuffer &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_drawcommand_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_drawcommand_buffer
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, ui_drawcommand_buffer, AllocatedBuffer) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_drawcommand_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_ui_drawcommand_buffer
@@ -1288,11 +1493,11 @@ namespace Low {
       AllocatedBuffer &ViewInfo::get_debug_geometry_buffer() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_debug_geometry_buffer
         // LOW_CODEGEN::END::CUSTOM:GETTER_debug_geometry_buffer
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, debug_geometry_buffer,
                         AllocatedBuffer);
       }
@@ -1300,15 +1505,14 @@ namespace Low {
       ViewInfo::set_debug_geometry_buffer(AllocatedBuffer &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_debug_geometry_buffer
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_debug_geometry_buffer
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, debug_geometry_buffer, AllocatedBuffer) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_debug_geometry_buffer
         // LOW_CODEGEN::END::CUSTOM:SETTER_debug_geometry_buffer
@@ -1316,27 +1520,54 @@ namespace Low {
         broadcast_observable(N(debug_geometry_buffer));
       }
 
+      AllocatedBuffer &ViewInfo::get_object_id_buffer() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_id_buffer
+        // LOW_CODEGEN::END::CUSTOM:GETTER_object_id_buffer
+
+        return TYPE_SOA(ViewInfo, object_id_buffer, AllocatedBuffer);
+      }
+      void ViewInfo::set_object_id_buffer(AllocatedBuffer &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_id_buffer
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_object_id_buffer
+
+        // Set new value
+        TYPE_SOA(ViewInfo, object_id_buffer, AllocatedBuffer) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_object_id_buffer
+        // LOW_CODEGEN::END::CUSTOM:SETTER_object_id_buffer
+
+        broadcast_observable(N(object_id_buffer));
+      }
+
       Low::Util::Name ViewInfo::get_name() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(ViewInfo, name, Low::Util::Name);
       }
       void ViewInfo::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(ViewInfo, name, Low::Util::Name) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -1346,6 +1577,7 @@ namespace Low {
 
       StagingBuffer &ViewInfo::get_current_staging_buffer()
       {
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_staging_buffer
         return get_staging_buffers()
             [Global::get_current_frame_index()];
@@ -1355,6 +1587,7 @@ namespace Low {
       size_t ViewInfo::request_current_staging_buffer_space(
           const size_t p_RequestedSize, size_t *p_OutOffset)
       {
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_request_current_staging_buffer_space
         StagingBuffer &l_StagingBuffer = get_current_staging_buffer();
 
@@ -1368,6 +1601,7 @@ namespace Low {
                                              const size_t p_DataSize,
                                              const size_t p_Offset)
       {
+        Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write_current_staging_buffer
         StagingBuffer &l_StagingBuffer = get_current_staging_buffer();
 
@@ -1375,175 +1609,83 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_write_current_staging_buffer
       }
 
-      uint32_t ViewInfo::create_instance()
+      uint32_t ViewInfo::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void ViewInfo::increase_budget()
+      u32 ViewInfo::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for ViewInfo.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, ViewInfo::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(ViewInfoData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewInfoData, view_data_buffer) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewInfoData, view_data_buffer) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(AllocatedBuffer));
+      bool ViewInfo::get_page_for_index(const u32 p_Index,
+                                        u32 &p_PageIndex,
+                                        u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
-                                       view_data_descriptor_set) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData,
-                                     view_data_descriptor_set) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(VkDescriptorSet));
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
-                                       lighting_descriptor_set) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData,
-                                     lighting_descriptor_set) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(VkDescriptorSet));
-        }
-        {
-          for (auto it = ms_LivingInstances.begin();
-               it != ms_LivingInstances.end(); ++it) {
-            ViewInfo i_ViewInfo = *it;
-
-            auto *i_ValPtr = new (
-                &l_NewBuffer[offsetof(ViewInfoData, staging_buffers) *
-                                 (l_Capacity + l_CapacityIncrease) +
-                             (it->get_index() *
-                              sizeof(
-                                  Low::Util::List<StagingBuffer>))])
-                Low::Util::List<StagingBuffer>();
-            *i_ValPtr = ACCESSOR_TYPE_SOA(
-                i_ViewInfo, ViewInfo, staging_buffers,
-                Low::Util::List<StagingBuffer>);
-          }
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData, initialized) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData, initialized) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
-                                       gbuffer_descriptor_set) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData,
-                                     gbuffer_descriptor_set) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(VkDescriptorSet));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
-                                       point_light_cluster_buffer) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData,
-                                     point_light_cluster_buffer) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(AllocatedBuffer));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewInfoData,
-                                    point_light_buffer) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewInfoData, point_light_buffer) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(AllocatedBuffer));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData, light_clusters) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData, light_clusters) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::UVector3));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewInfoData,
-                                    light_cluster_count) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewInfoData, light_cluster_count) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(uint32_t));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
-                                       ui_drawcommand_buffer) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData,
-                                     ui_drawcommand_buffer) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(AllocatedBuffer));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewInfoData,
-                                       debug_geometry_buffer) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewInfoData,
-                                     debug_geometry_buffer) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(AllocatedBuffer));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewInfoData, name) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewInfoData, name) * (l_Capacity)],
-              l_Capacity * sizeof(Low::Util::Name));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG << "Auto-increased budget for ViewInfo from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

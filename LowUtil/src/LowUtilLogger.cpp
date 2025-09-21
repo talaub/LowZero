@@ -20,13 +20,13 @@
 namespace Low {
   namespace Util {
     namespace Log {
-      LogStream g_LogStream;
-
       List<LogCallback> g_Callbacks;
 
       JobManager::ThreadPool *g_ThreadPool;
 
       String g_LogFilePath;
+
+      Mutex g_PrintMutex;
 
       void initialize()
       {
@@ -144,25 +144,26 @@ namespace Low {
 #endif
       }
 
-      LogStream &begin_log(uint8_t p_LogLevel, const char *p_Module,
-                           bool p_Terminate)
+      LogStream begin_log(uint8_t p_LogLevel, const char *p_Module,
+                          bool p_Terminate)
       {
-        g_LogStream.m_Entry = LogEntry();
+        LogStream l_LogStream;
+        l_LogStream.m_Entry = LogEntry();
 
-        g_LogStream.m_Entry.terminate = p_Terminate;
+        l_LogStream.m_Entry.terminate = p_Terminate;
         if (p_LogLevel == LogLevel::ERR) {
-          g_LogStream.m_Entry.level = LogLevel::ERROR;
+          l_LogStream.m_Entry.level = LogLevel::ERROR;
         } else {
-          g_LogStream.m_Entry.level = p_LogLevel;
+          l_LogStream.m_Entry.level = p_LogLevel;
         }
-        g_LogStream.m_Entry.module = p_Module;
-        time(&g_LogStream.m_Entry.time);
+        l_LogStream.m_Entry.module = p_Module;
+        time(&l_LogStream.m_Entry.time);
 
         std::stringstream ss;
         ss << std::this_thread::get_id();
-        g_LogStream.m_Entry.threadId = std::stoi(ss.str());
+        l_LogStream.m_Entry.threadId = std::stoi(ss.str());
 
-        return g_LogStream;
+        return l_LogStream;
       }
 
       static void log_to_file(LogEntry p_Entry)
@@ -225,6 +226,7 @@ namespace Low {
 
       LogStream &LogStream::operator<<(LogLineEnd p_LineEnd)
       {
+        g_PrintMutex.lock();
         print_time(m_Entry);
         print_thread_id(m_Entry);
         print_log_level(m_Entry.level);
@@ -234,6 +236,8 @@ namespace Low {
         for (uint32_t i = 0u; i < g_Callbacks.size(); ++i) {
           g_Callbacks[i](m_Entry);
         }
+
+        g_PrintMutex.unlock();
 
         LogEntry l_Entry = m_Entry;
         g_ThreadPool->enqueue([l_Entry] { log_to_file(l_Entry); });
@@ -249,7 +253,7 @@ namespace Low {
       LogStream &LogStream::operator<<(String &p_Message)
       {
         m_Entry.message += p_Message;
-        return g_LogStream;
+        return *this;
       }
 
       LogStream &LogStream::operator<<(const char *p_Message)
@@ -343,5 +347,5 @@ namespace Low {
                      << ", " << p_Vec.z << ")";
       }
     } // namespace Log
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

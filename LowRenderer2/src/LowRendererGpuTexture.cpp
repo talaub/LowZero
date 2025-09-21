@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -23,11 +24,14 @@ namespace Low {
 
     const uint16_t GpuTexture::TYPE_ID = 74;
     uint32_t GpuTexture::ms_Capacity = 0u;
-    uint8_t *GpuTexture::ms_Buffer = 0;
-    std::shared_mutex GpuTexture::ms_BufferMutex;
-    Low::Util::Instances::Slot *GpuTexture::ms_Slots = 0;
-    Low::Util::List<GpuTexture> GpuTexture::ms_LivingInstances =
-        Low::Util::List<GpuTexture>();
+    uint32_t GpuTexture::ms_PageSize = 0u;
+    Low::Util::SharedMutex GpuTexture::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        GpuTexture::ms_PagesLock(GpuTexture::ms_PagesMutex,
+                                 std::defer_lock);
+    Low::Util::List<GpuTexture> GpuTexture::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        GpuTexture::ms_Pages;
 
     GpuTexture::GpuTexture() : Low::Util::Handle(0ull)
     {
@@ -47,22 +51,30 @@ namespace Low {
 
     GpuTexture GpuTexture::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       GpuTexture l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = GpuTexture::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, GpuTexture, imgui_texture_id,
-                              ImTextureID)) ImTextureID();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, GpuTexture, loaded_mips,
-                              Low::Util::List<uint8_t>))
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GpuTexture,
+                                 imgui_texture_id, ImTextureID))
+          ImTextureID();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GpuTexture, loaded_mips,
+                                 Low::Util::List<uint8_t>))
           Low::Util::List<uint8_t>();
       ACCESSOR_TYPE_SOA(l_Handle, GpuTexture, name, Low::Util::Name) =
           Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -79,17 +91,28 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      Vulkan::Image l_Image = get_data_handle();
-      l_Image.destroy();
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        Vulkan::Image l_Image = get_data_handle();
+        l_Image.destroy();
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -98,23 +121,25 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void GpuTexture::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(GpuTexture));
 
-      initialize_buffer(&ms_Buffer, GpuTextureData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_GpuTexture);
-      LOW_PROFILE_ALLOC(type_slots_GpuTexture);
+      ms_PageSize = ms_Capacity;
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, GpuTexture::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(GpuTexture);
@@ -143,12 +168,13 @@ namespace Low {
         l_PropertyInfo.name = N(data_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(GpuTextureData, data_handle);
+            offsetof(GpuTexture::Data, data_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           l_Handle.get_data_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuTexture,
                                             data_handle, uint64_t);
@@ -161,6 +187,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_data_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -172,12 +199,13 @@ namespace Low {
         l_PropertyInfo.name = N(texture_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(GpuTextureData, texture_handle);
+            offsetof(GpuTexture::Data, texture_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           l_Handle.get_texture_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuTexture,
                                             texture_handle, uint64_t);
@@ -190,6 +218,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_texture_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -201,12 +230,13 @@ namespace Low {
         l_PropertyInfo.name = N(imgui_texture_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(GpuTextureData, imgui_texture_id);
+            offsetof(GpuTexture::Data, imgui_texture_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           l_Handle.get_imgui_texture_id();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, GpuTexture, imgui_texture_id, ImTextureID);
@@ -219,6 +249,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           *((ImTextureID *)p_Data) = l_Handle.get_imgui_texture_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -230,12 +261,13 @@ namespace Low {
         l_PropertyInfo.name = N(full_mip_count);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(GpuTextureData, full_mip_count);
+            offsetof(GpuTexture::Data, full_mip_count);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           l_Handle.get_full_mip_count();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuTexture,
                                             full_mip_count, uint8_t);
@@ -248,6 +280,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           *((uint8_t *)p_Data) = l_Handle.get_full_mip_count();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -259,12 +292,13 @@ namespace Low {
         l_PropertyInfo.name = N(loaded_mips);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(GpuTextureData, loaded_mips);
+            offsetof(GpuTexture::Data, loaded_mips);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           l_Handle.loaded_mips();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuTexture,
                                             loaded_mips,
@@ -275,6 +309,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           *((Low::Util::List<uint8_t> *)p_Data) =
               l_Handle.loaded_mips();
         };
@@ -286,12 +321,13 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(GpuTextureData, name);
+        l_PropertyInfo.dataOffset = offsetof(GpuTexture::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, GpuTexture,
                                             name, Low::Util::Name);
@@ -304,6 +340,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           GpuTexture l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<GpuTexture> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -318,13 +355,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_GpuTexture);
-      LOW_PROFILE_FREE(type_slots_GpuTexture);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle GpuTexture::_find_by_index(uint32_t p_Index)
@@ -338,8 +381,18 @@ namespace Low {
 
       GpuTexture l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = GpuTexture::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -360,9 +413,22 @@ namespace Low {
 
     bool GpuTexture::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != GpuTexture::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == GpuTexture::TYPE_ID &&
-             check_alive(ms_Slots, GpuTexture::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t GpuTexture::get_capacity()
@@ -524,24 +590,23 @@ namespace Low {
     uint64_t GpuTexture::get_data_handle() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GpuTexture, data_handle, uint64_t);
     }
     void GpuTexture::set_data_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GpuTexture, data_handle, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
       ms_Dirty.insert(get_id());
@@ -553,24 +618,23 @@ namespace Low {
     uint64_t GpuTexture::get_texture_handle() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_texture_handle
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GpuTexture, texture_handle, uint64_t);
     }
     void GpuTexture::set_texture_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture_handle
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture_handle
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GpuTexture, texture_handle, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_texture_handle
@@ -581,24 +645,23 @@ namespace Low {
     ImTextureID GpuTexture::get_imgui_texture_id() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_id
       // LOW_CODEGEN::END::CUSTOM:GETTER_imgui_texture_id
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GpuTexture, imgui_texture_id, ImTextureID);
     }
     void GpuTexture::set_imgui_texture_id(ImTextureID p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_id
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_imgui_texture_id
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GpuTexture, imgui_texture_id, ImTextureID) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_imgui_texture_id
       // LOW_CODEGEN::END::CUSTOM:SETTER_imgui_texture_id
@@ -609,24 +672,23 @@ namespace Low {
     uint8_t GpuTexture::get_full_mip_count() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_full_mip_count
       // LOW_CODEGEN::END::CUSTOM:GETTER_full_mip_count
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GpuTexture, full_mip_count, uint8_t);
     }
     void GpuTexture::set_full_mip_count(uint8_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_full_mip_count
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_full_mip_count
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GpuTexture, full_mip_count, uint8_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_full_mip_count
       // LOW_CODEGEN::END::CUSTOM:SETTER_full_mip_count
@@ -637,11 +699,11 @@ namespace Low {
     Low::Util::List<uint8_t> &GpuTexture::loaded_mips() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded_mips
       // LOW_CODEGEN::END::CUSTOM:GETTER_loaded_mips
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GpuTexture, loaded_mips,
                       Low::Util::List<uint8_t>);
     }
@@ -649,15 +711,14 @@ namespace Low {
     GpuTexture::set_loaded_mips(Low::Util::List<uint8_t> &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_loaded_mips
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded_mips
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GpuTexture, loaded_mips, Low::Util::List<uint8_t>) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded_mips
       // LOW_CODEGEN::END::CUSTOM:SETTER_loaded_mips
@@ -668,24 +729,23 @@ namespace Low {
     Low::Util::Name GpuTexture::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(GpuTexture, name, Low::Util::Name);
     }
     void GpuTexture::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<GpuTexture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(GpuTexture, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -693,19 +753,75 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t GpuTexture::create_instance()
+    uint32_t GpuTexture::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      LOW_ASSERT(l_Index < get_capacity(),
-                 "Budget blown for type GpuTexture");
-      ms_Slots[l_Index].m_Occupied = true;
+      LOW_ASSERT(l_FoundIndex, "Budget blown for type GpuTexture");
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
+    }
+
+    u32 GpuTexture::create_page()
+    {
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for GpuTexture.");
+
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, GpuTexture::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
+
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
+
+    bool GpuTexture::get_page_for_index(const u32 p_Index,
+                                        u32 &p_PageIndex,
+                                        u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
+      }
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
+      }
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

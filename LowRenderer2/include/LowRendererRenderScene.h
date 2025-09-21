@@ -7,7 +7,6 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererGlobals.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -18,25 +17,31 @@ namespace Low {
     struct DrawCommand;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API RenderSceneData
-    {
-      Low::Util::List<DrawCommand> draw_commands;
-      Low::Util::Set<u32> pointlight_deleted_slots;
-      uint64_t data_handle;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(RenderSceneData);
-      }
-    };
-
     struct LOW_RENDERER2_API RenderScene : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        Low::Util::List<DrawCommand> draw_commands;
+        Low::Util::Set<u32> pointlight_deleted_slots;
+        uint64_t data_handle;
+        Low::Math::Vector3 directional_light_direction;
+        Low::Math::ColorRGB directional_light_color;
+        float directional_light_intensity;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<RenderScene> ms_LivingInstances;
 
@@ -108,9 +113,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == RenderScene::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        RenderScene l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -127,16 +131,42 @@ namespace Low {
       uint64_t get_data_handle() const;
       void set_data_handle(uint64_t p_Value);
 
+      Low::Math::Vector3 &get_directional_light_direction() const;
+      void
+      set_directional_light_direction(Low::Math::Vector3 &p_Value);
+      void set_directional_light_direction(float p_X, float p_Y,
+                                           float p_Z);
+      void set_directional_light_direction_x(float p_Value);
+      void set_directional_light_direction_y(float p_Value);
+      void set_directional_light_direction_z(float p_Value);
+
+      Low::Math::ColorRGB &get_directional_light_color() const;
+      void set_directional_light_color(Low::Math::ColorRGB &p_Value);
+      void set_directional_light_color(float p_X, float p_Y,
+                                       float p_Z);
+      void set_directional_light_color_x(float p_Value);
+      void set_directional_light_color_y(float p_Value);
+      void set_directional_light_color_z(float p_Value);
+
+      float get_directional_light_intensity() const;
+      void set_directional_light_intensity(float p_Value);
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       bool
       insert_draw_command(Low::Renderer::DrawCommand p_DrawCommand);
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       void set_pointlight_deleted_slots(Low::Util::Set<u32> &p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -24,11 +25,14 @@ namespace Low {
 
       const uint16_t Transform::TYPE_ID = 25;
       uint32_t Transform::ms_Capacity = 0u;
-      uint8_t *Transform::ms_Buffer = 0;
-      std::shared_mutex Transform::ms_BufferMutex;
-      Low::Util::Instances::Slot *Transform::ms_Slots = 0;
-      Low::Util::List<Transform> Transform::ms_LivingInstances =
-          Low::Util::List<Transform>();
+      uint32_t Transform::ms_PageSize = 0u;
+      Low::Util::SharedMutex Transform::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          Transform::ms_PagesLock(Transform::ms_PagesMutex,
+                                  std::defer_lock);
+      Low::Util::List<Transform> Transform::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          Transform::ms_Pages;
 
       Transform::Transform() : Low::Util::Handle(0ull)
       {
@@ -57,47 +61,54 @@ namespace Low {
       Transform Transform::make(Low::Core::Entity p_Entity,
                                 Low::Util::UniqueId p_UniqueId)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         Transform l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = Transform::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, position,
-                                Low::Math::Vector3))
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
+
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, position,
+                                   Low::Math::Vector3))
             Low::Math::Vector3();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, rotation,
-                                Low::Math::Quaternion))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, rotation,
+                                   Low::Math::Quaternion))
             Low::Math::Quaternion();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, scale,
-                                Low::Math::Vector3))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, scale,
+                                   Low::Math::Vector3))
             Low::Math::Vector3();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, children,
-                                Low::Util::List<uint64_t>))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, children,
+                                   Low::Util::List<uint64_t>))
             Low::Util::List<uint64_t>();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_position,
-                                Low::Math::Vector3))
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Transform, world_position, Low::Math::Vector3))
             Low::Math::Vector3();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_rotation,
-                                Low::Math::Quaternion))
-            Low::Math::Quaternion();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_scale,
-                                Low::Math::Vector3))
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Transform, world_rotation,
+            Low::Math::Quaternion)) Low::Math::Quaternion();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, world_scale,
+                                   Low::Math::Vector3))
             Low::Math::Vector3();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, world_matrix,
-                                Low::Math::Matrix4x4))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, world_matrix,
+                                   Low::Math::Matrix4x4))
             Low::Math::Matrix4x4();
         ACCESSOR_TYPE_SOA(l_Handle, Transform, world_updated, bool) =
             false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, Transform, entity,
-                                Low::Core::Entity))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, entity,
+                                   Low::Core::Entity))
             Low::Core::Entity();
         ACCESSOR_TYPE_SOA(l_Handle, Transform, dirty, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Transform, world_dirty, bool) =
             false;
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -125,21 +136,32 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        {
+          Low::Util::HandleLock<Transform> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        // Doing this to remove the transform from the list of
-        // children
-        set_parent(0);
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
+          // Doing this to remove the transform from the list of
+          // children
+          set_parent(0);
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
+        }
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
         Low::Util::remove_unique_id(get_unique_id());
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -148,11 +170,12 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void Transform::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -160,12 +183,21 @@ namespace Low {
         ms_Capacity =
             Low::Util::Config::get_capacity(N(LowCore), N(Transform));
 
-        initialize_buffer(&ms_Buffer, TransformData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_Transform);
-        LOW_PROFILE_ALLOC(type_slots_Transform);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, Transform::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Transform);
@@ -193,13 +225,14 @@ namespace Low {
           l_PropertyInfo.name = N(position);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, position);
+              offsetof(Transform::Data, position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.position();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, position, Low::Math::Vector3);
@@ -212,6 +245,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Vector3 *)p_Data) = l_Handle.position();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -223,13 +257,14 @@ namespace Low {
           l_PropertyInfo.name = N(rotation);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, rotation);
+              offsetof(Transform::Data, rotation);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.rotation();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, rotation, Low::Math::Quaternion);
@@ -242,6 +277,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Quaternion *)p_Data) = l_Handle.rotation();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -252,13 +288,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(scale);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, scale);
+          l_PropertyInfo.dataOffset =
+              offsetof(Transform::Data, scale);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.scale();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, scale, Low::Math::Vector3);
@@ -271,6 +309,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Vector3 *)p_Data) = l_Handle.scale();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -281,12 +320,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(parent);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, parent);
+          l_PropertyInfo.dataOffset =
+              offsetof(Transform::Data, parent);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_parent();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               parent, uint64_t);
@@ -299,6 +340,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((uint64_t *)p_Data) = l_Handle.get_parent();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -310,12 +352,13 @@ namespace Low {
           l_PropertyInfo.name = N(parent_uid);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, parent_uid);
+              offsetof(Transform::Data, parent_uid);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_parent_uid();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               parent_uid, uint64_t);
@@ -325,6 +368,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((uint64_t *)p_Data) = l_Handle.get_parent_uid();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -336,13 +380,14 @@ namespace Low {
           l_PropertyInfo.name = N(children);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, children);
+              offsetof(Transform::Data, children);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_children();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, children,
@@ -353,6 +398,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Util::List<uint64_t> *)p_Data) =
                 l_Handle.get_children();
           };
@@ -365,13 +411,14 @@ namespace Low {
           l_PropertyInfo.name = N(world_position);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, world_position);
+              offsetof(Transform::Data, world_position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_world_position();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_position,
@@ -382,6 +429,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Vector3 *)p_Data) =
                 l_Handle.get_world_position();
           };
@@ -394,13 +442,14 @@ namespace Low {
           l_PropertyInfo.name = N(world_rotation);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, world_rotation);
+              offsetof(Transform::Data, world_rotation);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::QUATERNION;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_world_rotation();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_rotation,
@@ -411,6 +460,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Quaternion *)p_Data) =
                 l_Handle.get_world_rotation();
           };
@@ -423,13 +473,14 @@ namespace Low {
           l_PropertyInfo.name = N(world_scale);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, world_scale);
+              offsetof(Transform::Data, world_scale);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR3;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_world_scale();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, world_scale, Low::Math::Vector3);
@@ -439,6 +490,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Vector3 *)p_Data) =
                 l_Handle.get_world_scale();
           };
@@ -451,13 +503,14 @@ namespace Low {
           l_PropertyInfo.name = N(world_matrix);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, world_matrix);
+              offsetof(Transform::Data, world_matrix);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_world_matrix();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_matrix,
@@ -468,6 +521,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Math::Matrix4x4 *)p_Data) =
                 l_Handle.get_world_matrix();
           };
@@ -480,12 +534,13 @@ namespace Low {
           l_PropertyInfo.name = N(world_updated);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, world_updated);
+              offsetof(Transform::Data, world_updated);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.is_world_updated();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_updated, bool);
@@ -498,6 +553,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_world_updated();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -508,12 +564,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, entity);
+          l_PropertyInfo.dataOffset =
+              offsetof(Transform::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, entity, Low::Core::Entity);
@@ -526,6 +584,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -537,12 +596,13 @@ namespace Low {
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, unique_id);
+              offsetof(Transform::Data, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, Transform, unique_id, Low::Util::UniqueId);
@@ -552,6 +612,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -563,12 +624,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(dirty);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(TransformData, dirty);
+          l_PropertyInfo.dataOffset =
+              offsetof(Transform::Data, dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.is_dirty();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               dirty, bool);
@@ -581,6 +644,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_dirty();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -592,12 +656,13 @@ namespace Low {
           l_PropertyInfo.name = N(world_dirty);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(TransformData, world_dirty);
+              offsetof(Transform::Data, world_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             l_Handle.is_world_dirty();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Transform,
                                               world_dirty, bool);
@@ -610,6 +675,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             Transform l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_world_dirty();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -633,13 +699,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_Transform);
-        LOW_PROFILE_FREE(type_slots_Transform);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle Transform::_find_by_index(uint32_t p_Index)
@@ -653,8 +725,18 @@ namespace Low {
 
         Transform l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = Transform::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -675,9 +757,22 @@ namespace Low {
 
       bool Transform::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != Transform::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == Transform::TYPE_ID &&
-               check_alive(ms_Slots, Transform::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t Transform::get_capacity()
@@ -729,7 +824,8 @@ namespace Low {
                                             rotation());
         Low::Util::Serialization::serialize(p_Node["scale"], scale());
         p_Node["parent_uid"] = get_parent_uid();
-        p_Node["unique_id"] = get_unique_id();
+        p_Node["_unique_id"] =
+            Low::Util::hash_to_string(get_unique_id()).c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -747,14 +843,16 @@ namespace Low {
       Transform::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
       {
-        Transform l_Handle = Transform::make(p_Creator.get_id());
-
+        Low::Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
-          Low::Util::remove_unique_id(l_Handle.get_unique_id());
-          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-          Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                        l_Handle.get_id());
+          l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
+        } else if (p_Node["_unique_id"]) {
+          l_HandleUniqueId = Low::Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
         }
+
+        Transform l_Handle =
+            Transform::make(p_Creator.get_id(), l_HandleUniqueId);
 
         if (p_Node["position"]) {
           l_Handle.position(
@@ -838,12 +936,12 @@ namespace Low {
       Low::Math::Vector3 &Transform::position() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_position
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, position, Low::Math::Vector3);
       }
       void Transform::position(float p_X, float p_Y, float p_Z)
@@ -876,6 +974,7 @@ namespace Low {
       void Transform::position(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
 
@@ -887,9 +986,7 @@ namespace Low {
           mark_world_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, position, Low::Math::Vector3) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -918,17 +1015,18 @@ namespace Low {
       Low::Math::Quaternion &Transform::rotation() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, rotation, Low::Math::Quaternion);
       }
       void Transform::rotation(Low::Math::Quaternion &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
 
@@ -940,10 +1038,8 @@ namespace Low {
           mark_world_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, rotation, Low::Math::Quaternion) =
               p_Value;
-          LOCK_UNLOCK(l_WriteLock);
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -972,12 +1068,12 @@ namespace Low {
       Low::Math::Vector3 &Transform::scale() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_scale
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, scale, Low::Math::Vector3);
       }
       void Transform::scale(float p_X, float p_Y, float p_Z)
@@ -1010,6 +1106,7 @@ namespace Low {
       void Transform::scale(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale
 
@@ -1021,9 +1118,7 @@ namespace Low {
           mark_world_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, scale, Low::Math::Vector3) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
@@ -1052,17 +1147,18 @@ namespace Low {
       uint64_t Transform::get_parent() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, parent, uint64_t);
       }
       void Transform::set_parent(uint64_t p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
 
@@ -1085,9 +1181,7 @@ namespace Low {
           mark_world_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, parent, uint64_t) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
@@ -1107,17 +1201,18 @@ namespace Low {
       uint64_t Transform::get_parent_uid() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_uid
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, parent_uid, uint64_t);
       }
       void Transform::set_parent_uid(uint64_t p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_uid
 
@@ -1129,9 +1224,7 @@ namespace Low {
           mark_world_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, parent_uid, uint64_t) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
 
@@ -1144,12 +1237,12 @@ namespace Low {
       Low::Util::List<uint64_t> &Transform::get_children() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, children,
                         Low::Util::List<uint64_t>);
       }
@@ -1157,13 +1250,13 @@ namespace Low {
       Low::Math::Vector3 &Transform::get_world_position()
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_position
 
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_position
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_position,
                         Low::Math::Vector3);
       }
@@ -1198,16 +1291,15 @@ namespace Low {
       void Transform::set_world_position(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_position
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_position, Low::Math::Vector3) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_position
 
@@ -1219,13 +1311,13 @@ namespace Low {
       Low::Math::Quaternion &Transform::get_world_rotation()
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_rotation
 
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_rotation
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_rotation,
                         Low::Math::Quaternion);
       }
@@ -1233,16 +1325,15 @@ namespace Low {
       Transform::set_world_rotation(Low::Math::Quaternion &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_rotation
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_rotation
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_rotation, Low::Math::Quaternion) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_rotation
 
@@ -1254,13 +1345,13 @@ namespace Low {
       Low::Math::Vector3 &Transform::get_world_scale()
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_scale
 
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_scale
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_scale, Low::Math::Vector3);
       }
       void Transform::set_world_scale(float p_X, float p_Y, float p_Z)
@@ -1293,16 +1384,15 @@ namespace Low {
       void Transform::set_world_scale(Low::Math::Vector3 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_scale
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_scale
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_scale, Low::Math::Vector3) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_scale
 
@@ -1314,29 +1404,28 @@ namespace Low {
       Low::Math::Matrix4x4 &Transform::get_world_matrix()
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_matrix
 
         recalculate_world_transform();
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_matrix,
                         Low::Math::Matrix4x4);
       }
       void Transform::set_world_matrix(Low::Math::Matrix4x4 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_matrix
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_matrix, Low::Math::Matrix4x4) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
 
@@ -1348,12 +1437,12 @@ namespace Low {
       bool Transform::is_world_updated() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_updated
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_updated, bool);
       }
       void Transform::toggle_world_updated()
@@ -1364,15 +1453,14 @@ namespace Low {
       void Transform::set_world_updated(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_updated
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_updated, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
 
@@ -1384,26 +1472,25 @@ namespace Low {
       Low::Core::Entity Transform::get_entity() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, entity, Low::Core::Entity);
       }
       void Transform::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, entity, Low::Core::Entity) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -1415,26 +1502,25 @@ namespace Low {
       Low::Util::UniqueId Transform::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, unique_id, Low::Util::UniqueId);
       }
       void Transform::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, unique_id, Low::Util::UniqueId) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -1446,12 +1532,12 @@ namespace Low {
       bool Transform::is_dirty() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, dirty, bool);
       }
       void Transform::toggle_dirty()
@@ -1462,15 +1548,14 @@ namespace Low {
       void Transform::set_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, dirty, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
@@ -1482,9 +1567,7 @@ namespace Low {
       void Transform::mark_dirty()
       {
         if (!is_dirty()) {
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, dirty, bool) = true;
-          LOCK_UNLOCK(l_WriteLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
           // LOW_CODEGEN::END::CUSTOM:MARK_dirty
         }
@@ -1493,6 +1576,7 @@ namespace Low {
       bool Transform::is_world_dirty() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
 
@@ -1508,7 +1592,6 @@ namespace Low {
         }
         // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(Transform, world_dirty, bool);
       }
       void Transform::toggle_world_dirty()
@@ -1519,15 +1602,14 @@ namespace Low {
       void Transform::set_world_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(Transform, world_dirty, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
@@ -1539,9 +1621,7 @@ namespace Low {
       void Transform::mark_world_dirty()
       {
         if (!is_world_dirty()) {
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Transform, world_dirty, bool) = true;
-          LOCK_UNLOCK(l_WriteLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
           // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
         }
@@ -1549,6 +1629,7 @@ namespace Low {
 
       void Transform::recalculate_world_transform()
       {
+        Low::Util::HandleLock<Transform> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
 
         LOW_ASSERT(is_alive(), "Cannot calculate world "
@@ -1615,174 +1696,83 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_recalculate_world_transform
       }
 
-      uint32_t Transform::create_instance()
+      uint32_t Transform::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void Transform::increase_budget()
+      u32 Transform::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for Transform.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, Transform::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer =
-            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                              sizeof(TransformData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, position) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, position) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::Vector3));
+      bool Transform::get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, rotation) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, rotation) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::Quaternion));
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, scale) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, scale) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::Vector3));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, parent) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, parent) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(uint64_t));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, parent_uid) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, parent_uid) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(uint64_t));
-        }
-        {
-          for (auto it = ms_LivingInstances.begin();
-               it != ms_LivingInstances.end(); ++it) {
-            Transform i_Transform = *it;
-
-            auto *i_ValPtr = new (
-                &l_NewBuffer[offsetof(TransformData, children) *
-                                 (l_Capacity + l_CapacityIncrease) +
-                             (it->get_index() *
-                              sizeof(Low::Util::List<uint64_t>))])
-                Low::Util::List<uint64_t>();
-            *i_ValPtr =
-                ACCESSOR_TYPE_SOA(i_Transform, Transform, children,
-                                  Low::Util::List<uint64_t>);
-          }
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(TransformData, world_position) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TransformData, world_position) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(Low::Math::Vector3));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(TransformData, world_rotation) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(TransformData, world_rotation) *
-                         (l_Capacity)],
-              l_Capacity * sizeof(Low::Math::Quaternion));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, world_scale) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, world_scale) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::Vector3));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, world_matrix) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, world_matrix) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::Matrix4x4));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, world_updated) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, world_updated) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, entity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, entity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::Entity));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, dirty) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, dirty) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(TransformData, world_dirty) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(TransformData, world_dirty) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG << "Auto-increased budget for Transform from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

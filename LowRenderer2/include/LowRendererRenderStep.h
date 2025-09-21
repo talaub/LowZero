@@ -7,7 +7,6 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #define RENDERSTEP_SOLID_MATERIAL_NAME N(solid_material)
 #define RENDERSTEP_LIGHTING_NAME N(phong_lighting)
@@ -16,6 +15,7 @@
 #define RENDERSTEP_CAVITIES_NAME N(cavities)
 #define RENDERSTEP_UI_NAME N(ui)
 #define RENDERSTEP_DEBUG_GEOMETRY_NAME N(debug_geometry)
+#define RENDERSTEP_OBJECT_ID_COPY N(object_id_copy)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -25,36 +25,39 @@ namespace Low {
     struct RenderStep;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API RenderStepData
-    {
-      Low::Util::Function<bool(RenderStep)> setup_callback;
-      Low::Util::Function<bool(Low::Renderer::RenderStep,
-                               Low::Renderer::RenderView)>
-          prepare_callback;
-      Low::Util::Function<bool(Low::Renderer::RenderStep,
-                               Low::Renderer::RenderView)>
-          teardown_callback;
-      Low::Util::Function<bool(Low::Renderer::RenderStep, float,
-                               Low::Renderer::RenderView)>
-          execute_callback;
-      Low::Util::Function<bool(Low::Renderer::RenderStep,
-                               Low::Math::UVector2 p_NewDimensions,
-                               Low::Renderer::RenderView)>
-          resolution_update_callback;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(RenderStepData);
-      }
-    };
-
     struct LOW_RENDERER2_API RenderStep : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        Low::Util::Function<bool(RenderStep)> setup_callback;
+        Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                 Low::Renderer::RenderView)>
+            prepare_callback;
+        Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                 Low::Renderer::RenderView)>
+            teardown_callback;
+        Low::Util::Function<bool(Low::Renderer::RenderStep, float,
+                                 Low::Renderer::RenderView)>
+            execute_callback;
+        Low::Util::Function<bool(Low::Renderer::RenderStep,
+                                 Low::Math::UVector2 p_NewDimensions,
+                                 Low::Renderer::RenderView)>
+            resolution_update_callback;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<RenderStep> ms_LivingInstances;
 
@@ -126,9 +129,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == RenderStep::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        RenderStep l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -188,10 +190,17 @@ namespace Low {
       bool execute(float p_DeltaTime,
                    Low::Renderer::RenderView p_RenderView);
       bool setup();
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

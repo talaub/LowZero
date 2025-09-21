@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -24,11 +25,14 @@ namespace Low {
 
       const uint16_t MeshRenderer::TYPE_ID = 26;
       uint32_t MeshRenderer::ms_Capacity = 0u;
-      uint8_t *MeshRenderer::ms_Buffer = 0;
-      std::shared_mutex MeshRenderer::ms_BufferMutex;
-      Low::Util::Instances::Slot *MeshRenderer::ms_Slots = 0;
-      Low::Util::List<MeshRenderer> MeshRenderer::ms_LivingInstances =
-          Low::Util::List<MeshRenderer>();
+      uint32_t MeshRenderer::ms_PageSize = 0u;
+      Low::Util::SharedMutex MeshRenderer::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          MeshRenderer::ms_PagesLock(MeshRenderer::ms_PagesMutex,
+                                     std::defer_lock);
+      Low::Util::List<MeshRenderer> MeshRenderer::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          MeshRenderer::ms_Pages;
 
       MeshRenderer::MeshRenderer() : Low::Util::Handle(0ull)
       {
@@ -59,24 +63,31 @@ namespace Low {
       MeshRenderer MeshRenderer::make(Low::Core::Entity p_Entity,
                                       Low::Util::UniqueId p_UniqueId)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         MeshRenderer l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, mesh,
-                                Low::Core::MeshAsset))
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<MeshRenderer> l_HandleLock(l_Handle);
+
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer, mesh,
+                                   Low::Core::MeshAsset))
             Low::Core::MeshAsset();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, material,
-                                Low::Core::Material))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer, material,
+                                   Low::Core::Material))
             Low::Core::Material();
-        new (&ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, entity,
-                                Low::Core::Entity))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer, entity,
+                                   Low::Core::Entity))
             Low::Core::Entity();
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -103,25 +114,37 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        {
+          Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        if (get_material().is_alive() && get_material().is_loaded()) {
-          get_material().unload();
-        }
+          if (get_material().is_alive() &&
+              get_material().is_loaded()) {
+            get_material().unload();
+          }
 
-        if (get_mesh().is_alive() && get_mesh().is_loaded()) {
-          get_mesh().unload();
+          if (get_mesh().is_alive() && get_mesh().is_loaded()) {
+            get_mesh().unload();
+          }
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
         Low::Util::remove_unique_id(get_unique_id());
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -130,11 +153,12 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void MeshRenderer::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -142,12 +166,21 @@ namespace Low {
         ms_Capacity = Low::Util::Config::get_capacity(
             N(LowCore), N(MeshRenderer));
 
-        initialize_buffer(&ms_Buffer, MeshRendererData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_MeshRenderer);
-        LOW_PROFILE_ALLOC(type_slots_MeshRenderer);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, MeshRenderer::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(MeshRenderer);
@@ -175,12 +208,14 @@ namespace Low {
           l_PropertyInfo.name = N(mesh);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(MeshRendererData, mesh);
+              offsetof(MeshRenderer::Data, mesh);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::MeshAsset::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             l_Handle.get_mesh();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, MeshRenderer, mesh, Low::Core::MeshAsset);
@@ -193,6 +228,8 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             *((Low::Core::MeshAsset *)p_Data) = l_Handle.get_mesh();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -204,12 +241,14 @@ namespace Low {
           l_PropertyInfo.name = N(material);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(MeshRendererData, material);
+              offsetof(MeshRenderer::Data, material);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Material::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             l_Handle.get_material();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer,
                                               material,
@@ -223,6 +262,8 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             *((Low::Core::Material *)p_Data) =
                 l_Handle.get_material();
           };
@@ -235,12 +276,14 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(MeshRendererData, entity);
+              offsetof(MeshRenderer::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, MeshRenderer, entity, Low::Core::Entity);
@@ -253,6 +296,8 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -264,12 +309,14 @@ namespace Low {
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(MeshRendererData, unique_id);
+              offsetof(MeshRenderer::Data, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer,
                                               unique_id,
@@ -280,6 +327,8 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -296,13 +345,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_MeshRenderer);
-        LOW_PROFILE_FREE(type_slots_MeshRenderer);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle MeshRenderer::_find_by_index(uint32_t p_Index)
@@ -316,8 +371,18 @@ namespace Low {
 
         MeshRenderer l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -338,9 +403,22 @@ namespace Low {
 
       bool MeshRenderer::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != MeshRenderer::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == MeshRenderer::TYPE_ID &&
-               check_alive(ms_Slots, MeshRenderer::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t MeshRenderer::get_capacity()
@@ -388,7 +466,8 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
-        p_Node["unique_id"] = get_unique_id();
+        p_Node["_unique_id"] =
+            Low::Util::hash_to_string(get_unique_id()).c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -412,15 +491,16 @@ namespace Low {
       MeshRenderer::deserialize(Low::Util::Yaml::Node &p_Node,
                                 Low::Util::Handle p_Creator)
       {
-        MeshRenderer l_Handle =
-            MeshRenderer::make(p_Creator.get_id());
-
+        Low::Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
-          Low::Util::remove_unique_id(l_Handle.get_unique_id());
-          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-          Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                        l_Handle.get_id());
+          l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
+        } else if (p_Node["_unique_id"]) {
+          l_HandleUniqueId = Low::Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
         }
+
+        MeshRenderer l_Handle =
+            MeshRenderer::make(p_Creator.get_id(), l_HandleUniqueId);
 
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -498,17 +578,18 @@ namespace Low {
       Low::Core::MeshAsset MeshRenderer::get_mesh() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset);
       }
       void MeshRenderer::set_mesh(Low::Core::MeshAsset p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
 
@@ -518,9 +599,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -550,17 +629,18 @@ namespace Low {
       Low::Core::Material MeshRenderer::get_material() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(MeshRenderer, material, Low::Core::Material);
       }
       void MeshRenderer::set_material(Low::Core::Material p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
 
@@ -570,10 +650,8 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(MeshRenderer, material, Low::Core::Material) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -603,26 +681,25 @@ namespace Low {
       Low::Core::Entity MeshRenderer::get_entity() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(MeshRenderer, entity, Low::Core::Entity);
       }
       void MeshRenderer::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(MeshRenderer, entity, Low::Core::Entity) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -634,27 +711,26 @@ namespace Low {
       Low::Util::UniqueId MeshRenderer::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(MeshRenderer, unique_id, Low::Util::UniqueId);
       }
       void MeshRenderer::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(MeshRenderer, unique_id, Low::Util::UniqueId) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -663,86 +739,83 @@ namespace Low {
         broadcast_observable(N(unique_id));
       }
 
-      uint32_t MeshRenderer::create_instance()
+      uint32_t MeshRenderer::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void MeshRenderer::increase_budget()
+      u32 MeshRenderer::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for MeshRenderer.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, MeshRenderer::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer =
-            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                              sizeof(MeshRendererData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(&l_NewBuffer[offsetof(MeshRendererData, mesh) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(MeshRendererData, mesh) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::MeshAsset));
+      bool MeshRenderer::get_page_for_index(const u32 p_Index,
+                                            u32 &p_PageIndex,
+                                            u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(MeshRendererData, material) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(MeshRendererData, material) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::Material));
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(MeshRendererData, entity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(MeshRendererData, entity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::Entity));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(MeshRendererData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(MeshRendererData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG
-            << "Auto-increased budget for MeshRenderer from "
-            << l_Capacity << " to "
-            << (l_Capacity + l_CapacityIncrease) << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

@@ -7,7 +7,6 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "imgui.h"
 #include "LowRendererGpuTexture.h"
@@ -22,27 +21,31 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API TextureData
-    {
-      GpuTexture gpu;
-      TextureResource resource;
-      TextureStaging staging;
-      Low::Renderer::TextureState state;
-      Low::Util::Set<u64> references;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(TextureData);
-      }
-    };
-
     struct LOW_RENDERER2_API Texture : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        GpuTexture gpu;
+        TextureResource resource;
+        TextureStaging staging;
+        Low::Renderer::TextureState state;
+        Low::Util::Set<u64> references;
+        Low::Util::UniqueId unique_id;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<Texture> ms_LivingInstances;
 
@@ -54,6 +57,8 @@ namespace Low {
 
       static Texture make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+      static Texture make(Low::Util::Name p_Name,
+                          Low::Util::UniqueId p_UniqueId);
       explicit Texture(const Texture &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -118,9 +123,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Texture::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        Texture l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -142,18 +146,29 @@ namespace Low {
       Low::Renderer::TextureState get_state() const;
       void set_state(Low::Renderer::TextureState p_Value);
 
+      Low::Util::UniqueId get_unique_id() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       static Low::Renderer::Texture
       make_gpu_ready(Low::Util::Name p_Name);
       EditorImage get_editor_image();
+      static Texture
+      make_from_resource_config(TextureResourceConfig &p_Config);
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       Low::Util::Set<u64> &get_references() const;
+      void set_unique_id(Low::Util::UniqueId p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

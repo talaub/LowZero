@@ -227,14 +227,14 @@ namespace Low {
       Math::Vector3 deserialize_vector3(Yaml::Node &p_Node)
       {
         Math::Vector3 l_Result;
-        if (p_Node.IsSequence()) {
-          l_Result.x = p_Node[0].as<float>();
-          l_Result.y = p_Node[1].as<float>();
-          l_Result.z = p_Node[2].as<float>();
-        } else {
+        if (p_Node.IsMap()) {
           l_Result.x = p_Node["x"].as<float>();
           l_Result.y = p_Node["y"].as<float>();
           l_Result.z = p_Node["z"].as<float>();
+        } else {
+          l_Result.x = p_Node[0].as<float>();
+          l_Result.y = p_Node[1].as<float>();
+          l_Result.z = p_Node[2].as<float>();
         }
 
         return l_Result;

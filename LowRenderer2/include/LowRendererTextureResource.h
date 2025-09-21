@@ -7,33 +7,50 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
-
-    struct LOW_RENDERER2_API TextureResourceData
+    struct TextureResourceConfig
     {
+      Util::Name name;
+      u64 textureId;
+      u64 assetHash;
+      Util::String sourceFile;
+      Util::String sidecarPath;
       Util::String path;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(TextureResourceData);
-      }
+      Util::String texturePath;
     };
+    // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API TextureResource
         : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        Util::String path;
+        Util::String texture_path;
+        Util::String sidecar_path;
+        Util::String source_file;
+        uint64_t texture_id;
+        uint64_t asset_hash;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<TextureResource> ms_LivingInstances;
 
@@ -108,9 +125,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == TextureResource::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        TextureResource l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -122,17 +138,43 @@ namespace Low {
 
       Util::String &get_path() const;
 
+      Util::String &get_texture_path() const;
+
+      Util::String &get_sidecar_path() const;
+
+      Util::String &get_source_file() const;
+
+      uint64_t get_texture_id() const;
+
+      uint64_t get_asset_hash() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       static TextureResource make(Util::String &p_Path);
+      static TextureResource
+      make_from_config(TextureResourceConfig &p_Config);
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       void set_path(Util::String &p_Value);
       void set_path(const char *p_Value);
+      void set_texture_path(Util::String &p_Value);
+      void set_texture_path(const char *p_Value);
+      void set_sidecar_path(Util::String &p_Value);
+      void set_sidecar_path(const char *p_Value);
+      void set_source_file(Util::String &p_Value);
+      void set_source_file(const char *p_Value);
+      void set_texture_id(uint64_t p_Value);
+      void set_asset_hash(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

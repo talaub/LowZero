@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -26,11 +27,14 @@ namespace Low {
 
         const uint16_t Display::TYPE_ID = 39;
         uint32_t Display::ms_Capacity = 0u;
-        uint8_t *Display::ms_Buffer = 0;
-        std::shared_mutex Display::ms_BufferMutex;
-        Low::Util::Instances::Slot *Display::ms_Slots = 0;
-        Low::Util::List<Display> Display::ms_LivingInstances =
-            Low::Util::List<Display>();
+        uint32_t Display::ms_PageSize = 0u;
+        Low::Util::SharedMutex Display::ms_PagesMutex;
+        Low::Util::UniqueLock<Low::Util::SharedMutex>
+            Display::ms_PagesLock(Display::ms_PagesMutex,
+                                  std::defer_lock);
+        Low::Util::List<Display> Display::ms_LivingInstances;
+        Low::Util::List<Low::Util::Instances::Page *>
+            Display::ms_Pages;
 
         Display::Display() : Low::Util::Handle(0ull)
         {
@@ -59,46 +63,52 @@ namespace Low {
         Display Display::make(Low::Core::UI::Element p_Element,
                               Low::Util::UniqueId p_UniqueId)
         {
-          WRITE_LOCK(l_Lock);
-          uint32_t l_Index = create_instance();
+          u32 l_PageIndex = 0;
+          u32 l_SlotIndex = 0;
+          Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+          uint32_t l_Index =
+              create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
           Display l_Handle;
           l_Handle.m_Data.m_Index = l_Index;
           l_Handle.m_Data.m_Generation =
-              ms_Slots[l_Index].m_Generation;
+              ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
           l_Handle.m_Data.m_Type = Display::TYPE_ID;
 
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, pixel_position,
-                                  Low::Math::Vector2))
+          l_PageLock.unlock();
+
+          Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
+
+          new (ACCESSOR_TYPE_SOA_PTR(
+              l_Handle, Display, pixel_position, Low::Math::Vector2))
               Low::Math::Vector2();
           ACCESSOR_TYPE_SOA(l_Handle, Display, rotation, float) =
               0.0f;
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, pixel_scale,
-                                  Low::Math::Vector2))
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, pixel_scale,
+                                     Low::Math::Vector2))
               Low::Math::Vector2();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, children,
-                                  Low::Util::List<uint64_t>))
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, children,
+                                     Low::Util::List<uint64_t>))
               Low::Util::List<uint64_t>();
-          new (&ACCESSOR_TYPE_SOA(
+          new (ACCESSOR_TYPE_SOA_PTR(
               l_Handle, Display, absolute_pixel_position,
               Low::Math::Vector2)) Low::Math::Vector2();
           ACCESSOR_TYPE_SOA(l_Handle, Display, absolute_rotation,
                             float) = 0.0f;
-          new (&ACCESSOR_TYPE_SOA(
+          new (ACCESSOR_TYPE_SOA_PTR(
               l_Handle, Display, absolute_pixel_scale,
               Low::Math::Vector2)) Low::Math::Vector2();
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, world_matrix,
-                                  Low::Math::Matrix4x4))
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, world_matrix,
+                                     Low::Math::Matrix4x4))
               Low::Math::Matrix4x4();
           ACCESSOR_TYPE_SOA(l_Handle, Display, world_updated, bool) =
               false;
-          new (&ACCESSOR_TYPE_SOA(l_Handle, Display, element,
-                                  Low::Core::UI::Element))
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, element,
+                                     Low::Core::UI::Element))
               Low::Core::UI::Element();
           ACCESSOR_TYPE_SOA(l_Handle, Display, dirty, bool) = false;
           ACCESSOR_TYPE_SOA(l_Handle, Display, world_dirty, bool) =
               false;
-          LOCK_UNLOCK(l_Lock);
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
@@ -125,21 +135,32 @@ namespace Low {
         {
           LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          {
+            Low::Util::HandleLock<Display> l_Lock(get_id());
+            // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-          // Doing this to remove the transform from the list of
-          // children
-          set_parent(0);
-          // LOW_CODEGEN::END::CUSTOM:DESTROY
+            // Doing this to remove the transform from the list of
+            // children
+            set_parent(0);
+            // LOW_CODEGEN::END::CUSTOM:DESTROY
+          }
 
           broadcast_observable(OBSERVABLE_DESTROY);
 
           Low::Util::remove_unique_id(get_unique_id());
 
-          WRITE_LOCK(l_Lock);
-          ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-          ms_Slots[this->m_Data.m_Index].m_Generation++;
+          u32 l_PageIndex = 0;
+          u32 l_SlotIndex = 0;
+          _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                         l_SlotIndex));
+          Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+          Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+              l_Page->mutex);
+          l_Page->slots[l_SlotIndex].m_Occupied = false;
+          l_Page->slots[l_SlotIndex].m_Generation++;
+
+          ms_PagesLock.lock();
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end();) {
             if (it->get_id() == get_id()) {
@@ -148,11 +169,12 @@ namespace Low {
               it++;
             }
           }
+          ms_PagesLock.unlock();
         }
 
         void Display::initialize()
         {
-          WRITE_LOCK(l_Lock);
+          LOCK_PAGES_WRITE(l_PagesLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
           // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -160,12 +182,21 @@ namespace Low {
           ms_Capacity =
               Low::Util::Config::get_capacity(N(LowCore), N(Display));
 
-          initialize_buffer(&ms_Buffer, DisplayData::get_size(),
-                            get_capacity(), &ms_Slots);
-          LOCK_UNLOCK(l_Lock);
-
-          LOW_PROFILE_ALLOC(type_buffer_Display);
-          LOW_PROFILE_ALLOC(type_slots_Display);
+          ms_PageSize = Low::Math::Util::clamp(
+              Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+          {
+            u32 l_Capacity = 0u;
+            while (l_Capacity < ms_Capacity) {
+              Low::Util::Instances::Page *i_Page =
+                  new Low::Util::Instances::Page;
+              Low::Util::Instances::initialize_page(
+                  i_Page, Display::Data::get_size(), ms_PageSize);
+              ms_Pages.push_back(i_Page);
+              l_Capacity += ms_PageSize;
+            }
+            ms_Capacity = l_Capacity;
+          }
+          LOCK_UNLOCK(l_PagesLock);
 
           Low::Util::RTTI::TypeInfo l_TypeInfo;
           l_TypeInfo.name = N(Display);
@@ -193,13 +224,14 @@ namespace Low {
             l_PropertyInfo.name = N(pixel_position);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, pixel_position);
+                offsetof(Display::Data, pixel_position);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.pixel_position();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 pixel_position,
@@ -213,6 +245,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Math::Vector2 *)p_Data) =
                   l_Handle.pixel_position();
             };
@@ -226,13 +259,14 @@ namespace Low {
             l_PropertyInfo.name = N(rotation);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, rotation);
+                offsetof(Display::Data, rotation);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.rotation();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 rotation, float);
@@ -245,6 +279,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((float *)p_Data) = l_Handle.rotation();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -257,13 +292,14 @@ namespace Low {
             l_PropertyInfo.name = N(pixel_scale);
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, pixel_scale);
+                offsetof(Display::Data, pixel_scale);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.pixel_scale();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, pixel_scale, Low::Math::Vector2);
@@ -276,6 +312,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Math::Vector2 *)p_Data) =
                   l_Handle.pixel_scale();
             };
@@ -288,13 +325,15 @@ namespace Low {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(layer);
             l_PropertyInfo.editorProperty = true;
-            l_PropertyInfo.dataOffset = offsetof(DisplayData, layer);
+            l_PropertyInfo.dataOffset =
+                offsetof(Display::Data, layer);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT32;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.layer();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 layer, uint32_t);
@@ -307,6 +346,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((uint32_t *)p_Data) = l_Handle.layer();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -318,13 +358,15 @@ namespace Low {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(parent);
             l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset = offsetof(DisplayData, parent);
+            l_PropertyInfo.dataOffset =
+                offsetof(Display::Data, parent);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_parent();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 parent, uint64_t);
@@ -337,6 +379,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((uint64_t *)p_Data) = l_Handle.get_parent();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -349,13 +392,14 @@ namespace Low {
             l_PropertyInfo.name = N(parent_uid);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, parent_uid);
+                offsetof(Display::Data, parent_uid);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_parent_uid();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 parent_uid, uint64_t);
@@ -365,6 +409,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((uint64_t *)p_Data) = l_Handle.get_parent_uid();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -377,13 +422,14 @@ namespace Low {
             l_PropertyInfo.name = N(children);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, children);
+                offsetof(Display::Data, children);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_children();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, children,
@@ -394,6 +440,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Util::List<uint64_t> *)p_Data) =
                   l_Handle.get_children();
             };
@@ -407,13 +454,14 @@ namespace Low {
             l_PropertyInfo.name = N(absolute_pixel_position);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, absolute_pixel_position);
+                offsetof(Display::Data, absolute_pixel_position);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_absolute_pixel_position();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, absolute_pixel_position,
@@ -424,6 +472,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Math::Vector2 *)p_Data) =
                   l_Handle.get_absolute_pixel_position();
             };
@@ -437,13 +486,14 @@ namespace Low {
             l_PropertyInfo.name = N(absolute_rotation);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, absolute_rotation);
+                offsetof(Display::Data, absolute_rotation);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::FLOAT;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_absolute_rotation();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, absolute_rotation, float);
@@ -453,6 +503,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((float *)p_Data) = l_Handle.get_absolute_rotation();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -465,13 +516,14 @@ namespace Low {
             l_PropertyInfo.name = N(absolute_pixel_scale);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, absolute_pixel_scale);
+                offsetof(Display::Data, absolute_pixel_scale);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::VECTOR2;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_absolute_pixel_scale();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 absolute_pixel_scale,
@@ -482,6 +534,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Math::Vector2 *)p_Data) =
                   l_Handle.get_absolute_pixel_scale();
             };
@@ -495,13 +548,14 @@ namespace Low {
             l_PropertyInfo.name = N(absolute_layer);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, absolute_layer);
+                offsetof(Display::Data, absolute_layer);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT32;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_absolute_layer();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, absolute_layer, uint32_t);
@@ -511,6 +565,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((uint32_t *)p_Data) = l_Handle.get_absolute_layer();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -523,13 +578,14 @@ namespace Low {
             l_PropertyInfo.name = N(world_matrix);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, world_matrix);
+                offsetof(Display::Data, world_matrix);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UNKNOWN;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_world_matrix();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 world_matrix,
@@ -540,6 +596,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Math::Matrix4x4 *)p_Data) =
                   l_Handle.get_world_matrix();
             };
@@ -553,12 +610,13 @@ namespace Low {
             l_PropertyInfo.name = N(world_updated);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, world_updated);
+                offsetof(Display::Data, world_updated);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.is_world_updated();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 world_updated, bool);
@@ -571,6 +629,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((bool *)p_Data) = l_Handle.is_world_updated();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -583,7 +642,7 @@ namespace Low {
             l_PropertyInfo.name = N(element);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, element);
+                offsetof(Display::Data, element);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
@@ -591,6 +650,7 @@ namespace Low {
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_element();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, element, Low::Core::UI::Element);
@@ -603,6 +663,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Core::UI::Element *)p_Data) =
                   l_Handle.get_element();
             };
@@ -616,13 +677,14 @@ namespace Low {
             l_PropertyInfo.name = N(unique_id);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, unique_id);
+                offsetof(Display::Data, unique_id);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::UINT64;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_unique_id();
               return (void *)&ACCESSOR_TYPE_SOA(
                   p_Handle, Display, unique_id, Low::Util::UniqueId);
@@ -632,6 +694,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((Low::Util::UniqueId *)p_Data) =
                   l_Handle.get_unique_id();
             };
@@ -644,12 +707,14 @@ namespace Low {
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(dirty);
             l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset = offsetof(DisplayData, dirty);
+            l_PropertyInfo.dataOffset =
+                offsetof(Display::Data, dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.is_dirty();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 dirty, bool);
@@ -662,6 +727,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((bool *)p_Data) = l_Handle.is_dirty();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -674,12 +740,13 @@ namespace Low {
             l_PropertyInfo.name = N(world_dirty);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(DisplayData, world_dirty);
+                offsetof(Display::Data, world_dirty);
             l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.is_world_dirty();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
                                                 world_dirty, bool);
@@ -692,6 +759,7 @@ namespace Low {
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               *((bool *)p_Data) = l_Handle.is_world_dirty();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -746,13 +814,19 @@ namespace Low {
           for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
             l_Instances[i].destroy();
           }
-          WRITE_LOCK(l_Lock);
-          free(ms_Buffer);
-          free(ms_Slots);
+          ms_PagesLock.lock();
+          for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+            Low::Util::Instances::Page *i_Page = *it;
+            free(i_Page->buffer);
+            free(i_Page->slots);
+            free(i_Page->lockWords);
+            delete i_Page;
+            it = ms_Pages.erase(it);
+          }
 
-          LOW_PROFILE_FREE(type_buffer_Display);
-          LOW_PROFILE_FREE(type_slots_Display);
-          LOCK_UNLOCK(l_Lock);
+          ms_Capacity = 0;
+
+          ms_PagesLock.unlock();
         }
 
         Low::Util::Handle Display::_find_by_index(uint32_t p_Index)
@@ -766,9 +840,19 @@ namespace Low {
 
           Display l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
-          l_Handle.m_Data.m_Generation =
-              ms_Slots[p_Index].m_Generation;
           l_Handle.m_Data.m_Type = Display::TYPE_ID;
+
+          u32 l_PageIndex = 0;
+          u32 l_SlotIndex = 0;
+          if (!get_page_for_index(p_Index, l_PageIndex,
+                                  l_SlotIndex)) {
+            l_Handle.m_Data.m_Generation = 0;
+          }
+          Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+          Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+              l_Page->mutex);
+          l_Handle.m_Data.m_Generation =
+              l_Page->slots[l_SlotIndex].m_Generation;
 
           return l_Handle;
         }
@@ -789,9 +873,22 @@ namespace Low {
 
         bool Display::is_alive() const
         {
-          READ_LOCK(l_Lock);
+          if (m_Data.m_Type != Display::TYPE_ID) {
+            return false;
+          }
+          u32 l_PageIndex = 0;
+          u32 l_SlotIndex = 0;
+          if (!get_page_for_index(get_index(), l_PageIndex,
+                                  l_SlotIndex)) {
+            return false;
+          }
+          Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+          Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+              l_Page->mutex);
           return m_Data.m_Type == Display::TYPE_ID &&
-                 check_alive(ms_Slots, Display::get_capacity());
+                 l_Page->slots[l_SlotIndex].m_Occupied &&
+                 l_Page->slots[l_SlotIndex].m_Generation ==
+                     m_Data.m_Generation;
         }
 
         uint32_t Display::get_capacity()
@@ -846,7 +943,8 @@ namespace Low {
                                               pixel_scale());
           p_Node["layer"] = layer();
           p_Node["parent_uid"] = get_parent_uid();
-          p_Node["unique_id"] = get_unique_id();
+          p_Node["_unique_id"] =
+              Low::Util::hash_to_string(get_unique_id()).c_str();
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -864,15 +962,16 @@ namespace Low {
         Display::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
         {
-          Display l_Handle = Display::make(p_Creator.get_id());
-
+          Low::Util::UniqueId l_HandleUniqueId = 0ull;
           if (p_Node["unique_id"]) {
-            Low::Util::remove_unique_id(l_Handle.get_unique_id());
-            l_Handle.set_unique_id(
-                p_Node["unique_id"].as<uint64_t>());
-            Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                          l_Handle.get_id());
+            l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
+          } else if (p_Node["_unique_id"]) {
+            l_HandleUniqueId = Low::Util::string_to_hash(
+                LOW_YAML_AS_STRING(p_Node["_unique_id"]));
           }
+
+          Display l_Handle =
+              Display::make(p_Creator.get_id(), l_HandleUniqueId);
 
           if (p_Node["pixel_position"]) {
             l_Handle.pixel_position(
@@ -957,12 +1056,12 @@ namespace Low {
         Low::Math::Vector2 &Display::pixel_position() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, pixel_position,
                           Low::Math::Vector2);
         }
@@ -989,6 +1088,7 @@ namespace Low {
         void Display::pixel_position(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
 
@@ -1000,10 +1100,8 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, pixel_position, Low::Math::Vector2) =
                 p_Value;
-            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
 
@@ -1016,17 +1114,18 @@ namespace Low {
         float Display::rotation() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, rotation, float);
         }
         void Display::rotation(float p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
 
@@ -1038,9 +1137,7 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, rotation, float) = p_Value;
-            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
 
@@ -1053,12 +1150,12 @@ namespace Low {
         Low::Math::Vector2 &Display::pixel_scale() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_scale
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_scale
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, pixel_scale, Low::Math::Vector2);
         }
         void Display::pixel_scale(float p_X, float p_Y)
@@ -1084,6 +1181,7 @@ namespace Low {
         void Display::pixel_scale(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_scale
 
@@ -1095,10 +1193,8 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, pixel_scale, Low::Math::Vector2) =
                 p_Value;
-            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_scale
 
@@ -1111,17 +1207,18 @@ namespace Low {
         uint32_t Display::layer() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layer
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_layer
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, layer, uint32_t);
         }
         void Display::layer(uint32_t p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layer
 
@@ -1133,9 +1230,7 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, layer, uint32_t) = p_Value;
-            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer
 
@@ -1148,17 +1243,18 @@ namespace Low {
         uint64_t Display::get_parent() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, parent, uint64_t);
         }
         void Display::set_parent(uint64_t p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent
 
@@ -1181,9 +1277,7 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, parent, uint64_t) = p_Value;
-            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
@@ -1203,17 +1297,18 @@ namespace Low {
         uint64_t Display::get_parent_uid() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_uid
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, parent_uid, uint64_t);
         }
         void Display::set_parent_uid(uint64_t p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_uid
 
@@ -1225,9 +1320,7 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, parent_uid, uint64_t) = p_Value;
-            LOCK_UNLOCK(l_WriteLock);
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
 
@@ -1240,12 +1333,12 @@ namespace Low {
         Low::Util::List<uint64_t> &Display::get_children() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_children
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_children
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, children,
                           Low::Util::List<uint64_t>);
         }
@@ -1253,13 +1346,13 @@ namespace Low {
         Low::Math::Vector2 &Display::get_absolute_pixel_position()
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_pixel_position
 
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_position
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_pixel_position,
                           Low::Math::Vector2);
         }
@@ -1288,16 +1381,15 @@ namespace Low {
             Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_pixel_position
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_position
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_pixel_position,
                    Low::Math::Vector2) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_position
 
@@ -1309,27 +1401,26 @@ namespace Low {
         float Display::get_absolute_rotation()
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_rotation
 
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_rotation
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_rotation, float);
         }
         void Display::set_absolute_rotation(float p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_rotation
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_rotation
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_rotation, float) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_rotation
 
@@ -1341,13 +1432,13 @@ namespace Low {
         Low::Math::Vector2 &Display::get_absolute_pixel_scale()
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_pixel_scale
 
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_pixel_scale
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_pixel_scale,
                           Low::Math::Vector2);
         }
@@ -1375,16 +1466,15 @@ namespace Low {
         Display::set_absolute_pixel_scale(Low::Math::Vector2 &p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_pixel_scale
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_pixel_scale
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_pixel_scale,
                    Low::Math::Vector2) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_pixel_scale
 
@@ -1396,27 +1486,26 @@ namespace Low {
         uint32_t Display::get_absolute_layer()
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_absolute_layer
 
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_absolute_layer
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, absolute_layer, uint32_t);
         }
         void Display::set_absolute_layer(uint32_t p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_absolute_layer
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_absolute_layer
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, absolute_layer, uint32_t) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_absolute_layer
 
@@ -1428,29 +1517,28 @@ namespace Low {
         Low::Math::Matrix4x4 &Display::get_world_matrix()
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_matrix
 
           recalculate_world_transform();
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_matrix
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_matrix,
                           Low::Math::Matrix4x4);
         }
         void Display::set_world_matrix(Low::Math::Matrix4x4 &p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_matrix
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_matrix
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, world_matrix, Low::Math::Matrix4x4) =
               p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_matrix
 
@@ -1462,12 +1550,12 @@ namespace Low {
         bool Display::is_world_updated() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_updated
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_updated
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_updated, bool);
         }
         void Display::toggle_world_updated()
@@ -1478,15 +1566,14 @@ namespace Low {
         void Display::set_world_updated(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_updated
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_updated
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, world_updated, bool) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_updated
 
@@ -1498,27 +1585,26 @@ namespace Low {
         Low::Core::UI::Element Display::get_element() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_element
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_element
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, element, Low::Core::UI::Element);
         }
         void Display::set_element(Low::Core::UI::Element p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_element
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_element
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, element, Low::Core::UI::Element) =
               p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_element
 
@@ -1530,26 +1616,25 @@ namespace Low {
         Low::Util::UniqueId Display::get_unique_id() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, unique_id, Low::Util::UniqueId);
         }
         void Display::set_unique_id(Low::Util::UniqueId p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, unique_id, Low::Util::UniqueId) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -1561,12 +1646,12 @@ namespace Low {
         bool Display::is_dirty() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, dirty, bool);
         }
         void Display::toggle_dirty()
@@ -1577,15 +1662,14 @@ namespace Low {
         void Display::set_dirty(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, dirty, bool) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
 
@@ -1597,9 +1681,7 @@ namespace Low {
         void Display::mark_dirty()
         {
           if (!is_dirty()) {
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, dirty, bool) = true;
-            LOCK_UNLOCK(l_WriteLock);
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
             // LOW_CODEGEN::END::CUSTOM:MARK_dirty
           }
@@ -1608,6 +1690,7 @@ namespace Low {
         bool Display::is_world_dirty() const
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_dirty
 
@@ -1628,7 +1711,6 @@ namespace Low {
           }
           // LOW_CODEGEN::END::CUSTOM:GETTER_world_dirty
 
-          READ_LOCK(l_ReadLock);
           return TYPE_SOA(Display, world_dirty, bool);
         }
         void Display::toggle_world_dirty()
@@ -1639,15 +1721,14 @@ namespace Low {
         void Display::set_world_dirty(bool p_Value)
         {
           _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Display> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_dirty
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_dirty
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(Display, world_dirty, bool) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_dirty
 
@@ -1659,9 +1740,7 @@ namespace Low {
         void Display::mark_world_dirty()
         {
           if (!is_world_dirty()) {
-            WRITE_LOCK(l_WriteLock);
             TYPE_SOA(Display, world_dirty, bool) = true;
-            LOCK_UNLOCK(l_WriteLock);
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
             // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
           }
@@ -1669,6 +1748,7 @@ namespace Low {
 
         void Display::recalculate_world_transform()
         {
+          Low::Util::HandleLock<Display> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_recalculate_world_transform
 
           LOW_ASSERT(is_alive(), "Cannot calculate world position of "
@@ -1747,6 +1827,7 @@ namespace Low {
 
         float Display::get_absolute_layer_float()
         {
+          Low::Util::HandleLock<Display> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_absolute_layer_float
 
           float l_AbsoluteLayer =
@@ -1758,6 +1839,7 @@ namespace Low {
         bool
         Display::point_is_in_bounding_box(Low::Math::Vector2 &p_Point)
         {
+          Low::Util::HandleLock<Display> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_point_is_in_bounding_box
 
           Math::Vector2 l_Position = get_absolute_pixel_position();
@@ -1779,194 +1861,83 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:FUNCTION_point_is_in_bounding_box
         }
 
-        uint32_t Display::create_instance()
+        uint32_t Display::create_instance(
+            u32 &p_PageIndex, u32 &p_SlotIndex,
+            Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
         {
-          uint32_t l_Index = 0u;
+          LOCK_PAGES_WRITE(l_PagesLock);
+          u32 l_Index = 0;
+          u32 l_PageIndex = 0;
+          u32 l_SlotIndex = 0;
+          bool l_FoundIndex = false;
+          Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-          for (; l_Index < get_capacity(); ++l_Index) {
-            if (!ms_Slots[l_Index].m_Occupied) {
+          for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+               ++l_PageIndex) {
+            Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+                ms_Pages[l_PageIndex]->mutex);
+            for (l_SlotIndex = 0;
+                 l_SlotIndex < ms_Pages[l_PageIndex]->size;
+                 ++l_SlotIndex) {
+              if (!ms_Pages[l_PageIndex]
+                       ->slots[l_SlotIndex]
+                       .m_Occupied) {
+                l_FoundIndex = true;
+                l_PageLock = std::move(i_PageLock);
+                break;
+              }
+              l_Index++;
+            }
+            if (l_FoundIndex) {
               break;
             }
           }
-          if (l_Index >= get_capacity()) {
-            increase_budget();
+          if (!l_FoundIndex) {
+            l_SlotIndex = 0;
+            l_PageIndex = create_page();
+            Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+                ms_Pages[l_PageIndex]->mutex);
+            l_PageLock = std::move(l_NewLock);
           }
-          ms_Slots[l_Index].m_Occupied = true;
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+          p_PageIndex = l_PageIndex;
+          p_SlotIndex = l_SlotIndex;
+          p_PageLock = std::move(l_PageLock);
+          LOCK_UNLOCK(l_PagesLock);
           return l_Index;
         }
 
-        void Display::increase_budget()
+        u32 Display::create_page()
         {
-          uint32_t l_Capacity = get_capacity();
-          uint32_t l_CapacityIncrease =
-              std::max(std::min(l_Capacity, 64u), 1u);
-          l_CapacityIncrease = std::min(l_CapacityIncrease,
-                                        LOW_UINT32_MAX - l_Capacity);
+          const u32 l_Capacity = get_capacity();
+          LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                     "Could not increase capacity for Display.");
 
-          LOW_ASSERT(l_CapacityIncrease > 0,
-                     "Could not increase capacity");
+          Low::Util::Instances::Page *l_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              l_Page, Display::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(l_Page);
 
-          uint8_t *l_NewBuffer =
-              (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                                sizeof(DisplayData));
-          Low::Util::Instances::Slot *l_NewSlots =
-              (Low::Util::Instances::Slot *)malloc(
-                  (l_Capacity + l_CapacityIncrease) *
-                  sizeof(Low::Util::Instances::Slot));
+          ms_Capacity = l_Capacity + l_Page->size;
+          return ms_Pages.size() - 1;
+        }
 
-          memcpy(l_NewSlots, ms_Slots,
-                 l_Capacity * sizeof(Low::Util::Instances::Slot));
-          {
-            memcpy(
-                &l_NewBuffer[offsetof(DisplayData, pixel_position) *
-                             (l_Capacity + l_CapacityIncrease)],
-                &ms_Buffer[offsetof(DisplayData, pixel_position) *
-                           (l_Capacity)],
-                l_Capacity * sizeof(Low::Math::Vector2));
+        bool Display::get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
+        {
+          if (p_Index >= get_capacity()) {
+            p_PageIndex = LOW_UINT32_MAX;
+            p_SlotIndex = LOW_UINT32_MAX;
+            return false;
           }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, rotation) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, rotation) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(float));
+          p_PageIndex = p_Index / ms_PageSize;
+          if (p_PageIndex > (ms_Pages.size() - 1)) {
+            return false;
           }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, pixel_scale) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, pixel_scale) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Low::Math::Vector2));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, layer) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, layer) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(uint32_t));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, parent) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, parent) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(uint64_t));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, parent_uid) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, parent_uid) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(uint64_t));
-          }
-          {
-            for (auto it = ms_LivingInstances.begin();
-                 it != ms_LivingInstances.end(); ++it) {
-              Display i_Display = *it;
-
-              auto *i_ValPtr = new (
-                  &l_NewBuffer[offsetof(DisplayData, children) *
-                                   (l_Capacity + l_CapacityIncrease) +
-                               (it->get_index() *
-                                sizeof(Low::Util::List<uint64_t>))])
-                  Low::Util::List<uint64_t>();
-              *i_ValPtr =
-                  ACCESSOR_TYPE_SOA(i_Display, Display, children,
-                                    Low::Util::List<uint64_t>);
-            }
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData,
-                                         absolute_pixel_position) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData,
-                                       absolute_pixel_position) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Low::Math::Vector2));
-          }
-          {
-            memcpy(
-                &l_NewBuffer[offsetof(DisplayData,
-                                      absolute_rotation) *
-                             (l_Capacity + l_CapacityIncrease)],
-                &ms_Buffer[offsetof(DisplayData, absolute_rotation) *
-                           (l_Capacity)],
-                l_Capacity * sizeof(float));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData,
-                                         absolute_pixel_scale) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData,
-                                       absolute_pixel_scale) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Low::Math::Vector2));
-          }
-          {
-            memcpy(
-                &l_NewBuffer[offsetof(DisplayData, absolute_layer) *
-                             (l_Capacity + l_CapacityIncrease)],
-                &ms_Buffer[offsetof(DisplayData, absolute_layer) *
-                           (l_Capacity)],
-                l_Capacity * sizeof(uint32_t));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, world_matrix) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, world_matrix) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Low::Math::Matrix4x4));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, world_updated) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, world_updated) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(bool));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, element) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, element) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Low::Core::UI::Element));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, unique_id) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, unique_id) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(Low::Util::UniqueId));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, dirty) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, dirty) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(bool));
-          }
-          {
-            memcpy(&l_NewBuffer[offsetof(DisplayData, world_dirty) *
-                                (l_Capacity + l_CapacityIncrease)],
-                   &ms_Buffer[offsetof(DisplayData, world_dirty) *
-                              (l_Capacity)],
-                   l_Capacity * sizeof(bool));
-          }
-          for (uint32_t i = l_Capacity;
-               i < l_Capacity + l_CapacityIncrease; ++i) {
-            l_NewSlots[i].m_Occupied = false;
-            l_NewSlots[i].m_Generation = 0;
-          }
-          free(ms_Buffer);
-          free(ms_Slots);
-          ms_Buffer = l_NewBuffer;
-          ms_Slots = l_NewSlots;
-          ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-          LOW_LOG_DEBUG << "Auto-increased budget for Display from "
-                        << l_Capacity << " to "
-                        << (l_Capacity + l_CapacityIncrease)
-                        << LOW_LOG_END;
+          p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+          return true;
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

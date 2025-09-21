@@ -7,7 +7,6 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererMeshResource.h"
 #include "LowRendererMeshGeometry.h"
@@ -21,28 +20,33 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API MeshData
-    {
-      Low::Renderer::MeshResource resource;
-      MeshState state;
-      Low::Renderer::MeshGeometry geometry;
-      Low::Renderer::GpuMesh gpu;
-      bool unloadable;
-      Low::Util::Set<u64> references;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(MeshData);
-      }
-    };
-
     struct LOW_RENDERER2_API Mesh : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        Low::Renderer::MeshResource resource;
+        MeshState state;
+        Low::Renderer::MeshGeometry geometry;
+        Low::Renderer::GpuMesh gpu;
+        bool unloadable;
+        uint32_t submesh_count;
+        Low::Util::Set<u64> references;
+        Low::Util::UniqueId unique_id;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<Mesh> ms_LivingInstances;
 
@@ -54,6 +58,8 @@ namespace Low {
 
       static Mesh make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
+      static Mesh make(Low::Util::Name p_Name,
+                       Low::Util::UniqueId p_UniqueId);
       explicit Mesh(const Mesh &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
@@ -117,9 +123,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Mesh::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        Mesh l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -145,18 +150,30 @@ namespace Low {
       void set_unloadable(bool p_Value);
       void toggle_unloadable();
 
+      uint32_t get_submesh_count() const;
+      void set_submesh_count(uint32_t p_Value);
+
+      Low::Util::UniqueId get_unique_id() const;
+
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
       static Mesh
       make_from_resource_config(MeshResourceConfig &p_Config);
       EditorImage get_editor_image();
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       Low::Util::Set<u64> &get_references() const;
+      void set_unique_id(Low::Util::UniqueId p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

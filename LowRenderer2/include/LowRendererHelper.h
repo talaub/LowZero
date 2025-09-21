@@ -22,6 +22,7 @@ namespace Low {
       RGBA16_SFLOAT,
       RGB16_SFLOAT,
       R16_SFLOAT,
+      R32_UINT,
       DEPTH
     };
 

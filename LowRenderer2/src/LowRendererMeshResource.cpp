@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -20,11 +21,14 @@ namespace Low {
 
     const uint16_t MeshResource::TYPE_ID = 47;
     uint32_t MeshResource::ms_Capacity = 0u;
-    uint8_t *MeshResource::ms_Buffer = 0;
-    std::shared_mutex MeshResource::ms_BufferMutex;
-    Low::Util::Instances::Slot *MeshResource::ms_Slots = 0;
-    Low::Util::List<MeshResource> MeshResource::ms_LivingInstances =
-        Low::Util::List<MeshResource>();
+    uint32_t MeshResource::ms_PageSize = 0u;
+    Low::Util::SharedMutex MeshResource::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        MeshResource::ms_PagesLock(MeshResource::ms_PagesMutex,
+                                   std::defer_lock);
+    Low::Util::List<MeshResource> MeshResource::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        MeshResource::ms_Pages;
 
     MeshResource::MeshResource() : Low::Util::Handle(0ull)
     {
@@ -45,29 +49,32 @@ namespace Low {
 
     MeshResource MeshResource::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       MeshResource l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = MeshResource::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, path,
-                              Util::String)) Util::String();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, mesh_path,
-                              Util::String)) Util::String();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, sidecar_path,
-                              Util::String)) Util::String();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, source_file,
-                              Util::String)) Util::String();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, mesh_id,
-                              uint64_t)) uint64_t();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MeshResource, asset_hash,
-                              uint64_t)) uint64_t();
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, path,
+                                 Util::String)) Util::String();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, mesh_path,
+                                 Util::String)) Util::String();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, sidecar_path,
+                                 Util::String)) Util::String();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, source_file,
+                                 Util::String)) Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -83,15 +90,26 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<MeshResource> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -100,23 +118,33 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void MeshResource::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(MeshResource));
 
-      initialize_buffer(&ms_Buffer, MeshResourceData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_MeshResource);
-      LOW_PROFILE_ALLOC(type_slots_MeshResource);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, MeshResource::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(MeshResource);
@@ -144,12 +172,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(path);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshResourceData, path);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResource::Data, path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_path();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
                                             path, Util::String);
@@ -159,6 +189,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((Util::String *)p_Data) = l_Handle.get_path();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -170,12 +201,13 @@ namespace Low {
         l_PropertyInfo.name = N(mesh_path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MeshResourceData, mesh_path);
+            offsetof(MeshResource::Data, mesh_path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_mesh_path();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
                                             mesh_path, Util::String);
@@ -185,6 +217,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((Util::String *)p_Data) = l_Handle.get_mesh_path();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -196,12 +229,13 @@ namespace Low {
         l_PropertyInfo.name = N(sidecar_path);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MeshResourceData, sidecar_path);
+            offsetof(MeshResource::Data, sidecar_path);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_sidecar_path();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MeshResource, sidecar_path, Util::String);
@@ -211,6 +245,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((Util::String *)p_Data) = l_Handle.get_sidecar_path();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -222,12 +257,13 @@ namespace Low {
         l_PropertyInfo.name = N(source_file);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MeshResourceData, source_file);
+            offsetof(MeshResource::Data, source_file);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_source_file();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MeshResource, source_file, Util::String);
@@ -237,6 +273,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((Util::String *)p_Data) = l_Handle.get_source_file();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -248,12 +285,13 @@ namespace Low {
         l_PropertyInfo.name = N(mesh_id);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MeshResourceData, mesh_id);
+            offsetof(MeshResource::Data, mesh_id);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_mesh_id();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
                                             mesh_id, uint64_t);
@@ -263,6 +301,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_mesh_id();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -274,12 +313,13 @@ namespace Low {
         l_PropertyInfo.name = N(asset_hash);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MeshResourceData, asset_hash);
+            offsetof(MeshResource::Data, asset_hash);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_asset_hash();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
                                             asset_hash, uint64_t);
@@ -289,6 +329,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_asset_hash();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -299,12 +340,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MeshResourceData, name);
+        l_PropertyInfo.dataOffset =
+            offsetof(MeshResource::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshResource,
                                             name, Low::Util::Name);
@@ -317,6 +360,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MeshResource l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -365,13 +409,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_MeshResource);
-      LOW_PROFILE_FREE(type_slots_MeshResource);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle MeshResource::_find_by_index(uint32_t p_Index)
@@ -385,8 +435,18 @@ namespace Low {
 
       MeshResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = MeshResource::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -407,9 +467,22 @@ namespace Low {
 
     bool MeshResource::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != MeshResource::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == MeshResource::TYPE_ID &&
-             check_alive(ms_Slots, MeshResource::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t MeshResource::get_capacity()
@@ -545,11 +618,11 @@ namespace Low {
     Util::String &MeshResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, path, Util::String);
     }
     void MeshResource::set_path(const char *p_Value)
@@ -561,14 +634,13 @@ namespace Low {
     void MeshResource::set_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, path, Util::String) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
@@ -579,11 +651,11 @@ namespace Low {
     Util::String &MeshResource::get_mesh_path() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_path
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_path
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, mesh_path, Util::String);
     }
     void MeshResource::set_mesh_path(const char *p_Value)
@@ -595,14 +667,13 @@ namespace Low {
     void MeshResource::set_mesh_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_path
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_path
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, mesh_path, Util::String) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_path
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_path
@@ -613,11 +684,11 @@ namespace Low {
     Util::String &MeshResource::get_sidecar_path() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_sidecar_path
       // LOW_CODEGEN::END::CUSTOM:GETTER_sidecar_path
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, sidecar_path, Util::String);
     }
     void MeshResource::set_sidecar_path(const char *p_Value)
@@ -629,14 +700,13 @@ namespace Low {
     void MeshResource::set_sidecar_path(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_sidecar_path
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_sidecar_path
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, sidecar_path, Util::String) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_sidecar_path
       // LOW_CODEGEN::END::CUSTOM:SETTER_sidecar_path
@@ -647,11 +717,11 @@ namespace Low {
     Util::String &MeshResource::get_source_file() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_source_file
       // LOW_CODEGEN::END::CUSTOM:GETTER_source_file
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, source_file, Util::String);
     }
     void MeshResource::set_source_file(const char *p_Value)
@@ -663,14 +733,13 @@ namespace Low {
     void MeshResource::set_source_file(Util::String &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_source_file
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_source_file
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, source_file, Util::String) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_source_file
       // LOW_CODEGEN::END::CUSTOM:SETTER_source_file
@@ -678,27 +747,26 @@ namespace Low {
       broadcast_observable(N(source_file));
     }
 
-    uint64_t &MeshResource::get_mesh_id() const
+    uint64_t MeshResource::get_mesh_id() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_id
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_id
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, mesh_id, uint64_t);
     }
-    void MeshResource::set_mesh_id(uint64_t &p_Value)
+    void MeshResource::set_mesh_id(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_id
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_id
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, mesh_id, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_id
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_id
@@ -706,27 +774,26 @@ namespace Low {
       broadcast_observable(N(mesh_id));
     }
 
-    uint64_t &MeshResource::get_asset_hash() const
+    uint64_t MeshResource::get_asset_hash() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_asset_hash
       // LOW_CODEGEN::END::CUSTOM:GETTER_asset_hash
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, asset_hash, uint64_t);
     }
-    void MeshResource::set_asset_hash(uint64_t &p_Value)
+    void MeshResource::set_asset_hash(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_asset_hash
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_asset_hash
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, asset_hash, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_asset_hash
       // LOW_CODEGEN::END::CUSTOM:SETTER_asset_hash
@@ -737,24 +804,23 @@ namespace Low {
     Low::Util::Name MeshResource::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
     }
     void MeshResource::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MeshResource, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -798,107 +864,81 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
     }
 
-    uint32_t MeshResource::create_instance()
+    uint32_t MeshResource::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void MeshResource::increase_budget()
+    u32 MeshResource::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for MeshResource.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, MeshResource::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(MeshResourceData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, path) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, path) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::String));
+    bool MeshResource::get_page_for_index(const u32 p_Index,
+                                          u32 &p_PageIndex,
+                                          u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, mesh_path) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, mesh_path) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::String));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, sidecar_path) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, sidecar_path) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::String));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, source_file) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, source_file) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Util::String));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, mesh_id) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, mesh_id) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, asset_hash) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, asset_hash) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MeshResourceData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MeshResourceData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for MeshResource from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

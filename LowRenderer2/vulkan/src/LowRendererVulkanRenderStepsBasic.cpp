@@ -1,5 +1,6 @@
 #include "LowRendererVulkanRenderStepsBasic.h"
 
+#include "LowMath.h"
 #include "LowRendererRenderStep.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererUiCanvas.h"
@@ -20,7 +21,6 @@
 #include "LowRendererVkPipeline.h"
 #include "LowRendererVkViewInfo.h"
 #include "LowRendererDrawCommand.h"
-#include "LowRendererMeshInfo.h"
 #include "LowRendererVulkanBase.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVulkanPipeline.h"
@@ -56,6 +56,9 @@ namespace Low {
           VkClearValue l_ClearColorValue = {};
           l_ClearColorValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
+          VkClearValue l_ClearObjectValue = {};
+          l_ClearObjectValue.color.uint32[0] = LOW_UINT32_MAX;
+
           VkClearValue l_ClearColorValueDepth = {};
           l_ClearColorValueDepth.depthStencil.depth =
               1.0f; // Depth clear value (1.0f is the farthest)
@@ -75,6 +78,9 @@ namespace Low {
               p_RenderView.get_gbuffer_viewposition()
                   .get_gpu()
                   .get_data_handle();
+          Image l_ObjectMapImage = p_RenderView.get_object_map()
+                                       .get_gpu()
+                                       .get_data_handle();
 
           {
             VkViewport l_Viewport = {};
@@ -123,6 +129,13 @@ namespace Low {
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             ImageUtil::cmd_transition(
                 l_Cmd,
+                p_RenderView.get_object_map()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            ImageUtil::cmd_transition(
+                l_Cmd,
                 p_RenderView.get_gbuffer_depth()
                     .get_gpu()
                     .get_data_handle(),
@@ -131,7 +144,7 @@ namespace Low {
           }
 
           Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
-          l_ColorAttachments.resize(3);
+          l_ColorAttachments.resize(4);
           l_ColorAttachments[0] = InitUtil::attachment_info(
               l_AlbedoImage.get_allocated_image().imageView,
               &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
@@ -141,6 +154,9 @@ namespace Low {
           l_ColorAttachments[2] = InitUtil::attachment_info(
               l_ViewPositionImage.get_allocated_image().imageView,
               &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+          l_ColorAttachments[3] = InitUtil::attachment_info(
+              l_ObjectMapImage.get_allocated_image().imageView,
+              &l_ClearObjectValue, VK_IMAGE_LAYOUT_GENERAL);
 
           VkRenderingAttachmentInfo l_DepthAttachment =
               InitUtil::attachment_info(
@@ -281,6 +297,13 @@ namespace Low {
             ImageUtil::cmd_transition(
                 l_Cmd,
                 p_RenderView.get_gbuffer_viewposition()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ImageUtil::cmd_transition(
+                l_Cmd,
+                p_RenderView.get_object_map()
                     .get_gpu()
                     .get_data_handle(),
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -1260,9 +1283,12 @@ namespace Low {
                     i_DrawCommand.get_texture().get_gpu().get_index();
               }
               i_Upload.materialIndex = 0;
-              if (i_DrawCommand.get_material().is_alive()) {
-                i_Upload.materialIndex =
-                    i_DrawCommand.get_material().get_index();
+              if (i_DrawCommand.get_material().is_alive() &&
+                  i_DrawCommand.get_material().get_state() ==
+                      MaterialState::LOADED) {
+                i_Upload.materialIndex = i_DrawCommand.get_material()
+                                             .get_gpu()
+                                             .get_index();
               }
 
               i_Upload.uvRect = i_DrawCommand.get_uv_rect();
@@ -1635,6 +1661,69 @@ namespace Low {
         return true;
       }
 
+      bool initialize_object_id_copy_renderstep()
+      {
+        RenderStep l_RenderStep =
+            RenderStep::make(RENDERSTEP_OBJECT_ID_COPY);
+
+        l_RenderStep.set_execute_callback(
+            [&](RenderStep p_RenderStep, float p_Delta,
+                RenderView p_RenderView) -> bool {
+              VK_RENDERDOC_SECTION_BEGIN(
+                  "Object ID copy",
+                  SINGLE_ARG({0.2f, 0.427f, 0.217f}));
+
+              VkCommandBuffer l_Cmd =
+                  Global::get_current_command_buffer();
+
+              ViewInfo l_ViewInfo =
+                  p_RenderView.get_view_info_handle();
+
+              Image l_Image = p_RenderView.get_object_map()
+                                  .get_gpu()
+                                  .get_data_handle();
+
+              const u32 l_Width =
+                  l_Image.get_allocated_image().extent.width;
+              const u32 l_Height =
+                  l_Image.get_allocated_image().extent.height;
+
+              ImageUtil::cmd_transition(
+                  l_Cmd, l_Image,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+              // Copy image to buffer
+              {
+                VkBufferImageCopy l_Region = {};
+                l_Region.bufferOffset = 0;
+                l_Region.bufferRowLength = 0;
+                l_Region.bufferImageHeight = 0;
+                l_Region.imageSubresource.aspectMask =
+                    VK_IMAGE_ASPECT_COLOR_BIT;
+                l_Region.imageSubresource.mipLevel = 0;
+                l_Region.imageSubresource.baseArrayLayer = 0;
+                l_Region.imageSubresource.layerCount = 1;
+                l_Region.imageExtent = {l_Width, l_Height, 1};
+
+                vkCmdCopyImageToBuffer(
+                    l_Cmd, l_Image.get_allocated_image().image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    l_ViewInfo.get_object_id_buffer().buffer, 1,
+                    &l_Region);
+              }
+
+              ImageUtil::cmd_transition(
+                  l_Cmd, l_Image,
+                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+              VK_RENDERDOC_SECTION_END();
+              return true;
+            });
+        return true;
+      }
+
       bool initialize_basic_rendersteps()
       {
         LOWR_VK_ASSERT_RETURN(
@@ -1657,6 +1746,10 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             initialize_debug_geometry_renderstep(),
             "Failed to initialize debug geometry renderstep");
+
+        LOWR_VK_ASSERT_RETURN(
+            initialize_object_id_copy_renderstep(),
+            "Failed to initialize object copy renderstep");
         return true;
       }
     } // namespace Vulkan

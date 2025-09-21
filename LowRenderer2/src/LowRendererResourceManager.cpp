@@ -2,14 +2,14 @@
 
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererEditorImageStaging.h"
+#include "LowRendererMaterialState.h"
 #include "LowRendererMeshResourceState.h"
+#include "LowRendererTextureResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererVulkanRenderer.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVkImage.h"
 #include "LowRendererGlobals.h"
-#include "LowRendererSubmesh.h"
-#include "LowRendererMeshInfo.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererMeshGeometry.h"
 #include "LowRendererGpuMesh.h"
@@ -20,8 +20,10 @@
 
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
+#include "LowUtilHandle.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilAssert.h"
+#include "LowUtilLogger.h"
 #include "LowUtilResource.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilHashing.h"
@@ -39,7 +41,10 @@ namespace Low {
   namespace Renderer {
     namespace ResourceManager {
 
+      Util::Map<u64, u64> g_AssetRegistry;
+
       static bool mesh_schedule_gpu_upload(Mesh p_Mesh);
+      static bool material_schedule_gpu_upload(Material p_Material);
 
       struct MeshEntry
       {
@@ -152,11 +157,32 @@ namespace Low {
           return false;
         }
 
+        register_asset(p_Texture.get_resource().get_texture_id(),
+                       p_Texture);
+
         p_Texture.set_state(TextureState::SCHEDULEDTOLOAD);
 
         g_LoadSchedules.textures.insert(p_Texture);
 
         return true;
+      }
+
+      bool load_material(Material p_Material)
+      {
+        LOCK_HANDLE(p_Material);
+
+        if (p_Material.is_alive()) {
+          register_asset(p_Material.get_unique_id(), p_Material);
+        }
+
+        if (p_Material.get_state() == MaterialState::MEMORYLOADED) {
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              material_schedule_gpu_upload(p_Material),
+              "Failed to schedule material for GPU upload.");
+
+          return true;
+        }
+        return false;
       }
 
       bool load_font(Font p_Font)
@@ -176,6 +202,10 @@ namespace Low {
 
       bool load_mesh(Mesh p_Mesh)
       {
+        if (p_Mesh.is_alive() && p_Mesh.get_resource().is_alive()) {
+          register_asset(p_Mesh.get_resource().get_mesh_id(), p_Mesh);
+        }
+
         if (p_Mesh.is_alive() &&
             p_Mesh.get_state() == MeshState::MEMORYLOADED &&
             p_Mesh.get_geometry().is_alive()) {
@@ -338,12 +368,19 @@ namespace Low {
                             Util::Resource::Image2D &p_Image2D)
       {
         TexturePixels l_Pixels = TexturePixels::make(N(Mip0));
+        Util::HandleLock l_PixelsLock(l_Pixels);
+
         l_Pixels.set_state(TextureState::MEMORYLOADED);
         // TODO: Maybe not force 4 channels and not hardcode format
         l_Pixels.set_channels(4);
         l_Pixels.set_format(p_Image2D.format);
-        l_Pixels.set_data_size(p_Image2D.size);
+        /*
+        for (u32 i = 0; i < l_Pixels.get_pixel_data().size(); ++i) {
+          l_Pixels.get_pixel_data()[i] = p_Image2D.data[i];
+        }
+        */
         l_Pixels.set_pixel_data(p_Image2D.data);
+        l_Pixels.set_data_size(p_Image2D.size);
         l_Pixels.set_dimensions(p_Image2D.dimensions);
 
         return l_Pixels;
@@ -408,12 +445,16 @@ namespace Low {
         // texture to MEMORYLOADED once this is done.
         Util::JobManager::default_pool().enqueue([l_TextureId]() {
           Texture l_Texture = l_TextureId;
+          Util::HandleLock l_TextureLock(l_Texture);
+
           Util::Resource::ImageMipMaps l_MipMaps;
           Util::Resource::load_image_mipmaps(
-              l_Texture.get_resource().get_path(), l_MipMaps);
+              l_Texture.get_resource().get_texture_path(), l_MipMaps);
 
           TextureStaging l_Staging =
               TextureStaging::make(l_Texture.get_name());
+          Util::HandleLock l_StagingLock(l_Staging);
+
           l_Texture.set_staging(l_Staging);
 
           // Copy pixel data for all mips
@@ -449,9 +490,11 @@ namespace Low {
 
         Util::JobManager::default_pool().enqueue([l_EditorImageId]() {
           EditorImage l_EditorImage = l_EditorImageId;
+          Util::HandleLock l_EditorImageLock(l_EditorImage);
 
           EditorImageStaging l_Staging =
               EditorImageStaging::make(l_EditorImage.get_name());
+          Util::HandleLock l_StagingLock(l_Staging);
           l_EditorImage.set_staging(l_Staging);
 
           int l_Width, l_Height, l_Channels;
@@ -506,8 +549,10 @@ namespace Low {
         // to MEMORYLOADED once this is done.
         Util::JobManager::default_pool().enqueue([l_MeshId]() {
           Mesh l_Mesh = l_MeshId;
+          Util::HandleLock l_MeshLock(l_Mesh);
           MeshGeometry l_MeshGeometry =
               MeshGeometry::make(l_Mesh.get_name());
+          Util::HandleLock l_MeshGeometryLock(l_MeshGeometry);
           l_Mesh.set_geometry(l_MeshGeometry);
 
           Util::Resource::Mesh l_ResourceMesh;
@@ -564,6 +609,7 @@ namespace Low {
           }
 
           l_MeshGeometry.set_submesh_count(l_SubmeshCount);
+          l_Mesh.set_submesh_count(l_SubmeshCount);
 
           l_Mesh.set_state(MeshState::MEMORYLOADED);
         });
@@ -629,6 +675,34 @@ namespace Low {
         p_Mesh.get_gpu().set_submesh_count(l_Index);
 
         p_Mesh.set_state(MeshState::UPLOADINGTOGPU);
+        return true;
+      }
+
+      static bool material_schedule_gpu_upload(Material p_Material)
+      {
+        LOW_ASSERT_ERROR_RETURN_FALSE(
+            p_Material.is_alive(),
+            "Tried to gpu load material but it was dead");
+        LOW_ASSERT_ERROR_RETURN_FALSE(
+            p_Material.get_state() == MaterialState::MEMORYLOADED,
+            "Cannot gpu load material that is not in state memory "
+            "loaded.");
+        LOW_ASSERT_ERROR_RETURN_FALSE(
+            !p_Material.get_gpu().is_alive(),
+            "Cannot gpu load material that already has a GPUMaterial "
+            "assigned.");
+
+        if (GpuMaterial::living_count() >=
+            GpuMaterial::get_capacity()) {
+          LOW_NOT_IMPLEMENTED;
+          // TODO: Unload materials?
+        }
+
+        p_Material.set_gpu(GpuMaterial::make(p_Material.get_name()));
+        p_Material.update_gpu();
+
+        p_Material.set_state(MaterialState::UPLOADINGTOGPU);
+
         return true;
       }
 
@@ -1399,6 +1473,10 @@ namespace Low {
           p_Config.sourceFile =
               LOW_YAML_AS_STRING(p_Node["source_file"]);
 
+          LOWR_ASSERT_RETURN(p_Node["submesh_count"],
+                             "Could not find submesh count");
+          p_Config.submeshCount = p_Node["submesh_count"].as<u32>();
+
           p_Config.sidecarPath =
               Util::get_project().assetCachePath + "\\" +
               Util::hash_to_string(p_Config.meshId) + ".mesh.yaml";
@@ -1410,6 +1488,70 @@ namespace Low {
           return true;
         }
         return true;
+      }
+
+      bool
+      parse_texture_resource_config(Util::String p_Path,
+                                    Util::Yaml::Node &p_Node,
+                                    TextureResourceConfig &p_Config)
+      {
+        LOWR_ASSERT_RETURN(p_Node["version"],
+                           "Could not find version");
+        const u32 l_Version = p_Node["version"].as<u32>();
+
+        if (l_Version == 1) {
+          LOWR_ASSERT_RETURN(p_Node["name"],
+                             "Could not find texture name");
+          p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
+
+          LOWR_ASSERT_RETURN(p_Node["texture_id"],
+                             "Could not find texture id");
+          p_Config.textureId = Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["texture_id"]));
+
+          LOWR_ASSERT_RETURN(p_Node["asset_hash"],
+                             "Could not find asset hash");
+          p_Config.assetHash = Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+
+          LOWR_ASSERT_RETURN(p_Node["source_file"],
+                             "Could not find source file");
+          p_Config.sourceFile =
+              LOW_YAML_AS_STRING(p_Node["source_file"]);
+
+          p_Config.sidecarPath =
+              Util::get_project().assetCachePath + "/" +
+              Util::hash_to_string(p_Config.textureId) +
+              ".texture.yaml";
+          p_Config.texturePath =
+              Util::get_project().assetCachePath + "/" +
+              Util::hash_to_string(p_Config.textureId) + ".ktx";
+
+          p_Config.path = p_Path;
+          return true;
+        }
+        return true;
+      }
+
+      void register_asset_id(const u64 p_AssetId,
+                             const u64 p_AssetHandleId)
+      {
+        auto l_Pos = g_AssetRegistry.find(p_AssetId);
+        LOW_ASSERT(l_Pos == g_AssetRegistry.end() ||
+                       l_Pos->second == p_AssetHandleId,
+                   "Encountered asset ID collision.");
+        g_AssetRegistry[p_AssetId] = p_AssetHandleId;
+      }
+
+      u64 find_asset_by_id(const u64 p_AssetId)
+      {
+        auto pos = g_AssetRegistry.find(p_AssetId);
+
+        if (pos == g_AssetRegistry.end()) {
+          return Util::Handle::DEAD;
+        }
+
+        return pos->second;
       }
     } // namespace ResourceManager
   } // namespace Renderer

@@ -20,5 +20,5 @@ namespace Low {
       LOW_EXPORT void write_file(const char *p_Path, Node &p_Node);
       LOW_EXPORT Node parse(const char *p_Yaml);
     } // namespace Yaml
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

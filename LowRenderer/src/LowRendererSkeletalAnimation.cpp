@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -22,12 +23,15 @@ namespace Low {
 
     const uint16_t SkeletalAnimation::TYPE_ID = 29;
     uint32_t SkeletalAnimation::ms_Capacity = 0u;
-    uint8_t *SkeletalAnimation::ms_Buffer = 0;
-    std::shared_mutex SkeletalAnimation::ms_BufferMutex;
-    Low::Util::Instances::Slot *SkeletalAnimation::ms_Slots = 0;
+    uint32_t SkeletalAnimation::ms_PageSize = 0u;
+    Low::Util::SharedMutex SkeletalAnimation::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        SkeletalAnimation::ms_PagesLock(
+            SkeletalAnimation::ms_PagesMutex, std::defer_lock);
     Low::Util::List<SkeletalAnimation>
-        SkeletalAnimation::ms_LivingInstances =
-            Low::Util::List<SkeletalAnimation>();
+        SkeletalAnimation::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        SkeletalAnimation::ms_Pages;
 
     SkeletalAnimation::SkeletalAnimation() : Low::Util::Handle(0ull)
     {
@@ -48,25 +52,32 @@ namespace Low {
 
     SkeletalAnimation SkeletalAnimation::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       SkeletalAnimation l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = SkeletalAnimation::TYPE_ID;
+
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(l_Handle);
 
       ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, duration,
                         float) = 0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, ticks_per_second,
                         float) = 0.0f;
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, SkeletalAnimation, channels,
           Util::List<Util::Resource::AnimationChannel>))
           Util::List<Util::Resource::AnimationChannel>();
       ACCESSOR_TYPE_SOA(l_Handle, SkeletalAnimation, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -83,16 +94,27 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -101,11 +123,12 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void SkeletalAnimation::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -113,12 +136,22 @@ namespace Low {
       ms_Capacity = Low::Util::Config::get_capacity(
           N(LowRenderer), N(SkeletalAnimation));
 
-      initialize_buffer(&ms_Buffer, SkeletalAnimationData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_SkeletalAnimation);
-      LOW_PROFILE_ALLOC(type_slots_SkeletalAnimation);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, SkeletalAnimation::Data::get_size(),
+              ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(SkeletalAnimation);
@@ -147,12 +180,14 @@ namespace Low {
         l_PropertyInfo.name = N(duration);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, duration);
+            offsetof(SkeletalAnimation::Data, duration);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           l_Handle.get_duration();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, SkeletalAnimation, duration, float);
@@ -165,6 +200,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           *((float *)p_Data) = l_Handle.get_duration();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -176,12 +213,14 @@ namespace Low {
         l_PropertyInfo.name = N(ticks_per_second);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, ticks_per_second);
+            offsetof(SkeletalAnimation::Data, ticks_per_second);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           l_Handle.get_ticks_per_second();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, SkeletalAnimation, ticks_per_second, float);
@@ -194,6 +233,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           *((float *)p_Data) = l_Handle.get_ticks_per_second();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -205,12 +246,14 @@ namespace Low {
         l_PropertyInfo.name = N(channels);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, channels);
+            offsetof(SkeletalAnimation::Data, channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           l_Handle.get_channels();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, SkeletalAnimation, channels,
@@ -221,6 +264,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           *((Util::List<Util::Resource::AnimationChannel> *)p_Data) =
               l_Handle.get_channels();
         };
@@ -233,12 +278,14 @@ namespace Low {
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(SkeletalAnimationData, name);
+            offsetof(SkeletalAnimation::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, SkeletalAnimation, name, Low::Util::Name);
@@ -251,6 +298,8 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           SkeletalAnimation l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<SkeletalAnimation> l_HandleLock(
+              l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -266,13 +315,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_SkeletalAnimation);
-      LOW_PROFILE_FREE(type_slots_SkeletalAnimation);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle
@@ -288,8 +343,18 @@ namespace Low {
 
       SkeletalAnimation l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = SkeletalAnimation::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -311,9 +376,22 @@ namespace Low {
 
     bool SkeletalAnimation::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != SkeletalAnimation::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == SkeletalAnimation::TYPE_ID &&
-             check_alive(ms_Slots, SkeletalAnimation::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t SkeletalAnimation::get_capacity()
@@ -472,26 +550,25 @@ namespace Low {
     float SkeletalAnimation::get_duration() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_duration
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_duration
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(SkeletalAnimation, duration, float);
     }
     void SkeletalAnimation::set_duration(float p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_duration
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_duration
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(SkeletalAnimation, duration, float) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_duration
 
@@ -503,26 +580,25 @@ namespace Low {
     float SkeletalAnimation::get_ticks_per_second() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ticks_per_second
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_ticks_per_second
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(SkeletalAnimation, ticks_per_second, float);
     }
     void SkeletalAnimation::set_ticks_per_second(float p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ticks_per_second
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ticks_per_second
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(SkeletalAnimation, ticks_per_second, float) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ticks_per_second
 
@@ -535,12 +611,12 @@ namespace Low {
     SkeletalAnimation::get_channels() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_channels
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_channels
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(SkeletalAnimation, channels,
                       Util::List<Util::Resource::AnimationChannel>);
     }
@@ -548,26 +624,25 @@ namespace Low {
     Low::Util::Name SkeletalAnimation::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(SkeletalAnimation, name, Low::Util::Name);
     }
     void SkeletalAnimation::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<SkeletalAnimation> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(SkeletalAnimation, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -576,100 +651,82 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t SkeletalAnimation::create_instance()
+    uint32_t SkeletalAnimation::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void SkeletalAnimation::increase_budget()
+    u32 SkeletalAnimation::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT(
+          (l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+          "Could not increase capacity for SkeletalAnimation.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, SkeletalAnimation::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(SkeletalAnimationData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(
-            &l_NewBuffer[offsetof(SkeletalAnimationData, duration) *
-                         (l_Capacity + l_CapacityIncrease)],
-            &ms_Buffer[offsetof(SkeletalAnimationData, duration) *
-                       (l_Capacity)],
-            l_Capacity * sizeof(float));
+    bool SkeletalAnimation::get_page_for_index(const u32 p_Index,
+                                               u32 &p_PageIndex,
+                                               u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData,
-                                     ticks_per_second) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData,
-                                   ticks_per_second) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(float));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          SkeletalAnimation i_SkeletalAnimation = *it;
-
-          auto *i_ValPtr =
-              new (&l_NewBuffer
-                       [offsetof(SkeletalAnimationData, channels) *
-                            (l_Capacity + l_CapacityIncrease) +
-                        (it->get_index() *
-                         sizeof(Util::List<
-                                Util::Resource::AnimationChannel>))])
-                  Util::List<Util::Resource::AnimationChannel>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(
-              i_SkeletalAnimation, SkeletalAnimation, channels,
-              Util::List<Util::Resource::AnimationChannel>);
-        }
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(SkeletalAnimationData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(SkeletalAnimationData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG
-          << "Auto-increased budget for SkeletalAnimation from "
-          << l_Capacity << " to " << (l_Capacity + l_CapacityIncrease)
-          << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

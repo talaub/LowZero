@@ -231,6 +231,11 @@ namespace Low {
         l_RenderObject.set_material(get_default_material());
         l_RenderObject.set_world_transform(l_LocalMatrix);
 
+        l_RenderScene.set_directional_light_color(1.0f, 1.0f, 1.0f);
+        l_RenderScene.set_directional_light_intensity(0.75f);
+        l_RenderScene.set_directional_light_direction(-0.15f, -1.0f,
+                                                      -1.5f);
+
         ThumbnailCreationSchedule l_Schedule;
         l_Schedule.mesh = p_Mesh;
         l_Schedule.material = Util::Handle::DEAD;
@@ -325,6 +330,8 @@ namespace Low {
               Util::hash_to_string(l_AssetHash).c_str();
           l_ResourceNode["source_file"] = p_ImportPath.c_str();
           l_ResourceNode["name"] = l_FileName.c_str();
+          l_ResourceNode["submesh_count"] =
+              l_SidecarInfo["submeshes"].size();
         }
 
         Assimp::Exporter l_Exporter;
@@ -362,5 +369,5 @@ namespace Low {
         return true;
       }
     } // namespace ResourceImporter
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

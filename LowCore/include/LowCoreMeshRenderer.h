@@ -12,7 +12,6 @@
 #include "LowCoreMeshAsset.h"
 #include "LowCoreMaterial.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -24,25 +23,28 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API MeshRendererData
-      {
-        Low::Core::MeshAsset mesh;
-        Low::Core::Material material;
-        Low::Core::Entity entity;
-        Low::Util::UniqueId unique_id;
-
-        static size_t get_size()
-        {
-          return sizeof(MeshRendererData);
-        }
-      };
-
       struct LOW_CORE_API MeshRenderer : public Low::Util::Handle
       {
       public:
-        static std::shared_mutex ms_BufferMutex;
-        static uint8_t *ms_Buffer;
-        static Low::Util::Instances::Slot *ms_Slots;
+        struct Data
+        {
+        public:
+          Low::Core::MeshAsset mesh;
+          Low::Core::Material material;
+          Low::Core::Entity entity;
+          Low::Util::UniqueId unique_id;
+
+          static size_t get_size()
+          {
+            return sizeof(Data);
+          }
+        };
+
+      public:
+        static Low::Util::UniqueLock<Low::Util::SharedMutex>
+            ms_PagesLock;
+        static Low::Util::SharedMutex ms_PagesMutex;
+        static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
         static Low::Util::List<MeshRenderer> ms_LivingInstances;
 
@@ -114,9 +116,8 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          READ_LOCK(l_Lock);
-          return p_Handle.get_type() == MeshRenderer::TYPE_ID &&
-                 p_Handle.check_alive(ms_Slots, get_capacity());
+          MeshRenderer l_Handle = p_Handle.get_id();
+          return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
@@ -137,10 +138,17 @@ namespace Low {
 
         Low::Util::UniqueId get_unique_id() const;
 
+        static bool get_page_for_index(const u32 p_Index,
+                                       u32 &p_PageIndex,
+                                       u32 &p_SlotIndex);
+
       private:
-        static uint32_t ms_Capacity;
-        static uint32_t create_instance();
-        static void increase_budget();
+        static u32 ms_Capacity;
+        static u32 ms_PageSize;
+        static u32 create_instance(
+            u32 &p_PageIndex, u32 &p_SlotIndex,
+            Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+        static u32 create_page();
         void set_unique_id(Low::Util::UniqueId p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

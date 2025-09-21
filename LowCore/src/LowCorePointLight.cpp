@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -24,11 +25,14 @@ namespace Low {
 
       const uint16_t PointLight::TYPE_ID = 28;
       uint32_t PointLight::ms_Capacity = 0u;
-      uint8_t *PointLight::ms_Buffer = 0;
-      std::shared_mutex PointLight::ms_BufferMutex;
-      Low::Util::Instances::Slot *PointLight::ms_Slots = 0;
-      Low::Util::List<PointLight> PointLight::ms_LivingInstances =
-          Low::Util::List<PointLight>();
+      uint32_t PointLight::ms_PageSize = 0u;
+      Low::Util::SharedMutex PointLight::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          PointLight::ms_PagesLock(PointLight::ms_PagesMutex,
+                                   std::defer_lock);
+      Low::Util::List<PointLight> PointLight::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          PointLight::ms_Pages;
 
       PointLight::PointLight() : Low::Util::Handle(0ull)
       {
@@ -57,23 +61,30 @@ namespace Low {
       PointLight PointLight::make(Low::Core::Entity p_Entity,
                                   Low::Util::UniqueId p_UniqueId)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         PointLight l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = PointLight::TYPE_ID;
 
-        new (&ACCESSOR_TYPE_SOA(l_Handle, PointLight, color,
-                                Low::Math::ColorRGB))
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
+
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, PointLight, color,
+                                   Low::Math::ColorRGB))
             Low::Math::ColorRGB();
         ACCESSOR_TYPE_SOA(l_Handle, PointLight, intensity, float) =
             0.0f;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, PointLight, entity,
-                                Low::Core::Entity))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, PointLight, entity,
+                                   Low::Core::Entity))
             Low::Core::Entity();
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
@@ -100,18 +111,29 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        {
+          Low::Util::HandleLock<PointLight> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
+        }
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
         Low::Util::remove_unique_id(get_unique_id());
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -120,11 +142,12 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void PointLight::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -132,12 +155,21 @@ namespace Low {
         ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
                                                       N(PointLight));
 
-        initialize_buffer(&ms_Buffer, PointLightData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_PointLight);
-        LOW_PROFILE_ALLOC(type_slots_PointLight);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, PointLight::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(PointLight);
@@ -164,13 +196,15 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(color);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(PointLightData, color);
+          l_PropertyInfo.dataOffset =
+              offsetof(PointLight::Data, color);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::COLORRGB;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             l_Handle.get_color();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PointLight, color, Low::Math::ColorRGB);
@@ -183,6 +217,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             *((Low::Math::ColorRGB *)p_Data) = l_Handle.get_color();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -194,12 +229,13 @@ namespace Low {
           l_PropertyInfo.name = N(intensity);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(PointLightData, intensity);
+              offsetof(PointLight::Data, intensity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             l_Handle.get_intensity();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight,
                                               intensity, float);
@@ -212,6 +248,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             *((float *)p_Data) = l_Handle.get_intensity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -223,12 +260,13 @@ namespace Low {
           l_PropertyInfo.name = N(entity);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(PointLightData, entity);
+              offsetof(PointLight::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             l_Handle.get_entity();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PointLight, entity, Low::Core::Entity);
@@ -241,6 +279,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             *((Low::Core::Entity *)p_Data) = l_Handle.get_entity();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -252,12 +291,13 @@ namespace Low {
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(PointLightData, unique_id);
+              offsetof(PointLight::Data, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, PointLight, unique_id, Low::Util::UniqueId);
@@ -267,6 +307,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -282,13 +323,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_PointLight);
-        LOW_PROFILE_FREE(type_slots_PointLight);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle PointLight::_find_by_index(uint32_t p_Index)
@@ -302,8 +349,18 @@ namespace Low {
 
         PointLight l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = PointLight::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -324,9 +381,22 @@ namespace Low {
 
       bool PointLight::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != PointLight::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == PointLight::TYPE_ID &&
-               check_alive(ms_Slots, PointLight::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t PointLight::get_capacity()
@@ -372,7 +442,8 @@ namespace Low {
         Low::Util::Serialization::serialize(p_Node["color"],
                                             get_color());
         p_Node["intensity"] = get_intensity();
-        p_Node["unique_id"] = get_unique_id();
+        p_Node["_unique_id"] =
+            Low::Util::hash_to_string(get_unique_id()).c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -390,14 +461,16 @@ namespace Low {
       PointLight::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
       {
-        PointLight l_Handle = PointLight::make(p_Creator.get_id());
-
+        Low::Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
-          Low::Util::remove_unique_id(l_Handle.get_unique_id());
-          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-          Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                        l_Handle.get_id());
+          l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
+        } else if (p_Node["_unique_id"]) {
+          l_HandleUniqueId = Low::Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
         }
+
+        PointLight l_Handle =
+            PointLight::make(p_Creator.get_id(), l_HandleUniqueId);
 
         if (p_Node["color"]) {
           l_Handle.set_color(
@@ -470,26 +543,52 @@ namespace Low {
       Low::Math::ColorRGB &PointLight::get_color() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PointLight, color, Low::Math::ColorRGB);
       }
+      void PointLight::set_color(float p_X, float p_Y, float p_Z)
+      {
+        Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+        set_color(p_Val);
+      }
+
+      void PointLight::set_color_x(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_color();
+        l_Value.x = p_Value;
+        set_color(l_Value);
+      }
+
+      void PointLight::set_color_y(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_color();
+        l_Value.y = p_Value;
+        set_color(l_Value);
+      }
+
+      void PointLight::set_color_z(float p_Value)
+      {
+        Low::Math::Vector3 l_Value = get_color();
+        l_Value.z = p_Value;
+        set_color(l_Value);
+      }
+
       void PointLight::set_color(Low::Math::ColorRGB &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PointLight, color, Low::Math::ColorRGB) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -516,26 +615,25 @@ namespace Low {
       float PointLight::get_intensity() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_intensity
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_intensity
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PointLight, intensity, float);
       }
       void PointLight::set_intensity(float p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_intensity
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_intensity
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PointLight, intensity, float) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
@@ -562,26 +660,25 @@ namespace Low {
       Low::Core::Entity PointLight::get_entity() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_entity
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PointLight, entity, Low::Core::Entity);
       }
       void PointLight::set_entity(Low::Core::Entity p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_entity
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_entity
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PointLight, entity, Low::Core::Entity) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_entity
 
@@ -593,27 +690,26 @@ namespace Low {
       Low::Util::UniqueId PointLight::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(PointLight, unique_id, Low::Util::UniqueId);
       }
       void PointLight::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(PointLight, unique_id, Low::Util::UniqueId) =
             p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -622,86 +718,83 @@ namespace Low {
         broadcast_observable(N(unique_id));
       }
 
-      uint32_t PointLight::create_instance()
+      uint32_t PointLight::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void PointLight::increase_budget()
+      u32 PointLight::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for PointLight.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, PointLight::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer =
-            (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                              sizeof(PointLightData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(&l_NewBuffer[offsetof(PointLightData, color) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PointLightData, color) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::ColorRGB));
+      bool PointLight::get_page_for_index(const u32 p_Index,
+                                          u32 &p_PageIndex,
+                                          u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(PointLightData, intensity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PointLightData, intensity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(float));
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(&l_NewBuffer[offsetof(PointLightData, entity) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PointLightData, entity) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Core::Entity));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(PointLightData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(PointLightData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG << "Auto-increased budget for PointLight from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

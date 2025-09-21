@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -20,11 +21,14 @@ namespace Low {
 
     const uint16_t TexturePixels::TYPE_ID = 73;
     uint32_t TexturePixels::ms_Capacity = 0u;
-    uint8_t *TexturePixels::ms_Buffer = 0;
-    std::shared_mutex TexturePixels::ms_BufferMutex;
-    Low::Util::Instances::Slot *TexturePixels::ms_Slots = 0;
-    Low::Util::List<TexturePixels> TexturePixels::ms_LivingInstances =
-        Low::Util::List<TexturePixels>();
+    uint32_t TexturePixels::ms_PageSize = 0u;
+    Low::Util::SharedMutex TexturePixels::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        TexturePixels::ms_PagesLock(TexturePixels::ms_PagesMutex,
+                                    std::defer_lock);
+    Low::Util::List<TexturePixels> TexturePixels::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        TexturePixels::ms_Pages;
 
     TexturePixels::TexturePixels() : Low::Util::Handle(0ull)
     {
@@ -45,35 +49,43 @@ namespace Low {
 
     TexturePixels TexturePixels::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       TexturePixels l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = TexturePixels::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, TexturePixels, dimensions,
-                              Low::Math::UVector2))
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TexturePixels, dimensions,
+                                 Low::Math::UVector2))
           Low::Math::UVector2();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, TexturePixels, format,
-                              Low::Util::Resource::Image2DFormat))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TexturePixels, format,
+                                 Low::Util::Resource::Image2DFormat))
           Low::Util::Resource::Image2DFormat();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, TexturePixels, pixel_data,
-                              Low::Util::List<uint8_t>))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TexturePixels, pixel_data,
+                                 Low::Util::List<uint8_t>))
           Low::Util::List<uint8_t>();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, TexturePixels, state,
-                              Low::Renderer::TextureState))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TexturePixels, state,
+                                 Low::Renderer::TextureState))
           Low::Renderer::TextureState();
       ACCESSOR_TYPE_SOA(l_Handle, TexturePixels, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
       ms_LivingInstances.push_back(l_Handle);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.get_pixel_data().resize(15);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -83,15 +95,26 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -100,23 +123,33 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void TexturePixels::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(TexturePixels));
 
-      initialize_buffer(&ms_Buffer, TexturePixelsData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_TexturePixels);
-      LOW_PROFILE_ALLOC(type_slots_TexturePixels);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, TexturePixels::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(TexturePixels);
@@ -145,12 +178,13 @@ namespace Low {
         l_PropertyInfo.name = N(dimensions);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(TexturePixelsData, dimensions);
+            offsetof(TexturePixels::Data, dimensions);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_dimensions();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexturePixels,
                                             dimensions,
@@ -164,6 +198,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((Low::Math::UVector2 *)p_Data) =
               l_Handle.get_dimensions();
         };
@@ -176,12 +211,13 @@ namespace Low {
         l_PropertyInfo.name = N(channels);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(TexturePixelsData, channels);
+            offsetof(TexturePixels::Data, channels);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_channels();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexturePixels,
                                             channels, uint8_t);
@@ -194,6 +230,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((uint8_t *)p_Data) = l_Handle.get_channels();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -205,12 +242,13 @@ namespace Low {
         l_PropertyInfo.name = N(format);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(TexturePixelsData, format);
+            offsetof(TexturePixels::Data, format);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_format();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, TexturePixels, format,
@@ -225,6 +263,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((Low::Util::Resource::Image2DFormat *)p_Data) =
               l_Handle.get_format();
         };
@@ -237,12 +276,13 @@ namespace Low {
         l_PropertyInfo.name = N(pixel_data);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(TexturePixelsData, pixel_data);
+            offsetof(TexturePixels::Data, pixel_data);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_pixel_data();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexturePixels,
                                             pixel_data,
@@ -257,6 +297,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((Low::Util::List<uint8_t> *)p_Data) =
               l_Handle.get_pixel_data();
         };
@@ -269,12 +310,13 @@ namespace Low {
         l_PropertyInfo.name = N(data_size);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(TexturePixelsData, data_size);
+            offsetof(TexturePixels::Data, data_size);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_data_size();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexturePixels,
                                             data_size, uint64_t);
@@ -287,6 +329,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_data_size();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -298,13 +341,14 @@ namespace Low {
         l_PropertyInfo.name = N(state);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(TexturePixelsData, state);
+            offsetof(TexturePixels::Data, state);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType =
             Low::Renderer::TextureStateEnumHelper::get_enum_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_state();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, TexturePixels, state,
@@ -318,6 +362,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((Low::Renderer::TextureState *)p_Data) =
               l_Handle.get_state();
         };
@@ -329,12 +374,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(TexturePixelsData, name);
+        l_PropertyInfo.dataOffset =
+            offsetof(TexturePixels::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, TexturePixels,
                                             name, Low::Util::Name);
@@ -347,6 +394,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           TexturePixels l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<TexturePixels> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -361,13 +409,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_TexturePixels);
-      LOW_PROFILE_FREE(type_slots_TexturePixels);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle TexturePixels::_find_by_index(uint32_t p_Index)
@@ -381,8 +435,18 @@ namespace Low {
 
       TexturePixels l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = TexturePixels::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -403,9 +467,22 @@ namespace Low {
 
     bool TexturePixels::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != TexturePixels::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == TexturePixels::TYPE_ID &&
-             check_alive(ms_Slots, TexturePixels::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t TexturePixels::get_capacity()
@@ -573,11 +650,11 @@ namespace Low {
     Low::Math::UVector2 &TexturePixels::get_dimensions() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, dimensions, Low::Math::UVector2);
     }
     void TexturePixels::set_dimensions(u32 p_X, u32 p_Y)
@@ -603,15 +680,14 @@ namespace Low {
     void TexturePixels::set_dimensions(Low::Math::UVector2 &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, dimensions, Low::Math::UVector2) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
@@ -622,24 +698,23 @@ namespace Low {
     uint8_t TexturePixels::get_channels() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_channels
       // LOW_CODEGEN::END::CUSTOM:GETTER_channels
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, channels, uint8_t);
     }
     void TexturePixels::set_channels(uint8_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_channels
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_channels
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, channels, uint8_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_channels
       // LOW_CODEGEN::END::CUSTOM:SETTER_channels
@@ -651,11 +726,11 @@ namespace Low {
     TexturePixels::get_format() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_format
       // LOW_CODEGEN::END::CUSTOM:GETTER_format
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, format,
                       Low::Util::Resource::Image2DFormat);
     }
@@ -663,15 +738,14 @@ namespace Low {
         Low::Util::Resource::Image2DFormat &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_format
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_format
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, format,
                Low::Util::Resource::Image2DFormat) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_format
       // LOW_CODEGEN::END::CUSTOM:SETTER_format
@@ -682,11 +756,11 @@ namespace Low {
     Low::Util::List<uint8_t> &TexturePixels::get_pixel_data() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_data
       // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_data
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, pixel_data,
                       Low::Util::List<uint8_t>);
     }
@@ -694,15 +768,14 @@ namespace Low {
     TexturePixels::set_pixel_data(Low::Util::List<uint8_t> &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_data
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_data
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, pixel_data, Low::Util::List<uint8_t>) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_data
       // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_data
@@ -713,24 +786,23 @@ namespace Low {
     uint64_t TexturePixels::get_data_size() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_size
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_size
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, data_size, uint64_t);
     }
     void TexturePixels::set_data_size(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_size
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_size
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, data_size, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_size
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_size
@@ -741,26 +813,25 @@ namespace Low {
     Low::Renderer::TextureState TexturePixels::get_state() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, state,
                       Low::Renderer::TextureState);
     }
     void TexturePixels::set_state(Low::Renderer::TextureState p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, state, Low::Renderer::TextureState) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
@@ -771,24 +842,23 @@ namespace Low {
     Low::Util::Name TexturePixels::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(TexturePixels, name, Low::Util::Name);
     }
     void TexturePixels::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(TexturePixels, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -796,117 +866,81 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    uint32_t TexturePixels::create_instance()
+    uint32_t TexturePixels::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void TexturePixels::increase_budget()
+    u32 TexturePixels::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for TexturePixels.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, TexturePixels::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(TexturePixelsData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(&l_NewBuffer[offsetof(TexturePixelsData, dimensions) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(TexturePixelsData, dimensions) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Math::UVector2));
+    bool TexturePixels::get_page_for_index(const u32 p_Index,
+                                           u32 &p_PageIndex,
+                                           u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(TexturePixelsData, channels) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(TexturePixelsData, channels) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint8_t));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(TexturePixelsData, format) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(TexturePixelsData, format) *
-                          (l_Capacity)],
-               l_Capacity *
-                   sizeof(Low::Util::Resource::Image2DFormat));
-      }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          TexturePixels i_TexturePixels = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(TexturePixelsData, pixel_data) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Low::Util::List<uint8_t>))])
-              Low::Util::List<uint8_t>();
-          *i_ValPtr =
-              ACCESSOR_TYPE_SOA(i_TexturePixels, TexturePixels,
-                                pixel_data, Low::Util::List<uint8_t>);
-        }
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(TexturePixelsData, data_size) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(TexturePixelsData, data_size) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(TexturePixelsData, state) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(TexturePixelsData, state) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Renderer::TextureState));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(TexturePixelsData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(TexturePixelsData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for TexturePixels from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

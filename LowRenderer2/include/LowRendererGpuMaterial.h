@@ -7,11 +7,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowUtilResource.h"
-#include "LowRendererImageResourceState.h"
-#include "LowRendererTexture.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -19,42 +15,40 @@ namespace Low {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API ImageResourceData
-    {
-      Util::String path;
-      Util::Resource::ImageMipMaps resource_image;
-      Low::Renderer::ImageResourceState state;
-      Low::Renderer::Texture texture;
-      Low::Util::List<uint8_t> loaded_mips;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(ImageResourceData);
-      }
-    };
-
-    struct LOW_RENDERER2_API ImageResource : public Low::Util::Handle
+    struct LOW_RENDERER2_API GpuMaterial : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        uint64_t material_handle;
+        Util::List<uint8_t> data;
+        bool dirty;
+        Low::Util::Name name;
 
-      static Low::Util::List<ImageResource> ms_LivingInstances;
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
+
+      static Low::Util::List<GpuMaterial> ms_LivingInstances;
 
       const static uint16_t TYPE_ID;
 
-      ImageResource();
-      ImageResource(uint64_t p_Id);
-      ImageResource(ImageResource &p_Copy);
+      GpuMaterial();
+      GpuMaterial(uint64_t p_Id);
+      GpuMaterial(GpuMaterial &p_Copy);
 
-    private:
-      static ImageResource make(Low::Util::Name p_Name);
+      static GpuMaterial make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
-
-    public:
-      explicit ImageResource(const ImageResource &p_Copy)
+      explicit GpuMaterial(const GpuMaterial &p_Copy)
           : Low::Util::Handle(p_Copy.m_Id)
       {
       }
@@ -68,18 +62,24 @@ namespace Low {
       {
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
-      static ImageResource *living_instances()
+      static GpuMaterial *living_instances()
       {
         return ms_LivingInstances.data();
       }
 
-      static ImageResource find_by_index(uint32_t p_Index);
+      static GpuMaterial create_handle_by_index(u32 p_Index);
+
+      static GpuMaterial find_by_index(uint32_t p_Index);
       static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
       bool is_alive() const;
 
       u64 observe(Low::Util::Name p_Observable,
                   Low::Util::Handle p_Observer) const;
+      u64 observe(Low::Util::Name p_Observable,
+                  Low::Util::Function<void(Low::Util::Handle,
+                                           Low::Util::Name)>
+                      p_Observer) const;
       void notify(Low::Util::Handle p_Observed,
                   Low::Util::Name p_Observable);
       void broadcast_observable(Low::Util::Name p_Observable) const;
@@ -92,13 +92,13 @@ namespace Low {
 
       void serialize(Low::Util::Yaml::Node &p_Node) const;
 
-      ImageResource duplicate(Low::Util::Name p_Name) const;
-      static ImageResource duplicate(ImageResource p_Handle,
-                                     Low::Util::Name p_Name);
+      GpuMaterial duplicate(Low::Util::Name p_Name) const;
+      static GpuMaterial duplicate(GpuMaterial p_Handle,
+                                   Low::Util::Name p_Name);
       static Low::Util::Handle _duplicate(Low::Util::Handle p_Handle,
                                           Low::Util::Name p_Name);
 
-      static ImageResource find_by_name(Low::Util::Name p_Name);
+      static GpuMaterial find_by_name(Low::Util::Name p_Name);
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
@@ -108,42 +108,41 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == ImageResource::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        GpuMaterial l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
       {
         _LOW_ASSERT(is_alive(p_Handle));
-        ImageResource l_ImageResource = p_Handle.get_id();
-        l_ImageResource.destroy();
+        GpuMaterial l_GpuMaterial = p_Handle.get_id();
+        l_GpuMaterial.destroy();
       }
 
-      Util::String &get_path() const;
+      uint64_t get_material_handle() const;
+      void set_material_handle(uint64_t p_Value);
 
-      Util::Resource::ImageMipMaps &get_resource_image() const;
-
-      Low::Renderer::ImageResourceState get_state() const;
-      void set_state(Low::Renderer::ImageResourceState p_Value);
-
-      Low::Renderer::Texture &get_texture() const;
-      void set_texture(Low::Renderer::Texture &p_Value);
-
-      Low::Util::List<uint8_t> &loaded_mips() const;
+      bool is_dirty() const;
+      void set_dirty(bool p_Value);
+      void toggle_dirty();
+      void mark_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static ImageResource make(Util::String &p_Path);
+      void *get_data() const;
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
-      void set_path(Util::String &p_Value);
-      void set_path(const char *p_Value);
-      void set_loaded_mips(Low::Util::List<uint8_t> &p_Value);
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
+      Util::List<uint8_t> &data() const;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

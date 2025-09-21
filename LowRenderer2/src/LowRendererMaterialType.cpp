@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -20,11 +21,14 @@ namespace Low {
 
     const uint16_t MaterialType::TYPE_ID = 58;
     uint32_t MaterialType::ms_Capacity = 0u;
-    uint8_t *MaterialType::ms_Buffer = 0;
-    std::shared_mutex MaterialType::ms_BufferMutex;
-    Low::Util::Instances::Slot *MaterialType::ms_Slots = 0;
-    Low::Util::List<MaterialType> MaterialType::ms_LivingInstances =
-        Low::Util::List<MaterialType>();
+    uint32_t MaterialType::ms_PageSize = 0u;
+    Low::Util::SharedMutex MaterialType::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        MaterialType::ms_PagesLock(MaterialType::ms_PagesMutex,
+                                   std::defer_lock);
+    Low::Util::List<MaterialType> MaterialType::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        MaterialType::ms_Pages;
 
     MaterialType::MaterialType() : Low::Util::Handle(0ull)
     {
@@ -45,35 +49,42 @@ namespace Low {
 
     MaterialType MaterialType::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       MaterialType l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
 
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, transparent, bool) =
           false;
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, inputs,
-                              Util::List<MaterialTypeInput>))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MaterialType, inputs,
+                                 Util::List<MaterialTypeInput>))
           Util::List<MaterialTypeInput>();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, initialized, bool) =
           false;
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType,
-                              draw_pipeline_config,
-                              Low::Renderer::GraphicsPipelineConfig))
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, MaterialType, draw_pipeline_config,
+          Low::Renderer::GraphicsPipelineConfig))
           Low::Renderer::GraphicsPipelineConfig();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType,
-                              depth_pipeline_config,
-                              Low::Renderer::GraphicsPipelineConfig))
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, MaterialType, depth_pipeline_config,
+          Low::Renderer::GraphicsPipelineConfig))
           Low::Renderer::GraphicsPipelineConfig();
-      new (&ACCESSOR_TYPE_SOA(l_Handle, MaterialType, family,
-                              Low::Renderer::MaterialTypeFamily))
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MaterialType, family,
+                                 Low::Renderer::MaterialTypeFamily))
           Low::Renderer::MaterialTypeFamily();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialType, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -101,15 +112,26 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
+      {
+        Low::Util::HandleLock<MaterialType> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
+      }
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -118,23 +140,33 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void MaterialType::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(MaterialType));
 
-      initialize_buffer(&ms_Buffer, MaterialTypeData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_MaterialType);
-      LOW_PROFILE_ALLOC(type_slots_MaterialType);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, MaterialType::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(MaterialType);
@@ -163,12 +195,13 @@ namespace Low {
         l_PropertyInfo.name = N(transparent);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, transparent);
+            offsetof(MaterialType::Data, transparent);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.is_transparent();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
                                             transparent, bool);
@@ -181,6 +214,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_transparent();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -192,12 +226,13 @@ namespace Low {
         l_PropertyInfo.name = N(draw_pipeline_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, draw_pipeline_handle);
+            offsetof(MaterialType::Data, draw_pipeline_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.get_draw_pipeline_handle();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MaterialType, draw_pipeline_handle, uint64_t);
@@ -210,6 +245,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_draw_pipeline_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -221,12 +257,13 @@ namespace Low {
         l_PropertyInfo.name = N(depth_pipeline_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, depth_pipeline_handle);
+            offsetof(MaterialType::Data, depth_pipeline_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.get_depth_pipeline_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
                                             depth_pipeline_handle,
@@ -240,6 +277,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) =
               l_Handle.get_depth_pipeline_handle();
         };
@@ -252,7 +290,7 @@ namespace Low {
         l_PropertyInfo.name = N(inputs);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, inputs);
+            offsetof(MaterialType::Data, inputs);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
@@ -272,12 +310,13 @@ namespace Low {
         l_PropertyInfo.name = N(initialized);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, initialized);
+            offsetof(MaterialType::Data, initialized);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.is_initialized();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
                                             initialized, bool);
@@ -290,6 +329,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((bool *)p_Data) = l_Handle.is_initialized();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -301,12 +341,13 @@ namespace Low {
         l_PropertyInfo.name = N(draw_pipeline_config);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, draw_pipeline_config);
+            offsetof(MaterialType::Data, draw_pipeline_config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.get_draw_pipeline_config();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MaterialType, draw_pipeline_config,
@@ -317,6 +358,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((Low::Renderer::GraphicsPipelineConfig *)p_Data) =
               l_Handle.get_draw_pipeline_config();
         };
@@ -329,12 +371,13 @@ namespace Low {
         l_PropertyInfo.name = N(depth_pipeline_config);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, depth_pipeline_config);
+            offsetof(MaterialType::Data, depth_pipeline_config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.get_depth_pipeline_config();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MaterialType, depth_pipeline_config,
@@ -345,6 +388,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((Low::Renderer::GraphicsPipelineConfig *)p_Data) =
               l_Handle.get_depth_pipeline_config();
         };
@@ -357,13 +401,14 @@ namespace Low {
         l_PropertyInfo.name = N(family);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(MaterialTypeData, family);
+            offsetof(MaterialType::Data, family);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
         l_PropertyInfo.handleType = Low::Renderer::
             MaterialTypeFamilyEnumHelper::get_enum_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.get_family();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, MaterialType, family,
@@ -374,6 +419,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((Low::Renderer::MaterialTypeFamily *)p_Data) =
               l_Handle.get_family();
         };
@@ -385,12 +431,14 @@ namespace Low {
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(MaterialTypeData, name);
+        l_PropertyInfo.dataOffset =
+            offsetof(MaterialType::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MaterialType,
                                             name, Low::Util::Name);
@@ -403,6 +451,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           MaterialType l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<MaterialType> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -641,13 +690,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_MaterialType);
-      LOW_PROFILE_FREE(type_slots_MaterialType);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle MaterialType::_find_by_index(uint32_t p_Index)
@@ -661,8 +716,18 @@ namespace Low {
 
       MaterialType l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -683,9 +748,22 @@ namespace Low {
 
     bool MaterialType::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != MaterialType::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == MaterialType::TYPE_ID &&
-             check_alive(ms_Slots, MaterialType::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t MaterialType::get_capacity()
@@ -862,11 +940,11 @@ namespace Low {
     bool MaterialType::is_transparent() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transparent
       // LOW_CODEGEN::END::CUSTOM:GETTER_transparent
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, transparent, bool);
     }
     void MaterialType::toggle_transparent()
@@ -877,14 +955,13 @@ namespace Low {
     void MaterialType::set_transparent(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transparent
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_transparent
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MaterialType, transparent, bool) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transparent
       // LOW_CODEGEN::END::CUSTOM:SETTER_transparent
@@ -895,25 +972,24 @@ namespace Low {
     uint64_t MaterialType::get_draw_pipeline_handle() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_pipeline_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_pipeline_handle
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, draw_pipeline_handle, uint64_t);
     }
     void MaterialType::set_draw_pipeline_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_draw_pipeline_handle
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_draw_pipeline_handle
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MaterialType, draw_pipeline_handle, uint64_t) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_draw_pipeline_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_draw_pipeline_handle
@@ -924,25 +1000,24 @@ namespace Low {
     uint64_t MaterialType::get_depth_pipeline_handle() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline_handle
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, depth_pipeline_handle, uint64_t);
     }
     void MaterialType::set_depth_pipeline_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_pipeline_handle
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_pipeline_handle
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MaterialType, depth_pipeline_handle, uint64_t) =
           p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_pipeline_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline_handle
@@ -953,11 +1028,11 @@ namespace Low {
     Util::List<MaterialTypeInput> &MaterialType::get_inputs() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_inputs
       // LOW_CODEGEN::END::CUSTOM:GETTER_inputs
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, inputs,
                       Util::List<MaterialTypeInput>);
     }
@@ -965,11 +1040,11 @@ namespace Low {
     bool MaterialType::is_initialized() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
       // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, initialized, bool);
     }
     void MaterialType::toggle_initialized()
@@ -980,14 +1055,13 @@ namespace Low {
     void MaterialType::set_initialized(bool p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MaterialType, initialized, bool) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
       // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
@@ -999,11 +1073,11 @@ namespace Low {
     MaterialType::get_draw_pipeline_config() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_pipeline_config
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_pipeline_config
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, draw_pipeline_config,
                       Low::Renderer::GraphicsPipelineConfig);
     }
@@ -1012,11 +1086,11 @@ namespace Low {
     MaterialType::get_depth_pipeline_config() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline_config
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline_config
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, depth_pipeline_config,
                       Low::Renderer::GraphicsPipelineConfig);
     }
@@ -1024,11 +1098,11 @@ namespace Low {
     Low::Renderer::MaterialTypeFamily MaterialType::get_family() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_family
       // LOW_CODEGEN::END::CUSTOM:GETTER_family
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, family,
                       Low::Renderer::MaterialTypeFamily);
     }
@@ -1036,15 +1110,14 @@ namespace Low {
         Low::Renderer::MaterialTypeFamily p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_family
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_family
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MaterialType, family,
                Low::Renderer::MaterialTypeFamily) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_family
       // LOW_CODEGEN::END::CUSTOM:SETTER_family
@@ -1055,24 +1128,23 @@ namespace Low {
     Low::Util::Name MaterialType::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(MaterialType, name, Low::Util::Name);
     }
     void MaterialType::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(MaterialType, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -1098,6 +1170,8 @@ namespace Low {
         l_Handle.get_draw_pipeline_config()
             .colorAttachmentFormats.push_back(
                 ImageFormat::RGBA16_SFLOAT);
+        l_Handle.get_draw_pipeline_config()
+            .colorAttachmentFormats.push_back(ImageFormat::R32_UINT);
         l_Handle.get_draw_pipeline_config().depthFormat =
             ImageFormat::DEPTH;
 
@@ -1126,6 +1200,7 @@ namespace Low {
 
     void MaterialType::calculate_offsets()
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_calculate_offsets
       LOW_ASSERT(!is_initialized(),
                  "Cannot calculate offsets for a material type that "
@@ -1192,6 +1267,7 @@ namespace Low {
     bool MaterialType::get_input(Low::Util::Name p_Name,
                                  MaterialTypeInput *p_Input)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input
       Util::List<MaterialTypeInput> &l_Inputs = get_inputs();
 
@@ -1207,6 +1283,7 @@ namespace Low {
 
     void MaterialType::finalize()
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_finalize
       LOW_ASSERT(!is_initialized(),
                  "Cannot finalize materialtype that has already been "
@@ -1223,6 +1300,7 @@ namespace Low {
     void MaterialType::add_input(Low::Util::Name p_Name,
                                  MaterialTypeInputType p_Type)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_input
       LOW_ASSERT(
           !is_initialized(),
@@ -1238,6 +1316,7 @@ namespace Low {
 
     bool MaterialType::has_input(Low::Util::Name p_Name)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_input
       MaterialTypeInput l_Input;
 
@@ -1247,6 +1326,7 @@ namespace Low {
 
     uint32_t MaterialType::get_input_offset(Low::Util::Name p_Name)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input_offset
       LOW_ASSERT(is_initialized(),
                  "Cannot fetch offset from materialtype that has not "
@@ -1264,6 +1344,7 @@ namespace Low {
     MaterialTypeInputType &
     MaterialType::get_input_type(Low::Util::Name p_Name)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input_type
       MaterialTypeInput l_Input;
 
@@ -1277,6 +1358,7 @@ namespace Low {
     uint32_t MaterialType::fill_input_names(
         Low::Util::List<Low::Util::Name> &p_InputNames)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_input_names
       Util::List<MaterialTypeInput> &l_Inputs = get_inputs();
 
@@ -1291,6 +1373,7 @@ namespace Low {
     void MaterialType::set_draw_vertex_shader_path(
         Low::Util::String p_Path)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_vertex_shader_path
       get_draw_pipeline_config().vertexShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
@@ -1299,6 +1382,7 @@ namespace Low {
     void MaterialType::set_draw_fragment_shader_path(
         Low::Util::String p_Path)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_fragment_shader_path
       get_draw_pipeline_config().fragmentShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_fragment_shader_path
@@ -1307,6 +1391,7 @@ namespace Low {
     void MaterialType::set_depth_vertex_shader_path(
         Low::Util::String p_Path)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_vertex_shader_path
       get_depth_pipeline_config().vertexShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_vertex_shader_path
@@ -1315,146 +1400,87 @@ namespace Low {
     void MaterialType::set_depth_fragment_shader_path(
         Low::Util::String p_Path)
     {
+      Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_fragment_shader_path
       get_depth_pipeline_config().fragmentShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_fragment_shader_path
     }
 
-    uint32_t MaterialType::create_instance()
+    uint32_t MaterialType::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void MaterialType::increase_budget()
+    u32 MaterialType::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for MaterialType.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, MaterialType::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(MaterialTypeData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData, transparent) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData, transparent) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(bool));
+    bool MaterialType::get_page_for_index(const u32 p_Index,
+                                          u32 &p_PageIndex,
+                                          u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData,
-                                     draw_pipeline_handle) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData,
-                                   draw_pipeline_handle) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData,
-                                     depth_pipeline_handle) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData,
-                                   depth_pipeline_handle) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
-      }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          MaterialType i_MaterialType = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(MaterialTypeData, inputs) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Util::List<MaterialTypeInput>))])
-              Util::List<MaterialTypeInput>();
-          *i_ValPtr =
-              ACCESSOR_TYPE_SOA(i_MaterialType, MaterialType, inputs,
-                                Util::List<MaterialTypeInput>);
-        }
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData, initialized) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData, initialized) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(bool));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData,
-                                     draw_pipeline_config) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData,
-                                   draw_pipeline_config) *
-                          (l_Capacity)],
-               l_Capacity *
-                   sizeof(Low::Renderer::GraphicsPipelineConfig));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData,
-                                     depth_pipeline_config) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData,
-                                   depth_pipeline_config) *
-                          (l_Capacity)],
-               l_Capacity *
-                   sizeof(Low::Renderer::GraphicsPipelineConfig));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData, family) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData, family) *
-                          (l_Capacity)],
-               l_Capacity *
-                   sizeof(Low::Renderer::MaterialTypeFamily));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(MaterialTypeData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(MaterialTypeData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for MaterialType from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

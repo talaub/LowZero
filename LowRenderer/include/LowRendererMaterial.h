@@ -11,7 +11,6 @@
 #include "LowRendererContext.h"
 #include "LowUtilVariant.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -22,24 +21,27 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER_API MaterialData
-    {
-      MaterialType material_type;
-      Interface::Context context;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(MaterialData);
-      }
-    };
-
     struct LOW_RENDERER_API Material : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        MaterialType material_type;
+        Interface::Context context;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<Material> ms_LivingInstances;
 
@@ -114,9 +116,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == Material::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        Material l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -136,10 +137,17 @@ namespace Low {
                            Interface::Context p_Context);
       void set_property(Util::Name p_PropertyName,
                         Util::Variant &p_Value);
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
       Interface::Context get_context() const;
       void set_context(Interface::Context p_Value);
 

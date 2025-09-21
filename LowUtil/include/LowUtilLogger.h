@@ -79,13 +79,13 @@ namespace Low {
 
       typedef void (*LogCallback)(const LogEntry &);
 
-      LOW_EXPORT LogStream &begin_log(uint8_t p_LogLevel,
-                                      const char *p_Module,
-                                      bool p_Terminate = false);
+      LOW_EXPORT LogStream begin_log(uint8_t p_LogLevel,
+                                     const char *p_Module,
+                                     bool p_Terminate = false);
 
       struct LOW_EXPORT LogStream
       {
-        friend LogStream &begin_log(uint8_t, const char *, bool);
+        friend LogStream begin_log(uint8_t, const char *, bool);
 
         LogStream &operator<<(LogLineEnd p_End);
         LogStream &operator<<(String &p_Message);
@@ -118,5 +118,5 @@ namespace Low {
       void cleanup();
 
     } // namespace Log
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

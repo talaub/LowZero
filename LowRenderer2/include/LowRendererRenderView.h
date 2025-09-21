@@ -7,7 +7,6 @@
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
 
-#include "shared_mutex"
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowRendererRenderScene.h"
 #include "LowRendererTexture.h"
@@ -33,40 +32,44 @@ namespace Low {
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    struct LOW_RENDERER2_API RenderViewData
-    {
-      Low::Math::Vector3 camera_position;
-      Low::Math::Vector3 camera_direction;
-      uint64_t render_target_handle;
-      uint64_t view_info_handle;
-      Low::Math::UVector2 dimensions;
-      Low::Renderer::RenderScene render_scene;
-      Low::Renderer::Texture gbuffer_albedo;
-      Low::Renderer::Texture gbuffer_normals;
-      Low::Renderer::Texture gbuffer_depth;
-      Low::Renderer::Texture gbuffer_viewposition;
-      Low::Renderer::Texture lit_image;
-      Low::Util::List<Low::Renderer::RenderStep> steps;
-      Low::Util::List<RenderStepDataPtr> step_data;
-      Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
-      Low::Util::List<Low::Renderer::DebugGeometryDraw>
-          debug_geometry;
-      bool camera_dirty;
-      bool dimensions_dirty;
-      Low::Util::Name name;
-
-      static size_t get_size()
-      {
-        return sizeof(RenderViewData);
-      }
-    };
-
     struct LOW_RENDERER2_API RenderView : public Low::Util::Handle
     {
     public:
-      static std::shared_mutex ms_BufferMutex;
-      static uint8_t *ms_Buffer;
-      static Low::Util::Instances::Slot *ms_Slots;
+      struct Data
+      {
+      public:
+        Low::Math::Vector3 camera_position;
+        Low::Math::Vector3 camera_direction;
+        uint64_t render_target_handle;
+        uint64_t view_info_handle;
+        Low::Math::UVector2 dimensions;
+        Low::Renderer::RenderScene render_scene;
+        Low::Renderer::Texture gbuffer_albedo;
+        Low::Renderer::Texture gbuffer_normals;
+        Low::Renderer::Texture gbuffer_depth;
+        Low::Renderer::Texture gbuffer_viewposition;
+        Low::Renderer::Texture object_map;
+        Low::Renderer::Texture lit_image;
+        Low::Util::List<Low::Renderer::RenderStep> steps;
+        Low::Util::List<RenderStepDataPtr> step_data;
+        Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
+        Low::Util::List<Low::Renderer::DebugGeometryDraw>
+            debug_geometry;
+        bool camera_dirty;
+        bool dimensions_dirty;
+        Low::Util::Name name;
+
+        static size_t get_size()
+        {
+          return sizeof(Data);
+        }
+      };
+
+    public:
+      static Low::Util::UniqueLock<Low::Util::SharedMutex>
+          ms_PagesLock;
+      static Low::Util::SharedMutex ms_PagesMutex;
+      static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
       static Low::Util::List<RenderView> ms_LivingInstances;
 
@@ -138,9 +141,8 @@ namespace Low {
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
-        READ_LOCK(l_Lock);
-        return p_Handle.get_type() == RenderView::TYPE_ID &&
-               p_Handle.check_alive(ms_Slots, get_capacity());
+        RenderView l_Handle = p_Handle.get_id();
+        return l_Handle.is_alive();
       }
 
       static void destroy(Low::Util::Handle p_Handle)
@@ -191,6 +193,9 @@ namespace Low {
       Low::Renderer::Texture get_gbuffer_viewposition() const;
       void set_gbuffer_viewposition(Low::Renderer::Texture p_Value);
 
+      Low::Renderer::Texture get_object_map() const;
+      void set_object_map(Low::Renderer::Texture p_Value);
+
       Low::Renderer::Texture get_lit_image() const;
       void set_lit_image(Low::Renderer::Texture p_Value);
 
@@ -228,11 +233,19 @@ namespace Low {
       */
       void add_debug_geometry(
           Low::Renderer::DebugGeometryDraw &p_DebugGeometryDraw);
+      uint32_t
+      read_object_id_px(const Low::Math::UVector2 p_PixelPosition);
+      static bool get_page_for_index(const u32 p_Index,
+                                     u32 &p_PageIndex,
+                                     u32 &p_SlotIndex);
 
     private:
-      static uint32_t ms_Capacity;
-      static uint32_t create_instance();
-      static void increase_budget();
+      static u32 ms_Capacity;
+      static u32 ms_PageSize;
+      static u32 create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
+      static u32 create_page();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

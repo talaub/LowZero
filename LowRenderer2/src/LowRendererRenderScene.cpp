@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -22,11 +23,14 @@ namespace Low {
 
     const uint16_t RenderScene::TYPE_ID = 61;
     uint32_t RenderScene::ms_Capacity = 0u;
-    uint8_t *RenderScene::ms_Buffer = 0;
-    std::shared_mutex RenderScene::ms_BufferMutex;
-    Low::Util::Instances::Slot *RenderScene::ms_Slots = 0;
-    Low::Util::List<RenderScene> RenderScene::ms_LivingInstances =
-        Low::Util::List<RenderScene>();
+    uint32_t RenderScene::ms_PageSize = 0u;
+    Low::Util::SharedMutex RenderScene::ms_PagesMutex;
+    Low::Util::UniqueLock<Low::Util::SharedMutex>
+        RenderScene::ms_PagesLock(RenderScene::ms_PagesMutex,
+                                  std::defer_lock);
+    Low::Util::List<RenderScene> RenderScene::ms_LivingInstances;
+    Low::Util::List<Low::Util::Instances::Page *>
+        RenderScene::ms_Pages;
 
     RenderScene::RenderScene() : Low::Util::Handle(0ull)
     {
@@ -46,23 +50,38 @@ namespace Low {
 
     RenderScene RenderScene::make(Low::Util::Name p_Name)
     {
-      WRITE_LOCK(l_Lock);
-      uint32_t l_Index = create_instance();
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+      uint32_t l_Index =
+          create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
       RenderScene l_Handle;
       l_Handle.m_Data.m_Index = l_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+      l_Handle.m_Data.m_Generation =
+          ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
       l_Handle.m_Data.m_Type = RenderScene::TYPE_ID;
 
-      new (&ACCESSOR_TYPE_SOA(l_Handle, RenderScene, draw_commands,
-                              Low::Util::List<DrawCommand>))
+      l_PageLock.unlock();
+
+      Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderScene, draw_commands,
+                                 Low::Util::List<DrawCommand>))
           Low::Util::List<DrawCommand>();
-      new (&ACCESSOR_TYPE_SOA(
+      new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderScene, pointlight_deleted_slots,
           Low::Util::Set<u32>)) Low::Util::Set<u32>();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderScene, directional_light_direction,
+          Low::Math::Vector3)) Low::Math::Vector3();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderScene, directional_light_color,
+          Low::Math::ColorRGB)) Low::Math::ColorRGB();
+      ACCESSOR_TYPE_SOA(l_Handle, RenderScene,
+                        directional_light_intensity, float) = 0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, RenderScene, name,
                         Low::Util::Name) = Low::Util::Name(0u);
-      LOCK_UNLOCK(l_Lock);
 
       l_Handle.set_name(p_Name);
 
@@ -71,6 +90,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       // TODO: Should be moved somewhere else
       l_Handle.set_data_handle(Vulkan::Scene::make(p_Name));
+
+      l_Handle.set_directional_light_intensity(0.0f);
+      l_Handle.set_directional_light_color(Math::ColorRGB(1.0f));
+      l_Handle.set_directional_light_direction(
+          Math::Vector3(0.0f, -1.0f, 0.0f));
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -80,21 +104,32 @@ namespace Low {
     {
       LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-      for (auto it = get_draw_commands().begin();
-           it != get_draw_commands().end(); ++it) {
-        if (it->is_alive()) {
-          it->destroy();
+      {
+        Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        for (auto it = get_draw_commands().begin();
+             it != get_draw_commands().end(); ++it) {
+          if (it->is_alive()) {
+            it->destroy();
+          }
         }
+        // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
-      // LOW_CODEGEN::END::CUSTOM:DESTROY
 
       broadcast_observable(OBSERVABLE_DESTROY);
 
-      WRITE_LOCK(l_Lock);
-      ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-      ms_Slots[this->m_Data.m_Index].m_Generation++;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      _LOW_ASSERT(
+          get_page_for_index(get_index(), l_PageIndex, l_SlotIndex));
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Page->slots[l_SlotIndex].m_Occupied = false;
+      l_Page->slots[l_SlotIndex].m_Generation++;
+
+      ms_PagesLock.lock();
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -103,23 +138,33 @@ namespace Low {
           it++;
         }
       }
+      ms_PagesLock.unlock();
     }
 
     void RenderScene::initialize()
     {
-      WRITE_LOCK(l_Lock);
+      LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
                                                     N(RenderScene));
 
-      initialize_buffer(&ms_Buffer, RenderSceneData::get_size(),
-                        get_capacity(), &ms_Slots);
-      LOCK_UNLOCK(l_Lock);
-
-      LOW_PROFILE_ALLOC(type_buffer_RenderScene);
-      LOW_PROFILE_ALLOC(type_slots_RenderScene);
+      ms_PageSize = Low::Math::Util::clamp(
+          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+      {
+        u32 l_Capacity = 0u;
+        while (l_Capacity < ms_Capacity) {
+          Low::Util::Instances::Page *i_Page =
+              new Low::Util::Instances::Page;
+          Low::Util::Instances::initialize_page(
+              i_Page, RenderScene::Data::get_size(), ms_PageSize);
+          ms_Pages.push_back(i_Page);
+          l_Capacity += ms_PageSize;
+        }
+        ms_Capacity = l_Capacity;
+      }
+      LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderScene);
@@ -148,12 +193,13 @@ namespace Low {
         l_PropertyInfo.name = N(draw_commands);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderSceneData, draw_commands);
+            offsetof(RenderScene::Data, draw_commands);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_draw_commands();
           return (void *)&ACCESSOR_TYPE_SOA(
               p_Handle, RenderScene, draw_commands,
@@ -164,6 +210,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Util::List<DrawCommand> *)p_Data) =
               l_Handle.get_draw_commands();
         };
@@ -176,12 +223,13 @@ namespace Low {
         l_PropertyInfo.name = N(pointlight_deleted_slots);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderSceneData, pointlight_deleted_slots);
+            offsetof(RenderScene::Data, pointlight_deleted_slots);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_pointlight_deleted_slots();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             pointlight_deleted_slots,
@@ -192,6 +240,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Util::Set<u32> *)p_Data) =
               l_Handle.get_pointlight_deleted_slots();
         };
@@ -204,12 +253,13 @@ namespace Low {
         l_PropertyInfo.name = N(data_handle);
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset =
-            offsetof(RenderSceneData, data_handle);
+            offsetof(RenderScene::Data, data_handle);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_data_handle();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             data_handle, uint64_t);
@@ -222,22 +272,125 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((uint64_t *)p_Data) = l_Handle.get_data_handle();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: data_handle
       }
       {
+        // Property: directional_light_direction
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(directional_light_direction);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderScene::Data, directional_light_direction);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR3;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+          l_Handle.get_directional_light_direction();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderScene, directional_light_direction,
+              Low::Math::Vector3);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.set_directional_light_direction(
+              *(Low::Math::Vector3 *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+          *((Low::Math::Vector3 *)p_Data) =
+              l_Handle.get_directional_light_direction();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: directional_light_direction
+      }
+      {
+        // Property: directional_light_color
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(directional_light_color);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderScene::Data, directional_light_color);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::COLORRGB;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+          l_Handle.get_directional_light_color();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
+                                            directional_light_color,
+                                            Low::Math::ColorRGB);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.set_directional_light_color(
+              *(Low::Math::ColorRGB *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+          *((Low::Math::ColorRGB *)p_Data) =
+              l_Handle.get_directional_light_color();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: directional_light_color
+      }
+      {
+        // Property: directional_light_intensity
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(directional_light_intensity);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderScene::Data, directional_light_intensity);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+          l_Handle.get_directional_light_intensity();
+          return (void *)&ACCESSOR_TYPE_SOA(
+              p_Handle, RenderScene, directional_light_intensity,
+              float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderScene l_Handle = p_Handle.get_id();
+          l_Handle.set_directional_light_intensity(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
+          *((float *)p_Data) =
+              l_Handle.get_directional_light_intensity();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: directional_light_intensity
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
         l_PropertyInfo.editorProperty = false;
-        l_PropertyInfo.dataOffset = offsetof(RenderSceneData, name);
+        l_PropertyInfo.dataOffset = offsetof(RenderScene::Data, name);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
         l_PropertyInfo.handleType = 0;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           l_Handle.get_name();
           return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderScene,
                                             name, Low::Util::Name);
@@ -250,6 +403,7 @@ namespace Low {
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           RenderScene l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderScene> l_HandleLock(l_Handle);
           *((Low::Util::Name *)p_Data) = l_Handle.get_name();
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -282,13 +436,19 @@ namespace Low {
       for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
         l_Instances[i].destroy();
       }
-      WRITE_LOCK(l_Lock);
-      free(ms_Buffer);
-      free(ms_Slots);
+      ms_PagesLock.lock();
+      for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+        Low::Util::Instances::Page *i_Page = *it;
+        free(i_Page->buffer);
+        free(i_Page->slots);
+        free(i_Page->lockWords);
+        delete i_Page;
+        it = ms_Pages.erase(it);
+      }
 
-      LOW_PROFILE_FREE(type_buffer_RenderScene);
-      LOW_PROFILE_FREE(type_slots_RenderScene);
-      LOCK_UNLOCK(l_Lock);
+      ms_Capacity = 0;
+
+      ms_PagesLock.unlock();
     }
 
     Low::Util::Handle RenderScene::_find_by_index(uint32_t p_Index)
@@ -302,8 +462,18 @@ namespace Low {
 
       RenderScene l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
       l_Handle.m_Data.m_Type = RenderScene::TYPE_ID;
+
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+        l_Handle.m_Data.m_Generation = 0;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
+      l_Handle.m_Data.m_Generation =
+          l_Page->slots[l_SlotIndex].m_Generation;
 
       return l_Handle;
     }
@@ -324,9 +494,22 @@ namespace Low {
 
     bool RenderScene::is_alive() const
     {
-      READ_LOCK(l_Lock);
+      if (m_Data.m_Type != RenderScene::TYPE_ID) {
+        return false;
+      }
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      if (!get_page_for_index(get_index(), l_PageIndex,
+                              l_SlotIndex)) {
+        return false;
+      }
+      Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+          l_Page->mutex);
       return m_Data.m_Type == RenderScene::TYPE_ID &&
-             check_alive(ms_Slots, RenderScene::get_capacity());
+             l_Page->slots[l_SlotIndex].m_Occupied &&
+             l_Page->slots[l_SlotIndex].m_Generation ==
+                 m_Data.m_Generation;
     }
 
     uint32_t RenderScene::get_capacity()
@@ -363,6 +546,12 @@ namespace Low {
       l_Handle.set_pointlight_deleted_slots(
           get_pointlight_deleted_slots());
       l_Handle.set_data_handle(get_data_handle());
+      l_Handle.set_directional_light_direction(
+          get_directional_light_direction());
+      l_Handle.set_directional_light_color(
+          get_directional_light_color());
+      l_Handle.set_directional_light_intensity(
+          get_directional_light_intensity());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -460,11 +649,11 @@ namespace Low {
     RenderScene::get_draw_commands() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderScene, draw_commands,
                       Low::Util::List<DrawCommand>);
     }
@@ -473,11 +662,11 @@ namespace Low {
     RenderScene::get_pointlight_deleted_slots() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pointlight_deleted_slots
       // LOW_CODEGEN::END::CUSTOM:GETTER_pointlight_deleted_slots
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderScene, pointlight_deleted_slots,
                       Low::Util::Set<u32>);
     }
@@ -485,15 +674,14 @@ namespace Low {
         Low::Util::Set<u32> &p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pointlight_deleted_slots
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_pointlight_deleted_slots
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderScene, pointlight_deleted_slots,
                Low::Util::Set<u32>) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pointlight_deleted_slots
       // LOW_CODEGEN::END::CUSTOM:SETTER_pointlight_deleted_slots
@@ -504,24 +692,23 @@ namespace Low {
     uint64_t RenderScene::get_data_handle() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderScene, data_handle, uint64_t);
     }
     void RenderScene::set_data_handle(uint64_t p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderScene, data_handle, uint64_t) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
@@ -529,27 +716,175 @@ namespace Low {
       broadcast_observable(N(data_handle));
     }
 
+    Low::Math::Vector3 &
+    RenderScene::get_directional_light_direction() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_direction
+      // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_direction
+
+      return TYPE_SOA(RenderScene, directional_light_direction,
+                      Low::Math::Vector3);
+    }
+    void RenderScene::set_directional_light_direction(float p_X,
+                                                      float p_Y,
+                                                      float p_Z)
+    {
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_directional_light_direction(p_Val);
+    }
+
+    void RenderScene::set_directional_light_direction_x(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_directional_light_direction();
+      l_Value.x = p_Value;
+      set_directional_light_direction(l_Value);
+    }
+
+    void RenderScene::set_directional_light_direction_y(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_directional_light_direction();
+      l_Value.y = p_Value;
+      set_directional_light_direction(l_Value);
+    }
+
+    void RenderScene::set_directional_light_direction_z(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_directional_light_direction();
+      l_Value.z = p_Value;
+      set_directional_light_direction(l_Value);
+    }
+
+    void RenderScene::set_directional_light_direction(
+        Low::Math::Vector3 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_direction
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_direction
+
+      // Set new value
+      TYPE_SOA(RenderScene, directional_light_direction,
+               Low::Math::Vector3) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_direction
+      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_direction
+
+      broadcast_observable(N(directional_light_direction));
+    }
+
+    Low::Math::ColorRGB &
+    RenderScene::get_directional_light_color() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_color
+      // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_color
+
+      return TYPE_SOA(RenderScene, directional_light_color,
+                      Low::Math::ColorRGB);
+    }
+    void RenderScene::set_directional_light_color(float p_X,
+                                                  float p_Y,
+                                                  float p_Z)
+    {
+      Low::Math::Vector3 p_Val(p_X, p_Y, p_Z);
+      set_directional_light_color(p_Val);
+    }
+
+    void RenderScene::set_directional_light_color_x(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_directional_light_color();
+      l_Value.x = p_Value;
+      set_directional_light_color(l_Value);
+    }
+
+    void RenderScene::set_directional_light_color_y(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_directional_light_color();
+      l_Value.y = p_Value;
+      set_directional_light_color(l_Value);
+    }
+
+    void RenderScene::set_directional_light_color_z(float p_Value)
+    {
+      Low::Math::Vector3 l_Value = get_directional_light_color();
+      l_Value.z = p_Value;
+      set_directional_light_color(l_Value);
+    }
+
+    void RenderScene::set_directional_light_color(
+        Low::Math::ColorRGB &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_color
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_color
+
+      // Set new value
+      TYPE_SOA(RenderScene, directional_light_color,
+               Low::Math::ColorRGB) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_color
+      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_color
+
+      broadcast_observable(N(directional_light_color));
+    }
+
+    float RenderScene::get_directional_light_intensity() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_intensity
+      // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_intensity
+
+      return TYPE_SOA(RenderScene, directional_light_intensity,
+                      float);
+    }
+    void RenderScene::set_directional_light_intensity(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_intensity
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_intensity
+
+      // Set new value
+      TYPE_SOA(RenderScene, directional_light_intensity, float) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_intensity
+      // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_intensity
+
+      broadcast_observable(N(directional_light_intensity));
+    }
+
     Low::Util::Name RenderScene::get_name() const
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-      READ_LOCK(l_ReadLock);
       return TYPE_SOA(RenderScene, name, Low::Util::Name);
     }
     void RenderScene::set_name(Low::Util::Name p_Value)
     {
       _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
-      WRITE_LOCK(l_WriteLock);
       TYPE_SOA(RenderScene, name, Low::Util::Name) = p_Value;
-      LOCK_UNLOCK(l_WriteLock);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
@@ -560,6 +895,7 @@ namespace Low {
     bool RenderScene::insert_draw_command(
         Low::Renderer::DrawCommand p_DrawCommand)
     {
+      Low::Util::HandleLock<RenderScene> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_insert_draw_command
       _LOW_ASSERT(is_alive());
       _LOW_ASSERT(p_DrawCommand.is_alive());
@@ -598,105 +934,81 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_insert_draw_command
     }
 
-    uint32_t RenderScene::create_instance()
+    uint32_t RenderScene::create_instance(
+        u32 &p_PageIndex, u32 &p_SlotIndex,
+        Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
     {
-      uint32_t l_Index = 0u;
+      LOCK_PAGES_WRITE(l_PagesLock);
+      u32 l_Index = 0;
+      u32 l_PageIndex = 0;
+      u32 l_SlotIndex = 0;
+      bool l_FoundIndex = false;
+      Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-      for (; l_Index < get_capacity(); ++l_Index) {
-        if (!ms_Slots[l_Index].m_Occupied) {
+      for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+           ++l_PageIndex) {
+        Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+            ms_Pages[l_PageIndex]->mutex);
+        for (l_SlotIndex = 0;
+             l_SlotIndex < ms_Pages[l_PageIndex]->size;
+             ++l_SlotIndex) {
+          if (!ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied) {
+            l_FoundIndex = true;
+            l_PageLock = std::move(i_PageLock);
+            break;
+          }
+          l_Index++;
+        }
+        if (l_FoundIndex) {
           break;
         }
       }
-      if (l_Index >= get_capacity()) {
-        increase_budget();
+      if (!l_FoundIndex) {
+        l_SlotIndex = 0;
+        l_PageIndex = create_page();
+        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+            ms_Pages[l_PageIndex]->mutex);
+        l_PageLock = std::move(l_NewLock);
       }
-      ms_Slots[l_Index].m_Occupied = true;
+      ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+      p_PageIndex = l_PageIndex;
+      p_SlotIndex = l_SlotIndex;
+      p_PageLock = std::move(l_PageLock);
+      LOCK_UNLOCK(l_PagesLock);
       return l_Index;
     }
 
-    void RenderScene::increase_budget()
+    u32 RenderScene::create_page()
     {
-      uint32_t l_Capacity = get_capacity();
-      uint32_t l_CapacityIncrease =
-          std::max(std::min(l_Capacity, 64u), 1u);
-      l_CapacityIncrease =
-          std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+      const u32 l_Capacity = get_capacity();
+      LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                 "Could not increase capacity for RenderScene.");
 
-      LOW_ASSERT(l_CapacityIncrease > 0,
-                 "Could not increase capacity");
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, RenderScene::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
 
-      uint8_t *l_NewBuffer =
-          (uint8_t *)malloc((l_Capacity + l_CapacityIncrease) *
-                            sizeof(RenderSceneData));
-      Low::Util::Instances::Slot *l_NewSlots =
-          (Low::Util::Instances::Slot *)malloc(
-              (l_Capacity + l_CapacityIncrease) *
-              sizeof(Low::Util::Instances::Slot));
+      ms_Capacity = l_Capacity + l_Page->size;
+      return ms_Pages.size() - 1;
+    }
 
-      memcpy(l_NewSlots, ms_Slots,
-             l_Capacity * sizeof(Low::Util::Instances::Slot));
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          RenderScene i_RenderScene = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(RenderSceneData, draw_commands) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Low::Util::List<DrawCommand>))])
-              Low::Util::List<DrawCommand>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(i_RenderScene, RenderScene,
-                                        draw_commands,
-                                        Low::Util::List<DrawCommand>);
-        }
+    bool RenderScene::get_page_for_index(const u32 p_Index,
+                                         u32 &p_PageIndex,
+                                         u32 &p_SlotIndex)
+    {
+      if (p_Index >= get_capacity()) {
+        p_PageIndex = LOW_UINT32_MAX;
+        p_SlotIndex = LOW_UINT32_MAX;
+        return false;
       }
-      {
-        for (auto it = ms_LivingInstances.begin();
-             it != ms_LivingInstances.end(); ++it) {
-          RenderScene i_RenderScene = *it;
-
-          auto *i_ValPtr = new (
-              &l_NewBuffer[offsetof(RenderSceneData,
-                                    pointlight_deleted_slots) *
-                               (l_Capacity + l_CapacityIncrease) +
-                           (it->get_index() *
-                            sizeof(Low::Util::Set<u32>))])
-              Low::Util::Set<u32>();
-          *i_ValPtr = ACCESSOR_TYPE_SOA(i_RenderScene, RenderScene,
-                                        pointlight_deleted_slots,
-                                        Low::Util::Set<u32>);
-        }
+      p_PageIndex = p_Index / ms_PageSize;
+      if (p_PageIndex > (ms_Pages.size() - 1)) {
+        return false;
       }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderSceneData, data_handle) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderSceneData, data_handle) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(uint64_t));
-      }
-      {
-        memcpy(&l_NewBuffer[offsetof(RenderSceneData, name) *
-                            (l_Capacity + l_CapacityIncrease)],
-               &ms_Buffer[offsetof(RenderSceneData, name) *
-                          (l_Capacity)],
-               l_Capacity * sizeof(Low::Util::Name));
-      }
-      for (uint32_t i = l_Capacity;
-           i < l_Capacity + l_CapacityIncrease; ++i) {
-        l_NewSlots[i].m_Occupied = false;
-        l_NewSlots[i].m_Generation = 0;
-      }
-      free(ms_Buffer);
-      free(ms_Slots);
-      ms_Buffer = l_NewBuffer;
-      ms_Slots = l_NewSlots;
-      ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-      LOW_LOG_DEBUG << "Auto-increased budget for RenderScene from "
-                    << l_Capacity << " to "
-                    << (l_Capacity + l_CapacityIncrease)
-                    << LOW_LOG_END;
+      p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+      return true;
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

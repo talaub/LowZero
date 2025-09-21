@@ -1,6 +1,12 @@
+#include "LowMath.h"
+#include "LowRendererTextureResource.h"
 #include "LowRendererTextureState.h"
+#include "LowUtilAssert.h"
+#include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "LowUtil.h"
+#include "LowUtilYaml.h"
+#include "SDL_mouse.h"
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -77,6 +83,61 @@ Low::Math::UVector2 g_Dimensions{1700, 900};
 
 uint64_t frames = 0;
 
+static void save_material(Low::Renderer::Material p_Material)
+{
+  using namespace Low;
+
+  if (!p_Material.get_resource().is_alive()) {
+    LOW_LOG_ERROR << "Cannot save material to disk that does not "
+                     "have a resource associated with it."
+                  << LOW_LOG_END;
+    return;
+  }
+
+  if (!(p_Material.get_state() == Renderer::MaterialState::LOADED ||
+        p_Material.get_state() ==
+            Renderer::MaterialState::UPLOADINGTOGPU ||
+        p_Material.get_state() ==
+            Renderer::MaterialState::MEMORYLOADED)) {
+    LOW_LOG_ERROR << "Cannot save material to disk that is not "
+                     "loaded into memory."
+                  << LOW_LOG_END;
+    return;
+  }
+
+  Renderer::MaterialResource l_Resource = p_Material.get_resource();
+
+  Util::Yaml::Node l_Node;
+  p_Material.serialize(l_Node);
+
+  l_Node["version"] = 2;
+
+  Util::Yaml::write_file(l_Resource.get_path().c_str(), l_Node);
+}
+
+static void save_material(Low::Renderer::Material p_Material,
+                          Low::Util::String p_Path)
+{
+  using namespace Low;
+  if (p_Material.get_resource().is_alive()) {
+    if (p_Material.get_resource().get_path() == p_Path) {
+      save_material(p_Material);
+    } else {
+      LOW_LOG_ERROR << "Material already has a resource associated "
+                       "but the paths don't match."
+                    << LOW_LOG_END;
+    }
+    return;
+  }
+
+  Renderer::MaterialResource l_Resource =
+      Renderer::MaterialResource::make(p_Path);
+
+  p_Material.set_resource(l_Resource);
+
+  save_material(p_Material);
+}
+
 void draw()
 {
   frames++;
@@ -129,14 +190,12 @@ void draw()
 
       if (l_EditorImage.get_state() == TextureState::LOADED &&
           l_EditorImage.get_gpu().is_imgui_texture_initialized()) {
-        LOW_LOG_DEBUG << "Rendering editor image" << LOW_LOG_END;
         ImGui::Begin("Editor Image");
         ImGui::Image(l_EditorImage.get_gpu().get_imgui_texture_id(),
                      ImVec2(256, 256));
         ImGui::End();
       } else if (l_EditorImage.get_state() ==
                  TextureState::UNLOADED) {
-        LOW_LOG_DEBUG << "Loading editor image" << LOW_LOG_END;
         ResourceManager::load_editor_image(l_EditorImage);
       }
     }
@@ -177,7 +236,7 @@ void draw()
     g_RenderView.add_debug_geometry(l_Draw);
   }
 
-  {
+  if (g_PointLight.is_alive()) {
     ImGui::Begin("Light");
     Low::Math::Vector3 pos = g_PointLight.get_world_position();
     if (ImGui::DragFloat3("Position", (float *)&pos)) {
@@ -195,6 +254,15 @@ void draw()
     }
 
     ImGui::End();
+  }
+
+  if (false) {
+    int x;
+    int y;
+    SDL_GetMouseState(&x, &y);
+    const u32 readback = g_RenderView.read_object_id_px({x, y});
+
+    LOW_LOG_DEBUG << "Readback: " << readback << LOW_LOG_END;
   }
   Low::Renderer::tick(0.1f);
 }
@@ -256,7 +324,7 @@ void init()
 
     g_RenderScene = Low::Renderer::RenderScene::make("Default");
 
-    {
+    if (true) {
       g_PointLight = Low::Renderer::PointLight::make(g_RenderScene);
       g_PointLight.set_world_position(0.0f, 1.0f, -10.0f);
       g_PointLight.set_range(20.0f);
@@ -272,6 +340,14 @@ void init()
     g_RenderView.set_dimensions(g_Dimensions);
     g_RenderView.set_render_scene(g_RenderScene);
 
+    {
+      g_RenderScene.set_directional_light_intensity(1.0f);
+      g_RenderScene.set_directional_light_color(
+          Low::Math::ColorRGB(1.0f, 1.0f, 1.0f));
+      g_RenderScene.set_directional_light_direction(
+          Low::Math::Vector3(0.0f, -1.0f, 0.5f));
+    }
+
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
         RENDERSTEP_SOLID_MATERIAL_NAME));
     g_RenderView.add_step(Low::Renderer::RenderStep::find_by_name(
@@ -283,14 +359,32 @@ void init()
     g_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
     g_RenderView.add_step(
         Low::Renderer::RenderStep::find_by_name(RENDERSTEP_UI_NAME));
+    g_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);
 
-    g_UiMaterial = Low::Renderer::Material::make(
+    g_UiMaterial = Low::Renderer::Material::make_gpu_ready(
         N(UiMaterial), l_MaterialTypes.uiText);
 
+#if 0
     g_TestMaterial = Low::Renderer::Material::make(
         N(TestMaterial), l_MaterialTypes.solidBase);
     g_TestMaterial.set_property_vector3(
         N(base_color), Low::Math::Vector3(1.0f, 0.0f, 0.0f));
+#else
+    g_TestMaterial =
+        Low::Renderer::Material::find_by_name(N(TestMaterial));
+#endif
+#if 0
+    g_TestMaterial.set_property_texture(
+        N(albedo), Low::Renderer::Texture::find_by_name(N(brick)));
+#endif
+
+#if 0
+    {
+      Low::Util::String l_Path = Low::Util::get_project().dataPath;
+      l_Path += "\\TestMaterial.material.yaml";
+      save_material(g_TestMaterial, l_Path);
+    }
+#endif
 
     {
       using namespace Low::Renderer;
@@ -317,7 +411,7 @@ void init()
       Texture l_Texture = Texture::make(N(TestTexture));
       l_Texture.set_resource(TextureResource::make(l_TexturePath));
 
-      g_UiRenderObject.set_texture(l_Texture);
+      //g_UiRenderObject.set_texture(l_Texture);
 
       g_Font = Font::living_instances()[0];
 
@@ -353,9 +447,9 @@ void init()
 
     g_RenderObject =
         Low::Renderer::RenderObject::make(g_RenderScene, l_Mesh);
-    g_RenderObject.set_material(
-        Low::Renderer::get_default_material_texture());
+    g_RenderObject.set_material(g_TestMaterial);
     g_RenderObject.set_world_transform(l_LocalMatrix);
+    g_RenderObject.set_object_id(15);
   }
 }
 
@@ -378,6 +472,12 @@ int main(int argc, char *argv[])
   if (false) {
     Low::Renderer::ResourceImporter::import_font("E:\\roboto.ttf",
                                                  "roboto");
+    Low::Util::cleanup();
+    return 0;
+  }
+  if (false) {
+    Low::Renderer::ResourceImporter::import_texture("E:\\brick.png",
+                                                    "bricks");
     Low::Util::cleanup();
     return 0;
   }

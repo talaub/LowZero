@@ -7,6 +7,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilObserverManager.h"
 
@@ -27,11 +28,12 @@ namespace Low {
 
       const uint16_t View::TYPE_ID = 38;
       uint32_t View::ms_Capacity = 0u;
-      uint8_t *View::ms_Buffer = 0;
-      std::shared_mutex View::ms_BufferMutex;
-      Low::Util::Instances::Slot *View::ms_Slots = 0;
-      Low::Util::List<View> View::ms_LivingInstances =
-          Low::Util::List<View>();
+      uint32_t View::ms_PageSize = 0u;
+      Low::Util::SharedMutex View::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          View::ms_PagesLock(View::ms_PagesMutex, std::defer_lock);
+      Low::Util::List<View> View::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *> View::ms_Pages;
 
       View::View() : Low::Util::Handle(0ull)
       {
@@ -56,23 +58,31 @@ namespace Low {
       View View::make(Low::Util::Name p_Name,
                       Low::Util::UniqueId p_UniqueId)
       {
-        WRITE_LOCK(l_Lock);
-        uint32_t l_Index = create_instance();
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
         View l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[l_Index].m_Generation;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
         l_Handle.m_Data.m_Type = View::TYPE_ID;
 
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<View> l_HandleLock(l_Handle);
+
         ACCESSOR_TYPE_SOA(l_Handle, View, loaded, bool) = false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, View, elements,
-                                Util::Set<Util::UniqueId>))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, View, elements,
+                                   Util::Set<Util::UniqueId>))
             Util::Set<Util::UniqueId>();
         ACCESSOR_TYPE_SOA(l_Handle, View, internal, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, View, view_template, bool) =
             false;
-        new (&ACCESSOR_TYPE_SOA(l_Handle, View, pixel_position,
-                                Low::Math::Vector2))
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, View, pixel_position,
+                                   Low::Math::Vector2))
             Low::Math::Vector2();
         ACCESSOR_TYPE_SOA(l_Handle, View, rotation, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, View, scale_multiplier, float) =
@@ -81,7 +91,6 @@ namespace Low {
             false;
         ACCESSOR_TYPE_SOA(l_Handle, View, name, Low::Util::Name) =
             Low::Util::Name(0u);
-        LOCK_UNLOCK(l_Lock);
 
         l_Handle.set_name(p_Name);
 
@@ -108,41 +117,52 @@ namespace Low {
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+        {
+          Low::Util::HandleLock<View> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        Util::List<Element> l_ElementsToDelete;
-        for (u64 i_ElementId : get_elements()) {
-          Element i_Element =
-              Util::find_handle_by_unique_id(i_ElementId);
+          Util::List<Element> l_ElementsToDelete;
+          for (u64 i_ElementId : get_elements()) {
+            Element i_Element =
+                Util::find_handle_by_unique_id(i_ElementId);
 
-          if (!i_Element.is_alive()) {
-            continue;
+            if (!i_Element.is_alive()) {
+              continue;
+            }
+
+            Component::Display i_Parent = 0;
+
+            if (i_Element.get_display().is_alive()) {
+              i_Parent = i_Element.get_display().get_parent();
+            }
+
+            if (!i_Parent.is_alive()) {
+              l_ElementsToDelete.push_back(i_Element);
+            }
           }
 
-          Component::Display i_Parent = 0;
-
-          if (i_Element.get_display().is_alive()) {
-            i_Parent = i_Element.get_display().get_parent();
+          for (Element i_Element : l_ElementsToDelete) {
+            i_Element.destroy();
           }
-
-          if (!i_Parent.is_alive()) {
-            l_ElementsToDelete.push_back(i_Element);
-          }
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
-
-        for (Element i_Element : l_ElementsToDelete) {
-          i_Element.destroy();
-        }
-        // LOW_CODEGEN::END::CUSTOM:DESTROY
 
         broadcast_observable(OBSERVABLE_DESTROY);
 
         Low::Util::remove_unique_id(get_unique_id());
 
-        WRITE_LOCK(l_Lock);
-        ms_Slots[this->m_Data.m_Index].m_Occupied = false;
-        ms_Slots[this->m_Data.m_Index].m_Generation++;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
 
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -151,11 +171,12 @@ namespace Low {
             it++;
           }
         }
+        ms_PagesLock.unlock();
       }
 
       void View::initialize()
       {
-        WRITE_LOCK(l_Lock);
+        LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
@@ -163,12 +184,21 @@ namespace Low {
         ms_Capacity =
             Low::Util::Config::get_capacity(N(LowCore), N(View));
 
-        initialize_buffer(&ms_Buffer, ViewData::get_size(),
-                          get_capacity(), &ms_Slots);
-        LOCK_UNLOCK(l_Lock);
-
-        LOW_PROFILE_ALLOC(type_buffer_View);
-        LOW_PROFILE_ALLOC(type_slots_View);
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, View::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(View);
@@ -196,12 +226,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(loaded);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, loaded);
+          l_PropertyInfo.dataOffset = offsetof(View::Data, loaded);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.is_loaded();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View, loaded,
                                               bool);
@@ -214,6 +245,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_loaded();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -224,13 +256,14 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(elements);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, elements);
+          l_PropertyInfo.dataOffset = offsetof(View::Data, elements);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.get_elements();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, View, elements, Util::Set<Util::UniqueId>);
@@ -240,6 +273,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((Util::Set<Util::UniqueId> *)p_Data) =
                 l_Handle.get_elements();
           };
@@ -251,12 +285,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(internal);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, internal);
+          l_PropertyInfo.dataOffset = offsetof(View::Data, internal);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.is_internal();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
                                               internal, bool);
@@ -266,6 +301,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_internal();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -277,12 +313,13 @@ namespace Low {
           l_PropertyInfo.name = N(view_template);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewData, view_template);
+              offsetof(View::Data, view_template);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.is_view_template();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
                                               view_template, bool);
@@ -295,6 +332,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_view_template();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -306,13 +344,14 @@ namespace Low {
           l_PropertyInfo.name = N(pixel_position);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewData, pixel_position);
+              offsetof(View::Data, pixel_position);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::VECTOR2;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.pixel_position();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, View, pixel_position, Low::Math::Vector2);
@@ -325,6 +364,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((Low::Math::Vector2 *)p_Data) =
                 l_Handle.pixel_position();
           };
@@ -336,12 +376,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(rotation);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, rotation);
+          l_PropertyInfo.dataOffset = offsetof(View::Data, rotation);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.rotation();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
                                               rotation, float);
@@ -354,6 +395,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((float *)p_Data) = l_Handle.rotation();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -365,12 +407,13 @@ namespace Low {
           l_PropertyInfo.name = N(scale_multiplier);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewData, scale_multiplier);
+              offsetof(View::Data, scale_multiplier);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.scale_multiplier();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, View, scale_multiplier, float);
@@ -383,6 +426,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((float *)p_Data) = l_Handle.scale_multiplier();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -394,12 +438,13 @@ namespace Low {
           l_PropertyInfo.name = N(layer_offset);
           l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewData, layer_offset);
+              offsetof(View::Data, layer_offset);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.layer_offset();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
                                               layer_offset, uint32_t);
@@ -412,6 +457,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((uint32_t *)p_Data) = l_Handle.layer_offset();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -422,12 +468,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
           l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, unique_id);
+          l_PropertyInfo.dataOffset = offsetof(View::Data, unique_id);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.get_unique_id();
             return (void *)&ACCESSOR_TYPE_SOA(
                 p_Handle, View, unique_id, Low::Util::UniqueId);
@@ -437,6 +484,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((Low::Util::UniqueId *)p_Data) =
                 l_Handle.get_unique_id();
           };
@@ -449,12 +497,13 @@ namespace Low {
           l_PropertyInfo.name = N(transform_dirty);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(ViewData, transform_dirty);
+              offsetof(View::Data, transform_dirty);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.is_transform_dirty();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View,
                                               transform_dirty, bool);
@@ -467,6 +516,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((bool *)p_Data) = l_Handle.is_transform_dirty();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -477,12 +527,13 @@ namespace Low {
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = true;
-          l_PropertyInfo.dataOffset = offsetof(ViewData, name);
+          l_PropertyInfo.dataOffset = offsetof(View::Data, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(p_Handle, View, name,
                                               Low::Util::Name);
@@ -495,6 +546,7 @@ namespace Low {
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
             *((Low::Util::Name *)p_Data) = l_Handle.get_name();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
@@ -612,13 +664,19 @@ namespace Low {
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
         }
-        WRITE_LOCK(l_Lock);
-        free(ms_Buffer);
-        free(ms_Slots);
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
 
-        LOW_PROFILE_FREE(type_buffer_View);
-        LOW_PROFILE_FREE(type_slots_View);
-        LOCK_UNLOCK(l_Lock);
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
       }
 
       Low::Util::Handle View::_find_by_index(uint32_t p_Index)
@@ -632,8 +690,18 @@ namespace Low {
 
         View l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Generation = ms_Slots[p_Index].m_Generation;
         l_Handle.m_Data.m_Type = View::TYPE_ID;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
 
         return l_Handle;
       }
@@ -654,9 +722,22 @@ namespace Low {
 
       bool View::is_alive() const
       {
-        READ_LOCK(l_Lock);
+        if (m_Data.m_Type != View::TYPE_ID) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
         return m_Data.m_Type == View::TYPE_ID &&
-               check_alive(ms_Slots, View::get_capacity());
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
       }
 
       uint32_t View::get_capacity()
@@ -745,7 +826,8 @@ namespace Low {
         p_Node["rotation"] = rotation();
         p_Node["scale_multiplier"] = scale_multiplier();
         p_Node["layer_offset"] = layer_offset();
-        p_Node["unique_id"] = get_unique_id();
+        p_Node["_unique_id"] =
+            Low::Util::hash_to_string(get_unique_id()).c_str();
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -764,14 +846,15 @@ namespace Low {
       View::deserialize(Low::Util::Yaml::Node &p_Node,
                         Low::Util::Handle p_Creator)
       {
-        View l_Handle = View::make(N(View));
-
+        Low::Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
-          Low::Util::remove_unique_id(l_Handle.get_unique_id());
-          l_Handle.set_unique_id(p_Node["unique_id"].as<uint64_t>());
-          Low::Util::register_unique_id(l_Handle.get_unique_id(),
-                                        l_Handle.get_id());
+          l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
+        } else if (p_Node["_unique_id"]) {
+          l_HandleUniqueId = Low::Util::string_to_hash(
+              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
         }
+
+        View l_Handle = View::make(N(View), l_HandleUniqueId);
 
         if (p_Node["view_template"]) {
           l_Handle.set_view_template(
@@ -858,12 +941,12 @@ namespace Low {
       bool View::is_loaded() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_loaded
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_loaded
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, loaded, bool);
       }
       void View::toggle_loaded()
@@ -874,15 +957,14 @@ namespace Low {
       void View::set_loaded(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_loaded
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_loaded
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, loaded, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_loaded
 
@@ -894,24 +976,24 @@ namespace Low {
       Util::Set<Util::UniqueId> &View::get_elements() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_elements
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_elements
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, elements, Util::Set<Util::UniqueId>);
       }
 
       bool View::is_internal() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_internal
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_internal
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, internal, bool);
       }
       void View::toggle_internal()
@@ -922,15 +1004,14 @@ namespace Low {
       void View::set_internal(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_internal
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_internal
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, internal, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_internal
 
@@ -942,12 +1023,12 @@ namespace Low {
       bool View::is_view_template() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_template
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_template
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, view_template, bool);
       }
       void View::toggle_view_template()
@@ -958,15 +1039,14 @@ namespace Low {
       void View::set_view_template(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_template
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_template
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, view_template, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_template
 
@@ -978,12 +1058,12 @@ namespace Low {
       Low::Math::Vector2 &View::pixel_position() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_position
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_position
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, pixel_position, Low::Math::Vector2);
       }
       void View::pixel_position(float p_X, float p_Y)
@@ -1009,6 +1089,7 @@ namespace Low {
       void View::pixel_position(Low::Math::Vector2 &p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_position
 
@@ -1019,10 +1100,8 @@ namespace Low {
           mark_transform_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, pixel_position, Low::Math::Vector2) =
               p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_position
 
@@ -1035,17 +1114,18 @@ namespace Low {
       float View::rotation() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, rotation, float);
       }
       void View::rotation(float p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
 
@@ -1056,9 +1136,7 @@ namespace Low {
           mark_transform_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, rotation, float) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
 
@@ -1071,17 +1149,18 @@ namespace Low {
       float View::scale_multiplier() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_scale_multiplier
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_scale_multiplier
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, scale_multiplier, float);
       }
       void View::scale_multiplier(float p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_scale_multiplier
 
@@ -1092,9 +1171,7 @@ namespace Low {
           mark_transform_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, scale_multiplier, float) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_scale_multiplier
 
@@ -1107,17 +1184,18 @@ namespace Low {
       uint32_t View::layer_offset() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_layer_offset
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_layer_offset
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, layer_offset, uint32_t);
       }
       void View::layer_offset(uint32_t p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_layer_offset
 
@@ -1128,9 +1206,7 @@ namespace Low {
           mark_transform_dirty();
 
           // Set new value
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, layer_offset, uint32_t) = p_Value;
-          LOCK_UNLOCK(l_WriteLock);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_layer_offset
 
@@ -1143,26 +1219,25 @@ namespace Low {
       Low::Util::UniqueId View::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, unique_id, Low::Util::UniqueId);
       }
       void View::set_unique_id(Low::Util::UniqueId p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, unique_id, Low::Util::UniqueId) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
 
@@ -1174,12 +1249,12 @@ namespace Low {
       bool View::is_transform_dirty() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transform_dirty
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_transform_dirty
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, transform_dirty, bool);
       }
       void View::toggle_transform_dirty()
@@ -1190,15 +1265,14 @@ namespace Low {
       void View::set_transform_dirty(bool p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transform_dirty
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_transform_dirty
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, transform_dirty, bool) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform_dirty
 
@@ -1210,9 +1284,7 @@ namespace Low {
       void View::mark_transform_dirty()
       {
         if (!is_transform_dirty()) {
-          WRITE_LOCK(l_WriteLock);
           TYPE_SOA(View, transform_dirty, bool) = true;
-          LOCK_UNLOCK(l_WriteLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_transform_dirty
           // LOW_CODEGEN::END::CUSTOM:MARK_transform_dirty
         }
@@ -1221,26 +1293,25 @@ namespace Low {
       Low::Util::Name View::get_name() const
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-        READ_LOCK(l_ReadLock);
         return TYPE_SOA(View, name, Low::Util::Name);
       }
       void View::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
 
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
-        WRITE_LOCK(l_WriteLock);
         TYPE_SOA(View, name, Low::Util::Name) = p_Value;
-        LOCK_UNLOCK(l_WriteLock);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
 
@@ -1251,6 +1322,7 @@ namespace Low {
 
       void View::serialize_elements(Util::Yaml::Node &p_Node)
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_elements
 
         for (auto it = get_elements().begin();
@@ -1268,6 +1340,7 @@ namespace Low {
 
       void View::add_element(Element p_Element)
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_element
 
         if (p_Element.get_view().is_alive()) {
@@ -1281,6 +1354,7 @@ namespace Low {
 
       void View::remove_element(Element p_Element)
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_remove_element
 
         p_Element.set_view(0);
@@ -1290,6 +1364,7 @@ namespace Low {
 
       void View::load_elements()
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_load_elements
 
         LOW_ASSERT(is_alive(), "Cannot load dead view");
@@ -1321,6 +1396,7 @@ namespace Low {
 
       void View::unload_elements()
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload_elements
 
         LOW_ASSERT(is_alive(), "Cannot unload dead view");
@@ -1340,6 +1416,7 @@ namespace Low {
 
       Low::Core::UI::View View::spawn_instance(Low::Util::Name p_Name)
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
 
         _LOW_ASSERT(is_alive());
@@ -1359,6 +1436,7 @@ namespace Low {
       Low::Core::UI::Element
       View::find_element_by_name(Low::Util::Name p_Name)
       {
+        Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_element_by_name
 
         _LOW_ASSERT(is_alive());
@@ -1376,141 +1454,83 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_element_by_name
       }
 
-      uint32_t View::create_instance()
+      uint32_t View::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
-        uint32_t l_Index = 0u;
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
 
-        for (; l_Index < get_capacity(); ++l_Index) {
-          if (!ms_Slots[l_Index].m_Occupied) {
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
             break;
           }
         }
-        if (l_Index >= get_capacity()) {
-          increase_budget();
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
         }
-        ms_Slots[l_Index].m_Occupied = true;
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
         return l_Index;
       }
 
-      void View::increase_budget()
+      u32 View::create_page()
       {
-        uint32_t l_Capacity = get_capacity();
-        uint32_t l_CapacityIncrease =
-            std::max(std::min(l_Capacity, 64u), 1u);
-        l_CapacityIncrease =
-            std::min(l_CapacityIncrease, LOW_UINT32_MAX - l_Capacity);
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for View.");
 
-        LOW_ASSERT(l_CapacityIncrease > 0,
-                   "Could not increase capacity");
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, View::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
 
-        uint8_t *l_NewBuffer = (uint8_t *)malloc(
-            (l_Capacity + l_CapacityIncrease) * sizeof(ViewData));
-        Low::Util::Instances::Slot *l_NewSlots =
-            (Low::Util::Instances::Slot *)malloc(
-                (l_Capacity + l_CapacityIncrease) *
-                sizeof(Low::Util::Instances::Slot));
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
 
-        memcpy(l_NewSlots, ms_Slots,
-               l_Capacity * sizeof(Low::Util::Instances::Slot));
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewData, loaded) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewData, loaded) * (l_Capacity)],
-              l_Capacity * sizeof(bool));
+      bool View::get_page_for_index(const u32 p_Index,
+                                    u32 &p_PageIndex,
+                                    u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
         }
-        {
-          for (auto it = ms_LivingInstances.begin();
-               it != ms_LivingInstances.end(); ++it) {
-            View i_View = *it;
-
-            auto *i_ValPtr = new (
-                &l_NewBuffer[offsetof(ViewData, elements) *
-                                 (l_Capacity + l_CapacityIncrease) +
-                             (it->get_index() *
-                              sizeof(Util::Set<Util::UniqueId>))])
-                Util::Set<Util::UniqueId>();
-            *i_ValPtr = ACCESSOR_TYPE_SOA(i_View, View, elements,
-                                          Util::Set<Util::UniqueId>);
-          }
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
         }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewData, internal) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewData, internal) * (l_Capacity)],
-              l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, view_template) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, view_template) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, pixel_position) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, pixel_position) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Math::Vector2));
-        }
-        {
-          memcpy(
-              &l_NewBuffer[offsetof(ViewData, rotation) *
-                           (l_Capacity + l_CapacityIncrease)],
-              &ms_Buffer[offsetof(ViewData, rotation) * (l_Capacity)],
-              l_Capacity * sizeof(float));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, scale_multiplier) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, scale_multiplier) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(float));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, layer_offset) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, layer_offset) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(uint32_t));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, unique_id) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, unique_id) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::UniqueId));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, transform_dirty) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, transform_dirty) *
-                            (l_Capacity)],
-                 l_Capacity * sizeof(bool));
-        }
-        {
-          memcpy(&l_NewBuffer[offsetof(ViewData, name) *
-                              (l_Capacity + l_CapacityIncrease)],
-                 &ms_Buffer[offsetof(ViewData, name) * (l_Capacity)],
-                 l_Capacity * sizeof(Low::Util::Name));
-        }
-        for (uint32_t i = l_Capacity;
-             i < l_Capacity + l_CapacityIncrease; ++i) {
-          l_NewSlots[i].m_Occupied = false;
-          l_NewSlots[i].m_Generation = 0;
-        }
-        free(ms_Buffer);
-        free(ms_Slots);
-        ms_Buffer = l_NewBuffer;
-        ms_Slots = l_NewSlots;
-        ms_Capacity = l_Capacity + l_CapacityIncrease;
-
-        LOW_LOG_DEBUG << "Auto-increased budget for View from "
-                      << l_Capacity << " to "
-                      << (l_Capacity + l_CapacityIncrease)
-                      << LOW_LOG_END;
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE

@@ -26,6 +26,7 @@ namespace Low {
       Widget *widget;
       Util::String name;
       bool open;
+      bool viewMenu;
     };
 
     Util::Map<Util::String, EditorWidget> &get_editor_widgets();
@@ -40,7 +41,8 @@ namespace Low {
     void set_widget_open(Util::String p_Path, bool p_Open);
 
     void register_editor_widget(Util::String p_Path, Widget *p_Widget,
-                                bool p_DefaultOpen = false);
+                                bool p_DefaultOpen = false,
+                                bool p_AddToViewMenu = true);
 
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
@@ -61,5 +63,5 @@ namespace Low {
       SphericalBillboardMaterials get_spherical_billboard_materials();
 
     } // namespace Helper
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

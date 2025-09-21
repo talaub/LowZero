@@ -107,6 +107,24 @@ namespace Low {
         return random() <= p_Percent;
       }
 
+      u32 next_power_of_two(u32 p_Value)
+      {
+        if (p_Value == 0) {
+          return 1;
+        }
+
+        // Decrement first to handle exact powers of two correctly
+        p_Value--;
+        p_Value |= p_Value >> 1;
+        p_Value |= p_Value >> 2;
+        p_Value |= p_Value >> 4;
+        p_Value |= p_Value >> 8;
+        p_Value |= p_Value >> 16;
+        p_Value++;
+
+        return p_Value;
+      }
+
     } // namespace Util
-  }   // namespace Math
+  } // namespace Math
 } // namespace Low
