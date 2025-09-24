@@ -23,6 +23,7 @@ add_dependencies(LowUtil
   tlsf
   assimp
   LowMath
+  SDL2
 )
 
 MESSAGE("LOWUTILBUILD: ${CMAKE_CURRENT_BINARY_DIR}")
@@ -56,6 +57,7 @@ target_link_libraries(LowUtil PRIVATE
 )
 
 target_link_libraries(LowUtil PUBLIC
+  SDL2
   EASTL
   yaml-cpp
   tlsf

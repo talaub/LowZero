@@ -5,7 +5,6 @@
 #include "LowRendererTextureState.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererVulkanBase.h"
-#include "LowRendererCompatibility.h"
 
 #include "LowRendererVulkanPipeline.h"
 #include "LowRendererVulkanImage.h"
@@ -540,8 +539,7 @@ namespace Low {
         initialize_types();
 
         int l_Width, l_Height;
-        SDL_GetWindowSize(Util::Window::get_main_window().sdlwindow,
-                          &l_Width, &l_Height);
+        Util::Window::get_main_window().get_size(&l_Width, &l_Height);
 
         LOWR_VK_ASSERT_RETURN(Base::initialize(),
                               "Failed to initialize vulkan globals");
@@ -716,7 +714,7 @@ namespace Low {
         VK_RENDERDOC_SECTION_BEGIN("Blit to swapchain",
                                    SINGLE_ARG({0.8f, 0.8f, 0.8f}));
         // TODO: Change this - this is just for testing
-        {
+        if (false) {
           RenderView l_RenderView = RenderView::living_instances()[0];
           ViewInfo l_ViewInfo = l_RenderView.get_view_info_handle();
 
@@ -833,6 +831,9 @@ namespace Low {
           float p_Delta, RenderView p_RenderView, ViewInfo p_ViewInfo)
       {
         VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
+
+        p_RenderView.set_actual_dimensions(
+            p_RenderView.get_desired_dimensions());
 
         if (p_ViewInfo.is_initialized()) {
           wait_idle();
@@ -1251,7 +1252,7 @@ namespace Low {
           l_FrameData.dimensions.w = 1.0f / l_FrameData.dimensions.y;
 
           l_FrameData.projectionMatrix = glm::perspective(
-              glm::radians(45.0f),
+              glm::radians(p_RenderView.get_camera_fov()),
               ((float)p_RenderView.get_dimensions().x) /
                   ((float)p_RenderView.get_dimensions().y),
               1.0f, 100.0f);
@@ -1421,6 +1422,13 @@ namespace Low {
                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 
           i_Gpu.set_imgui_texture_initialized(true);
+
+          for (u32 i = 0; i < Global::get_frame_overlap(); ++i) {
+            EditorImageUpdate i_Update;
+            i_Update.gpuEditorImage = i_Gpu;
+            i_Update.editorImageIndex = i_Gpu.get_index();
+            Global::get_editor_image_update_queue(i).push(i_Update);
+          }
 
           it = EditorImageGpu::ms_Dirty.erase(it);
         }
@@ -1682,6 +1690,117 @@ namespace Low {
                                     255.0f);
       }
 
+      static bool handle_texture_exports(float p_Delta)
+      {
+        Util::List<TextureExport> l_ExportsToDelete;
+
+        for (u32 i = 0; i < TextureExport::living_count(); ++i) {
+          TextureExport i_Export =
+              TextureExport::living_instances()[i];
+
+          if (i_Export.get_state() == TextureExportState::COPIED) {
+
+            TexExport i_TexExport = i_Export.get_data_handle();
+
+            if (i_TexExport.get_frame_index() !=
+                Global::get_current_frame_index()) {
+              continue;
+            }
+
+            Image i_Image =
+                i_Export.get_texture().get_gpu().get_data_handle();
+
+            // Map buffer and write PNG
+            {
+              const u64 l_ImageSize =
+                  i_TexExport.get_staging_buffer().info.size;
+
+              const u32 l_Width =
+                  i_Image.get_allocated_image().extent.width;
+              const u32 l_Height =
+                  i_Image.get_allocated_image().extent.height;
+
+              // TODO: Check channel count
+              u32 l_Channels = 4;
+              u32 l_PixelSize = sizeof(u8);
+
+              if (i_Image.get_allocated_image().format ==
+                  VK_FORMAT_R16G16B16A16_SFLOAT) {
+                l_PixelSize = sizeof(u16);
+              }
+
+              _LOW_ASSERT(l_ImageSize == l_Width * l_Height *
+                                             l_Channels *
+                                             l_PixelSize);
+
+              // Flip image vertically and write
+              Util::List<u8> l_Pixels;
+              l_Pixels.resize(l_Width * l_Height * l_Channels);
+
+              if (i_Image.get_allocated_image().format ==
+                  VK_FORMAT_R16G16B16A16_SFLOAT) {
+
+                u16 *l_Data = reinterpret_cast<u16 *>(
+                    i_TexExport.get_staging_buffer()
+                        .info.pMappedData);
+
+                for (u32 j = 0; j < l_Width * l_Height; ++j) {
+
+                  float r = half_to_float(l_Data[j * 4 + 0]);
+                  float g = half_to_float(l_Data[j * 4 + 1]);
+                  float b = half_to_float(l_Data[j * 4 + 2]);
+                  float a = half_to_float(l_Data[j * 4 + 3]);
+
+                  l_Pixels[j * 4 + 0] = float_to_unorm8(r);
+                  l_Pixels[j * 4 + 1] = float_to_unorm8(g);
+                  l_Pixels[j * 4 + 2] = float_to_unorm8(b);
+                  l_Pixels[j * 4 + 3] = float_to_unorm8(a);
+                }
+
+              } else {
+                uint8_t *l_Data = reinterpret_cast<uint8_t *>(
+                    i_TexExport.get_staging_buffer()
+                        .info.pMappedData);
+
+                for (u64 j = 0; j < l_ImageSize; ++j) {
+                  l_Pixels[j] = l_Data[j];
+                }
+              }
+
+              /*
+              Util::List<uint8_t> l_FlippedPixels;
+              l_FlippedPixels.resize(l_Width * l_Height *
+                                     l_Channels);
+
+              for (uint32_t i_Row = 0; i_Row < l_Height; ++i_Row) {
+                memcpy(
+                    &l_FlippedPixels[i_Row * l_Width * l_Channels],
+                    &l_Pixels[(l_Height - i_Row - 1) * l_Width *
+                              l_Channels],
+                    l_Width * l_Channels);
+              }
+              */
+
+              stbi_write_png(i_Export.get_path().c_str(), l_Width,
+                             l_Height, l_Channels, l_Pixels.data(),
+                             l_Width * l_Channels);
+            }
+
+            LOWR_VK_ASSERT_RETURN(
+                i_Export.finish(),
+                "Failed to call finish callback on TextureExport");
+
+            l_ExportsToDelete.push_back(i_Export);
+          }
+        }
+
+        for (auto it = l_ExportsToDelete.begin();
+             it != l_ExportsToDelete.end(); ++it) {
+          it->destroy();
+        }
+        return true;
+      }
+
       bool prepare_tick(float p_Delta)
       {
         static bool l_Initialized = false;
@@ -1690,7 +1809,7 @@ namespace Low {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow();
+        //ImGui::ShowDemoWindow();
 
         {
           for (u32 i = 0; i < MaterialType::living_count(); ++i) {
@@ -1730,115 +1849,8 @@ namespace Low {
         update_dirty_textures(p_Delta);
         update_dirty_editor_images(p_Delta);
 
-        // Handle Texture exports
-        {
-          Util::List<TextureExport> l_ExportsToDelete;
-
-          for (u32 i = 0; i < TextureExport::living_count(); ++i) {
-            TextureExport i_Export =
-                TextureExport::living_instances()[i];
-
-            if (i_Export.get_state() == TextureExportState::COPIED) {
-
-              TexExport i_TexExport = i_Export.get_data_handle();
-
-              if (i_TexExport.get_frame_index() !=
-                  Global::get_current_frame_index()) {
-                continue;
-              }
-
-              Image i_Image =
-                  i_Export.get_texture().get_gpu().get_data_handle();
-
-              // Map buffer and write PNG
-              {
-                const u64 l_ImageSize =
-                    i_TexExport.get_staging_buffer().info.size;
-
-                const u32 l_Width =
-                    i_Image.get_allocated_image().extent.width;
-                const u32 l_Height =
-                    i_Image.get_allocated_image().extent.height;
-
-                // TODO: Check channel count
-                u32 l_Channels = 4;
-                u32 l_PixelSize = sizeof(u8);
-
-                if (i_Image.get_allocated_image().format ==
-                    VK_FORMAT_R16G16B16A16_SFLOAT) {
-                  l_PixelSize = sizeof(u16);
-                }
-
-                _LOW_ASSERT(l_ImageSize == l_Width * l_Height *
-                                               l_Channels *
-                                               l_PixelSize);
-
-                // Flip image vertically and write
-                Util::List<u8> l_Pixels;
-                l_Pixels.resize(l_Width * l_Height * l_Channels);
-
-                if (i_Image.get_allocated_image().format ==
-                    VK_FORMAT_R16G16B16A16_SFLOAT) {
-
-                  u16 *l_Data = reinterpret_cast<u16 *>(
-                      i_TexExport.get_staging_buffer()
-                          .info.pMappedData);
-
-                  for (u32 j = 0; j < l_Width * l_Height; ++j) {
-
-                    float r = half_to_float(l_Data[j * 4 + 0]);
-                    float g = half_to_float(l_Data[j * 4 + 1]);
-                    float b = half_to_float(l_Data[j * 4 + 2]);
-                    float a = half_to_float(l_Data[j * 4 + 3]);
-
-                    l_Pixels[j * 4 + 0] = float_to_unorm8(r);
-                    l_Pixels[j * 4 + 1] = float_to_unorm8(g);
-                    l_Pixels[j * 4 + 2] = float_to_unorm8(b);
-                    l_Pixels[j * 4 + 3] = float_to_unorm8(a);
-                  }
-
-                } else {
-                  uint8_t *l_Data = reinterpret_cast<uint8_t *>(
-                      i_TexExport.get_staging_buffer()
-                          .info.pMappedData);
-
-                  for (u64 j = 0; j < l_ImageSize; ++j) {
-                    l_Pixels[j] = l_Data[j];
-                  }
-                }
-
-                /*
-                Util::List<uint8_t> l_FlippedPixels;
-                l_FlippedPixels.resize(l_Width * l_Height *
-                                       l_Channels);
-
-                for (uint32_t i_Row = 0; i_Row < l_Height; ++i_Row) {
-                  memcpy(
-                      &l_FlippedPixels[i_Row * l_Width * l_Channels],
-                      &l_Pixels[(l_Height - i_Row - 1) * l_Width *
-                                l_Channels],
-                      l_Width * l_Channels);
-                }
-                */
-
-                stbi_write_png(i_Export.get_path().c_str(), l_Width,
-                               l_Height, l_Channels, l_Pixels.data(),
-                               l_Width * l_Channels);
-              }
-
-              LOW_ASSERT(
-                  i_Export.finish(),
-                  "Failed to call finish callback on TextureExport");
-
-              l_ExportsToDelete.push_back(i_Export);
-            }
-          }
-
-          for (auto it = l_ExportsToDelete.begin();
-               it != l_ExportsToDelete.end(); ++it) {
-            it->destroy();
-          }
-        }
+        LOWR_VK_ASSERT_RETURN(handle_texture_exports(p_Delta),
+                              "Failed to export textures.");
 
         {
           DescriptorUtil::DescriptorWriter l_Writer;
@@ -1880,6 +1892,47 @@ namespace Low {
           }
         }
 
+        {
+          DescriptorUtil::DescriptorWriter l_Writer;
+
+          Samplers &l_Samplers = Global::get_samplers();
+
+          bool l_AddedEntry = false;
+
+          while (!Global::get_current_editor_image_update_queue()
+                      .empty()) {
+            EditorImageUpdate i_Update =
+                Global::get_current_editor_image_update_queue()
+                    .front();
+            Global::get_current_editor_image_update_queue().pop();
+
+            if (!i_Update.gpuEditorImage.is_alive()) {
+              continue;
+            }
+
+            Image i_Image = i_Update.gpuEditorImage.get_data_handle();
+
+            if (!i_Image.is_alive()) {
+              continue;
+            }
+
+            l_AddedEntry = true;
+
+            l_Writer.write_image(
+                1, i_Image.get_allocated_image().imageView,
+                l_Samplers.no_lod_nearest_repeat_black,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                i_Update.editorImageIndex);
+          }
+
+          if (l_AddedEntry) {
+            l_Writer.update_set(
+                Global::get_device(),
+                Global::get_current_texture_descriptor_set());
+          }
+        }
+
         return l_Result;
       }
 
@@ -1890,11 +1943,6 @@ namespace Low {
 
       bool tick(float p_Delta)
       {
-        VK_RENDERDOC_SECTION_BEGIN("ImGui",
-                                   SINGLE_ARG({0.1f, 0.1f, 0.1f}));
-        ImGui::Render();
-        VK_RENDERDOC_SECTION_END();
-
         if (!g_Context.requireResize) {
           LOWR_VK_ASSERT_RETURN(draw(g_Context, p_Delta),
                                 "Failed to draw vulkan renderer");
@@ -2009,10 +2057,12 @@ namespace Low {
             g_Context.swapchain.drawExtent.width,
             g_Context.swapchain.drawExtent.height};
 
+        /*
         if (l_Dimensions.x > 0 && l_Dimensions.y > 0) {
           RenderView i_RenderView = RenderView::living_instances()[0];
           i_RenderView.set_dimensions(l_Dimensions);
         }
+        */
 
         return true;
       }

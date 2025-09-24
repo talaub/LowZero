@@ -136,13 +136,20 @@ types:
       camera_direction:
         type: Low::Math::Vector3
         dirty_flag: camera_dirty
+      camera_fov:
+        type: float
+        dirty_flag: camera_dirty
       render_target_handle:
         type: uint64_t
       view_info_handle:
         type: uint64_t
       dimensions:
         type: Low::Math::UVector2
+        setter_name: set_actual_dimensions
+      desired_dimensions:
+        type: Low::Math::UVector2
         dirty_flag: dimensions_dirty
+        setter_name: set_dimensions
       render_scene:
         type: Low::Renderer::RenderScene
         handle: true
@@ -207,6 +214,13 @@ types:
           - name: pixelPosition
             type: const Low::Math::UVector2
             no_ref: true
+      make_default:
+        return_type: Low::Renderer::RenderView
+        return_handle: true
+        static: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
 
   MaterialType:
     private_make: true

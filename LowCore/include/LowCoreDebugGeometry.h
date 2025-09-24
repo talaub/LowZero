@@ -2,9 +2,11 @@
 
 #include "LowCoreApi.h"
 
-#include "LowCoreMeshResource.h"
-
 #include "LowMath.h"
+
+#include "LowRendererRenderView.h"
+#include "LowRendererMesh.h"
+#include "LowRendererEditorImage.h"
 
 namespace Low {
   namespace Core {
@@ -13,7 +15,7 @@ namespace Low {
 
       // Helpers
       LOW_CORE_API float
-      screen_space_multiplier(Renderer::RenderFlow p_RenderFlow,
+      screen_space_multiplier(Renderer::RenderView p_RenderView,
                               Math::Vector3 p_Position);
       LOW_CORE_API Renderer::Material
       create_spherical_billboard_material(Util::String p_Path);
@@ -60,9 +62,9 @@ namespace Low {
       LOW_CORE_API void
       render_spherical_billboard(Math::Vector3 p_Position,
                                  float p_Size,
-                                 Renderer::Material p_Material);
+                                 Renderer::EditorImage p_EditorImage);
 
-      MeshResource get_plane();
+      Renderer::Mesh get_plane();
     } // namespace DebugGeometry
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

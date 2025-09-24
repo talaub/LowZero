@@ -13,7 +13,7 @@ set(DBGHELP_LIB_PATH "${WINDOWS_SDK_PATH}/Lib/10.0.22621.0/um/x64")
 add_dependencies(Lowder
   LowUtil
   LowMath
-  LowRenderer
+  LowRenderer2
   LowCore
   nativefiledialog
   assimp
@@ -42,7 +42,7 @@ set_target_properties(Lowder PROPERTIES OUTPUT_NAME "lowder")
 
 target_link_libraries(Lowder PRIVATE
   LowCore
-  LowRenderer
+  LowRenderer2
   LowUtil
   LowMath
   nativefiledialog

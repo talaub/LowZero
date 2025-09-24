@@ -3,6 +3,8 @@
 #include "LowRendererDrawCommand.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererAdaptiveRenderObject.h"
+#include "LowRendererVulkan.h"
+#include "LowRenderer.h"
 
 namespace Low {
   namespace Renderer {

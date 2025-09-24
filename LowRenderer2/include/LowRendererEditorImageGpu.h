@@ -35,6 +35,7 @@ namespace Low {
       };
 
     public:
+      static Low::Util::SharedMutex ms_LivingMutex;
       static Low::Util::UniqueLock<Low::Util::SharedMutex>
           ms_PagesLock;
       static Low::Util::SharedMutex ms_PagesMutex;
@@ -62,10 +63,14 @@ namespace Low {
 
       static uint32_t living_count()
       {
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
       static EditorImageGpu *living_instances()
       {
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         return ms_LivingInstances.data();
       }
 

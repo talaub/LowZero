@@ -26,6 +26,7 @@ namespace Low {
         const uint16_t Image::TYPE_ID = 40;
         uint32_t Image::ms_Capacity = 0u;
         uint32_t Image::ms_PageSize = 0u;
+        Low::Util::SharedMutex Image::ms_LivingMutex;
         Low::Util::SharedMutex Image::ms_PagesMutex;
         Low::Util::UniqueLock<Low::Util::SharedMutex>
             Image::ms_PagesLock(Image::ms_PagesMutex,
@@ -76,11 +77,11 @@ namespace Low {
           Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
 
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Image, texture,
-                                     Low::Core::Texture2D))
-              Low::Core::Texture2D();
-          new (ACCESSOR_TYPE_SOA_PTR(
-              l_Handle, Image, renderer_material, Renderer::Material))
-              Renderer::Material();
+                                     Low::Renderer::Texture))
+              Low::Renderer::Texture();
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Image, material,
+                                     Low::Renderer::Material))
+              Low::Renderer::Material();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Image, element,
                                      Low::Core::UI::Element))
               Low::Core::UI::Element();
@@ -88,7 +89,11 @@ namespace Low {
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
 
-          ms_LivingInstances.push_back(l_Handle);
+          {
+            Low::Util::UniqueLock<Low::Util::SharedMutex>
+                l_LivingLock(ms_LivingMutex);
+            ms_LivingInstances.push_back(l_Handle);
+          }
 
           if (p_UniqueId > 0ull) {
             l_Handle.set_unique_id(p_UniqueId);
@@ -100,10 +105,6 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
-          l_Handle.set_renderer_material(Renderer::create_material(
-              p_Element.get_name(),
-              Renderer::MaterialType::find_by_name(N(ui_base))));
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -116,18 +117,6 @@ namespace Low {
           {
             Low::Util::HandleLock<Image> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
-            bool l_DeleteMaterial = true;
-            if (get_element().get_view().is_alive()) {
-              l_DeleteMaterial =
-                  !get_element().get_view().is_internal();
-            }
-
-            if (l_DeleteMaterial) {
-              if (get_renderer_material().is_alive()) {
-                get_renderer_material().destroy();
-              }
-            }
             // LOW_CODEGEN::END::CUSTOM:DESTROY
           }
 
@@ -147,6 +136,8 @@ namespace Low {
           l_Page->slots[l_SlotIndex].m_Generation++;
 
           ms_PagesLock.lock();
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end();) {
             if (it->get_id() == get_id()) {
@@ -156,6 +147,7 @@ namespace Low {
             }
           }
           ms_PagesLock.unlock();
+          l_LivingLock.unlock();
         }
 
         void Image::initialize()
@@ -213,25 +205,26 @@ namespace Low {
                 offsetof(Image::Data, texture);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
-            l_PropertyInfo.handleType = Low::Core::Texture2D::TYPE_ID;
+            l_PropertyInfo.handleType =
+                Low::Renderer::Texture::TYPE_ID;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
               l_Handle.get_texture();
               return (void *)&ACCESSOR_TYPE_SOA(
-                  p_Handle, Image, texture, Low::Core::Texture2D);
+                  p_Handle, Image, texture, Low::Renderer::Texture);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Image l_Handle = p_Handle.get_id();
-              l_Handle.set_texture(*(Low::Core::Texture2D *)p_Data);
+              l_Handle.set_texture(*(Low::Renderer::Texture *)p_Data);
             };
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Image l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
-              *((Low::Core::Texture2D *)p_Data) =
+              *((Low::Renderer::Texture *)p_Data) =
                   l_Handle.get_texture();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
@@ -239,23 +232,23 @@ namespace Low {
             // End property: texture
           }
           {
-            // Property: renderer_material
+            // Property: material
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(renderer_material);
+            l_PropertyInfo.name = N(material);
             l_PropertyInfo.editorProperty = false;
             l_PropertyInfo.dataOffset =
-                offsetof(Image::Data, renderer_material);
+                offsetof(Image::Data, material);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
-            l_PropertyInfo.handleType = Renderer::Material::TYPE_ID;
+            l_PropertyInfo.handleType =
+                Low::Renderer::Material::TYPE_ID;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
-              l_Handle.get_renderer_material();
-              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image,
-                                                renderer_material,
-                                                Renderer::Material);
+              l_Handle.get_material();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Image, material, Low::Renderer::Material);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {};
@@ -263,12 +256,12 @@ namespace Low {
                                     void *p_Data) {
               Image l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
-              *((Renderer::Material *)p_Data) =
-                  l_Handle.get_renderer_material();
+              *((Low::Renderer::Material *)p_Data) =
+                  l_Handle.get_material();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
-            // End property: renderer_material
+            // End property: material
           }
           {
             // Property: element
@@ -435,8 +428,8 @@ namespace Low {
           if (get_texture().is_alive()) {
             l_Handle.set_texture(get_texture());
           }
-          if (get_renderer_material().is_alive()) {
-            l_Handle.set_renderer_material(get_renderer_material());
+          if (get_material().is_alive()) {
+            l_Handle.set_material(get_material());
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
@@ -554,7 +547,7 @@ namespace Low {
           l_Image.notify(p_Observed, p_Observable);
         }
 
-        Low::Core::Texture2D Image::get_texture() const
+        Low::Renderer::Texture Image::get_texture() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Image> l_Lock(get_id());
@@ -563,72 +556,52 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_texture
 
-          return TYPE_SOA(Image, texture, Low::Core::Texture2D);
+          return TYPE_SOA(Image, texture, Low::Renderer::Texture);
         }
-        void Image::set_texture(Low::Core::Texture2D p_Value)
+        void Image::set_texture(Low::Renderer::Texture p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
-
-          Core::Texture2D l_OldTexture =
-              TYPE_SOA(Image, texture, Core::Texture2D);
-          if (l_OldTexture.is_alive()) {
-            l_OldTexture.unload();
-          }
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
           // Set new value
-          TYPE_SOA(Image, texture, Low::Core::Texture2D) = p_Value;
+          TYPE_SOA(Image, texture, Low::Renderer::Texture) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
 
-          if (p_Value.is_alive()) {
-            p_Value.load();
-
-            /*
-            get_renderer_material().set_property(
-                N(image_map),
-                Util::Variant::from_handle(
-                    p_Value.get_renderer_texture().get_id()));
-                    */
-          }
           // LOW_CODEGEN::END::CUSTOM:SETTER_texture
 
           broadcast_observable(N(texture));
         }
 
-        Renderer::Material Image::get_renderer_material() const
+        Low::Renderer::Material Image::get_material() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_material
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+          // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
-          // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_material
-
-          return TYPE_SOA(Image, renderer_material,
-                          Renderer::Material);
+          return TYPE_SOA(Image, material, Low::Renderer::Material);
         }
-        void Image::set_renderer_material(Renderer::Material p_Value)
+        void Image::set_material(Low::Renderer::Material p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_material
-
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_material
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
           // Set new value
-          TYPE_SOA(Image, renderer_material, Renderer::Material) =
+          TYPE_SOA(Image, material, Low::Renderer::Material) =
               p_Value;
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_material
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+          // LOW_CODEGEN::END::CUSTOM:SETTER_material
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_material
-
-          broadcast_observable(N(renderer_material));
+          broadcast_observable(N(material));
         }
 
         Low::Core::UI::Element Image::get_element() const

@@ -17,7 +17,7 @@ namespace Flode {
       ImGuiWindow *window = GetCurrentWindow();
 
       ImGuiNextWindowDataFlags backup_next_window_data_flags =
-          g.NextWindowData.Flags;
+          g.NextWindowData.WindowFlags;
       g.NextWindowData.ClearFlags(); // We behave like Begin() and
                                      // need to consume those values
       if (window->SkipItems)
@@ -130,7 +130,7 @@ namespace Flode {
       if (!popup_open)
         return false;
 
-      g.NextWindowData.Flags = backup_next_window_data_flags;
+      g.NextWindowData.WindowFlags = backup_next_window_data_flags;
       ed::Suspend();
       return BeginComboPopup(popup_id, bb, flags);
     }

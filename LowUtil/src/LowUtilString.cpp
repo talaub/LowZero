@@ -61,6 +61,56 @@ namespace Low {
       {
         p_String += std::to_string(p_Appendix).c_str();
       }
+
+      String prettify_name(String p_String)
+      {
+        String l_String = p_String;
+        if (StringHelper::begins_with(l_String, "p_")) {
+          l_String = l_String.substr(2);
+        }
+        l_String = StringHelper::replace(p_String, '_', ' ');
+        l_String[0] = toupper(l_String[0]);
+        {
+          Util::String l_Friendly;
+          for (u32 i = 0; i < l_String.size(); ++i) {
+            if (i) {
+              if (islower(l_String[i - 1]) && !islower(l_String[i])) {
+                l_Friendly += " ";
+              }
+            }
+
+            l_Friendly += l_String[i];
+          }
+          l_String = l_Friendly;
+        }
+        return l_String;
+      }
+
+      String prettify_name(Name p_Name)
+      {
+        return prettify_name(String(p_Name.c_str()));
+      }
+
+      String technify_string(String p_String)
+      {
+        String output;
+        for (char c : p_String) {
+          if (std::isalnum(c)) {
+            output += c; // keep letters and digits
+          } else if (c == ' ' || c == '-' || c == '_') {
+            output += '_'; // normalize common safe separators
+          } else if (c == '.' || c == '/' || c == '\\' || c == ':' ||
+                     c == '*' || c == '?' || c == '"' || c == '<' ||
+                     c == '>' || c == '|') {
+            // skip forbidden or unsafe characters
+            continue;
+          } else {
+            output +=
+                '_'; // fallback: replace unknowns with underscore
+          }
+        }
+        return output;
+      }
     } // namespace StringHelper
 
     namespace PathHelper {
@@ -82,6 +132,64 @@ namespace Low {
         }
 
         return filename;
+      }
+
+      String get_file_subtype(const String p_Path)
+      {
+        // Find last slash or backslash
+        size_t l_LastSlash = p_Path.find_last_of("/\\");
+        size_t l_FileStart =
+            (l_LastSlash == String::npos) ? 0 : l_LastSlash + 1;
+
+        // Extract just the filename
+        String l_Filename = p_Path.substr(l_FileStart);
+
+        // Find dots
+        size_t l_FirstDot = l_Filename.find('.');
+        size_t l_LastDot = l_Filename.find_last_of('.');
+
+        // If there aren’t at least 2 dots -> return empty
+        if (l_FirstDot == String::npos || l_LastDot == String::npos ||
+            l_FirstDot == l_LastDot) {
+          return "";
+        }
+
+        // Extract between first and last dot
+        return l_Filename.substr(l_FirstDot + 1,
+                                 l_LastDot - l_FirstDot - 1);
+      }
+
+      String get_file_extension(const String p_Path)
+      {
+        // Find last slash or backslash
+        size_t l_LastSlash = p_Path.find_last_of("/\\");
+        size_t l_FileStart =
+            (l_LastSlash == String::npos) ? 0 : l_LastSlash + 1;
+
+        // Extract just the filename
+        String l_Filename = p_Path.substr(l_FileStart);
+
+        // Find last dot
+        size_t l_LastDot = l_Filename.find_last_of('.');
+
+        // If no dot -> return empty
+        if (l_LastDot == String::npos) {
+          return "";
+        }
+
+        // Return everything after last dot
+        return l_Filename.substr(l_LastDot + 1);
+      }
+
+      String normalize(const String p_Path)
+      {
+        String l_Result = p_Path;
+        for (size_t i = 0; i < l_Result.size(); ++i) {
+          if (l_Result[i] == '\\') {
+            l_Result[i] = '/';
+          }
+        }
+        return l_Result;
       }
     } // namespace PathHelper
 

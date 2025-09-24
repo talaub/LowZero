@@ -29,6 +29,8 @@ namespace Low {
 
       void select(Util::Handle p_Handle);
 
+      float m_Splitter = 90.0f;
+
       char m_Search[128] = "";
 
       bool handle_shortcuts(float p_Delta) override;

@@ -16,8 +16,6 @@
 #include "LowEditorNotifications.h"
 #include "LowEditorIcons.h"
 
-#include "LowRendererImGuiHelper.h"
-
 #include "FlodeMathNodes.h"
 #include "FLodeSyntaxNodes.h"
 
@@ -312,7 +310,7 @@ namespace Flode {
       m_SelectedNodes[0]->render_data();
     } else if (m_Graph) {
       ImGui::PushID(238392);
-      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
+      ImGui::PushFont(Low::Editor::Fonts::UI());
       ImGui::Text("Graph");
       ImGui::PopFont();
       if (!m_Graph->m_Internal) {
@@ -358,7 +356,7 @@ namespace Flode {
       ImGui::Separator();
       ImGui::PopID();
       ImGui::PushID(638745);
-      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
+      ImGui::PushFont(Low::Editor::Fonts::UI());
       ImGui::Text("Variables");
       ImGui::PopFont();
       if (ImGui::Button(ICON_LC_PLUS "")) {
@@ -570,11 +568,11 @@ namespace Flode {
     }
     NodeEd::Resume();
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F))) {
+    if (ImGui::IsKeyPressed(ImGuiKey_F)) {
       NodeEd::NavigateToSelection();
     }
 
-    if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_F3))) {
+    if (ImGui::IsKeyPressed(ImGuiKey_F3)) {
       Cflat::Function *l_Function =
           Low::Core::Scripting::get_environment()->getFunction(
               "TestScript::TestFunction");

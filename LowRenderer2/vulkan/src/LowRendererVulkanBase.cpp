@@ -1,7 +1,6 @@
 #include "LowRendererVulkanBase.h"
 
 #include "LowRendererBackend.h"
-#include "LowRendererCompatibility.h"
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVulkanPipeline.h"
@@ -41,11 +40,11 @@ namespace Low {
               Global::get_surface()};
 
           p_Swapchain.imageFormat = Global::get_swapchain_format();
-          
-            VkSurfaceFormatKHR l_SurfaceFormat;
-				  l_SurfaceFormat.format = p_Swapchain.imageFormat;
-				  l_SurfaceFormat.colorSpace =
-					  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
+          VkSurfaceFormatKHR l_SurfaceFormat;
+          l_SurfaceFormat.format = p_Swapchain.imageFormat;
+          l_SurfaceFormat.colorSpace =
+              VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
           vkb::Swapchain l_VkbSwapchain =
               l_SwapchainBuilder
@@ -440,9 +439,20 @@ namespace Low {
               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+          ImGui::Render();
+
           imgui_draw(p_Context,
                      p_Context.swapchain
                          .imageViews[p_Context.swapchain.imageIndex]);
+
+          {
+            auto &io = ImGui::GetIO();
+            if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+              ImGui::UpdatePlatformWindows();
+
+              ImGui::RenderPlatformWindowsDefault();
+            }
+          }
 
           ImageUtil::Internal::cmd_transition(
               l_Cmd,
@@ -494,6 +504,6 @@ namespace Low {
           }
         }
       } // namespace Base
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

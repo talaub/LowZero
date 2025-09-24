@@ -11,7 +11,7 @@ file(GLOB_RECURSE PRIVATE_INCLUDES "private_include/*.h")
 file(GLOB_RECURSE VULKAN_SOURCES "vulkan/src/*.cpp")
 file(GLOB_RECURSE VULKAN_INCLUDES "vulkan/include/*.h")
 
-set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui2")
+set(IMGUI_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/imgui3")
 set(ICON_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/IconFontCppHeaders")
 
 set(IMGUIZMO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/ImGuizmo")
@@ -24,7 +24,7 @@ SET(IMGUI_SOURCES
   "${IMGUI_PATH}/imgui_demo.cpp"
   "${IMGUI_PATH}/imgui_tables.cpp"
   "${IMGUI_PATH}/imgui_widgets.cpp"
-  #"${IMGUI_PATH}/imgui_stacklayout.cpp"
+  "${IMGUI_PATH}/imgui_stacklayout.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_sdl2.cpp"
   "${IMGUI_PATH}/backends/imgui_impl_vulkan.cpp"
 )
@@ -37,7 +37,7 @@ SET(IMGUIZMO_SOURCES
   "${IMGUIZMO_PATH}/ImSequencer.cpp"
 )
   
-add_executable(LowRenderer2 
+add_library(LowRenderer2 SHARED
   ${IMGUI_SOURCES}
   ${IMGUIZMO_SOURCES}
   ${VULKAN_SOURCES}
@@ -52,7 +52,6 @@ source_group("Header Files" FILES "${INCLUDES}")
 add_dependencies(LowRenderer2 
   LowUtil 
   LowMath 
-  SDL2-static
   vk-bootstrap
   freetype
   assimp
@@ -69,7 +68,6 @@ target_link_directories(LowRenderer2 PUBLIC
 )
 
 target_link_libraries(LowRenderer2 PUBLIC
-  SDL2-static
   vulkan-1.lib
 )
 

@@ -3,6 +3,7 @@
 #include "LowEditorApi.h"
 
 #include "LowEditorWidget.h"
+#include "LowEditorFonts.h"
 
 #include <imgui.h>
 
@@ -42,8 +43,10 @@ namespace Low {
                                              int max = 50000);
 
       bool LOW_EDITOR_API ButtonRounding(const char *p_Text,
-                                         u32 p_Flags);
-      bool LOW_EDITOR_API ButtonNoRounding(const char *p_Text);
+                                         u32 p_Flags,
+                                         float p_ButtonWidth = 0.0f);
+      bool LOW_EDITOR_API ButtonNoRounding(
+          const char *p_Text, float p_ButtonWidth = 0.0f);
 
       bool LOW_EDITOR_API CollapsingHeaderButton(
           const char *label, u32 p_Flags, const char *button_label);
@@ -76,5 +79,5 @@ namespace Low {
                                     ImGuiInputTextFlags p_Flags = 0);
 
     } // namespace Gui
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

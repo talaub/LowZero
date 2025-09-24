@@ -111,23 +111,31 @@ types:
     editor:
       icon: cube
     header_imports:
-      - LowCoreMeshAsset.h
-      - LowCoreMaterial.h
+      - LowRendererMesh.h
+      - LowRendererMaterial.h
+      - LowRendererRenderObject.h
     properties:
       mesh:
         editor_editable: true
-        type: Low::Core::MeshAsset
+        type: Low::Renderer::Mesh
         handle: true
         skip_serialization: true
         skip_deserialization: true
         expose_scripting: true
+        dirty_flag: dirty
       material:
         editor_editable: true
-        type: Low::Core::Material
+        type: Low::Renderer::Material
         handle: true
         skip_serialization: true
         skip_deserialization: true
         expose_scripting: true
+      render_object:
+        editor_editable: false
+        type: Low::Renderer::RenderObject
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
 
   DirectionalLight:
     component: true
@@ -162,6 +170,16 @@ types:
         editor_editable: true
         expose_scripting: true
         type: float
+      range:
+        editor_editable: true
+        expose_scripting: true
+        type: float
+      renderer_point_light:
+        editor_editable: false
+        type: Low::Renderer::PointLight
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
 
   Rigidbody:
     component: true
@@ -289,6 +307,10 @@ types:
         type: float
         expose_scripting: true
         editor_editable: true
+      render_view:
+        type: Low::Renderer::RenderView
+        hande: true
+        editor_editable: false
     functions:
       activate:
         return_type: void

@@ -18,7 +18,7 @@ namespace Low {
         {
           LOW_PROFILE_CPU("Core", "RegionSystem tick");
           Math::Vector3 l_CameraPosition =
-              Renderer::get_main_renderflow().get_camera_position();
+              Renderer::get_game_renderview().get_camera_position();
 
           for (Core::Region i_Region : Core::Region::ms_LivingInstances) {
             if (!i_Region.is_streaming_enabled()) {

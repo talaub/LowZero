@@ -1,5 +1,8 @@
 #include "LowEditor.h"
 
+#include "LowRendererEditorImage.h"
+#include "LowRendererResourceManager.h"
+
 #include "LowUtilJobManager.h"
 #include "LowUtil.h"
 #include "LowUtilProfiler.h"
@@ -19,6 +22,7 @@
 #include "LowEditorFlodeWidget.h"
 #include "LowEditorIcons.h"
 #include "LowEditorNotifications.h"
+#include "LowEditorFonts.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -29,6 +33,7 @@
 #include "FlodeHandleNodes.h"
 #include "FlodeBoolNodes.h"
 #include "FlodeOperatorNodes.h"
+#include "imgui.h"
 
 namespace Low {
   namespace Editor {
@@ -41,6 +46,41 @@ namespace Low {
     Util::List<EnumMetadata> g_EnumMetadata;
 
     Util::Map<Util::Name, Util::Variant> g_UserSettings;
+
+    Util::Map<AssetType, Math::Color> g_AssetTypeColor;
+    Util::Map<AssetType, Util::String> g_AssetTypeName;
+    Util::Map<AssetType, Renderer::EditorImage>
+        g_AssetTypeEditorImage;
+    ;
+
+    Math::Color get_color_for_asset_type(const AssetType p_AssetType)
+    {
+      auto l_Pos = g_AssetTypeColor.find(p_AssetType);
+      if (l_Pos == g_AssetTypeColor.end()) {
+        return g_AssetTypeColor[AssetType::File];
+      }
+
+      return l_Pos->second;
+    }
+    Util::String get_asset_type_name(const AssetType p_AssetType)
+    {
+      auto l_Pos = g_AssetTypeName.find(p_AssetType);
+      if (l_Pos == g_AssetTypeName.end()) {
+        return g_AssetTypeName[AssetType::File];
+      }
+
+      return l_Pos->second;
+    }
+    Renderer::EditorImage
+    get_editor_image_for_asset_type(const AssetType p_AssetType)
+    {
+      auto l_Pos = g_AssetTypeEditorImage.find(p_AssetType);
+      if (l_Pos == g_AssetTypeEditorImage.end()) {
+        return g_AssetTypeEditorImage[AssetType::File];
+      }
+
+      return l_Pos->second;
+    }
 
     struct EditorJob
     {
@@ -153,22 +193,7 @@ namespace Low {
       }
 
       Core::Entity l_Entity = p_Handle.get_id();
-      if (!l_Entity.is_alive()) {
-        uint32_t l_Id = ~0u;
-        get_editing_widget()
-            ->m_RenderFlowWidget->get_renderflow()
-            .get_resources()
-            .get_buffer_resource(N(SelectedIdBuffer))
-            .set(&l_Id);
-        return;
-      }
-      uint32_t l_Id = l_Entity.get_index();
-
-      get_editing_widget()
-          ->m_RenderFlowWidget->get_renderflow()
-          .get_resources()
-          .get_buffer_resource(N(SelectedIdBuffer))
-          .set(&l_Id);
+      // TODO: Highlight selection
 
       {
         HandlePropertiesSection l_Section(l_Entity, true);
@@ -250,13 +275,11 @@ namespace Low {
       g_UserSettings[N(theme)] = theme_get_current_name();
       g_UserSettings[N(loaded_scene)] = l_Scene.get_name();
 
-      /*
       LOW_LOG_DEBUG << "Debug" << LOW_LOG_END;
       LOW_LOG_INFO << "Info" << LOW_LOG_END;
       LOW_LOG_WARN << "Warning" << LOW_LOG_END;
       LOW_LOG_ERROR << "Error" << LOW_LOG_END;
       LOW_LOG_PROFILE << "Profile" << LOW_LOG_END;
-      */
     }
 
     static void register_type_nodes()
@@ -517,6 +540,7 @@ namespace Low {
                 ParameterMetadata i_Param;
                 i_Param.name = LOW_YAML_AS_NAME(i_ParamNode["name"]);
                 i_Param.friendlyName = prettify_name(i_Param.name);
+
                 if (p_Metadata.hasTypeInfo) {
                   i_Param.paramInfo =
                       i_Func.functionInfo.parameters[i];
@@ -733,6 +757,78 @@ namespace Low {
       initialize_main_window();
 
       {
+        Util::String l_BasePath =
+            Util::get_project().engineDataPath + "\\fonts\\";
+        // During engine/editor init:
+        Fonts::set_paths({
+            /* roboto_regular_ttf = */ l_BasePath +
+                "Roboto-Regular.ttf",
+            /* roboto_medium_ttf  = */
+            l_BasePath + "Roboto-Medium.ttf",
+            /* roboto_bold_ttf    = */
+            l_BasePath + "Roboto-Bold.ttf",
+            /* roboto_light_ttf    = */
+            l_BasePath + "Roboto-Light.ttf",
+            /* codicons_ttf       = */
+            l_BasePath + "codicon.ttf",
+            /* lucide_ttf         = */
+            l_BasePath + "lucide.ttf", // if you have it
+        });
+        Fonts::set_preset_sizes(
+            {12, 14, 17, 19, 25, 28, 33, 40}); // whatever you like
+                                               //
+        float l_Dpi = ImGui::GetMainViewport()->DpiScale;
+
+        Fonts::initialize(l_Dpi);
+
+        ImGui::GetIO().FontDefault = Fonts::UI(17);
+      }
+
+      // Load editor images
+      {
+        Renderer::ResourceManager::load_editor_image(
+            Renderer::EditorImage::find_by_name(N(point_light)));
+      }
+
+      {
+        g_AssetTypeColor[AssetType::Script] =
+            color_from_hex("#41bf5c");
+        g_AssetTypeColor[AssetType::Material] =
+            color_from_hex("#7c40c1");
+        g_AssetTypeColor[AssetType::Texture] =
+            color_from_hex("#bf5641");
+        g_AssetTypeColor[AssetType::Font] = color_from_hex("#b744ac");
+        g_AssetTypeColor[AssetType::Mesh] = color_from_hex("#baa343");
+        g_AssetTypeColor[AssetType::Flode] =
+            color_from_hex("#424ebc");
+        g_AssetTypeColor[AssetType::File] = color_from_hex("#b2b2b2");
+
+        g_AssetTypeName[AssetType::File] = "File";
+        g_AssetTypeName[AssetType::Texture] = "Texture";
+        g_AssetTypeName[AssetType::Material] = "Material";
+        g_AssetTypeName[AssetType::Script] = "Script";
+        g_AssetTypeName[AssetType::Font] = "Font";
+        g_AssetTypeName[AssetType::Flode] = "Flode";
+        g_AssetTypeName[AssetType::Mesh] = "Mesh";
+        g_AssetTypeName[AssetType::Model] = "Model";
+
+        g_AssetTypeEditorImage[AssetType::File] =
+            Renderer::EditorImage::find_by_name(N(filetype_file));
+        g_AssetTypeEditorImage[AssetType::Texture] =
+            Renderer::EditorImage::find_by_name(N(filetype_texture));
+        g_AssetTypeEditorImage[AssetType::Mesh] =
+            Renderer::EditorImage::find_by_name(N(filetype_mesh));
+        g_AssetTypeEditorImage[AssetType::Material] =
+            Renderer::EditorImage::find_by_name(N(filetype_material));
+
+        // Load all of them
+        for (auto it = g_AssetTypeEditorImage.begin();
+             it != g_AssetTypeEditorImage.end(); ++it) {
+          Renderer::ResourceManager::load_editor_image(it->second);
+        }
+      }
+
+      {
         Flode::MathNodes::register_nodes();
         Flode::SyntaxNodes::register_nodes();
         Flode::DebugNodes::register_nodes();
@@ -757,26 +853,7 @@ namespace Low {
 
     Util::String prettify_name(Util::String p_String)
     {
-      Util::String l_String = p_String;
-      if (Util::StringHelper::begins_with(l_String, "p_")) {
-        l_String = l_String.substr(2);
-      }
-      l_String = Util::StringHelper::replace(p_String, '_', ' ');
-      l_String[0] = toupper(l_String[0]);
-      {
-        Util::String l_Friendly;
-        for (u32 i = 0; i < l_String.size(); ++i) {
-          if (i) {
-            if (islower(l_String[i - 1]) && !islower(l_String[i])) {
-              l_Friendly += " ";
-            }
-          }
-
-          l_Friendly += l_String[i];
-        }
-        l_String = l_Friendly;
-      }
-      return l_String;
+      return Util::StringHelper::prettify_name(p_String);
     }
 
     Util::String prettify_name(Util::Name p_Name)
@@ -786,22 +863,7 @@ namespace Low {
 
     Util::String technify_string(Util::String p_String)
     {
-      Util::String output;
-      for (char c : p_String) {
-        if (std::isalnum(c)) {
-          output += c; // keep letters and digits
-        } else if (c == ' ' || c == '-' || c == '_') {
-          output += '_'; // normalize common safe separators
-        } else if (c == '.' || c == '/' || c == '\\' || c == ':' ||
-                   c == '*' || c == '?' || c == '"' || c == '<' ||
-                   c == '>' || c == '|') {
-          // skip forbidden or unsafe characters
-          continue;
-        } else {
-          output += '_'; // fallback: replace unknowns with underscore
-        }
-      }
-      return output;
+      return Util::StringHelper::technify_string(p_String);
     }
 
     DirectoryWatchers &get_directory_watchers()

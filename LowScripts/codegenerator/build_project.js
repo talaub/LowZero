@@ -108,14 +108,14 @@ function generate_module_cmake(p_Module) {
   t += `add_dependencies(${p_Module.name}\n`;
   t += `  LowUtil\n`;
   t += `  LowMath\n`;
-  t += `  LowRenderer\n`;
+  t += `  LowRenderer2\n`;
   t += `  LowCore\n`;
   t += `)\n\n`;
 
   t += `target_link_libraries(${p_Module.name} PUBLIC\n`;
   t += `  LowUtil\n`;
   t += `  LowMath\n`;
-  t += `  LowRenderer\n`;
+  t += `  LowRenderer2\n`;
   t += `  LowCore\n`;
   t += `)\n\n`;
 
@@ -163,6 +163,7 @@ function generate_root_cmake(p_ProjectConfig) {
   t += 'set_target_properties(LowCore PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(LowUtil PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(LowRenderer PROPERTIES FOLDER "LowEngine")\n';
+  t += 'set_target_properties(LowRenderer2 PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(Lowder PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(LowEditor PROPERTIES FOLDER "LowEngine")\n';
   t += 'set_target_properties(LowMath PROPERTIES FOLDER "LowEngine")\n\n';

@@ -18,6 +18,8 @@ namespace Low {
     private:
       Util::List<HandlePropertiesSection> m_Sections;
       bool m_BreakRunning = false;
+
+      float m_Splitter = 30.0f;
     };
   } // namespace Editor
 } // namespace Low

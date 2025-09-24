@@ -12,7 +12,7 @@
 #include "LowMath.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
+#include "LowRendererRenderView.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -30,6 +30,7 @@ namespace Low {
         public:
           bool active;
           float fov;
+          Low::Renderer::RenderView render_view;
           Low::Core::Entity entity;
           Low::Util::UniqueId unique_id;
 
@@ -40,6 +41,7 @@ namespace Low {
         };
 
       public:
+        static Low::Util::SharedMutex ms_LivingMutex;
         static Low::Util::UniqueLock<Low::Util::SharedMutex>
             ms_PagesLock;
         static Low::Util::SharedMutex ms_PagesMutex;
@@ -69,10 +71,14 @@ namespace Low {
 
         static uint32_t living_count()
         {
+          Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
         static Camera *living_instances()
         {
+          Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           return ms_LivingInstances.data();
         }
 
@@ -130,6 +136,9 @@ namespace Low {
 
         float get_fov() const;
         void set_fov(float p_Value);
+
+        Low::Renderer::RenderView &get_render_view() const;
+        void set_render_view(Low::Renderer::RenderView &p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);

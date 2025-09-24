@@ -26,6 +26,7 @@ namespace Low {
       const uint16_t PointLight::TYPE_ID = 28;
       uint32_t PointLight::ms_Capacity = 0u;
       uint32_t PointLight::ms_PageSize = 0u;
+      Low::Util::SharedMutex PointLight::ms_LivingMutex;
       Low::Util::SharedMutex PointLight::ms_PagesMutex;
       Low::Util::UniqueLock<Low::Util::SharedMutex>
           PointLight::ms_PagesLock(PointLight::ms_PagesMutex,
@@ -82,6 +83,10 @@ namespace Low {
             Low::Math::ColorRGB();
         ACCESSOR_TYPE_SOA(l_Handle, PointLight, intensity, float) =
             0.0f;
+        ACCESSOR_TYPE_SOA(l_Handle, PointLight, range, float) = 0.0f;
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, PointLight, renderer_point_light,
+            Low::Renderer::PointLight)) Low::Renderer::PointLight();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, PointLight, entity,
                                    Low::Core::Entity))
             Low::Core::Entity();
@@ -89,7 +94,11 @@ namespace Low {
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
-        ms_LivingInstances.push_back(l_Handle);
+        {
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
+          ms_LivingInstances.push_back(l_Handle);
+        }
 
         if (p_UniqueId > 0ull) {
           l_Handle.set_unique_id(p_UniqueId);
@@ -101,7 +110,8 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
+        l_Handle.set_intensity(5.0f);
+        l_Handle.set_range(10.0f);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -114,7 +124,9 @@ namespace Low {
         {
           Low::Util::HandleLock<PointLight> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
+          if (get_renderer_point_light().is_alive()) {
+            get_renderer_point_light().destroy();
+          }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -134,6 +146,8 @@ namespace Low {
         l_Page->slots[l_SlotIndex].m_Generation++;
 
         ms_PagesLock.lock();
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -143,6 +157,7 @@ namespace Low {
           }
         }
         ms_PagesLock.unlock();
+        l_LivingLock.unlock();
       }
 
       void PointLight::initialize()
@@ -253,6 +268,72 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: intensity
+        }
+        {
+          // Property: range
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(range);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(PointLight::Data, range);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
+            l_Handle.get_range();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, PointLight,
+                                              range, float);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            PointLight l_Handle = p_Handle.get_id();
+            l_Handle.set_range(*(float *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
+            *((float *)p_Data) = l_Handle.get_range();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: range
+        }
+        {
+          // Property: renderer_point_light
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(renderer_point_light);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(PointLight::Data, renderer_point_light);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Renderer::PointLight::TYPE_ID;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
+            l_Handle.get_renderer_point_light();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, PointLight, renderer_point_light,
+                Low::Renderer::PointLight);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            PointLight l_Handle = p_Handle.get_id();
+            l_Handle.set_renderer_point_light(
+                *(Low::Renderer::PointLight *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            PointLight l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
+            *((Low::Renderer::PointLight *)p_Data) =
+                l_Handle.get_renderer_point_light();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: renderer_point_light
         }
         {
           // Property: entity
@@ -412,6 +493,11 @@ namespace Low {
         PointLight l_Handle = make(p_Entity);
         l_Handle.set_color(get_color());
         l_Handle.set_intensity(get_intensity());
+        l_Handle.set_range(get_range());
+        if (get_renderer_point_light().is_alive()) {
+          l_Handle.set_renderer_point_light(
+              get_renderer_point_light());
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -442,6 +528,7 @@ namespace Low {
         Low::Util::Serialization::serialize(p_Node["color"],
                                             get_color());
         p_Node["intensity"] = get_intensity();
+        p_Node["range"] = get_range();
         p_Node["_unique_id"] =
             Low::Util::hash_to_string(get_unique_id()).c_str();
 
@@ -479,6 +566,9 @@ namespace Low {
         }
         if (p_Node["intensity"]) {
           l_Handle.set_intensity(p_Node["intensity"].as<float>());
+        }
+        if (p_Node["range"]) {
+          l_Handle.set_range(p_Node["range"].as<float>());
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -655,6 +745,79 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_intensity
 
         broadcast_observable(N(intensity));
+      }
+
+      float PointLight::get_range() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_range
+        // LOW_CODEGEN::END::CUSTOM:GETTER_range
+
+        return TYPE_SOA(PointLight, range, float);
+      }
+      void PointLight::set_range(float p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_range
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_range
+
+        // Set new value
+        TYPE_SOA(PointLight, range, float) = p_Value;
+        {
+          Low::Core::Entity l_Entity = get_entity();
+          if (l_Entity.has_component(
+                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+            Low::Core::Component::PrefabInstance l_Instance =
+                l_Entity.get_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID);
+            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+            if (l_Prefab.is_alive()) {
+              l_Instance.override(
+                  TYPE_ID, N(range),
+                  !l_Prefab.compare_property(*this, N(range)));
+            }
+          }
+        }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_range
+        // LOW_CODEGEN::END::CUSTOM:SETTER_range
+
+        broadcast_observable(N(range));
+      }
+
+      Low::Renderer::PointLight
+      PointLight::get_renderer_point_light() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_point_light
+        // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_point_light
+
+        return TYPE_SOA(PointLight, renderer_point_light,
+                        Low::Renderer::PointLight);
+      }
+      void PointLight::set_renderer_point_light(
+          Low::Renderer::PointLight p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<PointLight> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_point_light
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_point_light
+
+        // Set new value
+        TYPE_SOA(PointLight, renderer_point_light,
+                 Low::Renderer::PointLight) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_point_light
+        // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_point_light
+
+        broadcast_observable(N(renderer_point_light));
       }
 
       Low::Core::Entity PointLight::get_entity() const

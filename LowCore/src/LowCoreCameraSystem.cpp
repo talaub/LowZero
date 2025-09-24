@@ -1,5 +1,6 @@
 #include "LowCoreCameraSystem.h"
 
+#include "LowRendererRenderView.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
@@ -11,6 +12,7 @@
 #include "LowUtilProfiler.h"
 
 #include "LowRenderer.h"
+#include "LowRendererRenderView.h"
 
 namespace Low {
   namespace Core {
@@ -21,13 +23,13 @@ namespace Low {
           Component::Transform i_Transform =
               p_Camera.get_entity().get_transform();
 
-          Renderer::RenderFlow l_RenderFlow =
-              Renderer::get_main_renderflow();
+          Renderer::RenderView l_RenderView =
+              p_Camera.get_render_view();
 
-          l_RenderFlow.set_camera_fov(p_Camera.get_fov());
-          l_RenderFlow.set_camera_position(
+          l_RenderView.set_camera_fov(p_Camera.get_fov());
+          l_RenderView.set_camera_position(
               i_Transform.get_world_position());
-          l_RenderFlow.set_camera_direction(
+          l_RenderView.set_camera_direction(
               Math::VectorUtil::direction(
                   i_Transform.get_world_rotation()));
         }
@@ -49,6 +51,13 @@ namespace Low {
                ++i) {
             Component::Camera i_Camera = l_Cameras[i];
 
+            if (!i_Camera.get_render_view().is_alive()) {
+              i_Camera.set_render_view(Renderer::RenderView::make(
+                  i_Camera.get_entity().get_name()));
+              i_Camera.get_render_view().set_render_scene(
+                  Renderer::get_global_renderscene());
+            }
+
             if (!l_ActiveCamera.is_alive()) {
               l_ActiveCamera = i_Camera;
             }
@@ -65,6 +74,6 @@ namespace Low {
         }
 
       } // namespace Camera
-    }   // namespace System
-  }     // namespace Core
+    } // namespace System
+  } // namespace Core
 } // namespace Low

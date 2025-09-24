@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowUtilString.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -22,6 +23,7 @@ namespace Low {
     const uint16_t MeshResource::TYPE_ID = 47;
     uint32_t MeshResource::ms_Capacity = 0u;
     uint32_t MeshResource::ms_PageSize = 0u;
+    Low::Util::SharedMutex MeshResource::ms_LivingMutex;
     Low::Util::SharedMutex MeshResource::ms_PagesMutex;
     Low::Util::UniqueLock<Low::Util::SharedMutex>
         MeshResource::ms_PagesLock(MeshResource::ms_PagesMutex,
@@ -78,7 +80,11 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      ms_LivingInstances.push_back(l_Handle);
+      {
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
+        ms_LivingInstances.push_back(l_Handle);
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -110,6 +116,8 @@ namespace Low {
       l_Page->slots[l_SlotIndex].m_Generation++;
 
       ms_PagesLock.lock();
+      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -119,6 +127,7 @@ namespace Low {
         }
       }
       ms_PagesLock.unlock();
+      l_LivingLock.unlock();
     }
 
     void MeshResource::initialize()
@@ -400,6 +409,23 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_from_config
       }
+      {
+        // Function: find_by_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(find_by_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = MeshResource::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: find_by_path
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -502,6 +528,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
+      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -853,7 +881,8 @@ namespace Low {
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_config
       MeshResource l_MeshResource = MeshResource::make(p_Config.name);
-      l_MeshResource.set_path(p_Config.path);
+      l_MeshResource.set_path(
+          Util::PathHelper::normalize(p_Config.path));
       l_MeshResource.set_mesh_id(p_Config.meshId);
       l_MeshResource.set_asset_hash(p_Config.assetHash);
       l_MeshResource.set_source_file(p_Config.sourceFile);
@@ -862,6 +891,20 @@ namespace Low {
 
       return l_MeshResource;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
+    }
+
+    MeshResource MeshResource::find_by_path(Util::String &p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
+        if (it->get_path() == p_Path) {
+          return *it;
+        }
+      }
+
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_by_path
     }
 
     uint32_t MeshResource::create_instance(

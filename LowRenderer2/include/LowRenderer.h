@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowRenderer2Api.h"
+
 #include "LowUtil.h"
 
 #include "LowRendererMesh.h"
@@ -44,23 +46,28 @@ namespace Low {
       TextureExport textureExport;
     };
 
-    MaterialTypes &get_material_types();
+    LOW_RENDERER2_API MaterialTypes &get_material_types();
 
-    void initialize();
-    void cleanup();
-    void prepare_tick(float p_Delta);
-    void tick(float p_Delta);
+    void LOW_RENDERER2_API initialize();
+    void LOW_RENDERER2_API cleanup();
+    void LOW_RENDERER2_API prepare_tick(float p_Delta);
+    void LOW_RENDERER2_API tick(float p_Delta);
 
-    void check_window_resize(float p_Delta);
+    void LOW_RENDERER2_API check_window_resize(float p_Delta);
 
-    void load_mesh(Mesh p_Mesh);
-    Texture load_texture(Util::String p_ImagePath);
+    void LOW_RENDERER2_API load_mesh(Mesh p_Mesh);
+    Texture LOW_RENDERER2_API load_texture(Util::String p_ImagePath);
 
-    Texture get_default_texture();
-    Material get_default_material();
-    Material get_default_material_texture();
+    Texture LOW_RENDERER2_API get_default_texture();
+    Material LOW_RENDERER2_API get_default_material();
+    Material LOW_RENDERER2_API get_default_material_texture();
 
-    void
+    RenderView LOW_RENDERER2_API get_game_renderview();
+    RenderView LOW_RENDERER2_API get_editor_renderview();
+
+    RenderScene LOW_RENDERER2_API get_global_renderscene();
+
+    void LOW_RENDERER2_API
     submit_thumbnail_creation(ThumbnailCreationSchedule p_Schedule);
   } // namespace Renderer
 } // namespace Low

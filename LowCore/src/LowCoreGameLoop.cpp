@@ -12,9 +12,6 @@
 #include "LowCoreCflatScripting.h"
 #include "LowCoreCameraSystem.h"
 
-#include "LowCoreMeshResource.h"
-#include "LowCoreTexture2D.h"
-#include "LowCoreFont.h"
 #include "LowCoreInput.h"
 
 #include "LowCoreUiElement.h"
@@ -56,7 +53,13 @@ namespace Low {
         static bool l_FirstRun = true;
         Util::tick(p_Delta);
 
-        Renderer::tick(p_Delta, get_engine_state());
+        if (Util::Window::get_main_window().minimized) {
+          return;
+        }
+
+        Renderer::check_window_resize(p_Delta);
+
+        Renderer::prepare_tick(p_Delta);
         System::Transform::tick(p_Delta, get_engine_state());
         UI::System::View::tick(p_Delta, get_engine_state());
         UI::System::Display::tick(p_Delta, get_engine_state());
@@ -64,7 +67,7 @@ namespace Low {
         System::Camera::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
           System::Physics::tick(p_Delta, get_engine_state());
-          System::Navmesh::tick(p_Delta, get_engine_state());
+          //System::Navmesh::tick(p_Delta, get_engine_state());
         }
 
         Scripting::tick(p_Delta, get_engine_state());
@@ -79,10 +82,6 @@ namespace Low {
           CflatVoidCall(MtdScripts::StatusEffect::Ignite::tick,
                         CflatArg(param));
         }
-
-        MeshResource::update();
-        Texture2D::update();
-        Font::update();
 
         for (auto it = g_TickCallbacks.begin();
              it != g_TickCallbacks.end(); ++it) {
@@ -133,7 +132,7 @@ namespace Low {
         System::Transform::late_tick(p_Delta, get_engine_state());
 
         Input::late_tick(p_Delta);
-        Renderer::late_tick(p_Delta, get_engine_state());
+        Renderer::tick(p_Delta);
         l_FirstRun = false;
       }
 
@@ -141,7 +140,8 @@ namespace Low {
       {
 
         Util::String l_Path = "arial.ttf";
-        Font l_Font = Font::make(l_Path);
+        Renderer::Font l_Font =
+            Renderer::Font::find_by_name(N(arial));
 
         {
           UI::View l_View = UI::View::make(N(StartCombatView));
@@ -351,8 +351,9 @@ namespace Low {
         UI::Element l_Element = UI::Element::make(N(test), l_View);
         l_Element.set_click_passthrough(false);
 
+        // TODO: fix
         Util::String l_Path = "arial.ttf";
-        Font l_Font = Font::make(l_Path);
+        Renderer::Font l_Font = Renderer::Font::make(N(arial));
 
         // Background
         {
@@ -366,8 +367,9 @@ namespace Low {
           UI::Component::Image l_Image =
               UI::Component::Image::make(l_Element);
 
-          Core::Texture2D l_Texture =
-              Core::Texture2D::make(Util::String("card_bg.ktx"));
+          // TODO: Fix
+          Renderer::Texture l_Texture =
+              Renderer::Texture::find_by_name(N(card_bg));
           l_Image.set_texture(l_Texture);
         }
 
@@ -416,8 +418,9 @@ namespace Low {
           UI::Component::Image l_Image =
               UI::Component::Image::make(l_ResourceIconElement);
 
-          Core::Texture2D l_Texture =
-              Core::Texture2D::make(Util::String("crystal.ktx"));
+          // TODO: fix
+          Renderer::Texture l_Texture =
+              Renderer::Texture::make(N(crystal));
           l_Image.set_texture(l_Texture);
         }
 
@@ -549,7 +552,7 @@ namespace Low {
 
             l_Accumulator = 0ns;
 
-            if (!Renderer::window_is_open()) {
+            if (Util::Window::get_main_window().shouldClose) {
               stop();
               continue;
             }
@@ -591,5 +594,5 @@ namespace Low {
         return g_LastFps;
       }
     } // namespace GameLoop
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

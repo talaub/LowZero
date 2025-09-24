@@ -26,6 +26,7 @@ namespace Low {
         const uint16_t Text::TYPE_ID = 42;
         uint32_t Text::ms_Capacity = 0u;
         uint32_t Text::ms_PageSize = 0u;
+        Low::Util::SharedMutex Text::ms_LivingMutex;
         Low::Util::SharedMutex Text::ms_PagesMutex;
         Low::Util::UniqueLock<Low::Util::SharedMutex>
             Text::ms_PagesLock(Text::ms_PagesMutex, std::defer_lock);
@@ -78,8 +79,8 @@ namespace Low {
                                      Low::Util::String))
               Low::Util::String();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, font,
-                                     Low::Core::Font))
-              Low::Core::Font();
+                                     Low::Renderer::Font))
+              Low::Renderer::Font();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, color,
                                      Low::Math::Color))
               Low::Math::Color();
@@ -94,7 +95,11 @@ namespace Low {
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
 
-          ms_LivingInstances.push_back(l_Handle);
+          {
+            Low::Util::UniqueLock<Low::Util::SharedMutex>
+                l_LivingLock(ms_LivingMutex);
+            ms_LivingInstances.push_back(l_Handle);
+          }
 
           if (p_UniqueId > 0ull) {
             l_Handle.set_unique_id(p_UniqueId);
@@ -119,10 +124,6 @@ namespace Low {
           {
             Low::Util::HandleLock<Text> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
-            if (get_font().is_alive()) {
-              get_font().unload();
-            }
             // LOW_CODEGEN::END::CUSTOM:DESTROY
           }
 
@@ -142,6 +143,8 @@ namespace Low {
           l_Page->slots[l_SlotIndex].m_Generation++;
 
           ms_PagesLock.lock();
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           for (auto it = ms_LivingInstances.begin();
                it != ms_LivingInstances.end();) {
             if (it->get_id() == get_id()) {
@@ -151,6 +154,7 @@ namespace Low {
             }
           }
           ms_PagesLock.unlock();
+          l_LivingLock.unlock();
         }
 
         void Text::initialize()
@@ -239,25 +243,25 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(Text::Data, font);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
-            l_PropertyInfo.handleType = Low::Core::Font::TYPE_ID;
+            l_PropertyInfo.handleType = Low::Renderer::Font::TYPE_ID;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
               l_Handle.get_font();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text, font,
-                                                Low::Core::Font);
+                                                Low::Renderer::Font);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Text l_Handle = p_Handle.get_id();
-              l_Handle.set_font(*(Low::Core::Font *)p_Data);
+              l_Handle.set_font(*(Low::Renderer::Font *)p_Data);
             };
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Text l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
-              *((Low::Core::Font *)p_Data) = l_Handle.get_font();
+              *((Low::Renderer::Font *)p_Data) = l_Handle.get_font();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
@@ -600,7 +604,7 @@ namespace Low {
             l_Handle.set_text(LOW_YAML_AS_STRING(p_Node["text"]));
           }
           if (p_Node["font"]) {
-            l_Handle.set_font(Low::Core::Font::deserialize(
+            l_Handle.set_font(Low::Renderer::Font::deserialize(
                                   p_Node["font"], l_Handle.get_id())
                                   .get_id());
           }
@@ -709,7 +713,7 @@ namespace Low {
           broadcast_observable(N(text));
         }
 
-        Low::Core::Font Text::get_font() const
+        Low::Renderer::Font Text::get_font() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Text> l_Lock(get_id());
@@ -718,25 +722,18 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_font
 
-          return TYPE_SOA(Text, font, Low::Core::Font);
+          return TYPE_SOA(Text, font, Low::Renderer::Font);
         }
-        void Text::set_font(Low::Core::Font p_Value)
+        void Text::set_font(Low::Renderer::Font p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font
-
-          if (get_font().is_alive()) {
-            get_font().unload();
-          }
-          if (p_Value.is_alive()) {
-            p_Value.load();
-          }
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_font
 
           // Set new value
-          TYPE_SOA(Text, font, Low::Core::Font) = p_Value;
+          TYPE_SOA(Text, font, Low::Renderer::Font) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
 

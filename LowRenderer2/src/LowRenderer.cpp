@@ -52,6 +52,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilString.h"
 
+#include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
 #include <vulkan/vulkan_core.h>
 
@@ -69,6 +70,11 @@ namespace Low {
     Texture g_DefaultTexture;
     Material g_DefaultMaterial;
     Material g_DefaultMaterialTexture;
+
+    RenderView g_GameRenderView;
+    RenderView g_EditorRenderView;
+
+    RenderScene g_GlobalScene;
 
     Texture get_default_texture()
     {
@@ -359,8 +365,10 @@ namespace Low {
 
         for (Util::String &i_Path : l_FilePaths) {
           if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
+            Util::String i_NameString =
+                Util::PathHelper::get_base_name_no_ext(i_Path);
             EditorImage i_EditorImage =
-                EditorImage::make(N(EditorImage));
+                EditorImage::make(LOW_NAME(i_NameString.c_str()));
             i_EditorImage.set_path(i_Path);
           }
         }
@@ -536,6 +544,18 @@ namespace Low {
                  "Failed to initialize default materials");
 
       LOW_ASSERT(preload_resources(), "Failed to preload resources.");
+
+      g_GlobalScene = RenderScene::make(N(Global));
+
+      g_GameRenderView = RenderView::make_default(N(Game));
+      g_GameRenderView.set_render_scene(g_GlobalScene);
+
+      // TODO: Create separate editor renderview in editor builds
+      g_EditorRenderView = g_GameRenderView;
+      // g_EditorRenderView = RenderView::make(N(Editor));
+
+      Util::Window::get_main_window().eventCallbacks.push_back(
+          &ImGui_ImplSDL2_ProcessEvent);
     }
 
     void cleanup()
@@ -735,168 +755,10 @@ namespace Low {
     void tick(float p_Delta)
     {
 
-      static bool l_ImageInit = false;
       ResourceManager::tick(p_Delta);
       RenderObjectSystem::tick(p_Delta);
       initialize_ui_renderobjects(p_Delta);
       tick_materials(p_Delta);
-      if (!l_ImageInit) {
-        if (g_Texture.is_alive() &&
-            g_Texture.get_state() == TextureState::LOADED) {
-          l_ImageInit = true;
-        }
-      }
-
-      ImGui::Begin("Camera");
-      RenderView l_RenderView = RenderView::living_instances()[0];
-      Math::Vector3 l_CameraPosition =
-          l_RenderView.get_camera_position();
-      ImGui::DragFloat3("Position", (float *)&l_CameraPosition);
-      l_RenderView.set_camera_position(l_CameraPosition);
-
-      {
-        RenderObject l_RenderObject =
-            RenderObject::living_instances()[0];
-
-        static bool l_Test = true;
-
-        if (!l_Test &&
-            l_RenderObject.get_mesh().get_gpu().is_alive()) {
-          Math::Sphere l_Sphere = l_RenderObject.get_mesh()
-                                      .get_gpu()
-                                      .get_bounding_sphere();
-
-          l_Test = true;
-
-          Math::Vector3 l_Direction(0.2f, -0.1f, 1.0f);
-          l_Direction = glm::normalize(l_Direction);
-
-          LOW_LOG_DEBUG << l_Sphere.position << LOW_LOG_END;
-          LOW_LOG_DEBUG << l_Sphere.radius << LOW_LOG_END;
-
-          l_RenderView.set_camera_direction(l_Direction);
-          l_RenderView.set_camera_position(
-              l_Sphere.position -
-              (l_Direction * (l_Sphere.radius + 8.0f)));
-        }
-        // MARK
-      }
-
-      {
-        static float value = 0;
-        static float value2 = 0;
-
-        static float split = 150.0f;
-        float splitter_thickness = 4.0f;
-        ImVec2 region = ImGui::GetContentRegionAvail();
-
-        // Left panel: label column
-        ImGui::BeginChild("LeftColumn", ImVec2(split, 0), false);
-        ImGui::Text("Property Name");
-        ImGui::EndChild();
-
-        // Splitter: draw and interact
-        ImGui::SameLine();
-        ImGui::PushStyleColor(
-            ImGuiCol_Button,
-            ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Normal
-        ImGui::PushStyleColor(
-            ImGuiCol_ButtonHovered,
-            ImVec4(0.7f, 0.7f, 0.7f, 1.0f)); // Hover
-        ImGui::PushStyleColor(
-            ImGuiCol_ButtonActive,
-            ImVec4(0.9f, 0.9f, 0.9f, 1.0f)); // Dragging
-        ImGui::Button("##Splitter",
-                      ImVec2(splitter_thickness, region.y));
-        ImGui::PopStyleColor(3);
-
-        if (ImGui::IsItemActive())
-          split += ImGui::GetIO().MouseDelta.x;
-
-        ImGui::SetCursorPosX(
-            split + splitter_thickness); // Position right of splitter
-
-        // Right panel: value column
-        ImGui::SameLine();
-        ImGui::BeginChild("RightColumn", ImVec2(0, 0), false);
-        ImGui::InputFloat("##Value2", &value2);
-        ImGui::EndChild();
-
-        ImGui::BeginChild("LeftColumn", ImVec2(split, 0), false);
-        ImGui::Text("Property2");
-        ImGui::EndChild();
-
-        // Splitter: draw and interact
-        /*
-        ImGui::SameLine();
-        ImGui::PushStyleColor(
-            ImGuiCol_Button,
-            ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Normal
-        ImGui::PushStyleColor(
-            ImGuiCol_ButtonHovered,
-            ImVec4(0.7f, 0.7f, 0.7f, 1.0f)); // Hover
-        ImGui::PushStyleColor(
-            ImGuiCol_ButtonActive,
-            ImVec4(0.9f, 0.9f, 0.9f, 1.0f)); // Dragging
-        ImGui::Button("##Splitter",
-                      ImVec2(splitter_thickness, region.y));
-        ImGui::PopStyleColor(3);
-
-        if (ImGui::IsItemActive())
-          split += ImGui::GetIO().MouseDelta.x;
-
-        ImGui::SetCursorPosX(
-            split + splitter_thickness); // Position right of
-        splitter
-            */
-
-        // Right panel: value column
-        ImGui::SameLine();
-        ImGui::BeginChild("RightColumn", ImVec2(0, 0), false);
-        ImGui::InputFloat("##Value", &value);
-        ImGui::EndChild();
-      }
-      ImGui::End();
-
-      ImGui::Begin("Normals");
-      ImGui::Image(RenderView::living_instances()[0]
-                       .get_gbuffer_normals()
-                       .get_gpu()
-                       .get_imgui_texture_id(),
-                   ImVec2(256, 256));
-      ImGui::End();
-      ImGui::Begin("Depth");
-      ImGui::Image(RenderView::living_instances()[0]
-                       .get_gbuffer_depth()
-                       .get_gpu()
-                       .get_imgui_texture_id(),
-                   ImVec2(256, 256));
-      ImGui::End();
-      ImGui::Begin("View Position");
-      ImGui::Image(RenderView::living_instances()[0]
-                       .get_gbuffer_viewposition()
-                       .get_gpu()
-                       .get_imgui_texture_id(),
-                   ImVec2(256, 256));
-      ImGui::End();
-      ImGui::Begin("Albedo");
-      ImGui::Image(RenderView::living_instances()[0]
-                       .get_gbuffer_albedo()
-                       .get_gpu()
-                       .get_imgui_texture_id(),
-                   ImVec2(256, 256));
-      ImGui::End();
-
-      if (l_ImageInit) {
-        ImGui::Begin("Mipmapped");
-
-        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-        ImGui::Image(
-            (ImTextureID)g_Texture.get_gpu().get_imgui_texture_id(),
-            ImVec2{viewportPanelSize.x, viewportPanelSize.y});
-
-        ImGui::End();
-      }
 
       LOW_ASSERT(Vulkan::tick(p_Delta),
                  "Failed to tick Vulkan renderer");
@@ -933,6 +795,20 @@ namespace Low {
     {
       p_Schedule.state = ThumbnailCreationState::SCHEDULED;
       g_ThumbnailCreationSchedules.push_back(p_Schedule);
+    }
+
+    RenderView get_game_renderview()
+    {
+      return g_GameRenderView;
+    }
+    RenderView get_editor_renderview()
+    {
+      return g_EditorRenderView;
+    }
+
+    RenderScene get_global_renderscene()
+    {
+      return g_GlobalScene;
     }
   } // namespace Renderer
 } // namespace Low

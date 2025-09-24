@@ -24,6 +24,7 @@ namespace Low {
     const uint16_t EditorImageGpu::TYPE_ID = 84;
     uint32_t EditorImageGpu::ms_Capacity = 0u;
     uint32_t EditorImageGpu::ms_PageSize = 0u;
+    Low::Util::SharedMutex EditorImageGpu::ms_LivingMutex;
     Low::Util::SharedMutex EditorImageGpu::ms_PagesMutex;
     Low::Util::UniqueLock<Low::Util::SharedMutex>
         EditorImageGpu::ms_PagesLock(EditorImageGpu::ms_PagesMutex,
@@ -78,7 +79,11 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      ms_LivingInstances.push_back(l_Handle);
+      {
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
+        ms_LivingInstances.push_back(l_Handle);
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       ms_Dirty.insert(l_Handle);
@@ -112,6 +117,8 @@ namespace Low {
       l_Page->slots[l_SlotIndex].m_Generation++;
 
       ms_PagesLock.lock();
+      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -121,6 +128,7 @@ namespace Low {
         }
       }
       ms_PagesLock.unlock();
+      l_LivingLock.unlock();
     }
 
     void EditorImageGpu::initialize()
@@ -132,20 +140,12 @@ namespace Low {
       ms_Capacity = Low::Util::Config::get_capacity(
           N(LowRenderer2), N(EditorImageGpu));
 
-      ms_PageSize = Low::Math::Util::clamp(
-          Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
-      {
-        u32 l_Capacity = 0u;
-        while (l_Capacity < ms_Capacity) {
-          Low::Util::Instances::Page *i_Page =
-              new Low::Util::Instances::Page;
-          Low::Util::Instances::initialize_page(
-              i_Page, EditorImageGpu::Data::get_size(), ms_PageSize);
-          ms_Pages.push_back(i_Page);
-          l_Capacity += ms_PageSize;
-        }
-        ms_Capacity = l_Capacity;
-      }
+      ms_PageSize = ms_Capacity;
+      Low::Util::Instances::Page *l_Page =
+          new Low::Util::Instances::Page;
+      Low::Util::Instances::initialize_page(
+          l_Page, EditorImageGpu::Data::get_size(), ms_PageSize);
+      ms_Pages.push_back(l_Page);
       LOCK_UNLOCK(l_PagesLock);
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
@@ -441,6 +441,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
+      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -756,13 +758,8 @@ namespace Low {
           break;
         }
       }
-      if (!l_FoundIndex) {
-        l_SlotIndex = 0;
-        l_PageIndex = create_page();
-        Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
-            ms_Pages[l_PageIndex]->mutex);
-        l_PageLock = std::move(l_NewLock);
-      }
+      LOW_ASSERT(l_FoundIndex,
+                 "Budget blown for type EditorImageGpu");
       ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
       p_PageIndex = l_PageIndex;
       p_SlotIndex = l_SlotIndex;

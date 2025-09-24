@@ -8,18 +8,13 @@
 #include "LowCorePointLight.h"
 #include "LowCoreRigidbody.h"
 #include "LowCoreMeshRenderer.h"
-#include "LowCoreMeshAsset.h"
-#include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
-#include "LowCoreTexture2D.h"
-#include "LowCoreMaterial.h"
 #include "LowCorePrefab.h"
 #include "LowCoreGameLoop.h"
 #include "LowCorePhysicsSystem.h"
 #include "LowCorePrefabInstance.h"
 #include "LowCoreCflatScripting.h"
 #include "LowCoreNavmeshAgent.h"
-#include "LowCoreFont.h"
 #include "LowCoreGameMode.h"
 #include "LowCoreCamera.h"
 
@@ -80,46 +75,6 @@ namespace Low {
               },
               0.5f);
 
-      LOW_LOG_DEBUG << "Watching meshassets" << LOW_LOG_END;
-      g_FilesystemWatchers.meshAssetDirectory =
-          Util::FileSystem::watch_directory(
-              l_DataPath + "/assets/meshes",
-              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
-                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
-                                                   ".mesh.yaml")) {
-                  return (Util::Handle)0;
-                }
-                Util::List<Util::String> l_Parts;
-                Util::StringHelper::split(p_FileWatcher.name, '.',
-                                          l_Parts);
-                uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
-
-                return Util::find_handle_by_unique_id(l_UniqueId);
-              },
-              l_UpdateTime);
-      g_WatchHandles[MeshAsset::TYPE_ID] =
-          g_FilesystemWatchers.meshAssetDirectory;
-
-      LOW_LOG_DEBUG << "Watching material assets" << LOW_LOG_END;
-      g_FilesystemWatchers.materialAssetDirectory =
-          Util::FileSystem::watch_directory(
-              l_DataPath + "/assets/materials",
-              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
-                if (!Util::StringHelper::ends_with(
-                        p_FileWatcher.name, ".material.yaml")) {
-                  return (Util::Handle)0;
-                }
-                Util::List<Util::String> l_Parts;
-                Util::StringHelper::split(p_FileWatcher.name, '.',
-                                          l_Parts);
-                uint64_t l_UniqueId = std::stoull(l_Parts[0].c_str());
-
-                return Util::find_handle_by_unique_id(l_UniqueId);
-              },
-              l_UpdateTime);
-      g_WatchHandles[Material::TYPE_ID] =
-          g_FilesystemWatchers.materialAssetDirectory;
-
       LOW_LOG_DEBUG << "Watching prefab assets" << LOW_LOG_END;
       g_FilesystemWatchers.prefabAssetDirectory =
           Util::FileSystem::watch_directory(
@@ -139,37 +94,11 @@ namespace Low {
               l_UpdateTime);
       g_WatchHandles[Prefab::TYPE_ID] =
           g_FilesystemWatchers.prefabAssetDirectory;
-
-      LOW_LOG_DEBUG << "Watching mesh ressources" << LOW_LOG_END;
-      g_FilesystemWatchers.meshResourceDirectory =
-          Util::FileSystem::watch_directory(
-              l_DataPath + "/resources/meshes",
-              [](Util::FileSystem::FileWatcher &p_FileWatcher) {
-                if (!Util::StringHelper::ends_with(p_FileWatcher.name,
-                                                   ".glb")) {
-                  return (Util::Handle)0;
-                }
-                return (Util::Handle)MeshResource::make(
-                           p_FileWatcher.name)
-                    .get_id();
-              },
-              l_UpdateTime);
-      g_WatchHandles[MeshResource::TYPE_ID] =
-          g_FilesystemWatchers.meshResourceDirectory;
     }
 
     static void initialize_asset_types()
     {
-      MeshAsset::initialize();
-      Material::initialize();
       Prefab::initialize();
-    }
-
-    static void initialize_resource_types()
-    {
-      MeshResource::initialize();
-      Texture2D::initialize();
-      Font::initialize();
     }
 
     static void initialize_component_types()
@@ -209,71 +138,10 @@ namespace Low {
 
     static void initialize_types()
     {
-      LOW_LOG_DEBUG << "init types" << LOW_LOG_END;
-      initialize_resource_types();
-      LOW_LOG_DEBUG << "done resource types" << LOW_LOG_END;
       initialize_asset_types();
-      LOW_LOG_DEBUG << "done asset types" << LOW_LOG_END;
       initialize_base_types();
-      LOW_LOG_DEBUG << "done base types" << LOW_LOG_END;
       initialize_component_types();
-      LOW_LOG_DEBUG << "done component types" << LOW_LOG_END;
       initialize_ui_types();
-      LOW_LOG_DEBUG << "done ui types" << LOW_LOG_END;
-    }
-
-    static void load_mesh_resources()
-    {
-      Util::String l_Path =
-          Util::get_project().dataPath + "\\resources\\meshes";
-
-      Util::List<Util::String> l_FilePaths;
-
-      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
-      Util::String l_Ending = ".glb";
-
-      for (Util::String &i_Path : l_FilePaths) {
-        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          MeshResource::make(
-              i_Path.substr(i_Path.find_last_of('\\') + 1));
-        }
-      }
-    }
-
-    static void load_texture2d_resources()
-    {
-      Util::String l_Path =
-          Util::get_project().dataPath + "\\resources\\img2d";
-
-      Util::List<Util::String> l_FilePaths;
-
-      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
-      Util::String l_Ending = ".ktx";
-
-      for (Util::String &i_Path : l_FilePaths) {
-        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Texture2D::make(
-              i_Path.substr(i_Path.find_last_of('\\') + 1));
-        }
-      }
-    }
-
-    static void load_mesh_assets_from_directory(Util::String p_Path)
-    {
-      Util::List<Util::String> l_FilePaths;
-
-      Util::FileIO::list_directory(p_Path.c_str(), l_FilePaths);
-      Util::String l_Ending = ".mesh.yaml";
-
-      for (Util::String &i_Path : l_FilePaths) {
-        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(i_Path.c_str());
-          MeshAsset::deserialize(i_Node, 0);
-        } else if (Util::FileIO::is_directory(i_Path.c_str())) {
-          load_mesh_assets_from_directory(i_Path);
-        }
-      }
     }
 
     static void load_prefabs_from_directory(Util::String p_Path)
@@ -290,33 +158,6 @@ namespace Low {
           Prefab::deserialize(i_Node, 0);
         } else if (Util::FileIO::is_directory(i_Path.c_str())) {
           load_prefabs_from_directory(i_Path);
-        }
-      }
-    }
-
-    static void load_mesh_assets()
-    {
-      Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\meshes";
-
-      load_mesh_assets_from_directory(l_Path);
-    }
-
-    static void load_materials()
-    {
-      Util::String l_Path =
-          Util::get_project().dataPath + "\\assets\\materials";
-
-      Util::List<Util::String> l_FilePaths;
-
-      Util::FileIO::list_directory(l_Path.c_str(), l_FilePaths);
-      Util::String l_Ending = ".material.yaml";
-
-      for (Util::String &i_Path : l_FilePaths) {
-        if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(i_Path.c_str());
-          Material::deserialize(i_Node, 0);
         }
       }
     }
@@ -367,16 +208,8 @@ namespace Low {
       }
     }
 
-    static void load_resources()
-    {
-      load_mesh_resources();
-      load_texture2d_resources();
-    }
-
     static void load_assets()
     {
-      load_mesh_assets();
-      load_materials();
       load_prefabs();
     }
 
@@ -415,13 +248,10 @@ namespace Low {
 
       initialize_types();
 
-      LOW_LOG_DEBUG << "init debug geometry" << LOW_LOG_END;
       DebugGeometry::initialize();
-      LOW_LOG_DEBUG << "done debug geometry" << LOW_LOG_END;
       GameLoop::initialize();
       Scripting::initialize();
 
-      load_resources();
       load_assets();
 
       load_regions();
@@ -433,15 +263,6 @@ namespace Low {
     static void cleanup_asset_types()
     {
       Prefab::cleanup();
-      MeshAsset::cleanup();
-      Material::cleanup();
-    }
-
-    static void cleanup_resource_types()
-    {
-      MeshResource::cleanup();
-      Texture2D::cleanup();
-      Font::cleanup();
     }
 
     static void cleanup_component_types()
@@ -484,7 +305,6 @@ namespace Low {
       cleanup_component_types();
       cleanup_base_types();
       cleanup_asset_types();
-      cleanup_resource_types();
       cleanup_ui_types();
     }
 
@@ -525,9 +345,9 @@ namespace Low {
       }
 
       g_StoredData.cameraPosition =
-          Renderer::get_main_renderflow().get_camera_position();
+          Renderer::get_editor_renderview().get_camera_position();
       g_StoredData.cameraDirection =
-          Renderer::get_main_renderflow().get_camera_direction();
+          Renderer::get_editor_renderview().get_camera_direction();
 
       g_CurrentEngineState = Util::EngineState::PLAYING;
     }
@@ -540,9 +360,9 @@ namespace Low {
         g_GameModes.pop();
       }
 
-      Renderer::get_main_renderflow().set_camera_position(
+      Renderer::get_editor_renderview().set_camera_position(
           g_StoredData.cameraPosition);
-      Renderer::get_main_renderflow().set_camera_direction(
+      Renderer::get_editor_renderview().set_camera_direction(
           g_StoredData.cameraDirection);
 
       g_StoredData.scene.load();

@@ -22,6 +22,7 @@ namespace Low {
     const uint16_t MaterialResource::TYPE_ID = 86;
     uint32_t MaterialResource::ms_Capacity = 0u;
     uint32_t MaterialResource::ms_PageSize = 0u;
+    Low::Util::SharedMutex MaterialResource::ms_LivingMutex;
     Low::Util::SharedMutex MaterialResource::ms_PagesMutex;
     Low::Util::UniqueLock<Low::Util::SharedMutex>
         MaterialResource::ms_PagesLock(
@@ -73,7 +74,11 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      ms_LivingInstances.push_back(l_Handle);
+      {
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
+        ms_LivingInstances.push_back(l_Handle);
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -105,6 +110,8 @@ namespace Low {
       l_Page->slots[l_SlotIndex].m_Generation++;
 
       ms_PagesLock.lock();
+      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -114,6 +121,7 @@ namespace Low {
         }
       }
       ms_PagesLock.unlock();
+      l_LivingLock.unlock();
     }
 
     void MaterialResource::initialize()
@@ -243,6 +251,23 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
       }
+      {
+        // Function: find_by_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(find_by_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = MaterialResource::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: find_by_path
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -349,6 +374,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
+      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -551,6 +578,21 @@ namespace Low {
 
       return l_MaterialResource;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    MaterialResource
+    MaterialResource::find_by_path(Util::String &p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
+        if (it->get_path() == p_Path) {
+          return *it;
+        }
+      }
+
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_by_path
     }
 
     uint32_t MaterialResource::create_instance(

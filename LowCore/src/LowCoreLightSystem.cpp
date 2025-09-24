@@ -9,6 +9,7 @@
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 
@@ -25,26 +26,22 @@ namespace Low {
                     .get_entity()
                     .get_transform();
 
-            Renderer::DirectionalLight l_RendererDirectionalLight;
-            l_RendererDirectionalLight.color =
-                Component::DirectionalLight::living_instances()[0].get_color() *
-                Component::DirectionalLight::living_instances()[0]
-                    .get_intensity();
+            Component::DirectionalLight l_DirectioalLight =
+                Component::DirectionalLight::living_instances()[0];
 
-            l_RendererDirectionalLight.rotation =
-                l_Transform.get_world_rotation();
-
-            Renderer::get_main_renderflow().set_directional_light(
-                l_RendererDirectionalLight);
+            Renderer::get_global_renderscene()
+                .set_directional_light_color(
+                    l_DirectioalLight.get_color());
+            Renderer::get_global_renderscene()
+                .set_directional_light_direction(
+                    Math::VectorUtil::direction(
+                        l_Transform.get_world_rotation()));
+            Renderer::get_global_renderscene()
+                .set_directional_light_intensity(
+                    l_DirectioalLight.get_intensity());
           } else {
-            Renderer::DirectionalLight l_RendererDirectionalLight;
-            l_RendererDirectionalLight.color = Math::ColorRGB(0.0f);
-
-            l_RendererDirectionalLight.rotation =
-                Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f);
-
-            Renderer::get_main_renderflow().set_directional_light(
-                l_RendererDirectionalLight);
+            Renderer::get_global_renderscene()
+                .set_directional_light_intensity(0.0f);
           }
 
           for (Component::PointLight i_PointLight :
@@ -52,16 +49,30 @@ namespace Low {
             Component::Transform i_Transform =
                 i_PointLight.get_entity().get_transform();
 
-            Renderer::PointLight i_RendererPointLight;
-            i_RendererPointLight.position = i_Transform.get_world_position();
-            i_RendererPointLight.color =
-                i_PointLight.get_color() * i_PointLight.get_intensity();
+            if (!i_PointLight.get_renderer_point_light().is_alive()) {
+              Renderer::PointLight i_Renderer =
+                  Renderer::PointLight::make(
+                      Renderer::get_global_renderscene());
+              i_PointLight.set_renderer_point_light(i_Renderer);
+            }
 
-            Renderer::get_main_renderflow().get_point_lights().push_back(
-                i_RendererPointLight);
+            LOCK_HANDLE(i_PointLight.get_renderer_point_light());
+
+            // TODO: Only update if the point light is actually dirty
+            if (i_PointLight.get_renderer_point_light().is_alive()) {
+              i_PointLight.get_renderer_point_light().set_color(
+                  i_PointLight.get_color());
+              i_PointLight.get_renderer_point_light().set_intensity(
+                  i_PointLight.get_intensity());
+              i_PointLight.get_renderer_point_light().set_range(
+                  i_PointLight.get_range());
+              i_PointLight.get_renderer_point_light()
+                  .set_world_position(
+                      i_Transform.get_world_position());
+            }
           }
         }
       } // namespace Light
-    }   // namespace System
-  }     // namespace Core
+    } // namespace System
+  } // namespace Core
 } // namespace Low

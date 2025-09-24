@@ -70,6 +70,9 @@ namespace Low {
       render_editor(Util::String p_Label, Util::Handle p_Handle,
                     Util::RTTI::PropertyInfoBase p_PropertyInfoBase,
                     bool p_RenderLabel = true);
+
+      bool render_line(Util::String p_Label,
+                       const Util::Function<bool()> &p_DrawEditor);
     } // namespace PropertyEditors
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

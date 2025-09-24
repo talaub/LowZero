@@ -29,6 +29,7 @@ namespace Low {
       const uint16_t NavmeshAgent::TYPE_ID = 35;
       uint32_t NavmeshAgent::ms_Capacity = 0u;
       uint32_t NavmeshAgent::ms_PageSize = 0u;
+      Low::Util::SharedMutex NavmeshAgent::ms_LivingMutex;
       Low::Util::SharedMutex NavmeshAgent::ms_PagesMutex;
       Low::Util::UniqueLock<Low::Util::SharedMutex>
           NavmeshAgent::ms_PagesLock(NavmeshAgent::ms_PagesMutex,
@@ -98,7 +99,11 @@ namespace Low {
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
-        ms_LivingInstances.push_back(l_Handle);
+        {
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
+          ms_LivingInstances.push_back(l_Handle);
+        }
 
         if (p_UniqueId > 0ull) {
           l_Handle.set_unique_id(p_UniqueId);
@@ -144,6 +149,8 @@ namespace Low {
         l_Page->slots[l_SlotIndex].m_Generation++;
 
         ms_PagesLock.lock();
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -153,6 +160,7 @@ namespace Low {
           }
         }
         ms_PagesLock.unlock();
+        l_LivingLock.unlock();
       }
 
       void NavmeshAgent::initialize()

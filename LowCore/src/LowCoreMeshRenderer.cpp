@@ -13,7 +13,7 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -26,6 +26,7 @@ namespace Low {
       const uint16_t MeshRenderer::TYPE_ID = 26;
       uint32_t MeshRenderer::ms_Capacity = 0u;
       uint32_t MeshRenderer::ms_PageSize = 0u;
+      Low::Util::SharedMutex MeshRenderer::ms_LivingMutex;
       Low::Util::SharedMutex MeshRenderer::ms_PagesMutex;
       Low::Util::UniqueLock<Low::Util::SharedMutex>
           MeshRenderer::ms_PagesLock(MeshRenderer::ms_PagesMutex,
@@ -80,19 +81,29 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_HandleLock(l_Handle);
 
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer, mesh,
-                                   Low::Core::MeshAsset))
-            Low::Core::MeshAsset();
+                                   Low::Renderer::Mesh))
+            Low::Renderer::Mesh();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer, material,
-                                   Low::Core::Material))
-            Low::Core::Material();
+                                   Low::Renderer::Material))
+            Low::Renderer::Material();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer,
+                                   render_object,
+                                   Low::Renderer::RenderObject))
+            Low::Renderer::RenderObject();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshRenderer, entity,
                                    Low::Core::Entity))
             Low::Core::Entity();
+        ACCESSOR_TYPE_SOA(l_Handle, MeshRenderer, dirty, bool) =
+            false;
 
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
-        ms_LivingInstances.push_back(l_Handle);
+        {
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
+          ms_LivingInstances.push_back(l_Handle);
+        }
 
         if (p_UniqueId > 0ull) {
           l_Handle.set_unique_id(p_UniqueId);
@@ -117,14 +128,9 @@ namespace Low {
         {
           Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
-          if (get_material().is_alive() &&
-              get_material().is_loaded()) {
-            get_material().unload();
-          }
-
-          if (get_mesh().is_alive() && get_mesh().is_loaded()) {
-            get_mesh().unload();
+          LOCK_HANDLE(get_render_object());
+          if (get_render_object().is_alive()) {
+            get_render_object().destroy();
           }
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -145,6 +151,8 @@ namespace Low {
         l_Page->slots[l_SlotIndex].m_Generation++;
 
         ms_PagesLock.lock();
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -154,6 +162,7 @@ namespace Low {
           }
         }
         ms_PagesLock.unlock();
+        l_LivingLock.unlock();
       }
 
       void MeshRenderer::initialize()
@@ -210,7 +219,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(MeshRenderer::Data, mesh);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::MeshAsset::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
@@ -218,19 +227,19 @@ namespace Low {
                 l_Handle);
             l_Handle.get_mesh();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, MeshRenderer, mesh, Low::Core::MeshAsset);
+                p_Handle, MeshRenderer, mesh, Low::Renderer::Mesh);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             MeshRenderer l_Handle = p_Handle.get_id();
-            l_Handle.set_mesh(*(Low::Core::MeshAsset *)p_Data);
+            l_Handle.set_mesh(*(Low::Renderer::Mesh *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             MeshRenderer l_Handle = p_Handle.get_id();
             Low::Util::HandleLock<MeshRenderer> l_HandleLock(
                 l_Handle);
-            *((Low::Core::MeshAsset *)p_Data) = l_Handle.get_mesh();
+            *((Low::Renderer::Mesh *)p_Data) = l_Handle.get_mesh();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: mesh
@@ -243,32 +252,70 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(MeshRenderer::Data, material);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Material::TYPE_ID;
+          l_PropertyInfo.handleType =
+              Low::Renderer::Material::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
             Low::Util::HandleLock<MeshRenderer> l_HandleLock(
                 l_Handle);
             l_Handle.get_material();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer,
-                                              material,
-                                              Low::Core::Material);
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, MeshRenderer, material,
+                Low::Renderer::Material);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
             MeshRenderer l_Handle = p_Handle.get_id();
-            l_Handle.set_material(*(Low::Core::Material *)p_Data);
+            l_Handle.set_material(*(Low::Renderer::Material *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
             MeshRenderer l_Handle = p_Handle.get_id();
             Low::Util::HandleLock<MeshRenderer> l_HandleLock(
                 l_Handle);
-            *((Low::Core::Material *)p_Data) =
+            *((Low::Renderer::Material *)p_Data) =
                 l_Handle.get_material();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: material
+        }
+        {
+          // Property: render_object
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(render_object);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(MeshRenderer::Data, render_object);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Renderer::RenderObject::TYPE_ID;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
+            l_Handle.get_render_object();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, MeshRenderer, render_object,
+                Low::Renderer::RenderObject);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            MeshRenderer l_Handle = p_Handle.get_id();
+            l_Handle.set_render_object(
+                *(Low::Renderer::RenderObject *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
+            *((Low::Renderer::RenderObject *)p_Data) =
+                l_Handle.get_render_object();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: render_object
         }
         {
           // Property: entity
@@ -334,6 +381,39 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: unique_id
+        }
+        {
+          // Property: dirty
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(dirty);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(MeshRenderer::Data, dirty);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
+            l_Handle.is_dirty();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, MeshRenderer,
+                                              dirty, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            MeshRenderer l_Handle = p_Handle.get_id();
+            l_Handle.set_dirty(*(bool *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            MeshRenderer l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<MeshRenderer> l_HandleLock(
+                l_Handle);
+            *((bool *)p_Data) = l_Handle.is_dirty();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: dirty
         }
         Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
       }
@@ -438,6 +518,10 @@ namespace Low {
         if (get_material().is_alive()) {
           l_Handle.set_material(get_material());
         }
+        if (get_render_object().is_alive()) {
+          l_Handle.set_render_object(get_render_object());
+        }
+        l_Handle.set_dirty(is_dirty());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -470,12 +554,13 @@ namespace Low {
             Low::Util::hash_to_string(get_unique_id()).c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
         if (get_mesh().is_alive()) {
-          p_Node["mesh"] = get_mesh().get_unique_id();
+          LOW_SERIALIZATION_SET_HASH(p_Node["mesh"],
+                                     get_mesh().get_unique_id());
         }
         if (get_material().is_alive()) {
-          p_Node["material"] = get_material().get_unique_id();
+          LOW_SERIALIZATION_SET_HASH(p_Node["material"],
+                                     get_material().get_unique_id());
         }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
@@ -511,16 +596,16 @@ namespace Low {
 
         l_Handle.set_mesh(0);
         if (p_Node["mesh"]) {
-          l_Handle.set_mesh(Util::find_handle_by_unique_id(
-                                p_Node["mesh"].as<uint64_t>())
-                                .get_id());
+          l_Handle.set_mesh(
+              Renderer::ResourceManager::find_asset<Renderer::Mesh>(
+                  LOW_SERIALIZATION_GET_HASH(p_Node["mesh"])));
         }
 
         l_Handle.set_material(0);
         if (p_Node["material"]) {
-          l_Handle.set_material(Util::find_handle_by_unique_id(
-                                    p_Node["material"].as<uint64_t>())
-                                    .get_id());
+          l_Handle.set_material(Renderer::ResourceManager::find_asset<
+                                Renderer::Material>(
+              LOW_SERIALIZATION_GET_HASH(p_Node["material"])));
         }
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
@@ -575,7 +660,7 @@ namespace Low {
         l_MeshRenderer.notify(p_Observed, p_Observable);
       }
 
-      Low::Core::MeshAsset MeshRenderer::get_mesh() const
+      Low::Renderer::Mesh MeshRenderer::get_mesh() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
@@ -584,49 +669,46 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
-        return TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset);
+        return TYPE_SOA(MeshRenderer, mesh, Low::Renderer::Mesh);
       }
-      void MeshRenderer::set_mesh(Low::Core::MeshAsset p_Value)
+      void MeshRenderer::set_mesh(Low::Renderer::Mesh p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
-
-        if (get_mesh().is_alive() && get_mesh().is_loaded()) {
-          get_mesh().unload();
-        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
-        // Set new value
-        TYPE_SOA(MeshRenderer, mesh, Low::Core::MeshAsset) = p_Value;
-        {
-          Low::Core::Entity l_Entity = get_entity();
-          if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
-            Low::Core::Component::PrefabInstance l_Instance =
-                l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
-            Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
-            if (l_Prefab.is_alive()) {
-              l_Instance.override(
-                  TYPE_ID, N(mesh),
-                  !l_Prefab.compare_property(*this, N(mesh)));
+        if (get_mesh() != p_Value) {
+          // Set dirty flags
+          mark_dirty();
+
+          // Set new value
+          TYPE_SOA(MeshRenderer, mesh, Low::Renderer::Mesh) = p_Value;
+          {
+            Low::Core::Entity l_Entity = get_entity();
+            if (l_Entity.has_component(
+                    Low::Core::Component::PrefabInstance::TYPE_ID)) {
+              Low::Core::Component::PrefabInstance l_Instance =
+                  l_Entity.get_component(
+                      Low::Core::Component::PrefabInstance::TYPE_ID);
+              Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
+              if (l_Prefab.is_alive()) {
+                l_Instance.override(
+                    TYPE_ID, N(mesh),
+                    !l_Prefab.compare_property(*this, N(mesh)));
+              }
             }
           }
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+          // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
+
+          broadcast_observable(N(mesh));
         }
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
-
-        if (p_Value.is_alive()) {
-          p_Value.load();
-        }
-        // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
-
-        broadcast_observable(N(mesh));
       }
 
-      Low::Core::Material MeshRenderer::get_material() const
+      Low::Renderer::Material MeshRenderer::get_material() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
@@ -635,22 +717,19 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
-        return TYPE_SOA(MeshRenderer, material, Low::Core::Material);
+        return TYPE_SOA(MeshRenderer, material,
+                        Low::Renderer::Material);
       }
-      void MeshRenderer::set_material(Low::Core::Material p_Value)
+      void MeshRenderer::set_material(Low::Renderer::Material p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
-
-        if (get_material().is_alive() && get_material().is_loaded()) {
-          get_material().unload();
-        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
         // Set new value
-        TYPE_SOA(MeshRenderer, material, Low::Core::Material) =
+        TYPE_SOA(MeshRenderer, material, Low::Renderer::Material) =
             p_Value;
         {
           Low::Core::Entity l_Entity = get_entity();
@@ -669,13 +748,40 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
-
-        if (p_Value.is_alive()) {
-          p_Value.load();
-        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_material
 
         broadcast_observable(N(material));
+      }
+
+      Low::Renderer::RenderObject
+      MeshRenderer::get_render_object() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+        // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
+
+        return TYPE_SOA(MeshRenderer, render_object,
+                        Low::Renderer::RenderObject);
+      }
+      void MeshRenderer::set_render_object(
+          Low::Renderer::RenderObject p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
+
+        // Set new value
+        TYPE_SOA(MeshRenderer, render_object,
+                 Low::Renderer::RenderObject) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+        // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
+
+        broadcast_observable(N(render_object));
       }
 
       Low::Core::Entity MeshRenderer::get_entity() const
@@ -737,6 +843,47 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
         broadcast_observable(N(unique_id));
+      }
+
+      bool MeshRenderer::is_dirty() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+        // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
+
+        return TYPE_SOA(MeshRenderer, dirty, bool);
+      }
+      void MeshRenderer::toggle_dirty()
+      {
+        set_dirty(!is_dirty());
+      }
+
+      void MeshRenderer::set_dirty(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+
+        // Set new value
+        TYPE_SOA(MeshRenderer, dirty, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+        // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+        broadcast_observable(N(dirty));
+      }
+
+      void MeshRenderer::mark_dirty()
+      {
+        if (!is_dirty()) {
+          TYPE_SOA(MeshRenderer, dirty, bool) = true;
+          // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+          // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+        }
       }
 
       uint32_t MeshRenderer::create_instance(

@@ -3,6 +3,8 @@
 #include "imgui.h"
 #include "IconsLucide.h"
 
+#include "LowUtilGlobals.h"
+
 namespace Low {
   namespace Editor {
     void DetailsWidget::render(float p_Delta)
@@ -11,13 +13,18 @@ namespace Low {
 
       ImGui::Begin(ICON_LC_PENCIL_RULER " Details");
 
+      static Util::Name l_GlobalName = N(LOW_EDITOR_DETAILS_SPLITTER);
+      Util::Globals::set(l_GlobalName, m_Splitter);
+
+      // 2) Draw all sections (they won’t be pushed down anymore)
       for (auto it = m_Sections.begin(); it != m_Sections.end();
            ++it) {
-        if (m_BreakRunning) {
+        if (m_BreakRunning)
           break;
-        }
         it->render(p_Delta);
       }
+
+      m_Splitter = Util::Globals::get(l_GlobalName);
 
       ImGui::End();
     }

@@ -32,6 +32,7 @@ namespace Low {
       };
 
     public:
+      static Low::Util::SharedMutex ms_LivingMutex;
       static Low::Util::UniqueLock<Low::Util::SharedMutex>
           ms_PagesLock;
       static Low::Util::SharedMutex ms_PagesMutex;
@@ -62,10 +63,14 @@ namespace Low {
 
       static uint32_t living_count()
       {
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
       static MaterialResource *living_instances()
       {
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         return ms_LivingInstances.data();
       }
 
@@ -127,6 +132,7 @@ namespace Low {
       void set_name(Low::Util::Name p_Value);
 
       static MaterialResource make(Util::String &p_Path);
+      static MaterialResource find_by_path(Util::String &p_Path);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

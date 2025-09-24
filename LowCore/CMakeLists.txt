@@ -23,7 +23,7 @@ source_group("Cflat Header Files" FILES ${CFLAT_INCLUDES})
 add_dependencies(LowCore
   LowUtil
   LowMath
-  LowRenderer
+  LowRenderer2
   physx
   Recast
   RecastDemo
@@ -61,7 +61,7 @@ target_link_libraries(LowCore PRIVATE
   freetype
   LowUtil
   LowMath
-  LowRenderer
+  LowRenderer2
   physx
   Recast
   RecastDemo

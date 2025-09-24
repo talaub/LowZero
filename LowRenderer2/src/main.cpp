@@ -14,8 +14,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "LowRendererCompatibility.h"
-
 #include "LowRenderer.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderView.h"
@@ -70,15 +68,6 @@ Low::Math::Vector3 g_Scale(1.0f);
 
 Low::Renderer::PointLight g_PointLight;
 
-namespace Low {
-  namespace Util {
-    Window &Window::get_main_window()
-    {
-      return g_MainWindow;
-    }
-  } // namespace Util
-} // namespace Low
-  //
 Low::Math::UVector2 g_Dimensions{1700, 900};
 
 uint64_t frames = 0;
@@ -411,7 +400,7 @@ void init()
       Texture l_Texture = Texture::make(N(TestTexture));
       l_Texture.set_resource(TextureResource::make(l_TexturePath));
 
-      //g_UiRenderObject.set_texture(l_Texture);
+      // g_UiRenderObject.set_texture(l_Texture);
 
       g_Font = Font::living_instances()[0];
 

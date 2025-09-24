@@ -20,7 +20,14 @@ set(FT_DISABLE_PNG     ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_HARFBUZZ ON CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS  OFF CACHE BOOL "" FORCE)
 add_subdirectory(freetype)
+
+set(SDL_SHARED ON CACHE BOOL "" FORCE)
+set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+
+# (Some SDL2 setups also honor CMake's generic switch)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 add_subdirectory(SDL)
+
 set(VK_BOOTSTRAP_TEST OFF)
 set(VK_BOOTSTRAP_INSTALL OFF)
 add_subdirectory(vk-bootstrap)

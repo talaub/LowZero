@@ -16,12 +16,21 @@ namespace Low {
         WatchHandle watchHandle;
         String name;
         String path;
+        String trimmedPath;
         bool update;
         float currentUpdateTimer;
         float updateTimer;
         uint64_t modifiedTimestamp;
         Util::Function<Handle(FileWatcher &)> handleCallback;
         Util::Handle handle;
+        bool hidden;
+        String nameClean;
+        String subtype;
+        String extension;
+        u64 subtypeHash;
+        String nameCleanPrettified;
+        u32 typeEnum;
+        u64 assetId;
       };
 
       struct DirectoryWatcher
@@ -29,6 +38,8 @@ namespace Low {
         WatchHandle watchHandle;
         String name;
         String path;
+        String trimmedPath;
+        String cleanedPath;
         List<WatchHandle> files;
         List<WatchHandle> subdirectories;
         bool update;
@@ -36,7 +47,9 @@ namespace Low {
         float currentUpdateTimer;
         float updateTimer;
         WatchHandle parentWatchHandle;
+        bool hidden;
         Util::Function<Handle(FileWatcher &)> handleCallback;
+        u32 trimAmount;
       };
 
       void tick(float p_Delta);
@@ -44,12 +57,12 @@ namespace Low {
       WatchHandle LOW_EXPORT watch_directory(
           String p_Path,
           Util::Function<Handle(FileWatcher &)> p_HandleCallback,
-          float p_UpdateTimer = 3.0f);
+          float p_UpdateTimer = 3.0f, const u32 p_TrimCount = 0);
 
       WatchHandle LOW_EXPORT watch_file(
           String p_Path,
           Util::Function<Handle(FileWatcher &)> p_HandleCallback,
-          float p_UpdateTimer = 3.0f);
+          float p_UpdateTimer = 3.0f, const u32 p_TrimCount = 0);
 
       DirectoryWatcher LOW_EXPORT &
       get_directory_watcher(WatchHandle p_WatchHandle);
@@ -63,5 +76,5 @@ namespace Low {
           const char *p_DirectoryPath, const char *p_Suffix,
           List<String> &p_OutFiles);
     } // namespace FileSystem
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

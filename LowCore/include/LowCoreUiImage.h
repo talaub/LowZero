@@ -9,8 +9,8 @@
 
 #include "LowCoreUiElement.h"
 
-#include "LowCoreTexture2D.h"
-#include "LowRenderer.h"
+#include "LowRendererTexture.h"
+#include "LowRendererMaterial.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
@@ -30,8 +30,8 @@ namespace Low {
           struct Data
           {
           public:
-            Low::Core::Texture2D texture;
-            Renderer::Material renderer_material;
+            Low::Renderer::Texture texture;
+            Low::Renderer::Material material;
             Low::Core::UI::Element element;
             Low::Util::UniqueId unique_id;
 
@@ -42,6 +42,7 @@ namespace Low {
           };
 
         public:
+          static Low::Util::SharedMutex ms_LivingMutex;
           static Low::Util::UniqueLock<Low::Util::SharedMutex>
               ms_PagesLock;
           static Low::Util::SharedMutex ms_PagesMutex;
@@ -72,10 +73,14 @@ namespace Low {
 
           static uint32_t living_count()
           {
+            Low::Util::SharedLock<Low::Util::SharedMutex>
+                l_LivingLock(ms_LivingMutex);
             return static_cast<uint32_t>(ms_LivingInstances.size());
           }
           static Image *living_instances()
           {
+            Low::Util::SharedLock<Low::Util::SharedMutex>
+                l_LivingLock(ms_LivingMutex);
             return ms_LivingInstances.data();
           }
 
@@ -130,10 +135,10 @@ namespace Low {
             l_Image.destroy();
           }
 
-          Low::Core::Texture2D get_texture() const;
-          void set_texture(Low::Core::Texture2D p_Value);
+          Low::Renderer::Texture get_texture() const;
+          void set_texture(Low::Renderer::Texture p_Value);
 
-          Renderer::Material get_renderer_material() const;
+          Low::Renderer::Material get_material() const;
 
           Low::Core::UI::Element get_element() const;
           void set_element(Low::Core::UI::Element p_Value);
@@ -151,7 +156,7 @@ namespace Low {
               u32 &p_PageIndex, u32 &p_SlotIndex,
               Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
           static u32 create_page();
-          void set_renderer_material(Renderer::Material p_Value);
+          void set_material(Low::Renderer::Material p_Value);
           void set_unique_id(Low::Util::UniqueId p_Value);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

@@ -13,8 +13,7 @@
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
-
-#include "LowRendererImGuiHelper.h"
+#include "LowEditorFonts.h"
 
 #include "IconsFontAwesome5.h"
 #include "IconsCodicons.h"
@@ -1267,7 +1266,7 @@ namespace Flode {
       if (l_HasSubtitle) {
         ImGui::Dummy(ImVec2(0, 15));
         ImGui::PushFont(
-            Low::Renderer::ImGuiHelper::fonts().lucide_700);
+            Low::Editor::Fonts::UI());
       } else {
         ImGui::Dummy(ImVec2(0, 4));
       }
@@ -1287,7 +1286,7 @@ namespace Flode {
     ImGui::Dummy(ImVec2(0, 8));
     ImGui::TextUnformatted(get_name(NodeNameType::Full).c_str());
     if (!l_Subtitle.empty()) {
-      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_350);
+      ImGui::PushFont(Low::Editor::Fonts::UI());
       ImGui::Text(l_Subtitle.c_str());
       ImGui::PopFont();
       ImGui::Dummy(ImVec2(0, 1));
@@ -1510,11 +1509,11 @@ namespace Flode {
 
     ImGui::Spring(0);
     if (pins.size() == 1) {
-      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_500);
+      ImGui::PushFont(Low::Editor::Fonts::UI());
       ImGui::PushStyleColor(ImGuiCol_Text,
                             ImVec4(0.9f, 0.9f, 0.9f, 1.0f));
     } else {
-      ImGui::PushFont(Low::Renderer::ImGuiHelper::fonts().common_800);
+      ImGui::PushFont(Low::Editor::Fonts::UI());
       ImGui::PushStyleColor(ImGuiCol_Text,
                             ImVec4(0.9f, 0.9f, 0.9f, 0.5f));
     }

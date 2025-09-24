@@ -13,6 +13,8 @@
 #include "IconsLucide.h"
 #include <string.h>
 
+#include "LowUtilGlobals.h"
+
 #include <algorithm>
 #include <vcruntime_string.h>
 
@@ -29,33 +31,6 @@ namespace Low {
       Util::Map<uint16_t, Util::FileSystem::WatchHandle>
           g_SelectedDirectoryPerType;
 
-      static void render_label(Util::String &p_Label)
-      {
-        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
-        float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_LabelWidth = l_FullWidth * LOW_EDITOR_LABEL_WIDTH_REL;
-        float l_LabelHeight = 20.0f;
-
-        Util::String l_DisplayLabel = p_Label;
-        DISPLAY_LABEL(l_DisplayLabel);
-        ImGui::RenderTextEllipsis(
-            ImGui::GetWindowDrawList(), l_Pos,
-            l_Pos + ImVec2(l_LabelWidth, l_LabelHeight),
-            l_Pos.x + l_LabelWidth - LOW_EDITOR_SPACING,
-            l_Pos.x + l_LabelWidth, l_DisplayLabel.c_str(),
-            l_DisplayLabel.c_str() + l_DisplayLabel.size(), nullptr);
-        ImGui::SetCursorScreenPos(l_Pos);
-        Util::String l_InvisLabel = "##";
-        l_InvisLabel += "INVIS" + p_Label;
-        ImGui::InvisibleButton(l_InvisLabel.c_str(),
-                               ImVec2(l_LabelWidth, l_LabelHeight));
-        if (ImGui::IsItemHovered()) {
-          ImGui::SetTooltip(l_DisplayLabel.c_str());
-        }
-        ImGui::SetCursorScreenPos(
-            {l_Pos.x + l_LabelWidth + LOW_EDITOR_SPACING, l_Pos.y});
-      }
-
       bool render_enum_selector(u16 p_EnumId, u8 *p_Value,
                                 Util::String p_Label,
                                 bool p_RenderLabel)
@@ -69,82 +44,83 @@ namespace Low {
                                 bool p_RenderLabel,
                                 Util::List<u8> p_FilterList)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Label, &p_EnumId, p_Value,
+                                     &p_FilterList]() {
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
+          Util::RTTI::EnumInfo &l_EnumInfo =
+              Util::get_enum_info(p_EnumId);
 
-        Util::RTTI::EnumInfo &l_EnumInfo =
-            Util::get_enum_info(p_EnumId);
+          Util::List<Util::RTTI::EnumEntryInfo> l_FilteredEntries;
 
-        Util::List<Util::RTTI::EnumEntryInfo> l_FilteredEntries;
-
-        for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
-          bool i_Filtered = false;
-          for (u32 j = 0; j < p_FilterList.size(); ++j) {
-            if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
-              i_Filtered = true;
-              break;
-            }
-          }
-
-          if (!i_Filtered) {
-            l_FilteredEntries.push_back(l_EnumInfo.entries[i]);
-          }
-        }
-
-        u8 l_CurrentValue = *p_Value;
-
-        bool l_Result = false;
-
-        if (ImGui::BeginCombo(
-                l_Label.c_str(),
-                l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
-          for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
-            bool i_Disabled = false;
+          for (u32 i = 0; i < l_EnumInfo.entries.size(); ++i) {
+            bool i_Filtered = false;
             for (u32 j = 0; j < p_FilterList.size(); ++j) {
               if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
-                i_Disabled = true;
+                i_Filtered = true;
                 break;
               }
             }
 
-            if (i_Disabled) {
-              ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
-                                  ImGui::GetStyle().Alpha * 0.5f);
-              ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-            }
-
-            if (ImGui::Selectable(l_EnumInfo.entries[i].name.c_str(),
-                                  l_CurrentValue ==
-                                      l_EnumInfo.entries[i].value)) {
-              if (!i_Disabled) // Only allow selection if the item is
-                               // not disabled
-              {
-                l_CurrentValue = l_EnumInfo.entries[i].value;
-                l_Result = true;
-              }
-            }
-
-            if (i_Disabled) {
-              ImGui::PopItemFlag();
-              ImGui::PopStyleVar();
-            }
-
-            // Set the initial focus when opening the combo (scrolling
-            // + keyboard navigation focus)
-            if (l_CurrentValue == l_EnumInfo.entries[i].value) {
-              ImGui::SetItemDefaultFocus();
+            if (!i_Filtered) {
+              l_FilteredEntries.push_back(l_EnumInfo.entries[i]);
             }
           }
-          ImGui::EndCombo();
-        }
 
-        *p_Value = l_CurrentValue;
+          u8 l_CurrentValue = *p_Value;
 
-        return l_Result;
+          bool l_Result = false;
+
+          if (ImGui::BeginCombo(
+                  l_Label.c_str(),
+                  l_EnumInfo.entry_name(l_CurrentValue).c_str())) {
+            for (int i = 0; i < l_EnumInfo.entries.size(); i++) {
+              bool i_Disabled = false;
+              for (u32 j = 0; j < p_FilterList.size(); ++j) {
+                if (l_EnumInfo.entries[i].value == p_FilterList[j]) {
+                  i_Disabled = true;
+                  break;
+                }
+              }
+
+              if (i_Disabled) {
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha,
+                                    ImGui::GetStyle().Alpha * 0.5f);
+                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+              }
+
+              if (ImGui::Selectable(
+                      l_EnumInfo.entries[i].name.c_str(),
+                      l_CurrentValue ==
+                          l_EnumInfo.entries[i].value)) {
+                if (!i_Disabled) // Only allow selection if the item
+                                 // is not disabled
+                {
+                  l_CurrentValue = l_EnumInfo.entries[i].value;
+                  l_Result = true;
+                }
+              }
+
+              if (i_Disabled) {
+                ImGui::PopItemFlag();
+                ImGui::PopStyleVar();
+              }
+
+              // Set the initial focus when opening the combo
+              // (scrolling
+              // + keyboard navigation focus)
+              if (l_CurrentValue == l_EnumInfo.entries[i].value) {
+                ImGui::SetItemDefaultFocus();
+              }
+            }
+            ImGui::EndCombo();
+          }
+
+          *p_Value = l_CurrentValue;
+
+          return l_Result;
+        });
       }
 
       bool render_enum_selector(PropertyMetadata &p_Metadata,
@@ -165,59 +141,58 @@ namespace Low {
       bool render_name_editor(Util::String &p_Label,
                               Util::Name &p_Name, bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Name, &p_Label]() {
+          char l_Buffer[255];
+          uint32_t l_NameLength = strlen(p_Name.c_str());
+          memcpy(l_Buffer, p_Name.c_str(), l_NameLength);
+          l_Buffer[l_NameLength] = '\0';
 
-        char l_Buffer[255];
-        uint32_t l_NameLength = strlen(p_Name.c_str());
-        memcpy(l_Buffer, p_Name.c_str(), l_NameLength);
-        l_Buffer[l_NameLength] = '\0';
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
-
-        if (Gui::InputText(l_Label.c_str(), l_Buffer, 255,
-                           ImGuiInputTextFlags_EnterReturnsTrue)) {
-          p_Name.m_Index = LOW_NAME(l_Buffer).m_Index;
-          return true;
-        }
-        return false;
+          if (Gui::InputText(l_Label.c_str(), l_Buffer, 255,
+                             ImGuiInputTextFlags_EnterReturnsTrue)) {
+            p_Name.m_Index = LOW_NAME(l_Buffer).m_Index;
+            return true;
+          }
+          return false;
+        });
       }
 
       bool render_string_editor(Util::String &p_Label,
                                 Util::String &p_String,
                                 bool p_Multiline, bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
 
-        char l_Buffer[1024];
-        uint32_t l_NameLength = strlen(p_String.c_str());
-        memcpy(l_Buffer, p_String.c_str(), l_NameLength);
-        l_Buffer[l_NameLength] = '\0';
+        return render_line(p_Label, [&p_String, &p_Label,
+                                     p_Multiline]() {
+          char l_Buffer[1024];
+          uint32_t l_NameLength = strlen(p_String.c_str());
+          memcpy(l_Buffer, p_String.c_str(), l_NameLength);
+          l_Buffer[l_NameLength] = '\0';
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        if (p_Multiline) {
-          if (ImGui::InputTextMultiline(
-                  l_Label.c_str(), l_Buffer, 1024,
-                  ImVec2(-FLT_MIN, 90),
-                  ImGuiInputTextFlags_EnterReturnsTrue |
-                      ImGuiInputTextFlags_CtrlEnterForNewLine)) {
-            p_String = l_Buffer;
-            return true;
+          if (p_Multiline) {
+            if (ImGui::InputTextMultiline(
+                    l_Label.c_str(), l_Buffer, 1024,
+                    ImVec2(-FLT_MIN, 90),
+                    ImGuiInputTextFlags_EnterReturnsTrue |
+                        ImGuiInputTextFlags_CtrlEnterForNewLine)) {
+              p_String = l_Buffer;
+              return true;
+            }
+          } else {
+            if (Gui::InputText(
+                    l_Label.c_str(), l_Buffer, 1024,
+                    ImGuiInputTextFlags_EnterReturnsTrue)) {
+              p_String = l_Buffer;
+              return true;
+            }
           }
-        } else {
-          if (Gui::InputText(l_Label.c_str(), l_Buffer, 1024,
-                             ImGuiInputTextFlags_EnterReturnsTrue)) {
-            p_String = l_Buffer;
-            return true;
-          }
-        }
-        return false;
+          return false;
+        });
       }
 
       void render_string_editor(PropertyMetadata &p_PropertyMetadata,
@@ -234,110 +209,88 @@ namespace Low {
                                     Math::Quaternion &p_Quaternion,
                                     bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Quaternion]() {
+          Math::Vector3 l_Vector =
+              Math::VectorUtil::to_euler(p_Quaternion);
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
+          if (Gui::Vector3Edit(l_Vector)) {
+            p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
+            return true;
+          }
 
-        Math::Vector3 l_Vector =
-            Math::VectorUtil::to_euler(p_Quaternion);
-
-        if (Gui::Vector3Edit(l_Vector)) {
-          p_Quaternion = Math::VectorUtil::from_euler(l_Vector);
-          return true;
-        }
-
-        return false;
+          return false;
+        });
       }
 
       bool render_vector3_editor(Util::String p_Label,
                                  Math::Vector3 &p_Vector,
                                  bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Vector]() {
+          Math::Vector3 l_Vector = p_Vector;
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
+          if (Gui::Vector3Edit(l_Vector)) {
+            p_Vector = l_Vector;
+            return true;
+          }
 
-        Math::Vector3 l_Vector = p_Vector;
-
-        if (Gui::Vector3Edit(l_Vector)) {
-          p_Vector = l_Vector;
-          return true;
-        }
-
-        /*
-              if (ImGui::DragFloat3(l_Label.c_str(), (float
-           *)&l_Vector, 0.2f)) { p_Vector = l_Vector; return true;
-              }
-        */
-        return false;
+          return false;
+        });
       }
 
       bool render_vector2_editor(Util::String &p_Label,
                                  Math::Vector2 &p_Vector,
                                  bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Label, &p_Vector]() {
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
-
-        return ImGui::DragFloat2(l_Label.c_str(), (float *)&p_Vector);
+          return ImGui::DragFloat2(l_Label.c_str(),
+                                   (float *)&p_Vector);
+        });
       }
 
       bool render_checkbox_bool_editor(Util::String &p_Label,
                                        bool &p_Bool,
                                        bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Label, &p_Bool]() {
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
-
-        return Base::BoolEdit(l_Label.c_str(), &p_Bool);
+          return Base::BoolEdit(l_Label.c_str(), &p_Bool);
+        });
       }
 
       bool render_float_editor(Util::String &p_Label, float &p_Float,
                                bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Label, &p_Float]() {
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
-
-        // ImGui::DragFloat(l_Label.c_str(), &p_Float);
-        return Gui::DragFloatWithButtons(l_Label.c_str(), &p_Float);
+          // ImGui::DragFloat(l_Label.c_str(), &p_Float);
+          return Gui::DragFloatWithButtons(l_Label.c_str(), &p_Float);
+        });
       }
 
       bool render_uint32_editor(Util::String &p_Label, u32 &p_Value,
                                 bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Label, &p_Value]() {
+          int l_LocalValue = p_Value;
 
-        int l_LocalValue = p_Value;
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
-
-        if (Gui::DragIntWithButtons(l_Label.c_str(), &l_LocalValue, 1,
-                                    0, 50000)) {
-          p_Value = l_LocalValue;
-          return true;
-        }
-        return false;
+          if (Gui::DragIntWithButtons(l_Label.c_str(), &l_LocalValue,
+                                      1, 0, 50000)) {
+            p_Value = l_LocalValue;
+            return true;
+          }
+          return false;
+        });
       }
 
       // bool render_enum_selector(Util::String p_Label, )
@@ -354,125 +307,130 @@ namespace Low {
                                   Util::RTTI::TypeInfo &p_TypeInfo,
                                   uint64_t *p_HandleId)
       {
-        ImGui::BeginGroup();
-        render_label(p_Label);
+        return render_line(p_Label, [&p_Label, &p_TypeInfo,
+                                     p_HandleId]() {
+          ImGui::BeginGroup();
 
-        ImVec2 l_Pos = ImGui::GetCursorScreenPos();
-        float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_ButtonWidth = HANDLE_SELECTOR_BUTTON_WIDTH;
-        float l_NameWidth =
-            l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
+          ImVec2 l_Pos = ImGui::GetCursorScreenPos();
+          float l_FullWidth = ImGui::GetContentRegionAvail().x;
+          float l_ButtonWidth = HANDLE_SELECTOR_BUTTON_WIDTH;
+          float l_NameWidth =
+              l_FullWidth - l_ButtonWidth - LOW_EDITOR_SPACING;
 
-        bool l_Changed = false;
+          bool l_Changed = false;
 
-        Util::Handle l_CurrentHandle = *p_HandleId;
+          Util::Handle l_CurrentHandle = *p_HandleId;
 
-        Util::String l_PopupName =
-            Util::String("_choose_element_") + p_Label;
+          Util::String l_PopupName =
+              Util::String("_choose_element_") + p_Label;
 
-        const char *l_DisplayName = "None";
+          const char *l_DisplayName = "None";
 
-        Util::RTTI::PropertyInfo l_NameProperty;
-        bool l_HasNameProperty = false;
+          Util::RTTI::PropertyInfo l_NameProperty;
+          bool l_HasNameProperty = false;
 
-        if (p_TypeInfo.properties.find(N(name)) !=
-            p_TypeInfo.properties.end()) {
+          if (p_TypeInfo.properties.find(N(name)) !=
+              p_TypeInfo.properties.end()) {
 
-          l_NameProperty = p_TypeInfo.properties[N(name)];
+            l_NameProperty = p_TypeInfo.properties[N(name)];
 
-          if (p_TypeInfo.is_alive(l_CurrentHandle)) {
-            Util::Name l_Name;
-            p_TypeInfo.properties[N(name)].get(l_CurrentHandle,
-                                               &l_Name);
-            l_DisplayName = l_Name.c_str();
-          }
-          l_HasNameProperty = true;
-        }
-        int l_NameLength = strlen(l_DisplayName);
-
-        ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-        ImVec2 widget_size = ImVec2(
-            l_NameWidth + 2.0f,
-            ImGui::GetFrameHeight()); // Customize width as needed
-
-        // Draw background with custom corner rounding
-        ImDrawList *draw_list = ImGui::GetWindowDrawList();
-        ImVec4 bg_color = color_to_imvec4(
-            theme_get_current().input); // Customize color here
-        draw_list->AddRectFilled(cursor_pos,
-                                 ImVec2(cursor_pos.x + widget_size.x,
-                                        cursor_pos.y + widget_size.y),
-                                 ImGui::GetColorU32(bg_color),
-                                 2.0f, // Rounding amount
-                                 ImDrawFlags_RoundCornersLeft
-                                 // corners
-        );
-
-        ImGui::SetCursorScreenPos(cursor_pos); // Reset cursor
-                                               // position
-        ImGui::RenderTextEllipsis(
-            ImGui::GetWindowDrawList(),
-            l_Pos + ImVec2(HANDLE_SELECTOR_NAME_OFFSET_X,
-                           HANDLE_SELECTOR_NAME_OFFSET_Y),
-            l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
-            l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING,
-            l_Pos.x + l_NameWidth, l_DisplayName,
-            l_DisplayName + l_NameLength, nullptr);
-
-        ImGui::SetCursorScreenPos(l_Pos + ImVec2(l_NameWidth, 0.0f));
-
-        if (ImGui::Button(ICON_LC_CIRCLE_DOT)) {
-          ImGui::OpenPopup(l_PopupName.c_str());
-        }
-
-        if (ImGui::BeginDragDropTarget()) {
-          if (const ImGuiPayload *l_Payload =
-                  ImGui::AcceptDragDropPayload("DG_HANDLE")) {
-            Util::Handle l_PayloadHandle =
-                *(uint64_t *)l_Payload->Data;
-
-            if (p_TypeInfo.is_alive(l_PayloadHandle)) {
-              l_Changed = true;
-              *p_HandleId = l_PayloadHandle.get_id();
+            if (p_TypeInfo.is_alive(l_CurrentHandle)) {
+              Util::Name l_Name;
+              p_TypeInfo.properties[N(name)].get(l_CurrentHandle,
+                                                 &l_Name);
+              l_DisplayName = l_Name.c_str();
             }
+            l_HasNameProperty = true;
           }
-          ImGui::EndDragDropTarget();
-        }
+          int l_NameLength = strlen(l_DisplayName);
 
-        if (ImGui::BeginPopup(l_PopupName.c_str())) {
+          ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+          ImVec2 widget_size = ImVec2(
+              l_NameWidth + 2.0f,
+              ImGui::GetFrameHeight()); // Customize width as needed
+
+          // Draw background with custom corner rounding
+          ImDrawList *draw_list = ImGui::GetWindowDrawList();
+          ImVec4 bg_color = color_to_imvec4(
+              theme_get_current().input); // Customize color here
+          draw_list->AddRectFilled(
+              cursor_pos,
+              ImVec2(cursor_pos.x + widget_size.x,
+                     cursor_pos.y + widget_size.y),
+              ImGui::GetColorU32(bg_color),
+              2.0f, // Rounding amount
+              ImDrawFlags_RoundCornersLeft
+              // corners
+          );
+
+          ImGui::SetCursorScreenPos(cursor_pos); // Reset cursor
+                                                 // position
+          ImGui::RenderTextEllipsis(
+              ImGui::GetWindowDrawList(),
+              l_Pos + ImVec2(HANDLE_SELECTOR_NAME_OFFSET_X,
+                             HANDLE_SELECTOR_NAME_OFFSET_Y),
+              l_Pos +
+                  ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
+              l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING,
+              l_DisplayName, l_DisplayName + l_NameLength, nullptr);
+
+          ImGui::SetCursorScreenPos(l_Pos +
+                                    ImVec2(l_NameWidth, 0.0f));
+
+          if (ImGui::Button(ICON_LC_CIRCLE_DOT)) {
+            ImGui::OpenPopup(l_PopupName.c_str());
+          }
+
+          if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload *l_Payload =
+                    ImGui::AcceptDragDropPayload("DG_HANDLE")) {
+              Util::Handle l_PayloadHandle =
+                  *(uint64_t *)l_Payload->Data;
+
+              if (p_TypeInfo.is_alive(l_PayloadHandle)) {
+                l_Changed = true;
+                *p_HandleId = l_PayloadHandle.get_id();
+              }
+            }
+            ImGui::EndDragDropTarget();
+          }
+
+          if (ImGui::BeginPopup(l_PopupName.c_str())) {
 #define SEARCH_BUFFER_SIZE 255
-          static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
-          Gui::SearchField("##search", l_SearchBuffer,
-                           SEARCH_BUFFER_SIZE, {0.0f, 3.0f});
+            static char l_SearchBuffer[SEARCH_BUFFER_SIZE] = {'\0'};
+            Gui::SearchField("##search", l_SearchBuffer,
+                             SEARCH_BUFFER_SIZE, {0.0f, 3.0f});
 
 #undef SEARCH_BUFFER_SIZE
 
-          Util::Handle *l_Handles = p_TypeInfo.get_living_instances();
+            Util::Handle *l_Handles =
+                p_TypeInfo.get_living_instances();
 
-          for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
-               ++i) {
-            char *i_DisplayName = "Object";
-            if (l_HasNameProperty) {
-              Util::Name i_Name;
-              l_NameProperty.get(l_Handles[i], &i_Name);
-              i_DisplayName = i_Name.c_str();
-            }
+            for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
+                 ++i) {
+              char *i_DisplayName = "Object";
+              if (l_HasNameProperty) {
+                Util::Name i_Name;
+                l_NameProperty.get(l_Handles[i], &i_Name);
+                i_DisplayName = i_Name.c_str();
+              }
 
-            if (strlen(l_SearchBuffer) > 0 &&
-                !strstr(i_DisplayName, l_SearchBuffer)) {
-              continue;
+              if (strlen(l_SearchBuffer) > 0 &&
+                  !strstr(i_DisplayName, l_SearchBuffer)) {
+                continue;
+              }
+              if (ImGui::Selectable(i_DisplayName)) {
+                l_SearchBuffer[0] = '\0';
+                *p_HandleId = l_Handles[i].get_id();
+                l_Changed = true;
+              }
             }
-            if (ImGui::Selectable(i_DisplayName)) {
-              l_SearchBuffer[0] = '\0';
-              *p_HandleId = l_Handles[i].get_id();
-              l_Changed = true;
-            }
+            ImGui::EndPopup();
           }
-          ImGui::EndPopup();
-        }
 
-        ImGui::EndGroup();
-        return l_Changed;
+          ImGui::EndGroup();
+          return l_Changed;
+        });
       }
 
       bool render_fs_handle_selector_directory_entry(
@@ -542,7 +500,6 @@ namespace Low {
         }
 
         ImGui::BeginGroup();
-        render_label(p_Label);
 
         ImVec2 l_Pos = ImGui::GetCursorScreenPos();
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
@@ -603,8 +560,7 @@ namespace Low {
             l_Pos + ImVec2(HANDLE_SELECTOR_NAME_OFFSET_X,
                            HANDLE_SELECTOR_NAME_OFFSET_Y),
             l_Pos + ImVec2(l_NameWidth, LOW_EDITOR_LABEL_HEIGHT_ABS),
-            l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING,
-            l_Pos.x + l_NameWidth, l_DisplayName,
+            l_Pos.x + l_NameWidth - LOW_EDITOR_SPACING, l_DisplayName,
             l_DisplayName + l_NameLength, nullptr);
 
         ImGui::SetCursorScreenPos(l_Pos + ImVec2(l_NameWidth, 0.0f));
@@ -766,112 +722,104 @@ namespace Low {
       bool render_color_selector(Util::String p_Label,
                                  Math::Color *p_Color)
       {
-        render_label(p_Label);
-
-        bool l_Edited = ImGui::ColorEdit4(
-            (Util::String("##") + p_Label).c_str(), (float *)p_Color,
-            ImGuiColorEditFlags_NoInputs |
-                ImGuiColorEditFlags_NoLabel);
-
-        return l_Edited;
-        /*
-              return ImGui::ColorPicker4((Util::String("##") +
-           p_Label).c_str(), (float *)p_Color);
-        */
+        return render_line(p_Label, [&p_Label, p_Color]() {
+          return ImGui::ColorEdit4(
+              (Util::String("##") + p_Label).c_str(),
+              (float *)p_Color,
+              ImGuiColorEditFlags_NoInputs |
+                  ImGuiColorEditFlags_NoLabel);
+        });
       }
 
       bool render_colorrgb_editor(Util::String &p_Label,
                                   Math::ColorRGB &p_Color,
                                   bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
+        return render_line(p_Label, [&p_Label, &p_Color]() {
+          Math::ColorRGB l_Color = p_Color;
 
-        Math::ColorRGB l_Color = p_Color;
-
-        if (ImGui::ColorEdit3(l_Label.c_str(), (float *)&l_Color,
-                              ImGuiColorEditFlags_NoInputs |
-                                  ImGuiColorEditFlags_NoLabel)) {
-          p_Color = l_Color;
-          return true;
-        }
-        return false;
+          if (ImGui::ColorEdit3(
+                  (Util::String("##") + p_Label).c_str(),
+                  (float *)&l_Color,
+                  ImGuiColorEditFlags_NoInputs |
+                      ImGuiColorEditFlags_NoLabel)) {
+            p_Color = l_Color;
+            return true;
+          }
+          return false;
+        });
       }
 
       bool render_shape_editor(Util::String &p_Label,
                                Math::Shape *p_DataPtr,
                                bool p_RenderLabel)
       {
-        if (p_RenderLabel) {
-          render_label(p_Label);
-        }
+        return render_line(p_Label, [&p_Label, p_DataPtr]() {
+          Util::String l_Label = "##";
+          l_Label += p_Label.c_str();
 
-        Util::String l_Label = "##";
-        l_Label += p_Label.c_str();
+          int l_TypeCount = 4;
+          int l_CurrentType = 0;
 
-        int l_TypeCount = 4;
-        int l_CurrentType = 0;
+          bool l_Changed = false;
 
-        bool l_Changed = false;
+          Util::String l_Names[] = {"Box", "Sphere", "Cone",
+                                    "Cylinder"};
+          Math::ShapeType l_Types[] = {
+              Math::ShapeType::BOX, Math::ShapeType::SPHERE,
+              Math::ShapeType::CONE, Math::ShapeType::CYLINDER};
 
-        Util::String l_Names[] = {"Box", "Sphere", "Cone",
-                                  "Cylinder"};
-        Math::ShapeType l_Types[] = {
-            Math::ShapeType::BOX, Math::ShapeType::SPHERE,
-            Math::ShapeType::CONE, Math::ShapeType::CYLINDER};
+          Math::Shape l_Shape = *p_DataPtr;
 
-        Math::Shape l_Shape = *p_DataPtr;
-
-        for (; l_CurrentType < l_TypeCount; ++l_CurrentType) {
-          if (l_Shape.type == l_Types[l_CurrentType]) {
-            break;
-          }
-        }
-
-        if (ImGui::BeginCombo("##shapetypeselector",
-                              l_Names[l_CurrentType].c_str(), 0)) {
-          for (int i = 0; i < l_TypeCount; ++i) {
-            if (ImGui::Selectable(l_Names[i].c_str(),
-                                  i == l_CurrentType)) {
-              memset(&l_Shape, 0, sizeof(l_Shape));
-              l_Shape.type = l_Types[i];
-              l_Changed = true;
+          for (; l_CurrentType < l_TypeCount; ++l_CurrentType) {
+            if (l_Shape.type == l_Types[l_CurrentType]) {
+              break;
             }
           }
-          ImGui::EndCombo();
-        }
 
-        if (l_Shape.type == Math::ShapeType::BOX) {
-          ImGui::PushID("BOXPOS");
-          if (render_vector3_editor("BoxPosition",
-                                    l_Shape.box.position, true)) {
-            l_Changed = true;
+          if (ImGui::BeginCombo("##shapetypeselector",
+                                l_Names[l_CurrentType].c_str(), 0)) {
+            for (int i = 0; i < l_TypeCount; ++i) {
+              if (ImGui::Selectable(l_Names[i].c_str(),
+                                    i == l_CurrentType)) {
+                memset(&l_Shape, 0, sizeof(l_Shape));
+                l_Shape.type = l_Types[i];
+                l_Changed = true;
+              }
+            }
+            ImGui::EndCombo();
           }
-          ImGui::PopID();
-          ImGui::PushID("BOXROT");
-          if (render_quaternion_editor("BoxRotation",
-                                       l_Shape.box.rotation, true)) {
-            l_Changed = true;
-          }
-          ImGui::PopID();
-          ImGui::PushID("BOXSCL");
-          if (render_vector3_editor("BoxHalfExtents",
-                                    l_Shape.box.halfExtents, true)) {
-            l_Changed = true;
-          }
-          ImGui::PopID();
-        } else {
-          ImGui::Text("Shape type not editable");
-        }
 
-        if (l_Changed) {
-          *p_DataPtr = l_Shape;
-        }
-        return l_Changed;
+          if (l_Shape.type == Math::ShapeType::BOX) {
+            ImGui::PushID("BOXPOS");
+            if (render_vector3_editor("BoxPosition",
+                                      l_Shape.box.position, true)) {
+              l_Changed = true;
+            }
+            ImGui::PopID();
+            ImGui::PushID("BOXROT");
+            if (render_quaternion_editor(
+                    "BoxRotation", l_Shape.box.rotation, true)) {
+              l_Changed = true;
+            }
+            ImGui::PopID();
+            ImGui::PushID("BOXSCL");
+            if (render_vector3_editor("BoxHalfExtents",
+                                      l_Shape.box.halfExtents,
+                                      true)) {
+              l_Changed = true;
+            }
+            ImGui::PopID();
+          } else {
+            ImGui::Text("Shape type not editable");
+          }
+
+          if (l_Changed) {
+            *p_DataPtr = l_Shape;
+          }
+          return l_Changed;
+        });
       }
 
       void render_editor(Util::Handle p_Handle,
@@ -942,7 +890,6 @@ namespace Low {
       void render_editor(Util::String p_Label,
                          Util::Function<void()> p_Function)
       {
-        render_label(p_Label);
 
         p_Function();
       }
@@ -1059,10 +1006,152 @@ namespace Low {
                                                   p_Handle);
         }
 
+        /*
         ImGui::SetCursorScreenPos(
             l_Pos +
             ImVec2(0.0f, LOW_EDITOR_LABEL_HEIGHT_ABS + 12.0f));
+            */
+      }
+
+      bool render_line(Util::String p_Label,
+                       const Util::Function<bool()> &p_DrawEditor)
+      {
+        static Util::Name l_SplitterName =
+            N(LOW_EDITOR_DETAILS_SPLITTER);
+
+        float l_Splitter = Util::Globals::get(l_SplitterName);
+
+        // Tunables
+        const float l_Min = 90.0f;
+        const float l_Max = 420.0f;
+        const float l_GrabWidth = 6.0f;
+        const float l_Gap = 8.0f;
+        const float l_LineThickness = 1.0f;
+        const float l_PadY = 0.0f;
+
+        ImGui::PushID(p_Label.c_str());
+
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        const float l_AvailW = ImGui::GetContentRegionAvail().x;
+        const float l_FrameH = ImGui::GetFrameHeight();
+        const float l_TextH = ImGui::GetTextLineHeight();
+
+        float l_LabelW =
+            Low::Math::Util::clamp(l_Splitter, l_Min, l_Max);
+        const float l_EditorW =
+            ImMax(10.0f, l_AvailW - (l_LabelW + l_Gap));
+
+        // Compact mode for this row: kill vertical item spacing so
+        // rows sit flush
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,
+                            ImVec2(l_Style.ItemSpacing.x, 0.0f));
+
+        // Infer continuity from previous item bottom (stateless)
+        const float l_PrevBottomY = ImGui::GetItemRectMax().y;
+
+        // Top pad (0 here but keep the call—makes the math stable if
+        // you tweak later)
+        ImGui::Dummy(ImVec2(0.0f, l_PadY));
+        const ImVec2 l_RowTop = ImGui::GetCursorScreenPos();
+
+        const float l_ExpectedPrevBottom = l_RowTop.y - l_PadY;
+        const float l_Epsilon = 1.0f;
+        const bool l_IsContiguous =
+            (ImFabs(l_PrevBottomY - l_ExpectedPrevBottom) <=
+             l_Epsilon);
+
+        const float l_BaselineNudge = l_Style.FramePadding.y + 5;
+
+        // Row line: [label cell] [editor] [splitter]
+        ImGui::BeginGroup();
+
+        // Label baseline cell (use text height baseline, not frame
+        // height, for tighter rows)
+        ImGui::Dummy(ImVec2(l_LabelW, l_TextH));
+
+        // Editor
+        ImGui::SameLine(l_LabelW + l_Gap, 0.0f);
+        ImGui::BeginGroup();
+        ImGui::Dummy(ImVec2(0.0f, l_BaselineNudge));
+        ImGui::SetNextItemWidth(l_EditorW);
+
+        // Slightly denser framed controls (optional). Comment out if
+        // you don't want this.
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FramePadding,
+            ImVec2(l_Style.FramePadding.x,
+                   ImMax(0.0f, l_Style.FramePadding.y - 1.0f)));
+        const bool l_Result = p_DrawEditor();
+        ImGui::PopStyleVar();
+
+        const float l_EditorH =
+            ImGui::GetItemRectSize().y + l_BaselineNudge / 2.0f;
+        ImGui::EndGroup();
+
+        // Splitter grab sized to max(label baseline, editor)
+        {
+          const float l_SplitOffset = l_LabelW - l_GrabWidth * 0.5f;
+          ImGui::SameLine(l_SplitOffset, 0.0f);
+          ImGui::InvisibleButton(
+              "##RowSplitter",
+              ImVec2(l_GrabWidth, ImMax(l_TextH, l_EditorH)));
+          const bool l_Active = ImGui::IsItemActive();
+          if (ImGui::IsItemHovered() || l_Active)
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+          if (l_Active) {
+            l_Splitter += ImGui::GetIO().MouseDelta.x;
+            l_Splitter =
+                Low::Math::Util::clamp(l_Splitter, l_Min, l_Max);
+            Util::Globals::set(l_SplitterName, l_Splitter);
+            l_LabelW = l_Splitter;
+          }
+        }
+
+        ImGui::EndGroup();
+
+        // If editor is taller than text baseline, add the missing
+        // height so we still get a bottom separator flush
+        if (l_EditorH > l_TextH)
+          ImGui::Dummy(ImVec2(0.0f, l_EditorH - l_TextH));
+
+        // Bottom pad (0 here)
+        ImGui::Dummy(ImVec2(0.0f, l_PadY));
+        const ImVec2 l_RowBottom = ImGui::GetCursorScreenPos();
+
+        // Label text (ellipsis) vertically centered in final row rect
+        {
+          const float l_RowH = l_RowBottom.y - l_RowTop.y;
+          const float l_TextY =
+              l_RowTop.y + (l_RowH - l_TextH) * 0.5f;
+
+          ImGui::RenderTextEllipsis(
+              ImGui::GetWindowDrawList(), ImVec2(l_RowTop.x, l_TextY),
+              ImVec2(l_RowTop.x + l_LabelW, l_RowBottom.y), l_LabelW,
+              p_Label.c_str(), nullptr, nullptr);
+        }
+
+        // Pixel-snapped grid lines (clipped to window)
+        auto snap = [](float v) { return IM_FLOOR(v) + 0.5f; };
+        const float yTopSep = snap(
+            l_IsContiguous ? l_PrevBottomY : (l_RowTop.y - l_PadY));
+        const float yBottomSep = snap(l_RowBottom.y);
+
+        // Horizontal at bottom
+        ImGui::GetWindowDrawList()->AddLine(
+            ImVec2(l_RowTop.x, yBottomSep),
+            ImVec2(l_RowTop.x + l_AvailW, yBottomSep),
+            ImGui::GetColorU32(ImGuiCol_TableBorderLight));
+
+        // Vertical split from previous (or our top) to current bottom
+        const float l_SplitX = snap(l_RowTop.x + l_LabelW);
+        ImGui::GetWindowDrawList()->AddLine(
+            ImVec2(l_SplitX, yTopSep), ImVec2(l_SplitX, yBottomSep),
+            ImGui::GetColorU32(ImGuiCol_Separator), l_LineThickness);
+
+        ImGui::PopStyleVar(); // ItemSpacing.y
+        ImGui::PopID();
+        return l_Result;
       }
     } // namespace PropertyEditors
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

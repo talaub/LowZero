@@ -4,8 +4,6 @@
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 
-#include "LowCoreMeshResource.h"
-
 namespace Low {
   namespace Core {
     namespace TaskScheduler {
@@ -43,19 +41,8 @@ namespace Low {
         Util::Queue<T> m_Queue;
       };
 
-      SchedulingQueue<MeshResource> g_MeshResourceLoadQueue;
-
-      void schedule_mesh_resource_load(MeshResource p_MeshResource)
-      {
-        g_MeshResourceLoadQueue.schedule(p_MeshResource);
-      }
-
       static void do_tick()
       {
-        if (!g_MeshResourceLoadQueue.empty()) {
-          g_MeshResourceLoadQueue.pop().load();
-          return;
-        }
       }
 
       void tick()
@@ -64,5 +51,5 @@ namespace Low {
       }
 
     } // namespace TaskScheduler
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

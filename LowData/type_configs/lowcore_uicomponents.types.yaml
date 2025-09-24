@@ -132,18 +132,18 @@ types:
   Image:
     ui_component: true
     header_imports:
-      - LowCoreTexture2D.h
-      - LowRenderer.h
+      - LowRendererTexture.h
+      - LowRendererMaterial.h
     properties:
       texture:
         editor_editable: true
-        type: Low::Core::Texture2D
+        type: Low::Renderer::Texture
         handle: true
         skip_serialization: true
         skip_deserialization: true
-      renderer_material:
+      material:
         editor_editable: false
-        type: Renderer::Material
+        type: Low::Renderer::Material
         handle: true
         skip_serialization: true
         skip_deserialization: true
@@ -153,8 +153,7 @@ types:
     ui_component: true
     scripting_expose: true
     header_imports:
-      - LowCoreTexture2D.h
-      - LowCoreFont.h
+      - LowRendererFont.h
       - LowRenderer.h
     properties:
       text:
@@ -163,7 +162,7 @@ types:
         expose_scripting: true
       font:
         editor_editable: true
-        type: Low::Core::Font
+        type: Low::Renderer::Font
         handle: true
       color:
         editor_editable: true

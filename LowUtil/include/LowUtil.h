@@ -4,6 +4,9 @@
 
 #include "LowUtilContainers.h"
 
+#define SDL_MAIN_HANDLED
+#include <SDL.h>
+
 namespace Low {
   namespace Util {
     LOW_EXPORT void initialize();
@@ -22,5 +25,20 @@ namespace Low {
     };
 
     LOW_EXPORT const Project &get_project();
+
+    struct LOW_EXPORT Window
+    {
+      SDL_Window *sdlwindow;
+
+      bool shouldClose = false;
+      bool minimized = false;
+
+      typedef bool (*EventCallback)(const SDL_Event *);
+      Util::List<EventCallback> eventCallbacks;
+
+      void get_size(int *p_Width, int *p_Height);
+
+      static Window &get_main_window();
+    };
   } // namespace Util
 } // namespace Low

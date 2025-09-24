@@ -1,8 +1,7 @@
 #include "LowEditorNotifications.h"
 
 #include "LowEditorThemes.h"
-
-#include "LowRendererImGuiHelper.h"
+#include "LowEditorFonts.h"
 
 #include "LowUtilString.h"
 
@@ -108,8 +107,7 @@ namespace Low {
 
         // Icon block
         ImGui::BeginGroup();
-        ImGui::PushFont(Renderer::ImGuiHelper::fonts()
-                            .lucide_800); // Use your icon font
+        ImGui::PushFont(Fonts::UI()); // Use your icon font
         ImGui::PushStyleColor(ImGuiCol_Text,
                               color_to_imvec4(n.color));
         ImGui::TextUnformatted(

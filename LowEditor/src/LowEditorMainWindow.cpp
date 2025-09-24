@@ -8,7 +8,7 @@
 #include "IconsFontAwesome5.h"
 
 #include "LowEditorLogWidget.h"
-#include "LowEditorRenderFlowWidget.h"
+#include "LowEditorRenderViewWidget.h"
 #include "LowEditorDetailsWidget.h"
 #include "LowEditorProfilerWidget.h"
 #include "LowEditorEditingWidget.h"
@@ -38,17 +38,12 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilProfiler.h"
 
-#include "LowRendererTexture2D.h"
-#include "LowRendererImGuiHelper.h"
 #include "LowRenderer.h"
 
-#include "LowCoreMeshResource.h"
 #include "LowCoreDebugGeometry.h"
 #include "LowCoreRigidbody.h"
 #include "LowCorePrefabInstance.h"
 #include "LowCorePhysicsSystem.h"
-#include "LowCoreMeshAsset.h"
-#include "LowCoreMaterial.h"
 
 #include <chrono>
 #include <cstddef>
@@ -240,33 +235,7 @@ namespace Low {
     {
       Util::String l_JobTitle = "Importing mesh resource";
 
-      register_editor_job(l_JobTitle, [p_Path] {
-        Util::String l_FileName = p_Path.substr(
-            p_Path.find_last_of('\\') + 1,
-            p_Path.find_last_of('.') - p_Path.find_last_of('\\') - 1);
-        bool l_HasAnimations = ResourceProcessor::Mesh::process(
-            p_Path.c_str(), Util::get_project().dataPath +
-                                "\\resources\\meshes\\" + l_FileName +
-                                ".glb");
-
-        Core::MeshResource::make(Util::String(l_FileName + ".glb"));
-
-        LOW_LOG_INFO << "Mesh file '" << l_FileName
-                     << "' has been successfully imported."
-                     << LOW_LOG_END;
-
-        if (l_HasAnimations) {
-          ResourceProcessor::Mesh::process_animations(
-              p_Path.c_str(),
-              Util::get_project().dataPath +
-                  "\\resources\\skeletal_animations\\" + l_FileName +
-                  ".glb");
-
-          LOW_LOG_INFO << "Animations from file '" << l_FileName
-                       << "' have been successfully imported."
-                       << LOW_LOG_END;
-        }
-      });
+      register_editor_job(l_JobTitle, [p_Path] {});
     }
 
     static void render_menu_entry(MenuEntry &p_MenuEntry)
@@ -319,9 +288,11 @@ namespace Low {
                            0.5f); // Center icon vertically
 
       // Example: ImGui::Image for your logo
+      /*
       ImGui::Image(Low::Renderer::get_default_texture_id(),
                    ImVec2(24, 24)); // Replace with your ID
       ImGui::SameLine();
+      */
       // ImGui::Text("LowEngine"); // Optional name
 
       ImGui::EndGroup();
@@ -444,7 +415,7 @@ namespace Low {
         ImGui::PushStyleColor(
             ImGuiCol_Text,
             color_to_imvec4(theme_get_current().subtext));
-        ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_300);
+        ImGui::PushFont(Fonts::UI(12));
         ImVec2 cursor = ImGui::GetCursorPos();
         ImGui::SetCursorPos(cursor + ImVec2(0.0f, 3.0f));
         ImGui::Text(l_VersionString.c_str());
@@ -562,6 +533,8 @@ namespace Low {
     {
       Util::String l_DataPath = Util::get_project().dataPath;
 
+      // TODO: Fix
+      /*
       g_SphericalBillboardMaterials.sun =
           Core::DebugGeometry::create_spherical_billboard_material(
               l_DataPath +
@@ -578,6 +551,7 @@ namespace Low {
           Core::DebugGeometry::create_spherical_billboard_material(
               l_DataPath +
               "/_internal/assets/editor_icons/ktx/region.ktx");
+              */
     }
 
     static void initialize_billboard_materials()
@@ -627,16 +601,16 @@ namespace Low {
     static void handle_shortcuts(float p_Delta)
     {
       if (ImGui::GetIO().KeyCtrl) {
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_D))) {
+        if (ImGui::IsKeyPressed(ImGuiKey_D)) {
           duplicate({get_selected_handle()});
         }
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S))) {
+        if (ImGui::IsKeyPressed(ImGuiKey_S)) {
           schedule_save_scene(Core::Scene::get_loaded_scene());
         }
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Z))) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Z)) {
           get_global_changelist().undo();
         }
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Y))) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Y)) {
           get_global_changelist().redo();
         }
       }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowRenderer2Api.h"
+
 #include "LowRendererMesh.h"
 #include "LowRendererMaterial.h"
 #include "LowRendererFont.h"
@@ -8,14 +10,14 @@
 namespace Low {
   namespace Renderer {
     namespace ResourceManager {
-      bool load_mesh(Mesh p_Mesh);
+      bool LOW_RENDERER2_API load_mesh(Mesh p_Mesh);
       bool upload_mesh(Mesh p_Mesh);
-      // bool unload_mesh_resource(MeshResource p_MeshResource);
 
-      bool load_texture(Texture p_Texture);
-      bool load_font(Font p_Font);
-      bool load_editor_image(EditorImage p_EditorImage);
-      bool load_material(Material p_Material);
+      bool LOW_RENDERER2_API load_texture(Texture p_Texture);
+      bool LOW_RENDERER2_API load_font(Font p_Font);
+      bool LOW_RENDERER2_API
+      load_editor_image(EditorImage p_EditorImage);
+      bool LOW_RENDERER2_API load_material(Material p_Material);
 
       void tick(float p_Delta);
 
@@ -30,7 +32,7 @@ namespace Low {
       void register_asset_id(const u64 p_AssetId,
                              const u64 p_AssetHandleId);
 
-      u64 find_asset_by_id(const u64 p_AssetId);
+      u64 LOW_RENDERER2_API find_asset_by_id(const u64 p_AssetId);
 
       template <typename T> T find_asset(const u64 p_AssetId)
       {

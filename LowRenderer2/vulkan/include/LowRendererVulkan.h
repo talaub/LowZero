@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LowRendererEditorImageGpu.h"
 #include "vulkan/vulkan.h"
 #include "VkBootstrap.h"
 
@@ -120,6 +121,12 @@ namespace Low {
         u32 textureIndex;
       };
 
+      struct EditorImageUpdate
+      {
+        EditorImageGpu gpuEditorImage;
+        u32 editorImageIndex;
+      };
+
       namespace Global {
         bool initialize();
         bool cleanup();
@@ -172,8 +179,12 @@ namespace Low {
 
         Low::Util::Queue<TextureUpdate> &
         get_texture_update_queue(u32 p_FrameIndex);
+        Low::Util::Queue<EditorImageUpdate> &
+        get_editor_image_update_queue(u32 p_FrameIndex);
         Low::Util::Queue<TextureUpdate> &
         get_current_texture_update_queue();
+        Low::Util::Queue<EditorImageUpdate> &
+        get_current_editor_image_update_queue();
 
         bool advance_frame_count();
 

@@ -9,8 +9,9 @@
 
 #include "LowCoreEntity.h"
 
-#include "LowCoreMeshAsset.h"
-#include "LowCoreMaterial.h"
+#include "LowRendererMesh.h"
+#include "LowRendererMaterial.h"
+#include "LowRendererRenderObject.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
@@ -29,10 +30,12 @@ namespace Low {
         struct Data
         {
         public:
-          Low::Core::MeshAsset mesh;
-          Low::Core::Material material;
+          Low::Renderer::Mesh mesh;
+          Low::Renderer::Material material;
+          Low::Renderer::RenderObject render_object;
           Low::Core::Entity entity;
           Low::Util::UniqueId unique_id;
+          bool dirty;
 
           static size_t get_size()
           {
@@ -41,6 +44,7 @@ namespace Low {
         };
 
       public:
+        static Low::Util::SharedMutex ms_LivingMutex;
         static Low::Util::UniqueLock<Low::Util::SharedMutex>
             ms_PagesLock;
         static Low::Util::SharedMutex ms_PagesMutex;
@@ -70,10 +74,14 @@ namespace Low {
 
         static uint32_t living_count()
         {
+          Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
         static MeshRenderer *living_instances()
         {
+          Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           return ms_LivingInstances.data();
         }
 
@@ -127,16 +135,24 @@ namespace Low {
           l_MeshRenderer.destroy();
         }
 
-        Low::Core::MeshAsset get_mesh() const;
-        void set_mesh(Low::Core::MeshAsset p_Value);
+        Low::Renderer::Mesh get_mesh() const;
+        void set_mesh(Low::Renderer::Mesh p_Value);
 
-        Low::Core::Material get_material() const;
-        void set_material(Low::Core::Material p_Value);
+        Low::Renderer::Material get_material() const;
+        void set_material(Low::Renderer::Material p_Value);
+
+        Low::Renderer::RenderObject get_render_object() const;
+        void set_render_object(Low::Renderer::RenderObject p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
+
+        bool is_dirty() const;
+        void set_dirty(bool p_Value);
+        void toggle_dirty();
+        void mark_dirty();
 
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,

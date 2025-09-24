@@ -29,6 +29,8 @@ namespace Low {
 
       bool depthTest;
       bool wireframe;
+
+      EditorImage editorImage;
     };
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -40,9 +42,11 @@ namespace Low {
       public:
         Low::Math::Vector3 camera_position;
         Low::Math::Vector3 camera_direction;
+        float camera_fov;
         uint64_t render_target_handle;
         uint64_t view_info_handle;
         Low::Math::UVector2 dimensions;
+        Low::Math::UVector2 desired_dimensions;
         Low::Renderer::RenderScene render_scene;
         Low::Renderer::Texture gbuffer_albedo;
         Low::Renderer::Texture gbuffer_normals;
@@ -66,6 +70,7 @@ namespace Low {
       };
 
     public:
+      static Low::Util::SharedMutex ms_LivingMutex;
       static Low::Util::UniqueLock<Low::Util::SharedMutex>
           ms_PagesLock;
       static Low::Util::SharedMutex ms_PagesMutex;
@@ -93,10 +98,14 @@ namespace Low {
 
       static uint32_t living_count()
       {
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         return static_cast<uint32_t>(ms_LivingInstances.size());
       }
       static RenderView *living_instances()
       {
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         return ms_LivingInstances.data();
       }
 
@@ -166,6 +175,9 @@ namespace Low {
       void set_camera_direction_y(float p_Value);
       void set_camera_direction_z(float p_Value);
 
+      float get_camera_fov() const;
+      void set_camera_fov(float p_Value);
+
       uint64_t get_render_target_handle() const;
       void set_render_target_handle(uint64_t p_Value);
 
@@ -173,6 +185,12 @@ namespace Low {
       void set_view_info_handle(uint64_t p_Value);
 
       Low::Math::UVector2 &get_dimensions() const;
+      void set_actual_dimensions(Low::Math::UVector2 &p_Value);
+      void set_actual_dimensions(u32 p_X, u32 p_Y);
+      void set_actual_dimensions_x(u32 p_Value);
+      void set_actual_dimensions_y(u32 p_Value);
+
+      Low::Math::UVector2 &get_desired_dimensions() const;
       void set_dimensions(Low::Math::UVector2 &p_Value);
       void set_dimensions(u32 p_X, u32 p_Y);
       void set_dimensions_x(u32 p_Value);
@@ -235,6 +253,8 @@ namespace Low {
           Low::Renderer::DebugGeometryDraw &p_DebugGeometryDraw);
       uint32_t
       read_object_id_px(const Low::Math::UVector2 p_PixelPosition);
+      static Low::Renderer::RenderView
+      make_default(Low::Util::Name p_Name);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

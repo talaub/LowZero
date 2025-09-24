@@ -9,8 +9,7 @@
 
 #include "LowCoreUiElement.h"
 
-#include "LowCoreTexture2D.h"
-#include "LowCoreFont.h"
+#include "LowRendererFont.h"
 #include "LowRenderer.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
@@ -38,7 +37,7 @@ namespace Low {
           {
           public:
             Low::Util::String text;
-            Low::Core::Font font;
+            Low::Renderer::Font font;
             Low::Math::Color color;
             float size;
             TextContentFitOptions content_fit_approach;
@@ -52,6 +51,7 @@ namespace Low {
           };
 
         public:
+          static Low::Util::SharedMutex ms_LivingMutex;
           static Low::Util::UniqueLock<Low::Util::SharedMutex>
               ms_PagesLock;
           static Low::Util::SharedMutex ms_PagesMutex;
@@ -82,10 +82,14 @@ namespace Low {
 
           static uint32_t living_count()
           {
+            Low::Util::SharedLock<Low::Util::SharedMutex>
+                l_LivingLock(ms_LivingMutex);
             return static_cast<uint32_t>(ms_LivingInstances.size());
           }
           static Text *living_instances()
           {
+            Low::Util::SharedLock<Low::Util::SharedMutex>
+                l_LivingLock(ms_LivingMutex);
             return ms_LivingInstances.data();
           }
 
@@ -144,8 +148,8 @@ namespace Low {
           void set_text(Low::Util::String &p_Value);
           void set_text(const char *p_Value);
 
-          Low::Core::Font get_font() const;
-          void set_font(Low::Core::Font p_Value);
+          Low::Renderer::Font get_font() const;
+          void set_font(Low::Renderer::Font p_Value);
 
           Low::Math::Color &get_color() const;
           void set_color(Low::Math::Color &p_Value);

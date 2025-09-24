@@ -3,6 +3,7 @@
 #include "LowMath.h"
 #include "LowRendererRenderStep.h"
 #include "LowRendererRenderView.h"
+#include "LowRendererTextureState.h"
 #include "LowRendererUiCanvas.h"
 
 #include <vulkan/vulkan.h>
@@ -1487,7 +1488,14 @@ namespace Low {
           Util::List<DebugGeometryUpload> l_Uploads;
           for (auto it = p_RenderView.get_debug_geometry().begin();
                it != p_RenderView.get_debug_geometry().end(); ++it) {
-            l_Uploads.emplace_back(it->transform, it->color);
+            u32 l_EditorImageIndex = LOW_UINT32_MAX;
+            if (it->editorImage.is_alive() &&
+                it->editorImage.get_state() == TextureState::LOADED) {
+              l_EditorImageIndex =
+                  it->editorImage.get_gpu().get_index();
+            }
+            l_Uploads.emplace_back(it->transform, it->color,
+                                   l_EditorImageIndex);
           }
 
           {

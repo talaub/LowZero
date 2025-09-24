@@ -37,5 +37,5 @@ namespace Low {
 
       LOW_RENDERER_API Fonts &fonts();
     } // namespace ImGuiHelper
-  }   // namespace Renderer
+  } // namespace Renderer
 } // namespace Low

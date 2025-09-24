@@ -402,6 +402,7 @@ function generate_header(p_Type) {
   t += empty();
   t += line("public:", --n);
   n++;
+  t += line("static Low::Util::SharedMutex ms_LivingMutex;", n);
   t += line("static Low::Util::UniqueLock<Low::Util::SharedMutex> ms_PagesLock;");
   t += line("static Low::Util::SharedMutex ms_PagesMutex;", n);
   t += line("static Low::Util::List<Low::Util::Instances::Page*> ms_Pages;", n);
@@ -459,9 +460,11 @@ function generate_header(p_Type) {
 
   t += empty();
   t += line("static uint32_t living_count() {");
+  t += line(`Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line("return static_cast<uint32_t>(ms_LivingInstances.size());");
   t += line("}");
   t += line(`static ${p_Type.name} *living_instances() {`);
+  t += line(`Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line("return ms_LivingInstances.data();");
   t += line("}");
   t += empty();
@@ -812,6 +815,7 @@ function generate_source(p_Type) {
   t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${p_Type.typeId};`, n);
   t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
   t += line(`uint32_t ${p_Type.name}::ms_PageSize = 0u;`, n);
+  t += line(`Low::Util::SharedMutex ${p_Type.name}::ms_LivingMutex;`, n);
   t += line(`Low::Util::SharedMutex ${p_Type.name}::ms_PagesMutex;`, n);
   t += line(`Low::Util::UniqueLock<Low::Util::SharedMutex> ${p_Type.name}::ms_PagesLock(${p_Type.name}::ms_PagesMutex, std::defer_lock);`, n);
   t += line(
@@ -948,7 +952,10 @@ function generate_source(p_Type) {
     t += line("l_Handle.set_name(p_Name);");
     t += empty();
   }
+  t += line('{');
+  t += line(`Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line(`ms_LivingInstances.push_back(l_Handle);`);
+  t += line('}');
   if (p_Type.unique_id) {
     t += empty();
     t += line(`if (p_UniqueId > 0ull) {`);
@@ -1046,6 +1053,8 @@ function generate_source(p_Type) {
   t += line("}");
   */
   t += line(`ms_PagesLock.lock();`);
+
+  t += line(`Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
   t += line(
     `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end();) {`,
   );
@@ -1057,6 +1066,7 @@ function generate_source(p_Type) {
   t += line("}");
   //t += line(`_LOW_ASSERT(l_LivingInstanceFound);`);
   t += line(`ms_PagesLock.unlock();`);
+  t += line(`l_LivingLock.unlock();`);
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::initialize() {`);
@@ -1474,6 +1484,8 @@ function generate_source(p_Type) {
       t += line(l_CustomEndMarker);
       t += empty();
     }
+
+    t += line(`Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(ms_LivingMutex);`);
     t += line(
       `for (auto it = ms_LivingInstances.begin(); it != ms_LivingInstances.end(); ++it) {`,
     );

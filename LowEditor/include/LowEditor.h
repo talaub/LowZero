@@ -4,6 +4,8 @@
 
 #include "LowEditorChangeList.h"
 
+#include "LowRendererEditorImage.h"
+
 #include "LowCoreEntity.h"
 
 #include "LowUtilEnums.h"
@@ -17,6 +19,18 @@ namespace Low {
     struct TypeMetadata;
     struct EnumMetadata;
     struct Widget;
+
+    enum class AssetType
+    {
+      File,
+      Material,
+      Mesh,
+      Model,
+      Script,
+      Flode,
+      Texture,
+      Font
+    };
 
     struct DirectoryWatchers
     {
@@ -74,6 +88,11 @@ namespace Low {
 
     void LOW_EDITOR_API
     delete_file_if_exists(Low::Util::String p_Path);
+
+    Math::Color get_color_for_asset_type(const AssetType p_AssetType);
+    Util::String get_asset_type_name(const AssetType p_AssetType);
+    Renderer::EditorImage
+    get_editor_image_for_asset_type(const AssetType p_AssetType);
 
     namespace History {
       Transaction LOW_EDITOR_API

@@ -12,7 +12,7 @@
 #include "LowMath.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
+#include "LowRendererPointLight.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -30,6 +30,8 @@ namespace Low {
         public:
           Low::Math::ColorRGB color;
           float intensity;
+          float range;
+          Low::Renderer::PointLight renderer_point_light;
           Low::Core::Entity entity;
           Low::Util::UniqueId unique_id;
 
@@ -40,6 +42,7 @@ namespace Low {
         };
 
       public:
+        static Low::Util::SharedMutex ms_LivingMutex;
         static Low::Util::UniqueLock<Low::Util::SharedMutex>
             ms_PagesLock;
         static Low::Util::SharedMutex ms_PagesMutex;
@@ -69,10 +72,14 @@ namespace Low {
 
         static uint32_t living_count()
         {
+          Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
         static PointLight *living_instances()
         {
+          Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
           return ms_LivingInstances.data();
         }
 
@@ -135,6 +142,13 @@ namespace Low {
 
         float get_intensity() const;
         void set_intensity(float p_Value);
+
+        float get_range() const;
+        void set_range(float p_Value);
+
+        Low::Renderer::PointLight get_renderer_point_light() const;
+        void
+        set_renderer_point_light(Low::Renderer::PointLight p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);

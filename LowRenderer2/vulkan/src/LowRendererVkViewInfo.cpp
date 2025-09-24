@@ -30,6 +30,7 @@ namespace Low {
       const uint16_t ViewInfo::TYPE_ID = 55;
       uint32_t ViewInfo::ms_Capacity = 0u;
       uint32_t ViewInfo::ms_PageSize = 0u;
+      Low::Util::SharedMutex ViewInfo::ms_LivingMutex;
       Low::Util::SharedMutex ViewInfo::ms_PagesMutex;
       Low::Util::UniqueLock<Low::Util::SharedMutex>
           ViewInfo::ms_PagesLock(ViewInfo::ms_PagesMutex,
@@ -116,7 +117,11 @@ namespace Low {
 
         l_Handle.set_name(p_Name);
 
-        ms_LivingInstances.push_back(l_Handle);
+        {
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
+          ms_LivingInstances.push_back(l_Handle);
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
         {
@@ -223,6 +228,8 @@ namespace Low {
         l_Page->slots[l_SlotIndex].m_Generation++;
 
         ms_PagesLock.lock();
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -232,6 +239,7 @@ namespace Low {
           }
         }
         ms_PagesLock.unlock();
+        l_LivingLock.unlock();
       }
 
       void ViewInfo::initialize()
@@ -963,6 +971,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end(); ++it) {
           if (it->get_name() == p_Name) {

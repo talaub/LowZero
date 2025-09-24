@@ -1,8 +1,8 @@
+#include "LowRendererEditorImageGpu.h"
 #include "LowRendererVulkan.h"
 
 #include "LowRendererVulkanBase.h"
 
-#include "LowRendererCompatibility.h"
 #include "LowRendererVulkanInit.h"
 #include "LowRendererVulkanImage.h"
 #include "LowRendererVulkanPipeline.h"
@@ -15,6 +15,7 @@
 #include "VkBootstrap.h"
 
 #include "LowUtilResource.h"
+#include "LowUtil.h"
 
 #include "vk_mem_alloc.h"
 
@@ -104,6 +105,7 @@ namespace Low {
           StagingBuffer frameStagingBuffer;
 
           Low::Util::Queue<TextureUpdate> textureUpdateQueue;
+          Low::Util::Queue<EditorImageUpdate> editorImageUpdateQueue;
         };
 
         u32 g_FrameOverlap;
@@ -171,10 +173,23 @@ namespace Low {
           return g_Frames[p_FrameIndex].textureUpdateQueue;
         }
 
+        Low::Util::Queue<EditorImageUpdate> &
+        get_editor_image_update_queue(u32 p_FrameIndex)
+        {
+          return g_Frames[p_FrameIndex].editorImageUpdateQueue;
+        }
+
         Low::Util::Queue<TextureUpdate> &
         get_current_texture_update_queue()
         {
           return get_texture_update_queue(get_current_frame_index());
+        }
+
+        Low::Util::Queue<EditorImageUpdate> &
+        get_current_editor_image_update_queue()
+        {
+          return get_editor_image_update_queue(
+              get_current_frame_index());
         }
 
         VkDescriptorSet get_texture_descriptor_set(u32 p_FrameIndex)
@@ -371,6 +386,9 @@ namespace Low {
             l_Builder.add_binding(
                 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 GpuTexture::get_capacity());
+            l_Builder.add_binding(
+                1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                EditorImageGpu::get_capacity());
             g_TextureDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
           }
@@ -407,6 +425,17 @@ namespace Low {
 
           ImGui::CreateContext();
 
+          {
+            ImGuiIO &io = ImGui::GetIO();
+            (void)io;
+            io.IniFilename = "loweditor.ini";
+            io.ConfigFlags |=
+                ImGuiConfigFlags_DockingEnable; // Enable Docking
+            io.ConfigFlags |=
+                ImGuiConfigFlags_ViewportsEnable; // Enable
+                                                  // Multi-Viewport /
+          }
+
           ImGui_ImplSDL2_InitForVulkan(
               Util::Window::get_main_window().sdlwindow);
 
@@ -435,7 +464,7 @@ namespace Low {
 
           ImGui_ImplVulkan_Init(&l_InitInfo);
 
-          ImGui_ImplVulkan_CreateFontsTexture();
+          // ImGui_ImplVulkan_CreateFontsTexture();
 
           return true;
         }

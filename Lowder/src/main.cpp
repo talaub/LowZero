@@ -15,8 +15,7 @@
 #include "LowUtilString.h"
 
 #include "LowRenderer.h"
-#include "LowRendererExposedObjects.h"
-#include "LowRendererRenderFlow.h"
+#include "LowRendererRenderView.h"
 
 #include "LowCore.h"
 #include "LowCoreGameLoop.h"
@@ -281,13 +280,9 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   load_project(p_ProjectPath);
   // return 0;
 
-  std::cout << "Initializing renderer" << std::endl;
   Low::Renderer::initialize();
-  std::cout << "Renderer initialized" << std::endl;
 
-  std::cout << "Initializing core" << std::endl;
   Low::Core::initialize();
-  std::cout << "Core initialized" << std::endl;
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 

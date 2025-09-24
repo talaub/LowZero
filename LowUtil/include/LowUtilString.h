@@ -41,9 +41,26 @@ namespace Low {
                                 char p_Replacer);
 
       LOW_EXPORT void append(String &p_String, int p_Appendix);
+
+      Util::String LOW_EXPORT prettify_name(Util::Name p_Name);
+      Util::String LOW_EXPORT prettify_name(Util::String p_String);
+      Util::String LOW_EXPORT technify_string(Util::String p_String);
+
+      inline String to_upper(const String &p_Input)
+      {
+        String l_Result = p_Input;
+        for (char &l_C : l_Result) {
+          l_C = static_cast<char>(
+              std::toupper(static_cast<unsigned char>(l_C)));
+        }
+        return l_Result;
+      }
     } // namespace StringHelper
     namespace PathHelper {
       LOW_EXPORT String get_base_name_no_ext(const String p_Path);
-    }
+      LOW_EXPORT String get_file_subtype(const String p_Path);
+      LOW_EXPORT String get_file_extension(const String p_Path);
+      LOW_EXPORT String normalize(const String p_Path);
+    } // namespace PathHelper
   } // namespace Util
 } // namespace Low

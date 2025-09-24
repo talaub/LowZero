@@ -33,7 +33,7 @@ source_group("Flode Source Files" FILES ${FLODE_SOURCES})
 add_dependencies(LowEditor
   LowUtil
   LowMath
-  LowRenderer
+  LowRenderer2
   LowCore
   nativefiledialog
 )
@@ -62,7 +62,7 @@ set_target_properties(LowEditor PROPERTIES OUTPUT_NAME "lowed")
 
 target_link_libraries(LowEditor PRIVATE
   LowCore
-  LowRenderer
+  LowRenderer2
   LowUtil
   LowMath
   nativefiledialog

@@ -27,6 +27,7 @@
 #include "LowUtilResource.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilHashing.h"
+#include "LowUtilString.h"
 
 #include <iostream>
 #include <vulkan/vulkan_core.h>
@@ -1527,7 +1528,7 @@ namespace Low {
               Util::get_project().assetCachePath + "/" +
               Util::hash_to_string(p_Config.textureId) + ".ktx";
 
-          p_Config.path = p_Path;
+          p_Config.path = Util::PathHelper::normalize(p_Path);
           return true;
         }
         return true;

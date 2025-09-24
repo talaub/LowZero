@@ -69,5 +69,10 @@ namespace Low {
 
     LOW_EDITOR_API ImVec4 color_to_imvec4(Math::Color &p_Color);
     LOW_EDITOR_API ImColor color_to_imcolor(Math::Color &p_Color);
+    LOW_EDITOR_API ImColor make_imcolor(const float p_Red,
+                                        const float p_Green,
+                                        const float p_Blue,
+                                        const float p_Alpha = 1.0f);
+    LOW_EDITOR_API Math::Color color_from_hex(const char *p_Hex);
   } // namespace Editor
 } // namespace Low

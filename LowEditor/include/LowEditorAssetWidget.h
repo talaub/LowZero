@@ -9,22 +9,6 @@ struct ImRect;
 
 namespace Low {
   namespace Editor {
-
-    struct FileElement
-    {
-      bool directory;
-      Util::String name;
-      Util::Handle handle;
-    };
-
-    struct AssetTypeConfig
-    {
-      uint16_t typeId;
-      Util::FileSystem::WatchHandle rootDirectoryWatchHandle;
-      Util::FileSystem::WatchHandle currentDirectoryWatchHandle;
-      void (*render)(AssetTypeConfig &, ImRect);
-    };
-
     struct AssetWidget : public Widget
     {
       AssetWidget();
@@ -32,14 +16,22 @@ namespace Low {
       void render(float p_Delta) override;
 
       static void save_prefab_asset(Util::Handle p_Handle);
-      static void save_material_asset(Util::Handle p_Handle);
 
     protected:
-      int m_SelectedCategory;
-
-      Util::List<AssetTypeConfig> m_TypeConfigs;
+      Util::FileSystem::WatchHandle m_SelectedDirectory;
 
       float m_UpdateCounter;
+
+      Util::FileSystem::WatchHandle m_DataWatcher;
+
+      void
+      render_directory_list(const Util::FileSystem::DirectoryWatcher
+                                &p_DirectoryWatcher,
+                            const Util::String p_DisplayName = "");
+
+      void render_directory_content(
+          const Util::FileSystem::DirectoryWatcher
+              &p_DirectoryWatcher);
     };
   } // namespace Editor
 } // namespace Low

@@ -4,6 +4,7 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilLogger.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHashing.h"
 
 #include "LowMath.h"
 
@@ -43,7 +44,7 @@ namespace Low {
       WatchHandle watch_directory(
           String p_Path,
           Util::Function<Handle(FileWatcher &)> p_HandleCallback,
-          float p_UpdateTimer)
+          float p_UpdateTimer, const u32 p_TrimPathBeginning)
       {
         auto l_HandlePos = g_Handles.find(p_Path);
 
@@ -59,11 +60,16 @@ namespace Low {
           DirectoryWatcher l_DirectoryWatcher;
           l_DirectoryWatcher.watchHandle = ++g_CurrentId;
           l_DirectoryWatcher.path = p_Path;
+          l_DirectoryWatcher.trimAmount = p_TrimPathBeginning;
+          l_DirectoryWatcher.trimmedPath =
+              p_Path.substr(p_TrimPathBeginning);
           l_DirectoryWatcher.name = get_name_from_path(p_Path);
           l_DirectoryWatcher.updateTimer = p_UpdateTimer;
           l_DirectoryWatcher.currentUpdateTimer = 0.0f;
           l_DirectoryWatcher.update = true;
           l_DirectoryWatcher.handleCallback = p_HandleCallback;
+          l_DirectoryWatcher.hidden =
+              StringHelper::begins_with(l_DirectoryWatcher.name, ".");
 
           g_Directories[l_DirectoryWatcher.watchHandle] =
               l_DirectoryWatcher;
@@ -86,7 +92,7 @@ namespace Low {
       WatchHandle watch_file(
           String p_Path,
           Util::Function<Handle(FileWatcher &)> p_HandleCallback,
-          float p_UpdateTimer)
+          float p_UpdateTimer, const u32 p_TrimPathBeginning)
       {
         auto l_HandlePos = g_Handles.find(p_Path);
 
@@ -96,12 +102,26 @@ namespace Low {
           FileWatcher l_FileWatcher;
           l_FileWatcher.watchHandle = ++g_CurrentId;
           l_FileWatcher.path = p_Path;
+          l_FileWatcher.trimmedPath =
+              p_Path.substr(p_TrimPathBeginning);
           l_FileWatcher.name = get_name_from_path(p_Path);
           l_FileWatcher.currentUpdateTimer = p_UpdateTimer;
           l_FileWatcher.update = true;
           l_FileWatcher.handleCallback = p_HandleCallback;
           l_FileWatcher.handle = 0;
           l_FileWatcher.updateTimer = p_UpdateTimer;
+          l_FileWatcher.hidden =
+              StringHelper::begins_with(l_FileWatcher.name, ".");
+          l_FileWatcher.nameClean =
+              PathHelper::get_base_name_no_ext(l_FileWatcher.path);
+          l_FileWatcher.subtype =
+              PathHelper::get_file_subtype(l_FileWatcher.path);
+          l_FileWatcher.subtypeHash =
+              Util::fnv1a_64(l_FileWatcher.subtype.c_str());
+          l_FileWatcher.nameCleanPrettified =
+              StringHelper::prettify_name(l_FileWatcher.nameClean);
+          l_FileWatcher.extension =
+              PathHelper::get_file_extension(l_FileWatcher.path);
 
           g_Files[l_FileWatcher.watchHandle] = l_FileWatcher;
           g_Handles[p_Path] = l_FileWatcher.watchHandle;
@@ -151,13 +171,13 @@ namespace Low {
 
         for (auto it = l_Contents.begin(); it != l_Contents.end();
              ++it) {
-          String i_Path =
-              StringHelper::replace(it->c_str(), '\\', '/');
+          String i_Path = PathHelper::normalize(*it);
 
           if (FileIO::is_directory(i_Path.c_str())) {
             WatchHandle i_WatchHandle = watch_directory(
                 i_Path, l_DirectoryWatcher.handleCallback,
-                l_DirectoryWatcher.updateTimer);
+                l_DirectoryWatcher.updateTimer,
+                l_DirectoryWatcher.trimAmount);
             DirectoryWatcher &i_NewDirectoryWatcher =
                 get_directory_watcher(i_WatchHandle);
             i_NewDirectoryWatcher.parentWatchHandle =
@@ -167,7 +187,8 @@ namespace Low {
           } else {
             l_DirectoryWatcher.files.push_back(
                 watch_file(i_Path, l_DirectoryWatcher.handleCallback,
-                           l_DirectoryWatcher.updateTimer));
+                           l_DirectoryWatcher.updateTimer,
+                           l_DirectoryWatcher.trimAmount));
           }
         }
       }
@@ -247,25 +268,15 @@ namespace Low {
           return;
         }
 
-        auto l_Pos = l_TypeInfo.properties.find(N(name));
-
-        if (l_Pos == l_TypeInfo.properties.end()) {
-          return;
-        }
-
         std::sort(
             l_DirectoryWatcher.files.begin(),
             l_DirectoryWatcher.files.end(),
-            [l_Pos](const WatchHandle a, const WatchHandle &b) {
+            [](const WatchHandle a, const WatchHandle &b) {
               FileWatcher &l_af = get_file_watcher(a);
               FileWatcher &l_bf = get_file_watcher(b);
 
-              String aName =
-                  ((Name *)l_Pos->second.get_return(l_af.handle))
-                      ->c_str();
-              String bName =
-                  ((Name *)l_Pos->second.get_return(l_bf.handle))
-                      ->c_str();
+              String aName = l_af.name;
+              String bName = l_bf.name;
 
               std::transform(
                   aName.begin(), aName.end(), aName.begin(),

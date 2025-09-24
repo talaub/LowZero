@@ -26,6 +26,7 @@ namespace Low {
       const uint16_t Camera::TYPE_ID = 44;
       uint32_t Camera::ms_Capacity = 0u;
       uint32_t Camera::ms_PageSize = 0u;
+      Low::Util::SharedMutex Camera::ms_LivingMutex;
       Low::Util::SharedMutex Camera::ms_PagesMutex;
       Low::Util::UniqueLock<Low::Util::SharedMutex>
           Camera::ms_PagesLock(Camera::ms_PagesMutex,
@@ -77,6 +78,9 @@ namespace Low {
 
         ACCESSOR_TYPE_SOA(l_Handle, Camera, active, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Camera, fov, float) = 0.0f;
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Camera, render_view,
+                                   Low::Renderer::RenderView))
+            Low::Renderer::RenderView();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Camera, entity,
                                    Low::Core::Entity))
             Low::Core::Entity();
@@ -84,7 +88,11 @@ namespace Low {
         l_Handle.set_entity(p_Entity);
         p_Entity.add_component(l_Handle);
 
-        ms_LivingInstances.push_back(l_Handle);
+        {
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
+          ms_LivingInstances.push_back(l_Handle);
+        }
 
         if (p_UniqueId > 0ull) {
           l_Handle.set_unique_id(p_UniqueId);
@@ -109,6 +117,9 @@ namespace Low {
         {
           Low::Util::HandleLock<Camera> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          if (get_render_view().is_alive()) {
+            get_render_view().destroy();
+          }
 
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -129,6 +140,8 @@ namespace Low {
         l_Page->slots[l_SlotIndex].m_Generation++;
 
         ms_PagesLock.lock();
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
         for (auto it = ms_LivingInstances.begin();
              it != ms_LivingInstances.end();) {
           if (it->get_id() == get_id()) {
@@ -138,6 +151,7 @@ namespace Low {
           }
         }
         ms_PagesLock.unlock();
+        l_LivingLock.unlock();
       }
 
       void Camera::initialize()
@@ -242,6 +256,41 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: fov
+        }
+        {
+          // Property: render_view
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(render_view);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Camera::Data, render_view);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Camera l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Camera> l_HandleLock(l_Handle);
+            l_Handle.get_render_view();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Camera, render_view,
+                Low::Renderer::RenderView);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Camera l_Handle = p_Handle.get_id();
+            l_Handle.set_render_view(
+                *(Low::Renderer::RenderView *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Camera l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Camera> l_HandleLock(l_Handle);
+            *((Low::Renderer::RenderView *)p_Data) =
+                l_Handle.get_render_view();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: render_view
         }
         {
           // Property: entity
@@ -408,6 +457,7 @@ namespace Low {
         Camera l_Handle = make(p_Entity);
         l_Handle.set_active(is_active());
         l_Handle.set_fov(get_fov());
+        l_Handle.set_render_view(get_render_view());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -471,6 +521,8 @@ namespace Low {
         }
         if (p_Node["fov"]) {
           l_Handle.set_fov(p_Node["fov"].as<float>());
+        }
+        if (p_Node["render_view"]) {
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -609,6 +661,35 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_fov
 
         broadcast_observable(N(fov));
+      }
+
+      Low::Renderer::RenderView &Camera::get_render_view() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Camera> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_view
+        // LOW_CODEGEN::END::CUSTOM:GETTER_render_view
+
+        return TYPE_SOA(Camera, render_view,
+                        Low::Renderer::RenderView);
+      }
+      void Camera::set_render_view(Low::Renderer::RenderView &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Camera> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_view
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_view
+
+        // Set new value
+        TYPE_SOA(Camera, render_view, Low::Renderer::RenderView) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_view
+        // LOW_CODEGEN::END::CUSTOM:SETTER_render_view
+
+        broadcast_observable(N(render_view));
       }
 
       Low::Core::Entity Camera::get_entity() const

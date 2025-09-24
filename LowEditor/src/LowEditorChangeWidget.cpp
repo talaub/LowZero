@@ -11,14 +11,13 @@
 #include "LowEditorChangeList.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorGui.h"
+#include "LowEditorFonts.h"
 
 #include "LowCoreEntity.h"
 #include "LowCorePrefab.h"
 #include "LowCoreTransform.h"
 
 #include "LowUtilString.h"
-
-#include "LowRendererImGuiHelper.h"
 
 #include "LowMathQuaternionUtil.h"
 #include <glm/gtc/matrix_transform.hpp>
@@ -29,7 +28,7 @@ namespace Low {
                                    bool p_IsCurrent)
     {
       ImGui::BeginGroup();
-      ImGui::PushFont(Renderer::ImGuiHelper::fonts().lucide_800);
+      ImGui::PushFont(Fonts::UI());
       if (p_IsCurrent) {
         ImGui::PushStyleColor(
             ImGuiCol_Text, color_to_imvec4(theme_get_current().info));
@@ -44,7 +43,7 @@ namespace Low {
       ImGui::PopFont();
       ImGui::SameLine();
       ImGui::BeginGroup();
-      ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
+      ImGui::PushFont(Fonts::UI());
       ImGui::TextWrapped(p_Transaction.m_Title.c_str());
       ImGui::PopFont();
 

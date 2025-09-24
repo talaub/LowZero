@@ -124,6 +124,13 @@ types:
         parameters:
           - name: config
             type: MeshResourceConfig
+      find_by_path:
+        static: true
+        return_type: MeshResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
 
 
   GpuMesh:
@@ -213,6 +220,13 @@ types:
         parameters:
           - name: config
             type: TextureResourceConfig
+      find_by_path:
+        static: true
+        return_type: TextureResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
 
   Texture:
     reference_counted: true
@@ -401,6 +415,7 @@ types:
         type: uint64_t
 
   EditorImageGpu:
+    dynamic_increase: false
     properties:
       imgui_texture_initialized:
         type: bool
@@ -567,6 +582,13 @@ types:
         parameters:
           - name: path
             type: Util::String
+      find_by_path:
+        static: true
+        return_type: MaterialResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
 
   GpuMaterial:
     dynamic_increase: false
@@ -625,6 +647,13 @@ types:
         private_setter: true
     functions:
       make:
+        static: true
+        return_type: ModelResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
+      find_by_path:
         static: true
         return_type: ModelResource
         return_handle: true

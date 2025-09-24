@@ -13,11 +13,10 @@
 #include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
 
-#include "LowCoreMeshAsset.h"
-
 #include "LowUtil.h"
 #include "LowUtilString.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilGlobals.h"
 
 namespace Low {
   namespace Editor {
@@ -128,10 +127,18 @@ namespace Low {
 
     void TypeManagerWidget::render_info(float p_Delta)
     {
+
+      static const Util::Name l_SplitterName =
+          N(LOW_EDITOR_DETAILS_SPLITTER);
+
+      Util::Globals::set(l_SplitterName, m_Splitter);
+
       for (auto it = m_Sections.begin(); it != m_Sections.end();
            ++it) {
         it->render(p_Delta);
       }
+
+      m_Splitter = Util::Globals::get(l_SplitterName);
     }
 
     void TypeManagerWidget::render_list(float p_Delta)
@@ -233,8 +240,7 @@ namespace Low {
           ImGui::CloseCurrentPopup();
         }
 
-        bool l_IsEnter =
-            ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter));
+        bool l_IsEnter = ImGui::IsKeyPressed(ImGuiKey_Enter);
 
         ImGui::SameLine();
 
@@ -321,7 +327,7 @@ namespace Low {
     bool TypeManagerWidget::handle_shortcuts(float p_Delta)
     {
       if (ImGui::GetIO().KeyCtrl) {
-        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_S))) {
+        if (ImGui::IsKeyPressed(ImGuiKey_S)) {
           if (m_TypeInfo.is_alive(m_Selected)) {
             save(m_Selected, m_TypeInfo);
             return true;

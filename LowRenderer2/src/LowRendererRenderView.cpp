@@ -25,6 +25,7 @@ namespace Low {
     const uint16_t RenderView::TYPE_ID = 53;
     uint32_t RenderView::ms_Capacity = 0u;
     uint32_t RenderView::ms_PageSize = 0u;
+    Low::Util::SharedMutex RenderView::ms_LivingMutex;
     Low::Util::SharedMutex RenderView::ms_PagesMutex;
     Low::Util::UniqueLock<Low::Util::SharedMutex>
         RenderView::ms_PagesLock(RenderView::ms_PagesMutex,
@@ -73,9 +74,14 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderView, camera_direction, Low::Math::Vector3))
           Low::Math::Vector3();
+      ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_fov, float) =
+          0.0f;
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, dimensions,
                                  Low::Math::UVector2))
           Low::Math::UVector2();
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, desired_dimensions,
+          Low::Math::UVector2)) Low::Math::UVector2();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, render_scene,
                                  Low::Renderer::RenderScene))
           Low::Renderer::RenderScene();
@@ -121,9 +127,17 @@ namespace Low {
 
       l_Handle.set_name(p_Name);
 
-      ms_LivingInstances.push_back(l_Handle);
+      {
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
+        ms_LivingInstances.push_back(l_Handle);
+      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+      l_Handle.set_dimensions(500, 500);
+      l_Handle.set_camera_fov(45.0f);
+      l_Handle.set_camera_position(0, 0, 0);
+      l_Handle.set_camera_direction(0, 0, -1);
       l_Handle.set_camera_dirty(true);
       l_Handle.set_dimensions_dirty(true);
       l_Handle.get_step_data().resize(RenderStep::get_capacity());
@@ -161,6 +175,8 @@ namespace Low {
       l_Page->slots[l_SlotIndex].m_Generation++;
 
       ms_PagesLock.lock();
+      Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end();) {
         if (it->get_id() == get_id()) {
@@ -170,6 +186,7 @@ namespace Low {
         }
       }
       ms_PagesLock.unlock();
+      l_LivingLock.unlock();
     }
 
     void RenderView::initialize()
@@ -286,6 +303,37 @@ namespace Low {
         // End property: camera_direction
       }
       {
+        // Property: camera_fov
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(camera_fov);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, camera_fov);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_camera_fov();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            camera_fov, float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_camera_fov(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((float *)p_Data) = l_Handle.get_camera_fov();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: camera_fov
+      }
+      {
         // Property: render_target_handle
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(render_target_handle);
@@ -367,7 +415,8 @@ namespace Low {
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                 const void *p_Data) -> void {
           RenderView l_Handle = p_Handle.get_id();
-          l_Handle.set_dimensions(*(Low::Math::UVector2 *)p_Data);
+          l_Handle.set_actual_dimensions(
+              *(Low::Math::UVector2 *)p_Data);
         };
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
@@ -378,6 +427,39 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: dimensions
+      }
+      {
+        // Property: desired_dimensions
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(desired_dimensions);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, desired_dimensions);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_desired_dimensions();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            desired_dimensions,
+                                            Low::Math::UVector2);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_dimensions(*(Low::Math::UVector2 *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((Low::Math::UVector2 *)p_Data) =
+              l_Handle.get_desired_dimensions();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: desired_dimensions
       }
       {
         // Property: render_scene
@@ -917,6 +999,23 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: read_object_id_px
       }
+      {
+        // Function: make_default
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_default);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType =
+            Low::Renderer::RenderView::TYPE_ID;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Name);
+          l_ParameterInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_default
+      }
       Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
     }
 
@@ -1019,6 +1118,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
+      Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+          ms_LivingMutex);
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_name() == p_Name) {
@@ -1035,9 +1136,11 @@ namespace Low {
       RenderView l_Handle = make(p_Name);
       l_Handle.set_camera_position(get_camera_position());
       l_Handle.set_camera_direction(get_camera_direction());
+      l_Handle.set_camera_fov(get_camera_fov());
       l_Handle.set_render_target_handle(get_render_target_handle());
       l_Handle.set_view_info_handle(get_view_info_handle());
-      l_Handle.set_dimensions(get_dimensions());
+      l_Handle.set_actual_dimensions(get_dimensions());
+      l_Handle.set_dimensions(get_desired_dimensions());
       if (get_render_scene().is_alive()) {
         l_Handle.set_render_scene(get_render_scene());
       }
@@ -1279,6 +1382,38 @@ namespace Low {
       }
     }
 
+    float RenderView::get_camera_fov() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_fov
+      // LOW_CODEGEN::END::CUSTOM:GETTER_camera_fov
+
+      return TYPE_SOA(RenderView, camera_fov, float);
+    }
+    void RenderView::set_camera_fov(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_fov
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_fov
+
+      if (get_camera_fov() != p_Value) {
+        // Set dirty flags
+        mark_camera_dirty();
+
+        // Set new value
+        TYPE_SOA(RenderView, camera_fov, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_fov
+        // LOW_CODEGEN::END::CUSTOM:SETTER_camera_fov
+
+        broadcast_observable(N(camera_fov));
+      }
+    }
+
     uint64_t RenderView::get_render_target_handle() const
     {
       _LOW_ASSERT(is_alive());
@@ -1343,6 +1478,55 @@ namespace Low {
 
       return TYPE_SOA(RenderView, dimensions, Low::Math::UVector2);
     }
+    void RenderView::set_actual_dimensions(u32 p_X, u32 p_Y)
+    {
+      Low::Math::UVector2 l_Val(p_X, p_Y);
+      set_actual_dimensions(l_Val);
+    }
+
+    void RenderView::set_actual_dimensions_x(u32 p_Value)
+    {
+      Low::Math::UVector2 l_Value = get_dimensions();
+      l_Value.x = p_Value;
+      set_actual_dimensions(l_Value);
+    }
+
+    void RenderView::set_actual_dimensions_y(u32 p_Value)
+    {
+      Low::Math::UVector2 l_Value = get_dimensions();
+      l_Value.y = p_Value;
+      set_actual_dimensions(l_Value);
+    }
+
+    void
+    RenderView::set_actual_dimensions(Low::Math::UVector2 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions
+
+      // Set new value
+      TYPE_SOA(RenderView, dimensions, Low::Math::UVector2) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
+      // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
+
+      broadcast_observable(N(dimensions));
+    }
+
+    Low::Math::UVector2 &RenderView::get_desired_dimensions() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_desired_dimensions
+      // LOW_CODEGEN::END::CUSTOM:GETTER_desired_dimensions
+
+      return TYPE_SOA(RenderView, desired_dimensions,
+                      Low::Math::UVector2);
+    }
     void RenderView::set_dimensions(u32 p_X, u32 p_Y)
     {
       Low::Math::UVector2 l_Val(p_X, p_Y);
@@ -1351,14 +1535,14 @@ namespace Low {
 
     void RenderView::set_dimensions_x(u32 p_Value)
     {
-      Low::Math::UVector2 l_Value = get_dimensions();
+      Low::Math::UVector2 l_Value = get_desired_dimensions();
       l_Value.x = p_Value;
       set_dimensions(l_Value);
     }
 
     void RenderView::set_dimensions_y(u32 p_Value)
     {
-      Low::Math::UVector2 l_Value = get_dimensions();
+      Low::Math::UVector2 l_Value = get_desired_dimensions();
       l_Value.y = p_Value;
       set_dimensions(l_Value);
     }
@@ -1368,21 +1552,21 @@ namespace Low {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
-      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
-      // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_desired_dimensions
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_desired_dimensions
 
-      if (get_dimensions() != p_Value) {
+      if (get_desired_dimensions() != p_Value) {
         // Set dirty flags
         mark_dimensions_dirty();
 
         // Set new value
-        TYPE_SOA(RenderView, dimensions, Low::Math::UVector2) =
-            p_Value;
+        TYPE_SOA(RenderView, desired_dimensions,
+                 Low::Math::UVector2) = p_Value;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
-        // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_desired_dimensions
+        // LOW_CODEGEN::END::CUSTOM:SETTER_desired_dimensions
 
-        broadcast_observable(N(dimensions));
+        broadcast_observable(N(desired_dimensions));
       }
     }
 
@@ -1834,6 +2018,24 @@ namespace Low {
                                      p_PixelPosition.x];
 
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_read_object_id_px
+    }
+
+    Low::Renderer::RenderView
+    RenderView::make_default(Low::Util::Name p_Name)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_default
+      RenderView l_RenderView = make(p_Name);
+
+      l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_LIGHTCULLING_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_SSAO_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_LIGHTING_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
+      l_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);
+
+      return l_RenderView;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_default
     }
 
     uint32_t RenderView::create_instance(

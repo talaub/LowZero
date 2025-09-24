@@ -14,6 +14,128 @@ namespace Low {
     Util::Map<Util::Name, Theme> g_Themes;
     Util::Name g_SelectedTheme;
 
+    Math::Color color_from_hex(const char *p_Hex)
+    {
+      using namespace Low::Math;
+      // Helpers (local lambdas to avoid polluting namespace)
+      auto l_is_hex = [](char c) -> bool {
+        return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+               (c >= 'A' && c <= 'F');
+      };
+
+      auto l_hex_val = [](char c) -> int {
+        if (c >= '0' && c <= '9')
+          return c - '0';
+        if (c >= 'a' && c <= 'f')
+          return 10 + (c - 'a');
+        return 10 + (c - 'A');
+      };
+
+      auto l_to_float_8bit = [](int v) -> float {
+        return (float)v / 255.0f;
+      };
+
+      auto l_to_float_4bit = [](int v) -> float {
+        // 0..15 -> scale to 0..255 by duplicating the nibble (common
+        // convention)
+        return (float)((v << 4) | v) / 255.0f;
+      };
+
+      // Defensive defaults
+      Vector4 l_result;
+      l_result.x = 1.0f; // magenta (error-color)
+      l_result.y = 0.0f;
+      l_result.z = 1.0f;
+      l_result.w = 1.0f;
+
+      if (!p_Hex) {
+        LOW_LOG_WARN<< "color_from_hex: null input"
+                        << LOW_LOG_END;
+        return l_result;
+      }
+
+      // Copy/scan once to:
+      // - trim surrounding whitespace
+      // - skip leading '#'
+      // - validate hex chars and count
+      const char *l_begin = p_Hex;
+      while (*l_begin == ' ' || *l_begin == '\t' ||
+             *l_begin == '\n' || *l_begin == '\r')
+        ++l_begin;
+
+      if (*l_begin == '#')
+        ++l_begin;
+
+      // Determine end, count only hex digits
+      const char *l_it = l_begin;
+      int l_hex_count = 0;
+      while (*l_it != '\0' && *l_it != ' ' && *l_it != '\t' &&
+             *l_it != '\n' && *l_it != '\r') {
+        if (!l_is_hex(*l_it)) {
+          LOW_LOG_WARN
+              << "color_from_hex: non-hex character encountered: '"
+              << *l_it << "'" << LOW_LOG_END;
+          return l_result;
+        }
+        ++l_hex_count;
+        ++l_it;
+      }
+
+      // Supported counts: 3 (RGB), 4 (RGBA), 6 (RRGGBB), 8 (RRGGBBAA)
+      if (!(l_hex_count == 3 || l_hex_count == 4 ||
+            l_hex_count == 6 || l_hex_count == 8)) {
+        LOW_LOG_WARN<< "color_from_hex: unsupported hex length "
+                        << l_hex_count << " (expected 3, 4, 6, or 8)"
+                        << LOW_LOG_END;
+        return l_result;
+      }
+
+      // Parse
+      // We’ll read components as 4-bit nibbles (for 3/4) or 8-bit
+      // pairs (for 6/8).
+      const char *l_ptr = l_begin;
+
+      if (l_hex_count == 3 || l_hex_count == 4) {
+        // #RGB or #RGBA (each char is 4 bits)
+        int r = l_hex_val(*l_ptr++);
+        int g = l_hex_val(*l_ptr++);
+        int b = l_hex_val(*l_ptr++);
+        int a = 0xF; // default alpha 1.0
+        if (l_hex_count == 4) {
+          a = l_hex_val(*l_ptr++);
+        }
+
+        l_result.x = l_to_float_4bit(r);
+        l_result.y = l_to_float_4bit(g);
+        l_result.z = l_to_float_4bit(b);
+        l_result.w = l_to_float_4bit(a);
+      } else {
+        // #RRGGBB or #RRGGBBAA (each pair is 8 bits)
+        auto l_read_byte = [&](int &l_out) {
+          int hi = l_hex_val(*l_ptr++);
+          int lo = l_hex_val(*l_ptr++);
+          l_out = (hi << 4) | lo;
+        };
+
+        int r8, g8, b8;
+        l_read_byte(r8);
+        l_read_byte(g8);
+        l_read_byte(b8);
+
+        int a8 = 255; // default alpha 1.0
+        if (l_hex_count == 8) {
+          l_read_byte(a8);
+        }
+
+        l_result.x = l_to_float_8bit(r8);
+        l_result.y = l_to_float_8bit(g8);
+        l_result.z = l_to_float_8bit(b8);
+        l_result.w = l_to_float_8bit(a8);
+      }
+
+      return l_result;
+    }
+
     ImVec4 color_to_imvec4(Math::Color &p_Color)
     {
       ImVec4 c;
@@ -25,15 +147,21 @@ namespace Low {
       return c;
     }
 
-    ImColor color_to_imcolor(Math::Color &p_Color)
+    ImColor make_imcolor(const float p_Red, const float p_Green,
+                         const float p_Blue, const float p_Alpha)
     {
       ImColor c;
-      c.Value.x = p_Color.r;
-      c.Value.y = p_Color.g;
-      c.Value.z = p_Color.b;
-      c.Value.w = p_Color.a;
+      c.Value.x = p_Red;
+      c.Value.y = p_Green;
+      c.Value.z = p_Blue;
+      c.Value.w = p_Alpha;
 
       return c;
+    }
+
+    ImColor color_to_imcolor(Math::Color &p_Color)
+    {
+      return make_imcolor(p_Color.r, p_Color.g, p_Color.b, p_Color.a);
     }
 
     static Math::Color parse_color(Util::Yaml::Node &p_Node)

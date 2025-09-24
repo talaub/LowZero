@@ -24,7 +24,6 @@ namespace Low {
       Util::String m_CurrentlyEditing = "";
 
       bool render_default(float p_Delta);
-      bool render_material(float p_Delta);
       bool render_entity(float p_Delta);
     };
   } // namespace Editor

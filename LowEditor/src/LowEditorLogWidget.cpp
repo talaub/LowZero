@@ -1,5 +1,6 @@
 #include "LowEditorLogWidget.h"
 
+#include "LowEditorFonts.h"
 #include "LowEditorThemes.h"
 #include "LowEditorGui.h"
 
@@ -7,9 +8,8 @@
 #include "LowUtilContainers.h"
 #include "LowUtilString.h"
 
-#include "LowRendererImGuiHelper.h"
-
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
 #include "IconsCodicons.h"
@@ -63,49 +63,108 @@ namespace Low {
     get_module_label(const Util::Log::LogEntry &p_Entry)
     {
       if (p_Entry.module == "lowcore") {
-        return "Engine";
+        return "ENGINE";
       }
       if (p_Entry.module == "lowed") {
-        return "Editor";
+        return "EDITOR";
       }
       if (p_Entry.module == "misteda") {
-        return "Game";
+        return "GAME";
       }
       if (p_Entry.module == "scripting") {
-        return "Script";
+        return "SCRIPT";
       }
       if (p_Entry.module == "flode") {
-        return "Flode";
+        return "FLODE";
       }
 
       return "Low";
     }
 
-    static void render_log_entry(const Util::Log::LogEntry &p_Entry)
+    static void render_log_entry(const Util::Log::LogEntry &p_Entry,
+                                 int p_Index)
     {
+      ImGuiWindow *l_Window = ImGui::GetCurrentWindow();
+      if (!l_Window || l_Window->SkipItems) {
+        return;
+      }
+
+      ImDrawList *l_DrawList = l_Window->DrawList;
+
+      // Start of row (before padding)
+      const ImVec2 l_RowMin = ImGui::GetCursorScreenPos();
+      const float l_Left = l_Window->WorkRect.Min.x;
+      const float l_Right = l_Window->WorkRect.Max.x;
+
+      l_DrawList->ChannelsSplit(2);
+      l_DrawList->ChannelsSetCurrent(1);
+
+      // --- CONTENT
+      // -----------------------------------------------------
       ImGui::BeginGroup();
-      ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
+
+      // Icon padding
+      const float l_IconPaddingTop =
+          12.0f; // bigger push for large icon
+      ImGui::SetCursorScreenPos(
+          ImVec2(l_RowMin.x, l_RowMin.y + l_IconPaddingTop));
+
+      ImGui::PushFont(Fonts::UI(40));
       ImGui::PushStyleColor(ImGuiCol_Text,
                             get_color_for_level(p_Entry.level));
       ImGui::Text(get_icon_for_level(p_Entry.level));
       ImGui::PopStyleColor();
       ImGui::PopFont();
+
       ImGui::SameLine();
+
+      // Text block padding
+      const float l_TextPaddingTop = 8.0f; // lighter push for text
+      ImGui::SetCursorScreenPos(
+          ImVec2(ImGui::GetCursorScreenPos().x,
+                 l_RowMin.y + l_TextPaddingTop));
+
       ImGui::BeginGroup();
-      ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
-      ImGui::TextWrapped(p_Entry.message.c_str());
-      ImGui::PopFont();
+      {
+        ImGui::PushFont(Fonts::UI());
+        ImGui::TextWrapped(p_Entry.message.c_str());
+        ImGui::PopFont();
 
-      ImGui::PushStyleColor(
-          ImGuiCol_Text,
-          color_to_imvec4(theme_get_current().subtext));
-      ImGui::TextWrapped(get_module_label(p_Entry));
-      ImGui::PopStyleColor();
+        ImGui::PushFont(Fonts::UI(14, Fonts::Weight::Light));
+        ImVec4 l_Color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        l_Color.w = 0.3f;
+        ImGui::PushStyleColor(ImGuiCol_Text, l_Color);
+        ImGui::TextWrapped(get_module_label(p_Entry));
+        ImGui::PopStyleColor();
+        ImGui::PopFont();
+      }
+      ImGui::EndGroup();
 
       ImGui::EndGroup();
-      ImGui::EndGroup();
-      ImGui::Separator();
-      ImGui::Spacing();
+      // ---------------------------------------------------------------
+
+      const ImVec2 l_RowMax = ImGui::GetCursorScreenPos();
+
+      // Background
+      l_DrawList->ChannelsSetCurrent(0);
+      if ((p_Index & 1) != 0) {
+        const ImU32 l_BgCol =
+            ImGui::GetColorU32(ImGuiCol_FrameBg, 0.28f);
+        l_DrawList->AddRectFilled(ImVec2(l_Left, l_RowMin.y),
+                                  ImVec2(l_Right, l_RowMax.y),
+                                  l_BgCol);
+      }
+
+      // Separator
+      {
+        const ImU32 l_LineCol =
+            ImGui::GetColorU32(ImGuiCol_Border, 0.25f);
+        l_DrawList->AddLine(ImVec2(l_Left, l_RowMax.y),
+                            ImVec2(l_Right, l_RowMax.y), l_LineCol,
+                            1.0f);
+      }
+
+      l_DrawList->ChannelsMerge();
     }
 
     static bool apply_filter(const Util::Log::LogEntry &p_Entry)
@@ -179,6 +238,7 @@ namespace Low {
                                ImGui::GetContentRegionAvail().y),
                         true, 0);
 
+      u32 l_Index = 0;
       for (auto it = g_Entries.begin(); it != g_Entries.end(); ++it) {
         Util::Log::LogEntry &i_Entry = *it;
 
@@ -203,7 +263,8 @@ namespace Low {
           }
         }
 
-        render_log_entry(i_Entry);
+        render_log_entry(i_Entry, l_Index);
+        l_Index++;
       }
 
       ImGui::EndChild();

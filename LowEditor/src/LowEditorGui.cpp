@@ -13,8 +13,6 @@
 #include <string.h>
 #include "LowEditorIcons.h"
 
-#include "LowRendererImGuiHelper.h"
-
 #include <algorithm>
 #include <nfd.h>
 
@@ -26,7 +24,7 @@ namespace Low {
 
       void Heading2(const char *p_Text)
       {
-        ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
+        ImGui::PushFont(Fonts::UI());
         ImGui::TextWrapped(p_Text);
         ImGui::PopFont();
       }
@@ -178,40 +176,38 @@ namespace Low {
           Util::String p_Label, ImColor p_Color, float *p_Value,
           float p_Width, float p_Margin, bool p_Break)
       {
-        using namespace ImGui;
+        // Width for this field
+        ImGui::SetNextItemWidth(p_Width);
 
-        ImVec2 l_Pos = GetCursorScreenPos();
-        // draw_single_letter_label(p_Label, p_Color);
+        // Invisible label keeps IDs unique without text
+        Util::String l_Id = "##" + p_Label;
 
-        bool l_Changed = false;
+        // Draw the float input
+        bool l_Changed =
+            ImGui::DragFloat(l_Id.c_str(), p_Value, 0.2f, 0.0f, 0.0f);
 
-        Util::String l_Label = "##" + p_Label;
-
-        if (drag_float(l_Label.c_str(), p_Value, (p_Width - 16.0f),
-                       0.2f, 0.0f, 0.0f)) {
-          l_Changed = true;
-        }
-
+        // Paint the left color strip using the last item's rect.
+        // No cursor movement—pure overlay.
         {
-          SetCursorScreenPos(l_Pos + ImVec2{2.0f, 0.0f});
+          ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+          const ImVec2 l_Min = ImGui::GetItemRectMin();
+          const ImVec2 l_Max = ImGui::GetItemRectMax();
 
-          ImDrawList *draw_list = ImGui::GetWindowDrawList();
+          const float l_StripWidth = 4.0f;
+          ImVec2 l_StripMin = ImVec2(l_Min.x, l_Min.y);
+          ImVec2 l_StripMax = ImVec2(l_Min.x + l_StripWidth, l_Max.y);
 
-          ImVec2 widget_size = ImVec2(
-              4.0f,
-              ImGui::GetFrameHeight()); // Customize width as needed
-
-          draw_list->AddRectFilled(
-              l_Pos - ImVec2{widget_size.x, 0.0f},
-              ImVec2(l_Pos.x, l_Pos.y + widget_size.y), p_Color,
-              2.0f,                        // Rounding amount
-              ImDrawFlags_RoundCornersLeft // Only round the right
-                                           // corners
-          );
+          // Round only the left corners so it blends with frame
+          // rounding
+          l_DrawList->AddRectFilled(l_StripMin, l_StripMax, p_Color,
+                                    2.0f,
+                                    ImDrawFlags_RoundCornersLeft);
         }
 
+        // If this is not the last field in the row, keep items on the
+        // same line
         if (!p_Break) {
-          SetCursorScreenPos({l_Pos.x + p_Width + p_Margin, l_Pos.y});
+          ImGui::SameLine(0.0f, p_Margin);
         }
 
         return l_Changed;
@@ -242,8 +238,8 @@ namespace Low {
                                                  float *p_Value,
                                                  float p_Width)
       {
-        return draw_single_coefficient_editor(p_Label, p_Color,
-                                              p_Value, p_Width, true);
+        return draw_single_coefficient_editor(
+            p_Label, p_Color, p_Value, p_Width, 0.0f, true);
       }
 
       bool Vector3Edit(Math::Vector3 &p_Vector, float p_MaxWidth)
@@ -252,28 +248,36 @@ namespace Low {
         if (p_MaxWidth > 0.0f) {
           l_FullWidth = p_MaxWidth;
         }
-        float l_Spacing = LOW_EDITOR_SPACING;
-        float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 3.0f;
-        bool l_Changed = false;
 
+        const float l_Spacing = LOW_EDITOR_SPACING;
+        const float l_Width =
+            (l_FullWidth - (l_Spacing * 2.0f)) / 3.0f;
+
+        bool l_Changed = false;
         Theme &l_Theme = theme_get_current();
 
-        if (draw_single_coefficient_editor(
-                "X", color_to_imcolor(l_Theme.coords0), &p_Vector.x,
-                l_Width, l_Spacing)) {
-          l_Changed = true;
-        }
-        if (draw_single_coefficient_editor(
-                "Y", color_to_imcolor(l_Theme.coords1), &p_Vector.y,
-                l_Width, l_Spacing)) {
-          l_Changed = true;
-        }
-        if (draw_single_coefficient_editor(
-                "Z", color_to_imcolor(l_Theme.coords2), &p_Vector.z,
-                l_Width)) {
-          l_Changed = true;
-        }
+        ImGui::BeginGroup(); // keep the three fields as one logical
+                             // block
 
+        // X
+        l_Changed |= draw_single_coefficient_editor(
+            "X", color_to_imcolor(l_Theme.coords0), &p_Vector.x,
+            l_Width, l_Spacing, false);
+
+        // Y
+        l_Changed |= draw_single_coefficient_editor(
+            "Y", color_to_imcolor(l_Theme.coords1), &p_Vector.y,
+            l_Width, l_Spacing, false);
+
+        // Z (last in the row -> break)
+        l_Changed |= draw_single_coefficient_editor(
+            "Z", color_to_imcolor(l_Theme.coords2), &p_Vector.z,
+            l_Width, /*p_Margin*/ 0.0f, /*p_Break*/ true);
+
+        ImGui::EndGroup();
+
+        // After EndGroup(), ImGui will naturally move to the next
+        // line as needed
         return l_Changed;
       }
 
@@ -396,7 +400,7 @@ namespace Low {
         using namespace ImGui;
 
         ImVec2 l_Pos = GetCursorScreenPos();
-        ImGui::PushFont(Renderer::ImGuiHelper::fonts().lucide_400);
+        ImGui::PushFont(Fonts::UI());
         draw_single_letter_label(p_Icon, p_Color, 22.0f,
                                  p_IconOffset);
         ImGui::PopFont();
@@ -624,134 +628,133 @@ namespace Low {
                                 float speed, float min, float max,
                                 const char *format)
       {
-        // Start a new horizontal group
         ImGui::BeginGroup();
 
         bool l_Edited = false;
 
-        float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_ButtonWidth = DRAG_BUTTON_WIDTH;
-        float l_DragWidth = l_FullWidth - (l_ButtonWidth * 3.0f);
+        const float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        const float l_ButtonWidth =
+            DRAG_BUTTON_WIDTH; // your constant
+        const float l_Spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 
-        ImVec2 l_CursorStart = ImGui::GetCursorPos();
+        // Drag width accounts for two buttons + two inner spacings
+        const float l_DragWidth =
+            l_FullWidth - (l_ButtonWidth * 2.0f) - (l_Spacing * 2.0f);
 
-        // DragFloat for the main value control
         ImGui::PushID(label);
-        ImGui::PushItemWidth(l_DragWidth + 3.0f);
+
+        // --- Value drag ---
+        ImGui::SetNextItemWidth(l_DragWidth);
         if (ImGui::DragFloat("##Drag", value, speed, min, max,
                              format)) {
-          // Ensure value stays clamped to min/max bounds (if
-          // provided)
-          if (min < max) {
+          if (min < max)
             *value = ImClamp(*value, min, max);
-          }
-          l_Edited = true;
-        }
-        ImGui::PopItemWidth();
-
-        ImGui::SetCursorPos(l_CursorStart +
-                            ImVec2(l_DragWidth, 0.0f));
-
-        if (ButtonNoRounding(ICON_LC_PLUS)) {
-          *value += 1.0f; // Increase by 1.0
-          if (min < max) {
-            *value = ImClamp(*value, min, max);
-          }
           l_Edited = true;
         }
 
-        ImGui::SetCursorPos(
-            l_CursorStart +
-            ImVec2(l_DragWidth + l_ButtonWidth, 0.0f));
+        // --- Plus button ---
+        ImGui::SameLine(0.0f, l_Spacing);
+        ImGui::PushItemFlag(
+            ImGuiItemFlags_NoNavDefaultFocus,
+            true); // keep nav focus on the drag by default
+        if (ButtonNoRounding(ICON_LC_PLUS, l_ButtonWidth)) {
+          *value += 1.0f;
+          if (min < max)
+            *value = ImClamp(*value, min, max);
+          l_Edited = true;
+        }
 
+        // --- Minus button (right-rounded) ---
+        ImGui::SameLine(0.0f, l_Spacing);
         if (ButtonRounding(ICON_LC_MINUS,
-                           ImDrawFlags_RoundCornersRight)) {
-          *value -= 1.0f; // Decrease by 1.0
-          if (min < max) {
+                           ImDrawFlags_RoundCornersRight,
+                           l_ButtonWidth)) {
+          *value -= 1.0f;
+          if (min < max)
             *value = ImClamp(*value, min, max);
-          }
           l_Edited = true;
         }
+        ImGui::PopItemFlag();
 
-        // End horizontal group
         ImGui::PopID();
         ImGui::EndGroup();
 
         return l_Edited;
       }
 
-      bool ButtonNoRounding(const char *p_Text)
+      // Layout-safe custom buttons that don't move the cursor
+      // manually. Optional fixed width ensures consistent layout in
+      // rows.
+
+      bool ButtonNoRounding(const char *p_Text,
+                            float p_FixedWidth /*=0.0f*/)
       {
-        ImGuiStyle &style = ImGui::GetStyle();
-        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        ImDrawList *l_Draw = ImGui::GetWindowDrawList();
 
-        ImVec2 button_pos = ImGui::GetCursorScreenPos();
-        ImVec2 button_size =
-            ImVec2(ImGui::CalcTextSize(p_Text).x + 10.0f,
+        // Compute desired size
+        ImVec2 l_TextSize = ImGui::CalcTextSize(p_Text);
+        ImVec2 l_Size =
+            ImVec2((p_FixedWidth > 0.0f ? p_FixedWidth
+                                        : l_TextSize.x + 10.0f),
                    ImGui::GetFrameHeight());
-        ImRect rect(button_pos, ImVec2(button_pos.x + button_size.x,
-                                       button_pos.y + button_size.y));
 
-        Util::String l_Label = "##";
-        l_Label += p_Text;
+        // Consume layout
+        bool l_Pressed = ImGui::InvisibleButton(
+            Util::String("##").append(p_Text).c_str(), l_Size);
 
-        // Draw the button itself
-        bool l_Pressed =
-            ImGui::InvisibleButton(l_Label.c_str(), button_size);
+        // Use the actual item rect to draw (layout-safe)
+        ImVec2 l_Min = ImGui::GetItemRectMin();
+        ImVec2 l_Max = ImGui::GetItemRectMax();
 
-        ImU32 l_ButtonColor = ImGui::GetColorU32(ImGuiCol_Button);
-        if (ImGui::IsItemHovered()) {
-          l_ButtonColor = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
-        }
+        ImU32 l_Col = ImGui::GetColorU32(
+            ImGui::IsItemActive()    ? ImGuiCol_ButtonActive
+            : ImGui::IsItemHovered() ? ImGuiCol_ButtonHovered
+                                     : ImGuiCol_Button);
 
-        // Draw the background
-        draw_list->AddRectFilled(rect.Min, rect.Max, l_ButtonColor,
-                                 0.0f);
+        l_Draw->AddRectFilled(l_Min, l_Max, l_Col, 0.0f);
 
-        // Draw the text
-        draw_list->AddText(
-            ImVec2(button_pos.x + 5.0f,
-                   button_pos.y + style.FramePadding.y),
-            ImGui::GetColorU32(ImGuiCol_Text), p_Text);
+        // Center text vertically, pad a bit horizontally
+        const float l_PadX = 5.0f;
+        ImVec2 l_TextPos(l_Min.x + l_PadX,
+                         l_Min.y + (l_Size.y - l_TextSize.y) * 0.5f);
+        l_Draw->AddText(l_TextPos, ImGui::GetColorU32(ImGuiCol_Text),
+                        p_Text);
 
         return l_Pressed;
       }
 
-      bool ButtonRounding(const char *p_Text, u32 p_Flags)
+      bool ButtonRounding(const char *p_Text, u32 p_Flags,
+                          float p_FixedWidth /*=0.0f*/)
       {
-        ImGuiStyle &style = ImGui::GetStyle();
-        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        ImDrawList *l_Draw = ImGui::GetWindowDrawList();
 
-        float original_rounding = style.FrameRounding;
-
-        ImVec2 button_pos = ImGui::GetCursorScreenPos();
-        ImVec2 button_size =
-            ImVec2(ImGui::CalcTextSize(p_Text).x + 10.0f,
+        ImVec2 l_TextSize = ImGui::CalcTextSize(p_Text);
+        ImVec2 l_Size =
+            ImVec2((p_FixedWidth > 0.0f ? p_FixedWidth
+                                        : l_TextSize.x + 10.0f),
                    ImGui::GetFrameHeight());
-        ImRect rect(button_pos, ImVec2(button_pos.x + button_size.x,
-                                       button_pos.y + button_size.y));
 
-        Util::String l_Label = "##";
-        l_Label += p_Text;
+        bool l_Pressed = ImGui::InvisibleButton(
+            Util::String("##").append(p_Text).c_str(), l_Size);
 
-        // Draw the button itself
-        bool l_Pressed =
-            ImGui::InvisibleButton(l_Label.c_str(), button_size);
+        ImVec2 l_Min = ImGui::GetItemRectMin();
+        ImVec2 l_Max = ImGui::GetItemRectMax();
 
-        ImU32 l_ButtonColor = ImGui::GetColorU32(ImGuiCol_Button);
-        if (ImGui::IsItemHovered()) {
-          l_ButtonColor = ImGui::GetColorU32(ImGuiCol_ButtonHovered);
-        }
+        ImU32 l_Col = ImGui::GetColorU32(
+            ImGui::IsItemActive()    ? ImGuiCol_ButtonActive
+            : ImGui::IsItemHovered() ? ImGuiCol_ButtonHovered
+                                     : ImGuiCol_Button);
 
-        // Draw the background
-        draw_list->AddRectFilled(rect.Min, rect.Max, l_ButtonColor,
-                                 original_rounding, p_Flags);
+        l_Draw->AddRectFilled(l_Min, l_Max, l_Col,
+                              l_Style.FrameRounding, p_Flags);
 
-        // Draw the text
-        draw_list->AddText(
-            ImVec2(button_pos.x + 5.0f,
-                   button_pos.y + style.FramePadding.y),
-            ImGui::GetColorU32(ImGuiCol_Text), p_Text);
+        const float l_PadX = 5.0f;
+        ImVec2 l_TextPos(l_Min.x + l_PadX,
+                         l_Min.y + (l_Size.y - l_TextSize.y) * 0.5f);
+        l_Draw->AddText(l_TextPos, ImGui::GetColorU32(ImGuiCol_Text),
+                        p_Text);
 
         return l_Pressed;
       }
@@ -985,383 +988,17 @@ namespace Low {
         return pressed;
       }
 
-      bool TreeNodeBehavior(ImGuiID id, ImGuiTreeNodeFlags flags,
-                            const char *label, const char *label_end)
-      {
-        ImGuiWindow *window = ImGui::GetCurrentWindow();
-        if (window->SkipItems)
-          return false;
-
-        const float l_Rounding = 4.0f;
-
-        ImGuiContext &g = *GImGui;
-        const ImGuiStyle &style = g.Style;
-        const bool display_frame =
-            (flags & ImGuiTreeNodeFlags_Framed) != 0;
-        const ImVec2 padding =
-            (display_frame ||
-             (flags & ImGuiTreeNodeFlags_FramePadding))
-                ? (style.FramePadding + ImVec2(0.0f, 2.8f))
-                : ImVec2(style.FramePadding.x,
-                         ImMin(window->DC.CurrLineTextBaseOffset,
-                               style.FramePadding.y));
-
-        if (!label_end)
-          label_end = ImGui::FindRenderedTextEnd(label);
-        const ImVec2 label_size =
-            ImGui::CalcTextSize(label, label_end, false);
-
-        // We vertically grow up to current line height up the typical
-        // widget height.
-        const float frame_height =
-            ImMax(ImMin(window->DC.CurrLineSize.y,
-                        g.FontSize + style.FramePadding.y * 2),
-                  label_size.y + padding.y * 2);
-        const bool span_all_columns =
-            (flags & ImGuiTreeNodeFlags_SpanAllColumns) != 0 &&
-            (g.CurrentTable != NULL);
-        ImRect frame_bb;
-        frame_bb.Min.x = span_all_columns
-                             ? window->ParentWorkRect.Min.x
-                         : (flags & ImGuiTreeNodeFlags_SpanFullWidth)
-                             ? window->WorkRect.Min.x
-                             : window->DC.CursorPos.x;
-        frame_bb.Min.y = window->DC.CursorPos.y;
-        frame_bb.Max.x = span_all_columns
-                             ? window->ParentWorkRect.Max.x
-                             : window->WorkRect.Max.x;
-        frame_bb.Max.y = window->DC.CursorPos.y + frame_height;
-        if (display_frame) {
-          // Framed header expand a little outside the default
-          // padding, to the edge of InnerClipRect (FIXME: May remove
-          // this at some point and make InnerClipRect align with
-          // WindowPadding.x instead of WindowPadding.x*0.5f)
-          frame_bb.Min.x -=
-              IM_TRUNC(window->WindowPadding.x * 0.5f - 1.0f);
-          frame_bb.Max.x += IM_TRUNC(window->WindowPadding.x * 0.5f);
-        }
-
-        const float text_offset_x =
-            g.FontSize +
-            (display_frame
-                 ? padding.x * 3
-                 : padding.x * 2); // Collapsing arrow width + Spacing
-        const float text_offset_y = ImMax(
-            padding.y,
-            window->DC.CurrLineTextBaseOffset); // Latch before
-                                                // ItemSize changes it
-        const float text_width =
-            g.FontSize + (label_size.x > 0.0f
-                              ? label_size.x + padding.x * 2
-                              : 0.0f); // Include collapsing
-        ImVec2 text_pos(window->DC.CursorPos.x + text_offset_x,
-                        window->DC.CursorPos.y + text_offset_y);
-        ImGui::ItemSize(ImVec2(text_width, frame_height), padding.y);
-
-        // For regular tree nodes, we arbitrary allow to click past 2
-        // worth of ItemSpacing
-        ImRect interact_bb = frame_bb;
-        if (!display_frame &&
-            (flags & (ImGuiTreeNodeFlags_SpanAvailWidth |
-                      ImGuiTreeNodeFlags_SpanFullWidth |
-                      ImGuiTreeNodeFlags_SpanAllColumns)) == 0)
-          interact_bb.Max.x = frame_bb.Min.x + text_width +
-                              style.ItemSpacing.x * 2.0f;
-
-        // Modify ClipRect for the ItemAdd(), faster than doing a
-        // PushColumnsBackground/PushTableBackgroundChannel for every
-        // Selectable..
-        const float backup_clip_rect_min_x = window->ClipRect.Min.x;
-        const float backup_clip_rect_max_x = window->ClipRect.Max.x;
-        if (span_all_columns) {
-          window->ClipRect.Min.x = window->ParentWorkRect.Min.x;
-          window->ClipRect.Max.x = window->ParentWorkRect.Max.x;
-        }
-
-        // Compute open and multi-select states before ItemAdd() as it
-        // clear NextItem data.
-        bool is_open = ImGui::TreeNodeUpdateNextOpen(id, flags);
-        bool item_add = ImGui::ItemAdd(interact_bb, id);
-        g.LastItemData.StatusFlags |=
-            ImGuiItemStatusFlags_HasDisplayRect;
-        g.LastItemData.DisplayRect = frame_bb;
-
-        if (span_all_columns) {
-          window->ClipRect.Min.x = backup_clip_rect_min_x;
-          window->ClipRect.Max.x = backup_clip_rect_max_x;
-        }
-
-        // If a NavLeft request is happening and
-        // ImGuiTreeNodeFlags_NavLeftJumpsBackHere enabled: Store data
-        // for the current depth to allow returning to this node from
-        // any child item. For this purpose we essentially compare if
-        // g.NavIdIsAlive went from 0 to 1 between TreeNode() and
-        // TreePop(). It will become tempting to enable
-        // ImGuiTreeNodeFlags_NavLeftJumpsBackHere by default or move
-        // it to ImGuiStyle. Currently only supports 32 level deep and
-        // we are fine with (1 << Depth) overflowing into a zero, easy
-        // to increase.
-        if (is_open && !g.NavIdIsAlive &&
-            (flags & ImGuiTreeNodeFlags_NavLeftJumpsBackHere) &&
-            !(flags & ImGuiTreeNodeFlags_NoTreePushOnOpen))
-          if (g.NavMoveDir == ImGuiDir_Left &&
-              g.NavWindow == window &&
-              ImGui::NavMoveRequestButNoResultYet()) {
-            g.NavTreeNodeStack.resize(g.NavTreeNodeStack.Size + 1);
-            ImGuiNavTreeNodeData *nav_tree_node_data =
-                &g.NavTreeNodeStack.back();
-            nav_tree_node_data->ID = id;
-            nav_tree_node_data->InFlags = g.LastItemData.InFlags;
-            nav_tree_node_data->NavRect = g.LastItemData.NavRect;
-            window->DC.TreeJumpToParentOnPopMask |=
-                (1 << window->DC.TreeDepth);
-          }
-
-        const bool is_leaf = (flags & ImGuiTreeNodeFlags_Leaf) != 0;
-        if (!item_add) {
-          if (is_open &&
-              !(flags & ImGuiTreeNodeFlags_NoTreePushOnOpen))
-            ImGui::TreePushOverrideID(id);
-          IMGUI_TEST_ENGINE_ITEM_INFO(
-              g.LastItemData.ID, label,
-              g.LastItemData.StatusFlags |
-                  (is_leaf ? 0 : ImGuiItemStatusFlags_Openable) |
-                  (is_open ? ImGuiItemStatusFlags_Opened : 0));
-          return is_open;
-        }
-
-        if (span_all_columns) {
-          ImGui::TablePushBackgroundChannel();
-          g.LastItemData.StatusFlags |=
-              ImGuiItemStatusFlags_HasClipRect;
-          g.LastItemData.ClipRect = window->ClipRect;
-        }
-
-        ImGuiButtonFlags button_flags = ImGuiTreeNodeFlags_None;
-        if ((flags & ImGuiTreeNodeFlags_AllowOverlap) ||
-            (g.LastItemData.InFlags & ImGuiItemFlags_AllowOverlap))
-          button_flags |= ImGuiButtonFlags_AllowOverlap;
-        if (!is_leaf)
-          button_flags |= ImGuiButtonFlags_PressedOnDragDropHold;
-
-        // We allow clicking on the arrow section with keyboard
-        // modifiers held, in order to easily allow browsing a tree
-        // while preserving selection with code implementing
-        // multi-selection patterns. When clicking on the rest of the
-        // tree node we always disallow keyboard modifiers.
-        const float arrow_hit_x1 =
-            (text_pos.x - text_offset_x) - style.TouchExtraPadding.x;
-        const float arrow_hit_x2 = (text_pos.x - text_offset_x) +
-                                   (g.FontSize + padding.x * 2.0f) +
-                                   style.TouchExtraPadding.x;
-        const bool is_mouse_x_over_arrow =
-            (g.IO.MousePos.x >= arrow_hit_x1 &&
-             g.IO.MousePos.x < arrow_hit_x2);
-        if (window != g.HoveredWindow || !is_mouse_x_over_arrow)
-          button_flags |= ImGuiButtonFlags_NoKeyModifiers;
-
-        // Open behaviors can be altered with the _OpenOnArrow and
-        // _OnOnDoubleClick flags. Some alteration have subtle effects
-        // (e.g. toggle on MouseUp vs MouseDown events) due to
-        // requirements for multi-selection and drag and drop support.
-        // - Single-click on label = Toggle on MouseUp (default, when
-        // _OpenOnArrow=0)
-        // - Single-click on arrow = Toggle on MouseDown (when
-        // _OpenOnArrow=0)
-        // - Single-click on arrow = Toggle on MouseDown (when
-        // _OpenOnArrow=1)
-        // - Double-click on label = Toggle on MouseDoubleClick (when
-        // _OpenOnDoubleClick=1)
-        // - Double-click on arrow = Toggle on MouseDoubleClick (when
-        // _OpenOnDoubleClick=1 and _OpenOnArrow=0) It is rather
-        // standard that arrow click react on Down rather than Up. We
-        // set ImGuiButtonFlags_PressedOnClickRelease on
-        // OpenOnDoubleClick because we want the item to be active on
-        // the initial MouseDown in order for drag and drop to work.
-        if (is_mouse_x_over_arrow)
-          button_flags |= ImGuiButtonFlags_PressedOnClick;
-        else if (flags & ImGuiTreeNodeFlags_OpenOnDoubleClick)
-          button_flags |= ImGuiButtonFlags_PressedOnClickRelease |
-                          ImGuiButtonFlags_PressedOnDoubleClick;
-        else
-          button_flags |= ImGuiButtonFlags_PressedOnClickRelease;
-
-        bool selected = (flags & ImGuiTreeNodeFlags_Selected) != 0;
-        const bool was_selected = selected;
-
-        bool hovered, held;
-        bool pressed = ImGui::ButtonBehavior(
-            interact_bb, id, &hovered, &held, button_flags);
-        bool toggled = false;
-        if (!is_leaf) {
-          if (pressed && g.DragDropHoldJustPressedId != id) {
-            if ((flags & (ImGuiTreeNodeFlags_OpenOnArrow |
-                          ImGuiTreeNodeFlags_OpenOnDoubleClick)) ==
-                    0 ||
-                (g.NavActivateId == id))
-              toggled = true;
-            if (flags & ImGuiTreeNodeFlags_OpenOnArrow)
-              toggled |=
-                  is_mouse_x_over_arrow &&
-                  !g.NavDisableMouseHover; // Lightweight equivalent
-                                           // of IsMouseHoveringRect()
-                                           // since ButtonBehavior()
-                                           // already did the job
-            if ((flags & ImGuiTreeNodeFlags_OpenOnDoubleClick) &&
-                g.IO.MouseClickedCount[0] == 2)
-              toggled = true;
-          } else if (pressed && g.DragDropHoldJustPressedId == id) {
-            IM_ASSERT(button_flags &
-                      ImGuiButtonFlags_PressedOnDragDropHold);
-            if (!is_open) // When using Drag and Drop "hold to open"
-                          // we keep the node highlighted after
-                          // opening, but never close it again.
-              toggled = true;
-          }
-
-          if (g.NavId == id && g.NavMoveDir == ImGuiDir_Left &&
-              is_open) {
-            toggled = true;
-            ImGui::NavClearPreferredPosForAxis(ImGuiAxis_X);
-            ImGui::NavMoveRequestCancel();
-          }
-          if (g.NavId == id && g.NavMoveDir == ImGuiDir_Right &&
-              !is_open) // If there's something upcoming on the line
-                        // we may want to give it the priority?
-          {
-            toggled = true;
-            ImGui::NavClearPreferredPosForAxis(ImGuiAxis_X);
-            ImGui::NavMoveRequestCancel();
-          }
-
-          if (toggled) {
-            is_open = !is_open;
-            window->DC.StateStorage->SetInt(id, is_open);
-            g.LastItemData.StatusFlags |=
-                ImGuiItemStatusFlags_ToggledOpen;
-          }
-        }
-
-        // In this branch, TreeNodeBehavior() cannot toggle the
-        // selection so this will never trigger.
-        if (selected != was_selected) //-V547
-          g.LastItemData.StatusFlags |=
-              ImGuiItemStatusFlags_ToggledSelection;
-
-        // Render
-        const ImU32 text_col = ImGui::GetColorU32(ImGuiCol_Text);
-        ImGuiNavHighlightFlags nav_highlight_flags =
-            ImGuiNavHighlightFlags_TypeThin;
-        if (display_frame) {
-          // Framed type
-          const ImU32 bg_col = ImGui::GetColorU32(
-              (held && hovered) ? ImGuiCol_HeaderActive
-              : hovered         ? ImGuiCol_HeaderHovered
-                                : ImGuiCol_Header);
-          ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, bg_col, true,
-                             l_Rounding);
-          ImGui::RenderNavHighlight(frame_bb, id,
-                                    nav_highlight_flags);
-          if (flags & ImGuiTreeNodeFlags_Bullet) {
-            ImGui::RenderBullet(
-                window->DrawList,
-                ImVec2(text_pos.x - text_offset_x * 0.60f,
-                       text_pos.y + g.FontSize * 0.5f),
-                text_col);
-          } else if (!is_leaf) {
-            /*
-            ImGui::RenderArrow(
-                window->DrawList,
-                ImVec2(text_pos.x - text_offset_x + padding.x,
-                       text_pos.y),
-                text_col,
-                is_open
-                    ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow)
-                           ? ImGuiDir_Up
-                           : ImGuiDir_Down)
-                    : ImGuiDir_Right,
-                1.0f);
-                */
-            const char *arrow = is_open ? ICON_LC_CHEVRON_DOWN
-                                        : ICON_LC_CHEVRON_RIGHT;
-            ImVec2 arrow_pos(text_pos.x - text_offset_x + padding.x,
-                             text_pos.y + 1.0f);
-            window->DrawList->AddText(arrow_pos, text_col, arrow);
-          } else // Leaf without bullet, left-adjusted text
-            text_pos.x -= text_offset_x - padding.x;
-          if (flags & ImGuiTreeNodeFlags_ClipLabelForTrailingButton)
-            frame_bb.Max.x -= g.FontSize + style.FramePadding.x;
-
-          if (g.LogEnabled)
-            ImGui::LogSetNextTextDecoration("###", "###");
-        } else {
-          // Unframed typed for tree nodes
-          if (hovered || selected) {
-            const ImU32 bg_col = ImGui::GetColorU32(
-                (held && hovered) ? ImGuiCol_HeaderActive
-                : hovered         ? ImGuiCol_HeaderHovered
-                                  : ImGuiCol_Header);
-            ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, bg_col,
-                               false);
-          }
-          ImGui::RenderNavHighlight(frame_bb, id,
-                                    nav_highlight_flags);
-          if (flags & ImGuiTreeNodeFlags_Bullet) {
-            ImGui::RenderBullet(
-                window->DrawList,
-                ImVec2(text_pos.x - text_offset_x * 0.5f,
-                       text_pos.y + g.FontSize * 0.5f),
-                text_col);
-          } else if (!is_leaf) {
-            ImGui::RenderArrow(
-                window->DrawList,
-                ImVec2(text_pos.x - text_offset_x + padding.x,
-                       text_pos.y + g.FontSize * 0.15f),
-                text_col,
-                is_open
-                    ? ((flags & ImGuiTreeNodeFlags_UpsideDownArrow)
-                           ? ImGuiDir_Up
-                           : ImGuiDir_Down)
-                    : ImGuiDir_Right,
-                0.70f);
-          }
-          if (g.LogEnabled)
-            ImGui::LogSetNextTextDecoration(">", NULL);
-        }
-
-        if (span_all_columns)
-          ImGui::TablePopBackgroundChannel();
-
-        // Label
-        if (display_frame)
-          ImGui::RenderTextClipped(text_pos, frame_bb.Max, label,
-                                   label_end, &label_size);
-        else
-          ImGui::RenderText(text_pos, label, label_end, false);
-
-        if (is_open && !(flags & ImGuiTreeNodeFlags_NoTreePushOnOpen))
-          ImGui::TreePushOverrideID(id);
-        IMGUI_TEST_ENGINE_ITEM_INFO(
-            id, label,
-            g.LastItemData.StatusFlags |
-                (is_leaf ? 0 : ImGuiItemStatusFlags_Openable) |
-                (is_open ? ImGuiItemStatusFlags_Opened : 0));
-
-        if (is_open) {
-          ImGui::Dummy({0.0f, 4.0f});
-        }
-        return is_open;
-      }
-
       bool CollapsingHeader(const char *label,
                             ImGuiTreeNodeFlags flags)
       {
-        ImGuiWindow *window = ImGui::GetCurrentWindow();
-        if (window->SkipItems)
-          return false;
-        ImGuiID id = window->GetID(label);
-        return TreeNodeBehavior(
-            id, flags | ImGuiTreeNodeFlags_CollapsingHeader, label);
+        // ImGuiWindow *window = ImGui::GetCurrentWindow();
+        // if (window->SkipItems)
+        //   return false;
+        // ImGuiID id = window->GetID(label);
+        // return TreeNodeBehavior(
+        //     id, flags | ImGuiTreeNodeFlags_CollapsingHeader,
+        //     label);
+        return ImGui::CollapsingHeader(label, flags);
       }
 
       bool InputText(Util::String p_Label, char *p_Text, int p_Length,
@@ -1369,68 +1006,62 @@ namespace Low {
       {
         Theme &l_Theme = theme_get_current();
 
-        const float rounding = 4.0f;
-        const float icon_padding = 8.0f;
-        const float spacing = 4.0f;
-        const float frame_height = 27.0f;
+        // Target visual height similar to your original (27px).
+        // We adapt padding so the final frame height approximates
+        // this.
+        const float l_TargetFrameHeight = 27.0f;
+        const float l_Rounding = 4.0f;
+        const float l_BorderSize = 1.0f;
 
-        float l_FullWidth = ImGui::CalcItemWidth();
-        ImVec2 pos = ImGui::GetCursorScreenPos();
-        ImVec2 total_size = ImVec2(
-            l_FullWidth, frame_height); // Or calc width if dynamic
+        ImGui::BeginGroup();
 
-        ImGuiWindow *window = ImGui::GetCurrentWindow();
-        if (window->SkipItems)
-          return false;
+        // Width honors current layout context (columns, tables, etc.)
+        const float l_FullWidth = ImGui::CalcItemWidth();
+        ImGui::SetNextItemWidth(l_FullWidth);
 
-        ImGui::ItemSize(total_size);
-        ImGuiID id = window->GetID(p_Label.c_str());
-        ImRect bb(pos,
-                  ImVec2(pos.x + total_size.x, pos.y + total_size.y));
-        if (!ImGui::ItemAdd(bb, id))
-          return false;
+        // Compute Y padding so the widget reaches ~target height.
+        // frame_height ~= text_line_height + 2*pad_y
+        const float l_TextLineHeight = ImGui::GetTextLineHeight();
+        float l_PadY = 0.0f;
+        if (l_TargetFrameHeight > l_TextLineHeight) {
+          l_PadY = (l_TargetFrameHeight - l_TextLineHeight) * 0.5f;
+        }
 
-        ImU32 bg_col = ImGui::IsItemHovered()
-                           ? color_to_imcolor(l_Theme.input)
-                           : color_to_imcolor(l_Theme.input);
-        ImU32 border_col = color_to_imcolor(l_Theme.button);
+        // Style: rounding, border, background + hovered/active
+        // variants, border color.
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                            ImVec2(l_Style.FramePadding.x, l_PadY));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, l_Rounding);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,
+                            l_BorderSize);
 
-        // Background + border
-        window->DrawList->AddRectFilled(bb.Min, bb.Max, bg_col,
-                                        rounding);
-        window->DrawList->AddRect(bb.Min, bb.Max, border_col,
-                                  rounding, 0, 1.0f);
+        // Use your theme colors; reuse input for all three bg states
+        // for consistency.
+        const ImU32 l_Bg = color_to_imcolor(l_Theme.input);
+        const ImU32 l_BgHover = color_to_imcolor(l_Theme.input);
+        const ImU32 l_BgActive = color_to_imcolor(l_Theme.input);
+        const ImU32 l_Border = color_to_imcolor(l_Theme.button);
 
-        // Position input field
-        ImGui::SameLine(0, spacing);
-        ImGui::SetCursorPosY(pos.y); // align with background
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-        ImGui::PushStyleColor(ImGuiCol_FrameBg,
-                              IM_COL32(0, 0, 0, 0)); // Transparent
-        ImGui::PushStyleColor(ImGuiCol_Border, IM_COL32(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, l_Bg);
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, l_BgHover);
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, l_BgActive);
+        ImGui::PushStyleColor(ImGuiCol_Border, l_Border);
 
-        // Shrink width for input field
-        ImGui::PushItemWidth(total_size.x - spacing - 6.0f);
+        // Invisible label -> stable ID without visible text.
+        Util::String l_Id = "##";
+        l_Id += p_Label;
 
-        ImGui::SetCursorScreenPos(ImVec2(
-            pos.x + 3.0f,
-            pos.y +
-                ((frame_height - ImGui::GetTextLineHeight()) * 0.5f) -
-                3.0f));
+        const bool l_Changed = ImGui::InputText(
+            l_Id.c_str(), p_Text, (size_t)p_Length, p_Flags);
 
-        bool changed = ImGui::InputText(p_Label.c_str(), p_Text,
-                                        p_Length, p_Flags);
-        ImGui::PopItemWidth();
+        ImGui::PopStyleColor(4);
+        ImGui::PopStyleVar(3);
 
-        ImGui::PopStyleColor(2);
-        ImGui::PopStyleVar(2);
-
-        ImGui::SetCursorScreenPos({pos.x, pos.y + total_size.y});
-
-        return changed;
+        ImGui::EndGroup();
+        return l_Changed;
       }
 
     } // namespace Gui
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

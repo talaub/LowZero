@@ -4,10 +4,6 @@
 
 #include "LowUtilLogger.h"
 
-#include "LowCoreMaterial.h"
-
-#include "LowRendererExposedObjects.h"
-
 namespace Low {
   namespace Editor {
     namespace AssetOperations {
@@ -25,22 +21,7 @@ namespace Low {
         Util::Handle l_OldHandle = m_Handle;
         m_Handle = p_ChangeList.get_mapping(m_Handle);
 
-        Core::Material l_Material = m_Handle.get_id();
-        if (l_Material.is_alive()) {
-          uint8_t l_PropertyType = 0;
-          for (auto it =
-                   l_Material.get_material_type().get_properties().begin();
-               it != l_Material.get_material_type().get_properties().end();
-               ++it) {
-            if (it->name == m_PropertyName) {
-              l_PropertyType = it->type;
-            }
-          }
-          if (l_PropertyType == Renderer::MaterialTypePropertyType::TEXTURE2D) {
-            m_NewValue.set_handle(p_ChangeList.get_mapping(m_NewValue));
-          }
-          l_Material.set_property(m_PropertyName, m_NewValue);
-        }
+        Renderer::Material l_Material = m_Handle.get_id();
       }
 
       Operation *

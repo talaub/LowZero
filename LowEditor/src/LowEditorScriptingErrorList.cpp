@@ -8,8 +8,6 @@
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 
-#include "LowRendererImGuiHelper.h"
-
 #include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
 #include "IconsCodicons.h"
@@ -129,7 +127,7 @@ namespace Low {
         }
 
         ImGui::BeginGroup();
-        ImGui::PushFont(Renderer::ImGuiHelper::fonts().icon_800);
+        ImGui::PushFont(Fonts::UI());
         ImGui::PushStyleColor(
             ImGuiCol_Text,
             color_to_imvec4(theme_get_current().error));
@@ -138,7 +136,7 @@ namespace Low {
         ImGui::PopFont();
         ImGui::SameLine();
         ImGui::BeginGroup();
-        ImGui::PushFont(Renderer::ImGuiHelper::fonts().common_500);
+        ImGui::PushFont(Fonts::UI());
         ImGui::TextWrapped(i_Error.message.c_str());
         ImGui::PopFont();
 

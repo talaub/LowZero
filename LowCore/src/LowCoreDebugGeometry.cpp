@@ -1,193 +1,48 @@
 #include "LowCoreDebugGeometry.h"
 
+#include "LowMath.h"
+#include "LowMathVectorUtil.h"
+#include "LowRendererEditorImage.h"
+#include "LowRendererPrimitives.h"
+#include "LowRendererTextureState.h"
+#include "LowRendererResourceManager.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 
-#include "LowRendererExposedObjects.h"
 #include "LowRenderer.h"
 
 namespace Low {
   namespace Core {
     namespace DebugGeometry {
-      struct
-      {
-        MeshResource cube;
-        MeshResource cone;
-        MeshResource cylinder;
-        MeshResource plane;
-        MeshResource sphere;
-        MeshResource triangle;
-      } g_Meshes;
-
-      struct
-      {
-        Renderer::Material onesided_fill_depthtested;
-        Renderer::Material onesided_fill_nodepthtest;
-        Renderer::Material onesided_line_depthtested;
-        Renderer::Material onesided_line_nodepthtest;
-      } g_Materials;
-
-      struct
-      {
-        Renderer::MaterialType basic;
-        Renderer::MaterialType wireframe;
-        Renderer::MaterialType nodepth_wireframe;
-        Renderer::MaterialType nodepth;
-        Renderer::MaterialType billboard;
-      } g_MaterialTypes;
-
-      static void load_meshes()
-      {
-        //Util::String l_BasePath = Util::get_project().dataPath;
-        Util::String l_BasePath = "../../_internal/assets/meshes/";
-
-        g_Meshes.cube = MeshResource::make(l_BasePath + "cube.glb");
-        g_Meshes.cube.load();
-        g_Meshes.cone = MeshResource::make(l_BasePath + "cone.glb");
-        g_Meshes.cone.load();
-        g_Meshes.cylinder =
-            MeshResource::make(l_BasePath + "cylinder.glb");
-        g_Meshes.cylinder.load();
-        g_Meshes.plane = MeshResource::make(l_BasePath + "plane.glb");
-        g_Meshes.plane.load();
-        g_Meshes.sphere =
-            MeshResource::make(l_BasePath + "sphere.glb");
-        g_Meshes.sphere.load();
-        g_Meshes.triangle =
-            MeshResource::make(l_BasePath + "triangle.glb");
-        g_Meshes.triangle.load();
-      }
-
-      static void initialize_materials()
-      {
-        for (auto it =
-                 Renderer::MaterialType::ms_LivingInstances.begin();
-             it != Renderer::MaterialType::ms_LivingInstances.end();
-             ++it) {
-          if (it->get_name() == N(debuggeometry)) {
-            g_MaterialTypes.basic = *it;
-          }
-          if (it->get_name() == N(debuggeometry_nodepth)) {
-            g_MaterialTypes.nodepth = *it;
-          }
-          if (it->get_name() == N(debuggeometry_wireframe)) {
-            g_MaterialTypes.wireframe = *it;
-          }
-          if (it->get_name() == N(debuggeometry_wireframe_nodepth)) {
-            g_MaterialTypes.nodepth_wireframe = *it;
-          }
-          if (it->get_name() == N(debuggeometry_billboard)) {
-            g_MaterialTypes.billboard = *it;
-          }
-        }
-
-        LOW_ASSERT(
-            g_MaterialTypes.basic.is_alive(),
-            "Could not find debug geometry base material type");
-        LOW_ASSERT(
-            g_MaterialTypes.nodepth.is_alive(),
-            "Could not find debug geometry nodepth material type");
-        LOW_ASSERT(
-            g_MaterialTypes.wireframe.is_alive(),
-            "Could not find debug geometry wireframe material type");
-        LOW_ASSERT(g_MaterialTypes.nodepth_wireframe.is_alive(),
-                   "Could not find debug geometry wireframe nodepth "
-                   "material type");
-        LOW_ASSERT(
-            g_MaterialTypes.billboard.is_alive(),
-            "Could not find debug geometry billboard material type");
-
-        g_Materials.onesided_fill_depthtested =
-            Renderer::create_material(N(DebugGeometryMaterial),
-                                      g_MaterialTypes.basic);
-        g_Materials.onesided_fill_depthtested.set_property(
-            N(fallback_color),
-            Util::Variant(Math::Vector4(0.2f, 0.8f, 1.0f, 1.0f)));
-
-        g_Materials.onesided_fill_nodepthtest =
-            Renderer::create_material(
-                N(DebugGeometryMaterialNoDepthTest),
-                g_MaterialTypes.nodepth);
-        g_Materials.onesided_fill_nodepthtest.set_property(
-            N(fallback_color),
-            Util::Variant(Math::Vector4(0.2f, 0.8f, 1.0f, 1.0f)));
-
-        g_Materials.onesided_line_depthtested =
-            Renderer::create_material(
-                N(DebugGeometryMaterialWireframe),
-                g_MaterialTypes.wireframe);
-        g_Materials.onesided_line_depthtested.set_property(
-            N(fallback_color),
-            Util::Variant(Math::Vector4(0.2f, 0.8f, 1.0f, 1.0f)));
-
-        g_Materials.onesided_line_nodepthtest =
-            Renderer::create_material(
-                N(DebugGeometryMaterialWireframeNoDepthTest),
-                g_MaterialTypes.nodepth_wireframe);
-        g_Materials.onesided_line_nodepthtest.set_property(
-            N(fallback_color),
-            Util::Variant(Math::Vector4(0.2f, 0.8f, 1.0f, 1.0f)));
-      }
 
       void initialize()
       {
-        load_meshes();
-        initialize_materials();
       }
 
-      float screen_space_multiplier(Renderer::RenderFlow p_RenderFlow,
+      float screen_space_multiplier(Renderer::RenderView p_RenderView,
                                     Math::Vector3 p_Position)
       {
-        return 0.0015f * p_RenderFlow.get_camera_fov() *
-               glm::length(p_RenderFlow.get_camera_position() -
+        return 0.0015f * p_RenderView.get_camera_fov() *
+               glm::length(p_RenderView.get_camera_position() -
                            p_Position);
       }
 
-      void render_mesh(Renderer::Mesh p_Mesh,
-                       Renderer::Material p_Material,
-                       Math::Color p_Color,
-                       Math::Matrix4x4 p_Transformation)
+      void render_mesh(Renderer::RenderView p_RenderView,
+                       Renderer::Mesh p_Mesh,
+                       const Math::Color p_Color,
+                       const Math::Matrix4x4 p_Transformation,
+                       const bool p_DepthTest, const bool p_Wireframe)
       {
-        Renderer::RenderObject l_RenderObject;
-        l_RenderObject.color = p_Color;
-        l_RenderObject.material = p_Material;
-        l_RenderObject.mesh = p_Mesh;
-        l_RenderObject.entity_id = 0;
-        l_RenderObject.transform = p_Transformation;
+        Renderer::DebugGeometryDraw l_Draw;
+        l_Draw.depthTest = p_DepthTest;
+        l_Draw.color = p_Color;
+        l_Draw.wireframe = p_Wireframe;
+        l_Draw.submesh = p_Mesh.get_gpu().get_submeshes()[0];
+        l_Draw.transform = p_Transformation;
 
-        Renderer::get_main_renderflow().register_renderobject(
-            l_RenderObject);
-      }
-
-      void render_mesh(MeshResource p_MeshResource,
-                       Math::Color p_Color,
-                       Math::Matrix4x4 &p_Transformation,
-                       bool p_DepthTest, bool p_Wireframe)
-      {
-        Renderer::Material l_Material =
-            g_Materials.onesided_fill_depthtested;
-
-        if (p_Wireframe) {
-          l_Material = g_Materials.onesided_line_depthtested;
-        }
-
-        if (!p_DepthTest) {
-          l_Material = g_Materials.onesided_fill_nodepthtest;
-
-          if (p_Wireframe) {
-            l_Material = g_Materials.onesided_line_nodepthtest;
-          }
-        }
-
-        for (uint32_t i = 0u;
-             i < p_MeshResource.get_submeshes().size(); ++i) {
-          render_mesh(
-              p_MeshResource.get_submeshes()[i].mesh, l_Material,
-              p_Color,
-              p_Transformation *
-                  p_MeshResource.get_submeshes()[i].transformation);
-        }
+        p_RenderView.add_debug_geometry(l_Draw);
       }
 
       void render_box(Math::Box p_Box, Math::Color p_Color,
@@ -198,8 +53,9 @@ namespace Low {
             glm::toMat4(p_Box.rotation) *
             glm::scale(glm::mat4(1.0f), p_Box.halfExtents * 2.0f);
 
-        render_mesh(g_Meshes.cube, p_Color, l_Transform, p_DepthTest,
-                    p_Wireframe);
+        render_mesh(Renderer::get_editor_renderview(),
+                    Renderer::get_primitives().unitCube, p_Color,
+                    l_Transform, p_DepthTest, p_Wireframe);
       }
 
       void render_sphere(Math::Sphere p_Sphere, Math::Color p_Color,
@@ -211,14 +67,16 @@ namespace Low {
             glm::scale(glm::mat4(1.0f),
                        Math::Vector3(p_Sphere.radius));
 
-        render_mesh(g_Meshes.sphere, p_Color, l_Transform,
-                    p_DepthTest, p_Wireframe);
+        render_mesh(Renderer::get_editor_renderview(),
+                    Renderer::get_primitives().unitIcoSphere, p_Color,
+                    l_Transform, p_DepthTest, p_Wireframe);
       }
 
       void render_cylinder(Math::Cylinder p_Cylinder,
                            Math::Color p_Color, bool p_DepthTest,
                            bool p_Wireframe)
       {
+        // TODO: FIX
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Cylinder.position) *
             glm::toMat4(p_Cylinder.rotation) *
@@ -227,13 +85,15 @@ namespace Low {
                                      p_Cylinder.height / 2.0f,
                                      p_Cylinder.radius));
 
-        render_mesh(g_Meshes.cylinder, p_Color, l_Transform,
-                    p_DepthTest, p_Wireframe);
+        render_mesh(Renderer::get_editor_renderview(),
+                    Renderer::get_primitives().unitCube, p_Color,
+                    l_Transform, p_DepthTest, p_Wireframe);
       }
 
       void render_cone(Math::Cone p_Cone, Math::Color p_Color,
                        bool p_DepthTest, bool p_Wireframe)
       {
+        // TODO: FIX
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Cone.position) *
             glm::toMat4(p_Cone.rotation) *
@@ -241,8 +101,9 @@ namespace Low {
                        Math::Vector3(p_Cone.radius, p_Cone.height,
                                      p_Cone.radius));
 
-        render_mesh(g_Meshes.cone, p_Color, l_Transform, p_DepthTest,
-                    p_Wireframe);
+        render_mesh(Renderer::get_editor_renderview(),
+                    Renderer::get_primitives().unitCube, p_Color,
+                    l_Transform, p_DepthTest, p_Wireframe);
       }
 
       void render_arrow(Math::Vector3 p_Position,
@@ -272,47 +133,52 @@ namespace Low {
         render_cone(l_Head, p_Color, p_DepthTest, p_Wireframe);
       }
 
-      void render_spherical_billboard(Math::Vector3 p_Position,
-                                      float p_Size,
-                                      Renderer::Material p_Material)
+      void
+      render_spherical_billboard(Math::Vector3 p_Position,
+                                 float p_Size,
+                                 Renderer::EditorImage p_EditorImage)
       {
+        Util::HandleLock l_ImageLock(p_EditorImage, false);
+
+        if (!l_ImageLock.owns_lock()) {
+          return;
+        }
+
+        if (!p_EditorImage.is_alive()) {
+          return;
+        }
+        if (p_EditorImage.get_state() ==
+            Renderer::TextureState::UNLOADED) {
+          Renderer::ResourceManager::load_editor_image(p_EditorImage);
+        }
+
+        Renderer::RenderView l_RenderView =
+            Renderer::get_editor_renderview();
+
+        const Math::Quaternion l_Rotation =
+            Math::VectorUtil::from_direction(
+                l_RenderView.get_camera_direction(), LOW_VECTOR3_UP);
+
         Math::Matrix4x4 l_Transform =
             glm::translate(glm::mat4(1.0f), p_Position) *
-            glm::toMat4(Math::Quaternion(1.0f, 0.0f, 0.0f, 0.0f)) *
+            glm::toMat4(l_Rotation) *
             glm::scale(glm::mat4(1.0f), Math::Vector3(p_Size));
 
-        Math::Color l_Color(1.0f);
+        const Math::Color l_Color(1.0f);
 
-        for (uint32_t i = 0u;
-             i < g_Meshes.plane.get_submeshes().size(); ++i) {
-          render_mesh(g_Meshes.plane.get_submeshes()[i].mesh,
-                      p_Material, l_Color, l_Transform);
+        {
+          Renderer::DebugGeometryDraw l_Draw;
+          l_Draw.depthTest = true;
+          l_Draw.color = l_Color;
+          l_Draw.wireframe = false;
+          l_Draw.submesh = Renderer::get_primitives()
+                               .unitQuad.get_gpu()
+                               .get_submeshes()[0];
+          l_Draw.transform = l_Transform;
+          l_Draw.editorImage = p_EditorImage;
+
+          l_RenderView.add_debug_geometry(l_Draw);
         }
-      }
-
-      static Renderer::Material create_spherical_billboard_material(
-          Renderer::Texture2D p_Texture)
-      {
-        Renderer::Material l_Material = Renderer::create_material(
-            N(DebugGeometryMaterialSphericalBillboardBase),
-            g_MaterialTypes.billboard);
-        l_Material.set_property(
-            N(billboard_image),
-            Util::Variant::from_handle(p_Texture));
-
-        return l_Material;
-      }
-
-      Renderer::Material
-      create_spherical_billboard_material(Util::String p_Path)
-      {
-        Util::Resource::Image2D l_Image;
-        Util::Resource::load_image2d(p_Path, l_Image);
-
-        Renderer::Texture2D l_Texture =
-            Renderer::upload_texture(N(BillboadTexture), l_Image);
-
-        return create_spherical_billboard_material(l_Texture);
       }
 
       void render_line(Math::Vector3 p_Start, Math::Vector3 p_End,
@@ -366,8 +232,9 @@ namespace Low {
                                      p_Cylinder.height,
                                      p_Cylinder.radius));
 
-        render_mesh(g_Meshes.cylinder, p_Color, l_Transform,
-                    p_DepthTest, p_Wireframe);
+        render_mesh(Renderer::get_editor_renderview(),
+                    Renderer::get_primitives().unitCube, p_Color,
+                    l_Transform, p_DepthTest, p_Wireframe);
       }
 
       glm::mat4 generateModelMatrix(const glm::vec3 &v0,
@@ -427,14 +294,19 @@ namespace Low {
            l_Transformation, p_DepthTest, p_Wireframe);
         */
 
+        return;
+        // TODO: fix
+
+        /*
         Renderer::render_debug_triangle(p_Color, p_Vertex0, p_Vertex1,
                                         p_Vertex2);
+                                        */
       }
 
-      MeshResource get_plane()
+      Renderer::Mesh get_plane()
       {
-        return g_Meshes.plane;
+        return Renderer::get_primitives().unitQuad;
       }
     } // namespace DebugGeometry
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

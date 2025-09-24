@@ -1,9 +1,7 @@
 #pragma once
 
 #include "LowEditorWidget.h"
-#include "LowEditorRenderFlowWidget.h"
-
-#include "LowRendererExposedObjects.h"
+#include "LowEditorRenderViewWidget.h"
 
 namespace Low {
   namespace Editor {
@@ -11,7 +9,7 @@ namespace Low {
     {
       EditingWidget();
       void render(float p_Delta) override;
-      RenderFlowWidget *m_RenderFlowWidget;
+      RenderViewWidget *m_RenderViewWidget;
 
     private:
       float m_CameraSpeed;
