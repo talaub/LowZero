@@ -29,6 +29,7 @@
 #include "LowEditorTypeManagerWidget.h"
 #include "LowEditorScriptingErrorWidget.h"
 #include "LowEditorAppearanceWidget.h"
+#include "LowEditorScriptWidget.h"
 #include "LowEditor.h"
 
 #include "LowUtil.h"
@@ -77,6 +78,7 @@ namespace Low {
     EditingWidget *g_MainViewportWidget;
     DetailsWidget *g_DetailsWidget;
     FlodeWidget *g_FlodeWidget;
+    ScriptWidget *g_ScriptWidget;
 
     Low::Util::Map<Util::String, EditorWidget> g_Widgets;
 
@@ -585,6 +587,8 @@ namespace Low {
                              new ScriptingErrorWidget, false);
       register_editor_widget("Appearance", new AppearanceWidget,
                              false, false);
+      g_ScriptWidget = new ScriptWidget;
+      register_editor_widget("Code Editor", g_ScriptWidget, false);
 
       for (auto &it : get_type_metadata()) {
         if (it.second.editor.manager) {
@@ -673,6 +677,11 @@ namespace Low {
     FlodeWidget *get_flode_widget()
     {
       return g_FlodeWidget;
+    }
+
+    ScriptWidget *get_script_widget()
+    {
+      return g_ScriptWidget;
     }
 
     void _set_focused_widget(Widget *p_Widget)

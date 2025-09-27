@@ -103,6 +103,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, lit_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, blurred_image,
+                                 Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderView, steps,
           Low::Util::List<Low::Renderer::RenderStep>))
@@ -699,6 +702,40 @@ namespace Low {
         // End property: lit_image
       }
       {
+        // Property: blurred_image
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(blurred_image);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, blurred_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_blurred_image();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            blurred_image,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_blurred_image(
+              *(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_blurred_image();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: blurred_image
+      }
+      {
         // Property: steps
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(steps);
@@ -1161,6 +1198,9 @@ namespace Low {
       }
       if (get_lit_image().is_alive()) {
         l_Handle.set_lit_image(get_lit_image());
+      }
+      if (get_blurred_image().is_alive()) {
+        l_Handle.set_blurred_image(get_blurred_image());
       }
       l_Handle.set_step_data(get_step_data());
       l_Handle.set_camera_dirty(is_camera_dirty());
@@ -1776,6 +1816,35 @@ namespace Low {
       broadcast_observable(N(lit_image));
     }
 
+    Low::Renderer::Texture RenderView::get_blurred_image() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_blurred_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_blurred_image
+
+      return TYPE_SOA(RenderView, blurred_image,
+                      Low::Renderer::Texture);
+    }
+    void RenderView::set_blurred_image(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_blurred_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_blurred_image
+
+      // Set new value
+      TYPE_SOA(RenderView, blurred_image, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_blurred_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_blurred_image
+
+      broadcast_observable(N(blurred_image));
+    }
+
     Low::Util::List<Low::Renderer::RenderStep> &
     RenderView::get_steps() const
     {
@@ -2033,6 +2102,7 @@ namespace Low {
       l_RenderView.add_step_by_name(RENDERSTEP_DEBUG_GEOMETRY_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
       l_RenderView.add_step_by_name(RENDERSTEP_OBJECT_ID_COPY);
+      l_RenderView.add_step_by_name(RENDERSTEP_BLUR);
 
       return l_RenderView;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_default

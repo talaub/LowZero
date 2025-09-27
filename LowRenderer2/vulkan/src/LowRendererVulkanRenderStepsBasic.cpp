@@ -186,6 +186,12 @@ namespace Low {
                it != p_RenderView.get_render_scene()
                          .get_draw_commands()
                          .end();) {
+            if (!it->is_alive()){
+              it = p_RenderView.get_render_scene()
+                       .get_draw_commands()
+                       .erase(it);
+              continue;
+            }
             if (!it->get_render_object().is_alive()) {
               it = p_RenderView.get_render_scene()
                        .get_draw_commands()
@@ -1732,6 +1738,217 @@ namespace Low {
         return true;
       }
 
+      struct BlurStepData
+      {
+        Texture tempBlurTexture;
+      };
+
+      bool initialize_blur_renderstep()
+      {
+        RenderStep l_RenderStep = RenderStep::make(RENDERSTEP_BLUR);
+
+        const u8 l_Scale = 1;
+
+        l_RenderStep.set_prepare_callback(
+            [](RenderStep p_RenderStep,
+               RenderView p_RenderView) -> bool {
+              BlurStepData *l_Data = new BlurStepData;
+              p_RenderView.get_step_data()[p_RenderStep.get_index()] =
+                  l_Data;
+              l_Data->tempBlurTexture =
+                  Texture::make_gpu_ready(N(BlurTemp));
+              return true;
+            });
+
+        l_RenderStep.set_resolution_update_callback(
+            [l_Scale](RenderStep p_RenderStep,
+                      Math::UVector2 p_NewDimensions,
+                      RenderView p_RenderView) -> bool {
+              VkCommandBuffer l_Cmd =
+                  Global::get_current_command_buffer();
+
+              BlurStepData *l_Data = (BlurStepData *)GET_STEP_DATA(
+                  p_RenderView, p_RenderStep);
+
+              {
+                Texture l_Texture = l_Data->tempBlurTexture;
+                LOWR_VK_ASSERT_RETURN(l_Texture.is_alive(),
+                                      "Failed to execute basic ssao "
+                                      "renderstep because ssao "
+                                      "blur texture was not alive.");
+
+                Vulkan::Image l_Image =
+                    l_Texture.get_gpu().get_data_handle();
+
+                if (l_Image.is_alive()) {
+                  ImGui_ImplVulkan_RemoveTexture(
+                      (VkDescriptorSet)l_Texture.get_gpu()
+                          .get_imgui_texture_id());
+
+                  ImageUtil::destroy(l_Image);
+                  l_Image.destroy();
+                }
+
+                if (!l_Image.is_alive()) {
+                  l_Data->tempBlurTexture.get_gpu().set_data_handle(
+                      Vulkan::Image::make(N(BlurTemp)));
+
+                  VkExtent3D l_Extent;
+                  l_Extent.width = p_NewDimensions.x / l_Scale;
+                  l_Extent.height = p_NewDimensions.y / l_Scale;
+                  l_Extent.depth = 1;
+
+                  LOWR_VK_ASSERT_RETURN(
+                      Vulkan::ImageUtil::create(
+                          l_Data->tempBlurTexture.get_gpu()
+                              .get_data_handle(),
+                          l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                          VK_IMAGE_USAGE_SAMPLED_BIT |
+                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                          false),
+                      "Failed to create temp blur image.");
+
+                  ImageUtil::cmd_transition(
+                      l_Cmd,
+                      l_Data->tempBlurTexture.get_gpu()
+                          .get_data_handle(),
+                      VK_IMAGE_LAYOUT_UNDEFINED,
+                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                }
+              }
+              return true;
+            });
+
+        l_RenderStep.set_execute_callback([l_Scale](
+                                              RenderStep p_RenderStep,
+                                              float p_Delta,
+                                              RenderView p_RenderView)
+                                              -> bool {
+          VkCommandBuffer l_Cmd =
+              Global::get_current_command_buffer();
+
+          VK_RENDERDOC_SECTION_BEGIN("Blur",
+                                     SINGLE_ARG({1.0f, 1.0f, 0.2f}));
+
+          ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
+
+          BlurStepData *l_Data = (BlurStepData *)GET_STEP_DATA(
+              p_RenderView, p_RenderStep);
+
+          Texture l_Texture = p_RenderView.get_blurred_image();
+          LOWR_VK_ASSERT_RETURN(l_Texture.is_alive(),
+                                "Failed to execute blur renderstep "
+                                "because blur "
+                                "output texture was not alive.");
+
+          Math::UVector2 l_Dimensions = p_RenderView.get_dimensions();
+
+          Vulkan::Image l_Image =
+              l_Texture.get_gpu().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Vulkan::Image::make(N(BlurOut));
+            l_Texture.get_gpu().set_data_handle(l_Image.get_id());
+
+            VkExtent3D l_Extent;
+            l_Extent.width = l_Dimensions.x / l_Scale;
+            l_Extent.height = l_Dimensions.y / l_Scale;
+            l_Extent.depth = 1;
+
+            LOWR_VK_ASSERT_RETURN(
+                Vulkan::ImageUtil::create(
+                    l_Image, l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                    VK_IMAGE_USAGE_SAMPLED_BIT |
+                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                    false),
+                "Failed to create blur out image.");
+
+            ImageUtil::cmd_transition(
+                l_Cmd,
+                p_RenderView.get_blurred_image()
+                    .get_gpu()
+                    .get_data_handle(),
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          {
+            Image l_TempImage =
+                l_Data->tempBlurTexture.get_gpu().get_data_handle();
+            if (!l_TempImage.is_alive()) {
+              l_Data->tempBlurTexture.get_gpu().set_data_handle(
+                  Vulkan::Image::make(N(SsaoBlur)));
+
+              VkExtent3D l_Extent;
+              l_Extent.width = l_Dimensions.x / l_Scale;
+              l_Extent.height = l_Dimensions.y / l_Scale;
+              l_Extent.depth = 1;
+
+              LOWR_VK_ASSERT_RETURN(
+                  Vulkan::ImageUtil::create(
+                      l_Data->tempBlurTexture.get_gpu()
+                          .get_data_handle(),
+                      l_Extent, VK_FORMAT_R16G16B16A16_SFLOAT,
+                      VK_IMAGE_USAGE_SAMPLED_BIT |
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                      false),
+                  "Failed to create blur image.");
+
+              ImageUtil::cmd_transition(
+                  l_Cmd,
+                  l_Data->tempBlurTexture.get_gpu().get_data_handle(),
+                  VK_IMAGE_LAYOUT_UNDEFINED,
+                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
+
+            {
+              VkDescriptorSet l_Set =
+                  Global::get_global_descriptor_set();
+
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_BaseSsaoStepData.pipelineLayout, 0, 1, &l_Set, 0,
+                  nullptr);
+
+              {
+                VkDescriptorSet l_TextureSet =
+                    Global::get_current_texture_descriptor_set();
+                vkCmdBindDescriptorSets(
+                    l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    g_BaseSsaoStepData.pipelineLayout, 1, 1,
+                    &l_TextureSet, 0, nullptr);
+              }
+
+              VkDescriptorSet l_DescriptorSet =
+                  l_ViewInfo.get_view_data_descriptor_set();
+
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_BaseSsaoStepData.pipelineLayout, 2, 1,
+                  &l_DescriptorSet, 0, nullptr);
+            }
+            {
+              vkCmdBindDescriptorSets(
+                  l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                  g_BaseSsaoStepData.pipelineLayout, 3, 1,
+                  &g_BaseSsaoStepData.descriptorSet, 0, nullptr);
+            }
+          }
+
+          Global::blur_image_4(
+              p_RenderView.get_lit_image(), l_Data->tempBlurTexture,
+              p_RenderView.get_blurred_image(),
+              {p_RenderView.get_dimensions().x / l_Scale,
+               p_RenderView.get_dimensions().y / l_Scale});
+
+          VK_RENDERDOC_SECTION_END();
+
+          return true;
+        });
+
+        return true;
+      }
+
       bool initialize_basic_rendersteps()
       {
         LOWR_VK_ASSERT_RETURN(
@@ -1758,6 +1975,9 @@ namespace Low {
         LOWR_VK_ASSERT_RETURN(
             initialize_object_id_copy_renderstep(),
             "Failed to initialize object copy renderstep");
+
+        LOWR_VK_ASSERT_RETURN(initialize_blur_renderstep(),
+                              "Failed to initialize blur renderstep");
         return true;
       }
     } // namespace Vulkan

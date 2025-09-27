@@ -18,12 +18,24 @@ file(GLOB_RECURSE INCLUDES "include/*.h")
 file(GLOB_RECURSE FLODE_SOURCES "../Flode/src/*.cpp")
 file(GLOB_RECURSE FLODE_INCLUDES "../Flode/include/*.h")
 
+set(ZEP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/zep")
+
 add_library(LowEditor SHARED
   ${NODEGRAPH_SOURCES} 
   ${SOURCES} 
   ${INCLUDES} 
   ${FLODE_SOURCES} 
   ${FLODE_INCLUDES} 
+)
+
+target_include_directories(LowEditor PRIVATE
+  "${ZEP_DIR}/include"
+)
+
+target_compile_definitions(LowEditor PRIVATE
+    ZEP_FEATURE_CPP_FILE_SYSTEM
+    ZEP_USE_SDL
+    ZEP_ROOT="\"${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/zep\""
 )
 
 source_group("Header Files" FILES ${INCLUDES})
@@ -80,3 +92,4 @@ target_include_directories(LowEditor PUBLIC
 target_include_directories(LowEditor PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/private_include"
 )
+

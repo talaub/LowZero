@@ -195,6 +195,9 @@ namespace Low {
         bool blur_image_1(Texture p_ImageToBlur, Texture p_TempImage,
                           Texture p_OutImage,
                           Math::UVector2 p_Dimensions);
+        bool blur_image_4(Texture p_ImageToBlur, Texture p_TempImage,
+                          Texture p_OutImage,
+                          Math::UVector2 p_Dimensions);
       } // namespace Global
 
       struct Context;

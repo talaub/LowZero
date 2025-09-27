@@ -84,6 +84,8 @@ namespace Low {
 
     void LOW_EDITOR_API open_flode_graph(Util::String p_Path);
 
+    void LOW_EDITOR_API open_file_in_code_editor(Util::String p_Path);
+
     void LOW_EDITOR_API close_widget(Widget *p_Widget);
 
     void LOW_EDITOR_API

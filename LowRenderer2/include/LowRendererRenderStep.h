@@ -16,6 +16,7 @@
 #define RENDERSTEP_UI_NAME N(ui)
 #define RENDERSTEP_DEBUG_GEOMETRY_NAME N(debug_geometry)
 #define RENDERSTEP_OBJECT_ID_COPY N(object_id_copy)
+#define RENDERSTEP_BLUR N(blur)
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {

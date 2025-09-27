@@ -23,6 +23,7 @@
 #include "LowEditorIcons.h"
 #include "LowEditorNotifications.h"
 #include "LowEditorFonts.h"
+#include "LowEditorScriptWidget.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -752,10 +753,6 @@ namespace Low {
               },
               g_DirectoryUpdateTimer);
 
-      Flode::initialize();
-
-      initialize_main_window();
-
       {
         Util::String l_BasePath =
             Util::get_project().engineDataPath + "\\fonts\\";
@@ -769,11 +766,20 @@ namespace Low {
             l_BasePath + "Roboto-Bold.ttf",
             /* roboto_light_ttf    = */
             l_BasePath + "Roboto-Light.ttf",
+            /* firacode_regular_ttf = */ l_BasePath +
+                "FiraCode-Regular.ttf",
+            /* firacode_medium_ttf  = */
+            l_BasePath + "FiraCode-Medium.ttf",
+            /* firacode_bold_ttf    = */
+            l_BasePath + "FiraCode-Bold.ttf",
+            /* firacode_light_ttf    = */
+            l_BasePath + "FiraCode-Light.ttf",
             /* codicons_ttf       = */
             l_BasePath + "codicon.ttf",
             /* lucide_ttf         = */
             l_BasePath + "lucide.ttf", // if you have it
         });
+
         Fonts::set_preset_sizes(
             {12, 14, 17, 19, 25, 28, 33, 40}); // whatever you like
                                                //
@@ -783,6 +789,10 @@ namespace Low {
 
         ImGui::GetIO().FontDefault = Fonts::UI(17);
       }
+
+      Flode::initialize();
+
+      initialize_main_window();
 
       // Load editor images
       {
@@ -946,6 +956,13 @@ namespace Low {
     {
       get_flode_widget()->m_Editor->load(p_Path);
       ImGui::SetWindowFocus(ICON_LC_WORKFLOW " Flode");
+    }
+
+    void open_file_in_code_editor(Util::String p_Path)
+    {
+      get_script_widget()->show(0.0f);
+      get_script_widget()->load_file(p_Path);
+      ImGui::SetWindowFocus(ICON_LC_BRACES " Code Editor");
     }
 
     void delete_file_if_exists(Low::Util::String p_Path)

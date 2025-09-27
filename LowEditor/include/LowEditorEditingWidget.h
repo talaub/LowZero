@@ -5,6 +5,14 @@
 
 namespace Low {
   namespace Editor {
+    enum class EditorTool
+    {
+      Select,
+      Move,
+      Rotate,
+      Scale
+    };
+
     struct EditingWidget : public Widget
     {
       EditingWidget();

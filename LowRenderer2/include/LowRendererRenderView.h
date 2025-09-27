@@ -54,6 +54,7 @@ namespace Low {
         Low::Renderer::Texture gbuffer_viewposition;
         Low::Renderer::Texture object_map;
         Low::Renderer::Texture lit_image;
+        Low::Renderer::Texture blurred_image;
         Low::Util::List<Low::Renderer::RenderStep> steps;
         Low::Util::List<RenderStepDataPtr> step_data;
         Low::Util::List<Low::Renderer::UiCanvas> ui_canvases;
@@ -216,6 +217,9 @@ namespace Low {
 
       Low::Renderer::Texture get_lit_image() const;
       void set_lit_image(Low::Renderer::Texture p_Value);
+
+      Low::Renderer::Texture get_blurred_image() const;
+      void set_blurred_image(Low::Renderer::Texture p_Value);
 
       Low::Util::List<Low::Renderer::RenderStep> &get_steps() const;
 

@@ -9,6 +9,7 @@
 #include "LowRendererMesh.h"
 #include "LowRendererResourceManager.h"
 #include "LowUtilFileSystem.h"
+#include "LowUtilHandle.h"
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "imgui.h"
@@ -262,15 +263,19 @@ namespace Low {
       }
       }
 
-      if (l_EditorImage.is_alive() &&
+      Util::HandleLock l_EditorImageLock(l_EditorImage, false);
+
+      if (l_EditorImageLock.owns_lock() && l_EditorImage.is_alive() &&
           l_EditorImage.get_state() ==
               Renderer::TextureState::UNLOADED) {
         Renderer::ResourceManager::load_editor_image(l_EditorImage);
       }
 
       const bool l_IsFallbackEditorImage =
-          !l_EditorImage.is_alive() ||
-          l_EditorImage.get_state() != Renderer::TextureState::LOADED;
+          l_EditorImageLock.owns_lock() &&
+              (
+              !l_EditorImage.is_alive() ||
+          l_EditorImage.get_state() != Renderer::TextureState::LOADED);
       if (l_IsFallbackEditorImage) {
         l_EditorImage = get_editor_image_for_asset_type(l_AssetType);
       }
@@ -281,7 +286,7 @@ namespace Low {
               ((thumb_max.x - thumb_min.x) - l_FallbackSize) / 2.0f,
               ((thumb_max.y - thumb_min.y) - l_FallbackSize) / 2.0f);
 
-      if (l_EditorImage.is_alive() &&
+      if (l_EditorImageLock.owns_lock() && l_EditorImage.is_alive() &&
           l_EditorImage.get_state() ==
               Renderer::TextureState::LOADED) {
 
@@ -291,11 +296,14 @@ namespace Low {
                             // ImGui::GetColorU32(ImGuiCol_WindowBg),
                             l_Rounding, ImDrawFlags_RoundCornersTop);
 
-          dl->AddImage(l_EditorImage.get_gpu().get_imgui_texture_id(),
-                       l_FallbackMin,
-                       l_FallbackMin +
-                           ImVec2(l_FallbackSize, l_FallbackSize));
-        } else {
+          if (l_EditorImageLock.owns_lock()) {
+            dl->AddImage(
+                l_EditorImage.get_gpu().get_imgui_texture_id(),
+                l_FallbackMin,
+                l_FallbackMin +
+                    ImVec2(l_FallbackSize, l_FallbackSize));
+          }
+        } else if (l_EditorImageLock.owns_lock()) {
           dl->AddImageRounded(
               l_EditorImage.get_gpu().get_imgui_texture_id(),
               thumb_min, thumb_max, ImVec2(0, 0), ImVec2(1, 1),
@@ -374,7 +382,19 @@ namespace Low {
         if (i_FileWatcher.hidden) {
           continue;
         }
-        draw_asset_card(i_FileWatcher);
+        AssetCardResult i_Result = draw_asset_card(i_FileWatcher);
+
+        AssetType i_AssetType = (AssetType)i_FileWatcher.typeEnum;
+
+        if (i_Result.clicked) {
+          if (i_AssetType == AssetType::Script) {
+            open_file_in_code_editor(i_FileWatcher.path);
+          } else if (i_AssetType == AssetType::File &&
+                     i_FileWatcher.extension == "yaml") {
+            open_file_in_code_editor(i_FileWatcher.path);
+          }
+        }
+
         l_Column++;
         if (l_Column < l_Cols) {
           ImGui::SameLine(0.0f, g_Margin.x);

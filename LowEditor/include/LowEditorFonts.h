@@ -11,7 +11,8 @@ namespace Low {
 
       enum class Family
       {
-        Roboto
+        Roboto,
+        FiraCode
       };
       enum class Weight
       {
@@ -63,6 +64,12 @@ namespace Low {
         return get({Family::Roboto, w, size_px});
       }
 
+      inline ImFont *Code(float size_px = 16.0f,
+                          Weight w = Weight::Regular)
+      {
+        return get({Family::FiraCode, w, size_px});
+      }
+
       // Let callers choose which sizes you bake up-front
       void set_preset_sizes(const Util::List<float> &sizes);
 
@@ -76,6 +83,11 @@ namespace Low {
         Util::String roboto_medium_ttf;
         Util::String roboto_bold_ttf;
         Util::String roboto_light_ttf;
+
+        Util::String firacode_regular_ttf;
+        Util::String firacode_medium_ttf;
+        Util::String firacode_bold_ttf;
+        Util::String firacode_light_ttf;
 
         Util::String codicons_ttf; // IconFontCppHeaders: Codicons
         Util::String lucide_ttf;   // If you have a Lucide TTF

@@ -50,7 +50,7 @@ namespace Low {
       static const char *PathFor(Family fam, Weight w)
       {
         switch (fam) {
-        case Family::Roboto:
+        case Family::Roboto: {
           switch (w) {
           case Weight::Regular:
             return g_paths.roboto_regular_ttf.c_str();
@@ -63,178 +63,190 @@ namespace Low {
           }
           break;
         }
-        return nullptr;
-      }
-
-      static void AddIconsToAtlas(ImFontAtlas *atlas, float size_px)
-      {
-        // Merge config for icons
-        ImFontConfig cfg = {};
-        cfg.MergeMode = true;
-        cfg.PixelSnapH = true;
-        cfg.OversampleH = 2; // small icon glyphs rasterize cleanly
-                             // with modest oversampling
-        cfg.OversampleV = 1;
-        cfg.GlyphMinAdvanceX = 0.0f; // set >0 for monospaced icons
-
-        cfg.GlyphOffset.y = 3.0f;
-        // --- Codicons range ---
-        // IconFontCppHeaders usually defines ICON_MIN_CI /
-        // ICON_MAX_CI for Codicons.
-        static const ImWchar codicons_ranges[] = {ICON_MIN_CI,
-                                                  ICON_MAX_CI, 0};
-        if (!g_paths.codicons_ttf.empty())
-          atlas->AddFontFromFileTTF(g_paths.codicons_ttf.c_str(),
-                                    size_px, &cfg, codicons_ranges);
-
-        // --- Lucide range ---
-        // If IconFontCppHeaders provides Lucide defines, prefer them:
-        // static const ImWchar lucide_ranges[] = { ICON_MIN_LC,
-        // ICON_MAX_LC, 0 };
-        // atlas->AddFontFromFileTTF(g_paths.lucide_ttf.c_str(),
-        // size_px, &cfg, lucide_ranges);
-
-        // If not, you can build a minimal range with only the icons
-        // you use: (Example shows how; comment this block out if you
-        // have proper MIN/MAX)
-        if (!g_paths.lucide_ttf.empty()) {
-          ImVector<ImWchar> ranges;
-          ImFontGlyphRangesBuilder b;
-          // AddExplicitChar for each Lucide codepoint you actually
-          // use b.AddChar(0xE000); b.AddChar(0xE001); ... // <- fill
-          // from your icon usage Or, if your Lucide TTF uses a
-          // contiguous block you know: b.AddRanges(lucide_ranges);
-          b.BuildRanges(&ranges);
-          atlas->AddFontFromFileTTF(g_paths.lucide_ttf.c_str(),
-                                    size_px, &cfg, ranges.Data);
+        case Family::FiraCode: {
+          switch (w) {
+          case Weight::Regular:
+            return g_paths.firacode_regular_ttf.c_str();
+          case Weight::Medium:
+            return g_paths.firacode_medium_ttf.c_str();
+          case Weight::Bold:
+            return g_paths.firacode_bold_ttf.c_str();
+          case Weight::Light:
+            return g_paths.firacode_light_ttf.c_str();
+          }
+          break;
         }
+        }
+      return nullptr;
+    }
+
+    static void AddIconsToAtlas(ImFontAtlas *atlas, float size_px)
+    {
+      // Merge config for icons
+      ImFontConfig cfg = {};
+      cfg.MergeMode = true;
+      cfg.PixelSnapH = true;
+      cfg.OversampleH = 2; // small icon glyphs rasterize cleanly
+                           // with modest oversampling
+      cfg.OversampleV = 1;
+      cfg.GlyphMinAdvanceX = 0.0f; // set >0 for monospaced icons
+
+      cfg.GlyphOffset.y = 3.0f;
+      // --- Codicons range ---
+      // IconFontCppHeaders usually defines ICON_MIN_CI /
+      // ICON_MAX_CI for Codicons.
+      static const ImWchar codicons_ranges[] = {ICON_MIN_CI,
+                                                ICON_MAX_CI, 0};
+      if (!g_paths.codicons_ttf.empty())
+        atlas->AddFontFromFileTTF(g_paths.codicons_ttf.c_str(),
+                                  size_px, &cfg, codicons_ranges);
+
+      // --- Lucide range ---
+      // If IconFontCppHeaders provides Lucide defines, prefer them:
+      // static const ImWchar lucide_ranges[] = { ICON_MIN_LC,
+      // ICON_MAX_LC, 0 };
+      // atlas->AddFontFromFileTTF(g_paths.lucide_ttf.c_str(),
+      // size_px, &cfg, lucide_ranges);
+
+      // If not, you can build a minimal range with only the icons
+      // you use: (Example shows how; comment this block out if you
+      // have proper MIN/MAX)
+      if (!g_paths.lucide_ttf.empty()) {
+        ImVector<ImWchar> ranges;
+        ImFontGlyphRangesBuilder b;
+        // AddExplicitChar for each Lucide codepoint you actually
+        // use b.AddChar(0xE000); b.AddChar(0xE001); ... // <- fill
+        // from your icon usage Or, if your Lucide TTF uses a
+        // contiguous block you know: b.AddRanges(lucide_ranges);
+        b.BuildRanges(&ranges);
+        atlas->AddFontFromFileTTF(g_paths.lucide_ttf.c_str(), size_px,
+                                  &cfg, ranges.Data);
       }
+    }
 
-      static float bake_size(float logical_px)
-      {
-        // Round to a stable pixel size after DPI so caching hits
-        // reliably.
-        return floorf(logical_px * g_dpi + 0.5f);
-      }
+    static float bake_size(float logical_px)
+    {
+      // Round to a stable pixel size after DPI so caching hits
+      // reliably.
+      return floorf(logical_px * g_dpi + 0.5f);
+    }
 
-      static ImFont *build_one(ImFontAtlas *atlas, Family fam,
-                               Weight w, float logical_px)
-      {
-        float baked_px = bake_size(logical_px);
+    static ImFont *build_one(ImFontAtlas *atlas, Family fam, Weight w,
+                             float logical_px)
+    {
+      float baked_px = bake_size(logical_px);
 
-        // Base font (text)
-        ImFontConfig cfg = {};
-        cfg.OversampleH =
-            3; // good text sharpness without being heavy
-        cfg.OversampleV = 2;
-        cfg.PixelSnapH = false;
-        cfg.RasterizerMultiply =
-            1.10f; // gentle weight boost, tweak to taste
+      // Base font (text)
+      ImFontConfig cfg = {};
+      cfg.OversampleH = 3; // good text sharpness without being heavy
+      cfg.OversampleV = 2;
+      cfg.PixelSnapH = false;
+      cfg.RasterizerMultiply =
+          1.10f; // gentle weight boost, tweak to taste
 
-        const char *path = PathFor(fam, w);
-        IM_ASSERT(path && "Font path missing");
+      const char *path = PathFor(fam, w);
+      IM_ASSERT(path && "Font path missing");
 
-        // Add text font
-        ImFont *base =
-            atlas->AddFontFromFileTTF(path, baked_px, &cfg);
-        IM_ASSERT(base);
+      // Add text font
+      ImFont *base = atlas->AddFontFromFileTTF(path, baked_px, &cfg);
+      IM_ASSERT(base);
 
-        // Merge icon fonts into the *same* size so icons align with
-        // text baseline
-        AddIconsToAtlas(atlas, baked_px);
-        return base;
-      }
+      // Merge icon fonts into the *same* size so icons align with
+      // text baseline
+      AddIconsToAtlas(atlas, baked_px);
+      return base;
+    }
 
-      static void build_all()
-      {
-        ImGuiIO &io = ImGui::GetIO();
-        ImFontAtlas *atlas = io.Fonts;
-        atlas->Clear();
+    static void build_all()
+    {
+      ImGuiIO &io = ImGui::GetIO();
+      ImFontAtlas *atlas = io.Fonts;
+      atlas->Clear();
 
-        // Optional atlas flags
-        // atlas->Flags |= ImFontAtlasFlags_NoMouseCursors; // if you
-        // draw your own atlas->Flags |=
-        // ImFontAtlasFlags_NoPowerOfTwoHeight;
+      // Optional atlas flags
+      // atlas->Flags |= ImFontAtlasFlags_NoMouseCursors; // if you
+      // draw your own atlas->Flags |=
+      // ImFontAtlasFlags_NoPowerOfTwoHeight;
 
-        g_fonts.clear();
+      g_fonts.clear();
 
-        const Family families[] = {Family::Roboto};
-        const Weight weights[] = {Weight::Regular, Weight::Medium,
-                                  Weight::Bold, Weight::Light};
+      const Family families[] = {Family::Roboto, Family::FiraCode};
+      const Weight weights[] = {Weight::Regular, Weight::Medium,
+                                Weight::Bold, Weight::Light};
 
-        for (float s : g_preset_sizes) {
-          for (auto fam : families) {
-            for (auto wt : weights) {
-              ImFont *f = build_one(atlas, fam, wt, s);
-              Key k{fam, wt, bake_size(s)};
-              g_fonts.emplace(k, f);
-            }
+      for (float s : g_preset_sizes) {
+        for (auto fam : families) {
+          for (auto wt : weights) {
+            ImFont *f = build_one(atlas, fam, wt, s);
+            Key k{fam, wt, bake_size(s)};
+            g_fonts.emplace(k, f);
           }
         }
-
-        // Build atlas now (optional; ImGui will build lazily
-        // otherwise)
-        unsigned char *pixels;
-        int w, h;
-        atlas->GetTexDataAsRGBA32(&pixels, &w, &h);
       }
 
-    } // namespace Fonts
+      // Build atlas now (optional; ImGui will build lazily
+      // otherwise)
+      unsigned char *pixels;
+      int w, h;
+      atlas->GetTexDataAsRGBA32(&pixels, &w, &h);
+    }
 
-    // --- Public API ---
-    namespace Fonts {
+  } // namespace Fonts
 
-      void set_paths(const Paths &p)
-      {
-        g_paths = p;
-      }
-      void set_preset_sizes(const Util::List<float> &sizes)
-      {
-        g_preset_sizes = sizes;
-      }
+  // --- Public API ---
+  namespace Fonts {
 
-      void initialize(float base_dpi_scale)
-      {
-        g_dpi = (base_dpi_scale > 0.f) ? base_dpi_scale : 1.0f;
+    void set_paths(const Paths &p)
+    {
+      g_paths = p;
+    }
+    void set_preset_sizes(const Util::List<float> &sizes)
+    {
+      g_preset_sizes = sizes;
+    }
+
+    void initialize(float base_dpi_scale)
+    {
+      g_dpi = (base_dpi_scale > 0.f) ? base_dpi_scale : 1.0f;
+      build_all();
+    }
+
+    void rebuild()
+    {
+      build_all();
+    }
+
+    void tick_dpi(float new_dpi_scale)
+    {
+      // If per-monitor DPI changes, you might pick one “UI DPI”
+      // here or keep multiple atlases. Simple approach: rebuild
+      // when it changes meaningfully.
+      if (fabsf(new_dpi_scale - g_dpi) > 0.05f) {
+        g_dpi = new_dpi_scale;
         build_all();
       }
+    }
 
-      void rebuild()
-      {
-        build_all();
-      }
+    ImFont *get(const Spec &spec)
+    {
+      Key k{spec.family, spec.weight, bake_size(spec.size_px)};
+      auto it = g_fonts.find(k);
+      if (it != g_fonts.end())
+        return it->second;
 
-      void tick_dpi(float new_dpi_scale)
-      {
-        // If per-monitor DPI changes, you might pick one “UI DPI”
-        // here or keep multiple atlases. Simple approach: rebuild
-        // when it changes meaningfully.
-        if (fabsf(new_dpi_scale - g_dpi) > 0.05f) {
-          g_dpi = new_dpi_scale;
-          build_all();
-        }
-      }
+      // Not baked yet? Add on-demand (keeps the API flexible)
+      ImFontAtlas *atlas = ImGui::GetIO().Fonts;
+      ImFont *f =
+          build_one(atlas, spec.family, spec.weight, spec.size_px);
+      g_fonts.emplace(k, f);
+      // If you add on-demand, you may need to call atlas->Build()
+      // right now:
+      unsigned char *pixels;
+      int w, h;
+      atlas->GetTexDataAsRGBA32(&pixels, &w, &h);
+      return f;
+    }
 
-      ImFont *get(const Spec &spec)
-      {
-        Key k{spec.family, spec.weight, bake_size(spec.size_px)};
-        auto it = g_fonts.find(k);
-        if (it != g_fonts.end())
-          return it->second;
-
-        // Not baked yet? Add on-demand (keeps the API flexible)
-        ImFontAtlas *atlas = ImGui::GetIO().Fonts;
-        ImFont *f =
-            build_one(atlas, spec.family, spec.weight, spec.size_px);
-        g_fonts.emplace(k, f);
-        // If you add on-demand, you may need to call atlas->Build()
-        // right now:
-        unsigned char *pixels;
-        int w, h;
-        atlas->GetTexDataAsRGBA32(&pixels, &w, &h);
-        return f;
-      }
-
-    } // namespace Fonts
-  } // namespace Editor
+  } // namespace Fonts
+} // namespace Editor
 } // namespace Low

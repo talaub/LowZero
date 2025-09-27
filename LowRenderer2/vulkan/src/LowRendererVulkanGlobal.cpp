@@ -1,3 +1,4 @@
+#include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererVulkan.h"
 
@@ -154,6 +155,7 @@ namespace Low {
         VkPipelineLayout g_LightingPipelineLayout;
 
         VkPipelineLayout g_BlurPipelineLayout;
+        VkPipelineLayout g_DynamicBlurPipelineLayout;
 
         struct BlurPushConstants
         {
@@ -161,10 +163,22 @@ namespace Low {
           u32 inputTextureIndex;
         };
 
+        struct DynamicBlurPushConstants
+        {
+          Math::Vector2 texelSize;
+          u32 inputTextureIndex;
+          u32 radius;
+          float sigma;
+          float stepScale;
+        };
+
         struct
         {
           Pipeline x_1;
           Pipeline y_1;
+
+          Pipeline x_4;
+          Pipeline y_4;
         } g_BlurPipelines;
 
         Low::Util::Queue<TextureUpdate> &
@@ -579,24 +593,49 @@ namespace Low {
           l_DescriptorSetLayouts.push_back(
               get_texture_descriptor_set_layout());
 
-          VkPipelineLayoutCreateInfo l_Layout{};
-          l_Layout.sType =
-              VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-          l_Layout.pNext = nullptr;
-          l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
-          l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+          {
+            VkPipelineLayoutCreateInfo l_Layout{};
+            l_Layout.sType =
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            l_Layout.pNext = nullptr;
+            l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+            l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
 
-          VkPushConstantRange l_PushConstant{};
-          l_PushConstant.offset = 0;
-          l_PushConstant.size = sizeof(BlurPushConstants);
-          l_PushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+            VkPushConstantRange l_PushConstant{};
+            l_PushConstant.offset = 0;
+            l_PushConstant.size = sizeof(BlurPushConstants);
+            l_PushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-          l_Layout.pPushConstantRanges = &l_PushConstant;
-          l_Layout.pushConstantRangeCount = 1;
+            l_Layout.pPushConstantRanges = &l_PushConstant;
+            l_Layout.pushConstantRangeCount = 1;
 
-          LOWR_VK_CHECK_RETURN(
-              vkCreatePipelineLayout(get_device(), &l_Layout, nullptr,
-                                     &g_BlurPipelineLayout));
+            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
+                get_device(), &l_Layout, nullptr,
+
+                &g_BlurPipelineLayout));
+          }
+
+          {
+            VkPipelineLayoutCreateInfo l_Layout{};
+            l_Layout.sType =
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            l_Layout.pNext = nullptr;
+            l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+            l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+
+            VkPushConstantRange l_PushConstant{};
+            l_PushConstant.offset = 0;
+            l_PushConstant.size = sizeof(DynamicBlurPushConstants);
+            l_PushConstant.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            l_Layout.pPushConstantRanges = &l_PushConstant;
+            l_Layout.pushConstantRangeCount = 1;
+
+            LOWR_VK_CHECK_RETURN(vkCreatePipelineLayout(
+                get_device(), &l_Layout, nullptr,
+
+                &g_DynamicBlurPipelineLayout));
+          }
 
           {
             g_BlurPipelines.x_1 =
@@ -610,6 +649,19 @@ namespace Low {
                     prepare_fullscreen_effect(g_BlurPipelineLayout,
                                               "blur_y_1.frag",
                                               VK_FORMAT_R8_UNORM)
+                        .register_pipeline();
+
+            g_BlurPipelines.x_4 =
+                PipelineUtil::GraphicsPipelineBuilder::
+                    prepare_fullscreen_effect(
+                        g_DynamicBlurPipelineLayout, "blur_x_4.frag",
+                        VK_FORMAT_R16G16B16A16_SFLOAT)
+                        .register_pipeline();
+            g_BlurPipelines.y_4 =
+                PipelineUtil::GraphicsPipelineBuilder::
+                    prepare_fullscreen_effect(
+                        g_DynamicBlurPipelineLayout, "blur_y_4.frag",
+                        VK_FORMAT_R16G16B16A16_SFLOAT)
                         .register_pipeline();
           }
           return true;
@@ -1159,6 +1211,162 @@ namespace Low {
             vkCmdPushConstants(l_Cmd, g_BlurPipelineLayout,
                                VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                sizeof(BlurPushConstants),
+                               &l_PushConstants);
+
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_OutImage,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          return true;
+        }
+
+        bool blur_image_4(Texture p_ImageToBlur, Texture p_TempImage,
+                          Texture p_OutImage,
+                          Math::UVector2 p_Dimensions)
+        {
+          VkCommandBuffer l_Cmd = get_current_command_buffer();
+
+          VkClearValue l_ClearColorValue = {};
+          l_ClearColorValue.color = {{1.0f, 1.0f, 1.0f, 1.0f}};
+
+          Math::Vector2 l_InverseDimensions;
+          l_InverseDimensions.x = 1.0f / float(p_Dimensions.x);
+          l_InverseDimensions.y = 1.0f / float(p_Dimensions.y);
+
+          Util::List<VkDescriptorSet> l_DescriptorSets;
+          l_DescriptorSets.resize(2);
+          l_DescriptorSets[0] = get_global_descriptor_set();
+          l_DescriptorSets[1] = get_current_texture_descriptor_set();
+
+          VkViewport l_Viewport = {};
+          l_Viewport.x = 0;
+          l_Viewport.y = 0;
+          l_Viewport.width = static_cast<float>(p_Dimensions.x);
+          l_Viewport.height = static_cast<float>(p_Dimensions.y);
+          l_Viewport.minDepth = 0.f;
+          l_Viewport.maxDepth = 1.f;
+
+          VkRect2D l_Scissor = {};
+          l_Scissor.offset.x = 0;
+          l_Scissor.offset.y = 0;
+          l_Scissor.extent.width = p_Dimensions.x;
+          l_Scissor.extent.height = p_Dimensions.y;
+
+          Samplers &l_Samplers = get_samplers();
+
+          Image l_TempImage = p_TempImage.get_gpu().get_data_handle();
+          Image l_ImageToBlur =
+              p_ImageToBlur.get_gpu().get_data_handle();
+          Image l_OutImage = p_OutImage.get_gpu().get_data_handle();
+
+          u32 l_Radius = 8;
+          float l_Sigma = 4.0f;
+          float l_StepSize = 2.0f;
+
+          {
+            ImageUtil::cmd_transition(
+                l_Cmd, l_TempImage,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_TempImage.get_allocated_image().imageView,
+                &l_ClearColorValue,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {p_Dimensions.x, p_Dimensions.y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              g_BlurPipelines.x_4.get_pipeline());
+
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_DynamicBlurPipelineLayout, 0,
+                l_DescriptorSets.size(), l_DescriptorSets.data(), 0,
+                nullptr);
+
+            DynamicBlurPushConstants l_PushConstants;
+            l_PushConstants.texelSize = l_InverseDimensions;
+            l_PushConstants.inputTextureIndex =
+                p_ImageToBlur.get_gpu().get_index();
+            l_PushConstants.radius = l_Radius;
+            l_PushConstants.sigma = l_Sigma;
+            l_PushConstants.stepScale = l_StepSize;
+
+            vkCmdPushConstants(l_Cmd, g_DynamicBlurPipelineLayout,
+                               VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                               sizeof(DynamicBlurPushConstants),
+                               &l_PushConstants);
+
+            vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+            vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+            vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+            vkCmdEndRendering(l_Cmd);
+
+            ImageUtil::cmd_transition(
+                l_Cmd, l_TempImage,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+          }
+
+          {
+            ImageUtil::cmd_transition(
+                l_Cmd, l_OutImage,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+            l_ColorAttachments.resize(1);
+            l_ColorAttachments[0] = InitUtil::attachment_info(
+                l_OutImage.get_allocated_image().imageView,
+                &l_ClearColorValue,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+                {p_Dimensions.x, p_Dimensions.y},
+                l_ColorAttachments.data(), l_ColorAttachments.size(),
+                nullptr);
+            vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+            vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                              g_BlurPipelines.y_4.get_pipeline());
+
+            vkCmdBindDescriptorSets(
+                l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                g_DynamicBlurPipelineLayout, 0,
+                l_DescriptorSets.size(), l_DescriptorSets.data(), 0,
+                nullptr);
+
+            DynamicBlurPushConstants l_PushConstants;
+            l_PushConstants.texelSize = l_InverseDimensions;
+            l_PushConstants.inputTextureIndex =
+                p_TempImage.get_gpu().get_index();
+            l_PushConstants.radius = l_Radius;
+            l_PushConstants.sigma = l_Sigma;
+            l_PushConstants.stepScale = l_StepSize;
+
+            vkCmdPushConstants(l_Cmd, g_DynamicBlurPipelineLayout,
+                               VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                               sizeof(DynamicBlurPushConstants),
                                &l_PushConstants);
 
             vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
