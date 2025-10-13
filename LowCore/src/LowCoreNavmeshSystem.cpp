@@ -19,7 +19,6 @@
 #include "LowCoreNavmeshAgent.h"
 
 #include <Recast.h>
-#include <ChunkyTriMesh.h>
 #include <DetourNavMeshBuilder.h>
 #include <DetourNavMesh.h>
 #include <DetourAlloc.h>
@@ -572,11 +571,13 @@ namespace Low {
                          g_RecastConfig.cs, &g_RecastConfig.width,
                          &g_RecastConfig.height);
 
+          /*
           rcChunkyTriMesh *l_ChunkyMesh = new rcChunkyTriMesh;
           rcCreateChunkyTriMesh(l_Geometry.data(), l_Indices.data(),
                                 l_Indices.size() / 3,
                                 LOW_NAVMESH_MAX_TRIS_PER_CHUNK,
                                 l_ChunkyMesh);
+          */
 
           // Initialize a heightfield
           rcHeightfield *l_Heightfield = rcAllocHeightfield();
@@ -605,12 +606,15 @@ namespace Low {
           int cid[LOW_NAVMESH_MAX_CHUNKS_ID]; // TODO: Make grow when
                                               // returning too many
                                               // items.
+          /*
           const int ncid = rcGetChunksOverlappingRect(
               l_ChunkyMesh, tbmin, tbmax, cid,
               LOW_NAVMESH_MAX_CHUNKS_ID);
+              */
 
-          _LOW_ASSERT(ncid);
+          //_LOW_ASSERT(ncid);
 
+          /*
           for (int i = 0; i < ncid; ++i) {
             const rcChunkyTriMeshNode &node =
                 l_ChunkyMesh->nodes[cid[i]];
@@ -750,6 +754,7 @@ namespace Low {
 
           g_NavMesh->init(l_NavData, l_NavDataSize,
                           DT_TILE_FREE_DATA);
+                          */
           // MARK
         }
 

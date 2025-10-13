@@ -11,6 +11,7 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
+set(GLI_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(gli)
 add_subdirectory(assimp)
 add_subdirectory(EASTL)
@@ -100,33 +101,10 @@ target_include_directories(nativefiledialog PUBLIC
 set_target_properties(nativefiledialog PROPERTIES FOLDER "Dependencies")
 
 
-project(RecastNavigation)
-
-add_subdirectory(recastnavigation/DebugUtils)
-add_subdirectory(recastnavigation/Detour)
-add_subdirectory(recastnavigation/DetourCrowd)
-add_subdirectory(recastnavigation/DetourTileCache)
-add_subdirectory(recastnavigation/Recast)
-
-set_target_properties(Detour PROPERTIES FOLDER "Dependencies/navigation")
-set_target_properties(DetourTileCache PROPERTIES FOLDER "Dependencies/navigation")
-set_target_properties(DebugUtils PROPERTIES FOLDER "Dependencies/navigation")
-set_target_properties(DetourCrowd PROPERTIES FOLDER "Dependencies/navigation")
-set_target_properties(Recast PROPERTIES FOLDER "Dependencies/navigation")
-
-project(RecastDemo)
-
-add_library(RecastDemo STATIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Include/ChunkyTriMesh.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Source/ChunkyTriMesh.cpp"
-)
-
-target_include_directories(RecastDemo PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/recastnavigation/RecastDemo/Include"
-)
-set_target_properties(RecastDemo PROPERTIES FOLDER "Dependencies")
-
-
+set(RECASTNAVIGATION_DEMO     OFF CACHE BOOL "Build demo" FORCE)
+set(RECASTNAVIGATION_TESTS    OFF CACHE BOOL "Build tests" FORCE)
+set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "Build examples" FORCE)
+add_subdirectory(recastnavigation)
 
 project(physx)
 

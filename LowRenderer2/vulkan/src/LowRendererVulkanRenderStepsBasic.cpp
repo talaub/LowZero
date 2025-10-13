@@ -186,7 +186,7 @@ namespace Low {
                it != p_RenderView.get_render_scene()
                          .get_draw_commands()
                          .end();) {
-            if (!it->is_alive()){
+            if (!it->is_alive()) {
               it = p_RenderView.get_render_scene()
                        .get_draw_commands()
                        .erase(it);
@@ -381,7 +381,7 @@ namespace Low {
         l_RenderStep.set_teardown_callback(
             [&](RenderStep p_RenderStep,
                 RenderView p_RenderView) -> bool {
-              // TODO: Delete data
+              // FIX: Delete data
               return true;
             });
 

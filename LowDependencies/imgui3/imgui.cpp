@@ -1156,6 +1156,8 @@ IMPLEMENTING SUPPORT for ImGuiBackendFlags_RendererHasTextures:
 #ifndef IMGUI_DISABLE
 #include "imgui_internal.h"
 
+#include "imgui_stacklayout_internal.h"
+
 // System includes
 #include <stdio.h>      // vsnprintf, sscanf, printf
 #include <stdint.h>     // intptr_t
@@ -11812,6 +11814,9 @@ bool ImGui::ItemAdd(const ImRect& bb, ImGuiID id, const ImRect* nav_bb_arg, ImGu
         g.LastItemData.StatusFlags |= ImGuiItemStatusFlags_Visible;
     if (IsMouseHoveringRect(bb.Min, bb.Max))
         g.LastItemData.StatusFlags |= ImGuiItemStatusFlags_HoveredRect;
+
+    ImGuiInternal::UpdateItemRect(window->ID, bb.Min, bb.Max);
+
     return true;
 }
 IM_MSVC_RUNTIME_CHECKS_RESTORE

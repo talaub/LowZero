@@ -1,9 +1,33 @@
 #include "LowUtilJobManager.h"
+#include <string>
+
+#include <windows.h>
 
 namespace Low {
   namespace Util {
     namespace JobManager {
       ThreadPool *g_DefaultThreadPool;
+
+      inline std::wstring to_wstring(const char *str)
+      {
+        if (!str)
+          return {};
+
+        int size_needed = MultiByteToWideChar(
+            CP_UTF8, // or CP_ACP if your char* is ANSI, but UTF-8 is
+                     // safer
+            0, str,
+            -1, // -1 means input is null-terminated
+            nullptr, 0);
+        if (size_needed <= 0)
+          return {};
+
+        std::wstring wstr(size_needed - 1,
+                          L'\0'); // exclude null terminator
+        MultiByteToWideChar(CP_UTF8, 0, str, -1, &wstr[0],
+                            size_needed);
+        return wstr;
+      }
 
       ThreadPool::ThreadPool(int p_NumThreads) : m_Stop(false)
       {
@@ -14,8 +38,9 @@ namespace Low {
 
               {
                 std::unique_lock<std::mutex> lock(m_QueueMutex);
-                m_Condition.wait(
-                    lock, [this] { return m_Stop || !m_JobQueue.empty(); });
+                m_Condition.wait(lock, [this] {
+                  return m_Stop || !m_JobQueue.empty();
+                });
 
                 if (m_Stop && m_JobQueue.empty())
                   return;
@@ -27,6 +52,13 @@ namespace Low {
               task();
             }
           });
+
+          Util::String i_WorkerName = "Worker ";
+          i_WorkerName += std::to_string(i + 1).c_str();
+          std::wstring i_WName = to_wstring(i_WorkerName.c_str());
+
+          SetThreadDescription(m_Workers[i].native_handle(),
+                               i_WName.c_str());
         }
       }
 
@@ -58,5 +90,5 @@ namespace Low {
         return *g_DefaultThreadPool;
       }
     } // namespace JobManager
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

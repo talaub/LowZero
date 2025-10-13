@@ -9,15 +9,10 @@
 #include "LowUtilFileIO.h"
 
 #include "LowEditor.h"
-#include "LowEditorPropertyEditors.h"
 #include "LowEditorBase.h"
 #include "LowEditorMainWindow.h"
-#include "LowEditorThemes.h"
 #include "LowEditorFonts.h"
 
-#include "IconsFontAwesome5.h"
-#include "IconsCodicons.h"
-#include "IconsLucide.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -1265,12 +1260,14 @@ namespace Flode {
       ImGui::BeginVertical("headericon");
       if (l_HasSubtitle) {
         ImGui::Dummy(ImVec2(0, 15));
-        ImGui::PushFont(
-            Low::Editor::Fonts::UI());
+        ImGui::PushFont(Low::Editor::Fonts::UI(
+            14, Low::Editor::Fonts::Weight::Light));
       } else {
         ImGui::Dummy(ImVec2(0, 4));
       }
+      ImGui::PushFont(Low::Editor::Fonts::UI(33));
       ImGui::Text(l_Icon.c_str());
+      ImGui::PopFont();
       if (l_HasSubtitle) {
         ImGui::PopFont();
       }
@@ -1286,7 +1283,8 @@ namespace Flode {
     ImGui::Dummy(ImVec2(0, 8));
     ImGui::TextUnformatted(get_name(NodeNameType::Full).c_str());
     if (!l_Subtitle.empty()) {
-      ImGui::PushFont(Low::Editor::Fonts::UI());
+      ImGui::PushFont(Low::Editor::Fonts::UI(
+          14, Low::Editor::Fonts::Weight::Light));
       ImGui::Text(l_Subtitle.c_str());
       ImGui::PopFont();
       ImGui::Dummy(ImVec2(0, 1));
@@ -1294,9 +1292,9 @@ namespace Flode {
       ImGui::Dummy(ImVec2(0, 2));
     }
     ImGui::EndVertical();
-    ImGui::Spring(1);
+    // ImGui::Spring(1);
     ImGui::Dummy(ImVec2(0, 20));
-    ImGui::Spring(0);
+    // ImGui::Spring(0);
 
     ImGui::EndHorizontal();
 
@@ -1343,7 +1341,6 @@ namespace Flode {
     if (p_Pin->direction == Flode::PinDirection::Input) {
       NodeEd::BeginPin(p_Pin->id, NodeEd::PinKind::Input);
     } else {
-      ImGui::Spring(0);
       NodeEd::BeginPin(p_Pin->id, NodeEd::PinKind::Output);
     }
 
@@ -1418,11 +1415,12 @@ namespace Flode {
         }
       }
     } else {
+      ImGui::Spring(1);
       if (!p_Pin->title.empty()) {
-        ImGui::Spring(0);
+        // ImGui::Spring(0);
         ImGui::TextUnformatted(p_Pin->title.c_str());
       }
-      ImGui::Spring(0);
+      // ImGui::Spring(1);
       draw_pin_icon(p_Pin, l_Connected, (int)(alpha * 255));
     }
     ImGui::PopStyleVar();
@@ -1466,7 +1464,7 @@ namespace Flode {
 
     NodeEd::PopStyleVar(2);
 
-    ImGui::Spring(1, 0);
+    // ImGui::Spring(1, 0);
     ImGui::EndVertical();
   }
 
@@ -1498,16 +1496,13 @@ namespace Flode {
 
     ImGui::PushID(id.AsPointer());
 
-    ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
+    // ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
 
-    {
-      ImGui::BeginHorizontal("content");
-      ImGui::Spring(0, 0);
-    }
+    ImGui::BeginHorizontal("content");
 
     render_input_pins();
 
-    ImGui::Spring(0);
+    ImGui::Spring(1);
     if (pins.size() == 1) {
       ImGui::PushFont(Low::Editor::Fonts::UI());
       ImGui::PushStyleColor(ImGuiCol_Text,
@@ -1520,18 +1515,18 @@ namespace Flode {
     ImGui::TextUnformatted(get_name(NodeNameType::Compact).c_str());
     ImGui::PopStyleColor();
     ImGui::PopFont();
-    ImGui::Spring(0);
+    ImGui::Spring(1);
 
     render_output_pins();
 
     ImGui::EndHorizontal();
     ImGui::EndVertical();
 
+    ImGui::PopID();
+
     NodeEd::EndNode();
 
     NodeEd::PopStyleVar();
-
-    ImGui::PopID();
 
     // NodeEd::PopStyleColor(l_ColorCount);
   }
@@ -1567,7 +1562,7 @@ namespace Flode {
 
     render_header();
 
-    ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
+    // ImGui::Spring(0, ImGui::GetStyle().ItemSpacing.y * 2.0f);
 
     ImGui::BeginHorizontal("content");
     // ImGui::Spring(0, 0);
@@ -1858,7 +1853,7 @@ namespace Flode {
 
   bool Graph::is_pin_connected(NodeEd::PinId p_PinId) const
   {
-    // TODO: Make more efficient by caching info
+    // OPTIMIZE: Make more efficient by caching info
 
     for (Link *i_Link : m_Links) {
       if (i_Link->inputPinId == p_PinId) {

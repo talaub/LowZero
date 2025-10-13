@@ -706,9 +706,8 @@ namespace Low {
             ++it;
             continue;
           }
-          // TODO: test if material is loaded
-          if (it->material.is_alive() /* &&
-              it->material.get_state() != MaterialState::LOADED */) {
+          if (it->material.is_alive() &&
+              it->material.get_state() != MaterialState::LOADED) {
             ++it;
             continue;
           }

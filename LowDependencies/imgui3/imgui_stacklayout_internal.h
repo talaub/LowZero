@@ -23,8 +23,7 @@ namespace ImGuiInternal
 {
     IMGUI_API ImGuiLayoutType GetCurrentLayoutType(ImGuiID window_id);
     IMGUI_API void            UpdateItemRect(ImGuiID window_id, const ImVec2& min, const ImVec2& max);
-
-} // namespace ImGuiInternal
+}
 
 
 #endif // #ifndef IMGUI_DISABLE

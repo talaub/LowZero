@@ -260,7 +260,7 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
 }
 */
 
-// TODO: We need some kind of dependency graph so we know which
+// HACK: We need some kind of dependency graph so we know which
 // modules to load first
 #if RELEASE_BUILD
   load_module(p_ProjectPath, "./modules/Gameplay");

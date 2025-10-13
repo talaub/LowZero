@@ -19,8 +19,12 @@ Index of this file:
 */
 
 // Navigating this file:
-// - In Visual Studio IDE: CTRL+comma ("Edit.NavigateTo") can follow symbols in comments, whereas CTRL+F12 ("Edit.GoToImplementation") cannot.
-// - With Visual Assist installed: ALT+G ("VAssistX.GoToImplementation") can also follow symbols in comments.
+// - In Visual Studio IDE: CTRL+comma ("Edit.NavigateTo") can follow
+// symbols in comments, whereas CTRL+F12 ("Edit.GoToImplementation")
+// cannot.
+// - With Visual Assist installed: ALT+G
+// ("VAssistX.GoToImplementation") can also follow symbols in
+// comments.
 
 //-----------------------------------------------------------------------------
 // [SECTION] Commentary
@@ -30,19 +34,25 @@ Index of this file:
 // Typical call flow: (root level is generally public API):
 //-----------------------------------------------------------------------------
 //
-// - BeginHorizontal/BeginVertical()            user begin into a layout
+// - BeginHorizontal/BeginVertical()            user begin into a
+// layout
 // - [...]                                      user emit contents
-// -  | Spring()                                - separate widget groups in layout
-// -  | SuspendLayout()                         - stop any layout operations
-// -  | ResumeLayout()                          - resume layout operations
+// -  | Spring()                                - separate widget
+// groups in layout
+// -  | SuspendLayout()                         - stop any layout
+// operations
+// -  | ResumeLayout()                          - resume layout
+// operations
 //-----------------------------------------------------------------------------
 // - EndHorizontal/EndVertical()                user ends the layout
 //-----------------------------------------------------------------------------
 
-
 //-----------------------------------------------------------------------------
 // [SECTION] Header mess
 //-----------------------------------------------------------------------------
+
+// dear imgui (docking) — stack layout implementation (updated
+// for 1.89/1.90+)
 
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
@@ -57,1074 +67,888 @@ Index of this file:
 #include "imgui_internal.h"
 #include "imgui_stacklayout_internal.h"
 
-#if defined(_MSC_VER) && _MSC_VER <= 1500 // MSVC 2008 or earlier
-#include <stddef.h>     // intptr_t
-#else
-#include <stdint.h>     // intptr_t
+#include <stdint.h>
+
+// --------------------------------------------------------
+// Small compatibility helpers (changed internals across versions)
+// --------------------------------------------------------
+#if !defined(IMGUI_VERSION_NUM)
+// Fallback, but docking era should define IMGUI_VERSION_NUM
+#define IMGUI_VERSION_NUM 18900
 #endif
 
-//-----------------------------------------------------------------------------
-// [SECTION] Stack layout: Forward declarations
-//-----------------------------------------------------------------------------
+// Access current vtx index robustly (avoid direct use of
+// _VtxCurrentIdx)
+static inline unsigned int ImDrawList_GetCurrentVtxIndex(ImDrawList *dl) {
+  // In 1.89/1.90+, VtxBuffer.Size is a safe stand-in for current
+  // vertex write index. (In older code `_VtxCurrentIdx` was used;
+  // it's intentionally considered internal.)
+  return (unsigned int)dl->VtxBuffer.Size;
+}
 
-// Use your programming IDE "Go to definition" facility on the names of the center columns to find the actual flags/enum lists.
-typedef int ImGuiLayoutItemType;        // -> enum ImGuiLayoutItemType_     // Enum: Item or Spring
+// Safer PushID for ImGuiID: use PushOverrideID which is stable in
+// docking branch.
+static inline void PushID_ImGuiID(ImGuiID id) {
+#if IMGUI_VERSION_NUM >= 18900
+  ImGui::PushOverrideID(id);
+#else
+  // Fallback (older) – not expected on docking builds but kept for
+  // completeness
+  ImGui::PushID((void *)(intptr_t)id);
+#endif
+}
 
-
-//-----------------------------------------------------------------------------
-// [SECTION] Stack layout: flags, enums, data structures
-//-----------------------------------------------------------------------------
-
-enum ImGuiLayoutItemType_
-{
-    ImGuiLayoutItemType_Item,
-    ImGuiLayoutItemType_Spring
+// --------------------------------------------------------
+// Types
+// --------------------------------------------------------
+typedef int ImGuiLayoutItemType;
+enum ImGuiLayoutItemType_ {
+  ImGuiLayoutItemType_Item,
+  ImGuiLayoutItemType_Spring
 };
 
-// sizeof() == 48
-struct ImGuiLayoutItem
-{
-    ImGuiLayoutItemType     Type;               // Type of an item
-    ImRect                  MeasuredBounds;
+struct ImGuiLayoutItem {
+  ImGuiLayoutItemType Type;
+  ImRect MeasuredBounds;
+  float SpringWeight;
+  float SpringSpacing;
+  float SpringSize;
+  float CurrentAlign;
+  float CurrentAlignOffset;
+  unsigned int VertexIndexBegin;
+  unsigned int VertexIndexEnd;
 
-    float                   SpringWeight;       // Weight of a spring
-    float                   SpringSpacing;      // Spring spacing
-    float                   SpringSize;         // Calculated spring size
-
-    float                   CurrentAlign;
-    float                   CurrentAlignOffset;
-
-    unsigned int            VertexIndexBegin;
-    unsigned int            VertexIndexEnd;
-
-    ImGuiLayoutItem(ImGuiLayoutItemType type)
-    {
-        Type = type;
-        MeasuredBounds = ImRect(0, 0, 0, 0);    // FIXME: @thedmd are you sure the default ImRect value FLT_MAX,FLT_MAX,-FLT_MAX,-FLT_MAX aren't enough here?
-        SpringWeight = 1.0f;
-        SpringSpacing = -1.0f;
-        SpringSize = 0.0f;
-        CurrentAlign = 0.0f;
-        CurrentAlignOffset = 0.0f;
-        VertexIndexBegin = VertexIndexEnd = (ImDrawIdx)0;
-    }
+  ImGuiLayoutItem(ImGuiLayoutItemType type)
+      : Type(type), MeasuredBounds(0, 0, 0, 0), SpringWeight(1.0f),
+        SpringSpacing(-1.0f), SpringSize(0.0f), CurrentAlign(0.0f),
+        CurrentAlignOffset(0.0f), VertexIndexBegin(0), VertexIndexEnd(0) {}
 };
 
-struct ImGuiLayout
-{
-    ImGuiID                     Id;
-    ImGuiLayoutType             Type;
-    bool                        Live;
-    ImVec2                      Size;               // Size passed to BeginLayout
-    ImVec2                      CurrentSize;        // Bounds of layout known at the beginning the frame.
-    ImVec2                      MinimumSize;        // Minimum possible size when springs are collapsed.
-    ImVec2                      MeasuredSize;       // Measured size with springs expanded.
+struct ImGuiLayout {
+  ImGuiID Id;
+  ImGuiLayoutType Type;
+  bool Live;
+  ImVec2 Size;
+  ImVec2 CurrentSize;
+  ImVec2 MinimumSize;
+  ImVec2 MeasuredSize;
 
-    ImVector<ImGuiLayoutItem>   Items;
-    int                         CurrentItemIndex;
-    int                         ParentItemIndex;
-    ImGuiLayout*                Parent;
-    ImGuiLayout*                FirstChild;
-    ImGuiLayout*                NextSibling;
-    float                       Align;              // Current item alignment.
-    float                       Indent;             // Indent used to align items in vertical layout.
-    ImVec2                      StartPos;           // Initial cursor position when BeginLayout is called.
-    ImVec2                      StartCursorMaxPos;  // Maximum cursor position when BeginLayout is called.
+  ImVector<ImGuiLayoutItem> Items;
+  int CurrentItemIndex;
+  int ParentItemIndex;
+  ImGuiLayout *Parent;
+  ImGuiLayout *FirstChild;
+  ImGuiLayout *NextSibling;
+  float Align;
+  float Indent;
+  ImVec2 StartPos;
+  ImVec2 StartCursorMaxPos;
 
-    ImGuiLayout(ImGuiID id, ImGuiLayoutType type)
-    {
-        Id = id;
-        Type = type;
-        Live = false;
-        Size = CurrentSize = MinimumSize = MeasuredSize = ImVec2(0, 0);
-        CurrentItemIndex = 0;
-        ParentItemIndex = 0;
-        Parent = FirstChild = NextSibling = NULL;
-        Align = -1.0f;
-        Indent = 0.0f;
-        StartPos = ImVec2(0, 0);
-        StartCursorMaxPos = ImVec2(0, 0);
-    }
+  ImGuiLayoutType PrevWindowLayoutType;
+
+  ImGuiLayout(ImGuiID id, ImGuiLayoutType type)
+      : Id(id), Type(type), Live(false), Size(0, 0), CurrentSize(0, 0),
+        MinimumSize(0, 0), MeasuredSize(0, 0), CurrentItemIndex(0),
+        ParentItemIndex(0), Parent(nullptr), FirstChild(nullptr),
+        NextSibling(nullptr), Align(-1.0f), Indent(0.0f), StartPos(0, 0),
+        StartCursorMaxPos(0, 0),
+        PrevWindowLayoutType(ImGuiLayoutType_Vertical) {}
 };
 
-struct ImGuiLayoutWindowState
-{
-    ImGuiWindow*            Window;
-    ImGuiLayout*            CurrentLayout;
-    ImGuiLayoutItem*        CurrentLayoutItem;
-    ImVector<ImGuiLayout*>  LayoutStack;
-    ImGuiStorage            Layouts;
+struct ImGuiLayoutWindowState {
+  ImGuiWindow *Window;
+  ImGuiLayout *CurrentLayout;
+  ImGuiLayoutItem *CurrentLayoutItem;
+  ImVector<ImGuiLayout *> LayoutStack;
+  ImGuiStorage Layouts;
 
-    ImGuiLayoutWindowState()
-    {
-        Window            = NULL;
-        CurrentLayout     = NULL;
-        CurrentLayoutItem = NULL;
-    }
+  ImGuiLayoutWindowState()
+      : Window(nullptr), CurrentLayout(nullptr), CurrentLayoutItem(nullptr) {}
 };
 
-struct ImGuiLayoutState
-{
-    ImGuiStorage    LayoutWindowStates;
+struct ImGuiLayoutState {
+  ImGuiStorage LayoutWindowStates;
+  ImGuiContext *Context;
+  ImGuiID ContextID;
+  ImGuiID NewFramePreID;
+  ImGuiID EndFramePreID;
+  ImGuiID ShutdownHookID;
 
-    ImGuiContext*   Context;
-    ImGuiID         ContextID;
-    ImGuiID         NewFramePreID;
-    ImGuiID         EndFramePreID;
-    ImGuiID         ShutdownHookID;
-
-    ImGuiLayoutState()
-    {
-        Context        = NULL;
-        ContextID      = 0;
-        NewFramePreID  = 0;
-        EndFramePreID  = 0;
-        ShutdownHookID = 0;
-    }
+  ImGuiLayoutState()
+      : Context(nullptr), ContextID(0), NewFramePreID(0), EndFramePreID(0),
+        ShutdownHookID(0) {}
 };
 
-
-//-----------------------------------------------------------------------------
-// [SECTION] Stack Layout: Context forward declarations
-//-----------------------------------------------------------------------------
-
+// --------------------------------------------------------
+// Context
+// --------------------------------------------------------
 static ImGuiStorage GStackLayoutStates;
 
-// Context management/hooks
-static ImGuiID                  GetContextID(ImGuiContext* context); // FIXME: ImGuiContext probably should have their own ID assigned
-static ImGuiLayoutState*        GetCurrentLayoutState();
-static ImGuiLayoutState*        GetLayoutState(ImGuiContext* context);
-static ImGuiLayoutState*        CreateLayoutState(ImGuiID context_id, ImGuiContext* context);
-static void                     StackLayout_NewFramePreCallback(ImGuiContext* ctx, ImGuiContextHook* hook);
-static void                     StackLayout_EndFramePreCallback(ImGuiContext* ctx, ImGuiContextHook* hook);
-static void                     StackLayout_ShutdownCallback(ImGuiContext* ctx, ImGuiContextHook* hook);
-
-static ImGuiLayoutWindowState*  GetWindowLayoutState(ImGuiID window_id, ImGuiWindow* window = NULL);
-static ImGuiLayoutWindowState*  GetCurrentWindowLayoutState();
-static void                     WindowLayoutState_OnNewFrame(ImGuiLayoutWindowState* state);
-static void                     WindowLayoutState_OnEndFrame(ImGuiLayoutWindowState* state);
-static void                     WindowLayoutState_OnShutdown(ImGuiLayoutWindowState* state);
-
-
-//-----------------------------------------------------------------------------
-// [SECTION] Stack Layout: Internal code forward declarations
-//-----------------------------------------------------------------------------
-
-namespace ImGui
-{
-// Stack Layout
-static ImGuiLayout*     FindLayout(ImGuiID id, ImGuiLayoutType type);
-static ImGuiLayout*     CreateNewLayout(ImGuiID id, ImGuiLayoutType type, ImVec2 size);
-static void             BeginLayout(ImGuiID id, ImGuiLayoutType type, ImVec2 size, float align);
-static void             EndLayout(ImGuiLayoutType type);
-static ImVec2           CalculateLayoutSize(ImGuiLayout& layout, bool collapse_springs);
-static void             PushLayout(ImGuiLayout* layout);
-static void             PopLayout(ImGuiLayout* layout);
-static void             BalanceLayoutSprings(ImGuiLayout& layout);
-static ImVec2           BalanceLayoutItemAlignment(ImGuiLayout& layout, ImGuiLayoutItem& item);
-static void             BalanceLayoutItemsAlignment(ImGuiLayout& layout);
-static bool             HasAnyNonZeroSpring(ImGuiLayout& layout);
-static void             BalanceChildLayouts(ImGuiLayout& layout);
-static ImGuiLayoutItem* GenerateLayoutItem(ImGuiLayout& layout, ImGuiLayoutItemType type);
-static float            CalculateLayoutItemAlignmentOffset(ImGuiLayout& layout, ImGuiLayoutItem& item);
-static void             TranslateLayoutItem(ImGuiLayoutItem& item, const ImVec2& offset);
-static void             SignedIndent(float indent);
-static void             BeginLayoutItem(ImGuiLayout& layout);
-static void             EndLayoutItem(ImGuiLayout& layout);
-static void             AddLayoutSpring(ImGuiLayout& layout, float weight, float spacing);
+static ImGuiID get_context_id(ImGuiContext *context) {
+  // Hash pointer to context (stable & unique per-context)
+#if IMGUI_VERSION_NUM >= 18900
+  return ImHashData(&context, sizeof(context), 0);
+#else
+  return ImHashData(&context, sizeof(context));
+#endif
 }
 
+static ImGuiLayoutState *get_layout_state(ImGuiContext *context) {
+  if (!context)
+    return nullptr;
+  ImGuiID l_ContextId = get_context_id(context);
+  ImGuiLayoutState *l_State =
+      (ImGuiLayoutState *)GStackLayoutStates.GetVoidPtr(l_ContextId);
+  if (!l_State) {
+    l_State = IM_NEW(ImGuiLayoutState);
+    l_State->Context = context;
+    l_State->ContextID = l_ContextId;
 
-//-----------------------------------------------------------------------------
-// [SECTION] Stack Layout: Context
-//-----------------------------------------------------------------------------
+    ImGuiContextHook new_frame_pre_hook{};
+    new_frame_pre_hook.Type = ImGuiContextHookType_NewFramePre;
+    new_frame_pre_hook.UserData = l_State;
+    new_frame_pre_hook.Callback = [](ImGuiContext *ctx,
+                                     ImGuiContextHook *hook) {
+      ImGuiLayoutState *layout_state = (ImGuiLayoutState *)hook->UserData;
+      for (int i = 0; i < layout_state->LayoutWindowStates.Data.Size; ++i) {
+        auto *ws =
+            (ImGuiLayoutWindowState *)layout_state->LayoutWindowStates.Data[i]
+                .val_p;
+        // mark layouts as not-live this frame
+        for (int j = 0; j < ws->Layouts.Data.Size; ++j)
+          ((ImGuiLayout *)ws->Layouts.Data[j].val_p)->Live = false;
+      }
+    };
+    l_State->NewFramePreID =
+        ImGui::AddContextHook(context, &new_frame_pre_hook);
 
-static ImGuiID GetContextID(ImGuiContext* context)
-{
-    // Hash pointer to ImGuiContext which is unique
-    return ImHashData(&context, sizeof(context));
+    ImGuiContextHook end_frame_pre_hook{};
+    end_frame_pre_hook.Type = ImGuiContextHookType_EndFramePre;
+    end_frame_pre_hook.UserData = l_State;
+    end_frame_pre_hook.Callback = [](ImGuiContext *ctx,
+                                     ImGuiContextHook *hook) {
+      ImGuiLayoutState *layout_state = (ImGuiLayoutState *)hook->UserData;
+      for (int i = 0; i < layout_state->LayoutWindowStates.Data.Size; ++i) {
+        auto *ws =
+            (ImGuiLayoutWindowState *)layout_state->LayoutWindowStates.Data[i]
+                .val_p;
+        IM_ASSERT(
+            (ws->LayoutStack.Size == 0 ||
+             ws->LayoutStack.back()->Type == ImGuiLayoutType_Horizontal) &&
+            "BeginHorizontal/EndHorizontal mismatch!");
+        IM_ASSERT((ws->LayoutStack.Size == 0 ||
+                   ws->LayoutStack.back()->Type == ImGuiLayoutType_Vertical) &&
+                  "BeginVertical/EndVertical mismatch!");
+      }
+    };
+    l_State->EndFramePreID =
+        ImGui::AddContextHook(context, &end_frame_pre_hook);
+
+    ImGuiContextHook shutdown_hook{};
+    shutdown_hook.Type = ImGuiContextHookType_Shutdown;
+    shutdown_hook.UserData = l_State;
+    shutdown_hook.Callback = [](ImGuiContext *ctx, ImGuiContextHook *hook) {
+      ImGuiLayoutState *layout_state = (ImGuiLayoutState *)hook->UserData;
+      for (int i = 0; i < layout_state->LayoutWindowStates.Data.Size; ++i) {
+        auto *ws =
+            (ImGuiLayoutWindowState *)layout_state->LayoutWindowStates.Data[i]
+                .val_p;
+        for (int j = 0; j < ws->Layouts.Data.Size; ++j)
+          IM_DELETE((ImGuiLayout *)ws->Layouts.Data[j].val_p);
+        IM_DELETE(ws);
+      }
+      GStackLayoutStates.SetVoidPtr(layout_state->ContextID, nullptr);
+      IM_DELETE(layout_state);
+    };
+    l_State->ShutdownHookID = ImGui::AddContextHook(context, &shutdown_hook);
+
+    GStackLayoutStates.SetVoidPtr(l_ContextId, l_State);
+  }
+  return l_State;
 }
 
-static ImGuiLayoutState* GetCurrentLayoutState()
-{
-    return GetLayoutState(ImGui::GetCurrentContext());
-}
+static ImGuiLayoutWindowState *
+get_window_layout_state(ImGuiID window_id, ImGuiWindow *window = nullptr) {
+  ImGuiLayoutState *l_State = get_layout_state(ImGui::GetCurrentContext());
+  if (!l_State)
+    return nullptr;
 
-static ImGuiLayoutState* GetLayoutState(ImGuiContext* context)
-{
-    if (context == NULL)
-        return NULL;
-
-    ImGuiID context_id = GetContextID(context);
-
-    ImGuiLayoutState* state = (ImGuiLayoutState*)GStackLayoutStates.GetVoidPtr(context_id);
-    if (state == NULL)
-        state = CreateLayoutState(context_id, context);
-
-    return state;
-}
-
-static ImGuiLayoutState* CreateLayoutState(ImGuiID context_id, ImGuiContext* context)
-{
-    ImGuiLayoutState* state = IM_NEW(ImGuiLayoutState);
-    state->Context   = context;
-    state->ContextID = context_id;
-
-    ImGuiContextHook new_frame_pre_hook;
-    new_frame_pre_hook.Type     = ImGuiContextHookType_NewFramePre;
-    new_frame_pre_hook.UserData = state;
-    new_frame_pre_hook.Callback = StackLayout_NewFramePreCallback;
-    state->NewFramePreID = ImGui::AddContextHook(context, &new_frame_pre_hook);
-
-    ImGuiContextHook end_frame_pre_hook;
-    end_frame_pre_hook.Type     = ImGuiContextHookType_EndFramePre;
-    end_frame_pre_hook.UserData = state;
-    end_frame_pre_hook.Callback = StackLayout_EndFramePreCallback;
-    state->EndFramePreID = ImGui::AddContextHook(context, &end_frame_pre_hook);
-
-    ImGuiContextHook shutdown_hook;
-    shutdown_hook.Type     = ImGuiContextHookType_Shutdown;
-    shutdown_hook.UserData = state;
-    shutdown_hook.Callback = StackLayout_ShutdownCallback;
-    state->ShutdownHookID = ImGui::AddContextHook(context, &shutdown_hook);
-
-    GStackLayoutStates.SetVoidPtr(context_id, state);
-
-    return state;
-}
-
-static void StackLayout_NewFramePreCallback(ImGuiContext* ctx, ImGuiContextHook* hook)
-{
-    ImGuiLayoutState* layout_state = (ImGuiLayoutState*)hook->UserData;
-
-    for (int i = 0; i < layout_state->LayoutWindowStates.Data.Size; ++i)
-    {
-        ImGuiLayoutWindowState* layout_window_state = (ImGuiLayoutWindowState*)layout_state->LayoutWindowStates.Data[i].val_p;
-
-        WindowLayoutState_OnNewFrame(layout_window_state);
+  auto *ws = (ImGuiLayoutWindowState *)l_State->LayoutWindowStates.GetVoidPtr(
+      window_id);
+  if (!ws) {
+    if (!window) {
+      window = ImGui::FindWindowByID(window_id);
+      IM_ASSERT(window && "get_window_layout_state: invalid window id");
     }
+    ws = IM_NEW(ImGuiLayoutWindowState);
+    ws->Window = window;
+    l_State->LayoutWindowStates.SetVoidPtr(window_id, ws);
+  }
+  return ws;
 }
 
-static void StackLayout_EndFramePreCallback(ImGuiContext* ctx, ImGuiContextHook* hook)
-{
-    ImGuiLayoutState* layout_state = (ImGuiLayoutState*)hook->UserData;
+static ImGuiLayoutWindowState *get_current_window_layout_state() {
+  ImGuiWindow *w = ImGui::GetCurrentWindow();
+  if (!w)
+    return nullptr;
+  return get_window_layout_state(w->ID, w);
+}
 
-    for (int i = 0; i < layout_state->LayoutWindowStates.Data.Size; ++i)
-    {
-        ImGuiLayoutWindowState* layout_window_state = (ImGuiLayoutWindowState*)layout_state->LayoutWindowStates.Data[i].val_p;
+// --------------------------------------------------------
+// Internal layout helpers
+// --------------------------------------------------------
+namespace ImGui {
+static ImGuiLayout *find_layout(ImGuiID id, ImGuiLayoutType type) {
+  IM_ASSERT(type == ImGuiLayoutType_Horizontal ||
+            type == ImGuiLayoutType_Vertical);
+  auto *ws = get_current_window_layout_state();
+  auto *layout = (ImGuiLayout *)ws->Layouts.GetVoidPtr(id);
+  if (!layout)
+    return nullptr;
+  if (layout->Type != type) {
+    layout->Type = type;
+    layout->MinimumSize = ImVec2(0, 0);
+    layout->Items.clear();
+  }
+  return layout;
+}
 
-        WindowLayoutState_OnEndFrame(layout_window_state);
+static ImGuiLayout *create_layout(ImGuiID id, ImGuiLayoutType type,
+                                  ImVec2 size) {
+  auto *ws = get_current_window_layout_state();
+  auto *layout = IM_NEW(ImGuiLayout)(id, type);
+  layout->Size = size;
+  ws->Layouts.SetVoidPtr(id, layout);
+  return layout;
+}
+
+static void push_layout(ImGuiLayout *layout) {
+  auto *ws = get_current_window_layout_state();
+  if (layout) {
+    layout->Parent = ws->CurrentLayout;
+    if (layout->Parent) {
+      layout->ParentItemIndex = layout->Parent->CurrentItemIndex;
+      layout->NextSibling = ws->CurrentLayout->FirstChild;
+      layout->FirstChild = nullptr;
+      ws->CurrentLayout->FirstChild = layout;
+    } else {
+      layout->NextSibling = nullptr;
+      layout->FirstChild = nullptr;
     }
+  }
+  ws->LayoutStack.push_back(layout);
+  ws->CurrentLayout = layout;
+  ws->CurrentLayoutItem = nullptr;
 }
 
-static void StackLayout_ShutdownCallback(ImGuiContext* ctx, ImGuiContextHook* hook)
-{
-    ImGuiLayoutState* layout_state = (ImGuiLayoutState*)hook->UserData;
+static void pop_layout(ImGuiLayout *layout) {
+  auto *ws = get_current_window_layout_state();
+  IM_ASSERT(!ws->LayoutStack.empty() && ws->LayoutStack.back() == layout);
+  ws->LayoutStack.pop_back();
+  if (!ws->LayoutStack.empty()) {
+    ws->CurrentLayout = ws->LayoutStack.back();
+    ws->CurrentLayoutItem =
+        &ws->CurrentLayout->Items[ws->CurrentLayout->CurrentItemIndex];
+  } else {
+    ws->CurrentLayout = nullptr;
+    ws->CurrentLayoutItem = nullptr;
+  }
+}
 
-    for (int i = 0; i < layout_state->LayoutWindowStates.Data.Size; ++i)
-    {
-        ImGuiLayoutWindowState* layout_window_state = (ImGuiLayoutWindowState*)layout_state->LayoutWindowStates.Data[i].val_p;
+static ImGuiLayoutItem *gen_item(ImGuiLayout &layout,
+                                 ImGuiLayoutItemType type) {
+  auto *ws = get_current_window_layout_state();
+  if (layout.CurrentItemIndex < layout.Items.Size) {
+    ImGuiLayoutItem &it = layout.Items[layout.CurrentItemIndex];
+    if (it.Type != type)
+      it = ImGuiLayoutItem(type);
+  } else {
+    layout.Items.push_back(ImGuiLayoutItem(type));
+  }
+  ws->CurrentLayoutItem = &layout.Items[layout.CurrentItemIndex];
+  return ws->CurrentLayoutItem;
+}
 
-        WindowLayoutState_OnShutdown(layout_window_state);
+static void translate_item(ImGuiLayoutItem &item, const ImVec2 &offset) {
+  if ((offset.x == 0.0f && offset.y == 0.0f) ||
+      (item.VertexIndexBegin == item.VertexIndexEnd))
+    return;
+  ImDrawList *dl = GetWindowDrawList();
+  ImDrawVert *begin = dl->VtxBuffer.Data + item.VertexIndexBegin;
+  ImDrawVert *end = dl->VtxBuffer.Data + item.VertexIndexEnd;
+  for (ImDrawVert *vtx = begin; vtx < end; ++vtx) {
+    vtx->pos.x += offset.x;
+    vtx->pos.y += offset.y;
+  }
+}
 
-        IM_DELETE(layout_window_state);
+static inline void signed_indent(float indent) {
+  if (indent > 0.0f)
+    ImGui::Indent(indent);
+  else if (indent < 0.0f)
+    ImGui::Unindent(-indent);
+}
+
+static float calc_item_align_offset(ImGuiLayout &layout,
+                                    ImGuiLayoutItem &item) {
+  if (item.CurrentAlign <= 0.0f)
+    return 0.0f;
+  const ImVec2 size = item.MeasuredBounds.GetSize();
+  const float layout_extent = (layout.Type == ImGuiLayoutType_Horizontal)
+                                  ? layout.CurrentSize.y
+                                  : layout.CurrentSize.x;
+  const float item_extent =
+      (layout.Type == ImGuiLayoutType_Horizontal) ? size.y : size.x;
+  if (item_extent <= 0.0f)
+    return 0.0f;
+  return ImFloor(item.CurrentAlign * (layout_extent - item_extent));
+}
+
+static ImVec2 balance_item_align(ImGuiLayout &layout, ImGuiLayoutItem &item) {
+  ImVec2 delta(0, 0);
+  if (item.CurrentAlign > 0.0f) {
+    const float want = calc_item_align_offset(layout, item);
+    if (want != item.CurrentAlignOffset) {
+      const float d = want - item.CurrentAlignOffset;
+      if (layout.Type == ImGuiLayoutType_Horizontal)
+        delta.y = d;
+      else
+        delta.x = d;
+      translate_item(item, delta);
+      item.CurrentAlignOffset = want;
     }
-
-    GStackLayoutStates.SetVoidPtr(layout_state->ContextID, nullptr);
-
-    IM_DELETE(layout_state);
+  }
+  return delta;
 }
 
+static void balance_items_align(ImGuiLayout &layout) {
+  for (int i = 0; i < layout.Items.Size; ++i)
+    (void)balance_item_align(layout, layout.Items[i]);
+}
 
-static ImGuiLayoutWindowState* GetWindowLayoutState(ImGuiID window_id, ImGuiWindow* window)
-{
-    ImGuiLayoutState* layout_state = GetCurrentLayoutState();
-    if (layout_state == NULL)
-        return NULL;
+static bool has_nonzero_spring(ImGuiLayout &layout) {
+  for (int i = 0; i < layout.Items.Size; ++i)
+    if (layout.Items[i].Type == ImGuiLayoutItemType_Spring &&
+        layout.Items[i].SpringWeight > 0.0f)
+      return true;
+  return false;
+}
 
-    ImGuiLayoutWindowState* window_layout_state = (ImGuiLayoutWindowState*)layout_state->LayoutWindowStates.GetVoidPtr(window_id);
-    if (window_layout_state == NULL)
-    {
-        if (window == NULL)
-        {
-            window = ImGui::FindWindowByID(window_id);
-            IM_ASSERT(window && "GetWindowLayoutState called with invalid Window ID.");
-        }
-
-        window_layout_state = IM_NEW(ImGuiLayoutWindowState);
-        window_layout_state->Window = window;
-        layout_state->LayoutWindowStates.SetVoidPtr(window_id, window_layout_state);
+static ImVec2 calc_layout_size(ImGuiLayout &layout, bool collapse_springs) {
+  ImVec2 bounds(0, 0);
+  if (layout.Type == ImGuiLayoutType_Vertical) {
+    for (int i = 0; i < layout.Items.Size; ++i) {
+      auto &it = layout.Items[i];
+      const ImVec2 sz = it.MeasuredBounds.GetSize();
+      if (it.Type == ImGuiLayoutItemType_Item) {
+        bounds.x = ImMax(bounds.x, sz.x);
+        bounds.y += sz.y;
+      } else {
+        bounds.y += ImFloor(it.SpringSpacing);
+        if (!collapse_springs)
+          bounds.y += it.SpringSize;
+      }
     }
-
-    return window_layout_state;
-
-}
-
-
-static ImGuiLayoutWindowState* GetCurrentWindowLayoutState()
-{
-    ImGuiWindow* current_window = ImGui::GetCurrentWindow();
-    if (current_window == NULL)
-        return NULL;
-
-    return GetWindowLayoutState(current_window->ID, current_window);
-}
-
-static void WindowLayoutState_OnNewFrame(ImGuiLayoutWindowState* state)
-{
-    // Mark all layouts as dead. They may be revived in this frame.
-    for (int i = 0; i < state->Layouts.Data.Size; i++)
-    {
-        ImGuiLayout* layout = (ImGuiLayout*)state->Layouts.Data[i].val_p;
-        layout->Live = false;
+  } else {
+    for (int i = 0; i < layout.Items.Size; ++i) {
+      auto &it = layout.Items[i];
+      const ImVec2 sz = it.MeasuredBounds.GetSize();
+      if (it.Type == ImGuiLayoutItemType_Item) {
+        bounds.x += sz.x;
+        bounds.y = ImMax(bounds.y, sz.y);
+      } else {
+        bounds.x += ImFloor(it.SpringSpacing);
+        if (!collapse_springs)
+          bounds.x += it.SpringSize;
+      }
     }
+  }
+  return bounds;
 }
 
-static void WindowLayoutState_OnEndFrame(ImGuiLayoutWindowState* state)
-{
-    // Check stacks (like ImGuiStackSizes::CompareWithCurrentState() does)
-    IM_ASSERT(0 == state->LayoutStack.Size && (!state->LayoutStack.Size || state->LayoutStack.back()->Type == ImGuiLayoutType_Horizontal) && "BeginHorizontal/EndHorizontal Mismatch!");
-    IM_ASSERT(0 == state->LayoutStack.Size && (!state->LayoutStack.Size || state->LayoutStack.back()->Type == ImGuiLayoutType_Vertical)   && "BeginVertical/EndVertical Mismatch!");
-}
+static void balance_springs(ImGuiLayout &layout) {
+  float total_w = 0.0f;
+  int last_spring = -1;
+  for (int i = 0; i < layout.Items.Size; ++i) {
+    auto &it = layout.Items[i];
+    if (it.Type != ImGuiLayoutItemType_Spring)
+      continue;
+    total_w += it.SpringWeight;
+    last_spring = i;
+  }
 
-static void WindowLayoutState_OnShutdown(ImGuiLayoutWindowState* state)
-{
-    for (int i = 0; i < state->Layouts.Data.Size; i++)
-    {
-        ImGuiLayout* layout = (ImGuiLayout*)state->Layouts.Data[i].val_p;
-        IM_DELETE(layout);
+#if 0
+  const bool is_h = (layout.Type == ImGuiLayoutType_Horizontal);
+  const bool is_auto = (((is_h ? layout.Size.x : layout.Size.y) <= 0.0f) &&
+                        layout.Parent == nullptr);
+  const float occupied = is_h ? layout.MinimumSize.x : layout.MinimumSize.y;
+  const float available =
+      is_auto ? occupied : (is_h ? layout.CurrentSize.x : layout.CurrentSize.y);
+  const float free = ImMax(available - occupied, 0.0f);
+#else
+  const bool is_h = (layout.Type == ImGuiLayoutType_Horizontal);
+  const bool is_top_level_auto =
+      ((is_h ? layout.Size.x : layout.Size.y) <= 0.0f) &&
+      (layout.Parent == nullptr);
+
+  // Space already taken by fixed items (what you already had)
+  const float occupied = is_h ? layout.MinimumSize.x : layout.MinimumSize.y;
+
+  // How much space can we actually use?
+  float available;
+  if (is_top_level_auto) {
+    // For a top-level, auto-sized layout, use the *remaining* content space.
+    // GetContentRegionAvail() is the remaining space from the current cursor
+    // to the content max on this axis (after anything already submitted).
+    const ImVec2 avail = ImFloor(ImGui::GetContentRegionAvail());
+    const float remain = is_h ? avail.x : avail.y;
+
+    // Total available = what’s already occupied by measured items + what
+    // remains.
+    available = occupied + ImMax(remain, 0.0f);
+
+    available = occupied;
+
+  } else {
+    // For explicit-size layouts or nested layouts, use the current size you
+    // computed.
+    available = is_h ? layout.CurrentSize.x : layout.CurrentSize.y;
+  }
+
+  const float free = ImMax(available - occupied, 0.0f);
+#endif
+
+  float span_start = 0.0f, cur_w = 0.0f;
+  for (int i = 0; i < layout.Items.Size; ++i) {
+    auto &it = layout.Items[i];
+    if (it.Type != ImGuiLayoutItemType_Spring)
+      continue;
+
+    const float last = it.SpringSize;
+    if (free > 0.0f && total_w > 0.0f) {
+      const float next_w = cur_w + it.SpringWeight;
+      const float span_end =
+          ImFloor((i == last_spring) ? free : (free * next_w / total_w));
+      it.SpringSize = span_end - span_start;
+      span_start = span_end;
+      cur_w = next_w;
+    } else
+      it.SpringSize = 0.0f;
+
+    if (last != it.SpringSize) {
+      const float d = it.SpringSize - last;
+      const ImVec2 off = is_h ? ImVec2(d, 0) : ImVec2(0, d);
+      it.MeasuredBounds.Max += off;
+      for (int j = i + 1; j < layout.Items.Size; ++j) {
+        auto &after = layout.Items[j];
+        translate_item(after, off);
+        after.MeasuredBounds.Min += off;
+        after.MeasuredBounds.Max += off;
+      }
     }
+  }
 }
 
+static inline void reset_line_state(ImGuiWindow *window) {
+  // Reset per-line bookkeeping so manual CursorPos changes don’t
+  // confuse ImGui into starting a new visual line.
+  window->DC.CursorPosPrevLine = window->DC.CursorPos;
+  window->DC.PrevLineSize = ImVec2(0.0f, 0.0f);
+  window->DC.CurrLineSize = ImVec2(0.0f, 0.0f);
+  window->DC.CurrLineTextBaseOffset = 0.0f;
+  window->DC.PrevLineTextBaseOffset = 0.0f;
+  window->DC.IsSameLine = false;
+}
 
-//-----------------------------------------------------------------------------
-// [SECTION] Stack Layout: Internal code
-//-----------------------------------------------------------------------------
+static void balance_children(ImGuiLayout &layout) {
+  for (ImGuiLayout *child = layout.FirstChild; child;
+       child = child->NextSibling) {
+    if (child->Type == ImGuiLayoutType_Horizontal && child->Size.x <= 0.0f)
+      child->CurrentSize.x = layout.CurrentSize.x;
+    else if (child->Type == ImGuiLayoutType_Vertical && child->Size.y <= 0.0f)
+      child->CurrentSize.y = layout.CurrentSize.y;
 
-static ImGuiLayout* ImGui::FindLayout(ImGuiID id, ImGuiLayoutType type)
-{
-    IM_ASSERT(type == ImGuiLayoutType_Horizontal || type == ImGuiLayoutType_Vertical);
+    balance_children(*child);
 
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-    ImGuiLayout* layout = (ImGuiLayout*)window_state->Layouts.GetVoidPtr(id);
-    if (!layout)
-        return NULL;
-
-    if (layout->Type != type)
-    {
-        layout->Type = type;
-        layout->MinimumSize = ImVec2(0.0f, 0.0f);
-        layout->Items.clear();
+    if (has_nonzero_spring(*child)) {
+      ImGuiLayoutItem &parent_item = layout.Items[child->ParentItemIndex];
+      if (child->Type == ImGuiLayoutType_Horizontal && child->Size.x <= 0.0f)
+        parent_item.MeasuredBounds.Max.x =
+            ImMax(parent_item.MeasuredBounds.Max.x,
+                  parent_item.MeasuredBounds.Min.x + layout.CurrentSize.x);
+      else if (child->Type == ImGuiLayoutType_Vertical && child->Size.y <= 0.0f)
+        parent_item.MeasuredBounds.Max.y =
+            ImMax(parent_item.MeasuredBounds.Max.y,
+                  parent_item.MeasuredBounds.Min.y + layout.CurrentSize.y);
     }
-
-    return layout;
+  }
+  balance_springs(layout);
+  balance_items_align(layout);
 }
 
-static ImGuiLayout* ImGui::CreateNewLayout(ImGuiID id, ImGuiLayoutType type, ImVec2 size)
-{
-    IM_ASSERT(type == ImGuiLayoutType_Horizontal || type == ImGuiLayoutType_Vertical);
+static void begin_layout(ImGuiID id, ImGuiLayoutType type, ImVec2 size,
+                         float align) {
+  ImGuiWindow *window = GetCurrentWindow();
 
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
+  PushID_ImGuiID(id); // safer than PushID(id) for raw ImGuiID
 
-    ImGuiLayout* layout = IM_NEW(ImGuiLayout)(id, type);
+  ImGuiLayout *layout = find_layout(id, type);
+  if (!layout)
+    layout = create_layout(id, type, size);
+  layout->Live = true;
+  push_layout(layout);
+
+  if (layout->Size.x != size.x || layout->Size.y != size.y)
     layout->Size = size;
 
-    window_state->Layouts.SetVoidPtr(id, layout);
+  layout->Align = (align < 0.0f) ? -1.0f : ImClamp(align, 0.0f, 1.0f);
 
-    return layout;
+  layout->CurrentItemIndex = 0;
+  layout->CurrentSize.x =
+      layout->Size.x > 0.0f ? layout->Size.x : layout->MinimumSize.x;
+  layout->CurrentSize.y =
+      layout->Size.y > 0.0f ? layout->Size.y : layout->MinimumSize.y;
+
+  /*
+  {
+    const ImVec2 avail = ImFloor(
+        ImGui::GetContentRegionAvail()); // robust to columns/child windows
+    if (layout->Size.x <= 0.0f && type == ImGuiLayoutType_Horizontal)
+      layout->CurrentSize.x = ImMax(layout->CurrentSize.x, avail.x);
+    if (layout->Size.y <= 0.0f && type == ImGuiLayoutType_Vertical)
+      layout->CurrentSize.y = ImMax(layout->CurrentSize.y, avail.y);
+  }
+  */
+
+  layout->StartPos = window->DC.CursorPos;
+  layout->StartCursorMaxPos = window->DC.CursorMaxPos;
+
+  layout->PrevWindowLayoutType = window->DC.LayoutType;
+  window->DC.LayoutType = type;
+
+  if (type == ImGuiLayoutType_Vertical) {
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+    ImGui::Dummy(ImVec2(0, 0));
+    ImGui::PopStyleVar();
+
+    layout->Indent = layout->StartPos.x - window->DC.CursorPos.x;
+    signed_indent(layout->Indent);
+
+    reset_line_state(window);
+  } else // ImGuiLayoutType_Horizontal
+  {
+    // Same rationale as vertical: submit a zero-sized item so extending
+    // boundary is legal on 1.89+ AND so line metrics start clean.
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+    ImGui::Dummy(ImVec2(0, 0));
+    ImGui::PopStyleVar();
+
+    reset_line_state(window);
+  }
+
+  // Begin first item
+  ImGuiLayoutItem &item = *gen_item(*layout, ImGuiLayoutItemType_Item);
+  item.CurrentAlign = (layout->Align < 0.0f)
+                          ? 0.5f
+                          : layout->Align; // default center if not provided
+  item.CurrentAlign = ImClamp(item.CurrentAlign, 0.0f, 1.0f);
+  item.CurrentAlignOffset = 0.0f;
+
+  // Pre-align for previous-frame alignment (will be corrected at
+  // end if needed)
+  if (item.CurrentAlign > 0.0f) {
+    const float off = item.CurrentAlignOffset =
+        calc_item_align_offset(*layout, item);
+    if (type == ImGuiLayoutType_Horizontal)
+      window->DC.CursorPos.y += off;
+    else {
+      signed_indent(off);
+      window->DC.CursorPos.x += off;
+    }
+  }
+
+  item.MeasuredBounds.Min = item.MeasuredBounds.Max = window->DC.CursorPos;
+  item.VertexIndexBegin = ImDrawList_GetCurrentVtxIndex(window->DrawList);
+  item.VertexIndexEnd = item.VertexIndexBegin;
 }
 
-static void ImGui::BeginLayout(ImGuiID id, ImGuiLayoutType type, ImVec2 size, float align)
-{
-    ImGuiWindow* window = GetCurrentWindow();
+static void end_layout(ImGuiLayoutType type) {
+  auto *ws = get_current_window_layout_state();
+  IM_ASSERT(ws && ws->CurrentLayout && ws->CurrentLayout->Type == type);
+  ImGuiLayout *layout = ws->CurrentLayout;
+  ImGuiWindow *window = ws->Window;
 
-    PushID(id);
+  // End current item (flush geometry bounds)
+  {
+    ImGuiLayoutItem &item = layout->Items[layout->CurrentItemIndex];
+    item.VertexIndexEnd = ImDrawList_GetCurrentVtxIndex(window->DrawList);
 
-    // Find or create
-    ImGuiLayout* layout = FindLayout(id, type);
-    if (!layout)
-        layout = CreateNewLayout(id, type, size);
+    if (item.CurrentAlign > 0.0f && layout->Type == ImGuiLayoutType_Vertical)
+      signed_indent(-item.CurrentAlignOffset);
 
-    layout->Live = true;
+    const ImVec2 fix = balance_item_align(*layout, item);
+    item.MeasuredBounds.Min += fix;
+    item.MeasuredBounds.Max += fix;
 
-    PushLayout(layout);
-
-    if (layout->Size.x != size.x || layout->Size.y != size.y)
-        layout->Size = size;
-
-    if (align < 0.0f)
-        layout->Align = -1.0f;
-    else
-        layout->Align = ImClamp(align, 0.0f, 1.0f);
-
-    // Start capture
-    layout->CurrentItemIndex = 0;
-
-    layout->CurrentSize.x = layout->Size.x > 0.0f ? layout->Size.x : layout->MinimumSize.x;
-    layout->CurrentSize.y = layout->Size.y > 0.0f ? layout->Size.y : layout->MinimumSize.y;
-
-    layout->StartPos = window->DC.CursorPos;
-    layout->StartCursorMaxPos = window->DC.CursorMaxPos;
-
-    if (type == ImGuiLayoutType_Vertical)
-    {
-        // Push empty item to recalculate cursor position.
-        PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-        Dummy(ImVec2(0.0f, 0.0f));
-        PopStyleVar();
-
-        // Indent horizontal position to match edge of the layout.
-        layout->Indent = layout->StartPos.x - window->DC.CursorPos.x;
-        SignedIndent(layout->Indent);
+    if (layout->Type == ImGuiLayoutType_Horizontal) {
+      window->DC.CursorPos.y = layout->StartPos.y;
+      reset_line_state(window); // <-- add this
+    } else {
+      window->DC.CursorPos.x = layout->StartPos.x;
+      reset_line_state(window); // <-- add this (good hygiene for vertical too)
     }
 
-    BeginLayoutItem(*layout);
+    layout->CurrentItemIndex++;
+  }
+
+  if (layout->CurrentItemIndex < layout->Items.Size)
+    layout->Items.resize(layout->CurrentItemIndex);
+
+  if (layout->Type == ImGuiLayoutType_Vertical)
+    signed_indent(-layout->Indent);
+
+  pop_layout(layout);
+
+  const bool auto_w = (layout->Size.x <= 0.0f);
+  const bool auto_h = (layout->Size.y <= 0.0f);
+
+  ImVec2 new_size = layout->Size;
+  if (auto_w)
+    new_size.x = layout->CurrentSize.x;
+  if (auto_h)
+    new_size.y = layout->CurrentSize.y;
+
+  const ImVec2 min_size = calc_layout_size(*layout, /*collapse_springs*/ true);
+  if (min_size.x != layout->MinimumSize.x ||
+      min_size.y != layout->MinimumSize.y) {
+    layout->MinimumSize = min_size;
+    if (auto_w)
+      new_size.x = min_size.x;
+    if (auto_h)
+      new_size.y = min_size.y;
+  }
+
+  if (!auto_w)
+    new_size.x = layout->Size.x;
+  if (!auto_h)
+    new_size.y = layout->Size.y;
+
+  layout->CurrentSize = new_size;
+
+  ImVec2 measured = new_size;
+  if ((auto_w || auto_h) && layout->Parent) {
+    if (layout->Type == ImGuiLayoutType_Horizontal && auto_w &&
+        layout->Parent->CurrentSize.x > 0)
+      layout->CurrentSize.x = layout->Parent->CurrentSize.x;
+    else if (layout->Type == ImGuiLayoutType_Vertical && auto_h &&
+             layout->Parent->CurrentSize.y > 0)
+      layout->CurrentSize.y = layout->Parent->CurrentSize.y;
+
+    balance_springs(*layout);
+    measured = layout->CurrentSize;
+  }
+  layout->CurrentSize = new_size;
+
+  ImVec2 current_layout_item_max(0, 0);
+  if (ws->CurrentLayoutItem)
+    current_layout_item_max = ImMax(ws->CurrentLayoutItem->MeasuredBounds.Max,
+                                    layout->StartPos + new_size);
+
+  window->DC.CursorPos = layout->StartPos;
+  window->DC.CursorMaxPos = layout->StartCursorMaxPos;
+  reset_line_state(window);
+
+  window->DC.LayoutType = layout->PrevWindowLayoutType;
+
+  ImGui::ItemSize(new_size);
+  ImGui::ItemAdd(ImRect(layout->StartPos, layout->StartPos + measured), 0);
+
+  if (ws->CurrentLayoutItem) {
+    // keep whatever ItemAdd() + UpdateItemRect() established,
+    // only extend if our precomputed value is larger
+    ws->CurrentLayoutItem->MeasuredBounds.Max = ImMax(
+        ws->CurrentLayoutItem->MeasuredBounds.Max, current_layout_item_max);
+  }
+
+  if (layout->Parent == nullptr)
+    balance_children(*layout);
+
+  ImGui::PopID(); // matches PushOverrideID
 }
 
-static void ImGui::EndLayout(ImGuiLayoutType type)
-{
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-    IM_ASSERT(window_state->CurrentLayout);
-    IM_ASSERT(window_state->CurrentLayout->Type == type);
-    IM_UNUSED(type);
+static void add_spring(ImGuiLayout &layout, float weight, float spacing) {
+  ImGuiWindow *window = GetCurrentWindow();
 
-    ImGuiLayout* layout = window_state->CurrentLayout;
+  // Undo padding so the spring eats the gap
+  {
+    ImGuiLayoutItem *prev = &layout.Items[layout.CurrentItemIndex];
+    if (layout.Type == ImGuiLayoutType_Horizontal) {
+      window->DC.CursorPos.x = prev->MeasuredBounds.Max.x;
+      reset_line_state(window);
+    } else {
+      window->DC.CursorPos.y = prev->MeasuredBounds.Max.y;
+      reset_line_state(window);
+    }
+  }
 
-    EndLayoutItem(*layout);
+  // Finish previous item
+  {
+    ImGuiLayoutItem &item = layout.Items[layout.CurrentItemIndex];
+    item.VertexIndexEnd = ImDrawList_GetCurrentVtxIndex(window->DrawList);
 
-    if (layout->CurrentItemIndex < layout->Items.Size)
-        layout->Items.resize(layout->CurrentItemIndex);
+    if (item.CurrentAlign > 0.0f && layout.Type == ImGuiLayoutType_Vertical)
+      signed_indent(-item.CurrentAlignOffset);
 
-    if (layout->Type == ImGuiLayoutType_Vertical)
-        SignedIndent(-layout->Indent);
+    const ImVec2 fix = balance_item_align(layout, item);
+    item.MeasuredBounds.Min += fix;
+    item.MeasuredBounds.Max += fix;
 
-    PopLayout(layout);
-
-    const bool auto_width  = layout->Size.x <= 0.0f;
-    const bool auto_height = layout->Size.y <= 0.0f;
-
-    ImVec2 new_size = layout->Size;
-    if (auto_width)
-        new_size.x = layout->CurrentSize.x;
-    if (auto_height)
-        new_size.y = layout->CurrentSize.y;
-
-    ImVec2 new_minimum_size = CalculateLayoutSize(*layout, true);
-
-    if (new_minimum_size.x != layout->MinimumSize.x || new_minimum_size.y != layout->MinimumSize.y)
-    {
-        layout->MinimumSize = new_minimum_size;
-
-        // Shrink
-        if (auto_width)
-            new_size.x = new_minimum_size.x;
-        if (auto_height)
-            new_size.y = new_minimum_size.y;
+    if (layout.Type == ImGuiLayoutType_Horizontal) {
+      window->DC.CursorPos.y = layout.StartPos.y;
+      reset_line_state(window); // <-- add this
+    } else {
+      window->DC.CursorPos.x = layout.StartPos.x;
+      reset_line_state(window); // <-- add this
     }
 
-    if (!auto_width)
-        new_size.x = layout->Size.x;
-    if (!auto_height)
-        new_size.y = layout->Size.y;
+    layout.CurrentItemIndex++;
+  }
 
-    layout->CurrentSize = new_size;
+  // Create spring item
+  ImGuiLayoutItem *spring_item = gen_item(layout, ImGuiLayoutItemType_Spring);
+  spring_item->MeasuredBounds.Min = spring_item->MeasuredBounds.Max =
+      window->DC.CursorPos;
+  spring_item->SpringWeight = ImMax(0.0f, weight);
 
-    ImVec2 measured_size = new_size;
-    if ((auto_width || auto_height) && layout->Parent)
-    {
-        if (layout->Type == ImGuiLayoutType_Horizontal && auto_width && layout->Parent->CurrentSize.x > 0)
-            layout->CurrentSize.x = layout->Parent->CurrentSize.x;
-        else if (layout->Type == ImGuiLayoutType_Vertical && auto_height && layout->Parent->CurrentSize.y > 0)
-            layout->CurrentSize.y = layout->Parent->CurrentSize.y;
+  if (spacing < 0.0f) {
+    const ImVec2 is = ImGui::GetStyle().ItemSpacing;
+    spacing = (layout.Type == ImGuiLayoutType_Horizontal) ? is.x : is.y;
+  }
+  spring_item->SpringSpacing = spacing;
 
-        BalanceLayoutSprings(*layout);
-
-        measured_size = layout->CurrentSize;
+  // Visualize spacing+spring so later items position correctly for
+  // this frame
+  if (spring_item->SpringSize > 0.0f || spacing > 0.0f) {
+    ImVec2 spring_size, spring_spacing;
+    if (layout.Type == ImGuiLayoutType_Horizontal) {
+      spring_spacing = ImVec2(0.0f, ImGui::GetStyle().ItemSpacing.y);
+      spring_size =
+          ImVec2(spacing + spring_item->SpringSize, layout.CurrentSize.y);
+    } else {
+      spring_spacing = ImVec2(ImGui::GetStyle().ItemSpacing.x, 0.0f);
+      spring_size =
+          ImVec2(layout.CurrentSize.x, spacing + spring_item->SpringSize);
     }
-
-    layout->CurrentSize = new_size;
-
-    PopID();
-
-    ImVec2 current_layout_item_max = ImVec2(0.0f, 0.0f);
-    if (window_state->CurrentLayoutItem)
-        current_layout_item_max = ImMax(window_state->CurrentLayoutItem->MeasuredBounds.Max, layout->StartPos + new_size);
-
-    window_state->Window->DC.CursorPos    = layout->StartPos;
-    window_state->Window->DC.CursorMaxPos = layout->StartCursorMaxPos;
-    ItemSize(new_size);
-    ItemAdd(ImRect(layout->StartPos, layout->StartPos + measured_size), 0);
-
-    if (window_state->CurrentLayoutItem)
-        window_state->CurrentLayoutItem->MeasuredBounds.Max = current_layout_item_max;
-
-    if (layout->Parent == NULL)
-        BalanceChildLayouts(*layout);
-
-    //window->DrawList->AddRect(layout->StartPos, layout->StartPos + measured_size, IM_COL32(0,255,0,255));           // [DEBUG]
-    //window->DrawList->AddRect(window->DC.LastItemRect.Min, window->DC.LastItemRect.Max, IM_COL32(255,255,0,255));   // [DEBUG]
-}
-
-static ImVec2 ImGui::CalculateLayoutSize(ImGuiLayout& layout, bool collapse_springs)
-{
-    ImVec2 bounds = ImVec2(0.0f, 0.0f);
-
-    if (layout.Type == ImGuiLayoutType_Vertical)
-    {
-        for (int i = 0; i < layout.Items.Size; i++)
-        {
-            ImGuiLayoutItem& item = layout.Items[i];
-            ImVec2 item_size = item.MeasuredBounds.GetSize();
-
-            if (item.Type == ImGuiLayoutItemType_Item)
-            {
-                bounds.x  = ImMax(bounds.x, item_size.x);
-                bounds.y += item_size.y;
-            }
-            else
-            {
-                bounds.y += ImFloor(item.SpringSpacing);
-
-                if (!collapse_springs)
-                    bounds.y += item.SpringSize;
-            }
-        }
-    }
-    else
-    {
-        for (int i = 0; i < layout.Items.Size; i++)
-        {
-            ImGuiLayoutItem& item = layout.Items[i];
-            ImVec2 item_size = item.MeasuredBounds.GetSize();
-
-            if (item.Type == ImGuiLayoutItemType_Item)
-            {
-                bounds.x += item_size.x;
-                bounds.y  = ImMax(bounds.y, item_size.y);
-            }
-            else
-            {
-                bounds.x += ImFloor(item.SpringSpacing);
-
-                if (!collapse_springs)
-                    bounds.x += item.SpringSize;
-            }
-        }
-    }
-
-    return bounds;
-}
-
-static void ImGui::PushLayout(ImGuiLayout* layout)
-{
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-
-    if (layout)
-    {
-        layout->Parent = window_state->CurrentLayout;
-        if (layout->Parent != NULL)
-            layout->ParentItemIndex = layout->Parent->CurrentItemIndex;
-        if (window_state->CurrentLayout)
-        {
-            layout->NextSibling = window_state->CurrentLayout->FirstChild;
-            layout->FirstChild  = NULL;
-            window_state->CurrentLayout->FirstChild = layout;
-        }
-        else
-        {
-            layout->NextSibling = NULL;
-            layout->FirstChild  = NULL;
-        }
-    }
-
-    window_state->LayoutStack.push_back(layout);
-    window_state->CurrentLayout = layout;
-    window_state->CurrentLayoutItem = NULL;
-}
-
-static void ImGui::PopLayout(ImGuiLayout* layout)
-{
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-
-    IM_ASSERT(!window_state->LayoutStack.empty());
-    IM_ASSERT(window_state->LayoutStack.back() == layout);
-    IM_UNUSED(layout);
-
-    window_state->LayoutStack.pop_back();
-
-    if (!window_state->LayoutStack.empty())
-    {
-        window_state->CurrentLayout = window_state->LayoutStack.back();
-        window_state->CurrentLayoutItem = &window_state->CurrentLayout->Items[window_state->CurrentLayout->CurrentItemIndex];
-    }
-    else
-    {
-        window_state->CurrentLayout = NULL;
-        window_state->CurrentLayoutItem = NULL;
-    }
-}
-
-static void ImGui::BalanceLayoutSprings(ImGuiLayout& layout)
-{
-    // Accumulate amount of occupied space and springs weights
-    float total_spring_weight = 0.0f;
-
-    int last_spring_item_index = -1;
-    for (int i = 0; i < layout.Items.Size; i++)
-    {
-        ImGuiLayoutItem& item = layout.Items[i];
-        if (item.Type == ImGuiLayoutItemType_Spring)
-        {
-            total_spring_weight += item.SpringWeight;
-            last_spring_item_index = i;
-        }
-    }
-
-    // Determine occupied space and available space depending on layout type
-    const bool  is_horizontal   = (layout.Type == ImGuiLayoutType_Horizontal);
-    const bool  is_auto_sized   = ((is_horizontal ? layout.Size.x : layout.Size.y) <= 0.0f) && (layout.Parent == NULL);
-    const float occupied_space  = is_horizontal ? layout.MinimumSize.x : layout.MinimumSize.y;
-    const float available_space = is_auto_sized ? occupied_space : (is_horizontal ? layout.CurrentSize.x : layout.CurrentSize.y);
-    const float free_space      = ImMax(available_space - occupied_space, 0.0f);
-
-    float span_start     = 0.0f;
-    float current_weight = 0.0f;
-    for (int i = 0; i < layout.Items.Size; i++)
-    {
-        ImGuiLayoutItem& item = layout.Items[i];
-        if (item.Type != ImGuiLayoutItemType_Spring)
-            continue;
-
-        float last_spring_size = item.SpringSize;
-
-        if (free_space > 0.0f && total_spring_weight > 0.0f)
-        {
-            float next_weight = current_weight + item.SpringWeight;
-            float span_end    = ImFloor((i == last_spring_item_index) ? free_space : (free_space * next_weight / total_spring_weight));
-            float spring_size = span_end - span_start;
-            item.SpringSize   = spring_size;
-            span_start        = span_end;
-            current_weight    = next_weight;
-        }
-        else
-        {
-            item.SpringSize = 0.0f;
-        }
-
-        // If spring changed its size, fix positioning of following items to avoid one frame visual bugs.
-        if (last_spring_size != item.SpringSize)
-        {
-            float difference = item.SpringSize - last_spring_size;
-
-            ImVec2 offset = is_horizontal ? ImVec2(difference, 0.0f) : ImVec2(0.0f, difference);
-
-            item.MeasuredBounds.Max += offset;
-
-            for (int j = i + 1; j < layout.Items.Size; j++)
-            {
-                ImGuiLayoutItem& translated_item = layout.Items[j];
-
-                TranslateLayoutItem(translated_item, offset);
-
-                translated_item.MeasuredBounds.Min += offset;
-                translated_item.MeasuredBounds.Max += offset;
-            }
-        }
-    }
-}
-
-static ImVec2 ImGui::BalanceLayoutItemAlignment(ImGuiLayout& layout, ImGuiLayoutItem& item)
-{
-    // Fixup item alignment if necessary.
-    ImVec2 position_correction = ImVec2(0.0f, 0.0f);
-    if (item.CurrentAlign > 0.0f)
-    {
-        float item_align_offset = CalculateLayoutItemAlignmentOffset(layout, item);
-        if (item.CurrentAlignOffset != item_align_offset)
-        {
-            float offset = item_align_offset - item.CurrentAlignOffset;
-
-            if (layout.Type == ImGuiLayoutType_Horizontal)
-                position_correction.y = offset;
-            else
-                position_correction.x = offset;
-
-            TranslateLayoutItem(item, position_correction);
-
-            item.CurrentAlignOffset = item_align_offset;
-        }
-    }
-
-    return position_correction;
-}
-
-static void ImGui::BalanceLayoutItemsAlignment(ImGuiLayout& layout)
-{
-    for (int i = 0; i < layout.Items.Size; ++i)
-    {
-        ImGuiLayoutItem& item = layout.Items[i];
-        BalanceLayoutItemAlignment(layout, item);
-    }
-}
-
-static bool ImGui::HasAnyNonZeroSpring(ImGuiLayout& layout)
-{
-    for (int i = 0; i < layout.Items.Size; ++i)
-    {
-        ImGuiLayoutItem& item = layout.Items[i];
-        if (item.Type != ImGuiLayoutItemType_Spring)
-            continue;
-        if (item.SpringWeight > 0)
-            return true;
-    }
-    return false;
-}
-
-static void ImGui::BalanceChildLayouts(ImGuiLayout& layout)
-{
-    for (ImGuiLayout* child = layout.FirstChild; child != NULL; child = child->NextSibling)
-    {
-        //ImVec2 child_layout_size = child->CurrentSize;
-
-        // Propagate layout size down to child layouts.
-        //
-        // TODO: Distribution assume inner layout is only
-        //       element inside parent item and assigns
-        //       all available space to it.
-        //
-        //       Investigate how to split space between
-        //       adjacent layouts.
-        //
-        //       Investigate how to measure non-layout items
-        //       to treat them as fixed size blocks.
-        //
-        if (child->Type == ImGuiLayoutType_Horizontal && child->Size.x <= 0.0f)
-            child->CurrentSize.x = layout.CurrentSize.x;
-        else if (child->Type == ImGuiLayoutType_Vertical && child->Size.y <= 0.0f)
-            child->CurrentSize.y = layout.CurrentSize.y;
-
-        BalanceChildLayouts(*child);
-
-        //child->CurrentSize = child_layout_size;
-
-        if (HasAnyNonZeroSpring(*child))
-        {
-            // Expand item measured bounds to make alignment correct.
-            ImGuiLayoutItem& item = layout.Items[child->ParentItemIndex];
-
-            if (child->Type == ImGuiLayoutType_Horizontal && child->Size.x <= 0.0f)
-                item.MeasuredBounds.Max.x = ImMax(item.MeasuredBounds.Max.x, item.MeasuredBounds.Min.x + layout.CurrentSize.x);
-            else if (child->Type == ImGuiLayoutType_Vertical && child->Size.y <= 0.0f)
-                item.MeasuredBounds.Max.y = ImMax(item.MeasuredBounds.Max.y, item.MeasuredBounds.Min.y + layout.CurrentSize.y);
-        }
-    }
-
-    BalanceLayoutSprings(layout);
-    BalanceLayoutItemsAlignment(layout);
-}
-
-static ImGuiLayoutItem* ImGui::GenerateLayoutItem(ImGuiLayout& layout, ImGuiLayoutItemType type)
-{
-    ImGuiContext& g = *GImGui;
-    IM_ASSERT(layout.CurrentItemIndex <= layout.Items.Size);
-
-    if (layout.CurrentItemIndex < layout.Items.Size)
-    {
-        ImGuiLayoutItem& item = layout.Items[layout.CurrentItemIndex];
-        if (item.Type != type)
-            item = ImGuiLayoutItem(type);
-    }
-    else
-    {
-        layout.Items.push_back(ImGuiLayoutItem(type));
-    }
-
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-    window_state->CurrentLayoutItem = &layout.Items[layout.CurrentItemIndex];
-
-    return &layout.Items[layout.CurrentItemIndex];
-}
-
-// Calculate how many pixels from top/left layout edge item need to be moved to match
-// layout alignment.
-static float ImGui::CalculateLayoutItemAlignmentOffset(ImGuiLayout& layout, ImGuiLayoutItem& item)
-{
-    if (item.CurrentAlign <= 0.0f)
-        return 0.0f;
-
-    ImVec2 item_size = item.MeasuredBounds.GetSize();
-
-    float layout_extent = (layout.Type == ImGuiLayoutType_Horizontal) ? layout.CurrentSize.y : layout.CurrentSize.x;
-    float item_extent   = (layout.Type == ImGuiLayoutType_Horizontal) ? item_size.y : item_size.x;
-
-    if (item_extent <= 0/* || layout_extent <= item_extent*/)
-        return 0.0f;
-
-    float align_offset = ImFloor(item.CurrentAlign * (layout_extent - item_extent));
-
-    return align_offset;
-}
-
-static void ImGui::TranslateLayoutItem(ImGuiLayoutItem& item, const ImVec2& offset)
-{
-    if ((offset.x == 0.0f && offset.y == 0.0f) || (item.VertexIndexBegin == item.VertexIndexEnd))
-        return;
-
-    //IMGUI_DEBUG_LOG("TranslateLayoutItem by %f,%f\n", offset.x, offset.y);
-    ImDrawList* draw_list = GetWindowDrawList();
-
-    ImDrawVert* begin = draw_list->VtxBuffer.Data + item.VertexIndexBegin;
-    ImDrawVert* end   = draw_list->VtxBuffer.Data + item.VertexIndexEnd;
-
-    for (ImDrawVert* vtx = begin; vtx < end; ++vtx)
-    {
-        vtx->pos.x += offset.x;
-        vtx->pos.y += offset.y;
-    }
-}
-
-static void ImGui::SignedIndent(float indent)
-{
-    if (indent > 0.0f)
-        Indent(indent);
-    else if (indent < 0.0f)
-        Unindent(-indent);
-}
-
-static void ImGui::BeginLayoutItem(ImGuiLayout& layout)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = g.CurrentWindow;
-    ImGuiLayoutItem& item = *GenerateLayoutItem(layout, ImGuiLayoutItemType_Item);
-
-    item.CurrentAlign = layout.Align;
-    if (item.CurrentAlign < 0.0f) {
-      // TODO: Play with align
-      const float l_Align = 0.5f;
-      item.CurrentAlign = ImClamp(l_Align, 0.0f, 1.0f);
-    }
-
-    // Align item according to data from previous frame.
-    // If layout changes in current frame alignment will
-    // be corrected in EndLayout() to it visualy coherent.
-    item.CurrentAlignOffset = CalculateLayoutItemAlignmentOffset(layout, item);
-    if (item.CurrentAlign > 0.0f)
-    {
-        if (layout.Type == ImGuiLayoutType_Horizontal)
-        {
-            window->DC.CursorPos.y += item.CurrentAlignOffset;
-        }
-        else
-        {
-            float new_position = window->DC.CursorPos.x + item.CurrentAlignOffset;
-
-            // Make placement behave like in horizontal case when next
-            // widget is placed at very same Y position. This indent
-            // make sure for vertical layout placed widgets has same X position.
-            SignedIndent(item.CurrentAlignOffset);
-
-            window->DC.CursorPos.x = new_position;
-        }
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImFloor(spring_spacing));
+    ImGui::Dummy(ImFloor(spring_size));
+    ImGui::PopStyleVar();
+  }
+
+  if (layout.Type == ImGuiLayoutType_Horizontal) {
+    window->DC.CursorPos.y = layout.StartPos.y;
+  } else {
+    window->DC.CursorPos.x = layout.StartPos.x;
+  }
+  reset_line_state(window);
+
+  layout.CurrentItemIndex++;
+
+  // Start next item
+  {
+    ImGuiLayoutItem &item = *gen_item(layout, ImGuiLayoutItemType_Item);
+    item.CurrentAlign = (layout.Align < 0.0f) ? 0.5f : layout.Align;
+    item.CurrentAlign = ImClamp(item.CurrentAlign, 0.0f, 1.0f);
+    item.CurrentAlignOffset = 0.0f;
+
+    if (item.CurrentAlign > 0.0f) {
+      const float off = item.CurrentAlignOffset =
+          calc_item_align_offset(layout, item);
+      if (layout.Type == ImGuiLayoutType_Horizontal)
+        window->DC.CursorPos.y += off;
+      else {
+        signed_indent(off);
+        window->DC.CursorPos.x += off;
+      }
     }
 
     item.MeasuredBounds.Min = item.MeasuredBounds.Max = window->DC.CursorPos;
-    item.VertexIndexBegin = item.VertexIndexEnd = window->DrawList->_VtxCurrentIdx;
+    item.VertexIndexBegin = ImDrawList_GetCurrentVtxIndex(window->DrawList);
+    item.VertexIndexEnd = item.VertexIndexBegin;
+  }
+}
+} // namespace ImGui
+
+// --------------------------------------------------------
+// Internal API
+// --------------------------------------------------------
+ImGuiLayoutType ImGuiInternal::GetCurrentLayoutType(ImGuiID window_id) {
+  auto *ws = get_window_layout_state(window_id);
+  ImGuiLayoutType lt = ws->Window->DC.LayoutType;
+  if (ws->CurrentLayout)
+    lt = ws->CurrentLayout->Type;
+  return lt;
 }
 
-static void ImGui::EndLayoutItem(ImGuiLayout& layout)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = g.CurrentWindow;
-    IM_ASSERT(layout.CurrentItemIndex < layout.Items.Size);
-
-    ImGuiLayoutItem& item = layout.Items[layout.CurrentItemIndex];
-
-    ImDrawList* draw_list = window->DrawList;
-    item.VertexIndexEnd = draw_list->_VtxCurrentIdx;
-
-    if (item.CurrentAlign > 0.0f && layout.Type == ImGuiLayoutType_Vertical)
-        SignedIndent(-item.CurrentAlignOffset);
-
-    // Fixup item alignment in case item size changed in current frame.
-    ImVec2 position_correction = BalanceLayoutItemAlignment(layout, item);
-
-    item.MeasuredBounds.Min += position_correction;
-    item.MeasuredBounds.Max += position_correction;
-
-    if (layout.Type == ImGuiLayoutType_Horizontal)
-        window->DC.CursorPos.y = layout.StartPos.y;
-    else
-        window->DC.CursorPos.x = layout.StartPos.x;
-
-    layout.CurrentItemIndex++;
+void ImGuiInternal::UpdateItemRect(ImGuiID window_id, const ImVec2 &min,
+                                   const ImVec2 &max) {
+  auto *ws = get_window_layout_state(window_id);
+  if (ws->CurrentLayoutItem)
+    ws->CurrentLayoutItem->MeasuredBounds.Max =
+        ImMax(ws->CurrentLayoutItem->MeasuredBounds.Max, max);
+  (void)min;
 }
 
-static void ImGui::AddLayoutSpring(ImGuiLayout& layout, float weight, float spacing)
-{
-    ImGuiContext& g = *GImGui;
-    ImGuiWindow* window = g.CurrentWindow;
-    ImGuiLayoutItem* previous_item = &layout.Items[layout.CurrentItemIndex];
+// --------------------------------------------------------
+// Public API
+// --------------------------------------------------------
+void ImGui::BeginHorizontal(const char *str_id, const ImVec2 &size,
+                            float align) {
+  ImGuiWindow *w = GetCurrentWindow();
+  begin_layout(w->GetID(str_id), ImGuiLayoutType_Horizontal, size, align);
+}
+void ImGui::BeginHorizontal(const void *ptr_id, const ImVec2 &size,
+                            float align) {
+  ImGuiWindow *w = GetCurrentWindow();
+  begin_layout(w->GetID(ptr_id), ImGuiLayoutType_Horizontal, size, align);
+}
+void ImGui::BeginHorizontal(int id, const ImVec2 &size, float align) {
+  ImGuiWindow *w = GetCurrentWindow();
+  begin_layout(w->GetID((void *)(intptr_t)id), ImGuiLayoutType_Horizontal, size,
+               align);
+}
+void ImGui::EndHorizontal() { end_layout(ImGuiLayoutType_Horizontal); }
 
-    // Undo item padding, spring should consume all space between items.
-    if (layout.Type == ImGuiLayoutType_Horizontal)
-        window->DC.CursorPos.x = previous_item->MeasuredBounds.Max.x;
-    else
-        window->DC.CursorPos.y = previous_item->MeasuredBounds.Max.y;
+void ImGui::BeginVertical(const char *str_id, const ImVec2 &size, float align) {
+  ImGuiWindow *w = GetCurrentWindow();
+  begin_layout(w->GetID(str_id), ImGuiLayoutType_Vertical, size, align);
+}
+void ImGui::BeginVertical(const void *ptr_id, const ImVec2 &size, float align) {
+  ImGuiWindow *w = GetCurrentWindow();
+  begin_layout(w->GetID(ptr_id), ImGuiLayoutType_Vertical, size, align);
+}
+void ImGui::BeginVertical(int id, const ImVec2 &size, float align) {
+  ImGuiWindow *w = GetCurrentWindow();
+  begin_layout(w->GetID((void *)(intptr_t)id), ImGuiLayoutType_Vertical, size,
+               align);
+}
+void ImGui::EndVertical() { end_layout(ImGuiLayoutType_Vertical); }
 
-    previous_item = NULL; // may be invalid after call to GenerateLayoutItem()
-
-    EndLayoutItem(layout);
-
-    ImGuiLayoutItem* spring_item = GenerateLayoutItem(layout, ImGuiLayoutItemType_Spring);
-
-    spring_item->MeasuredBounds.Min = spring_item->MeasuredBounds.Max = window->DC.CursorPos;
-
-    if (weight < 0.0f)
-        weight = 0.0f;
-
-    if (spring_item->SpringWeight != weight)
-        spring_item->SpringWeight = weight;
-
-    if (spacing < 0.0f)
-    {
-        ImVec2 style_spacing = g.Style.ItemSpacing;
-        if (layout.Type == ImGuiLayoutType_Horizontal)
-            spacing = style_spacing.x;
-        else
-            spacing = style_spacing.y;
-    }
-
-    if (spring_item->SpringSpacing != spacing)
-        spring_item->SpringSpacing = spacing;
-
-    if (spring_item->SpringSize > 0.0f || spacing > 0.0f)
-    {
-        ImVec2 spring_size, spring_spacing;
-        if (layout.Type == ImGuiLayoutType_Horizontal)
-        {
-            spring_spacing = ImVec2(0.0f, g.Style.ItemSpacing.y);
-            spring_size    = ImVec2(spacing + spring_item->SpringSize, layout.CurrentSize.y);
-        }
-        else
-        {
-            spring_spacing = ImVec2(g.Style.ItemSpacing.x, 0.0f);
-            spring_size    = ImVec2(layout.CurrentSize.x, spacing + spring_item->SpringSize);
-        }
-
-        PushStyleVar(ImGuiStyleVar_ItemSpacing, ImFloor(spring_spacing));
-        Dummy(ImFloor(spring_size));
-        PopStyleVar();
-    }
-
-    layout.CurrentItemIndex++;
-
-    BeginLayoutItem(layout);
+void ImGui::Spring(float weight, float spacing) {
+  auto *ws = get_current_window_layout_state();
+  IM_ASSERT(ws && ws->CurrentLayout && "Spring() must be inside a layout");
+  add_spring(*ws->CurrentLayout, weight, spacing);
 }
 
-
-//-----------------------------------------------------------------------------
-// [SECTION] Stack Layout: Internal API
-//-----------------------------------------------------------------------------
-
-ImGuiLayoutType ImGuiInternal::GetCurrentLayoutType(ImGuiID window_id)
-{
-    ImGuiLayoutWindowState* state = GetWindowLayoutState(window_id);
-
-    ImGuiLayoutType layout_type = state->Window->DC.LayoutType;
-    if (state->CurrentLayout)
-        layout_type = state->CurrentLayout->Type;
-
-    return layout_type;
+void ImGui::SuspendLayout() {
+  ImGui::PushID((void *)0xFEEDBEEF); /* marker */
+  ImGui::Dummy(ImVec2(0, 0));
+  ImGui::PopID();
+  ImGui::GetCurrentWindow();
+  ImGui::GetCurrentWindow();
+  ImGui::GetCurrentWindow(); /* no-op but keeps API */
+}
+void ImGui::ResumeLayout() { /* no-op in this implementation; kept for API
+                                compatibility */
 }
 
-void ImGuiInternal::UpdateItemRect(ImGuiID window_id, const ImVec2& min, const ImVec2& max)
-{
-    ImGuiLayoutWindowState* state = GetWindowLayoutState(window_id);
-
-    if (state->CurrentLayoutItem)
-        state->CurrentLayoutItem->MeasuredBounds.Max = ImMax(state->CurrentLayoutItem->MeasuredBounds.Max, max);
-
-    IM_UNUSED(min);
-}
-
-
-//-----------------------------------------------------------------------------
-// [SECTION] Stack Layout: Public API
-//-----------------------------------------------------------------------------
-
-void ImGui::BeginHorizontal(const char* str_id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    BeginLayout(window->GetID(str_id), ImGuiLayoutType_Horizontal, size, align);
-}
-
-void ImGui::BeginHorizontal(const void* ptr_id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    BeginLayout(window->GetID(ptr_id), ImGuiLayoutType_Horizontal, size, align);
-}
-
-void ImGui::BeginHorizontal(int id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    BeginLayout(window->GetID((void*)(intptr_t)id), ImGuiLayoutType_Horizontal, size, align);
-}
-
-void ImGui::EndHorizontal()
-{
-    EndLayout(ImGuiLayoutType_Horizontal);
-}
-
-void ImGui::BeginVertical(const char* str_id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    BeginLayout(window->GetID(str_id), ImGuiLayoutType_Vertical, size, align);
-}
-
-void ImGui::BeginVertical(const void* ptr_id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    BeginLayout(window->GetID(ptr_id), ImGuiLayoutType_Vertical, size, align);
-}
-
-void ImGui::BeginVertical(int id, const ImVec2& size/* = ImVec2(0, 0)*/, float align/* = -1*/)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    BeginLayout(window->GetID((void*)(intptr_t)id), ImGuiLayoutType_Vertical, size, align);
-}
-
-void ImGui::EndVertical()
-{
-    EndLayout(ImGuiLayoutType_Vertical);
-}
-
-// Inserts spring separator in layout
-//      weight <= 0     : spring will always have zero size
-//      weight > 0      : power of current spring
-//      spacing < 0     : use default spacing if pos_x == 0, no spacing if pos_x != 0
-//      spacing >= 0    : enforce spacing amount
-void ImGui::Spring(float weight/* = 1.0f*/, float spacing/* = -1.0f*/)
-{
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-    IM_ASSERT(window_state->CurrentLayout);
-
-    AddLayoutSpring(*window_state->CurrentLayout, weight, spacing);
-}
-
-void ImGui::SuspendLayout()
-{
-    PushLayout(NULL);
-}
-
-void ImGui::ResumeLayout()
-{
-    ImGuiLayoutWindowState* window_state = GetCurrentWindowLayoutState();
-    IM_ASSERT(!window_state->CurrentLayout);
-    IM_ASSERT(!window_state->LayoutStack.empty());
-    IM_UNUSED(window_state);
-    PopLayout(NULL);
-}
-
-//-----------------------------------------------------------------------------
-
-#endif // #ifndef IMGUI_DISABLE
+#endif // IMGUI_DISABLE

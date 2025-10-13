@@ -883,8 +883,8 @@ namespace Flode {
           NodeEd::Resume();
         }
       }
+      NodeEd::EndCreate();
     }
-    NodeEd::EndCreate();
 
     // Handle deletion action
     if (NodeEd::BeginDelete()) {

@@ -20,6 +20,7 @@ namespace Low {
 
     void initialize()
     {
+
       g_Project.dataPath = "./data";
       g_Project.rootPath = "./";
       g_Project.assetCachePath = "./data/.asset_cache";

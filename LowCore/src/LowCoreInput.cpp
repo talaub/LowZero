@@ -13,7 +13,7 @@ namespace Low {
 
       bool keyboard_button_down(Util::KeyboardButton p_Button)
       {
-        // TODO: Fix
+        // FIX: Fix
         return false;
         // return
         // Renderer::get_window().keyboard_button_down(p_Button);
@@ -21,28 +21,28 @@ namespace Low {
 
       bool keyboard_button_up(Util::KeyboardButton p_Button)
       {
-        // TODO: Fix
+        // FIX: Fix
         return false;
         // return Renderer::get_window().keyboard_button_up(p_Button);
       }
 
       bool mouse_button_down(Util::MouseButton p_Button)
       {
-        // TODO: Fix
+        // FIX: Fix
         return false;
         // return Renderer::get_window().mouse_button_down(p_Button);
       }
 
       bool mouse_button_up(Util::MouseButton p_Button)
       {
-        // TODO: Fix
+        // FIX: Fix
         return false;
         // return Renderer::get_window().mouse_button_up(p_Button);
       }
 
       bool mouse_button_released(Util::MouseButton p_Button)
       {
-        // TODO: Fix
+        // FIX: Fix
         return false;
         // return g_MouseSavedState[p_Button] &&
         //        mouse_button_up(p_Button);
@@ -50,7 +50,7 @@ namespace Low {
 
       bool mouse_button_pressed(Util::MouseButton p_Button)
       {
-        // TODO: Fix
+        // FIX: Fix
         return false;
         // return !g_MouseSavedState[p_Button] &&
         //        mouse_button_down(p_Button);
@@ -58,7 +58,7 @@ namespace Low {
 
       void mouse_position(Math::Vector2 &p_Position)
       {
-        // TODO: Find correct condition to go by
+        // HACK: Find correct condition to go by
 #if 1
         // Math::Vector2 l_MousePosition;
         // Renderer::get_window().mouse_position(l_MousePosition);

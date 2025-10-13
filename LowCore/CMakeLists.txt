@@ -26,7 +26,6 @@ add_dependencies(LowCore
   LowRenderer2
   physx
   Recast
-  RecastDemo
   Detour
   DetourCrowd
   #assimp
@@ -64,7 +63,6 @@ target_link_libraries(LowCore PRIVATE
   LowRenderer2
   physx
   Recast
-  RecastDemo
   Detour
   DetourCrowd
   #assimp

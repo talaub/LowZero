@@ -1,4 +1,4 @@
-cmake -S ../ -B ../build 
+cmake -S ../ -B ../build -A x64
 ::cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -G Ninja -S ../ -B ../build/ninja 
 
 ::xcopy /Y ..\build\ninja\compile_commands.json ..\

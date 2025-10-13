@@ -1,6 +1,5 @@
 // dear imgui, v1.92.4 WIP
 // (headers)
-
 // Help:
 // - See links below.
 // - Call and read ImGui::ShowDemoWindow() in imgui_demo.cpp. All applications in examples/ are doing that.
@@ -34,6 +33,8 @@
 #define IMGUI_HAS_TEXTURES          // Added ImGuiBackendFlags_RendererHasTextures - from IMGUI_VERSION_NUM >= 19198
 #define IMGUI_HAS_VIEWPORT          // In 'docking' WIP branch.
 #define IMGUI_HAS_DOCK              // In 'docking' WIP branch.
+
+#define IMGUI_DEFINE_MATH_OPERATORS
 
 /*
 

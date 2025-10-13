@@ -3,38 +3,22 @@
 #include "LowEditorFonts.h"
 #include "LowEditorThemes.h"
 #include "LowMath.h"
-#include "LowRendererMaterialResource.h"
 #include "LowRendererMeshResource.h"
 #include "LowRendererTextureState.h"
 #include "LowRendererMesh.h"
 #include "LowRendererResourceManager.h"
 #include "LowUtilFileSystem.h"
 #include "LowUtilHandle.h"
-#include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "imgui.h"
 #include "imgui_internal.h"
-#include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
-#include "IconsCodicons.h"
 
 #include "LowEditor.h"
-#include "LowEditorGui.h"
-#include "LowEditorMainWindow.h"
-#include "LowEditorDetailsWidget.h"
-#include "LowEditorFlodeWidget.h"
-#include "LowEditorBase.h"
-
-#include "LowCore.h"
 #include "LowCorePrefab.h"
 
 #include "LowUtil.h"
 #include "LowUtilString.h"
-#include "LowUtilFileIO.h"
-
-#include <algorithm>
-#include <cstring>
-#include <string>
 
 #define UPDATE_INTERVAL 3.0f
 
@@ -273,9 +257,9 @@ namespace Low {
 
       const bool l_IsFallbackEditorImage =
           l_EditorImageLock.owns_lock() &&
-              (
-              !l_EditorImage.is_alive() ||
-          l_EditorImage.get_state() != Renderer::TextureState::LOADED);
+          (!l_EditorImage.is_alive() ||
+           l_EditorImage.get_state() !=
+               Renderer::TextureState::LOADED);
       if (l_IsFallbackEditorImage) {
         l_EditorImage = get_editor_image_for_asset_type(l_AssetType);
       }

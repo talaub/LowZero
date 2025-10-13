@@ -250,7 +250,7 @@ namespace Low {
       void add_ui_canvas(Low::Renderer::UiCanvas p_Canvas);
       /*!
       Add a new debug geometry draw element to this renderview. This
-      element will be rendered for once frame before being cleared
+      element will be rendered for *one* frame before being cleared
       again.
       */
       void add_debug_geometry(

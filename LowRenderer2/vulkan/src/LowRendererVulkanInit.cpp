@@ -152,7 +152,7 @@ namespace Low {
           // MSAA
           l_Info.samples = VK_SAMPLE_COUNT_1_BIT;
 
-          // TODO: Check that again and learn what it does
+          // CHECK: Check that again and learn what it does
           // May have to be dynamic (change based on input params)
           l_Info.tiling = VK_IMAGE_TILING_OPTIMAL;
           l_Info.usage = p_UsageFlags;
@@ -318,6 +318,6 @@ namespace Low {
           return l_RenderInfo;
         }
       } // namespace InitUtil
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low
