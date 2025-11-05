@@ -39,17 +39,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           ViewInfo::ms_Pages;
 
-      ViewInfo::ViewInfo() : Low::Util::Handle(0ull)
-      {
-      }
-      ViewInfo::ViewInfo(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      ViewInfo::ViewInfo(ViewInfo &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle ViewInfo::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -100,9 +89,6 @@ namespace Low {
         new (ACCESSOR_TYPE_SOA_PTR(
             l_Handle, ViewInfo, point_light_buffer, AllocatedBuffer))
             AllocatedBuffer();
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ViewInfo, light_clusters,
-                                   Low::Math::UVector3))
-            Low::Math::UVector3();
         new (ACCESSOR_TYPE_SOA_PTR(
             l_Handle, ViewInfo, ui_drawcommand_buffer,
             AllocatedBuffer)) AllocatedBuffer();
@@ -1029,7 +1015,7 @@ namespace Low {
         return l_ViewInfo.duplicate(p_Name);
       }
 
-      void ViewInfo::serialize(Low::Util::Yaml::Node &p_Node) const
+      void ViewInfo::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -1042,14 +1028,14 @@ namespace Low {
       }
 
       void ViewInfo::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Yaml::Node p_Node)
       {
         ViewInfo l_ViewInfo = p_Handle.get_id();
         l_ViewInfo.serialize(p_Node);
       }
 
       Low::Util::Handle
-      ViewInfo::deserialize(Low::Util::Yaml::Node &p_Node,
+      ViewInfo::deserialize(Low::Util::Yaml::Node p_Node,
                             Low::Util::Handle p_Creator)
       {
         ViewInfo l_Handle = ViewInfo::make(N(ViewInfo));
@@ -1143,7 +1129,7 @@ namespace Low {
         l_ViewInfo.notify(p_Observed, p_Observable);
       }
 
-      AllocatedBuffer &ViewInfo::get_view_data_buffer() const
+      AllocatedBuffer ViewInfo::get_view_data_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1153,7 +1139,7 @@ namespace Low {
 
         return TYPE_SOA(ViewInfo, view_data_buffer, AllocatedBuffer);
       }
-      void ViewInfo::set_view_data_buffer(AllocatedBuffer &p_Value)
+      void ViewInfo::set_view_data_buffer(AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1171,7 +1157,7 @@ namespace Low {
         broadcast_observable(N(view_data_buffer));
       }
 
-      AllocatedBuffer &ViewInfo::get_directional_light_buffer() const
+      AllocatedBuffer ViewInfo::get_directional_light_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1183,7 +1169,7 @@ namespace Low {
                         AllocatedBuffer);
       }
       void
-      ViewInfo::set_directional_light_buffer(AllocatedBuffer &p_Value)
+      ViewInfo::set_directional_light_buffer(AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1231,7 +1217,7 @@ namespace Low {
         broadcast_observable(N(view_data_descriptor_set));
       }
 
-      VkDescriptorSet &ViewInfo::get_lighting_descriptor_set() const
+      VkDescriptorSet ViewInfo::get_lighting_descriptor_set() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1243,7 +1229,7 @@ namespace Low {
                         VkDescriptorSet);
       }
       void
-      ViewInfo::set_lighting_descriptor_set(VkDescriptorSet &p_Value)
+      ViewInfo::set_lighting_descriptor_set(VkDescriptorSet p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1324,7 +1310,7 @@ namespace Low {
         broadcast_observable(N(initialized));
       }
 
-      VkDescriptorSet &ViewInfo::get_gbuffer_descriptor_set() const
+      VkDescriptorSet ViewInfo::get_gbuffer_descriptor_set() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1336,7 +1322,7 @@ namespace Low {
                         VkDescriptorSet);
       }
       void
-      ViewInfo::set_gbuffer_descriptor_set(VkDescriptorSet &p_Value)
+      ViewInfo::set_gbuffer_descriptor_set(VkDescriptorSet p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1354,8 +1340,7 @@ namespace Low {
         broadcast_observable(N(gbuffer_descriptor_set));
       }
 
-      AllocatedBuffer &
-      ViewInfo::get_point_light_cluster_buffer() const
+      AllocatedBuffer ViewInfo::get_point_light_cluster_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1367,7 +1352,7 @@ namespace Low {
                         AllocatedBuffer);
       }
       void ViewInfo::set_point_light_cluster_buffer(
-          AllocatedBuffer &p_Value)
+          AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1385,7 +1370,7 @@ namespace Low {
         broadcast_observable(N(point_light_cluster_buffer));
       }
 
-      AllocatedBuffer &ViewInfo::get_point_light_buffer() const
+      AllocatedBuffer ViewInfo::get_point_light_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1396,7 +1381,7 @@ namespace Low {
         return TYPE_SOA(ViewInfo, point_light_buffer,
                         AllocatedBuffer);
       }
-      void ViewInfo::set_point_light_buffer(AllocatedBuffer &p_Value)
+      void ViewInfo::set_point_light_buffer(AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1414,7 +1399,7 @@ namespace Low {
         broadcast_observable(N(point_light_buffer));
       }
 
-      Low::Math::UVector3 &ViewInfo::get_light_clusters() const
+      Low::Math::UVector3 ViewInfo::get_light_clusters() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1425,7 +1410,7 @@ namespace Low {
         return TYPE_SOA(ViewInfo, light_clusters,
                         Low::Math::UVector3);
       }
-      void ViewInfo::set_light_clusters(Low::Math::UVector3 &p_Value)
+      void ViewInfo::set_light_clusters(Low::Math::UVector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1470,7 +1455,7 @@ namespace Low {
         broadcast_observable(N(light_cluster_count));
       }
 
-      AllocatedBuffer &ViewInfo::get_ui_drawcommand_buffer() const
+      AllocatedBuffer ViewInfo::get_ui_drawcommand_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1482,7 +1467,7 @@ namespace Low {
                         AllocatedBuffer);
       }
       void
-      ViewInfo::set_ui_drawcommand_buffer(AllocatedBuffer &p_Value)
+      ViewInfo::set_ui_drawcommand_buffer(AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1500,7 +1485,7 @@ namespace Low {
         broadcast_observable(N(ui_drawcommand_buffer));
       }
 
-      AllocatedBuffer &ViewInfo::get_debug_geometry_buffer() const
+      AllocatedBuffer ViewInfo::get_debug_geometry_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1512,7 +1497,7 @@ namespace Low {
                         AllocatedBuffer);
       }
       void
-      ViewInfo::set_debug_geometry_buffer(AllocatedBuffer &p_Value)
+      ViewInfo::set_debug_geometry_buffer(AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1530,7 +1515,7 @@ namespace Low {
         broadcast_observable(N(debug_geometry_buffer));
       }
 
-      AllocatedBuffer &ViewInfo::get_object_id_buffer() const
+      AllocatedBuffer ViewInfo::get_object_id_buffer() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
@@ -1540,7 +1525,7 @@ namespace Low {
 
         return TYPE_SOA(ViewInfo, object_id_buffer, AllocatedBuffer);
       }
-      void ViewInfo::set_object_id_buffer(AllocatedBuffer &p_Value)
+      void ViewInfo::set_object_id_buffer(AllocatedBuffer p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());

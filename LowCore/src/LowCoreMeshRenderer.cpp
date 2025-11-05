@@ -35,18 +35,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           MeshRenderer::ms_Pages;
 
-      MeshRenderer::MeshRenderer() : Low::Util::Handle(0ull)
-      {
-      }
-      MeshRenderer::MeshRenderer(uint64_t p_Id)
-          : Low::Util::Handle(p_Id)
-      {
-      }
-      MeshRenderer::MeshRenderer(MeshRenderer &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle
       MeshRenderer::_make(Low::Util::Handle p_Entity)
       {
@@ -545,8 +533,7 @@ namespace Low {
         return l_MeshRenderer.duplicate(l_Entity);
       }
 
-      void
-      MeshRenderer::serialize(Low::Util::Yaml::Node &p_Node) const
+      void MeshRenderer::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -566,14 +553,14 @@ namespace Low {
       }
 
       void MeshRenderer::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node &p_Node)
+                                   Low::Util::Yaml::Node p_Node)
       {
         MeshRenderer l_MeshRenderer = p_Handle.get_id();
         l_MeshRenderer.serialize(p_Node);
       }
 
       Low::Util::Handle
-      MeshRenderer::deserialize(Low::Util::Yaml::Node &p_Node,
+      MeshRenderer::deserialize(Low::Util::Yaml::Node p_Node,
                                 Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;

@@ -8,9 +8,6 @@
 
 #include "LowUtilGlobals.h"
 
-#include <windows.h>
-#include <shellapi.h>
-
 #define BUFFER_SIZE 256
 
 namespace Low {
@@ -49,10 +46,6 @@ namespace Low {
       ImGui::Text("Compute: ");
       ImGui::SameLine();
       ImGui::Text(std::to_string(l_ComputeDispatches).c_str());
-
-      if (ImGui::Button("Open profiler " ICON_LC_EXTERNAL_LINK)) {
-        ShellExecute(0, 0, "http://localhost:1338", 0, 0, SW_SHOW);
-      }
 
       ImGui::End();
     }

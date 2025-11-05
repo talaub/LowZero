@@ -34,17 +34,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           TexExport::ms_Pages;
 
-      TexExport::TexExport() : Low::Util::Handle(0ull)
-      {
-      }
-      TexExport::TexExport(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      TexExport::TexExport(TexExport &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle TexExport::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -408,7 +397,7 @@ namespace Low {
         return l_TexExport.duplicate(p_Name);
       }
 
-      void TexExport::serialize(Low::Util::Yaml::Node &p_Node) const
+      void TexExport::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -420,14 +409,14 @@ namespace Low {
       }
 
       void TexExport::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
       {
         TexExport l_TexExport = p_Handle.get_id();
         l_TexExport.serialize(p_Node);
       }
 
       Low::Util::Handle
-      TexExport::deserialize(Low::Util::Yaml::Node &p_Node,
+      TexExport::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
       {
         TexExport l_Handle = TexExport::make(N(TexExport));

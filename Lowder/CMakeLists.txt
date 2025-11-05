@@ -15,7 +15,7 @@ add_dependencies(Lowder
   LowMath
   LowRenderer2
   LowCore
-  nativefiledialog
+  #nativefiledialog
   assimp
   physx
 )
@@ -45,10 +45,10 @@ target_link_libraries(Lowder PRIVATE
   LowRenderer2
   LowUtil
   LowMath
-  nativefiledialog
+  #nativefiledialog
   assimp
   physx
-  "${DBGHELP_LIB_PATH}/Dbghelp.lib"
+  #"${DBGHELP_LIB_PATH}/Dbghelp.lib"
 )
 
 target_link_libraries(Lowder PRIVATE

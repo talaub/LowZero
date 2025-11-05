@@ -35,17 +35,6 @@ namespace Low {
       Low::Util::List<Element> Element::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> Element::ms_Pages;
 
-      Element::Element() : Low::Util::Handle(0ull)
-      {
-      }
-      Element::Element(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      Element::Element(Element &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle Element::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -726,7 +715,7 @@ namespace Low {
         return l_Element.duplicate(p_Name);
       }
 
-      void Element::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Element::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -737,14 +726,14 @@ namespace Low {
       }
 
       void Element::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node)
+                              Low::Util::Yaml::Node p_Node)
       {
         Element l_Element = p_Handle.get_id();
         l_Element.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Element::deserialize(Low::Util::Yaml::Node &p_Node,
+      Element::deserialize(Low::Util::Yaml::Node p_Node,
                            Low::Util::Handle p_Creator)
       {
 
@@ -776,11 +765,11 @@ namespace Low {
 
         l_View.add_element(l_Element);
 
-        Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
+        Util::Yaml::Node l_ComponentsNode = p_Node["components"];
 
         for (auto it = l_ComponentsNode.begin();
              it != l_ComponentsNode.end(); ++it) {
-          Util::Yaml::Node &i_ComponentNode = *it;
+          Util::Yaml::Node i_ComponentNode = *it;
           Util::RTTI::TypeInfo &i_TypeInfo =
               Util::Handle::get_type_info(
                   i_ComponentNode["type"].as<uint16_t>());
@@ -1087,7 +1076,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_display
       }
 
-      void Element::serialize(Util::Yaml::Node &p_Node,
+      void Element::serialize(Util::Yaml::Node p_Node,
                               bool p_AddHandles) const
       {
         Low::Util::HandleLock<Element> l_Lock(get_id());
@@ -1123,7 +1112,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
       }
 
-      void Element::serialize_hierarchy(Util::Yaml::Node &p_Node,
+      void Element::serialize_hierarchy(Util::Yaml::Node p_Node,
                                         bool p_AddHandles) const
       {
         Low::Util::HandleLock<Element> l_Lock(get_id());
@@ -1147,7 +1136,7 @@ namespace Low {
       }
 
       UI::Element
-      Element::deserialize_hierarchy(Util::Yaml::Node &p_Node,
+      Element::deserialize_hierarchy(Util::Yaml::Node p_Node,
                                      Util::Handle p_Creator)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy

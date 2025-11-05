@@ -309,7 +309,7 @@ types:
         editor_editable: true
       render_view:
         type: Low::Renderer::RenderView
-        hande: true
+        handle: true
         editor_editable: false
     functions:
       activate:

@@ -25,13 +25,14 @@ namespace Low {
         return l_Result;
       }
 
-      void set_roll(Quaternion &p_Quaternion, const float p_RollRadians)
+      void set_roll(Quaternion &p_Quaternion,
+                    const float p_RollRadians)
       {
         float l_Pitch = VectorUtil::pitch(p_Quaternion);
         float l_Yaw = VectorUtil::yaw(p_Quaternion);
 
         p_Quaternion = VectorUtil::from_euler(
-            glm::degrees(Math::Vector3(l_Pitch, l_Yaw, p_RollRadians)));
+            glm::degrees(Vector3(l_Pitch, l_Yaw, p_RollRadians)));
       }
 
       Quaternion get_identity()
@@ -40,5 +41,5 @@ namespace Low {
         return q;
       }
     } // namespace QuaternionUtil
-  }   // namespace Math
+  } // namespace Math
 } // namespace Low

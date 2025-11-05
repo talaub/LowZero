@@ -11,9 +11,9 @@
                          TypeMetadata &p_Metadata)                   \
   {                                                                  \
   }                                                                  \
-  static void handle_##eventname##(Util::Handle p_Handle,            \
-                                   TypeMetadata & p_Metadata);       \
-  static void handle_##eventname##(Util::Handle p_Handle);
+  static void handle_##eventname(Util::Handle p_Handle,              \
+                                 TypeMetadata &p_Metadata);          \
+  static void handle_##eventname(Util::Handle p_Handle);
 
 namespace Low {
   namespace Editor {

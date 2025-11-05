@@ -36,18 +36,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         UiRenderObject::ms_Pages;
 
-    UiRenderObject::UiRenderObject() : Low::Util::Handle(0ull)
-    {
-    }
-    UiRenderObject::UiRenderObject(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    UiRenderObject::UiRenderObject(UiRenderObject &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle UiRenderObject::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -73,20 +61,8 @@ namespace Low {
 
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, texture,
                                  Texture)) Texture();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, position,
-                                 Low::Math::Vector3))
-          Low::Math::Vector3();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, size,
-                                 Low::Math::Vector2))
-          Low::Math::Vector2();
       ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, rotation2D, float) =
           0.0f;
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, color,
-                                 Low::Math::Color))
-          Low::Math::Color();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, uv_rect,
-                                 Low::Math::Vector4))
-          Low::Math::Vector4();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, material,
                                  Material)) Material();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiRenderObject, mesh,
@@ -777,8 +753,7 @@ namespace Low {
       return l_UiRenderObject.duplicate(p_Name);
     }
 
-    void
-    UiRenderObject::serialize(Low::Util::Yaml::Node &p_Node) const
+    void UiRenderObject::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -787,14 +762,14 @@ namespace Low {
     }
 
     void UiRenderObject::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node &p_Node)
+                                   Low::Util::Yaml::Node p_Node)
     {
       UiRenderObject l_UiRenderObject = p_Handle.get_id();
       l_UiRenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    UiRenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
+    UiRenderObject::deserialize(Low::Util::Yaml::Node p_Node,
                                 Low::Util::Handle p_Creator)
     {
 
@@ -916,7 +891,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Vector3 &UiRenderObject::get_position() const
+    Low::Math::Vector3 UiRenderObject::get_position() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -953,7 +928,7 @@ namespace Low {
       set_position(l_Value);
     }
 
-    void UiRenderObject::set_position(Low::Math::Vector3 &p_Value)
+    void UiRenderObject::set_position(Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -976,7 +951,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Vector2 &UiRenderObject::get_size() const
+    Low::Math::Vector2 UiRenderObject::get_size() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -1006,7 +981,7 @@ namespace Low {
       set_size(l_Value);
     }
 
-    void UiRenderObject::set_size(Low::Math::Vector2 &p_Value)
+    void UiRenderObject::set_size(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -1060,7 +1035,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Color &UiRenderObject::get_color() const
+    Low::Math::Color UiRenderObject::get_color() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -1070,7 +1045,7 @@ namespace Low {
 
       return TYPE_SOA(UiRenderObject, color, Low::Math::Color);
     }
-    void UiRenderObject::set_color(Low::Math::Color &p_Value)
+    void UiRenderObject::set_color(Low::Math::Color p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -1092,7 +1067,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Vector4 &UiRenderObject::get_uv_rect() const
+    Low::Math::Vector4 UiRenderObject::get_uv_rect() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
@@ -1102,7 +1077,7 @@ namespace Low {
 
       return TYPE_SOA(UiRenderObject, uv_rect, Low::Math::Vector4);
     }
-    void UiRenderObject::set_uv_rect(Low::Math::Vector4 &p_Value)
+    void UiRenderObject::set_uv_rect(Low::Math::Vector4 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());

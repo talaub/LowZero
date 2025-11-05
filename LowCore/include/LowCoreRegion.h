@@ -53,10 +53,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      Region();
-      Region(uint64_t p_Id);
-      Region(Region &p_Copy);
-
       static Region make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
       static Region make(Low::Util::Name p_Name,
@@ -70,6 +66,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      Region(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      Region() : Low::Util::Handle()
+      {
+      }
+      Region(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      Region &operator=(const Region &) = default;
+      Region &operator=(Region &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -107,7 +119,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       Region duplicate(Low::Util::Name p_Name) const;
       static Region duplicate(Region p_Handle,
@@ -119,9 +131,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -144,8 +156,8 @@ namespace Low {
       void set_streaming_enabled(bool p_Value);
       void toggle_streaming_enabled();
 
-      Math::Vector3 &get_streaming_position() const;
-      void set_streaming_position(Math::Vector3 &p_Value);
+      Math::Vector3 get_streaming_position() const;
+      void set_streaming_position(Math::Vector3 p_Value);
       void set_streaming_position(float p_X, float p_Y, float p_Z);
       void set_streaming_position_x(float p_Value);
       void set_streaming_position_y(float p_Value);
@@ -162,7 +174,7 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      void serialize_entities(Util::Yaml::Node &p_Node);
+      void serialize_entities(Util::Yaml::Node p_Node);
       void add_entity(Entity p_Entity);
       void remove_entity(Entity p_Entity);
       void load_entities();

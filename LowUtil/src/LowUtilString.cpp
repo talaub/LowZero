@@ -2,16 +2,17 @@
 
 #include "LowUtilLogger.h"
 #include <cstdint>
+#include <algorithm>
 
 namespace Low {
   namespace Util {
     namespace StringHelper {
-      bool contains(String &p_Full, String p_Test)
+      bool contains(String p_Full, String p_Test)
       {
         return p_Full.find(p_Test) != eastl::string::npos;
       }
 
-      bool ends_with(String &p_Full, String p_Test)
+      bool ends_with(String p_Full, String p_Test)
       {
         if (p_Full.length() >= p_Test.length()) {
           return (0 ==
@@ -21,7 +22,7 @@ namespace Low {
         return false;
       }
 
-      bool begins_with(String &p_Full, String p_Test)
+      bool begins_with(String p_Full, String p_Test)
       {
         if (p_Full.length() >= p_Test.length()) {
           return (0 == p_Full.compare(0, p_Test.length(), p_Test));

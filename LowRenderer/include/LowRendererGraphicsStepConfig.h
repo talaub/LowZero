@@ -68,10 +68,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      GraphicsStepConfig();
-      GraphicsStepConfig(uint64_t p_Id);
-      GraphicsStepConfig(GraphicsStepConfig &p_Copy);
-
       static GraphicsStepConfig make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
       explicit GraphicsStepConfig(const GraphicsStepConfig &p_Copy)
@@ -83,6 +79,24 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      GraphicsStepConfig(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      GraphicsStepConfig() : Low::Util::Handle()
+      {
+      }
+      GraphicsStepConfig(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      GraphicsStepConfig &
+      operator=(const GraphicsStepConfig &) = default;
+      GraphicsStepConfig &
+      operator=(GraphicsStepConfig &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -120,7 +134,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       GraphicsStepConfig duplicate(Low::Util::Name p_Name) const;
       static GraphicsStepConfig duplicate(GraphicsStepConfig p_Handle,
@@ -132,9 +146,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -161,8 +175,8 @@ namespace Low {
       Util::List<PipelineResourceBindingConfig> &
       get_rendertargets() const;
 
-      Math::Color &get_rendertargets_clearcolor() const;
-      void set_rendertargets_clearcolor(Math::Color &p_Value);
+      Math::Color get_rendertargets_clearcolor() const;
+      void set_rendertargets_clearcolor(Math::Color p_Value);
 
       PipelineResourceBindingConfig &get_depth_rendertarget() const;
       void
@@ -194,7 +208,7 @@ namespace Low {
       void set_name(Low::Util::Name p_Value);
 
       static GraphicsStepConfig make(Util::Name p_Name,
-                                     Util::Yaml::Node &p_Node);
+                                     Util::Yaml::Node p_Node);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

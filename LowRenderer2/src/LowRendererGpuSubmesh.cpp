@@ -31,17 +31,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         GpuSubmesh::ms_Pages;
 
-    GpuSubmesh::GpuSubmesh() : Low::Util::Handle(0ull)
-    {
-    }
-    GpuSubmesh::GpuSubmesh(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    GpuSubmesh::GpuSubmesh(GpuSubmesh &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle GpuSubmesh::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -744,7 +733,7 @@ namespace Low {
       return l_GpuSubmesh.duplicate(p_Name);
     }
 
-    void GpuSubmesh::serialize(Low::Util::Yaml::Node &p_Node) const
+    void GpuSubmesh::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -753,14 +742,14 @@ namespace Low {
     }
 
     void GpuSubmesh::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Yaml::Node p_Node)
     {
       GpuSubmesh l_GpuSubmesh = p_Handle.get_id();
       l_GpuSubmesh.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GpuSubmesh::deserialize(Low::Util::Yaml::Node &p_Node,
+    GpuSubmesh::deserialize(Low::Util::Yaml::Node p_Node,
                             Low::Util::Handle p_Creator)
     {
 

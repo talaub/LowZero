@@ -35,17 +35,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           Transform::ms_Pages;
 
-      Transform::Transform() : Low::Util::Handle(0ull)
-      {
-      }
-      Transform::Transform(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      Transform::Transform(Transform &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle Transform::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
@@ -78,27 +67,9 @@ namespace Low {
 
         Low::Util::HandleLock<Transform> l_HandleLock(l_Handle);
 
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, position,
-                                   Low::Math::Vector3))
-            Low::Math::Vector3();
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, rotation,
-                                   Low::Math::Quaternion))
-            Low::Math::Quaternion();
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, scale,
-                                   Low::Math::Vector3))
-            Low::Math::Vector3();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, children,
                                    Low::Util::List<uint64_t>))
             Low::Util::List<uint64_t>();
-        new (ACCESSOR_TYPE_SOA_PTR(
-            l_Handle, Transform, world_position, Low::Math::Vector3))
-            Low::Math::Vector3();
-        new (ACCESSOR_TYPE_SOA_PTR(
-            l_Handle, Transform, world_rotation,
-            Low::Math::Quaternion)) Low::Math::Quaternion();
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, world_scale,
-                                   Low::Math::Vector3))
-            Low::Math::Vector3();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Transform, world_matrix,
                                    Low::Math::Matrix4x4))
             Low::Math::Matrix4x4();
@@ -822,7 +793,7 @@ namespace Low {
         return l_Transform.duplicate(l_Entity);
       }
 
-      void Transform::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Transform::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -841,14 +812,14 @@ namespace Low {
       }
 
       void Transform::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
       {
         Transform l_Transform = p_Handle.get_id();
         l_Transform.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Transform::deserialize(Low::Util::Yaml::Node &p_Node,
+      Transform::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -941,7 +912,7 @@ namespace Low {
         l_Transform.notify(p_Observed, p_Observable);
       }
 
-      Low::Math::Vector3 &Transform::position() const
+      Low::Math::Vector3 Transform::position() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -979,7 +950,7 @@ namespace Low {
         position(l_Value);
       }
 
-      void Transform::position(Low::Math::Vector3 &p_Value)
+      void Transform::position(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1020,7 +991,7 @@ namespace Low {
         }
       }
 
-      Low::Math::Quaternion &Transform::rotation() const
+      Low::Math::Quaternion Transform::rotation() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1031,7 +1002,7 @@ namespace Low {
 
         return TYPE_SOA(Transform, rotation, Low::Math::Quaternion);
       }
-      void Transform::rotation(Low::Math::Quaternion &p_Value)
+      void Transform::rotation(Low::Math::Quaternion p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1073,7 +1044,7 @@ namespace Low {
         }
       }
 
-      Low::Math::Vector3 &Transform::scale() const
+      Low::Math::Vector3 Transform::scale() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1111,7 +1082,7 @@ namespace Low {
         scale(l_Value);
       }
 
-      void Transform::scale(Low::Math::Vector3 &p_Value)
+      void Transform::scale(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1255,7 +1226,7 @@ namespace Low {
                         Low::Util::List<uint64_t>);
       }
 
-      Low::Math::Vector3 &Transform::get_world_position()
+      Low::Math::Vector3 Transform::get_world_position()
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1296,7 +1267,7 @@ namespace Low {
         set_world_position(l_Value);
       }
 
-      void Transform::set_world_position(Low::Math::Vector3 &p_Value)
+      void Transform::set_world_position(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1316,7 +1287,7 @@ namespace Low {
         broadcast_observable(N(world_position));
       }
 
-      Low::Math::Quaternion &Transform::get_world_rotation()
+      Low::Math::Quaternion Transform::get_world_rotation()
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1330,7 +1301,7 @@ namespace Low {
                         Low::Math::Quaternion);
       }
       void
-      Transform::set_world_rotation(Low::Math::Quaternion &p_Value)
+      Transform::set_world_rotation(Low::Math::Quaternion p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1350,7 +1321,7 @@ namespace Low {
         broadcast_observable(N(world_rotation));
       }
 
-      Low::Math::Vector3 &Transform::get_world_scale()
+      Low::Math::Vector3 Transform::get_world_scale()
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());
@@ -1389,7 +1360,7 @@ namespace Low {
         set_world_scale(l_Value);
       }
 
-      void Transform::set_world_scale(Low::Math::Vector3 &p_Value)
+      void Transform::set_world_scale(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Transform> l_Lock(get_id());

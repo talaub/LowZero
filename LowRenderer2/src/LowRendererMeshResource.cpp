@@ -32,18 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         MeshResource::ms_Pages;
 
-    MeshResource::MeshResource() : Low::Util::Handle(0ull)
-    {
-    }
-    MeshResource::MeshResource(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    MeshResource::MeshResource(MeshResource &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle MeshResource::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -67,14 +55,6 @@ namespace Low {
 
       Low::Util::HandleLock<MeshResource> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, mesh_path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, sidecar_path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MeshResource, source_file,
-                                 Util::String)) Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, MeshResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -571,7 +551,7 @@ namespace Low {
       return l_MeshResource.duplicate(p_Name);
     }
 
-    void MeshResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    void MeshResource::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -580,14 +560,14 @@ namespace Low {
     }
 
     void MeshResource::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Yaml::Node p_Node)
     {
       MeshResource l_MeshResource = p_Handle.get_id();
       l_MeshResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MeshResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    MeshResource::deserialize(Low::Util::Yaml::Node p_Node,
                               Low::Util::Handle p_Creator)
     {
 
@@ -643,7 +623,7 @@ namespace Low {
       l_MeshResource.notify(p_Observed, p_Observable);
     }
 
-    Util::String &MeshResource::get_path() const
+    Util::String MeshResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -659,7 +639,7 @@ namespace Low {
       set_path(l_Val);
     }
 
-    void MeshResource::set_path(Util::String &p_Value)
+    void MeshResource::set_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -676,7 +656,7 @@ namespace Low {
       broadcast_observable(N(path));
     }
 
-    Util::String &MeshResource::get_mesh_path() const
+    Util::String MeshResource::get_mesh_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -692,7 +672,7 @@ namespace Low {
       set_mesh_path(l_Val);
     }
 
-    void MeshResource::set_mesh_path(Util::String &p_Value)
+    void MeshResource::set_mesh_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -709,7 +689,7 @@ namespace Low {
       broadcast_observable(N(mesh_path));
     }
 
-    Util::String &MeshResource::get_sidecar_path() const
+    Util::String MeshResource::get_sidecar_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -725,7 +705,7 @@ namespace Low {
       set_sidecar_path(l_Val);
     }
 
-    void MeshResource::set_sidecar_path(Util::String &p_Value)
+    void MeshResource::set_sidecar_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -742,7 +722,7 @@ namespace Low {
       broadcast_observable(N(sidecar_path));
     }
 
-    Util::String &MeshResource::get_source_file() const
+    Util::String MeshResource::get_source_file() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -758,7 +738,7 @@ namespace Low {
       set_source_file(l_Val);
     }
 
-    void MeshResource::set_source_file(Util::String &p_Value)
+    void MeshResource::set_source_file(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
@@ -856,7 +836,7 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    MeshResource MeshResource::make(Util::String &p_Path)
+    MeshResource MeshResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       for (auto it = ms_LivingInstances.begin();
@@ -893,7 +873,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
     }
 
-    MeshResource MeshResource::find_by_path(Util::String &p_Path)
+    MeshResource MeshResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
       for (auto it = ms_LivingInstances.begin();

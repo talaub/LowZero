@@ -40,8 +40,6 @@ source_group("Header Files" FILES "${INCLUDES}")
 
 add_dependencies(LowRenderer LowUtil LowMath glfw)
 
-STRING(REGEX REPLACE "\\\\" "/" VULKAN_SDK_PATH $ENV{VK_SDK_PATH}) 
-
 set(LOWRENDERER_INCLUDE_DIRS
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
@@ -73,11 +71,21 @@ target_link_libraries(LowRenderer PUBLIC
   LowUtil
 )
 
+target_link_libraries(LowRenderer PUBLIC
+  glfw
+)
+
+if (WIN32)
+STRING(REGEX REPLACE "\\\\" "/" VULKAN_SDK_PATH $ENV{VK_SDK_PATH}) 
+
 target_link_directories(LowRenderer PUBLIC
   ${VULKAN_SDK_PATH}/Lib
 )
 
 target_link_libraries(LowRenderer PUBLIC
-  glfw
-  vulkan-1
+  vulkan-1.lib
 )
+else()
+find_package(Vulkan REQUIRED)
+target_link_libraries(LowRenderer PRIVATE Vulkan::Vulkan)
+endif()

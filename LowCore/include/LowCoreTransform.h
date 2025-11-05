@@ -61,10 +61,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        Transform();
-        Transform(uint64_t p_Id);
-        Transform(Transform &p_Copy);
-
         static Transform make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
         static Transform make(Low::Core::Entity p_Entity,
@@ -78,6 +74,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        Transform(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        Transform() : Low::Util::Handle()
+        {
+        }
+        Transform(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        Transform &operator=(const Transform &) = default;
+        Transform &operator=(Transform &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -115,7 +127,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         Transform duplicate(Low::Core::Entity p_Entity) const;
         static Transform duplicate(Transform p_Handle,
@@ -125,9 +137,9 @@ namespace Low {
                    Low::Util::Handle p_Entity);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -142,18 +154,18 @@ namespace Low {
           l_Transform.destroy();
         }
 
-        Low::Math::Vector3 &position() const;
-        void position(Low::Math::Vector3 &p_Value);
+        Low::Math::Vector3 position() const;
+        void position(Low::Math::Vector3 p_Value);
         void position(float p_X, float p_Y, float p_Z);
         void position_x(float p_Value);
         void position_y(float p_Value);
         void position_z(float p_Value);
 
-        Low::Math::Quaternion &rotation() const;
-        void rotation(Low::Math::Quaternion &p_Value);
+        Low::Math::Quaternion rotation() const;
+        void rotation(Low::Math::Quaternion p_Value);
 
-        Low::Math::Vector3 &scale() const;
-        void scale(Low::Math::Vector3 &p_Value);
+        Low::Math::Vector3 scale() const;
+        void scale(Low::Math::Vector3 p_Value);
         void scale(float p_X, float p_Y, float p_Z);
         void scale_x(float p_Value);
         void scale_y(float p_Value);
@@ -166,11 +178,11 @@ namespace Low {
 
         Low::Util::List<uint64_t> &get_children() const;
 
-        Low::Math::Vector3 &get_world_position();
+        Low::Math::Vector3 get_world_position();
 
-        Low::Math::Quaternion &get_world_rotation();
+        Low::Math::Quaternion get_world_rotation();
 
-        Low::Math::Vector3 &get_world_scale();
+        Low::Math::Vector3 get_world_scale();
 
         Low::Math::Matrix4x4 &get_world_matrix();
 
@@ -206,13 +218,13 @@ namespace Low {
             Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
         static u32 create_page();
         void set_parent_uid(uint64_t p_Value);
-        void set_world_position(Low::Math::Vector3 &p_Value);
+        void set_world_position(Low::Math::Vector3 p_Value);
         void set_world_position(float p_X, float p_Y, float p_Z);
         void set_world_position_x(float p_Value);
         void set_world_position_y(float p_Value);
         void set_world_position_z(float p_Value);
-        void set_world_rotation(Low::Math::Quaternion &p_Value);
-        void set_world_scale(Low::Math::Vector3 &p_Value);
+        void set_world_rotation(Low::Math::Quaternion p_Value);
+        void set_world_scale(Low::Math::Vector3 p_Value);
         void set_world_scale(float p_X, float p_Y, float p_Z);
         void set_world_scale_x(float p_Value);
         void set_world_scale_y(float p_Value);

@@ -27,33 +27,42 @@ types:
     properties:
       view_data_buffer:
         type: AllocatedBuffer
+        no_ref: true
       directional_light_buffer:
         type: AllocatedBuffer
+        no_ref: true
       view_data_descriptor_set:
         type: VkDescriptorSet
         no_ref: true
       lighting_descriptor_set:
         type: VkDescriptorSet
+        no_ref: true
       staging_buffers:
         type: Low::Util::List<StagingBuffer>
       initialized:
         type: bool
       gbuffer_descriptor_set:
         type: VkDescriptorSet
+        no_ref: true
       point_light_cluster_buffer:
         type: AllocatedBuffer
+        no_ref: true
       point_light_buffer:
         type: AllocatedBuffer
+        no_ref: true
       light_clusters:
         type: Low::Math::UVector3
       light_cluster_count:
         type: uint32_t
       ui_drawcommand_buffer:
         type: AllocatedBuffer
+        no_ref: true
       debug_geometry_buffer:
         type: AllocatedBuffer
+        no_ref: true
       object_id_buffer:
         type: AllocatedBuffer
+        no_ref: true
     functions:
       get_current_staging_buffer:
         return_type: StagingBuffer

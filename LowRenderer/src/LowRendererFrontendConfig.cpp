@@ -168,7 +168,7 @@ namespace Low {
 
     void parse_pipeline_resource_binding(
         PipelineResourceBindingConfig &p_BindingConfig,
-        Util::String &p_TargetString, Util::String &p_TypeName)
+        Util::String p_TargetString, Util::String p_TypeName)
     {
       Util::String l_TargetString = p_TargetString;
 
@@ -222,7 +222,7 @@ namespace Low {
     }
 
     void parse_compute_pipeline_configs(
-        Util::Yaml::Node &p_Node,
+        Util::Yaml::Node p_Node,
         Util::List<ComputePipelineConfig> &p_Configs)
     {
       for (auto it = p_Node.begin(); it != p_Node.end(); ++it) {

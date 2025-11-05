@@ -42,10 +42,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      MaterialResource();
-      MaterialResource(uint64_t p_Id);
-      MaterialResource(MaterialResource &p_Copy);
-
     private:
       static MaterialResource make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -60,6 +56,23 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      MaterialResource(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      MaterialResource() : Low::Util::Handle()
+      {
+      }
+      MaterialResource(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      MaterialResource &operator=(const MaterialResource &) = default;
+      MaterialResource &
+      operator=(MaterialResource &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -97,7 +110,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       MaterialResource duplicate(Low::Util::Name p_Name) const;
       static MaterialResource duplicate(MaterialResource p_Handle,
@@ -109,9 +122,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -126,13 +139,13 @@ namespace Low {
         l_MaterialResource.destroy();
       }
 
-      Util::String &get_path() const;
+      Util::String get_path() const;
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static MaterialResource make(Util::String &p_Path);
-      static MaterialResource find_by_path(Util::String &p_Path);
+      static MaterialResource make(Util::String p_Path);
+      static MaterialResource find_by_path(Util::String p_Path);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);
@@ -144,7 +157,7 @@ namespace Low {
           u32 &p_PageIndex, u32 &p_SlotIndex,
           Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
       static u32 create_page();
-      void set_path(Util::String &p_Value);
+      void set_path(Util::String p_Value);
       void set_path(const char *p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

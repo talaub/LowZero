@@ -55,10 +55,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      TextureExport();
-      TextureExport(uint64_t p_Id);
-      TextureExport(TextureExport &p_Copy);
-
       static TextureExport make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
       explicit TextureExport(const TextureExport &p_Copy)
@@ -70,6 +66,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      TextureExport(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      TextureExport() : Low::Util::Handle()
+      {
+      }
+      TextureExport(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      TextureExport &operator=(const TextureExport &) = default;
+      TextureExport &operator=(TextureExport &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -107,7 +119,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       TextureExport duplicate(Low::Util::Name p_Name) const;
       static TextureExport duplicate(TextureExport p_Handle,
@@ -119,9 +131,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -136,8 +148,8 @@ namespace Low {
         l_TextureExport.destroy();
       }
 
-      Low::Util::String &get_path() const;
-      void set_path(Low::Util::String &p_Value);
+      Low::Util::String get_path() const;
+      void set_path(Low::Util::String p_Value);
       void set_path(const char *p_Value);
 
       Low::Renderer::Texture get_texture() const;

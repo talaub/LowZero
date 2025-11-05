@@ -56,10 +56,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      FontResource();
-      FontResource(uint64_t p_Id);
-      FontResource(FontResource &p_Copy);
-
     private:
       static FontResource make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -74,6 +70,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      FontResource(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      FontResource() : Low::Util::Handle()
+      {
+      }
+      FontResource(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      FontResource &operator=(const FontResource &) = default;
+      FontResource &operator=(FontResource &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -111,7 +123,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       FontResource duplicate(Low::Util::Name p_Name) const;
       static FontResource duplicate(FontResource p_Handle,
@@ -123,9 +135,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -140,13 +152,13 @@ namespace Low {
         l_FontResource.destroy();
       }
 
-      Util::String &get_path() const;
+      Util::String get_path() const;
 
-      Util::String &get_font_path() const;
+      Util::String get_font_path() const;
 
-      Util::String &get_sidecar_path() const;
+      Util::String get_sidecar_path() const;
 
-      Util::String &get_source_file() const;
+      Util::String get_source_file() const;
 
       uint64_t get_font_id() const;
 
@@ -155,7 +167,7 @@ namespace Low {
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
 
-      static FontResource make(Util::String &p_Path);
+      static FontResource make(Util::String p_Path);
       static FontResource
       make_from_config(FontResourceConfig &p_Config);
       static bool get_page_for_index(const u32 p_Index,
@@ -169,13 +181,13 @@ namespace Low {
           u32 &p_PageIndex, u32 &p_SlotIndex,
           Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
       static u32 create_page();
-      void set_path(Util::String &p_Value);
+      void set_path(Util::String p_Value);
       void set_path(const char *p_Value);
-      void set_font_path(Util::String &p_Value);
+      void set_font_path(Util::String p_Value);
       void set_font_path(const char *p_Value);
-      void set_sidecar_path(Util::String &p_Value);
+      void set_sidecar_path(Util::String p_Value);
       void set_sidecar_path(const char *p_Value);
-      void set_source_file(Util::String &p_Value);
+      void set_source_file(Util::String p_Value);
       void set_source_file(const char *p_Value);
       void set_font_id(uint64_t p_Value);
       void set_asset_hash(uint64_t p_Value);

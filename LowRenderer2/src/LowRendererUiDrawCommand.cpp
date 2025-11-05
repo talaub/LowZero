@@ -32,18 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         UiDrawCommand::ms_Pages;
 
-    UiDrawCommand::UiDrawCommand() : Low::Util::Handle(0ull)
-    {
-    }
-    UiDrawCommand::UiDrawCommand(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    UiDrawCommand::UiDrawCommand(UiDrawCommand &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle UiDrawCommand::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -73,20 +61,8 @@ namespace Low {
           Low::Renderer::UiRenderObject();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, texture,
                                  Texture)) Texture();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, position,
-                                 Low::Math::Vector3))
-          Low::Math::Vector3();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, size,
-                                 Low::Math::Vector2))
-          Low::Math::Vector2();
       ACCESSOR_TYPE_SOA(l_Handle, UiDrawCommand, rotation2D, float) =
           0.0f;
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, color,
-                                 Low::Math::Color))
-          Low::Math::Color();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, uv_rect,
-                                 Low::Math::Vector4))
-          Low::Math::Vector4();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, material,
                                  Material)) Material();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, submesh,
@@ -767,7 +743,7 @@ namespace Low {
       return l_UiDrawCommand.duplicate(p_Name);
     }
 
-    void UiDrawCommand::serialize(Low::Util::Yaml::Node &p_Node) const
+    void UiDrawCommand::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -776,14 +752,14 @@ namespace Low {
     }
 
     void UiDrawCommand::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node &p_Node)
+                                  Low::Util::Yaml::Node p_Node)
     {
       UiDrawCommand l_UiDrawCommand = p_Handle.get_id();
       l_UiDrawCommand.serialize(p_Node);
     }
 
     Low::Util::Handle
-    UiDrawCommand::deserialize(Low::Util::Yaml::Node &p_Node,
+    UiDrawCommand::deserialize(Low::Util::Yaml::Node p_Node,
                                Low::Util::Handle p_Creator)
     {
 
@@ -930,7 +906,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Vector3 &UiDrawCommand::get_position() const
+    Low::Math::Vector3 UiDrawCommand::get_position() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -967,7 +943,7 @@ namespace Low {
       set_position(l_Value);
     }
 
-    void UiDrawCommand::set_position(Low::Math::Vector3 &p_Value)
+    void UiDrawCommand::set_position(Low::Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -990,7 +966,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Vector2 &UiDrawCommand::get_size() const
+    Low::Math::Vector2 UiDrawCommand::get_size() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -1020,7 +996,7 @@ namespace Low {
       set_size(l_Value);
     }
 
-    void UiDrawCommand::set_size(Low::Math::Vector2 &p_Value)
+    void UiDrawCommand::set_size(Low::Math::Vector2 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -1074,7 +1050,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Color &UiDrawCommand::get_color() const
+    Low::Math::Color UiDrawCommand::get_color() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -1084,7 +1060,7 @@ namespace Low {
 
       return TYPE_SOA(UiDrawCommand, color, Low::Math::Color);
     }
-    void UiDrawCommand::set_color(Low::Math::Color &p_Value)
+    void UiDrawCommand::set_color(Low::Math::Color p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -1106,7 +1082,7 @@ namespace Low {
       }
     }
 
-    Low::Math::Vector4 &UiDrawCommand::get_uv_rect() const
+    Low::Math::Vector4 UiDrawCommand::get_uv_rect() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
@@ -1116,7 +1092,7 @@ namespace Low {
 
       return TYPE_SOA(UiDrawCommand, uv_rect, Low::Math::Vector4);
     }
-    void UiDrawCommand::set_uv_rect(Low::Math::Vector4 &p_Value)
+    void UiDrawCommand::set_uv_rect(Low::Math::Vector4 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());

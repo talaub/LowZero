@@ -14,7 +14,7 @@
 
 #define LOWR_VK_ASSERT(cond, text)                                   \
   {                                                                  \
-    if (!cond) {                                                     \
+    if (!(cond)) {                                                   \
       LOW_LOG_ERROR << "[VK] " << text << LOW_LOG_END;               \
       return false;                                                  \
     }                                                                \
@@ -22,7 +22,7 @@
 
 #define LOWR_VK_ASSERT_RETURN(cond, text)                            \
   {                                                                  \
-    if (!cond) {                                                     \
+    if (!(cond)) {                                                   \
       LOW_LOG_ERROR << "[VK] " << text << LOW_LOG_END;               \
       return false;                                                  \
     }                                                                \
@@ -65,6 +65,6 @@ namespace Low {
         bool context_prepare_draw(Context &p_Context);
         bool context_present(Context &p_Context);
       } // namespace Base
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

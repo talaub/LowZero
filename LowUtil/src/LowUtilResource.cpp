@@ -8,7 +8,6 @@
 #include <gli/convert.hpp>
 #include <stdint.h>
 #include <string>
-#include <vcruntime_string.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/matrix4x4.h>

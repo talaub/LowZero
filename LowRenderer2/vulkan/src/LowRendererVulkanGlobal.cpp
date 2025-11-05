@@ -84,12 +84,7 @@ namespace Low {
           // Break on error or warning
           if (messageSeverity >=
               VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-#ifdef _WIN32
-            __debugbreak(); // Windows
-                            // LOW_LOG_DEBUG << "Test" << LOW_LOG_END;
-#else
-            raise(SIGTRAP); // Unix-like
-#endif
+            // DEBUG_BREAK();
           }
 
           return VK_FALSE;
@@ -837,6 +832,8 @@ namespace Low {
                       g_TextureDescriptorSetLayout);
             }
           }
+
+          return true;
         }
 
         bool initialize()

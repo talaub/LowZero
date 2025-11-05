@@ -67,3 +67,14 @@ target_link_libraries(LowCore PRIVATE
   DetourCrowd
   #assimp
 )
+function(mark_includes_as_system consumer thirdparty)
+  if (NOT TARGET "${consumer}" OR NOT TARGET "${thirdparty}")
+    return()
+  endif()
+  get_target_property(_iface "${thirdparty}" INTERFACE_INCLUDE_DIRECTORIES)
+  if (_iface)
+    target_include_directories("${consumer}" SYSTEM PRIVATE ${_iface})
+  endif()
+endfunction()
+
+mark_includes_as_system(LowCore physx)

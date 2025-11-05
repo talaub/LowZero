@@ -121,9 +121,9 @@ namespace Flode {
     Pin *create_handle_pin(PinDirection p_Direction,
                            Low::Util::String p_Title, u16 p_TypeId,
                            u64 p_PinId = 0);
-    Pin *Node::create_enum_pin(PinDirection p_Direction,
-                               Low::Util::String p_Title,
-                               u16 p_EnumId, u64 p_PinId = 0);
+    Pin *create_enum_pin(PinDirection p_Direction,
+                         Low::Util::String p_Title, u16 p_EnumId,
+                         u64 p_PinId = 0);
 
     Pin *create_string_pin(PinDirection p_Direction,
                            Low::Util::String p_Title,
@@ -184,11 +184,11 @@ namespace Flode {
       return false;
     }
 
-    virtual void serialize(Low::Util::Yaml::Node &p_Node) const
+    virtual void serialize(Low::Util::Yaml::Node p_Node) const
     {
     }
 
-    virtual void deserialize(Low::Util::Yaml::Node &p_Node)
+    virtual void deserialize(Low::Util::Yaml::Node p_Node)
     {
     }
 

@@ -58,10 +58,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      ComputeStep();
-      ComputeStep(uint64_t p_Id);
-      ComputeStep(ComputeStep &p_Copy);
-
     private:
       static ComputeStep make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -76,6 +72,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      ComputeStep(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      ComputeStep() : Low::Util::Handle()
+      {
+      }
+      ComputeStep(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      ComputeStep &operator=(const ComputeStep &) = default;
+      ComputeStep &operator=(ComputeStep &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -113,7 +125,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       ComputeStep duplicate(Low::Util::Name p_Name) const;
       static ComputeStep duplicate(ComputeStep p_Handle,
@@ -125,9 +137,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {

@@ -33,16 +33,6 @@ namespace Low {
         Low::Util::List<Text> Text::ms_LivingInstances;
         Low::Util::List<Low::Util::Instances::Page *> Text::ms_Pages;
 
-        Text::Text() : Low::Util::Handle(0ull)
-        {
-        }
-        Text::Text(uint64_t p_Id) : Low::Util::Handle(p_Id)
-        {
-        }
-        Text::Text(Text &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-        {
-        }
-
         Low::Util::Handle Text::_make(Low::Util::Handle p_Element)
         {
           Low::Core::UI::Element l_Element = p_Element.get_id();
@@ -75,15 +65,9 @@ namespace Low {
 
           Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
 
-          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, text,
-                                     Low::Util::String))
-              Low::Util::String();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, font,
                                      Low::Renderer::Font))
               Low::Renderer::Font();
-          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, color,
-                                     Low::Math::Color))
-              Low::Math::Color();
           ACCESSOR_TYPE_SOA(l_Handle, Text, size, float) = 0.0f;
           new (ACCESSOR_TYPE_SOA_PTR(
               l_Handle, Text, content_fit_approach,
@@ -559,7 +543,7 @@ namespace Low {
           return l_Text.duplicate(l_Element);
         }
 
-        void Text::serialize(Low::Util::Yaml::Node &p_Node) const
+        void Text::serialize(Low::Util::Yaml::Node p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
@@ -579,14 +563,14 @@ namespace Low {
         }
 
         void Text::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
         {
           Text l_Text = p_Handle.get_id();
           l_Text.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Text::deserialize(Low::Util::Yaml::Node &p_Node,
+        Text::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -677,7 +661,7 @@ namespace Low {
           l_Text.notify(p_Observed, p_Observable);
         }
 
-        Low::Util::String &Text::get_text() const
+        Low::Util::String Text::get_text() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Text> l_Lock(get_id());
@@ -694,7 +678,7 @@ namespace Low {
           set_text(l_Val);
         }
 
-        void Text::set_text(Low::Util::String &p_Value)
+        void Text::set_text(Low::Util::String p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Text> l_Lock(get_id());
@@ -742,7 +726,7 @@ namespace Low {
           broadcast_observable(N(font));
         }
 
-        Low::Math::Color &Text::get_color() const
+        Low::Math::Color Text::get_color() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Text> l_Lock(get_id());
@@ -753,7 +737,7 @@ namespace Low {
 
           return TYPE_SOA(Text, color, Low::Math::Color);
         }
-        void Text::set_color(Low::Math::Color &p_Value)
+        void Text::set_color(Low::Math::Color p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Text> l_Lock(get_id());

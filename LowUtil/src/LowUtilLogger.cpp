@@ -15,8 +15,6 @@
 #include "LowUtilJobManager.h"
 #include "LowUtilFileIO.h"
 
-#include <microprofile.h>
-
 namespace Low {
   namespace Util {
     namespace Log {
@@ -250,7 +248,7 @@ namespace Low {
         return *this;
       }
 
-      LogStream &LogStream::operator<<(String &p_Message)
+      LogStream &LogStream::operator<<(String p_Message)
       {
         m_Entry.message += p_Message;
         return *this;
@@ -261,7 +259,7 @@ namespace Low {
         return *this << String(p_Message);
       }
 
-      LogStream &LogStream::operator<<(std::string &p_Message)
+      LogStream &LogStream::operator<<(std::string p_Message)
       {
         return *this << String(p_Message.c_str());
       }
@@ -271,7 +269,7 @@ namespace Low {
         return *this << p_Name.c_str();
       }
 
-      LogStream &LogStream::operator<<(Handle &p_Message)
+      LogStream &LogStream::operator<<(Handle p_Message)
       {
         RTTI::TypeInfo &l_TypeInfo =
             Handle::get_type_info(p_Message.get_type());

@@ -2,6 +2,10 @@
 
 #include "LowMathApi.h"
 
+#ifndef GLM_ENABLE_EXPERIMENTAL
+#define GLM_ENABLE_EXPERIMENTAL 1
+#endif
+
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include <glm/gtc/quaternion.hpp>
@@ -53,8 +57,6 @@
 #define LOW_VECTOR3_UP Low::Math::Vector3(0.0f, 1.0f, 0.0f)
 #define LOW_VECTOR3_FRONT Low::Math::Vector3(0.0f, 0.0f, -1.0f)
 #define LOW_VECTOR3_RIGHT Low::Math::Vector3(1.0f, 0.0f, 0.0f)
-
-#define LOW_MATRIX4x4_IDENTITY Low::Math::Matrix4x4(1.0f)
 
 typedef uint8_t u8;
 typedef uint16_t u16;

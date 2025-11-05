@@ -121,7 +121,8 @@ namespace Low {
         case (Util::VariantType::Name):
           return NameEdit(p_Label, (Util::Name *)&p_Variant.m_Uint32);
         }
+        return false;
       }
     } // namespace Base
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

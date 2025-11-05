@@ -31,16 +31,6 @@ namespace Low {
     Low::Util::List<Mesh> Mesh::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Mesh::ms_Pages;
 
-    Mesh::Mesh() : Low::Util::Handle(0ull)
-    {
-    }
-    Mesh::Mesh(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Mesh::Mesh(Mesh &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Mesh::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -528,7 +518,7 @@ namespace Low {
       return l_Mesh.duplicate(p_Name);
     }
 
-    void Mesh::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Mesh::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -547,13 +537,13 @@ namespace Low {
     }
 
     void Mesh::serialize(Low::Util::Handle p_Handle,
-                         Low::Util::Yaml::Node &p_Node)
+                         Low::Util::Yaml::Node p_Node)
     {
       Mesh l_Mesh = p_Handle.get_id();
       l_Mesh.serialize(p_Node);
     }
 
-    Low::Util::Handle Mesh::deserialize(Low::Util::Yaml::Node &p_Node,
+    Low::Util::Handle Mesh::deserialize(Low::Util::Yaml::Node p_Node,
                                         Low::Util::Handle p_Creator)
     {
       Mesh l_Handle = Mesh::make(N(Mesh));

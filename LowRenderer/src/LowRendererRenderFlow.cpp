@@ -36,17 +36,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         RenderFlow::ms_Pages;
 
-    RenderFlow::RenderFlow() : Low::Util::Handle(0ull)
-    {
-    }
-    RenderFlow::RenderFlow(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    RenderFlow::RenderFlow(RenderFlow &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle RenderFlow::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -73,8 +62,6 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderFlow, context,
                                  Interface::Context))
           Interface::Context();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderFlow, dimensions,
-                                 Math::UVector2)) Math::UVector2();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderFlow, output_image,
                                  Resource::Image)) Resource::Image();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderFlow, steps,
@@ -90,12 +77,6 @@ namespace Low {
           l_Handle, RenderFlow, resource_signature,
           Interface::PipelineResourceSignature))
           Interface::PipelineResourceSignature();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderFlow,
-                                 camera_position, Math::Vector3))
-          Math::Vector3();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderFlow,
-                                 camera_direction, Math::Vector3))
-          Math::Vector3();
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_fov, float) =
           0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, RenderFlow, camera_near_plane,
@@ -985,7 +966,7 @@ namespace Low {
       return l_RenderFlow.duplicate(p_Name);
     }
 
-    void RenderFlow::serialize(Low::Util::Yaml::Node &p_Node) const
+    void RenderFlow::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -1018,14 +999,14 @@ namespace Low {
     }
 
     void RenderFlow::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Yaml::Node p_Node)
     {
       RenderFlow l_RenderFlow = p_Handle.get_id();
       l_RenderFlow.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderFlow::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderFlow::deserialize(Low::Util::Yaml::Node p_Node,
                             Low::Util::Handle p_Creator)
     {
       RenderFlow l_Handle = RenderFlow::make(N(RenderFlow));
@@ -1176,7 +1157,7 @@ namespace Low {
       broadcast_observable(N(context));
     }
 
-    Math::UVector2 &RenderFlow::get_dimensions() const
+    Math::UVector2 RenderFlow::get_dimensions() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<RenderFlow> l_Lock(get_id());
@@ -1326,7 +1307,7 @@ namespace Low {
       broadcast_observable(N(resource_signature));
     }
 
-    Math::Vector3 &RenderFlow::get_camera_position() const
+    Math::Vector3 RenderFlow::get_camera_position() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<RenderFlow> l_Lock(get_id());
@@ -1365,7 +1346,7 @@ namespace Low {
       set_camera_position(l_Value);
     }
 
-    void RenderFlow::set_camera_position(Math::Vector3 &p_Value)
+    void RenderFlow::set_camera_position(Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<RenderFlow> l_Lock(get_id());
@@ -1384,7 +1365,7 @@ namespace Low {
       broadcast_observable(N(camera_position));
     }
 
-    Math::Vector3 &RenderFlow::get_camera_direction() const
+    Math::Vector3 RenderFlow::get_camera_direction() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<RenderFlow> l_Lock(get_id());
@@ -1423,7 +1404,7 @@ namespace Low {
       set_camera_direction(l_Value);
     }
 
-    void RenderFlow::set_camera_direction(Math::Vector3 &p_Value)
+    void RenderFlow::set_camera_direction(Math::Vector3 p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<RenderFlow> l_Lock(get_id());
@@ -1670,7 +1651,7 @@ namespace Low {
 
     RenderFlow RenderFlow::make(Util::Name p_Name,
                                 Interface::Context p_Context,
-                                Util::Yaml::Node &p_Config)
+                                Util::Yaml::Node p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 
@@ -1974,7 +1955,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
     }
 
-    void RenderFlow::update_dimensions(Math::UVector2 &p_Dimensions)
+    void RenderFlow::update_dimensions(Math::UVector2 p_Dimensions)
     {
       Low::Util::HandleLock<RenderFlow> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_dimensions

@@ -11,7 +11,6 @@
 #include "LowCoreDebugGeometry.h"
 
 #include <cmath>
-#include "microprofile.h"
 #include <stdint.h>
 
 namespace Low {
@@ -24,9 +23,6 @@ namespace Low {
             if (p_State != Util::EngineState::PLAYING) {
               return;
             }
-
-            MICROPROFILE_SCOPEI("Core", "UiImageSystem::TICK",
-                                MP_RED);
 
             Component::Image *l_Images =
                 Component::Image::living_instances();

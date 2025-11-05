@@ -35,17 +35,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           PointLight::ms_Pages;
 
-      PointLight::PointLight() : Low::Util::Handle(0ull)
-      {
-      }
-      PointLight::PointLight(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      PointLight::PointLight(PointLight &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle PointLight::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
@@ -78,9 +67,6 @@ namespace Low {
 
         Low::Util::HandleLock<PointLight> l_HandleLock(l_Handle);
 
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, PointLight, color,
-                                   Low::Math::ColorRGB))
-            Low::Math::ColorRGB();
         ACCESSOR_TYPE_SOA(l_Handle, PointLight, intensity, float) =
             0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, PointLight, range, float) = 0.0f;
@@ -521,7 +507,7 @@ namespace Low {
         return l_PointLight.duplicate(l_Entity);
       }
 
-      void PointLight::serialize(Low::Util::Yaml::Node &p_Node) const
+      void PointLight::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -538,14 +524,14 @@ namespace Low {
       }
 
       void PointLight::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Yaml::Node p_Node)
       {
         PointLight l_PointLight = p_Handle.get_id();
         l_PointLight.serialize(p_Node);
       }
 
       Low::Util::Handle
-      PointLight::deserialize(Low::Util::Yaml::Node &p_Node,
+      PointLight::deserialize(Low::Util::Yaml::Node p_Node,
                               Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -630,7 +616,7 @@ namespace Low {
         l_PointLight.notify(p_Observed, p_Observable);
       }
 
-      Low::Math::ColorRGB &PointLight::get_color() const
+      Low::Math::ColorRGB PointLight::get_color() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<PointLight> l_Lock(get_id());
@@ -668,7 +654,7 @@ namespace Low {
         set_color(l_Value);
       }
 
-      void PointLight::set_color(Low::Math::ColorRGB &p_Value)
+      void PointLight::set_color(Low::Math::ColorRGB p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<PointLight> l_Lock(get_id());

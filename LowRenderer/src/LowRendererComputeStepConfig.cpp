@@ -36,18 +36,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         ComputeStepConfig::ms_Pages;
 
-    ComputeStepConfig::ComputeStepConfig() : Low::Util::Handle(0ull)
-    {
-    }
-    ComputeStepConfig::ComputeStepConfig(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    ComputeStepConfig::ComputeStepConfig(ComputeStepConfig &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle ComputeStepConfig::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -532,7 +520,7 @@ namespace Low {
     }
 
     void
-    ComputeStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
+    ComputeStepConfig::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -544,14 +532,14 @@ namespace Low {
     }
 
     void ComputeStepConfig::serialize(Low::Util::Handle p_Handle,
-                                      Low::Util::Yaml::Node &p_Node)
+                                      Low::Util::Yaml::Node p_Node)
     {
       ComputeStepConfig l_ComputeStepConfig = p_Handle.get_id();
       l_ComputeStepConfig.serialize(p_Node);
     }
 
     Low::Util::Handle
-    ComputeStepConfig::deserialize(Low::Util::Yaml::Node &p_Node,
+    ComputeStepConfig::deserialize(Low::Util::Yaml::Node p_Node,
                                    Low::Util::Handle p_Creator)
     {
       ComputeStepConfig l_Handle =
@@ -748,9 +736,8 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    ComputeStepConfig
-    ComputeStepConfig::make(Util::Name p_Name,
-                            Util::Yaml::Node &p_Node)
+    ComputeStepConfig ComputeStepConfig::make(Util::Name p_Name,
+                                              Util::Yaml::Node p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 

@@ -1,3 +1,8 @@
+#include <gli/gli.hpp>
+#include <gli/make_texture.hpp>
+#include <gli/save_ktx.hpp>
+#include <gli/generate_mipmaps.hpp>
+
 #include "LowRendererResourceImporter.h"
 
 #include "LowMath.h"
@@ -11,11 +16,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include "../../LowDependencies/stb/stb_image.h"
-
-#include <gli/gli.hpp>
-#include <gli/make_texture.hpp>
-#include <gli/save_ktx.hpp>
-#include <gli/generate_mipmaps.hpp>
 
 namespace Low {
   namespace Renderer {

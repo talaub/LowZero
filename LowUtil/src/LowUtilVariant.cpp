@@ -1,6 +1,5 @@
 
 #include "LowUtilVariant.h"
-#include <vcruntime_string.h>
 
 #include "LowUtilAssert.h"
 

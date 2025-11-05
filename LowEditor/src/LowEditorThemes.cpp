@@ -49,8 +49,7 @@ namespace Low {
       l_result.w = 1.0f;
 
       if (!p_Hex) {
-        LOW_LOG_WARN<< "color_from_hex: null input"
-                        << LOW_LOG_END;
+        LOW_LOG_WARN << "color_from_hex: null input" << LOW_LOG_END;
         return l_result;
       }
 
@@ -84,9 +83,9 @@ namespace Low {
       // Supported counts: 3 (RGB), 4 (RGBA), 6 (RRGGBB), 8 (RRGGBBAA)
       if (!(l_hex_count == 3 || l_hex_count == 4 ||
             l_hex_count == 6 || l_hex_count == 8)) {
-        LOW_LOG_WARN<< "color_from_hex: unsupported hex length "
-                        << l_hex_count << " (expected 3, 4, 6, or 8)"
-                        << LOW_LOG_END;
+        LOW_LOG_WARN << "color_from_hex: unsupported hex length "
+                     << l_hex_count << " (expected 3, 4, 6, or 8)"
+                     << LOW_LOG_END;
         return l_result;
       }
 
@@ -136,7 +135,7 @@ namespace Low {
       return l_result;
     }
 
-    ImVec4 color_to_imvec4(Math::Color &p_Color)
+    ImVec4 color_to_imvec4(const Math::Color p_Color)
     {
       ImVec4 c;
       c.x = p_Color.r;
@@ -159,12 +158,12 @@ namespace Low {
       return c;
     }
 
-    ImColor color_to_imcolor(Math::Color &p_Color)
+    ImColor color_to_imcolor(const Math::Color p_Color)
     {
       return make_imcolor(p_Color.r, p_Color.g, p_Color.b, p_Color.a);
     }
 
-    static Math::Color parse_color(Util::Yaml::Node &p_Node)
+    static Math::Color parse_color(Util::Yaml::Node p_Node)
     {
       Util::String l_HexString = LOW_YAML_AS_STRING(p_Node);
       std::string l_StdHexString = l_HexString.c_str();

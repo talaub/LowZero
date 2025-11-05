@@ -9,7 +9,6 @@
 #include <atomic>
 #include <stdint.h>
 #include <stdlib.h>
-#include <vcruntime_string.h>
 
 namespace Low {
   namespace Util {
@@ -181,11 +180,6 @@ namespace Low {
     uint16_t Handle::get_type() const
     {
       return m_Data.m_Type;
-    }
-
-    Handle::operator uint64_t() const
-    {
-      return get_id();
     }
 
     bool Handle::is_registered_type() const

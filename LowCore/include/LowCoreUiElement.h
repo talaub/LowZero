@@ -52,10 +52,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        Element();
-        Element(uint64_t p_Id);
-        Element(Element &p_Copy);
-
         static Element make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
         static Element make(Low::Util::Name p_Name,
@@ -69,6 +65,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        Element(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        Element() : Low::Util::Handle()
+        {
+        }
+        Element(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        Element &operator=(const Element &) = default;
+        Element &operator=(Element &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -106,7 +118,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         Element duplicate(Low::Util::Name p_Name) const;
         static Element duplicate(Element p_Handle,
@@ -120,9 +132,9 @@ namespace Low {
         _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -158,12 +170,12 @@ namespace Low {
         void remove_component(uint16_t p_ComponentType);
         bool has_component(uint16_t p_ComponentType);
         Low::Core::UI::Component::Display get_display() const;
-        void serialize(Util::Yaml::Node &p_Node,
+        void serialize(Util::Yaml::Node p_Node,
                        bool p_AddHandles) const;
-        void serialize_hierarchy(Util::Yaml::Node &p_Node,
+        void serialize_hierarchy(Util::Yaml::Node p_Node,
                                  bool p_AddHandles) const;
         static UI::Element
-        deserialize_hierarchy(Util::Yaml::Node &p_Node,
+        deserialize_hierarchy(Util::Yaml::Node p_Node,
                               Util::Handle p_Creator);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,

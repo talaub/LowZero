@@ -36,16 +36,6 @@ namespace Low {
       Low::Util::List<View> View::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> View::ms_Pages;
 
-      View::View() : Low::Util::Handle(0ull)
-      {
-      }
-      View::View(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      View::View(View &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle View::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -82,9 +72,6 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, View, internal, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, View, view_template, bool) =
             false;
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, View, pixel_position,
-                                   Low::Math::Vector2))
-            Low::Math::Vector2();
         ACCESSOR_TYPE_SOA(l_Handle, View, rotation, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, View, scale_multiplier, float) =
             0.0f;
@@ -826,7 +813,7 @@ namespace Low {
         return l_View.duplicate(p_Name);
       }
 
-      void View::serialize(Low::Util::Yaml::Node &p_Node) const
+      void View::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -846,14 +833,14 @@ namespace Low {
       }
 
       void View::serialize(Low::Util::Handle p_Handle,
-                           Low::Util::Yaml::Node &p_Node)
+                           Low::Util::Yaml::Node p_Node)
       {
         View l_View = p_Handle.get_id();
         l_View.serialize(p_Node);
       }
 
       Low::Util::Handle
-      View::deserialize(Low::Util::Yaml::Node &p_Node,
+      View::deserialize(Low::Util::Yaml::Node p_Node,
                         Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -1065,7 +1052,7 @@ namespace Low {
         broadcast_observable(N(view_template));
       }
 
-      Low::Math::Vector2 &View::pixel_position() const
+      Low::Math::Vector2 View::pixel_position() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<View> l_Lock(get_id());
@@ -1096,7 +1083,7 @@ namespace Low {
         pixel_position(l_Value);
       }
 
-      void View::pixel_position(Low::Math::Vector2 &p_Value)
+      void View::pixel_position(Low::Math::Vector2 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<View> l_Lock(get_id());
@@ -1330,7 +1317,7 @@ namespace Low {
         broadcast_observable(N(name));
       }
 
-      void View::serialize_elements(Util::Yaml::Node &p_Node)
+      void View::serialize_elements(Util::Yaml::Node p_Node)
       {
         Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_elements
@@ -1393,11 +1380,11 @@ namespace Low {
 
         Util::Yaml::Node l_RootNode =
             Util::Yaml::load_file(l_Path.c_str());
-        Util::Yaml::Node &l_ElementsNode = l_RootNode["elements"];
+        Util::Yaml::Node l_ElementsNode = l_RootNode["elements"];
 
         for (auto it = l_ElementsNode.begin();
              it != l_ElementsNode.end(); ++it) {
-          Util::Yaml::Node &i_ElementNode = *it;
+          Util::Yaml::Node i_ElementNode = *it;
           Element::deserialize(i_ElementNode, *this);
         }
 

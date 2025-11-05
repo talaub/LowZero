@@ -32,18 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         MaterialResource::ms_Pages;
 
-    MaterialResource::MaterialResource() : Low::Util::Handle(0ull)
-    {
-    }
-    MaterialResource::MaterialResource(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    MaterialResource::MaterialResource(MaterialResource &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle MaterialResource::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -67,8 +55,6 @@ namespace Low {
 
       Low::Util::HandleLock<MaterialResource> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, MaterialResource, path,
-                                 Util::String)) Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, MaterialResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -415,7 +401,7 @@ namespace Low {
     }
 
     void
-    MaterialResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    MaterialResource::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -427,14 +413,14 @@ namespace Low {
     }
 
     void MaterialResource::serialize(Low::Util::Handle p_Handle,
-                                     Low::Util::Yaml::Node &p_Node)
+                                     Low::Util::Yaml::Node p_Node)
     {
       MaterialResource l_MaterialResource = p_Handle.get_id();
       l_MaterialResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MaterialResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    MaterialResource::deserialize(Low::Util::Yaml::Node p_Node,
                                   Low::Util::Handle p_Creator)
     {
       MaterialResource l_Handle =
@@ -500,7 +486,7 @@ namespace Low {
       l_MaterialResource.notify(p_Observed, p_Observable);
     }
 
-    Util::String &MaterialResource::get_path() const
+    Util::String MaterialResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
@@ -516,7 +502,7 @@ namespace Low {
       set_path(l_Val);
     }
 
-    void MaterialResource::set_path(Util::String &p_Value)
+    void MaterialResource::set_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
@@ -560,7 +546,7 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    MaterialResource MaterialResource::make(Util::String &p_Path)
+    MaterialResource MaterialResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       for (auto it = ms_LivingInstances.begin();
@@ -581,7 +567,7 @@ namespace Low {
     }
 
     MaterialResource
-    MaterialResource::find_by_path(Util::String &p_Path)
+    MaterialResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
       for (auto it = ms_LivingInstances.begin();

@@ -56,10 +56,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        ViewInfo();
-        ViewInfo(uint64_t p_Id);
-        ViewInfo(ViewInfo &p_Copy);
-
         static ViewInfo make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
         explicit ViewInfo(const ViewInfo &p_Copy)
@@ -71,6 +67,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        ViewInfo(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        ViewInfo() : Low::Util::Handle()
+        {
+        }
+        ViewInfo(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        ViewInfo &operator=(const ViewInfo &) = default;
+        ViewInfo &operator=(ViewInfo &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -108,7 +120,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         ViewInfo duplicate(Low::Util::Name p_Name) const;
         static ViewInfo duplicate(ViewInfo p_Handle,
@@ -122,9 +134,9 @@ namespace Low {
         _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -139,17 +151,17 @@ namespace Low {
           l_ViewInfo.destroy();
         }
 
-        AllocatedBuffer &get_view_data_buffer() const;
-        void set_view_data_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_view_data_buffer() const;
+        void set_view_data_buffer(AllocatedBuffer p_Value);
 
-        AllocatedBuffer &get_directional_light_buffer() const;
-        void set_directional_light_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_directional_light_buffer() const;
+        void set_directional_light_buffer(AllocatedBuffer p_Value);
 
         VkDescriptorSet get_view_data_descriptor_set() const;
         void set_view_data_descriptor_set(VkDescriptorSet p_Value);
 
-        VkDescriptorSet &get_lighting_descriptor_set() const;
-        void set_lighting_descriptor_set(VkDescriptorSet &p_Value);
+        VkDescriptorSet get_lighting_descriptor_set() const;
+        void set_lighting_descriptor_set(VkDescriptorSet p_Value);
 
         Low::Util::List<StagingBuffer> &get_staging_buffers() const;
         void
@@ -159,29 +171,29 @@ namespace Low {
         void set_initialized(bool p_Value);
         void toggle_initialized();
 
-        VkDescriptorSet &get_gbuffer_descriptor_set() const;
-        void set_gbuffer_descriptor_set(VkDescriptorSet &p_Value);
+        VkDescriptorSet get_gbuffer_descriptor_set() const;
+        void set_gbuffer_descriptor_set(VkDescriptorSet p_Value);
 
-        AllocatedBuffer &get_point_light_cluster_buffer() const;
-        void set_point_light_cluster_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_point_light_cluster_buffer() const;
+        void set_point_light_cluster_buffer(AllocatedBuffer p_Value);
 
-        AllocatedBuffer &get_point_light_buffer() const;
-        void set_point_light_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_point_light_buffer() const;
+        void set_point_light_buffer(AllocatedBuffer p_Value);
 
-        Low::Math::UVector3 &get_light_clusters() const;
-        void set_light_clusters(Low::Math::UVector3 &p_Value);
+        Low::Math::UVector3 get_light_clusters() const;
+        void set_light_clusters(Low::Math::UVector3 p_Value);
 
         uint32_t get_light_cluster_count() const;
         void set_light_cluster_count(uint32_t p_Value);
 
-        AllocatedBuffer &get_ui_drawcommand_buffer() const;
-        void set_ui_drawcommand_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_ui_drawcommand_buffer() const;
+        void set_ui_drawcommand_buffer(AllocatedBuffer p_Value);
 
-        AllocatedBuffer &get_debug_geometry_buffer() const;
-        void set_debug_geometry_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_debug_geometry_buffer() const;
+        void set_debug_geometry_buffer(AllocatedBuffer p_Value);
 
-        AllocatedBuffer &get_object_id_buffer() const;
-        void set_object_id_buffer(AllocatedBuffer &p_Value);
+        AllocatedBuffer get_object_id_buffer() const;
+        void set_object_id_buffer(AllocatedBuffer p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

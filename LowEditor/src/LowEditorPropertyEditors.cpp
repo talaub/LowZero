@@ -16,7 +16,6 @@
 #include "LowUtilGlobals.h"
 
 #include <algorithm>
-#include <vcruntime_string.h>
 
 #define DISPLAY_LABEL(s) std::replace(s.begin(), s.end(), '_', ' ')
 

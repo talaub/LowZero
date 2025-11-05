@@ -31,18 +31,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         TextureExport::ms_Pages;
 
-    TextureExport::TextureExport() : Low::Util::Handle(0ull)
-    {
-    }
-    TextureExport::TextureExport(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    TextureExport::TextureExport(TextureExport &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle TextureExport::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -66,9 +54,6 @@ namespace Low {
 
       Low::Util::HandleLock<TextureExport> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TextureExport, path,
-                                 Low::Util::String))
-          Low::Util::String();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TextureExport, texture,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
@@ -535,7 +520,7 @@ namespace Low {
       return l_TextureExport.duplicate(p_Name);
     }
 
-    void TextureExport::serialize(Low::Util::Yaml::Node &p_Node) const
+    void TextureExport::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -551,14 +536,14 @@ namespace Low {
     }
 
     void TextureExport::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node &p_Node)
+                                  Low::Util::Yaml::Node p_Node)
     {
       TextureExport l_TextureExport = p_Handle.get_id();
       l_TextureExport.serialize(p_Node);
     }
 
     Low::Util::Handle
-    TextureExport::deserialize(Low::Util::Yaml::Node &p_Node,
+    TextureExport::deserialize(Low::Util::Yaml::Node p_Node,
                                Low::Util::Handle p_Creator)
     {
       TextureExport l_Handle = TextureExport::make(N(TextureExport));
@@ -636,7 +621,7 @@ namespace Low {
       l_TextureExport.notify(p_Observed, p_Observable);
     }
 
-    Low::Util::String &TextureExport::get_path() const
+    Low::Util::String TextureExport::get_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureExport> l_Lock(get_id());
@@ -652,7 +637,7 @@ namespace Low {
       set_path(l_Val);
     }
 
-    void TextureExport::set_path(Low::Util::String &p_Value)
+    void TextureExport::set_path(Low::Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureExport> l_Lock(get_id());

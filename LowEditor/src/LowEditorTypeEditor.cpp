@@ -14,22 +14,22 @@
 #include "LowCorePrefabInstance.h"
 
 #define HANDLE_TYPE_MANAGER_EVENT_METHODS(eventname)                 \
-  void TypeEditor::handle_##eventname##(Util::Handle p_Handle,       \
-                                        TypeMetadata & p_Metadata)   \
+  void TypeEditor::handle_##eventname(Util::Handle p_Handle,         \
+                                      TypeMetadata &p_Metadata)      \
   {                                                                  \
     auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);            \
     if (l_Entry != g_TypeEditors.end()) {                            \
       l_Entry->second->eventname(p_Handle, p_Metadata);              \
     } else {                                                         \
       TypeEditor l_Editor;                                           \
-      l_Editor.##eventname##(p_Handle, p_Metadata);                  \
+      l_Editor.eventname(p_Handle, p_Metadata);                      \
     }                                                                \
   }                                                                  \
-  void TypeEditor::handle_##eventname##(Util::Handle p_Handle)       \
+  void TypeEditor::handle_##eventname(Util::Handle p_Handle)         \
   {                                                                  \
     TypeMetadata l_Metadata =                                        \
         get_type_metadata(p_Handle.get_type());                      \
-    handle_##eventname##(p_Handle, l_Metadata);                      \
+    handle_##eventname(p_Handle, l_Metadata);                        \
   }
 
 namespace Low {

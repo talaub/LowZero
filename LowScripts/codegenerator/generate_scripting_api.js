@@ -416,10 +416,12 @@ function main() {
 
   let l_Types = 0;
   let l_Enums = 0;
+
   if (l_Project) {
     let l_LocalPath = l_Path;
     if (!l_LocalPath.endsWith("/") && !l_LocalPath.endsWith("\\")) {
       l_LocalPath += "/";
+      l_Path += "/";
     }
     l_Types = collect_types_for_project(l_LocalPath);
     l_Enums = collect_enums_for_project(l_Path);
@@ -447,7 +449,7 @@ function main() {
       );
     }
   } else {
-    l_FilePath = `../../LowCore/src/LowCoreCflatScripting.cpp`;
+    l_FilePath = `../LowCore/src/LowCoreCflatScripting.cpp`;
     generate_scripting_api_for(l_FilePath, l_Types, l_Enums, undefined);
   }
 }

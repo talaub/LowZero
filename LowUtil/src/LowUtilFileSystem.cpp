@@ -30,7 +30,7 @@ namespace Low {
         return l_Builder.get();
       }
 
-      void update_directory(WatchHandle p_WatchHandle);
+      static void update_directory(WatchHandle p_WatchHandle);
 
       static String get_name_from_path(String p_Path)
       {

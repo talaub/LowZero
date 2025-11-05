@@ -30,11 +30,71 @@
 
 #include "LowEditor.h"
 
+#ifdef _WIN32
 #include <windows.h>
-#include <dbghelp.h>
-#include <tchar.h>
+using LibHandle = HMODULE;
+inline LibHandle open_library(const char *path)
+{
+  return ::LoadLibraryA(path);
+}
+inline void close_library(LibHandle h)
+{
+  if (h)
+    ::FreeLibrary(h);
+}
+inline void *get_symbol(LibHandle h, const char *name)
+{
+  return reinterpret_cast<void *>(::GetProcAddress(h, name));
+}
+inline std::string last_dl_error()
+{
+  DWORD e = ::GetLastError();
+  if (!e)
+    return {};
+  LPVOID buf = nullptr;
+  ::FormatMessageA(
+      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+          FORMAT_MESSAGE_IGNORE_INSERTS,
+      nullptr, e, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+      (LPSTR)&buf, 0, nullptr);
+  std::string msg = buf ? (char *)buf : "unknown error";
+  if (buf)
+    ::LocalFree(buf);
+  return msg;
+}
+#define DYNLIB_EXT ".dll"
+#define STDCALL __stdcall
+#else
+#include <dlfcn.h>
+using LibHandle = void *;
+inline LibHandle open_library(const char *path)
+{
+  // RTLD_NOW: resolve eagerly; switch to RTLD_LAZY if you prefer
+  return ::dlopen(path, RTLD_NOW | RTLD_LOCAL);
+}
+inline void close_library(LibHandle h)
+{
+  if (h)
+    ::dlclose(h);
+}
+inline void *get_symbol(LibHandle h, const char *name)
+{
+  ::dlerror(); // clear
+  void *p = ::dlsym(h, name);
+  (void)::dlerror(); // read & drop; callers can call last_dl_error if
+                     // needed
+  return p;
+}
+inline std::string last_dl_error()
+{
+  const char *e = ::dlerror();
+  return e ? std::string(e) : std::string{};
+}
+#define DYNLIB_EXT ".so"
+#define STDCALL /* nothing */
+#endif
 
-typedef int(__stdcall *f_funci)();
+using f_funci = int(STDCALL *)();
 
 enum class ModuleType
 {
@@ -62,48 +122,6 @@ void *operator new[](size_t size, size_t alignment,
   return malloc(size);
 }
 
-// Function to write the minidump
-void CreateMiniDump(EXCEPTION_POINTERS *pep)
-{
-  return;
-  // Open a file to write the minidump
-  HANDLE hFile =
-      CreateFile(_T("minidump.dmp"), GENERIC_WRITE, 0, NULL,
-                 CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-  if (hFile != INVALID_HANDLE_VALUE) {
-    // Initialize MINIDUMP_EXCEPTION_INFORMATION struct
-    MINIDUMP_EXCEPTION_INFORMATION mdei;
-    mdei.ThreadId = GetCurrentThreadId();
-    mdei.ExceptionPointers = pep;
-    mdei.ClientPointers = FALSE;
-
-    // Write the minidump
-    MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
-                      hFile, MiniDumpNormal, pep ? &mdei : NULL, NULL,
-                      NULL);
-
-    // Close the file handle
-    CloseHandle(hFile);
-
-    std::cout << "Minidump created." << std::endl;
-  } else {
-    std::cerr << "Failed to create minidump file." << std::endl;
-  }
-}
-
-// Custom unhandled exception filter
-LONG WINAPI
-MyUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo)
-{
-  // Call the function to create the minidump
-  CreateMiniDump(pExceptionInfo);
-
-  // Pass exception to the default handler, so the application can
-  // terminate normally
-  return EXCEPTION_EXECUTE_HANDLER;
-}
-
 static void setup_scene()
 {
   Low::Core::Scene l_Scene =
@@ -111,78 +129,51 @@ static void setup_scene()
   l_Scene.load();
 };
 
-void print_last_error()
+int load_module_lib(ModuleType type, const Low::Util::String &path)
 {
-  DWORD errorMessageID = ::GetLastError();
-  if (errorMessageID == 0) {
-    return; // No error message has been recorded
-  }
+  LOW_LOG_DEBUG << path << LOW_LOG_END;
 
-  LPSTR messageBuffer = nullptr;
-  size_t size = FormatMessageA(
-      FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-          FORMAT_MESSAGE_IGNORE_INSERTS,
-      NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-      (LPSTR)&messageBuffer, 0, NULL);
-
-  std::string message(messageBuffer, size);
-
-  // Free the buffer.
-  LocalFree(messageBuffer);
-
-  LOW_LOG_FATAL << message << LOW_LOG_END;
-}
-
-int load_module_dll(ModuleType p_ModuleType, Low::Util::String p_Path)
-{
-
-  LOW_LOG_DEBUG << p_Path << LOW_LOG_END;
-  /*
-  HINSTANCE hGetProcIDDLL =
-      LoadLibrary("../../../misteda/build/Debug/app/Gameplayd.dll");
-      */
-  HINSTANCE hGetProcIDDLL = LoadLibrary(p_Path.c_str());
-
-  if (!hGetProcIDDLL) {
-    LOW_LOG_WARN << "could not load the dynamic library"
-                 << LOW_LOG_END;
-    print_last_error();
+  LibHandle lib = open_library(path.c_str());
+  if (!lib) {
+    LOW_LOG_WARN << "could not load the dynamic library: "
+                 << last_dl_error() << LOW_LOG_END;
     return 1;
   }
 
-  // resolve function address here
-  f_funci plugin_initialize =
-      (f_funci)GetProcAddress(hGetProcIDDLL, "plugin_initialize");
-  if (!plugin_initialize) {
-    LOW_LOG_WARN << "could not locate the initialize function"
-                 << LOW_LOG_END;
+  auto get_func = [&](const char *name) -> f_funci {
+    auto p = reinterpret_cast<f_funci>(get_symbol(lib, name));
+    if (!p) {
+      LOW_LOG_WARN << "could not locate function '" << name
+                   << "': " << last_dl_error() << LOW_LOG_END;
+    }
+    return p;
+  };
+
+  f_funci plugin_initialize = get_func("plugin_initialize");
+  f_funci plugin_cleanup = get_func("plugin_cleanup");
+  if (!plugin_initialize || !plugin_cleanup) {
+    close_library(lib);
     return 1;
   }
 
-  f_funci plugin_cleanup =
-      (f_funci)GetProcAddress(hGetProcIDDLL, "plugin_cleanup");
-  if (!plugin_cleanup) {
-    LOW_LOG_WARN << "could not locate the cleanup function"
-                 << LOW_LOG_END;
-    return 1;
-  }
-
-  switch (p_ModuleType) {
-  case ModuleType::Runtime: {
+  switch (type) {
+  case ModuleType::Runtime:
     g_RuntimeModuleInitialize.push_back(plugin_initialize);
     g_RuntimeModuleCleanup.push_back(plugin_cleanup);
     break;
-  }
-  case ModuleType::Editor: {
+  case ModuleType::Editor:
     g_EditorModuleInitialize.push_back(plugin_initialize);
     g_EditorModuleCleanup.push_back(plugin_cleanup);
     break;
-  }
   default:
     LOW_LOG_FATAL << "Unknown module type" << LOW_LOG_END;
-    break;
+    close_library(lib);
+    return 1;
   }
 
+  // keep 'lib' around if you need it later; if you close it now,
+  // function ptrs go invalid. Store LibHandle in a vector/map keyed
+  // by module if you need later cleanup.
   return 0;
 }
 
@@ -216,30 +207,34 @@ void load_module(Low::Util::String p_ProjectPath,
 
   LOW_LOG_INFO << "Load module: " << p_Path << LOW_LOG_END;
 
-  Util::String l_ModuleConfigPath = p_Path + "\\module.yaml";
+  Util::String l_ModuleConfigPath = p_Path + "/module.yaml";
   Util::Yaml::Node l_ConfigNode =
       Util::Yaml::load_file(l_ModuleConfigPath.c_str());
 
   ModuleType l_ModuleType =
       parse_module_type(LOW_YAML_AS_STRING(l_ConfigNode["type"]));
 
-  Util::String l_DllPath = p_ProjectPath + "\\bin";
+  Util::String l_DllPath = p_ProjectPath + "/bin";
 
 #ifdef NDEBUG
-  l_DllPath += "\\RelWithDebInfo\\";
+  l_DllPath += "/RelWithDebInfo/";
 #else
-  l_DllPath += "\\Debug\\";
+  l_DllPath += "/Debug/";
 #endif
 
   l_DllPath += get_name_from_path(p_Path);
+#ifdef _WIN32
   l_DllPath += ".dll";
-  load_module_dll(l_ModuleType, l_DllPath);
+#else
+  l_DllPath += ".so";
+#endif
+  load_module_lib(l_ModuleType, l_DllPath);
 }
 
 void load_project(Low::Util::String p_ProjectPath)
 {
   using namespace Low;
-  Util::String l_Path = p_ProjectPath + "\\modules";
+  Util::String l_Path = p_ProjectPath + "/modules";
 
   Util::List<Util::String> l_FilePaths;
 
@@ -324,8 +319,6 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 
 int main(int argc, char *argv[])
 {
-  SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
-
   bool l_IsHost = false;
   Low::Util::String l_ProjectPath = "";
   if (argc > 1) {

@@ -234,11 +234,9 @@ namespace Low {
             l_AllocInfo.requiredFlags = VkMemoryPropertyFlags(
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-            LOWR_VK_CHECK(
-                vmaCreateImage(Global::get_allocator(), &l_ImgInfo,
-                               &l_AllocInfo, &l_Image.image,
-                               &l_Image.allocation, nullptr),
-                "Failed to create vulkan image");
+            LOWR_VK_CHECK(vmaCreateImage(
+                Global::get_allocator(), &l_ImgInfo, &l_AllocInfo,
+                &l_Image.image, &l_Image.allocation, nullptr));
 
             VkImageAspectFlags l_AspectFlag =
                 VK_IMAGE_ASPECT_COLOR_BIT;
@@ -257,8 +255,7 @@ namespace Low {
 
             LOWR_VK_CHECK(vkCreateImageView(Global::get_device(),
                                             &l_ViewInfo, nullptr,
-                                            &l_Image.imageView),
-                          "Failed to create vulkan imageview");
+                                            &l_Image.imageView));
 
             return l_Image;
           }
@@ -448,6 +445,6 @@ namespace Low {
           */
         }
       } // namespace ImageUtil
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

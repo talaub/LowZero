@@ -38,18 +38,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           NavmeshAgent::ms_Pages;
 
-      NavmeshAgent::NavmeshAgent() : Low::Util::Handle(0ull)
-      {
-      }
-      NavmeshAgent::NavmeshAgent(uint64_t p_Id)
-          : Low::Util::Handle(p_Id)
-      {
-      }
-      NavmeshAgent::NavmeshAgent(NavmeshAgent &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle
       NavmeshAgent::_make(Low::Util::Handle p_Entity)
       {
@@ -89,9 +77,6 @@ namespace Low {
             0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, NavmeshAgent, radius, float) =
             0.0f;
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, NavmeshAgent, offset,
-                                   Low::Math::Vector3))
-            Low::Math::Vector3();
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, NavmeshAgent, entity,
                                    Low::Core::Entity))
             Low::Core::Entity();
@@ -582,8 +567,7 @@ namespace Low {
         return l_NavmeshAgent.duplicate(l_Entity);
       }
 
-      void
-      NavmeshAgent::serialize(Low::Util::Yaml::Node &p_Node) const
+      void NavmeshAgent::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -602,14 +586,14 @@ namespace Low {
       }
 
       void NavmeshAgent::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node &p_Node)
+                                   Low::Util::Yaml::Node p_Node)
       {
         NavmeshAgent l_NavmeshAgent = p_Handle.get_id();
         l_NavmeshAgent.serialize(p_Node);
       }
 
       Low::Util::Handle
-      NavmeshAgent::deserialize(Low::Util::Yaml::Node &p_Node,
+      NavmeshAgent::deserialize(Low::Util::Yaml::Node p_Node,
                                 Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -835,7 +819,7 @@ namespace Low {
         broadcast_observable(N(radius));
       }
 
-      Low::Math::Vector3 &NavmeshAgent::get_offset() const
+      Low::Math::Vector3 NavmeshAgent::get_offset() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
@@ -873,7 +857,7 @@ namespace Low {
         set_offset(l_Value);
       }
 
-      void NavmeshAgent::set_offset(Low::Math::Vector3 &p_Value)
+      void NavmeshAgent::set_offset(Low::Math::Vector3 p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
@@ -999,7 +983,7 @@ namespace Low {
       }
 
       void NavmeshAgent::set_target_position(
-          Low::Math::Vector3 &p_TargetPosition)
+          Low::Math::Vector3 p_TargetPosition)
       {
         Low::Util::HandleLock<NavmeshAgent> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_target_position

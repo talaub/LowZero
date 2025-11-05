@@ -1,13 +1,16 @@
 #include "LowUtilJobManager.h"
 #include <string>
 
+#if defined(_WIN32)
 #include <windows.h>
+#endif
 
 namespace Low {
   namespace Util {
     namespace JobManager {
       ThreadPool *g_DefaultThreadPool;
 
+#if defined(_WIN32)
       inline std::wstring to_wstring(const char *str)
       {
         if (!str)
@@ -28,6 +31,7 @@ namespace Low {
                             size_needed);
         return wstr;
       }
+#endif
 
       ThreadPool::ThreadPool(int p_NumThreads) : m_Stop(false)
       {
@@ -53,12 +57,14 @@ namespace Low {
             }
           });
 
+#if defined(_WIN32)
           Util::String i_WorkerName = "Worker ";
           i_WorkerName += std::to_string(i + 1).c_str();
           std::wstring i_WName = to_wstring(i_WorkerName.c_str());
 
           SetThreadDescription(m_Workers[i].native_handle(),
                                i_WName.c_str());
+#endif
         }
       }
 

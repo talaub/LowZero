@@ -47,7 +47,7 @@ add_dependencies(LowEditor
   LowMath
   LowRenderer2
   LowCore
-  nativefiledialog
+  #nativefiledialog
 )
 
 set(LOWEDITOR_INCLUDE_DIRS
@@ -77,7 +77,7 @@ target_link_libraries(LowEditor PRIVATE
   LowRenderer2
   LowUtil
   LowMath
-  nativefiledialog
+  #nativefiledialog
   assimp
   physx
 )

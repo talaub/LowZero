@@ -1010,7 +1010,7 @@ namespace Low {
         }
 
         VkExtent3D l_Extent{p_RenderView.get_dimensions().x,
-                            p_RenderView.get_dimensions().y, 1.0f};
+                            p_RenderView.get_dimensions().y, 1};
 
         const VkFormat l_ImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
 
@@ -1130,10 +1130,12 @@ namespace Low {
                                 VK_IMAGE_USAGE_SAMPLED_BIT,
                             false);
 
-          p_ViewInfo.set_object_id_buffer(BufferUtil::create_buffer(
+          AllocatedBuffer l_ObjectBuffer = BufferUtil::create_buffer(
               sizeof(u32) * l_Extent.width * l_Extent.height,
               VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-              VMA_MEMORY_USAGE_GPU_TO_CPU));
+              VMA_MEMORY_USAGE_GPU_TO_CPU);
+
+          p_ViewInfo.set_object_id_buffer(l_ObjectBuffer);
 
           ImageUtil::cmd_transition(
               l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -2038,10 +2040,11 @@ namespace Low {
                 LOW_LOG_DEBUG << "IMAGESIZE: " << l_ImageSize
                               << LOW_LOG_END;
 
-                i_TexExport.set_staging_buffer(
-                    BufferUtil::create_buffer(
-                        l_ImageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                        VMA_MEMORY_USAGE_GPU_TO_CPU));
+                AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
+                    l_ImageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    VMA_MEMORY_USAGE_GPU_TO_CPU);
+
+                i_TexExport.set_staging_buffer(l_Buffer);
 
                 i_Export.observe(OBSERVABLE_DESTROY,
                                  i_TexExport.get_id());

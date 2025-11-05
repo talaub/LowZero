@@ -37,18 +37,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           GraphicsPipeline::ms_Pages;
 
-      GraphicsPipeline::GraphicsPipeline() : Low::Util::Handle(0ull)
-      {
-      }
-      GraphicsPipeline::GraphicsPipeline(uint64_t p_Id)
-          : Low::Util::Handle(p_Id)
-      {
-      }
-      GraphicsPipeline::GraphicsPipeline(GraphicsPipeline &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle
       GraphicsPipeline::_make(Low::Util::Name p_Name)
       {
@@ -431,7 +419,7 @@ namespace Low {
       }
 
       void
-      GraphicsPipeline::serialize(Low::Util::Yaml::Node &p_Node) const
+      GraphicsPipeline::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -443,14 +431,14 @@ namespace Low {
       }
 
       void GraphicsPipeline::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node &p_Node)
+                                       Low::Util::Yaml::Node p_Node)
       {
         GraphicsPipeline l_GraphicsPipeline = p_Handle.get_id();
         l_GraphicsPipeline.serialize(p_Node);
       }
 
       Low::Util::Handle
-      GraphicsPipeline::deserialize(Low::Util::Yaml::Node &p_Node,
+      GraphicsPipeline::deserialize(Low::Util::Yaml::Node p_Node,
                                     Low::Util::Handle p_Creator)
       {
         GraphicsPipeline l_Handle =

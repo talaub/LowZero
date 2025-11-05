@@ -56,10 +56,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        View();
-        View(uint64_t p_Id);
-        View(View &p_Copy);
-
         static View make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
         static View make(Low::Util::Name p_Name,
@@ -73,6 +69,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        View(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        View() : Low::Util::Handle()
+        {
+        }
+        View(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        View &operator=(const View &) = default;
+        View &operator=(View &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -110,7 +122,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         View duplicate(Low::Util::Name p_Name) const;
         static View duplicate(View p_Handle, Low::Util::Name p_Name);
@@ -123,9 +135,9 @@ namespace Low {
         _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -152,8 +164,8 @@ namespace Low {
         void set_view_template(bool p_Value);
         void toggle_view_template();
 
-        Low::Math::Vector2 &pixel_position() const;
-        void pixel_position(Low::Math::Vector2 &p_Value);
+        Low::Math::Vector2 pixel_position() const;
+        void pixel_position(Low::Math::Vector2 p_Value);
         void pixel_position(float p_X, float p_Y);
         void pixel_position_x(float p_Value);
         void pixel_position_y(float p_Value);
@@ -177,7 +189,7 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        void serialize_elements(Util::Yaml::Node &p_Node);
+        void serialize_elements(Util::Yaml::Node p_Node);
         void add_element(Element p_Element);
         void remove_element(Element p_Element);
         void load_elements();

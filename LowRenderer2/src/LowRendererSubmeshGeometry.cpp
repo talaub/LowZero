@@ -32,18 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         SubmeshGeometry::ms_Pages;
 
-    SubmeshGeometry::SubmeshGeometry() : Low::Util::Handle(0ull)
-    {
-    }
-    SubmeshGeometry::SubmeshGeometry(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    SubmeshGeometry::SubmeshGeometry(SubmeshGeometry &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle SubmeshGeometry::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -104,9 +92,10 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
       l_Handle.set_vertex_count(0);
       l_Handle.set_index_count(0);
-      l_Handle.set_transform(LOW_MATRIX4x4_IDENTITY);
-      l_Handle.set_parent_transform(LOW_MATRIX4x4_IDENTITY);
-      l_Handle.set_local_transform(LOW_MATRIX4x4_IDENTITY);
+      Math::Matrix4x4 l_Identity(1.0f);
+      l_Handle.set_transform(l_Identity);
+      l_Handle.set_parent_transform(l_Identity);
+      l_Handle.set_local_transform(l_Identity);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -731,7 +720,7 @@ namespace Low {
     }
 
     void
-    SubmeshGeometry::serialize(Low::Util::Yaml::Node &p_Node) const
+    SubmeshGeometry::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -740,14 +729,14 @@ namespace Low {
     }
 
     void SubmeshGeometry::serialize(Low::Util::Handle p_Handle,
-                                    Low::Util::Yaml::Node &p_Node)
+                                    Low::Util::Yaml::Node p_Node)
     {
       SubmeshGeometry l_SubmeshGeometry = p_Handle.get_id();
       l_SubmeshGeometry.serialize(p_Node);
     }
 
     Low::Util::Handle
-    SubmeshGeometry::deserialize(Low::Util::Yaml::Node &p_Node,
+    SubmeshGeometry::deserialize(Low::Util::Yaml::Node p_Node,
                                  Low::Util::Handle p_Creator)
     {
 

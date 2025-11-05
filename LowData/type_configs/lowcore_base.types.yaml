@@ -85,6 +85,7 @@ types:
             type: bool
       deserialize_hierarchy:
         return_type: Entity
+        return_handle: true
         static: true
         parameters:
           - name: node

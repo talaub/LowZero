@@ -34,17 +34,6 @@ namespace Low {
     Low::Util::List<Texture2D> Texture2D::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Texture2D::ms_Pages;
 
-    Texture2D::Texture2D() : Low::Util::Handle(0ull)
-    {
-    }
-    Texture2D::Texture2D(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Texture2D::Texture2D(Texture2D &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Texture2D::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -460,7 +449,7 @@ namespace Low {
       return l_Texture2D.duplicate(p_Name);
     }
 
-    void Texture2D::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Texture2D::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -478,14 +467,14 @@ namespace Low {
     }
 
     void Texture2D::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node)
+                              Low::Util::Yaml::Node p_Node)
     {
       Texture2D l_Texture2D = p_Handle.get_id();
       l_Texture2D.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Texture2D::deserialize(Low::Util::Yaml::Node &p_Node,
+    Texture2D::deserialize(Low::Util::Yaml::Node p_Node,
                            Low::Util::Handle p_Creator)
     {
       Texture2D l_Handle = Texture2D::make(N(Texture2D));

@@ -34,18 +34,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         SkeletalAnimation::ms_Pages;
 
-    SkeletalAnimation::SkeletalAnimation() : Low::Util::Handle(0ull)
-    {
-    }
-    SkeletalAnimation::SkeletalAnimation(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    SkeletalAnimation::SkeletalAnimation(SkeletalAnimation &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle SkeletalAnimation::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -463,7 +451,7 @@ namespace Low {
     }
 
     void
-    SkeletalAnimation::serialize(Low::Util::Yaml::Node &p_Node) const
+    SkeletalAnimation::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -477,14 +465,14 @@ namespace Low {
     }
 
     void SkeletalAnimation::serialize(Low::Util::Handle p_Handle,
-                                      Low::Util::Yaml::Node &p_Node)
+                                      Low::Util::Yaml::Node p_Node)
     {
       SkeletalAnimation l_SkeletalAnimation = p_Handle.get_id();
       l_SkeletalAnimation.serialize(p_Node);
     }
 
     Low::Util::Handle
-    SkeletalAnimation::deserialize(Low::Util::Yaml::Node &p_Node,
+    SkeletalAnimation::deserialize(Low::Util::Yaml::Node p_Node,
                                    Low::Util::Handle p_Creator)
     {
       SkeletalAnimation l_Handle =

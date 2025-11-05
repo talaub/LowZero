@@ -34,16 +34,6 @@ namespace Low {
       Low::Util::List<Camera> Camera::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> Camera::ms_Pages;
 
-      Camera::Camera() : Low::Util::Handle(0ull)
-      {
-      }
-      Camera::Camera(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      Camera::Camera(Camera &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle Camera::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
@@ -264,9 +254,9 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
               offsetof(Camera::Data, render_view);
-          l_PropertyInfo.type =
-              Low::Util::RTTI::PropertyType::UNKNOWN;
-          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Renderer::RenderView::TYPE_ID;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Camera l_Handle = p_Handle.get_id();
@@ -457,7 +447,9 @@ namespace Low {
         Camera l_Handle = make(p_Entity);
         l_Handle.set_active(is_active());
         l_Handle.set_fov(get_fov());
-        l_Handle.set_render_view(get_render_view());
+        if (get_render_view().is_alive()) {
+          l_Handle.set_render_view(get_render_view());
+        }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -480,12 +472,15 @@ namespace Low {
         return l_Camera.duplicate(l_Entity);
       }
 
-      void Camera::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Camera::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
         p_Node["active"] = is_active();
         p_Node["fov"] = get_fov();
+        if (get_render_view().is_alive()) {
+          get_render_view().serialize(p_Node["render_view"]);
+        }
         p_Node["_unique_id"] =
             Low::Util::hash_to_string(get_unique_id()).c_str();
 
@@ -495,14 +490,14 @@ namespace Low {
       }
 
       void Camera::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
       {
         Camera l_Camera = p_Handle.get_id();
         l_Camera.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Camera::deserialize(Low::Util::Yaml::Node &p_Node,
+      Camera::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -523,6 +518,10 @@ namespace Low {
           l_Handle.set_fov(p_Node["fov"].as<float>());
         }
         if (p_Node["render_view"]) {
+          l_Handle.set_render_view(
+              Low::Renderer::RenderView::deserialize(
+                  p_Node["render_view"], l_Handle.get_id())
+                  .get_id());
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -663,7 +662,7 @@ namespace Low {
         broadcast_observable(N(fov));
       }
 
-      Low::Renderer::RenderView &Camera::get_render_view() const
+      Low::Renderer::RenderView Camera::get_render_view() const
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Camera> l_Lock(get_id());
@@ -674,7 +673,7 @@ namespace Low {
         return TYPE_SOA(Camera, render_view,
                         Low::Renderer::RenderView);
       }
-      void Camera::set_render_view(Low::Renderer::RenderView &p_Value)
+      void Camera::set_render_view(Low::Renderer::RenderView p_Value)
       {
         _LOW_ASSERT(is_alive());
         Low::Util::HandleLock<Camera> l_Lock(get_id());

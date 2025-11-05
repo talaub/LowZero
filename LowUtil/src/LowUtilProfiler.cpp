@@ -42,17 +42,17 @@ namespace Low {
           }
         }
 
-        LOW_ASSERT(
-            false,
-            "Tried to untrack a tracked memory allocation that does not exist");
+        LOW_ASSERT(false, "Tried to untrack a tracked memory "
+                          "allocation that does not exist");
       }
 
       void evaluate_memory_allocation()
       {
         for (auto it = g_TrackedMemoryAllocations.begin();
              it != g_TrackedMemoryAllocations.end(); ++it) {
-          String i_Text = String("Tracked memory allocation '") + it->text +
-                          "' did not get free'd. Function: " + it->function;
+          String i_Text =
+              String("Tracked memory allocation '") + it->text +
+              "' did not get free'd. Function: " + it->function;
 
           Log::begin_log(Log::LogLevel::PROFILE, it->module.c_str())
               << i_Text << LOW_LOG_END;
@@ -64,8 +64,7 @@ namespace Low {
 
       void flip()
       {
-        MicroProfileFlip(nullptr);
       }
     } // namespace Profiler
-  }   // namespace Util
+  } // namespace Util
 } // namespace Low

@@ -36,8 +36,7 @@
 
 #define LOW_NOT_IMPLEMENTED                                          \
   LOW_LOG_ERROR << "Function '" << __FUNCTION__                      \
-                << "' not yet implemented." << LOW_LOG_END;          \
-  __debugbreak();
+                << "' not yet implemented." << LOW_LOG_END;
 
 #define LOW_NOT_IMPLEMENTED_WARN                                     \
   LOW_LOG_WARN << "Function '" << __FUNCTION__                       \
@@ -88,9 +87,9 @@ namespace Low {
         friend LogStream begin_log(uint8_t, const char *, bool);
 
         LogStream &operator<<(LogLineEnd p_End);
-        LogStream &operator<<(String &p_Message);
+        LogStream &operator<<(String p_Message);
         LogStream &operator<<(const char *p_Message);
-        LogStream &operator<<(std::string &p_Message);
+        LogStream &operator<<(std::string p_Message);
 
         LogStream &operator<<(int p_Message);
         LogStream &operator<<(uint32_t p_Message);
@@ -106,7 +105,7 @@ namespace Low {
         LogStream &operator<<(Math::UVector3 &p_Vec);
 
         LogStream &operator<<(Name p_Name);
-        LogStream &operator<<(Handle &p_Message);
+        LogStream &operator<<(Handle p_Message);
 
       private:
         LogEntry m_Entry;

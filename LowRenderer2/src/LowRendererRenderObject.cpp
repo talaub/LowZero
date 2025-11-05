@@ -35,18 +35,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         RenderObject::ms_Pages;
 
-    RenderObject::RenderObject() : Low::Util::Handle(0ull)
-    {
-    }
-    RenderObject::RenderObject(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    RenderObject::RenderObject(RenderObject &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle RenderObject::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -684,7 +672,7 @@ namespace Low {
       return l_RenderObject.duplicate(p_Name);
     }
 
-    void RenderObject::serialize(Low::Util::Yaml::Node &p_Node) const
+    void RenderObject::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -693,14 +681,14 @@ namespace Low {
     }
 
     void RenderObject::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Yaml::Node p_Node)
     {
       RenderObject l_RenderObject = p_Handle.get_id();
       l_RenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderObject::deserialize(Low::Util::Yaml::Node p_Node,
                               Low::Util::Handle p_Creator)
     {
 

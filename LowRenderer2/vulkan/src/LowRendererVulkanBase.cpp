@@ -171,6 +171,8 @@ namespace Low {
                 Global::get_device(), &l_SemaphoreCreateInfo, nullptr,
                 &p_Context.frames[i].renderSemaphore));
           }
+
+          return true;
         }
 
         // TODO: Most likely temporary
@@ -243,6 +245,8 @@ namespace Low {
           // Please read the comment on the function itself
           LOWR_VK_ASSERT(descriptors_init(p_Context),
                          "Could not initialize descriptors");
+
+          return true;
         }
 
         bool context_initialize(Context &p_Context,
@@ -337,6 +341,8 @@ namespace Low {
 
           LOWR_VK_ASSERT_RETURN(sync_structures_cleanup(p_Context),
                                 "Failed to cleanup sync structures");
+
+          return true;
         }
 
         bool cleanup()
@@ -502,6 +508,8 @@ namespace Low {
             LOW_LOG_DEBUG << "Require resize" << LOW_LOG_END;
             p_Context.requireResize = true;
           }
+
+          return true;
         }
       } // namespace Base
     } // namespace Vulkan

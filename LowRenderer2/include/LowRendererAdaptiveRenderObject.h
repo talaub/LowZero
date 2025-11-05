@@ -49,10 +49,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      AdaptiveRenderObject();
-      AdaptiveRenderObject(uint64_t p_Id);
-      AdaptiveRenderObject(AdaptiveRenderObject &p_Copy);
-
     private:
       static AdaptiveRenderObject make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -68,6 +64,24 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      AdaptiveRenderObject(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      AdaptiveRenderObject() : Low::Util::Handle()
+      {
+      }
+      AdaptiveRenderObject(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      AdaptiveRenderObject &
+      operator=(const AdaptiveRenderObject &) = default;
+      AdaptiveRenderObject &
+      operator=(AdaptiveRenderObject &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -105,7 +119,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       AdaptiveRenderObject duplicate(Low::Util::Name p_Name) const;
       static AdaptiveRenderObject
@@ -119,9 +133,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {

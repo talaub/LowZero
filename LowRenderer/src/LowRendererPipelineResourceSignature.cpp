@@ -39,21 +39,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           PipelineResourceSignature::ms_Pages;
 
-      PipelineResourceSignature::PipelineResourceSignature()
-          : Low::Util::Handle(0ull)
-      {
-      }
-      PipelineResourceSignature::PipelineResourceSignature(
-          uint64_t p_Id)
-          : Low::Util::Handle(p_Id)
-      {
-      }
-      PipelineResourceSignature::PipelineResourceSignature(
-          PipelineResourceSignature &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle
       PipelineResourceSignature::_make(Low::Util::Name p_Name)
       {
@@ -668,7 +653,7 @@ namespace Low {
       }
 
       void PipelineResourceSignature::serialize(
-          Low::Util::Yaml::Node &p_Node) const
+          Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -680,7 +665,7 @@ namespace Low {
       }
 
       void PipelineResourceSignature::serialize(
-          Low::Util::Handle p_Handle, Low::Util::Yaml::Node &p_Node)
+          Low::Util::Handle p_Handle, Low::Util::Yaml::Node p_Node)
       {
         PipelineResourceSignature l_PipelineResourceSignature =
             p_Handle.get_id();
@@ -688,7 +673,7 @@ namespace Low {
       }
 
       Low::Util::Handle PipelineResourceSignature::deserialize(
-          Low::Util::Yaml::Node &p_Node, Low::Util::Handle p_Creator)
+          Low::Util::Yaml::Node p_Node, Low::Util::Handle p_Creator)
       {
         PipelineResourceSignature l_Handle =
             PipelineResourceSignature::make(

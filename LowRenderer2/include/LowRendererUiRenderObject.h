@@ -56,10 +56,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      UiRenderObject();
-      UiRenderObject(uint64_t p_Id);
-      UiRenderObject(UiRenderObject &p_Copy);
-
     private:
       static UiRenderObject make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -74,6 +70,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      UiRenderObject(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      UiRenderObject() : Low::Util::Handle()
+      {
+      }
+      UiRenderObject(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      UiRenderObject &operator=(const UiRenderObject &) = default;
+      UiRenderObject &operator=(UiRenderObject &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -111,7 +123,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       UiRenderObject duplicate(Low::Util::Name p_Name) const;
       static UiRenderObject duplicate(UiRenderObject p_Handle,
@@ -123,9 +135,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -145,15 +157,15 @@ namespace Low {
       Texture get_texture() const;
       void set_texture(Texture p_Value);
 
-      Low::Math::Vector3 &get_position() const;
-      void set_position(Low::Math::Vector3 &p_Value);
+      Low::Math::Vector3 get_position() const;
+      void set_position(Low::Math::Vector3 p_Value);
       void set_position(float p_X, float p_Y, float p_Z);
       void set_position_x(float p_Value);
       void set_position_y(float p_Value);
       void set_position_z(float p_Value);
 
-      Low::Math::Vector2 &get_size() const;
-      void set_size(Low::Math::Vector2 &p_Value);
+      Low::Math::Vector2 get_size() const;
+      void set_size(Low::Math::Vector2 p_Value);
       void set_size(float p_X, float p_Y);
       void set_size_x(float p_Value);
       void set_size_y(float p_Value);
@@ -161,11 +173,11 @@ namespace Low {
       float get_rotation2D() const;
       void set_rotation2D(float p_Value);
 
-      Low::Math::Color &get_color() const;
-      void set_color(Low::Math::Color &p_Value);
+      Low::Math::Color get_color() const;
+      void set_color(Low::Math::Color p_Value);
 
-      Low::Math::Vector4 &get_uv_rect() const;
-      void set_uv_rect(Low::Math::Vector4 &p_Value);
+      Low::Math::Vector4 get_uv_rect() const;
+      void set_uv_rect(Low::Math::Vector4 p_Value);
 
       Material get_material() const;
       void set_material(Material p_Value);

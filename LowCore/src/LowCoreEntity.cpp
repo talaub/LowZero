@@ -34,16 +34,6 @@ namespace Low {
     Low::Util::List<Entity> Entity::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Entity::ms_Pages;
 
-    Entity::Entity() : Low::Util::Handle(0ull)
-    {
-    }
-    Entity::Entity(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Entity::Entity(Entity &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Entity::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -486,8 +476,8 @@ namespace Low {
         // Function: deserialize_hierarchy
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(deserialize_hierarchy);
-        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
-        l_FunctionInfo.handleType = 0;
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = Entity::TYPE_ID;
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Node);
@@ -668,7 +658,7 @@ namespace Low {
       return l_Entity.duplicate(p_Name);
     }
 
-    void Entity::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Entity::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -679,14 +669,14 @@ namespace Low {
     }
 
     void Entity::serialize(Low::Util::Handle p_Handle,
-                           Low::Util::Yaml::Node &p_Node)
+                           Low::Util::Yaml::Node p_Node)
     {
       Entity l_Entity = p_Handle.get_id();
       l_Entity.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Entity::deserialize(Low::Util::Yaml::Node &p_Node,
+    Entity::deserialize(Low::Util::Yaml::Node p_Node,
                         Low::Util::Handle p_Creator)
     {
 
@@ -717,11 +707,11 @@ namespace Low {
 
       l_Region.add_entity(l_Entity);
 
-      Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
+      Util::Yaml::Node l_ComponentsNode = p_Node["components"];
 
       for (auto it = l_ComponentsNode.begin();
            it != l_ComponentsNode.end(); ++it) {
-        Util::Yaml::Node &i_ComponentNode = *it;
+        Util::Yaml::Node i_ComponentNode = *it;
         Util::RTTI::TypeInfo &i_TypeInfo =
             Util::Handle::get_type_info(
                 i_ComponentNode["type"].as<uint16_t>());
@@ -986,7 +976,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
     }
 
-    void Entity::serialize(Low::Util::Yaml::Node &p_Node,
+    void Entity::serialize(Low::Util::Yaml::Node p_Node,
                            bool p_AddHandles) const
     {
       Low::Util::HandleLock<Entity> l_Lock(get_id());
@@ -1022,7 +1012,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
     }
 
-    void Entity::serialize_hierarchy(Util::Yaml::Node &p_Node,
+    void Entity::serialize_hierarchy(Util::Yaml::Node p_Node,
                                      bool p_AddHandles) const
     {
       Low::Util::HandleLock<Entity> l_Lock(get_id());
@@ -1045,8 +1035,8 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_hierarchy
     }
 
-    Entity &Entity::deserialize_hierarchy(Util::Yaml::Node &p_Node,
-                                          Low::Util::Handle p_Creator)
+    Entity Entity::deserialize_hierarchy(Util::Yaml::Node p_Node,
+                                         Low::Util::Handle p_Creator)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy
 

@@ -37,17 +37,6 @@ namespace Low {
         Low::Util::List<Low::Util::Instances::Page *>
             Display::ms_Pages;
 
-        Display::Display() : Low::Util::Handle(0ull)
-        {
-        }
-        Display::Display(uint64_t p_Id) : Low::Util::Handle(p_Id)
-        {
-        }
-        Display::Display(Display &p_Copy)
-            : Low::Util::Handle(p_Copy.m_Id)
-        {
-        }
-
         Low::Util::Handle Display::_make(Low::Util::Handle p_Element)
         {
           Low::Core::UI::Element l_Element = p_Element.get_id();
@@ -80,25 +69,13 @@ namespace Low {
 
           Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
 
-          new (ACCESSOR_TYPE_SOA_PTR(
-              l_Handle, Display, pixel_position, Low::Math::Vector2))
-              Low::Math::Vector2();
           ACCESSOR_TYPE_SOA(l_Handle, Display, rotation, float) =
               0.0f;
-          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, pixel_scale,
-                                     Low::Math::Vector2))
-              Low::Math::Vector2();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, children,
                                      Low::Util::List<uint64_t>))
               Low::Util::List<uint64_t>();
-          new (ACCESSOR_TYPE_SOA_PTR(
-              l_Handle, Display, absolute_pixel_position,
-              Low::Math::Vector2)) Low::Math::Vector2();
           ACCESSOR_TYPE_SOA(l_Handle, Display, absolute_rotation,
                             float) = 0.0f;
-          new (ACCESSOR_TYPE_SOA_PTR(
-              l_Handle, Display, absolute_pixel_scale,
-              Low::Math::Vector2)) Low::Math::Vector2();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, world_matrix,
                                      Low::Math::Matrix4x4))
               Low::Math::Matrix4x4();
@@ -940,7 +917,7 @@ namespace Low {
           return l_Display.duplicate(l_Element);
         }
 
-        void Display::serialize(Low::Util::Yaml::Node &p_Node) const
+        void Display::serialize(Low::Util::Yaml::Node p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
@@ -960,14 +937,14 @@ namespace Low {
         }
 
         void Display::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
         {
           Display l_Display = p_Handle.get_id();
           l_Display.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Display::deserialize(Low::Util::Yaml::Node &p_Node,
+        Display::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -1061,7 +1038,7 @@ namespace Low {
           l_Display.notify(p_Observed, p_Observable);
         }
 
-        Low::Math::Vector2 &Display::pixel_position() const
+        Low::Math::Vector2 Display::pixel_position() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1093,7 +1070,7 @@ namespace Low {
           pixel_position(l_Value);
         }
 
-        void Display::pixel_position(Low::Math::Vector2 &p_Value)
+        void Display::pixel_position(Low::Math::Vector2 p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1155,7 +1132,7 @@ namespace Low {
           }
         }
 
-        Low::Math::Vector2 &Display::pixel_scale() const
+        Low::Math::Vector2 Display::pixel_scale() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1186,7 +1163,7 @@ namespace Low {
           pixel_scale(l_Value);
         }
 
-        void Display::pixel_scale(Low::Math::Vector2 &p_Value)
+        void Display::pixel_scale(Low::Math::Vector2 p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1351,7 +1328,7 @@ namespace Low {
                           Low::Util::List<uint64_t>);
         }
 
-        Low::Math::Vector2 &Display::get_absolute_pixel_position()
+        Low::Math::Vector2 Display::get_absolute_pixel_position()
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1386,7 +1363,7 @@ namespace Low {
         }
 
         void Display::set_absolute_pixel_position(
-            Low::Math::Vector2 &p_Value)
+            Low::Math::Vector2 p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1437,7 +1414,7 @@ namespace Low {
           broadcast_observable(N(absolute_rotation));
         }
 
-        Low::Math::Vector2 &Display::get_absolute_pixel_scale()
+        Low::Math::Vector2 Display::get_absolute_pixel_scale()
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1471,7 +1448,7 @@ namespace Low {
         }
 
         void
-        Display::set_absolute_pixel_scale(Low::Math::Vector2 &p_Value)
+        Display::set_absolute_pixel_scale(Low::Math::Vector2 p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1845,7 +1822,7 @@ namespace Low {
         }
 
         bool
-        Display::point_is_in_bounding_box(Low::Math::Vector2 &p_Point)
+        Display::point_is_in_bounding_box(Low::Math::Vector2 p_Point)
         {
           Low::Util::HandleLock<Display> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_point_is_in_bounding_box

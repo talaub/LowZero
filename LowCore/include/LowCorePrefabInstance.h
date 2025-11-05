@@ -50,10 +50,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        PrefabInstance();
-        PrefabInstance(uint64_t p_Id);
-        PrefabInstance(PrefabInstance &p_Copy);
-
         static PrefabInstance make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
         static PrefabInstance make(Low::Core::Entity p_Entity,
@@ -67,6 +63,23 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        PrefabInstance(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        PrefabInstance() : Low::Util::Handle()
+        {
+        }
+        PrefabInstance(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        PrefabInstance &operator=(const PrefabInstance &) = default;
+        PrefabInstance &
+        operator=(PrefabInstance &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -104,7 +117,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         PrefabInstance duplicate(Low::Core::Entity p_Entity) const;
         static PrefabInstance duplicate(PrefabInstance p_Handle,
@@ -114,9 +127,9 @@ namespace Low {
                    Low::Util::Handle p_Entity);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {

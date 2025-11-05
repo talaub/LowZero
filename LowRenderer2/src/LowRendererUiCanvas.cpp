@@ -30,17 +30,6 @@ namespace Low {
     Low::Util::List<UiCanvas> UiCanvas::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> UiCanvas::ms_Pages;
 
-    UiCanvas::UiCanvas() : Low::Util::Handle(0ull)
-    {
-    }
-    UiCanvas::UiCanvas(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    UiCanvas::UiCanvas(UiCanvas &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle UiCanvas::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -429,7 +418,7 @@ namespace Low {
       return l_UiCanvas.duplicate(p_Name);
     }
 
-    void UiCanvas::serialize(Low::Util::Yaml::Node &p_Node) const
+    void UiCanvas::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -441,14 +430,14 @@ namespace Low {
     }
 
     void UiCanvas::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
     {
       UiCanvas l_UiCanvas = p_Handle.get_id();
       l_UiCanvas.serialize(p_Node);
     }
 
     Low::Util::Handle
-    UiCanvas::deserialize(Low::Util::Yaml::Node &p_Node,
+    UiCanvas::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
     {
       UiCanvas l_Handle = UiCanvas::make(N(UiCanvas));

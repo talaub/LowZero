@@ -54,10 +54,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      Texture2D();
-      Texture2D(uint64_t p_Id);
-      Texture2D(Texture2D &p_Copy);
-
       static Texture2D make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
       explicit Texture2D(const Texture2D &p_Copy)
@@ -69,6 +65,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      Texture2D(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      Texture2D() : Low::Util::Handle()
+      {
+      }
+      Texture2D(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      Texture2D &operator=(const Texture2D &) = default;
+      Texture2D &operator=(Texture2D &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -106,7 +118,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       Texture2D duplicate(Low::Util::Name p_Name) const;
       static Texture2D duplicate(Texture2D p_Handle,
@@ -118,9 +130,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {

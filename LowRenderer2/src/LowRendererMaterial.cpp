@@ -46,17 +46,6 @@ namespace Low {
     Low::Util::List<Material> Material::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Material::ms_Pages;
 
-    Material::Material() : Low::Util::Handle(0ull)
-    {
-    }
-    Material::Material(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Material::Material(Material &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Material::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -901,7 +890,7 @@ namespace Low {
       return l_Material.duplicate(p_Name);
     }
 
-    void Material::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Material::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -916,12 +905,12 @@ namespace Low {
       Util::List<Util::Name> l_InputNames;
       get_material_type().fill_input_names(l_InputNames);
 
-      Util::Yaml::Node &l_PropertiesNode = p_Node["properties"];
+      Util::Yaml::Node l_PropertiesNode = p_Node["properties"];
 
       for (u32 i = 0; i < l_InputNames.size(); ++i) {
         Util::Name i_Name = l_InputNames[i];
         const char *i_NameC = i_Name.c_str();
-        Util::Yaml::Node &i_Node = l_PropertiesNode[i_NameC];
+        Util::Yaml::Node i_Node = l_PropertiesNode[i_NameC];
         MaterialTypeInputType i_Type =
             get_material_type().get_input_type(i_Name);
         switch (i_Type) {
@@ -960,14 +949,14 @@ namespace Low {
     }
 
     void Material::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
     {
       Material l_Material = p_Handle.get_id();
       l_Material.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Material::deserialize(Low::Util::Yaml::Node &p_Node,
+    Material::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -1008,7 +997,7 @@ namespace Low {
         for (u32 i = 0; i < l_InputNames.size(); ++i) {
           Util::Name i_Name = l_InputNames[i];
           const char *i_NameC = i_Name.c_str();
-          Util::Yaml::Node &i_Node = l_PropertiesNode[i_NameC];
+          Util::Yaml::Node i_Node = l_PropertiesNode[i_NameC];
           MaterialTypeInputType i_Type =
               l_Handle.get_material_type().get_input_type(i_Name);
           switch (i_Type) {
@@ -1467,7 +1456,7 @@ namespace Low {
     }
 
     void Material::set_property_vector4(Util::Name p_Name,
-                                        Math::Vector4 &p_Value)
+                                        Math::Vector4 p_Value)
     {
       Low::Util::HandleLock<Material> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property_vector4
@@ -1480,7 +1469,7 @@ namespace Low {
     }
 
     void Material::set_property_vector3(Util::Name p_Name,
-                                        Math::Vector3 &p_Value)
+                                        Math::Vector3 p_Value)
     {
       Low::Util::HandleLock<Material> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property_vector3
@@ -1493,7 +1482,7 @@ namespace Low {
     }
 
     void Material::set_property_vector2(Util::Name p_Name,
-                                        Math::Vector2 &p_Value)
+                                        Math::Vector2 p_Value)
     {
       Low::Util::HandleLock<Material> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_property_vector2
@@ -1593,7 +1582,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_property_texture
     }
 
-    Low::Math::Vector4 &
+    Low::Math::Vector4
     Material::get_property_vector4(Util::Name p_Name) const
     {
       Low::Util::HandleLock<Material> l_Lock(get_id());
@@ -1604,7 +1593,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_property_vector4
     }
 
-    Low::Math::Vector3 &
+    Low::Math::Vector3
     Material::get_property_vector3(Util::Name p_Name) const
     {
       Low::Util::HandleLock<Material> l_Lock(get_id());
@@ -1615,7 +1604,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_property_vector3
     }
 
-    Low::Math::Vector2 &
+    Low::Math::Vector2
     Material::get_property_vector2(Util::Name p_Name) const
     {
       Low::Util::HandleLock<Material> l_Lock(get_id());

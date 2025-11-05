@@ -65,10 +65,6 @@ namespace Low {
 
           const static uint16_t TYPE_ID;
 
-          Display();
-          Display(uint64_t p_Id);
-          Display(Display &p_Copy);
-
           static Display make(Low::Core::UI::Element p_Element);
           static Low::Util::Handle _make(Low::Util::Handle p_Element);
           static Display make(Low::Core::UI::Element p_Element,
@@ -82,6 +78,22 @@ namespace Low {
 
           static void initialize();
           static void cleanup();
+
+          Display(u64 p_Id) : Low::Util::Handle(p_Id)
+          {
+          }
+          Display() : Low::Util::Handle()
+          {
+          }
+          Display(Low::Util::Handle p_Handle)
+              : Low::Util::Handle(p_Handle.get_id())
+          {
+          }
+
+          using Handle::operator=;
+
+          Display &operator=(const Display &) = default;
+          Display &operator=(Display &&) noexcept = default;
 
           static uint32_t living_count()
           {
@@ -120,7 +132,7 @@ namespace Low {
 
           static uint32_t get_capacity();
 
-          void serialize(Low::Util::Yaml::Node &p_Node) const;
+          void serialize(Low::Util::Yaml::Node p_Node) const;
 
           Display duplicate(Low::Core::UI::Element p_Entity) const;
           static Display duplicate(Display p_Handle,
@@ -130,9 +142,9 @@ namespace Low {
                      Low::Util::Handle p_Element);
 
           static void serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node);
+                                Low::Util::Yaml::Node p_Node);
           static Low::Util::Handle
-          deserialize(Low::Util::Yaml::Node &p_Node,
+          deserialize(Low::Util::Yaml::Node p_Node,
                       Low::Util::Handle p_Creator);
           static bool is_alive(Low::Util::Handle p_Handle)
           {
@@ -147,8 +159,8 @@ namespace Low {
             l_Display.destroy();
           }
 
-          Low::Math::Vector2 &pixel_position() const;
-          void pixel_position(Low::Math::Vector2 &p_Value);
+          Low::Math::Vector2 pixel_position() const;
+          void pixel_position(Low::Math::Vector2 p_Value);
           void pixel_position(float p_X, float p_Y);
           void pixel_position_x(float p_Value);
           void pixel_position_y(float p_Value);
@@ -156,8 +168,8 @@ namespace Low {
           float rotation() const;
           void rotation(float p_Value);
 
-          Low::Math::Vector2 &pixel_scale() const;
-          void pixel_scale(Low::Math::Vector2 &p_Value);
+          Low::Math::Vector2 pixel_scale() const;
+          void pixel_scale(Low::Math::Vector2 p_Value);
           void pixel_scale(float p_X, float p_Y);
           void pixel_scale_x(float p_Value);
           void pixel_scale_y(float p_Value);
@@ -172,11 +184,11 @@ namespace Low {
 
           Low::Util::List<uint64_t> &get_children() const;
 
-          Low::Math::Vector2 &get_absolute_pixel_position();
+          Low::Math::Vector2 get_absolute_pixel_position();
 
           float get_absolute_rotation();
 
-          Low::Math::Vector2 &get_absolute_pixel_scale();
+          Low::Math::Vector2 get_absolute_pixel_scale();
 
           uint32_t get_absolute_layer();
 
@@ -203,7 +215,7 @@ namespace Low {
 
           void recalculate_world_transform();
           float get_absolute_layer_float();
-          bool point_is_in_bounding_box(Low::Math::Vector2 &p_Point);
+          bool point_is_in_bounding_box(Low::Math::Vector2 p_Point);
           static bool get_page_for_index(const u32 p_Index,
                                          u32 &p_PageIndex,
                                          u32 &p_SlotIndex);
@@ -217,12 +229,12 @@ namespace Low {
           static u32 create_page();
           void set_parent_uid(uint64_t p_Value);
           void
-          set_absolute_pixel_position(Low::Math::Vector2 &p_Value);
+          set_absolute_pixel_position(Low::Math::Vector2 p_Value);
           void set_absolute_pixel_position(float p_X, float p_Y);
           void set_absolute_pixel_position_x(float p_Value);
           void set_absolute_pixel_position_y(float p_Value);
           void set_absolute_rotation(float p_Value);
-          void set_absolute_pixel_scale(Low::Math::Vector2 &p_Value);
+          void set_absolute_pixel_scale(Low::Math::Vector2 p_Value);
           void set_absolute_pixel_scale(float p_X, float p_Y);
           void set_absolute_pixel_scale_x(float p_Value);
           void set_absolute_pixel_scale_y(float p_Value);

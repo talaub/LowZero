@@ -34,17 +34,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         DrawCommand::ms_Pages;
 
-    DrawCommand::DrawCommand() : Low::Util::Handle(0ull)
-    {
-    }
-    DrawCommand::DrawCommand(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    DrawCommand::DrawCommand(DrawCommand &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle DrawCommand::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -664,7 +653,7 @@ namespace Low {
       return l_DrawCommand.duplicate(p_Name);
     }
 
-    void DrawCommand::serialize(Low::Util::Yaml::Node &p_Node) const
+    void DrawCommand::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -673,14 +662,14 @@ namespace Low {
     }
 
     void DrawCommand::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
     {
       DrawCommand l_DrawCommand = p_Handle.get_id();
       l_DrawCommand.serialize(p_Node);
     }
 
     Low::Util::Handle
-    DrawCommand::deserialize(Low::Util::Yaml::Node &p_Node,
+    DrawCommand::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
     {
 

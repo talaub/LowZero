@@ -54,10 +54,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        Context();
-        Context(uint64_t p_Id);
-        Context(Context &p_Copy);
-
       private:
         static Context make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -72,6 +68,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        Context(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        Context() : Low::Util::Handle()
+        {
+        }
+        Context(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        Context &operator=(const Context &) = default;
+        Context &operator=(Context &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -109,7 +121,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         Context duplicate(Low::Util::Name p_Name) const;
         static Context duplicate(Context p_Handle,
@@ -123,9 +135,9 @@ namespace Low {
         _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -161,7 +173,7 @@ namespace Low {
         uint8_t get_current_frame_index();
         uint8_t get_current_image_index();
         Renderpass get_current_renderpass();
-        Math::UVector2 &get_dimensions();
+        Math::UVector2 get_dimensions();
         uint8_t get_image_format();
         Window &get_window();
         uint8_t get_state();

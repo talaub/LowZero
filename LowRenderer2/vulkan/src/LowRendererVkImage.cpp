@@ -31,16 +31,6 @@ namespace Low {
       Low::Util::List<Image> Image::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> Image::ms_Pages;
 
-      Image::Image() : Low::Util::Handle(0ull)
-      {
-      }
-      Image::Image(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      Image::Image(Image &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle Image::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -410,7 +400,7 @@ namespace Low {
         return l_Image.duplicate(p_Name);
       }
 
-      void Image::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Image::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -422,14 +412,14 @@ namespace Low {
       }
 
       void Image::serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node)
+                            Low::Util::Yaml::Node p_Node)
       {
         Image l_Image = p_Handle.get_id();
         l_Image.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Image::deserialize(Low::Util::Yaml::Node &p_Node,
+      Image::deserialize(Low::Util::Yaml::Node p_Node,
                          Low::Util::Handle p_Creator)
       {
         Image l_Handle = Image::make(N(Image));

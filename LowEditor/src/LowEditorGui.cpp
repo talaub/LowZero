@@ -14,7 +14,6 @@
 #include "LowEditorIcons.h"
 
 #include <algorithm>
-#include <nfd.h>
 
 #define DRAG_BUTTON_WIDTH 27.0f
 
@@ -304,20 +303,6 @@ namespace Low {
 
       Util::String FileExplorer()
       {
-        nfdchar_t *outPath = NULL;
-        nfdresult_t result = NFD_OpenDialog(NULL, NULL, &outPath);
-
-        if (result == NFD_OKAY) {
-          Util::String l_Output = outPath;
-          free(outPath);
-
-          return l_Output;
-        } else if (result == NFD_CANCEL) {
-        } else {
-          LOW_LOG_ERROR << "File explorer encountered an error: "
-                        << NFD_GetError() << LOW_LOG_END;
-        }
-
         return "";
       }
 

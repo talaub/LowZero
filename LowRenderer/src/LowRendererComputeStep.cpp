@@ -33,17 +33,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         ComputeStep::ms_Pages;
 
-    ComputeStep::ComputeStep() : Low::Util::Handle(0ull)
-    {
-    }
-    ComputeStep::ComputeStep(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    ComputeStep::ComputeStep(ComputeStep &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle ComputeStep::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -746,7 +735,7 @@ namespace Low {
       return l_ComputeStep.duplicate(p_Name);
     }
 
-    void ComputeStep::serialize(Low::Util::Yaml::Node &p_Node) const
+    void ComputeStep::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -767,14 +756,14 @@ namespace Low {
     }
 
     void ComputeStep::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
     {
       ComputeStep l_ComputeStep = p_Handle.get_id();
       l_ComputeStep.serialize(p_Node);
     }
 
     Low::Util::Handle
-    ComputeStep::deserialize(Low::Util::Yaml::Node &p_Node,
+    ComputeStep::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
     {
       ComputeStep l_Handle = ComputeStep::make(N(ComputeStep));

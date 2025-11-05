@@ -30,16 +30,6 @@ namespace Low {
     Low::Util::List<Model> Model::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Model::ms_Pages;
 
-    Model::Model() : Low::Util::Handle(0ull)
-    {
-    }
-    Model::Model(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Model::Model(Model &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Model::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -560,7 +550,7 @@ namespace Low {
       return l_Model.duplicate(p_Name);
     }
 
-    void Model::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Model::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -592,15 +582,14 @@ namespace Low {
     }
 
     void Model::serialize(Low::Util::Handle p_Handle,
-                          Low::Util::Yaml::Node &p_Node)
+                          Low::Util::Yaml::Node p_Node)
     {
       Model l_Model = p_Handle.get_id();
       l_Model.serialize(p_Node);
     }
 
-    Low::Util::Handle
-    Model::deserialize(Low::Util::Yaml::Node &p_Node,
-                       Low::Util::Handle p_Creator)
+    Low::Util::Handle Model::deserialize(Low::Util::Yaml::Node p_Node,
+                                         Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
       if (p_Node["unique_id"]) {

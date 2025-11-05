@@ -28,7 +28,7 @@
 #include "Flode.h"
 #include "FlodeEditor.h"
 #include "FlodeMathNodes.h"
-#include "FlodeSyntaxNodes.h"
+#include "FLodeSyntaxNodes.h"
 #include "FlodeDebugNodes.h"
 #include "FlodeCastNodes.h"
 #include "FlodeHandleNodes.h"
@@ -149,7 +149,7 @@ namespace Low {
       }
 
       LOW_ASSERT(false, "Could not find enum metadata");
-      return EnumMetadata();
+      return g_EnumMetadata[0];
     }
 
     EnumMetadata &get_enum_metadata(Util::Name p_EnumTypeName)
@@ -161,7 +161,7 @@ namespace Low {
       }
 
       LOW_ASSERT(false, "Could not find enum metadata");
-      return EnumMetadata();
+      return g_EnumMetadata[0];
     }
 
     Util::Map<u16, TypeMetadata> &get_type_metadata()
@@ -300,7 +300,7 @@ namespace Low {
 
     static void
     parse_editor_type_metadata(TypeEditorMetadata &p_Metadata,
-                               Util::Yaml::Node &p_Node)
+                               Util::Yaml::Node p_Node)
     {
       p_Metadata.manager = false;
       if (p_Node["manager"]) {
@@ -323,7 +323,7 @@ namespace Low {
     }
 
     static void parse_property_metadata(PropertyMetadata &p_Metadata,
-                                        Util::Yaml::Node &p_Node)
+                                        Util::Yaml::Node p_Node)
     {
       if (p_Node["multiline"]) {
         p_Metadata.multiline = p_Node["multiline"].as<bool>();
@@ -536,7 +536,7 @@ namespace Low {
               int i = 0;
               for (auto pit = it->second[l_ParametersName].begin();
                    pit != it->second[l_ParametersName].end(); ++pit) {
-                Util::Yaml::Node &i_ParamNode = *pit;
+                Util::Yaml::Node i_ParamNode = *pit;
 
                 ParameterMetadata i_Param;
                 i_Param.name = LOW_YAML_AS_NAME(i_ParamNode["name"]);
@@ -570,7 +570,7 @@ namespace Low {
       int i = 0;
       for (auto it = p_Node["namespace"].begin();
            it != p_Node["namespace"].end(); ++it) {
-        Util::Yaml::Node &i_Node = *it;
+        Util::Yaml::Node i_Node = *it;
 
         Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
         l_Namespaces.push_back(i_Namespace);
@@ -620,8 +620,8 @@ namespace Low {
     }
 
     static inline void
-    parse_enum_metadata(Util::Yaml::Node &p_Node,
-                        Util::Yaml::Node &p_EnumIdsNode)
+    parse_enum_metadata(Util::Yaml::Node p_Node,
+                        Util::Yaml::Node p_EnumIdsNode)
     {
       Util::String l_ModuleString =
           LOW_YAML_AS_STRING(p_Node["module"]);
@@ -631,7 +631,7 @@ namespace Low {
       int i = 0;
       for (auto it = p_Node["namespace"].begin();
            it != p_Node["namespace"].end(); ++it) {
-        Util::Yaml::Node &i_Node = *it;
+        Util::Yaml::Node i_Node = *it;
 
         Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
         l_Namespaces.push_back(i_Namespace);
@@ -669,7 +669,7 @@ namespace Low {
 
         for (auto oit = it->second["options"].begin();
              oit != it->second["options"].end(); ++oit) {
-          Util::Yaml::Node &i_Node = *oit;
+          Util::Yaml::Node i_Node = *oit;
 
           EnumEntryMetadata i_Entry;
           i_Entry.name = LOW_YAML_AS_NAME(i_Node["name"]);
@@ -890,10 +890,10 @@ namespace Low {
       l_NameString += " Clone";
       l_Node["name"] = l_NameString.c_str();
 
-      Util::Yaml::Node &l_ComponentsNode = l_Node["components"];
+      Util::Yaml::Node l_ComponentsNode = l_Node["components"];
       for (auto it = l_ComponentsNode.begin();
            it != l_ComponentsNode.end(); ++it) {
-        Util::Yaml::Node &i_ComponentNode = *it;
+        Util::Yaml::Node i_ComponentNode = *it;
         i_ComponentNode["properties"].remove("unique_id");
       }
 

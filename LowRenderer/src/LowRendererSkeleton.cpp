@@ -32,17 +32,6 @@ namespace Low {
     Low::Util::List<Skeleton> Skeleton::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Skeleton::ms_Pages;
 
-    Skeleton::Skeleton() : Low::Util::Handle(0ull)
-    {
-    }
-    Skeleton::Skeleton(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Skeleton::Skeleton(Skeleton &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Skeleton::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -437,7 +426,7 @@ namespace Low {
       return l_Skeleton.duplicate(p_Name);
     }
 
-    void Skeleton::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Skeleton::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -450,14 +439,14 @@ namespace Low {
     }
 
     void Skeleton::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
     {
       Skeleton l_Skeleton = p_Handle.get_id();
       l_Skeleton.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Skeleton::deserialize(Low::Util::Yaml::Node &p_Node,
+    Skeleton::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
     {
       Skeleton l_Handle = Skeleton::make(N(Skeleton));

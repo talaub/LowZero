@@ -1,4 +1,4 @@
-const g_FullProjectPath = "P:/misteda";
+const g_FullProjectPath = "/home/mino/projects/LowEngine/misteda";
 
 const { assert } = require("console");
 const fs = require("fs");

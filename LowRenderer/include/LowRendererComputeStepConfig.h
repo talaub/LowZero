@@ -58,10 +58,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      ComputeStepConfig();
-      ComputeStepConfig(uint64_t p_Id);
-      ComputeStepConfig(ComputeStepConfig &p_Copy);
-
       static ComputeStepConfig make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
       explicit ComputeStepConfig(const ComputeStepConfig &p_Copy)
@@ -73,6 +69,24 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      ComputeStepConfig(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      ComputeStepConfig() : Low::Util::Handle()
+      {
+      }
+      ComputeStepConfig(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      ComputeStepConfig &
+      operator=(const ComputeStepConfig &) = default;
+      ComputeStepConfig &
+      operator=(ComputeStepConfig &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -110,7 +124,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       ComputeStepConfig duplicate(Low::Util::Name p_Name) const;
       static ComputeStepConfig duplicate(ComputeStepConfig p_Handle,
@@ -122,9 +136,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -153,7 +167,7 @@ namespace Low {
       void set_name(Low::Util::Name p_Value);
 
       static ComputeStepConfig make(Util::Name p_Name,
-                                    Util::Yaml::Node &p_Node);
+                                    Util::Yaml::Node p_Node);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

@@ -6,13 +6,16 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE INCLUDES "include/*.h")
 
 add_library(LowUtil SHARED
-  "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/microprofile/microprofile.cpp"
   ${SOURCES}
   ${INCLUDES}
 )
 
+set_target_properties(LowUtil PROPERTIES
+  CXX_VISIBILITY_PRESET hidden
+  VISIBILITY_INLINES_HIDDEN YES
+)
+
 set(LOWUTIL_INCLUDE_DIRS
-  "${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/microprofile"
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
@@ -28,16 +31,6 @@ add_dependencies(LowUtil
 
 MESSAGE("LOWUTILBUILD: ${CMAKE_CURRENT_BINARY_DIR}")
 
-#option(MICROPROFILE_USE_CONFIG_FILE "Use user provided configuration in microprofile.config.h file." OFF)
-
-#set(MICROPROFILE_EXPORT_FILENAME microprofile.export.h)
-#set(MICROPROFILE_CONFIG_HEADER ${PROJECT_SOURCE_DIR}/microprofile.config.h)
-#set(MICROPROFILE_PUBLIC_HEADERS
-	#${PROJECT_SOURCE_DIR}/microprofile.h
-	#${CMAKE_CURRENT_BINARY_DIR}/${MICROPROFILE_EXPORT_FILENAME}
-#)
-
-#set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 set_target_properties(LowUtil PROPERTIES OUTPUT_NAME "lowutil")
 
@@ -48,13 +41,36 @@ target_compile_definitions(LowUtil PRIVATE
   lowutil_EXPORTS
 )
 
-target_compile_definitions(LowUtil PUBLIC
-MICROPROFILE_EXPORT
-)
-
 target_link_libraries(LowUtil PRIVATE
   assimp
 )
+
+function(mark_includes_as_system consumer thirdparty)
+  if (NOT TARGET "${consumer}" OR NOT TARGET "${thirdparty}")
+    return()
+  endif()
+
+  # Some libs are ALIAS (e.g., assimp::assimp); resolve to real target
+  get_target_property(_aliased "${thirdparty}" ALIASED_TARGET)
+  if (_aliased)
+    set(thirdparty "${_aliased}")
+  endif()
+
+  # Copy both INTERFACE include props if present
+  get_target_property(_iface "${thirdparty}" INTERFACE_INCLUDE_DIRECTORIES)
+  if (_iface)
+    target_include_directories("${consumer}" SYSTEM PUBLIC ${_iface})
+  endif()
+
+  # CMake 3.25+: INTERFACE_SYSTEM_INCLUDE_DIRECTORIES (if the lib already flagged them)
+  get_target_property(_iface_sys "${thirdparty}" INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
+  if (_iface_sys)
+    target_include_directories("${consumer}" SYSTEM PUBLIC ${_iface_sys})
+  endif()
+endfunction()
+
+mark_includes_as_system(LowUtil assimp)
+
 
 target_link_libraries(LowUtil PUBLIC
   SDL2
@@ -65,8 +81,11 @@ target_link_libraries(LowUtil PUBLIC
   LowMath
 )
 
+mark_includes_as_system(LowUtil EASTL)
+mark_includes_as_system(LowUtil gli)
+mark_includes_as_system(LowUtil yaml-cpp)
+
 target_include_directories(LowUtil PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/microprofile>
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>
 )
@@ -80,8 +99,6 @@ endif()
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_11)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${MICROPROFILE_PUBLIC_HEADERS}")
-
 
 find_package(PkgConfig QUIET)
 if (PKG_CONFIG_FOUND)
@@ -89,5 +106,4 @@ if (PKG_CONFIG_FOUND)
 endif()
 if (stb_FOUND)
 	target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::stb)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE MICROPROFILE_SYSTEM_STB)
 endif()

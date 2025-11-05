@@ -32,16 +32,6 @@ namespace Low {
     Low::Util::List<Texture> Texture::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> Texture::ms_Pages;
 
-    Texture::Texture() : Low::Util::Handle(0ull)
-    {
-    }
-    Texture::Texture(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    Texture::Texture(Texture &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle Texture::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -598,7 +588,7 @@ namespace Low {
       return l_Texture.duplicate(p_Name);
     }
 
-    void Texture::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Texture::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -624,14 +614,14 @@ namespace Low {
     }
 
     void Texture::serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node)
+                            Low::Util::Yaml::Node p_Node)
     {
       Texture l_Texture = p_Handle.get_id();
       l_Texture.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Texture::deserialize(Low::Util::Yaml::Node &p_Node,
+    Texture::deserialize(Low::Util::Yaml::Node p_Node,
                          Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;

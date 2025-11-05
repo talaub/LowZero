@@ -47,10 +47,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      EditorImage();
-      EditorImage(uint64_t p_Id);
-      EditorImage(EditorImage &p_Copy);
-
       static EditorImage make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
       explicit EditorImage(const EditorImage &p_Copy)
@@ -62,6 +58,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      EditorImage(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      EditorImage() : Low::Util::Handle()
+      {
+      }
+      EditorImage(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      EditorImage &operator=(const EditorImage &) = default;
+      EditorImage &operator=(EditorImage &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -99,7 +111,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       EditorImage duplicate(Low::Util::Name p_Name) const;
       static EditorImage duplicate(EditorImage p_Handle,
@@ -111,9 +123,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -128,8 +140,8 @@ namespace Low {
         l_EditorImage.destroy();
       }
 
-      Low::Util::String &get_path() const;
-      void set_path(Low::Util::String &p_Value);
+      Low::Util::String get_path() const;
+      void set_path(Low::Util::String p_Value);
       void set_path(const char *p_Value);
 
       Low::Renderer::EditorImageGpu get_gpu() const;

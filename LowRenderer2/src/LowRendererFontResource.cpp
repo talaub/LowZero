@@ -31,18 +31,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         FontResource::ms_Pages;
 
-    FontResource::FontResource() : Low::Util::Handle(0ull)
-    {
-    }
-    FontResource::FontResource(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    FontResource::FontResource(FontResource &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle FontResource::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -66,14 +54,6 @@ namespace Low {
 
       Low::Util::HandleLock<FontResource> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, FontResource, path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, FontResource, font_path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, FontResource, sidecar_path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, FontResource, source_file,
-                                 Util::String)) Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, FontResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -553,7 +533,7 @@ namespace Low {
       return l_FontResource.duplicate(p_Name);
     }
 
-    void FontResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    void FontResource::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -562,14 +542,14 @@ namespace Low {
     }
 
     void FontResource::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Yaml::Node p_Node)
     {
       FontResource l_FontResource = p_Handle.get_id();
       l_FontResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    FontResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    FontResource::deserialize(Low::Util::Yaml::Node p_Node,
                               Low::Util::Handle p_Creator)
     {
 
@@ -626,7 +606,7 @@ namespace Low {
       l_FontResource.notify(p_Observed, p_Observable);
     }
 
-    Util::String &FontResource::get_path() const
+    Util::String FontResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -642,7 +622,7 @@ namespace Low {
       set_path(l_Val);
     }
 
-    void FontResource::set_path(Util::String &p_Value)
+    void FontResource::set_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -659,7 +639,7 @@ namespace Low {
       broadcast_observable(N(path));
     }
 
-    Util::String &FontResource::get_font_path() const
+    Util::String FontResource::get_font_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -675,7 +655,7 @@ namespace Low {
       set_font_path(l_Val);
     }
 
-    void FontResource::set_font_path(Util::String &p_Value)
+    void FontResource::set_font_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -692,7 +672,7 @@ namespace Low {
       broadcast_observable(N(font_path));
     }
 
-    Util::String &FontResource::get_sidecar_path() const
+    Util::String FontResource::get_sidecar_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -708,7 +688,7 @@ namespace Low {
       set_sidecar_path(l_Val);
     }
 
-    void FontResource::set_sidecar_path(Util::String &p_Value)
+    void FontResource::set_sidecar_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -725,7 +705,7 @@ namespace Low {
       broadcast_observable(N(sidecar_path));
     }
 
-    Util::String &FontResource::get_source_file() const
+    Util::String FontResource::get_source_file() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -741,7 +721,7 @@ namespace Low {
       set_source_file(l_Val);
     }
 
-    void FontResource::set_source_file(Util::String &p_Value)
+    void FontResource::set_source_file(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<FontResource> l_Lock(get_id());
@@ -839,7 +819,7 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    FontResource FontResource::make(Util::String &p_Path)
+    FontResource FontResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       for (auto it = ms_LivingInstances.begin();

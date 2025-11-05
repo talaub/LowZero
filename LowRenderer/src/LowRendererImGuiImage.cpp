@@ -34,17 +34,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           ImGuiImage::ms_Pages;
 
-      ImGuiImage::ImGuiImage() : Low::Util::Handle(0ull)
-      {
-      }
-      ImGuiImage::ImGuiImage(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      ImGuiImage::ImGuiImage(ImGuiImage &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle ImGuiImage::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -454,7 +443,7 @@ namespace Low {
         return l_ImGuiImage.duplicate(p_Name);
       }
 
-      void ImGuiImage::serialize(Low::Util::Yaml::Node &p_Node) const
+      void ImGuiImage::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -469,14 +458,14 @@ namespace Low {
       }
 
       void ImGuiImage::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Yaml::Node p_Node)
       {
         ImGuiImage l_ImGuiImage = p_Handle.get_id();
         l_ImGuiImage.serialize(p_Node);
       }
 
       Low::Util::Handle
-      ImGuiImage::deserialize(Low::Util::Yaml::Node &p_Node,
+      ImGuiImage::deserialize(Low::Util::Yaml::Node p_Node,
                               Low::Util::Handle p_Creator)
       {
         ImGuiImage l_Handle = ImGuiImage::make(N(ImGuiImage));
@@ -635,7 +624,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }
 
-      void ImGuiImage::render(Math::UVector2 &p_Dimensions)
+      void ImGuiImage::render(Math::UVector2 p_Dimensions)
       {
         Low::Util::HandleLock<ImGuiImage> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_render

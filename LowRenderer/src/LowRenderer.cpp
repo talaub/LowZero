@@ -38,7 +38,6 @@
 
 #include <stdint.h>
 
-#include "microprofile.h"
 #include "vulkan/vulkan_core.h"
 
 #define LOW_RENDERER_MAX_POSE_BONES 512
@@ -1406,7 +1405,6 @@ namespace Low {
 
     void late_tick(float p_Delta, Util::EngineState p_State)
     {
-      MICROPROFILE_SCOPEI("Renderer", "LATETICK", MP_GREEN);
       if (g_Context.get_state() != Backend::ContextState::SUCCESS) {
         ImGui::EndFrame();
         ImGui::UpdatePlatformWindows();

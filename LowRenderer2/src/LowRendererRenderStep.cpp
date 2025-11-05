@@ -32,17 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         RenderStep::ms_Pages;
 
-    RenderStep::RenderStep() : Low::Util::Handle(0ull)
-    {
-    }
-    RenderStep::RenderStep(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    RenderStep::RenderStep(RenderStep &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle RenderStep::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -675,7 +664,7 @@ namespace Low {
       return l_RenderStep.duplicate(p_Name);
     }
 
-    void RenderStep::serialize(Low::Util::Yaml::Node &p_Node) const
+    void RenderStep::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -686,14 +675,14 @@ namespace Low {
     }
 
     void RenderStep::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Yaml::Node p_Node)
     {
       RenderStep l_RenderStep = p_Handle.get_id();
       l_RenderStep.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderStep::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderStep::deserialize(Low::Util::Yaml::Node p_Node,
                             Low::Util::Handle p_Creator)
     {
       RenderStep l_Handle = RenderStep::make(N(RenderStep));
@@ -1003,7 +992,7 @@ namespace Low {
     }
 
     bool RenderStep::update_resolution(
-        Low::Math::UVector2 &p_NewDimensions,
+        Low::Math::UVector2 p_NewDimensions,
         Low::Renderer::RenderView p_RenderView)
     {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());

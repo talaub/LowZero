@@ -38,18 +38,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         GraphicsStepConfig::ms_Pages;
 
-    GraphicsStepConfig::GraphicsStepConfig() : Low::Util::Handle(0ull)
-    {
-    }
-    GraphicsStepConfig::GraphicsStepConfig(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    GraphicsStepConfig::GraphicsStepConfig(GraphicsStepConfig &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle
     GraphicsStepConfig::_make(Low::Util::Name p_Name)
     {
@@ -93,9 +81,6 @@ namespace Low {
           l_Handle, GraphicsStepConfig, rendertargets,
           Util::List<PipelineResourceBindingConfig>))
           Util::List<PipelineResourceBindingConfig>();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GraphicsStepConfig,
-                                 rendertargets_clearcolor,
-                                 Math::Color)) Math::Color();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GraphicsStepConfig,
                                  depth_rendertarget,
                                  PipelineResourceBindingConfig))
@@ -872,7 +857,7 @@ namespace Low {
     }
 
     void
-    GraphicsStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
+    GraphicsStepConfig::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -893,14 +878,14 @@ namespace Low {
     }
 
     void GraphicsStepConfig::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node &p_Node)
+                                       Low::Util::Yaml::Node p_Node)
     {
       GraphicsStepConfig l_GraphicsStepConfig = p_Handle.get_id();
       l_GraphicsStepConfig.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GraphicsStepConfig::deserialize(Low::Util::Yaml::Node &p_Node,
+    GraphicsStepConfig::deserialize(Low::Util::Yaml::Node p_Node,
                                     Low::Util::Handle p_Creator)
     {
       GraphicsStepConfig l_Handle =
@@ -1109,7 +1094,7 @@ namespace Low {
                       Util::List<PipelineResourceBindingConfig>);
     }
 
-    Math::Color &
+    Math::Color
     GraphicsStepConfig::get_rendertargets_clearcolor() const
     {
       _LOW_ASSERT(is_alive());
@@ -1123,7 +1108,7 @@ namespace Low {
                       Math::Color);
     }
     void GraphicsStepConfig::set_rendertargets_clearcolor(
-        Math::Color &p_Value)
+        Math::Color p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<GraphicsStepConfig> l_Lock(get_id());
@@ -1416,7 +1401,7 @@ namespace Low {
 
     GraphicsStepConfig
     GraphicsStepConfig::make(Util::Name p_Name,
-                             Util::Yaml::Node &p_Node)
+                             Util::Yaml::Node p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 
@@ -1488,7 +1473,7 @@ namespace Low {
       }
 
       if (!l_IsFullscreenTriangle) {
-        Util::Yaml::Node &l_PipelinesNode = p_Node["pipelines"];
+        Util::Yaml::Node l_PipelinesNode = p_Node["pipelines"];
         for (auto it = l_PipelinesNode.begin();
              it != l_PipelinesNode.end(); ++it) {
           Util::Name i_PipelineName = LOW_YAML_AS_NAME((*it)["name"]);
@@ -1525,7 +1510,7 @@ namespace Low {
       Util::String l_ContextPrefix = "context:";
       Util::String l_RenderFlowPrefix = "renderflow:";
 
-      Util::Yaml::Node &l_RenderTargetsNode = p_Node["rendertargets"];
+      Util::Yaml::Node l_RenderTargetsNode = p_Node["rendertargets"];
       for (auto it = l_RenderTargetsNode.begin();
            it != l_RenderTargetsNode.end(); ++it) {
         Util::String i_TargetString = LOW_YAML_AS_STRING((*it));

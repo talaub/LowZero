@@ -7,6 +7,7 @@
 #include <chrono>
 #include <type_traits>
 
+#include "LowMath.h"
 #include "LowUtilName.h"
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
@@ -179,8 +180,8 @@ namespace Low {
         Map<Name, FunctionInfo> functions;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
-        void (*serialize)(Handle, Yaml::Node &);
-        Handle (*deserialize)(Yaml::Node &, Handle);
+        void (*serialize)(Handle, Yaml::Node);
+        Handle (*deserialize)(Yaml::Node, Handle);
         Handle (*duplicate_default)(Handle, Name);
         Handle (*duplicate_component)(Handle, Handle);
         Handle (*make_default)(Name);
@@ -226,13 +227,29 @@ namespace Low {
       };
 
       Handle();
-      Handle(uint64_t p_Id);
+      Handle(u64 p_Id);
 
       bool operator==(const Handle &p_Other) const;
       bool operator!=(const Handle &p_Other) const;
       bool operator<(const Handle &p_Other) const;
 
-      operator uint64_t() const;
+      Handle &operator=(u64 p_Id)
+      {
+        m_Id = p_Id;
+        return *this;
+      }
+
+      // copy/move (keep defaults)
+      Handle(const Handle &) = default;
+      Handle(Handle &&) noexcept = default;
+      Handle &operator=(const Handle &) = default;
+      Handle &operator=(Handle &&) noexcept = default;
+
+      // implicit conversion to u64
+      constexpr operator u64() const noexcept
+      {
+        return m_Id;
+      }
 
       uint64_t get_id() const;
 

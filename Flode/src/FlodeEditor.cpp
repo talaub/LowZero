@@ -696,7 +696,7 @@ namespace Flode {
         if (l_Clipboard.IsDefined() && l_Clipboard["nodes"]) {
           for (auto it = l_Clipboard["nodes"].begin();
                it != l_Clipboard["nodes"].end(); ++it) {
-            Low::Util::Yaml::Node &i_Yaml = *it;
+            Low::Util::Yaml::Node i_Yaml = *it;
             Node *i_Node = nullptr;
             m_Graph->m_IdCounter += m_Graph->deserialize_node(
                 i_Yaml, &i_Node, m_Graph->m_IdCounter, false);
@@ -730,7 +730,7 @@ namespace Flode {
 
           for (auto it = l_Clipboard["nodes"].begin();
                it != l_Clipboard["nodes"].end(); ++it) {
-            Low::Util::Yaml::Node &i_Yaml = *it;
+            Low::Util::Yaml::Node i_Yaml = *it;
             if (!i_Yaml["_created_node_id"]) {
               continue;
             }
@@ -755,7 +755,7 @@ namespace Flode {
           if (l_Clipboard["links"]) {
             for (auto it = l_Clipboard["links"].begin();
                  it != l_Clipboard["links"].end(); ++it) {
-              Low::Util::Yaml::Node &i_Yaml = *it;
+              Low::Util::Yaml::Node i_Yaml = *it;
               u64 i_OldInputPinId = i_Yaml["inputpinid"].as<u64>();
               u64 i_OldOutputPinId = i_Yaml["outputpinid"].as<u64>();
 

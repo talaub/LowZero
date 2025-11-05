@@ -31,18 +31,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         ModelResource::ms_Pages;
 
-    ModelResource::ModelResource() : Low::Util::Handle(0ull)
-    {
-    }
-    ModelResource::ModelResource(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    ModelResource::ModelResource(ModelResource &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle ModelResource::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -66,8 +54,6 @@ namespace Low {
 
       Low::Util::HandleLock<ModelResource> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ModelResource, path,
-                                 Util::String)) Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, ModelResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -403,7 +389,7 @@ namespace Low {
       return l_ModelResource.duplicate(p_Name);
     }
 
-    void ModelResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    void ModelResource::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -415,14 +401,14 @@ namespace Low {
     }
 
     void ModelResource::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node &p_Node)
+                                  Low::Util::Yaml::Node p_Node)
     {
       ModelResource l_ModelResource = p_Handle.get_id();
       l_ModelResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    ModelResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    ModelResource::deserialize(Low::Util::Yaml::Node p_Node,
                                Low::Util::Handle p_Creator)
     {
       ModelResource l_Handle = ModelResource::make(N(ModelResource));
@@ -487,7 +473,7 @@ namespace Low {
       l_ModelResource.notify(p_Observed, p_Observable);
     }
 
-    Util::String &ModelResource::get_path() const
+    Util::String ModelResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<ModelResource> l_Lock(get_id());
@@ -503,7 +489,7 @@ namespace Low {
       set_path(l_Val);
     }
 
-    void ModelResource::set_path(Util::String &p_Value)
+    void ModelResource::set_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<ModelResource> l_Lock(get_id());
@@ -547,7 +533,7 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    ModelResource ModelResource::make(Util::String &p_Path)
+    ModelResource ModelResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       for (auto it = ms_LivingInstances.begin();
@@ -567,7 +553,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
     }
 
-    ModelResource ModelResource::find_by_path(Util::String &p_Path)
+    ModelResource ModelResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
       for (auto it = ms_LivingInstances.begin();

@@ -48,10 +48,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        GraphicsPipeline();
-        GraphicsPipeline(uint64_t p_Id);
-        GraphicsPipeline(GraphicsPipeline &p_Copy);
-
       private:
         static GraphicsPipeline make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -66,6 +62,24 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        GraphicsPipeline(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        GraphicsPipeline() : Low::Util::Handle()
+        {
+        }
+        GraphicsPipeline(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        GraphicsPipeline &
+        operator=(const GraphicsPipeline &) = default;
+        GraphicsPipeline &
+        operator=(GraphicsPipeline &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -103,7 +117,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         GraphicsPipeline duplicate(Low::Util::Name p_Name) const;
         static GraphicsPipeline duplicate(GraphicsPipeline p_Handle,
@@ -117,9 +131,9 @@ namespace Low {
         _find_by_name(Low::Util::Name p_Name);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {

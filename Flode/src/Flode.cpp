@@ -277,6 +277,8 @@ namespace Flode {
     }
 
     _LOW_ASSERT(false);
+
+    return PinType::Number;
   }
 
   PinType property_type_to_pin_type(u8 p_PropertyType)
@@ -2056,7 +2058,7 @@ namespace Flode {
     if (p_Node[l_NamespaceName]) {
       for (auto it = p_Node[l_NamespaceName].begin();
            it != p_Node[l_NamespaceName].end(); ++it) {
-        Low::Util::Yaml::Node &i_Node = *it;
+        Low::Util::Yaml::Node i_Node = *it;
         m_Namespace.push_back(LOW_YAML_AS_NAME(i_Node));
       }
     }
@@ -2068,7 +2070,7 @@ namespace Flode {
     if (p_Node["variables"]) {
       for (auto it = p_Node["variables"].begin();
            it != p_Node["variables"].end(); ++it) {
-        Low::Util::Yaml::Node &i_VariableNode = *it;
+        Low::Util::Yaml::Node i_VariableNode = *it;
 
         Variable *i_Variable = new Variable;
         i_Variable->name = LOW_YAML_AS_STRING(i_VariableNode["name"]);
@@ -2087,7 +2089,7 @@ namespace Flode {
     if (p_Node["nodes"]) {
       for (auto it = p_Node["nodes"].begin();
            it != p_Node["nodes"].end(); ++it) {
-        Low::Util::Yaml::Node &i_NodeNode = *it;
+        Low::Util::Yaml::Node i_NodeNode = *it;
 
         Node *i_Node = nullptr;
         l_IdsAdded += deserialize_node(
@@ -2104,7 +2106,7 @@ namespace Flode {
     if (p_Node["links"]) {
       for (auto it = p_Node["links"].begin();
            it != p_Node["links"].end(); ++it) {
-        Low::Util::Yaml::Node &i_LinkNode = *it;
+        Low::Util::Yaml::Node i_LinkNode = *it;
 
         Link *i_Link = create_link(i_LinkNode["input"].as<u64>(),
                                    i_LinkNode["output"].as<u64>());

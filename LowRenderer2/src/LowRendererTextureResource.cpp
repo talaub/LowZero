@@ -32,18 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         TextureResource::ms_Pages;
 
-    TextureResource::TextureResource() : Low::Util::Handle(0ull)
-    {
-    }
-    TextureResource::TextureResource(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    TextureResource::TextureResource(TextureResource &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle TextureResource::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -67,17 +55,6 @@ namespace Low {
 
       Low::Util::HandleLock<TextureResource> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TextureResource, path,
-                                 Util::String)) Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TextureResource,
-                                 texture_path, Util::String))
-          Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TextureResource,
-                                 sidecar_path, Util::String))
-          Util::String();
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, TextureResource,
-                                 source_file, Util::String))
-          Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, TextureResource, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -595,7 +572,7 @@ namespace Low {
     }
 
     void
-    TextureResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    TextureResource::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -604,14 +581,14 @@ namespace Low {
     }
 
     void TextureResource::serialize(Low::Util::Handle p_Handle,
-                                    Low::Util::Yaml::Node &p_Node)
+                                    Low::Util::Yaml::Node p_Node)
     {
       TextureResource l_TextureResource = p_Handle.get_id();
       l_TextureResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    TextureResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    TextureResource::deserialize(Low::Util::Yaml::Node p_Node,
                                  Low::Util::Handle p_Creator)
     {
 
@@ -667,7 +644,7 @@ namespace Low {
       l_TextureResource.notify(p_Observed, p_Observable);
     }
 
-    Util::String &TextureResource::get_path() const
+    Util::String TextureResource::get_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -683,7 +660,7 @@ namespace Low {
       set_path(l_Val);
     }
 
-    void TextureResource::set_path(Util::String &p_Value)
+    void TextureResource::set_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -700,7 +677,7 @@ namespace Low {
       broadcast_observable(N(path));
     }
 
-    Util::String &TextureResource::get_texture_path() const
+    Util::String TextureResource::get_texture_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -716,7 +693,7 @@ namespace Low {
       set_texture_path(l_Val);
     }
 
-    void TextureResource::set_texture_path(Util::String &p_Value)
+    void TextureResource::set_texture_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -733,7 +710,7 @@ namespace Low {
       broadcast_observable(N(texture_path));
     }
 
-    Util::String &TextureResource::get_sidecar_path() const
+    Util::String TextureResource::get_sidecar_path() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -749,7 +726,7 @@ namespace Low {
       set_sidecar_path(l_Val);
     }
 
-    void TextureResource::set_sidecar_path(Util::String &p_Value)
+    void TextureResource::set_sidecar_path(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -766,7 +743,7 @@ namespace Low {
       broadcast_observable(N(sidecar_path));
     }
 
-    Util::String &TextureResource::get_source_file() const
+    Util::String TextureResource::get_source_file() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -782,7 +759,7 @@ namespace Low {
       set_source_file(l_Val);
     }
 
-    void TextureResource::set_source_file(Util::String &p_Value)
+    void TextureResource::set_source_file(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<TextureResource> l_Lock(get_id());
@@ -880,7 +857,7 @@ namespace Low {
       broadcast_observable(N(name));
     }
 
-    TextureResource TextureResource::make(Util::String &p_Path)
+    TextureResource TextureResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
       for (auto it = ms_LivingInstances.begin();
@@ -918,8 +895,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
     }
 
-    TextureResource
-    TextureResource::find_by_path(Util::String &p_Path)
+    TextureResource TextureResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
       for (auto it = ms_LivingInstances.begin();

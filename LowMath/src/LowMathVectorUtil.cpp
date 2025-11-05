@@ -10,39 +10,40 @@ namespace Low {
     namespace VectorUtil {
       const float PI = 3.14159265359;
 
-      float magnitude_squared(const Vector3 &p_Vector)
+      float magnitude_squared(const Vector3 p_Vector)
       {
         return (p_Vector.x * p_Vector.x) + (p_Vector.y * p_Vector.y) +
                (p_Vector.z * p_Vector.z);
       }
 
-      float magnitude(const Vector3 &p_Vector)
+      float magnitude(const Vector3 p_Vector)
       {
         return sqrt(magnitude_squared(p_Vector));
       }
 
-      float distance_squared(const Vector3 &p_Start,
-                             const Vector3 &p_End)
+      float distance_squared(const Vector3 p_Start,
+                             const Vector3 p_End)
       {
         return magnitude_squared(p_End - p_Start);
       }
 
-      float distance(const Vector3 &p_Start, const Vector3 &p_End)
+      float distance(const Vector3 p_Start, const Vector3 p_End)
       {
         return sqrt(distance_squared(p_Start, p_End));
       }
 
-      Vector3 normalize(Vector3 &p_Vector)
+      Vector3 normalize(const Vector3 p_Vector)
       {
         return glm::normalize(p_Vector);
       }
 
-      Vector3 direction(Quaternion &p_Rotation)
+      Vector3 direction(const Quaternion p_Rotation)
       {
         return rotate_by_quaternion(LOW_VECTOR3_FRONT, p_Rotation);
       }
 
-      Quaternion from_direction(Vector3 &p_Direction, Vector3 &p_Up)
+      Quaternion from_direction(const Vector3 p_Direction,
+                                const Vector3 p_Up)
       {
         glm::vec3 direction = glm::normalize(p_Direction);
         return glm::quatLookAt(direction, p_Up);
@@ -63,7 +64,7 @@ namespace Low {
         */
       }
 
-      Vector3 to_euler(Quaternion &p_Rotation)
+      Vector3 to_euler(const Quaternion p_Rotation)
       {
         const Quaternion &q = p_Rotation;
         float x, y, z, w;
@@ -98,7 +99,7 @@ namespace Low {
         return l_Degrees;
       }
 
-      Quaternion from_euler(Math::Vector3 &p_EulerAngles)
+      Quaternion from_euler(const Math::Vector3 p_EulerAngles)
       {
         glm::vec3 l_Radians = glm::radians(p_EulerAngles);
 
@@ -131,7 +132,8 @@ namespace Low {
         return q;
       }
 
-      Vector3 rotate_by_quaternion(Vector3 &p_Vec, Quaternion &p_Quat)
+      Vector3 rotate_by_quaternion(const Vector3 p_Vec,
+                                   const Quaternion p_Quat)
       {
         /*
               return p_Vec +
@@ -142,7 +144,8 @@ namespace Low {
         return p_Quat * p_Vec;
       }
 
-      float pitch(Quaternion &p_Rotation, bool p_ReprojectAxis)
+      float pitch(const Quaternion p_Rotation,
+                  const bool p_ReprojectAxis)
       {
         float l_Result = 0.0f;
 
@@ -162,7 +165,8 @@ namespace Low {
         return l_Result;
       }
 
-      float yaw(Quaternion &p_Rotation, bool p_ReprojectAxis)
+      float yaw(const Quaternion p_Rotation,
+                const bool p_ReprojectAxis)
       {
         float l_Result = 0.0f;
 
@@ -183,7 +187,8 @@ namespace Low {
         return l_Result;
       }
 
-      float roll(Quaternion &p_Rotation, bool p_ReprojectAxis)
+      float roll(const Quaternion p_Rotation,
+                 const bool p_ReprojectAxis)
       {
         float l_Result = 0.0f;
 
@@ -203,16 +208,18 @@ namespace Low {
         return l_Result;
       }
 
-      float pitch_degrees(Quaternion &p_Rotation,
-                          bool p_ReprojectAxis)
+      float pitch_degrees(const Quaternion p_Rotation,
+                          const bool p_ReprojectAxis)
       {
         return glm::degrees(pitch(p_Rotation, p_ReprojectAxis));
       }
-      float yaw_degrees(Quaternion &p_Rotation, bool p_ReprojectAxis)
+      float yaw_degrees(const Quaternion p_Rotation,
+                        const bool p_ReprojectAxis)
       {
         return glm::degrees(yaw(p_Rotation, p_ReprojectAxis));
       }
-      float roll_degrees(Quaternion &p_Rotation, bool p_ReprojectAxis)
+      float roll_degrees(const Quaternion p_Rotation,
+                         const bool p_ReprojectAxis)
       {
         return glm::degrees(roll(p_Rotation, p_ReprojectAxis));
       }
@@ -230,17 +237,19 @@ namespace Low {
         return rowMajorMatrix;
       }
 
-      Quaternion between(Vector3 p_From, Vector3 p_To)
+      Quaternion between(const Vector3 p_From, const Vector3 p_To)
       {
         return glm::rotation(p_From, p_To);
       }
 
-      Vector2 lerp(Vector2 &p_Start, Vector2 &p_End, float p_Delta)
+      Vector2 lerp(const Vector2 p_Start, const Vector2 p_End,
+                   const float p_Delta)
       {
         return p_Start + (p_End - p_Start) * p_Delta;
       }
 
-      Vector3 lerp(Vector3 &p_Start, Vector3 &p_End, float p_Delta)
+      Vector3 lerp(const Vector3 p_Start, const Vector3 p_End,
+                   const float p_Delta)
       {
         return p_Start + (p_End - p_Start) * p_Delta;
       }

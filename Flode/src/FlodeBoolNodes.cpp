@@ -137,14 +137,14 @@ namespace Flode {
       }
     }
 
-    void EqualsNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void EqualsNode::serialize(Low::Util::Yaml::Node p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
       p_Node["pintypeid"] = m_PinTypeId;
     }
 
-    void EqualsNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void EqualsNode::deserialize(Low::Util::Yaml::Node p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(

@@ -12,7 +12,6 @@
 
 #include "LowCoreUiImageSystem.h"
 #include <cmath>
-#include "microprofile.h"
 #include <stdint.h>
 
 #define RENDER_BOUNDING_BOXES 0
@@ -27,8 +26,6 @@ namespace Low {
             if (p_State != Util::EngineState::PLAYING) {
               return;
             }
-
-            MICROPROFILE_SCOPEI("Core", "UiTextSystem::TICK", MP_RED);
 
             Component::Text *l_Texts =
                 Component::Text::living_instances();

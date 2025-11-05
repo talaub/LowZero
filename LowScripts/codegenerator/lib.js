@@ -5,7 +5,7 @@ const YAML = require("yaml");
 const { assert } = require("console");
 const { isArray } = require("util");
 
-const g_Directory = `${__dirname}\\..\\..\\misteda\\data\\_internal\\type_configs`;
+const g_Directory = `${__dirname}/../../misteda/data/_internal/type_configs`;
 
 let g_TypeIdMap = {};
 const g_AllTypeIds = [];
@@ -53,8 +53,8 @@ function format(p_FilePath, p_Content) {
 }
 
 function load_project_info(p_FullProjectPath) {
-  const l_ProjectModulesPath = `${p_FullProjectPath}\\modules`;
-  const l_ProjectConfigPath = `${p_FullProjectPath}\\project.yaml`;
+  const l_ProjectModulesPath = `${p_FullProjectPath}/modules`;
+  const l_ProjectConfigPath = `${p_FullProjectPath}/project.yaml`;
 
   console.log(`🔍 Looking for project at ${p_FullProjectPath}`);
   assert(fs.existsSync(p_FullProjectPath), "Project directory does not exist");
@@ -72,7 +72,7 @@ function load_project_info(p_FullProjectPath) {
   l_ProjectConfig.modules_path = l_ProjectModulesPath;
   l_ProjectConfig.full_path = p_FullProjectPath;
 
-  l_ProjectConfig.root_cmake_path = `${p_FullProjectPath}\\CMakeLists.txt`;
+  l_ProjectConfig.root_cmake_path = `${p_FullProjectPath}/CMakeLists.txt`;
 
   assert(
     l_ProjectConfig.engine_root,
@@ -87,13 +87,13 @@ function load_project_info(p_FullProjectPath) {
   const l_Modules = [];
 
   for (const i_ModuleDirectory of l_ProjectModuleDirectories) {
-    const i_ModulePath = `${l_ProjectModulesPath}\\${i_ModuleDirectory}`;
+    const i_ModulePath = `${l_ProjectModulesPath}/${i_ModuleDirectory}`;
     assert(
       fs.existsSync(i_ModulePath),
       `Could not find module directory ${i_ModulePath}`,
     );
 
-    const i_ModuleConfigPath = `${i_ModulePath}\\module.yaml`;
+    const i_ModuleConfigPath = `${i_ModulePath}/module.yaml`;
 
     if (!fs.existsSync(i_ModulePath)) {
       continue;
@@ -106,7 +106,7 @@ function load_project_info(p_FullProjectPath) {
       name: i_ModuleDirectory,
       path: i_ModulePath,
       api_header_path: `${i_ModulePath}/include/${l_ProjectConfig.name}${i_ModuleDirectory}Api.h`,
-      cmake_path: `${i_ModulePath}\\CMakeLists.txt`,
+      cmake_path: `${i_ModulePath}/CMakeLists.txt`,
       exports_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_EXPORTS`,
       static_marker: `${l_ProjectConfig.name.toLowerCase()}_${i_ModuleDirectory.toLowerCase()}_BUILD_STATIC`,
       project_name: l_ProjectConfig.name,
@@ -207,12 +207,12 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
 
     i_Enum.module_path = `${p_Path}${i_Enum.module}`;
     if (p_Project) {
-      i_Enum.module_path = `${p_Path}modules\\${i_Enum.module}`;
+      i_Enum.module_path = `${p_Path}modules/${i_Enum.module}`;
     }
     i_Enum.header_file_name = `${i_Enum.prefix}${i_Enum.name}.h`;
-    i_Enum.header_file_path = `${i_Enum.module_path}\\include\\${i_Enum.prefix}${i_Enum.name}.h`;
+    i_Enum.header_file_path = `${i_Enum.module_path}/include/${i_Enum.prefix}${i_Enum.name}.h`;
     i_Enum.source_file_name = `${i_Enum.prefix}${i_Enum.name}.cpp`;
-    i_Enum.source_file_path = `${i_Enum.module_path}\\src\\${i_Enum.prefix}${i_Enum.name}.cpp`;
+    i_Enum.source_file_path = `${i_Enum.module_path}/src/${i_Enum.prefix}${i_Enum.name}.cpp`;
 
     for (let i_Option of i_Enum.options) {
       i_Option.uppercase = i_Option.name.toUpperCase();
@@ -225,9 +225,9 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
 }
 
 function process_file(p_Path, p_FileName, p_Project = false) {
-  let l_FilePath = `${p_Path}LowData\\type_configs\\${p_FileName}`;
+  let l_FilePath = `${p_Path}LowData/type_configs/${p_FileName}`;
   if (p_Project) {
-    l_FilePath = `${p_Path}data\\_internal\\type_configs\\${p_FileName}`;
+    l_FilePath = `${p_Path}data/_internal/type_configs/${p_FileName}`;
   }
   const l_FileContent = read_file(l_FilePath);
 
@@ -551,21 +551,21 @@ function process_file(p_Path, p_FileName, p_Project = false) {
 
     i_Type.module_path = `${p_Path}${i_Type.module}`;
     if (p_Project) {
-      i_Type.module_path = `${p_Path}modules\\${i_Type.module}`;
+      i_Type.module_path = `${p_Path}modules/${i_Type.module}`;
     }
-    i_Type.docs_path = `${p_Path}docs\\docs\\types\\${i_Type.name.toLowerCase()}.mdx`;
+    i_Type.docs_path = `${p_Path}docs/docs/types/${i_Type.name.toLowerCase()}.mdx`;
     i_Type.header_file_name = `${i_Type.prefix}${i_Type.name}.h`;
-    i_Type.header_file_path = `${i_Type.module_path}\\include\\${i_Type.prefix}${i_Type.name}.h`;
+    i_Type.header_file_path = `${i_Type.module_path}/include/${i_Type.prefix}${i_Type.name}.h`;
     if (i_Type.header_path) {
-      i_Type.header_file_path = `${i_Type.module_path}\\${i_Type.header_path}\\${i_Type.prefix}${i_Type.name}.h`;
+      i_Type.header_file_path = `${i_Type.module_path}/${i_Type.header_path}/${i_Type.prefix}${i_Type.name}.h`;
     }
-    i_Type.source_file_path = `${i_Type.module_path}\\src\\${i_Type.prefix}${i_Type.name}.cpp`;
+    i_Type.source_file_path = `${i_Type.module_path}/src/${i_Type.prefix}${i_Type.name}.cpp`;
     if (i_Type.source_path) {
-      i_Type.source_file_path = `${i_Type.module_path}\\${i_Type.source_path}\\${i_Type.prefix}${i_Type.name}.cpp`;
+      i_Type.source_file_path = `${i_Type.module_path}/${i_Type.source_path}/${i_Type.prefix}${i_Type.name}.cpp`;
     }
-    i_Type.scripting_api_file_path = `${__dirname}\\..\\..\\LowScriptingApi\\${i_Type.prefix}${i_Type.name}.cs`;
+    i_Type.scripting_api_file_path = `${__dirname}/../../LowScriptingApi/${i_Type.prefix}${i_Type.name}.cs`;
     if (i_Type.module == "MistedaPlugin") {
-      i_Type.scripting_api_file_path = `${__dirname}\\..\\..\\LowScriptingApi\\${i_Type.prefix}${i_Type.name}.cs`;
+      i_Type.scripting_api_file_path = `${__dirname}/../../LowScriptingApi/${i_Type.prefix}${i_Type.name}.cs`;
     }
     i_Type.dll_macro = l_Config.dll_macro;
 
@@ -678,6 +678,36 @@ function get_cs_method_name(p_Name) {
 }
 
 function is_reference_type(t) {
+  if (t.endsWith("Yaml::Node")){
+    return false;
+  }
+  if (t.endsWith("Math::Color")){
+    return false;
+  }
+  if (t.endsWith("Math::ColorRGB")){
+    return false;
+  }
+  if (t.endsWith("Math::Vector3")){
+    return false;
+  }
+  if (t.endsWith("Math::Vector2")){
+    return false;
+  }
+  if (t.endsWith("Math::UVector3")){
+    return false;
+  }
+  if (t.endsWith("Math::UVector2")){
+    return false;
+  }
+  if (t.endsWith("Math::Vector4")){
+    return false;
+  }
+  if (t.endsWith("Math::Quaternion")){
+    return false;
+  }
+  if (t.endsWith("Util::String")){
+    return false;
+  }
   return (
     ![
       "void",
@@ -810,7 +840,7 @@ function collect_enums_for_low(p_Path) {
 
 function collect_types_for_low(p_Path) {
   const l_TypeIdContent = read_file(
-    `${p_Path}LowData\\type_configs\\typeids.yaml`,
+    `${p_Path}LowData/type_configs/typeids.yaml`,
   );
   g_TypeIdMap = YAML.parse(l_TypeIdContent);
   for (const [key, value] of Object.entries(g_TypeIdMap)) {
@@ -836,7 +866,7 @@ function collect_types_for_low(p_Path) {
   }
 
   fs.writeFileSync(
-    `${p_Path}LowData\\type_configs\\typeids.yaml`,
+    `${p_Path}LowData/type_configs/typeids.yaml`,
     YAML.stringify(g_TypeIdMap),
   );
 
@@ -845,7 +875,7 @@ function collect_types_for_low(p_Path) {
 
 function collect_types_for_project(p_Path) {
   const l_TypeIdContent = read_file(
-    `${p_Path}data\\_internal\\type_configs\\typeids.yaml`,
+    `${p_Path}data/_internal/type_configs/typeids.yaml`,
   );
   g_TypeIdMap = YAML.parse(l_TypeIdContent);
   if (g_TypeIdMap) {
@@ -876,7 +906,7 @@ function collect_types_for_project(p_Path) {
 
   if (Object.keys(g_TypeIdMap).length > 0) {
     fs.writeFileSync(
-      `${p_Path}data\\_internal\\type_configs\\typeids.yaml`,
+      `${p_Path}data/_internal/type_configs/typeids.yaml`,
       YAML.stringify(g_TypeIdMap),
     );
   }

@@ -396,11 +396,11 @@ namespace Low {
           Util::Yaml::Node l_Sidecar = Util::Yaml::load_file(
               l_Font.get_resource().get_sidecar_path().c_str());
 
-          Util::Yaml::Node &l_Glyphs = l_Sidecar["glyphs"];
+          Util::Yaml::Node l_Glyphs = l_Sidecar["glyphs"];
 
           for (auto it = l_Glyphs.begin(); it != l_Glyphs.end();
                ++it) {
-            Util::Yaml::Node &i_Node = *it;
+            Util::Yaml::Node i_Node = *it;
             Glyph i_Glyph;
             char i_Codepoint = i_Node["codepoint"].as<u8>();
             i_Glyph.uvMin = Util::Serialization::deserialize_vector2(
@@ -569,13 +569,14 @@ namespace Low {
           Util::UnorderedMap<Util::Name, Util::Yaml::Node>
               l_SubmeshNodes;
 
-          l_MeshGeometry.set_aabb(
-              Util::Serialization::deserialize_aabb(
-                  l_SidecarNode["aabb"]));
+          Math::AABB l_AABB = Util::Serialization::deserialize_aabb(
+              l_SidecarNode["aabb"]);
+          l_MeshGeometry.set_aabb(l_AABB);
           if (l_SidecarNode["bounding_sphere"]) {
-            l_MeshGeometry.set_bounding_sphere(
+            Math::Sphere l_Sphere =
                 Util::Serialization::deserialize_sphere(
-                    l_SidecarNode["bounding_sphere"]));
+                    l_SidecarNode["bounding_sphere"]);
+            l_MeshGeometry.set_bounding_sphere(l_Sphere);
           }
 
           for (auto it = l_ResourceMesh.submeshes.begin();
@@ -594,14 +595,16 @@ namespace Low {
               const char *i_NameBuffer =
                   i_SubmeshGeometry.get_name().c_str();
 
-              i_SubmeshGeometry.set_aabb(
+              Math::AABB i_AABB =
                   Util::Serialization::deserialize_aabb(
                       l_SidecarNode["submeshes"][i_NameBuffer]
-                                   ["aabb"]));
-              i_SubmeshGeometry.set_bounding_sphere(
+                                   ["aabb"]);
+              Math::Sphere i_BoundingSphere =
                   Util::Serialization::deserialize_sphere(
                       l_SidecarNode["submeshes"][i_NameBuffer]
-                                   ["bounding_sphere"]));
+                                   ["bounding_sphere"]);
+              i_SubmeshGeometry.set_aabb(i_AABB);
+              i_SubmeshGeometry.set_bounding_sphere(i_BoundingSphere);
 
               l_MeshGeometry.get_submeshes().push_back(
                   i_SubmeshGeometry);
@@ -1413,6 +1416,8 @@ namespace Low {
 
         LOW_ASSERT(false, "ResourceManager encountered unknown "
                           "resource type to upload");
+
+        return false;
       }
 
       static bool uploads_tick(float p_Delta)
@@ -1447,8 +1452,8 @@ namespace Low {
       }
 
       bool parse_mesh_resource_config(Util::String p_Path,
-                                      Util::Yaml::Node &p_Node,
-                                      MeshResourceConfig &p_Config)
+                                      Util::Yaml::Node p_Node,
+                                      MeshResourceConfig p_Config)
       {
         LOWR_ASSERT_RETURN(p_Node["version"],
                            "Could not find version");
@@ -1493,8 +1498,8 @@ namespace Low {
 
       bool
       parse_texture_resource_config(Util::String p_Path,
-                                    Util::Yaml::Node &p_Node,
-                                    TextureResourceConfig &p_Config)
+                                    Util::Yaml::Node p_Node,
+                                    TextureResourceConfig p_Config)
       {
         LOWR_ASSERT_RETURN(p_Node["version"],
                            "Could not find version");

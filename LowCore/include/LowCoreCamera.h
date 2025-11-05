@@ -51,10 +51,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        Camera();
-        Camera(uint64_t p_Id);
-        Camera(Camera &p_Copy);
-
         static Camera make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
         static Camera make(Low::Core::Entity p_Entity,
@@ -68,6 +64,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        Camera(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        Camera() : Low::Util::Handle()
+        {
+        }
+        Camera(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        Camera &operator=(const Camera &) = default;
+        Camera &operator=(Camera &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -105,7 +117,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         Camera duplicate(Low::Core::Entity p_Entity) const;
         static Camera duplicate(Camera p_Handle,
@@ -115,9 +127,9 @@ namespace Low {
                    Low::Util::Handle p_Entity);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -137,8 +149,8 @@ namespace Low {
         float get_fov() const;
         void set_fov(float p_Value);
 
-        Low::Renderer::RenderView &get_render_view() const;
-        void set_render_view(Low::Renderer::RenderView &p_Value);
+        Low::Renderer::RenderView get_render_view() const;
+        void set_render_view(Low::Renderer::RenderView p_Value);
 
         Low::Core::Entity get_entity() const;
         void set_entity(Low::Core::Entity p_Value);

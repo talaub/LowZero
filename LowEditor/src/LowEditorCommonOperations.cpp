@@ -66,7 +66,7 @@ namespace Low {
 
       static void
       create_mappings_from_entity_yaml(ChangeList &p_ChangeList,
-                                       Util::Yaml::Node &p_Node)
+                                       Util::Yaml::Node p_Node)
       {
         p_ChangeList.set_mapping(p_Node["handle"].as<uint64_t>(),
                                  p_Node["_handle"].as<uint64_t>());
@@ -158,5 +158,5 @@ namespace Low {
                                          m_SerializedHandle);
       }
     } // namespace CommonOperations
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

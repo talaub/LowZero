@@ -32,17 +32,6 @@ namespace Low {
     Low::Util::List<GameMode> GameMode::ms_LivingInstances;
     Low::Util::List<Low::Util::Instances::Page *> GameMode::ms_Pages;
 
-    GameMode::GameMode() : Low::Util::Handle(0ull)
-    {
-    }
-    GameMode::GameMode(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    GameMode::GameMode(GameMode &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle GameMode::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -72,9 +61,6 @@ namespace Low {
 
       Low::Util::HandleLock<GameMode> l_HandleLock(l_Handle);
 
-      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, GameMode,
-                                 tick_function_name, Util::String))
-          Util::String();
       ACCESSOR_TYPE_SOA(l_Handle, GameMode, name, Low::Util::Name) =
           Low::Util::Name(0u);
 
@@ -419,7 +405,7 @@ namespace Low {
       return l_GameMode.duplicate(p_Name);
     }
 
-    void GameMode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void GameMode::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -434,14 +420,14 @@ namespace Low {
     }
 
     void GameMode::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
     {
       GameMode l_GameMode = p_Handle.get_id();
       l_GameMode.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GameMode::deserialize(Low::Util::Yaml::Node &p_Node,
+    GameMode::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -521,7 +507,7 @@ namespace Low {
       l_GameMode.notify(p_Observed, p_Observable);
     }
 
-    Util::String &GameMode::get_tick_function_name() const
+    Util::String GameMode::get_tick_function_name() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<GameMode> l_Lock(get_id());
@@ -538,7 +524,7 @@ namespace Low {
       set_tick_function_name(l_Val);
     }
 
-    void GameMode::set_tick_function_name(Util::String &p_Value)
+    void GameMode::set_tick_function_name(Util::String p_Value)
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<GameMode> l_Lock(get_id());

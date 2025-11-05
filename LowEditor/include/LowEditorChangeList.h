@@ -11,7 +11,8 @@ namespace Low {
 
     struct Operation
     {
-      virtual void execute(ChangeList &p_ChangeList, Transaction &p_Transaction)
+      virtual void execute(ChangeList &p_ChangeList,
+                           Transaction &p_Transaction)
       {
       }
 
@@ -26,8 +27,8 @@ namespace Low {
     {
       Transaction(Util::String p_Title);
 
-      Transaction &Transaction::add_operation(Operation *p_Operation);
-      Util::List<Operation *> &Transaction::get_operations();
+      Transaction &add_operation(Operation *p_Operation);
+      Util::List<Operation *> &get_operations();
 
       void execute(ChangeList &p_ChangeList);
       Transaction invert(ChangeList &p_ChangeList) const;

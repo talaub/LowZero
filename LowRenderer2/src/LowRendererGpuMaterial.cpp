@@ -32,17 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         GpuMaterial::ms_Pages;
 
-    GpuMaterial::GpuMaterial() : Low::Util::Handle(0ull)
-    {
-    }
-    GpuMaterial::GpuMaterial(uint64_t p_Id) : Low::Util::Handle(p_Id)
-    {
-    }
-    GpuMaterial::GpuMaterial(GpuMaterial &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle GpuMaterial::_make(Low::Util::Name p_Name)
     {
       return make(p_Name).get_id();
@@ -425,7 +414,7 @@ namespace Low {
       return l_GpuMaterial.duplicate(p_Name);
     }
 
-    void GpuMaterial::serialize(Low::Util::Yaml::Node &p_Node) const
+    void GpuMaterial::serialize(Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -434,14 +423,14 @@ namespace Low {
     }
 
     void GpuMaterial::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
     {
       GpuMaterial l_GpuMaterial = p_Handle.get_id();
       l_GpuMaterial.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GpuMaterial::deserialize(Low::Util::Yaml::Node &p_Node,
+    GpuMaterial::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
     {
 

@@ -24,7 +24,6 @@
 #include "LowCoreUiViewSystem.h"
 
 #include <chrono>
-#include <microprofile.h>
 
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
@@ -67,7 +66,7 @@ namespace Low {
         System::Camera::tick(p_Delta, get_engine_state());
         if (!l_FirstRun) {
           System::Physics::tick(p_Delta, get_engine_state());
-          //System::Navmesh::tick(p_Delta, get_engine_state());
+          // System::Navmesh::tick(p_Delta, get_engine_state());
         }
 
         Scripting::tick(p_Delta, get_engine_state());

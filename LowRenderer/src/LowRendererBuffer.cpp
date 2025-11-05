@@ -33,16 +33,6 @@ namespace Low {
       Low::Util::List<Buffer> Buffer::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *> Buffer::ms_Pages;
 
-      Buffer::Buffer() : Low::Util::Handle(0ull)
-      {
-      }
-      Buffer::Buffer(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      Buffer::Buffer(Buffer &p_Copy) : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle Buffer::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
@@ -508,7 +498,7 @@ namespace Low {
         return l_Buffer.duplicate(p_Name);
       }
 
-      void Buffer::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Buffer::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -520,14 +510,14 @@ namespace Low {
       }
 
       void Buffer::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Yaml::Node p_Node)
       {
         Buffer l_Buffer = p_Handle.get_id();
         l_Buffer.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Buffer::deserialize(Low::Util::Yaml::Node &p_Node,
+      Buffer::deserialize(Low::Util::Yaml::Node p_Node,
                           Low::Util::Handle p_Creator)
       {
         Buffer l_Handle = Buffer::make(N(Buffer));

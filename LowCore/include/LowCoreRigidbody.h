@@ -56,10 +56,6 @@ namespace Low {
 
         const static uint16_t TYPE_ID;
 
-        Rigidbody();
-        Rigidbody(uint64_t p_Id);
-        Rigidbody(Rigidbody &p_Copy);
-
         static Rigidbody make(Low::Core::Entity p_Entity);
         static Low::Util::Handle _make(Low::Util::Handle p_Entity);
         static Rigidbody make(Low::Core::Entity p_Entity,
@@ -73,6 +69,22 @@ namespace Low {
 
         static void initialize();
         static void cleanup();
+
+        Rigidbody(u64 p_Id) : Low::Util::Handle(p_Id)
+        {
+        }
+        Rigidbody() : Low::Util::Handle()
+        {
+        }
+        Rigidbody(Low::Util::Handle p_Handle)
+            : Low::Util::Handle(p_Handle.get_id())
+        {
+        }
+
+        using Handle::operator=;
+
+        Rigidbody &operator=(const Rigidbody &) = default;
+        Rigidbody &operator=(Rigidbody &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -110,7 +122,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node &p_Node) const;
+        void serialize(Low::Util::Yaml::Node p_Node) const;
 
         Rigidbody duplicate(Low::Core::Entity p_Entity) const;
         static Rigidbody duplicate(Rigidbody p_Handle,
@@ -120,9 +132,9 @@ namespace Low {
                    Low::Util::Handle p_Entity);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node);
+                              Low::Util::Yaml::Node p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node &p_Node,
+        deserialize(Low::Util::Yaml::Node p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {

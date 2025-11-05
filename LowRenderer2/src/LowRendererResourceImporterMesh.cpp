@@ -1,3 +1,8 @@
+#include <gli/gli.hpp>
+#include <gli/make_texture.hpp>
+#include <gli/save_ktx.hpp>
+#include <gli/generate_mipmaps.hpp>
+
 #include "LowRendererResourceImporter.h"
 
 #include <assimp/scene.h>
@@ -6,11 +11,6 @@
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include "../../LowDependencies/assimp/code/Common/BaseProcess.h"
-
-#include <gli/gli.hpp>
-#include <gli/make_texture.hpp>
-#include <gli/save_ktx.hpp>
-#include <gli/generate_mipmaps.hpp>
 
 #include "LowUtil.h"
 #include "LowUtilString.h"

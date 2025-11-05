@@ -38,17 +38,6 @@ namespace Low {
       Low::Util::List<Low::Util::Instances::Page *>
           Rigidbody::ms_Pages;
 
-      Rigidbody::Rigidbody() : Low::Util::Handle(0ull)
-      {
-      }
-      Rigidbody::Rigidbody(uint64_t p_Id) : Low::Util::Handle(p_Id)
-      {
-      }
-      Rigidbody::Rigidbody(Rigidbody &p_Copy)
-          : Low::Util::Handle(p_Copy.m_Id)
-      {
-      }
-
       Low::Util::Handle Rigidbody::_make(Low::Util::Handle p_Entity)
       {
         Low::Core::Entity l_Entity = p_Entity.get_id();
@@ -612,7 +601,7 @@ namespace Low {
         return l_Rigidbody.duplicate(l_Entity);
       }
 
-      void Rigidbody::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Rigidbody::serialize(Low::Util::Yaml::Node p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -630,14 +619,14 @@ namespace Low {
       }
 
       void Rigidbody::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Yaml::Node p_Node)
       {
         Rigidbody l_Rigidbody = p_Handle.get_id();
         l_Rigidbody.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Rigidbody::deserialize(Low::Util::Yaml::Node &p_Node,
+      Rigidbody::deserialize(Low::Util::Yaml::Node p_Node,
                              Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -661,9 +650,10 @@ namespace Low {
           l_Handle.set_mass(p_Node["mass"].as<float>());
         }
         if (p_Node["shape"]) {
-          l_Handle.set_shape(
+          Math::Shape l_Shape =
               Low::Util::Serialization::deserialize_shape(
-                  p_Node["shape"]));
+                  p_Node["shape"]);
+          l_Handle.set_shape(l_Shape);
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(

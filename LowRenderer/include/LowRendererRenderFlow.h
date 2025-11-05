@@ -85,10 +85,6 @@ namespace Low {
 
       const static uint16_t TYPE_ID;
 
-      RenderFlow();
-      RenderFlow(uint64_t p_Id);
-      RenderFlow(RenderFlow &p_Copy);
-
     private:
       static RenderFlow make(Low::Util::Name p_Name);
       static Low::Util::Handle _make(Low::Util::Name p_Name);
@@ -103,6 +99,22 @@ namespace Low {
 
       static void initialize();
       static void cleanup();
+
+      RenderFlow(u64 p_Id) : Low::Util::Handle(p_Id)
+      {
+      }
+      RenderFlow() : Low::Util::Handle()
+      {
+      }
+      RenderFlow(Low::Util::Handle p_Handle)
+          : Low::Util::Handle(p_Handle.get_id())
+      {
+      }
+
+      using Handle::operator=;
+
+      RenderFlow &operator=(const RenderFlow &) = default;
+      RenderFlow &operator=(RenderFlow &&) noexcept = default;
 
       static uint32_t living_count()
       {
@@ -140,7 +152,7 @@ namespace Low {
 
       static uint32_t get_capacity();
 
-      void serialize(Low::Util::Yaml::Node &p_Node) const;
+      void serialize(Low::Util::Yaml::Node p_Node) const;
 
       RenderFlow duplicate(Low::Util::Name p_Name) const;
       static RenderFlow duplicate(RenderFlow p_Handle,
@@ -152,9 +164,9 @@ namespace Low {
       static Low::Util::Handle _find_by_name(Low::Util::Name p_Name);
 
       static void serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node &p_Node);
+                            Low::Util::Yaml::Node p_Node);
       static Low::Util::Handle
-      deserialize(Low::Util::Yaml::Node &p_Node,
+      deserialize(Low::Util::Yaml::Node p_Node,
                   Low::Util::Handle p_Creator);
       static bool is_alive(Low::Util::Handle p_Handle)
       {
@@ -169,7 +181,7 @@ namespace Low {
         l_RenderFlow.destroy();
       }
 
-      Math::UVector2 &get_dimensions() const;
+      Math::UVector2 get_dimensions() const;
 
       Resource::Image get_output_image() const;
       void set_output_image(Resource::Image p_Value);
@@ -184,15 +196,15 @@ namespace Low {
       Interface::PipelineResourceSignature
       get_resource_signature() const;
 
-      Math::Vector3 &get_camera_position() const;
-      void set_camera_position(Math::Vector3 &p_Value);
+      Math::Vector3 get_camera_position() const;
+      void set_camera_position(Math::Vector3 p_Value);
       void set_camera_position(float p_X, float p_Y, float p_Z);
       void set_camera_position_x(float p_Value);
       void set_camera_position_y(float p_Value);
       void set_camera_position_z(float p_Value);
 
-      Math::Vector3 &get_camera_direction() const;
-      void set_camera_direction(Math::Vector3 &p_Value);
+      Math::Vector3 get_camera_direction() const;
+      void set_camera_direction(Math::Vector3 p_Value);
       void set_camera_direction(float p_X, float p_Y, float p_Z);
       void set_camera_direction_x(float p_Value);
       void set_camera_direction_y(float p_Value);
@@ -221,10 +233,10 @@ namespace Low {
 
       static RenderFlow make(Util::Name p_Name,
                              Interface::Context p_Context,
-                             Util::Yaml::Node &p_Config);
+                             Util::Yaml::Node p_Config);
       void clear_renderbojects();
       void execute();
-      void update_dimensions(Math::UVector2 &p_Dimensions);
+      void update_dimensions(Math::UVector2 p_Dimensions);
       void register_renderobject(RenderObject &p_RenderObject);
       Resource::Image get_previous_output_image(Util::Handle p_Step);
       static bool get_page_for_index(const u32 p_Index,

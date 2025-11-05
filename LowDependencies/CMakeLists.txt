@@ -13,8 +13,26 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 set(GLI_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(gli)
-add_subdirectory(assimp)
-add_subdirectory(EASTL)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE) # supported by Assimp
+add_subdirectory(assimp EXCLUDE_FROM_ALL)
+
+# Make everything PIC by default (safe on non-Windows)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Or, only for EASTL targets:
+add_subdirectory(EASTL EXCLUDE_FROM_ALL)
+
+foreach(t EASTL EASTLd eastl eastld)  # handle possible target names/suffixes
+  if (TARGET ${t})
+    set_property(TARGET ${t} PROPERTY POSITION_INDEPENDENT_CODE ON)
+    if (MSVC)
+      target_compile_options(${t} PRIVATE /w /WX-)   # optional: hush warnings
+    else()
+      target_compile_options(${t} PRIVATE -w -Wno-error)
+    endif()
+  endif()
+endforeach()
+
 set(FT_DISABLE_ZLIB    ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_BZIP2   ON CACHE BOOL "" FORCE)
 set(FT_DISABLE_PNG     ON CACHE BOOL "" FORCE)
@@ -33,10 +51,14 @@ set(VK_BOOTSTRAP_TEST OFF)
 set(VK_BOOTSTRAP_INSTALL OFF)
 add_subdirectory(vk-bootstrap)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # makes ALL targets compile with -fPIC on non-Windows
+
 # Some FreeType trees export 'freetype' (lowercase). Provide the alias msdfgen expects:
 if (NOT TARGET Freetype::Freetype AND TARGET freetype)
   add_library(Freetype::Freetype ALIAS freetype)
 endif()
+
+set_property(TARGET freetype PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # --- msdfgen (needs to be AFTER freetype) --------------------------
 set(MSDFGEN_USE_VCPKG                OFF CACHE BOOL "" FORCE)
@@ -54,6 +76,7 @@ set(MSDFGEN_USE_FREETYPE             ON CACHE BOOL "" FORCE)
 # remove/avoid: set(MSDFGEN_CORE_ONLY ON)
 
 add_subdirectory(msdfgen) # exports msdfgen-core, msdfgen-freetype (and msdfgen-ext)
+
 # msdf-atlas-gen (library only)
 set(MSDF_ATLAS_BUILD_STANDALONE OFF CACHE BOOL "" FORCE)
 set(MSDF_ATLAS_MSDFGEN_EXTERNAL ON CACHE BOOL "" FORCE)
@@ -61,13 +84,14 @@ set(MSDF_ATLAS_USE_VCPKG OFF CACHE BOOL "" FORCE)
 set(MSDF_ATLAS_USE_SKIA OFF CACHE BOOL "" FORCE)
 add_subdirectory(msdf-atlas-gen)
 
+
 set_target_properties(EASTL PROPERTIES FOLDER "Dependencies")
 set_target_properties(gli_dummy PROPERTIES FOLDER "Dependencies")
 set_target_properties(assimp PROPERTIES FOLDER "Dependencies")
 set_target_properties(freetype PROPERTIES FOLDER "Dependencies")
 set_target_properties(uninstall PROPERTIES FOLDER "Dependencies")
 set_target_properties(zlibstatic PROPERTIES FOLDER "Dependencies")
-set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "Dependencies")
+#set_target_properties(UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTIES FOLDER "Dependencies")
 set_target_properties(msdfgen-core PROPERTIES FOLDER "Dependencies")
 set_target_properties(msdfgen-ext PROPERTIES FOLDER "Dependencies")
 
@@ -87,19 +111,29 @@ target_include_directories(tlsf PUBLIC
 set_target_properties(tlsf PROPERTIES FOLDER "Dependencies")
 cmake_minimum_required(VERSION 3.20)
 
-project(nativefiledialog)
-
-add_library(nativefiledialog STATIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_win.cpp"
-)
-
-target_include_directories(nativefiledialog PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src"
-)
-set_target_properties(nativefiledialog PROPERTIES FOLDER "Dependencies")
-
+# project(nativefiledialog)
+#
+# SET(NFD_SOURCES 
+#   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_win.cpp"
+# )
+#
+# if(UNIX)
+# SET(NFD_SOURCES 
+#   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_gtk.c"
+# )
+# endif()
+#
+# add_library(nativefiledialog STATIC
+#   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/nfd_common.c"
+#   ${NFD_SOURCES}
+# )
+#
+# target_include_directories(nativefiledialog PUBLIC
+#   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src/include"
+#   "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog/src"
+# )
+# set_target_properties(nativefiledialog PROPERTIES FOLDER "Dependencies")
+#
 
 set(RECASTNAVIGATION_DEMO     OFF CACHE BOOL "Build demo" FORCE)
 set(RECASTNAVIGATION_TESTS    OFF CACHE BOOL "Build tests" FORCE)
@@ -130,9 +164,15 @@ file(GLOB PHYSX_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}/physx/source/physx/src/buffering/*.cpp"
 )
 
+if (MSVC)
 file(GLOB PHYSX_PLATFORM_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}/physx/source/foundation/src/windows/*.cpp"
 )
+else()
+file(GLOB PHYSX_PLATFORM_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}/physx/source/foundation/src/unix/*.cpp"
+)
+endif()
 
 FILE(GLOB PHYSX_INCLUDE_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}/physx/source/**/include
@@ -152,9 +192,29 @@ FILE(GLOB PHYSX_INCLUDE_DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
 
 add_library(physx STATIC ${PHYSX_SOURCES} ${PHYSX_INCLUDES} ${PHYSX_PLATFORM_SOURCES})
 
+# Keep your existing line for Release
+target_compile_definitions(physx PUBLIC
+  $<$<CONFIG:Release>:NDEBUG>
+  $<$<CONFIG:RelWithDebInfo>:NDEBUG>
+  $<$<CONFIG:MinSizeRel>:NDEBUG>
+  $<$<CONFIG:Debug>:_DEBUG>
+)
+
+# Add _DEBUG for Debug builds (MSVC does this automatically, but it’s harmless to repeat)
+target_compile_definitions(physx PRIVATE
+  $<$<CONFIG:Debug>:_DEBUG>
+)
+
+# (Defensive) If something globally adds -DNDEBUG, undo it in Debug for Clang/GCC
+target_compile_options(physx PRIVATE
+  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANG_AND_ID:CXX,Clang,GNU>>:-UNDEBUG>
+  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANG_AND_ID:C,Clang,GNU>>:-UNDEBUG>
+)
+
 target_include_directories(physx PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}"
   ${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}/pxshared/include
+${CMAKE_CURRENT_SOURCE_DIR}/${PHYSX_NAME}/physx/include
 )
 
 target_include_directories(physx PRIVATE
@@ -162,5 +222,11 @@ target_include_directories(physx PRIVATE
   ${PHYSX_INCLUDE_DIRS}
   ${PHYSX_SOURCE_DIRS}
 )
+
+if (MSVC)
+  target_compile_options(physx PRIVATE /w /WX-)
+else()
+  target_compile_options(physx PRIVATE -w -Wno-error)
+endif()
 
 set_target_properties(physx PROPERTIES FOLDER "Dependencies")

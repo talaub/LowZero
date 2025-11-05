@@ -1,4 +1,4 @@
-#include "FlodeSyntaxNodes.h"
+#include "FLodeSyntaxNodes.h"
 #include <cstring>
 
 #include "LowEditor.h"
@@ -86,7 +86,7 @@ namespace Flode {
       graph->clean_unconnected_links();
     }
 
-    void FunctionNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void FunctionNode::serialize(Low::Util::Yaml::Node p_Node) const
     {
       p_Node["name"] = m_Name.c_str();
       p_Node["editable"] = m_Editable;
@@ -109,7 +109,7 @@ namespace Flode {
       }
     }
 
-    void FunctionNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void FunctionNode::deserialize(Low::Util::Yaml::Node p_Node)
     {
       m_Name = N(def_func);
       if (p_Node["name"]) {
@@ -139,7 +139,7 @@ namespace Flode {
       if (p_Node["parameters"]) {
         for (auto it = p_Node["parameters"].begin();
              it != p_Node["parameters"].end(); ++it) {
-          Low::Util::Yaml::Node &i_Node = *it;
+          Low::Util::Yaml::Node i_Node = *it;
 
           FunctionNodeParameter i_Param;
           i_Param.name = LOW_YAML_AS_NAME(i_Node["name"]);
@@ -460,14 +460,14 @@ namespace Flode {
     }
 
     void
-    GetVariableNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    GetVariableNode::serialize(Low::Util::Yaml::Node p_Node) const
     {
       if (m_Variable) {
         p_Node["variable"] = m_Variable->name.c_str();
       }
     }
 
-    void GetVariableNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void GetVariableNode::deserialize(Low::Util::Yaml::Node p_Node)
     {
       m_Variable = nullptr;
       if (p_Node["variable"]) {
@@ -581,14 +581,14 @@ namespace Flode {
     }
 
     void
-    SetVariableNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    SetVariableNode::serialize(Low::Util::Yaml::Node p_Node) const
     {
       if (m_Variable) {
         p_Node["variable"] = m_Variable->name.c_str();
       }
     }
 
-    void SetVariableNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void SetVariableNode::deserialize(Low::Util::Yaml::Node p_Node)
     {
       m_Variable = nullptr;
       if (p_Node["variable"]) {

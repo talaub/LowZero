@@ -32,20 +32,6 @@ namespace Low {
     Low::Util::List<Low::Util::Instances::Page *>
         AdaptiveRenderObject::ms_Pages;
 
-    AdaptiveRenderObject::AdaptiveRenderObject()
-        : Low::Util::Handle(0ull)
-    {
-    }
-    AdaptiveRenderObject::AdaptiveRenderObject(uint64_t p_Id)
-        : Low::Util::Handle(p_Id)
-    {
-    }
-    AdaptiveRenderObject::AdaptiveRenderObject(
-        AdaptiveRenderObject &p_Copy)
-        : Low::Util::Handle(p_Copy.m_Id)
-    {
-    }
-
     Low::Util::Handle
     AdaptiveRenderObject::_make(Low::Util::Name p_Name)
     {
@@ -603,7 +589,7 @@ namespace Low {
     }
 
     void AdaptiveRenderObject::serialize(
-        Low::Util::Yaml::Node &p_Node) const
+        Low::Util::Yaml::Node p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -621,16 +607,15 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
-    void
-    AdaptiveRenderObject::serialize(Low::Util::Handle p_Handle,
-                                    Low::Util::Yaml::Node &p_Node)
+    void AdaptiveRenderObject::serialize(Low::Util::Handle p_Handle,
+                                         Low::Util::Yaml::Node p_Node)
     {
       AdaptiveRenderObject l_AdaptiveRenderObject = p_Handle.get_id();
       l_AdaptiveRenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    AdaptiveRenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
+    AdaptiveRenderObject::deserialize(Low::Util::Yaml::Node p_Node,
                                       Low::Util::Handle p_Creator)
     {
       AdaptiveRenderObject l_Handle =
