@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererGlobals.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t TextureStaging::TYPE_ID = 75;
@@ -80,6 +82,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -92,6 +95,7 @@ namespace Low {
       {
         Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // Destroy all pixels still stored in this staging
         for (u8 i = 0u; i < IMAGE_MIPMAP_COUNT; ++i) {
           TexturePixels i_Pixels = get_pixels_for_miplevel(i);
@@ -134,6 +138,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
@@ -473,6 +478,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -506,6 +512,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -525,7 +532,8 @@ namespace Low {
       return l_TextureStaging.duplicate(p_Name);
     }
 
-    void TextureStaging::serialize(Low::Util::Yaml::Node p_Node) const
+    void
+    TextureStaging::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -544,18 +552,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void TextureStaging::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node p_Node)
+                                   Low::Util::Yaml::Node &p_Node)
     {
       TextureStaging l_TextureStaging = p_Handle.get_id();
       l_TextureStaging.serialize(p_Node);
     }
 
     Low::Util::Handle
-    TextureStaging::deserialize(Low::Util::Yaml::Node p_Node,
+    TextureStaging::deserialize(Low::Util::Yaml::Node &p_Node,
                                 Low::Util::Handle p_Creator)
     {
       TextureStaging l_Handle =
@@ -586,6 +595,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -627,6 +637,7 @@ namespace Low {
                                 Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -644,6 +655,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mip0
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mip0
 
       return TYPE_SOA(TextureStaging, mip0,
@@ -656,6 +668,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mip0
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mip0
 
       // Set new value
@@ -663,6 +676,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mip0
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_mip0
 
       broadcast_observable(N(mip0));
@@ -674,6 +688,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mip1
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mip1
 
       return TYPE_SOA(TextureStaging, mip1,
@@ -686,6 +701,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mip1
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mip1
 
       // Set new value
@@ -693,6 +709,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mip1
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_mip1
 
       broadcast_observable(N(mip1));
@@ -704,6 +721,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mip2
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mip2
 
       return TYPE_SOA(TextureStaging, mip2,
@@ -716,6 +734,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mip2
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mip2
 
       // Set new value
@@ -723,6 +742,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mip2
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_mip2
 
       broadcast_observable(N(mip2));
@@ -734,6 +754,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mip3
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mip3
 
       return TYPE_SOA(TextureStaging, mip3,
@@ -746,6 +767,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mip3
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mip3
 
       // Set new value
@@ -753,6 +775,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mip3
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_mip3
 
       broadcast_observable(N(mip3));
@@ -764,6 +787,7 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(TextureStaging, name, Low::Util::Name);
@@ -774,12 +798,14 @@ namespace Low {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(TextureStaging, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -790,6 +816,7 @@ namespace Low {
     {
       Low::Util::HandleLock<TextureStaging> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_pixels_for_miplevel
+
       switch (p_MipLevel) {
       case 0:
         return get_mip0();
@@ -889,6 +916,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

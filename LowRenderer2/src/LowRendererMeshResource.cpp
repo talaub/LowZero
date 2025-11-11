@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowUtilString.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MeshResource::TYPE_ID = 47;
@@ -67,6 +69,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -79,6 +82,7 @@ namespace Low {
       {
         Low::Util::HandleLock<MeshResource> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -114,6 +118,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -506,6 +511,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -532,6 +538,7 @@ namespace Low {
       l_Handle.set_asset_hash(get_asset_hash());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -551,27 +558,29 @@ namespace Low {
       return l_MeshResource.duplicate(p_Name);
     }
 
-    void MeshResource::serialize(Low::Util::Yaml::Node p_Node) const
+    void MeshResource::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void MeshResource::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
     {
       MeshResource l_MeshResource = p_Handle.get_id();
       l_MeshResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MeshResource::deserialize(Low::Util::Yaml::Node p_Node,
+    MeshResource::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return 0;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -612,6 +621,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -629,6 +639,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
       return TYPE_SOA(MeshResource, path, Util::String);
@@ -645,12 +656,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
       TYPE_SOA(MeshResource, path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
 
       broadcast_observable(N(path));
@@ -662,6 +675,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_path
 
       return TYPE_SOA(MeshResource, mesh_path, Util::String);
@@ -678,12 +692,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_path
 
       // Set new value
       TYPE_SOA(MeshResource, mesh_path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_path
 
       broadcast_observable(N(mesh_path));
@@ -695,6 +711,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_sidecar_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_sidecar_path
 
       return TYPE_SOA(MeshResource, sidecar_path, Util::String);
@@ -711,12 +728,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_sidecar_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_sidecar_path
 
       // Set new value
       TYPE_SOA(MeshResource, sidecar_path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_sidecar_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_sidecar_path
 
       broadcast_observable(N(sidecar_path));
@@ -728,6 +747,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_source_file
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_source_file
 
       return TYPE_SOA(MeshResource, source_file, Util::String);
@@ -744,12 +764,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_source_file
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_source_file
 
       // Set new value
       TYPE_SOA(MeshResource, source_file, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_source_file
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_source_file
 
       broadcast_observable(N(source_file));
@@ -761,6 +783,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh_id
 
       return TYPE_SOA(MeshResource, mesh_id, uint64_t);
@@ -771,12 +794,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh_id
 
       // Set new value
       TYPE_SOA(MeshResource, mesh_id, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_mesh_id
 
       broadcast_observable(N(mesh_id));
@@ -788,6 +813,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_asset_hash
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_asset_hash
 
       return TYPE_SOA(MeshResource, asset_hash, uint64_t);
@@ -798,12 +824,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_asset_hash
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_asset_hash
 
       // Set new value
       TYPE_SOA(MeshResource, asset_hash, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_asset_hash
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_asset_hash
 
       broadcast_observable(N(asset_hash));
@@ -815,6 +843,7 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(MeshResource, name, Low::Util::Name);
@@ -825,12 +854,14 @@ namespace Low {
       Low::Util::HandleLock<MeshResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MeshResource, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -839,6 +870,7 @@ namespace Low {
     MeshResource MeshResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
@@ -860,6 +892,7 @@ namespace Low {
     MeshResource::make_from_config(MeshResourceConfig &p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_config
+
       MeshResource l_MeshResource = MeshResource::make(p_Config.name);
       l_MeshResource.set_path(
           Util::PathHelper::normalize(p_Config.path));
@@ -876,6 +909,7 @@ namespace Low {
     MeshResource MeshResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
@@ -965,6 +999,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

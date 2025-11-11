@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererTextureExport.h"
 #include "LowRendererVulkanBuffer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -20,6 +21,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t TexExport::TYPE_ID = 81;
@@ -72,6 +74,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -84,6 +87,7 @@ namespace Low {
         {
           Low::Util::HandleLock<TexExport> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           BufferUtil::destroy_buffer(get_staging_buffer());
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -120,6 +124,7 @@ namespace Low {
       {
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -356,6 +361,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -378,6 +384,7 @@ namespace Low {
         l_Handle.set_frame_index(get_frame_index());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -397,7 +404,7 @@ namespace Low {
         return l_TexExport.duplicate(p_Name);
       }
 
-      void TexExport::serialize(Low::Util::Yaml::Node p_Node) const
+      void TexExport::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -405,18 +412,19 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
       void TexExport::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
       {
         TexExport l_TexExport = p_Handle.get_id();
         l_TexExport.serialize(p_Node);
       }
 
       Low::Util::Handle
-      TexExport::deserialize(Low::Util::Yaml::Node p_Node,
+      TexExport::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
       {
         TexExport l_Handle = TexExport::make(N(TexExport));
@@ -432,6 +440,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -474,6 +483,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         if (p_Observed.get_type() == TextureExport::TYPE_ID &&
             p_Observable == OBSERVABLE_DESTROY) {
           destroy();
@@ -495,6 +505,7 @@ namespace Low {
         Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_staging_buffer
 
         return TYPE_SOA(TexExport, staging_buffer, AllocatedBuffer);
@@ -505,6 +516,7 @@ namespace Low {
         Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging_buffer
 
         // Set new value
@@ -512,6 +524,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_staging_buffer
 
         broadcast_observable(N(staging_buffer));
@@ -523,6 +536,7 @@ namespace Low {
         Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_frame_index
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_frame_index
 
         return TYPE_SOA(TexExport, frame_index, uint32_t);
@@ -533,12 +547,14 @@ namespace Low {
         Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_frame_index
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_frame_index
 
         // Set new value
         TYPE_SOA(TexExport, frame_index, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_frame_index
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_frame_index
 
         broadcast_observable(N(frame_index));
@@ -550,6 +566,7 @@ namespace Low {
         Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(TexExport, name, Low::Util::Name);
@@ -560,12 +577,14 @@ namespace Low {
         Low::Util::HandleLock<TexExport> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(TexExport, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -651,6 +670,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan

@@ -917,7 +917,7 @@ namespace Low {
           return l_Display.duplicate(l_Element);
         }
 
-        void Display::serialize(Low::Util::Yaml::Node p_Node) const
+        void Display::serialize(Low::Util::Yaml::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
@@ -937,14 +937,14 @@ namespace Low {
         }
 
         void Display::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
         {
           Display l_Display = p_Handle.get_id();
           l_Display.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Display::deserialize(Low::Util::Yaml::Node p_Node,
+        Display::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -1027,6 +1027,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
           // LOW_CODEGEN::END::CUSTOM:NOTIFY
         }
 
@@ -1668,6 +1669,7 @@ namespace Low {
           if (!is_dirty()) {
             TYPE_SOA(Display, dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
             // LOW_CODEGEN::END::CUSTOM:MARK_dirty
           }
         }
@@ -1727,6 +1729,7 @@ namespace Low {
           if (!is_world_dirty()) {
             TYPE_SOA(Display, world_dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_world_dirty
+
             // LOW_CODEGEN::END::CUSTOM:MARK_world_dirty
           }
         }

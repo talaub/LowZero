@@ -95,6 +95,7 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -107,6 +108,7 @@ namespace Low {
           {
             Low::Util::HandleLock<Image> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
             // LOW_CODEGEN::END::CUSTOM:DESTROY
           }
 
@@ -444,7 +446,7 @@ namespace Low {
           return l_Image.duplicate(l_Element);
         }
 
-        void Image::serialize(Low::Util::Yaml::Node p_Node) const
+        void Image::serialize(Low::Util::Yaml::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
@@ -457,14 +459,14 @@ namespace Low {
         }
 
         void Image::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node p_Node)
+                              Low::Util::Yaml::Node &p_Node)
         {
           Image l_Image = p_Handle.get_id();
           l_Image.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Image::deserialize(Low::Util::Yaml::Node p_Node,
+        Image::deserialize(Low::Util::Yaml::Node &p_Node,
                            Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -526,6 +528,7 @@ namespace Low {
                            Low::Util::Name p_Observable)
         {
           // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
           // LOW_CODEGEN::END::CUSTOM:NOTIFY
         }
 
@@ -554,6 +557,7 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
           // Set new value
@@ -572,6 +576,7 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
           return TYPE_SOA(Image, material, Low::Renderer::Material);
@@ -582,6 +587,7 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
           // Set new value
@@ -589,6 +595,7 @@ namespace Low {
               p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_material
 
           broadcast_observable(N(material));

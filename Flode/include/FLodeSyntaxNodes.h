@@ -34,8 +34,8 @@ namespace Flode {
       virtual void render_data() override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node p_Node) override;
+      serialize(Low::Util::Yaml::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
 
       virtual void
       compile(Low::Util::StringBuilder &p_Builder) const override;
@@ -73,8 +73,8 @@ namespace Flode {
       virtual void render_data() override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node p_Node) override;
+      serialize(Low::Util::Yaml::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
 
       virtual void
       compile_output_pin(Low::Util::StringBuilder &p_Builder,
@@ -112,8 +112,8 @@ namespace Flode {
       virtual void render_data() override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node p_Node) override;
+      serialize(Low::Util::Yaml::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
 
       virtual void
       compile(Low::Util::StringBuilder &p_Builder) const override;

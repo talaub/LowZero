@@ -261,8 +261,8 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
   load_module(p_ProjectPath, "./modules/Gameplay");
   load_module(p_ProjectPath, "./modules/Editor");
 #else
-  load_module(p_ProjectPath, "P:/misteda/modules/Gameplay");
-  load_module(p_ProjectPath, "P:/misteda/modules/Editor");
+  load_module(p_ProjectPath, "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Gameplay");
+  load_module(p_ProjectPath, "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Editor");
 #endif
 }
 

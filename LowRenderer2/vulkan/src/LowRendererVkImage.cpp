@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererVulkanImage.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -19,6 +20,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Image::TYPE_ID = 49;
@@ -69,6 +71,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_depth(false);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -82,6 +85,7 @@ namespace Low {
         {
           Low::Util::HandleLock<Image> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // TODO: Schedule image for deletion
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -118,6 +122,7 @@ namespace Low {
       {
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -361,6 +366,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -383,6 +389,7 @@ namespace Low {
         l_Handle.set_depth(is_depth());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -400,7 +407,7 @@ namespace Low {
         return l_Image.duplicate(p_Name);
       }
 
-      void Image::serialize(Low::Util::Yaml::Node p_Node) const
+      void Image::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -408,18 +415,19 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
       void Image::serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node p_Node)
+                            Low::Util::Yaml::Node &p_Node)
       {
         Image l_Image = p_Handle.get_id();
         l_Image.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Image::deserialize(Low::Util::Yaml::Node p_Node,
+      Image::deserialize(Low::Util::Yaml::Node &p_Node,
                          Low::Util::Handle p_Creator)
       {
         Image l_Handle = Image::make(N(Image));
@@ -434,6 +442,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -475,6 +484,7 @@ namespace Low {
                          Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -492,6 +502,7 @@ namespace Low {
         Low::Util::HandleLock<Image> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_allocated_image
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_allocated_image
 
         return TYPE_SOA(Image, allocated_image, AllocatedImage);
@@ -502,12 +513,14 @@ namespace Low {
         Low::Util::HandleLock<Image> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_allocated_image
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_allocated_image
 
         // Set new value
         TYPE_SOA(Image, allocated_image, AllocatedImage) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_allocated_image
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_allocated_image
 
         broadcast_observable(N(allocated_image));
@@ -519,6 +532,7 @@ namespace Low {
         Low::Util::HandleLock<Image> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_depth
 
         return TYPE_SOA(Image, depth, bool);
@@ -534,12 +548,14 @@ namespace Low {
         Low::Util::HandleLock<Image> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth
 
         // Set new value
         TYPE_SOA(Image, depth, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_depth
 
         broadcast_observable(N(depth));
@@ -551,6 +567,7 @@ namespace Low {
         Low::Util::HandleLock<Image> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Image, name, Low::Util::Name);
@@ -561,12 +578,14 @@ namespace Low {
         Low::Util::HandleLock<Image> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Image, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -576,6 +595,7 @@ namespace Low {
       {
         Low::Util::HandleLock<Image> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_unload
+
         return ImageUtil::Internal::destroy(get_allocated_image());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_unload
       }
@@ -660,6 +680,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan

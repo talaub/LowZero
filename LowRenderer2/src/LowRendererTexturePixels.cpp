@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t TexturePixels::TYPE_ID = 73;
@@ -75,6 +77,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.get_pixel_data().resize(15);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -88,6 +91,7 @@ namespace Low {
       {
         Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -123,6 +127,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -493,6 +498,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -520,6 +526,7 @@ namespace Low {
       l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -539,7 +546,7 @@ namespace Low {
       return l_TexturePixels.duplicate(p_Name);
     }
 
-    void TexturePixels::serialize(Low::Util::Yaml::Node p_Node) const
+    void TexturePixels::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -552,18 +559,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void TexturePixels::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node p_Node)
+                                  Low::Util::Yaml::Node &p_Node)
     {
       TexturePixels l_TexturePixels = p_Handle.get_id();
       l_TexturePixels.serialize(p_Node);
     }
 
     Low::Util::Handle
-    TexturePixels::deserialize(Low::Util::Yaml::Node p_Node,
+    TexturePixels::deserialize(Low::Util::Yaml::Node &p_Node,
                                Low::Util::Handle p_Creator)
     {
       TexturePixels l_Handle = TexturePixels::make(N(TexturePixels));
@@ -590,6 +598,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -631,6 +640,7 @@ namespace Low {
                                Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -648,6 +658,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
 
       return TYPE_SOA(TexturePixels, dimensions, Low::Math::UVector2);
@@ -678,6 +689,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions
 
       // Set new value
@@ -685,6 +697,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
 
       broadcast_observable(N(dimensions));
@@ -696,6 +709,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_channels
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_channels
 
       return TYPE_SOA(TexturePixels, channels, uint8_t);
@@ -706,12 +720,14 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_channels
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_channels
 
       // Set new value
       TYPE_SOA(TexturePixels, channels, uint8_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_channels
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_channels
 
       broadcast_observable(N(channels));
@@ -724,6 +740,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_format
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_format
 
       return TYPE_SOA(TexturePixels, format,
@@ -736,6 +753,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_format
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_format
 
       // Set new value
@@ -743,6 +761,7 @@ namespace Low {
                Low::Util::Resource::Image2DFormat) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_format
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_format
 
       broadcast_observable(N(format));
@@ -754,6 +773,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pixel_data
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_pixel_data
 
       return TYPE_SOA(TexturePixels, pixel_data,
@@ -766,6 +786,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pixel_data
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_pixel_data
 
       // Set new value
@@ -773,6 +794,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pixel_data
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_pixel_data
 
       broadcast_observable(N(pixel_data));
@@ -784,6 +806,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_size
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_size
 
       return TYPE_SOA(TexturePixels, data_size, uint64_t);
@@ -794,12 +817,14 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_size
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_size
 
       // Set new value
       TYPE_SOA(TexturePixels, data_size, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_size
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_size
 
       broadcast_observable(N(data_size));
@@ -811,6 +836,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(TexturePixels, state,
@@ -822,6 +848,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
@@ -829,6 +856,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
 
       broadcast_observable(N(state));
@@ -840,6 +868,7 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(TexturePixels, name, Low::Util::Name);
@@ -850,12 +879,14 @@ namespace Low {
       Low::Util::HandleLock<TexturePixels> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(TexturePixels, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -939,6 +970,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

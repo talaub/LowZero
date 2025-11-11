@@ -54,6 +54,11 @@ target_include_directories(LowCore PUBLIC
 
 set_target_properties(LowCore PROPERTIES OUTPUT_NAME "lowcore")
 
+target_compile_options(LowCore PRIVATE
+  $<$<C_COMPILER_ID:MSVC>:/bigobj>
+  $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
+)
+
 set(WIN_PLATFORM_STRING "x64")
 
 target_link_libraries(LowCore PRIVATE

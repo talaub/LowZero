@@ -87,6 +87,7 @@ namespace Low {
         {
           Low::Util::HandleLock<Pipeline> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           vkDestroyPipelineLayout(Global::get_device(), get_layout(),
                                   nullptr);
           vkDestroyPipeline(Global::get_device(), get_pipeline(),
@@ -363,6 +364,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -405,7 +407,7 @@ namespace Low {
         return l_Pipeline.duplicate(p_Name);
       }
 
-      void Pipeline::serialize(Low::Util::Yaml::Node p_Node) const
+      void Pipeline::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -417,14 +419,14 @@ namespace Low {
       }
 
       void Pipeline::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
       {
         Pipeline l_Pipeline = p_Handle.get_id();
         l_Pipeline.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Pipeline::deserialize(Low::Util::Yaml::Node p_Node,
+      Pipeline::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
       {
         Pipeline l_Handle = Pipeline::make(N(Pipeline));
@@ -481,6 +483,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 

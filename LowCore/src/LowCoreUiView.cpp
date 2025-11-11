@@ -749,6 +749,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -813,7 +814,7 @@ namespace Low {
         return l_View.duplicate(p_Name);
       }
 
-      void View::serialize(Low::Util::Yaml::Node p_Node) const
+      void View::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -833,14 +834,14 @@ namespace Low {
       }
 
       void View::serialize(Low::Util::Handle p_Handle,
-                           Low::Util::Yaml::Node p_Node)
+                           Low::Util::Yaml::Node &p_Node)
       {
         View l_View = p_Handle.get_id();
         l_View.serialize(p_Node);
       }
 
       Low::Util::Handle
-      View::deserialize(Low::Util::Yaml::Node p_Node,
+      View::deserialize(Low::Util::Yaml::Node &p_Node,
                         Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -924,6 +925,7 @@ namespace Low {
                         Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -1283,6 +1285,7 @@ namespace Low {
         if (!is_transform_dirty()) {
           TYPE_SOA(View, transform_dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_transform_dirty
+
           // LOW_CODEGEN::END::CUSTOM:MARK_transform_dirty
         }
       }
@@ -1317,7 +1320,7 @@ namespace Low {
         broadcast_observable(N(name));
       }
 
-      void View::serialize_elements(Util::Yaml::Node p_Node)
+      void View::serialize_elements(Util::Yaml::Node &p_Node)
       {
         Low::Util::HandleLock<View> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_serialize_elements

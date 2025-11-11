@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MaterialResource::TYPE_ID = 86;
@@ -67,6 +69,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -79,6 +82,7 @@ namespace Low {
       {
         Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -114,6 +118,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
@@ -358,6 +363,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -380,6 +386,7 @@ namespace Low {
       l_Handle.set_path(get_path());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -401,7 +408,7 @@ namespace Low {
     }
 
     void
-    MaterialResource::serialize(Low::Util::Yaml::Node p_Node) const
+    MaterialResource::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -409,18 +416,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void MaterialResource::serialize(Low::Util::Handle p_Handle,
-                                     Low::Util::Yaml::Node p_Node)
+                                     Low::Util::Yaml::Node &p_Node)
     {
       MaterialResource l_MaterialResource = p_Handle.get_id();
       l_MaterialResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MaterialResource::deserialize(Low::Util::Yaml::Node p_Node,
+    MaterialResource::deserialize(Low::Util::Yaml::Node &p_Node,
                                   Low::Util::Handle p_Creator)
     {
       MaterialResource l_Handle =
@@ -434,6 +442,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -475,6 +484,7 @@ namespace Low {
                                   Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -492,6 +502,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
       return TYPE_SOA(MaterialResource, path, Util::String);
@@ -508,12 +519,14 @@ namespace Low {
       Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
       TYPE_SOA(MaterialResource, path, Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
 
       broadcast_observable(N(path));
@@ -525,6 +538,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(MaterialResource, name, Low::Util::Name);
@@ -535,12 +549,14 @@ namespace Low {
       Low::Util::HandleLock<MaterialResource> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MaterialResource, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -549,6 +565,7 @@ namespace Low {
     MaterialResource MaterialResource::make(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
@@ -570,6 +587,7 @@ namespace Low {
     MaterialResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {
@@ -659,6 +677,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

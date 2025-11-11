@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t GpuSubmesh::TYPE_ID = 69;
@@ -82,6 +84,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -94,6 +97,7 @@ namespace Low {
       {
         Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -129,6 +133,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -682,6 +687,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -714,6 +720,7 @@ namespace Low {
       l_Handle.set_bounding_sphere(get_bounding_sphere());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -733,27 +740,29 @@ namespace Low {
       return l_GpuSubmesh.duplicate(p_Name);
     }
 
-    void GpuSubmesh::serialize(Low::Util::Yaml::Node p_Node) const
+    void GpuSubmesh::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void GpuSubmesh::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
     {
       GpuSubmesh l_GpuSubmesh = p_Handle.get_id();
       l_GpuSubmesh.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GpuSubmesh::deserialize(Low::Util::Yaml::Node p_Node,
+    GpuSubmesh::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -794,6 +803,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -811,6 +821,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(GpuSubmesh, state, MeshState);
@@ -821,12 +832,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
       TYPE_SOA(GpuSubmesh, state, MeshState) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
 
       broadcast_observable(N(state));
@@ -838,6 +851,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded_vertex_count
 
       return TYPE_SOA(GpuSubmesh, uploaded_vertex_count, uint32_t);
@@ -848,12 +862,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded_vertex_count
 
       // Set new value
       TYPE_SOA(GpuSubmesh, uploaded_vertex_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded_vertex_count
 
       broadcast_observable(N(uploaded_vertex_count));
@@ -865,6 +881,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded_index_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded_index_count
 
       return TYPE_SOA(GpuSubmesh, uploaded_index_count, uint32_t);
@@ -875,12 +892,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded_index_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded_index_count
 
       // Set new value
       TYPE_SOA(GpuSubmesh, uploaded_index_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded_index_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded_index_count
 
       broadcast_observable(N(uploaded_index_count));
@@ -892,6 +911,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_count
 
       return TYPE_SOA(GpuSubmesh, vertex_count, uint32_t);
@@ -902,12 +922,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_count
 
       // Set new value
       TYPE_SOA(GpuSubmesh, vertex_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_count
 
       broadcast_observable(N(vertex_count));
@@ -919,6 +941,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_index_count
 
       return TYPE_SOA(GpuSubmesh, index_count, uint32_t);
@@ -929,12 +952,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_count
 
       // Set new value
       TYPE_SOA(GpuSubmesh, index_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_count
 
       broadcast_observable(N(index_count));
@@ -946,6 +971,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_vertex_start
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_vertex_start
 
       return TYPE_SOA(GpuSubmesh, vertex_start, uint32_t);
@@ -956,12 +982,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_vertex_start
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_vertex_start
 
       // Set new value
       TYPE_SOA(GpuSubmesh, vertex_start, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_vertex_start
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_vertex_start
 
       broadcast_observable(N(vertex_start));
@@ -973,6 +1001,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_index_start
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_index_start
 
       return TYPE_SOA(GpuSubmesh, index_start, uint32_t);
@@ -983,12 +1012,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_index_start
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_index_start
 
       // Set new value
       TYPE_SOA(GpuSubmesh, index_start, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_index_start
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_index_start
 
       broadcast_observable(N(index_start));
@@ -1000,6 +1031,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transform
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_transform
 
       return TYPE_SOA(GpuSubmesh, transform, Low::Math::Matrix4x4);
@@ -1010,12 +1042,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transform
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_transform
 
       // Set new value
       TYPE_SOA(GpuSubmesh, transform, Low::Math::Matrix4x4) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transform
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_transform
 
       broadcast_observable(N(transform));
@@ -1027,6 +1061,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_transform
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_parent_transform
 
       return TYPE_SOA(GpuSubmesh, parent_transform,
@@ -1039,6 +1074,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_transform
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_transform
 
       // Set new value
@@ -1046,6 +1082,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_transform
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_parent_transform
 
       broadcast_observable(N(parent_transform));
@@ -1057,6 +1094,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_local_transform
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_local_transform
 
       return TYPE_SOA(GpuSubmesh, local_transform,
@@ -1069,6 +1107,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_local_transform
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_local_transform
 
       // Set new value
@@ -1076,6 +1115,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_local_transform
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_local_transform
 
       broadcast_observable(N(local_transform));
@@ -1087,6 +1127,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_aabb
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_aabb
 
       return TYPE_SOA(GpuSubmesh, aabb, Low::Math::AABB);
@@ -1097,12 +1138,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_aabb
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_aabb
 
       // Set new value
       TYPE_SOA(GpuSubmesh, aabb, Low::Math::AABB) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_aabb
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_aabb
 
       broadcast_observable(N(aabb));
@@ -1114,6 +1157,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bounding_sphere
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_bounding_sphere
 
       return TYPE_SOA(GpuSubmesh, bounding_sphere, Low::Math::Sphere);
@@ -1124,6 +1168,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bounding_sphere
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_bounding_sphere
 
       // Set new value
@@ -1131,6 +1176,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bounding_sphere
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_bounding_sphere
 
       broadcast_observable(N(bounding_sphere));
@@ -1142,6 +1188,7 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(GpuSubmesh, name, Low::Util::Name);
@@ -1152,12 +1199,14 @@ namespace Low {
       Low::Util::HandleLock<GpuSubmesh> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(GpuSubmesh, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1241,6 +1290,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

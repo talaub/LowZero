@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererRenderScene.h"
 #include "LowRendererDrawCommand.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -19,6 +20,7 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Low::Util::Set<Low::Renderer::RenderObject>
         Low::Renderer::RenderObject::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -86,6 +88,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_dirty(true);
       l_Handle.set_uploaded(false);
       l_Handle.set_object_id(LOW_UINT32_MAX);
@@ -101,6 +104,7 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         for (auto it = get_draw_commands().begin();
              it != get_draw_commands().end(); ++it) {
           if (it->is_alive()) {
@@ -146,6 +150,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -621,6 +626,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -653,6 +659,7 @@ namespace Low {
       l_Handle.set_dirty(is_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -672,27 +679,29 @@ namespace Low {
       return l_RenderObject.duplicate(p_Name);
     }
 
-    void RenderObject::serialize(Low::Util::Yaml::Node p_Node) const
+    void RenderObject::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void RenderObject::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
     {
       RenderObject l_RenderObject = p_Handle.get_id();
       l_RenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderObject::deserialize(Low::Util::Yaml::Node p_Node,
+    RenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -733,6 +742,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -750,6 +760,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_transform
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_world_transform
 
       return TYPE_SOA(RenderObject, world_transform,
@@ -762,6 +773,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_transform
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_transform
 
       if (get_world_transform() != p_Value) {
@@ -773,6 +785,7 @@ namespace Low {
                  Low::Math::Matrix4x4) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
+
         ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_transform
 
@@ -786,6 +799,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
       return TYPE_SOA(RenderObject, mesh, Low::Renderer::Mesh);
@@ -796,6 +810,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+
       if (get_mesh().is_alive()) {
         get_mesh().dereference(get_id());
       }
@@ -805,6 +820,7 @@ namespace Low {
       TYPE_SOA(RenderObject, mesh, Low::Renderer::Mesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+
       if (p_Value.is_alive()) {
         p_Value.reference(get_id());
       }
@@ -819,6 +835,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
 
       return TYPE_SOA(RenderObject, uploaded, bool);
@@ -834,12 +851,14 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
 
       // Set new value
       TYPE_SOA(RenderObject, uploaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
 
       broadcast_observable(N(uploaded));
@@ -851,6 +870,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_slot
 
       return TYPE_SOA(RenderObject, slot, uint32_t);
@@ -861,12 +881,14 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
 
       // Set new value
       TYPE_SOA(RenderObject, slot, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
 
       broadcast_observable(N(slot));
@@ -878,6 +900,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_scene_handle
 
       return TYPE_SOA(RenderObject, render_scene_handle, uint64_t);
@@ -888,12 +911,14 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_scene_handle
 
       // Set new value
       TYPE_SOA(RenderObject, render_scene_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene_handle
 
       broadcast_observable(N(render_scene_handle));
@@ -905,6 +930,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
       return TYPE_SOA(RenderObject, material,
@@ -916,6 +942,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
       Material l_OldMaterial = get_material();
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
@@ -928,6 +955,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
         if (l_OldMaterial.is_alive()) {
           l_OldMaterial.dereference(get_id());
         }
@@ -948,6 +976,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
       return TYPE_SOA(RenderObject, draw_commands,
@@ -960,6 +989,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_object_id
 
       return TYPE_SOA(RenderObject, object_id, uint32_t);
@@ -970,6 +1000,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_object_id
 
       if (get_object_id() != p_Value) {
@@ -980,6 +1011,7 @@ namespace Low {
         TYPE_SOA(RenderObject, object_id, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_object_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_object_id
 
         broadcast_observable(N(object_id));
@@ -992,6 +1024,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
       return TYPE_SOA(RenderObject, dirty, bool);
@@ -1007,12 +1040,14 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
       TYPE_SOA(RenderObject, dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
       if (p_Value) {
         ms_Dirty.insert(get_id());
       }
@@ -1026,6 +1061,7 @@ namespace Low {
       if (!is_dirty()) {
         TYPE_SOA(RenderObject, dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
     }
@@ -1036,6 +1072,7 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(RenderObject, name, Low::Util::Name);
@@ -1046,12 +1083,14 @@ namespace Low {
       Low::Util::HandleLock<RenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(RenderObject, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1061,6 +1100,7 @@ namespace Low {
                                     Low::Renderer::Mesh p_Mesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       _LOW_ASSERT(p_RenderScene.is_alive());
 
       RenderObject l_Handle = make(N(RenderObject));
@@ -1153,6 +1193,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

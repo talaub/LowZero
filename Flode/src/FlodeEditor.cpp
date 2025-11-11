@@ -572,37 +572,6 @@ namespace Flode {
       NodeEd::NavigateToSelection();
     }
 
-    if (ImGui::IsKeyPressed(ImGuiKey_F3)) {
-      Cflat::Function *l_Function =
-          Low::Core::Scripting::get_environment()->getFunction(
-              "TestScript::TestFunction");
-
-      LOW_ASSERT(l_Function, "Could not find testfunction");
-
-      Cflat::Value l_ReturnValue;
-      CflatArgsVector(Cflat::Value) l_Arguments;
-
-      /*
-      Cflat::Value l_StatusEffectInstanceArgument;
-      l_StatusEffectInstanceArgument.initExternal(
-          kTypeUsageStatusEffectInstance);
-      l_StatusEffectInstanceArgument.set(&p_StatusEffectInstance);
-      l_Arguments.push_back(l_StatusEffectInstanceArgument);
-
-      Cflat::Value l_DamageAmountArgument;
-      l_DamageAmountArgument.initExternal(kTypeUsageFloat);
-      l_DamageAmountArgument.set(&p_DamageAmount);
-      l_Arguments.push_back(l_DamageAmountArgument);
-
-      Cflat::Value l_DamageTypeArgument;
-      l_DamageTypeArgument.initExternal(kTypeUsageDamageType);
-      l_DamageTypeArgument.set(&p_DamageType);
-      l_Arguments.push_back(l_DamageTypeArgument);
-      */
-
-      l_Function->execute(l_Arguments, &l_ReturnValue);
-    }
-
     NodeEd::Suspend();
     create_node_popup();
     NodeEd::Resume();

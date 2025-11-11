@@ -1453,7 +1453,7 @@ namespace Low {
 
       bool parse_mesh_resource_config(Util::String p_Path,
                                       Util::Yaml::Node p_Node,
-                                      MeshResourceConfig p_Config)
+                                      MeshResourceConfig &p_Config)
       {
         LOWR_ASSERT_RETURN(p_Node["version"],
                            "Could not find version");
@@ -1499,7 +1499,7 @@ namespace Low {
       bool
       parse_texture_resource_config(Util::String p_Path,
                                     Util::Yaml::Node p_Node,
-                                    TextureResourceConfig p_Config)
+                                    TextureResourceConfig &p_Config)
       {
         LOWR_ASSERT_RETURN(p_Node["version"],
                            "Could not find version");

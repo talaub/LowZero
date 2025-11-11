@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererRenderView.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t RenderStep::TYPE_ID = 64;
@@ -102,6 +104,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_setup_callback(
           [&](RenderStep p_RenderStep) -> bool { return true; });
       l_Handle.set_prepare_callback(
@@ -129,6 +132,7 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderStep> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -164,6 +168,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -619,6 +624,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -645,6 +651,7 @@ namespace Low {
           get_resolution_update_callback());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -664,25 +671,26 @@ namespace Low {
       return l_RenderStep.duplicate(p_Name);
     }
 
-    void RenderStep::serialize(Low::Util::Yaml::Node p_Node) const
+    void RenderStep::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void RenderStep::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
     {
       RenderStep l_RenderStep = p_Handle.get_id();
       l_RenderStep.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderStep::deserialize(Low::Util::Yaml::Node p_Node,
+    RenderStep::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
       RenderStep l_Handle = RenderStep::make(N(RenderStep));
@@ -702,6 +710,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -743,6 +752,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -761,6 +771,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_setup_callback
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_setup_callback
 
       return TYPE_SOA(RenderStep, setup_callback,
@@ -773,6 +784,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_setup_callback
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_setup_callback
 
       // Set new value
@@ -780,6 +792,7 @@ namespace Low {
                Low::Util::Function<bool(RenderStep)>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_setup_callback
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_setup_callback
 
       broadcast_observable(N(setup_callback));
@@ -793,6 +806,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_prepare_callback
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_prepare_callback
 
       return TYPE_SOA(
@@ -810,6 +824,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_prepare_callback
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_prepare_callback
 
       // Set new value
@@ -821,6 +836,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_prepare_callback
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_prepare_callback
 
       broadcast_observable(N(prepare_callback));
@@ -834,6 +850,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_teardown_callback
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_teardown_callback
 
       return TYPE_SOA(
@@ -851,6 +868,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_teardown_callback
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_teardown_callback
 
       // Set new value
@@ -862,6 +880,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_teardown_callback
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_teardown_callback
 
       broadcast_observable(N(teardown_callback));
@@ -875,6 +894,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_execute_callback
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_execute_callback
 
       return TYPE_SOA(RenderStep, execute_callback,
@@ -891,6 +911,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_execute_callback
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_execute_callback
 
       // Set new value
@@ -900,6 +921,7 @@ namespace Low {
                               Low::Renderer::RenderView)>)) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_execute_callback
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_execute_callback
 
       broadcast_observable(N(execute_callback));
@@ -914,6 +936,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resolution_update_callback
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resolution_update_callback
 
       return TYPE_SOA(
@@ -933,6 +956,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resolution_update_callback
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resolution_update_callback
 
       // Set new value
@@ -943,6 +967,7 @@ namespace Low {
                               Low::Renderer::RenderView)>)) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resolution_update_callback
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_resolution_update_callback
 
       broadcast_observable(N(resolution_update_callback));
@@ -954,6 +979,7 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(RenderStep, name, Low::Util::Name);
@@ -964,12 +990,14 @@ namespace Low {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(RenderStep, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -979,6 +1007,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_prepare
+
       return get_prepare_callback()(get_id(), p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_prepare
     }
@@ -987,6 +1016,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_teardown
+
       return get_teardown_callback()(get_id(), p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_teardown
     }
@@ -997,6 +1027,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_update_resolution
+
       return get_resolution_update_callback()(
           get_id(), p_NewDimensions, p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_update_resolution
@@ -1007,6 +1038,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_execute
+
       return get_execute_callback()(get_id(), p_DeltaTime,
                                     p_RenderView);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_execute
@@ -1016,6 +1048,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderStep> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_setup
+
       return get_setup_callback()(get_id());
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_setup
     }
@@ -1092,6 +1125,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

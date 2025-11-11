@@ -678,34 +678,31 @@ function get_cs_method_name(p_Name) {
 }
 
 function is_reference_type(t) {
-  if (t.endsWith("Yaml::Node")){
+  if (t.endsWith("Math::Color")) {
     return false;
   }
-  if (t.endsWith("Math::Color")){
+  if (t.endsWith("Math::ColorRGB")) {
     return false;
   }
-  if (t.endsWith("Math::ColorRGB")){
+  if (t.endsWith("Math::Vector3")) {
     return false;
   }
-  if (t.endsWith("Math::Vector3")){
+  if (t.endsWith("Math::Vector2")) {
     return false;
   }
-  if (t.endsWith("Math::Vector2")){
+  if (t.endsWith("Math::UVector3")) {
     return false;
   }
-  if (t.endsWith("Math::UVector3")){
+  if (t.endsWith("Math::UVector2")) {
     return false;
   }
-  if (t.endsWith("Math::UVector2")){
+  if (t.endsWith("Math::Vector4")) {
     return false;
   }
-  if (t.endsWith("Math::Vector4")){
+  if (t.endsWith("Math::Quaternion")) {
     return false;
   }
-  if (t.endsWith("Math::Quaternion")){
-    return false;
-  }
-  if (t.endsWith("Util::String")){
+  if (t.endsWith("Util::String")) {
     return false;
   }
   return (

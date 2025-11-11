@@ -117,7 +117,7 @@ namespace Low {
 
         static uint32_t get_capacity();
 
-        void serialize(Low::Util::Yaml::Node p_Node) const;
+        void serialize(Low::Util::Yaml::Node &p_Node) const;
 
         PrefabInstance duplicate(Low::Core::Entity p_Entity) const;
         static PrefabInstance duplicate(PrefabInstance p_Handle,
@@ -127,9 +127,9 @@ namespace Low {
                    Low::Util::Handle p_Entity);
 
         static void serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node p_Node);
+                              Low::Util::Yaml::Node &p_Node);
         static Low::Util::Handle
-        deserialize(Low::Util::Yaml::Node p_Node,
+        deserialize(Low::Util::Yaml::Node &p_Node,
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
@@ -175,6 +175,7 @@ namespace Low {
         void update_component_from_prefab(uint16_t p_ComponentType);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 

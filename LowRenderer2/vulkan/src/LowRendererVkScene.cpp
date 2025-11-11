@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererGlobals.h"
 #include "LowRendererVulkanBuffer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -20,6 +21,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t Scene::TYPE_ID = 63;
@@ -70,6 +72,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_point_light_slots(
             (bool *)calloc(POINTLIGHT_COUNT, sizeof(bool)));
 
@@ -94,6 +97,7 @@ namespace Low {
         {
           Low::Util::HandleLock<Scene> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           free(get_point_light_slots());
           BufferUtil::destroy_buffer(get_point_light_buffer());
           // LOW_CODEGEN::END::CUSTOM:DESTROY
@@ -131,6 +135,7 @@ namespace Low {
       {
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -365,6 +370,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -387,6 +393,7 @@ namespace Low {
         l_Handle.set_point_light_buffer(get_point_light_buffer());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -404,25 +411,26 @@ namespace Low {
         return l_Scene.duplicate(p_Name);
       }
 
-      void Scene::serialize(Low::Util::Yaml::Node p_Node) const
+      void Scene::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
       void Scene::serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node p_Node)
+                            Low::Util::Yaml::Node &p_Node)
       {
         Scene l_Scene = p_Handle.get_id();
         l_Scene.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Scene::deserialize(Low::Util::Yaml::Node p_Node,
+      Scene::deserialize(Low::Util::Yaml::Node &p_Node,
                          Low::Util::Handle p_Creator)
       {
         Scene l_Handle = Scene::make(N(Scene));
@@ -436,6 +444,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -477,6 +486,7 @@ namespace Low {
                          Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -494,6 +504,7 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_slots
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_slots
 
         return TYPE_SOA(Scene, point_light_slots, bool *);
@@ -504,12 +515,14 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_slots
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_slots
 
         // Set new value
         TYPE_SOA(Scene, point_light_slots, bool *) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_slots
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_slots
 
         broadcast_observable(N(point_light_slots));
@@ -521,6 +534,7 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_buffer
 
         return TYPE_SOA(Scene, point_light_buffer, AllocatedBuffer);
@@ -531,6 +545,7 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_buffer
 
         // Set new value
@@ -538,6 +553,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
 
         broadcast_observable(N(point_light_buffer));
@@ -549,6 +565,7 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Scene, name, Low::Util::Name);
@@ -559,12 +576,14 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Scene, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -650,6 +669,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan

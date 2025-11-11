@@ -96,6 +96,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         l_Handle.set_intensity(5.0f);
         l_Handle.set_range(10.0f);
         // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -110,6 +111,7 @@ namespace Low {
         {
           Low::Util::HandleLock<PointLight> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           if (get_renderer_point_light().is_alive()) {
             get_renderer_point_light().destroy();
           }
@@ -507,7 +509,7 @@ namespace Low {
         return l_PointLight.duplicate(l_Entity);
       }
 
-      void PointLight::serialize(Low::Util::Yaml::Node p_Node) const
+      void PointLight::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -524,14 +526,14 @@ namespace Low {
       }
 
       void PointLight::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
       {
         PointLight l_PointLight = p_Handle.get_id();
         l_PointLight.serialize(p_Node);
       }
 
       Low::Util::Handle
-      PointLight::deserialize(Low::Util::Yaml::Node p_Node,
+      PointLight::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -605,6 +607,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -739,6 +742,7 @@ namespace Low {
         Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_range
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_range
 
         return TYPE_SOA(PointLight, range, float);
@@ -749,6 +753,7 @@ namespace Low {
         Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_range
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_range
 
         // Set new value
@@ -770,6 +775,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_range
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_range
 
         broadcast_observable(N(range));
@@ -782,6 +788,7 @@ namespace Low {
         Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_renderer_point_light
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_renderer_point_light
 
         return TYPE_SOA(PointLight, renderer_point_light,
@@ -794,6 +801,7 @@ namespace Low {
         Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_renderer_point_light
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_renderer_point_light
 
         // Set new value
@@ -801,6 +809,7 @@ namespace Low {
                  Low::Renderer::PointLight) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_renderer_point_light
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_renderer_point_light
 
         broadcast_observable(N(renderer_point_light));

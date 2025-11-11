@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Util::Map<Util::Name, EditorImage> EditorImage::ms_Registry;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
@@ -76,6 +78,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_state(TextureState::UNLOADED);
 
       ms_Registry[p_Name] = l_Handle;
@@ -91,6 +94,7 @@ namespace Low {
       {
         Low::Util::HandleLock<EditorImage> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // TODO: destroy gpu/staging
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
@@ -127,6 +131,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -431,6 +436,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       auto pos = ms_Registry.find(p_Name);
       if (pos != ms_Registry.end()) {
         return pos->second;
@@ -464,6 +470,7 @@ namespace Low {
       l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -483,7 +490,7 @@ namespace Low {
       return l_EditorImage.duplicate(p_Name);
     }
 
-    void EditorImage::serialize(Low::Util::Yaml::Node p_Node) const
+    void EditorImage::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -501,18 +508,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void EditorImage::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
     {
       EditorImage l_EditorImage = p_Handle.get_id();
       l_EditorImage.serialize(p_Node);
     }
 
     Low::Util::Handle
-    EditorImage::deserialize(Low::Util::Yaml::Node p_Node,
+    EditorImage::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
       EditorImage l_Handle = EditorImage::make(N(EditorImage));
@@ -541,6 +549,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -582,6 +591,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -599,6 +609,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_path
 
       return TYPE_SOA(EditorImage, path, Low::Util::String);
@@ -615,12 +626,14 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
 
       // Set new value
       TYPE_SOA(EditorImage, path, Low::Util::String) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_path
 
       broadcast_observable(N(path));
@@ -632,6 +645,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gpu
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gpu
 
       return TYPE_SOA(EditorImage, gpu,
@@ -643,6 +657,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gpu
+
       if (p_Value.is_alive()) {
         p_Value.set_editor_image_handle(get_id());
       }
@@ -653,6 +668,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gpu
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_gpu
 
       broadcast_observable(N(gpu));
@@ -664,6 +680,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_staging
 
       return TYPE_SOA(EditorImage, staging,
@@ -676,6 +693,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging
 
       // Set new value
@@ -683,6 +701,7 @@ namespace Low {
                Low::Renderer::EditorImageStaging) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_staging
 
       broadcast_observable(N(staging));
@@ -694,6 +713,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(EditorImage, state,
@@ -705,6 +725,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
@@ -712,6 +733,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_state
 
       broadcast_observable(N(state));
@@ -723,6 +745,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(EditorImage, name, Low::Util::Name);
@@ -733,12 +756,14 @@ namespace Low {
       Low::Util::HandleLock<EditorImage> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(EditorImage, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -822,6 +847,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Low::Util::Set<Low::Renderer::EditorImageGpu>
         Low::Renderer::EditorImageGpu::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -74,6 +76,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       ms_Dirty.insert(l_Handle);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -87,6 +90,7 @@ namespace Low {
       {
         Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // TODO: remove vulkan imgui image
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
@@ -123,6 +127,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
@@ -427,6 +432,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -453,6 +459,7 @@ namespace Low {
       l_Handle.set_imgui_texture_id(get_imgui_texture_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -472,7 +479,8 @@ namespace Low {
       return l_EditorImageGpu.duplicate(p_Name);
     }
 
-    void EditorImageGpu::serialize(Low::Util::Yaml::Node p_Node) const
+    void
+    EditorImageGpu::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -483,18 +491,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void EditorImageGpu::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node p_Node)
+                                   Low::Util::Yaml::Node &p_Node)
     {
       EditorImageGpu l_EditorImageGpu = p_Handle.get_id();
       l_EditorImageGpu.serialize(p_Node);
     }
 
     Low::Util::Handle
-    EditorImageGpu::deserialize(Low::Util::Yaml::Node p_Node,
+    EditorImageGpu::deserialize(Low::Util::Yaml::Node &p_Node,
                                 Low::Util::Handle p_Creator)
     {
       EditorImageGpu l_Handle =
@@ -519,6 +528,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -560,6 +570,7 @@ namespace Low {
                                 Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -577,6 +588,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_initialized
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_imgui_texture_initialized
 
       return TYPE_SOA(EditorImageGpu, imgui_texture_initialized,
@@ -593,6 +605,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_initialized
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_imgui_texture_initialized
 
       // Set new value
@@ -600,6 +613,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_imgui_texture_initialized
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_imgui_texture_initialized
 
       broadcast_observable(N(imgui_texture_initialized));
@@ -611,6 +625,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
 
       return TYPE_SOA(EditorImageGpu, data_handle, uint64_t);
@@ -621,12 +636,14 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
 
       // Set new value
       TYPE_SOA(EditorImageGpu, data_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
+
       ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
 
@@ -639,6 +656,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_editor_image_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_editor_image_handle
 
       return TYPE_SOA(EditorImageGpu, editor_image_handle, uint64_t);
@@ -649,6 +667,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_editor_image_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_editor_image_handle
 
       // Set new value
@@ -656,6 +675,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_editor_image_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_editor_image_handle
 
       broadcast_observable(N(editor_image_handle));
@@ -667,6 +687,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_imgui_texture_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_imgui_texture_id
 
       return TYPE_SOA(EditorImageGpu, imgui_texture_id, ImTextureID);
@@ -677,6 +698,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_imgui_texture_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_imgui_texture_id
 
       // Set new value
@@ -684,6 +706,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_imgui_texture_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_imgui_texture_id
 
       broadcast_observable(N(imgui_texture_id));
@@ -695,6 +718,7 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(EditorImageGpu, name, Low::Util::Name);
@@ -705,12 +729,14 @@ namespace Low {
       Low::Util::HandleLock<EditorImageGpu> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(EditorImageGpu, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -789,6 +815,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

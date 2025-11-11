@@ -7,7 +7,7 @@
 namespace Low {
   namespace Util {
     namespace Serialization {
-      void serialize(Yaml::Node p_Node, Math::Quaternion p_Value)
+      void serialize(Yaml::Node &p_Node, Math::Quaternion p_Value)
       {
         p_Node["x"] = p_Value.x;
         p_Node["y"] = p_Value.y;
@@ -15,7 +15,7 @@ namespace Low {
         p_Node["w"] = p_Value.w;
       }
 
-      void serialize(Yaml::Node p_Node, Math::Vector4 p_Value)
+      void serialize(Yaml::Node &p_Node, Math::Vector4 p_Value)
       {
         p_Node["x"] = p_Value.x;
         p_Node["y"] = p_Value.y;
@@ -23,7 +23,7 @@ namespace Low {
         p_Node["a"] = p_Value.a;
       }
 
-      void serialize(Yaml::Node p_Node, Math::Vector3 p_Value)
+      void serialize(Yaml::Node &p_Node, Math::Vector3 p_Value)
       {
 #if SHORT_VECTORS
         p_Node.push_back(p_Value.x);
@@ -36,48 +36,48 @@ namespace Low {
 #endif
       }
 
-      void serialize(Yaml::Node p_Node, Math::Vector2 p_Value)
+      void serialize(Yaml::Node &p_Node, Math::Vector2 p_Value)
       {
         p_Node["x"] = p_Value.x;
         p_Node["y"] = p_Value.y;
       }
 
-      void serialize(Yaml::Node p_Node, Math::UVector2 p_Value)
+      void serialize(Yaml::Node &p_Node, Math::UVector2 p_Value)
       {
         p_Node["x"] = p_Value.x;
         p_Node["y"] = p_Value.y;
       }
 
-      void serialize(Yaml::Node p_Node, Math::AABB &p_AABB)
+      void serialize(Yaml::Node &p_Node, Math::AABB &p_AABB)
       {
-        Yaml::Node l_Bounds = p_Node["bounds"];
-        Yaml::Node l_Center = p_Node["center"];
+        Yaml::Node &l_Bounds = p_Node["bounds"];
+        Yaml::Node &l_Center = p_Node["center"];
         serialize(l_Bounds, p_AABB.bounds);
         serialize(l_Center, p_AABB.center);
       }
 
-      void serialize(Yaml::Node p_Node, Math::Bounds &p_Bounds)
+      void serialize(Yaml::Node &p_Node, Math::Bounds &p_Bounds)
       {
-        Yaml::Node l_Min = p_Node["min"];
-        Yaml::Node l_Max = p_Node["max"];
+        Yaml::Node &l_Min = p_Node["min"];
+        Yaml::Node &l_Max = p_Node["max"];
         serialize(l_Min, p_Bounds.min);
         serialize(l_Max, p_Bounds.max);
       }
 
-      void serialize(Yaml::Node p_Node, Math::Sphere &p_Sphere)
+      void serialize(Yaml::Node &p_Node, Math::Sphere &p_Sphere)
       {
         serialize(p_Node["position"], p_Sphere.position);
         p_Node["radius"] = p_Sphere.radius;
       }
 
-      void serialize(Yaml::Node p_Node, Math::Box &p_Box)
+      void serialize(Yaml::Node &p_Node, Math::Box &p_Box)
       {
         serialize(p_Node["position"], p_Box.position);
         serialize(p_Node["rotation"], p_Box.rotation);
         serialize(p_Node["half_extents"], p_Box.halfExtents);
       }
 
-      void serialize(Yaml::Node p_Node, Math::Shape &p_Shape)
+      void serialize(Yaml::Node &p_Node, Math::Shape &p_Shape)
       {
         if (p_Shape.type == Math::ShapeType::BOX) {
           serialize(p_Node["box"], p_Shape.box);
@@ -87,7 +87,7 @@ namespace Low {
         }
       }
 
-      void serialize_variant(Yaml::Node p_Node, Variant p_Variant)
+      void serialize_variant(Yaml::Node &p_Node, Variant p_Variant)
       {
         if (p_Variant.m_Type == VariantType::Bool) {
           p_Node["type"] = "Bool";
@@ -142,7 +142,7 @@ namespace Low {
         }
       }
 
-      void serialize_enum(Yaml::Node p_Node, u16 p_EnumId,
+      void serialize_enum(Yaml::Node &p_Node, u16 p_EnumId,
                           u8 p_EnumValue)
       {
         RTTI::EnumInfo &l_EnumInfo = Util::get_enum_info(p_EnumId);
@@ -151,7 +151,7 @@ namespace Low {
             l_EnumInfo.entry_name(p_EnumValue).c_str();
       }
 
-      void serialize_handle(Yaml::Node p_Node, Handle p_Handle)
+      void serialize_handle(Yaml::Node &p_Node, Handle p_Handle)
       {
         if (!p_Handle.is_registered_type()) {
           p_Node = false;
@@ -181,7 +181,7 @@ namespace Low {
         }
       }
 
-      Handle deserialize_handle(Yaml::Node p_Node)
+      Handle deserialize_handle(Yaml::Node &p_Node)
       {
         if (!p_Node.IsMap()) {
           return 0ull;
@@ -206,7 +206,7 @@ namespace Low {
         return 0ull;
       }
 
-      Math::Quaternion deserialize_quaternion(Yaml::Node p_Node)
+      Math::Quaternion deserialize_quaternion(Yaml::Node &p_Node)
       {
         Math::Quaternion l_Result;
         l_Result.x = p_Node["x"].as<float>();
@@ -217,7 +217,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::Vector4 deserialize_vector4(Yaml::Node p_Node)
+      Math::Vector4 deserialize_vector4(Yaml::Node &p_Node)
       {
         Math::Vector4 l_Result;
         l_Result.x = p_Node["x"].as<float>();
@@ -228,7 +228,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::Vector3 deserialize_vector3(Yaml::Node p_Node)
+      Math::Vector3 deserialize_vector3(Yaml::Node &p_Node)
       {
         Math::Vector3 l_Result;
         if (p_Node.IsMap()) {
@@ -244,7 +244,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::Vector2 deserialize_vector2(Yaml::Node p_Node)
+      Math::Vector2 deserialize_vector2(Yaml::Node &p_Node)
       {
         Math::Vector2 l_Result;
         l_Result.x = p_Node["x"].as<float>();
@@ -253,7 +253,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::UVector2 deserialize_uvector2(Yaml::Node p_Node)
+      Math::UVector2 deserialize_uvector2(Yaml::Node &p_Node)
       {
         Math::UVector2 l_Result;
         l_Result.x = p_Node["x"].as<uint32_t>();
@@ -262,7 +262,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::IVector2 deserialize_ivector2(Yaml::Node p_Node)
+      Math::IVector2 deserialize_ivector2(Yaml::Node &p_Node)
       {
         Math::IVector2 l_Result;
         l_Result.x = p_Node["x"].as<i32>();
@@ -271,7 +271,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::Bounds deserialize_bounds(Yaml::Node p_Node)
+      Math::Bounds deserialize_bounds(Yaml::Node &p_Node)
       {
         Math::Bounds l_Bounds;
 
@@ -281,7 +281,7 @@ namespace Low {
         return l_Bounds;
       }
 
-      Math::AABB deserialize_aabb(Yaml::Node p_Node)
+      Math::AABB deserialize_aabb(Yaml::Node &p_Node)
       {
         Math::AABB l_AABB;
 
@@ -291,7 +291,7 @@ namespace Low {
         return l_AABB;
       }
 
-      Math::Box deserialize_box(Yaml::Node p_Node)
+      Math::Box deserialize_box(Yaml::Node &p_Node)
       {
         Math::Box l_Result;
 
@@ -304,7 +304,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::Sphere deserialize_sphere(Yaml::Node p_Node)
+      Math::Sphere deserialize_sphere(Yaml::Node &p_Node)
       {
         Math::Sphere l_Result;
 
@@ -314,7 +314,7 @@ namespace Low {
         return l_Result;
       }
 
-      Math::Shape deserialize_shape(Yaml::Node p_Node)
+      Math::Shape deserialize_shape(Yaml::Node &p_Node)
       {
         Math::Shape l_Shape;
         if (p_Node["box"]) {
@@ -330,7 +330,7 @@ namespace Low {
         return l_Shape;
       }
 
-      Variant deserialize_variant(Yaml::Node p_Node)
+      Variant deserialize_variant(Yaml::Node &p_Node)
       {
         if (LOW_YAML_AS_STRING(p_Node["type"]) == "Bool") {
           return Variant(p_Node["value"].as<bool>());
@@ -375,7 +375,7 @@ namespace Low {
         return Variant(0);
       }
 
-      u8 deserialize_enum(Yaml::Node p_Node)
+      u8 deserialize_enum(Yaml::Node &p_Node)
       {
         RTTI::EnumInfo &l_EnumInfo =
             get_enum_info(p_Node["enum_id"].as<u16>());

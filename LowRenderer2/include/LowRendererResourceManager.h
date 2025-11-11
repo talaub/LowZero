@@ -22,11 +22,11 @@ namespace Low {
       void tick(float p_Delta);
 
       bool parse_mesh_resource_config(Util::String p_Path,
-                                      Util::Yaml::Node &p_Node,
+                                      Util::Yaml::Node p_Node,
                                       MeshResourceConfig &p_Config);
       bool
       parse_texture_resource_config(Util::String p_Path,
-                                    Util::Yaml::Node &p_Node,
+                                    Util::Yaml::Node p_Node,
                                     TextureResourceConfig &p_Config);
 
       void register_asset_id(const u64 p_AssetId,

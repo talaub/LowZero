@@ -649,6 +649,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -715,7 +716,7 @@ namespace Low {
         return l_Element.duplicate(p_Name);
       }
 
-      void Element::serialize(Low::Util::Yaml::Node p_Node) const
+      void Element::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -726,14 +727,14 @@ namespace Low {
       }
 
       void Element::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node p_Node)
+                              Low::Util::Yaml::Node &p_Node)
       {
         Element l_Element = p_Handle.get_id();
         l_Element.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Element::deserialize(Low::Util::Yaml::Node p_Node,
+      Element::deserialize(Low::Util::Yaml::Node &p_Node,
                            Low::Util::Handle p_Creator)
       {
 
@@ -821,6 +822,7 @@ namespace Low {
                            Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -1076,7 +1078,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_display
       }
 
-      void Element::serialize(Util::Yaml::Node p_Node,
+      void Element::serialize(Util::Yaml::Node &p_Node,
                               bool p_AddHandles) const
       {
         Low::Util::HandleLock<Element> l_Lock(get_id());
@@ -1112,7 +1114,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
       }
 
-      void Element::serialize_hierarchy(Util::Yaml::Node p_Node,
+      void Element::serialize_hierarchy(Util::Yaml::Node &p_Node,
                                         bool p_AddHandles) const
       {
         Low::Util::HandleLock<Element> l_Lock(get_id());
@@ -1136,7 +1138,7 @@ namespace Low {
       }
 
       UI::Element
-      Element::deserialize_hierarchy(Util::Yaml::Node p_Node,
+      Element::deserialize_hierarchy(Util::Yaml::Node &p_Node,
                                      Util::Handle p_Creator)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy

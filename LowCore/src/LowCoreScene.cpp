@@ -14,6 +14,7 @@
 #include "LowCoreRegion.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -99,6 +100,7 @@ namespace Low {
       {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -427,6 +429,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -466,7 +469,7 @@ namespace Low {
       return l_Scene.duplicate(p_Name);
     }
 
-    void Scene::serialize(Low::Util::Yaml::Node p_Node) const
+    void Scene::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -483,14 +486,15 @@ namespace Low {
     }
 
     void Scene::serialize(Low::Util::Handle p_Handle,
-                          Low::Util::Yaml::Node p_Node)
+                          Low::Util::Yaml::Node &p_Node)
     {
       Scene l_Scene = p_Handle.get_id();
       l_Scene.serialize(p_Node);
     }
 
-    Low::Util::Handle Scene::deserialize(Low::Util::Yaml::Node p_Node,
-                                         Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Scene::deserialize(Low::Util::Yaml::Node &p_Node,
+                       Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -547,6 +551,7 @@ namespace Low {
                        Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 

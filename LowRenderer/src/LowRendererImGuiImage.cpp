@@ -400,6 +400,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -443,7 +444,7 @@ namespace Low {
         return l_ImGuiImage.duplicate(p_Name);
       }
 
-      void ImGuiImage::serialize(Low::Util::Yaml::Node p_Node) const
+      void ImGuiImage::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -458,14 +459,14 @@ namespace Low {
       }
 
       void ImGuiImage::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
       {
         ImGuiImage l_ImGuiImage = p_Handle.get_id();
         l_ImGuiImage.serialize(p_Node);
       }
 
       Low::Util::Handle
-      ImGuiImage::deserialize(Low::Util::Yaml::Node p_Node,
+      ImGuiImage::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
       {
         ImGuiImage l_Handle = ImGuiImage::make(N(ImGuiImage));
@@ -525,6 +526,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 

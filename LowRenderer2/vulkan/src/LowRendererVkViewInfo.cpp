@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererVulkan.h"
 #include "LowRendererVulkanBuffer.h"
 #include "LowMath.h"
@@ -25,6 +26,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       const uint16_t ViewInfo::TYPE_ID = 55;
@@ -110,6 +112,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         {
           AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
               sizeof(ViewInfoFrameData),
@@ -183,6 +186,7 @@ namespace Low {
         {
           Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           BufferUtil::destroy_buffer(get_view_data_buffer());
           BufferUtil::destroy_buffer(get_directional_light_buffer());
           BufferUtil::destroy_buffer(
@@ -232,6 +236,7 @@ namespace Low {
       {
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -955,6 +960,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -996,6 +1002,7 @@ namespace Low {
         l_Handle.set_object_id_buffer(get_object_id_buffer());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -1015,7 +1022,7 @@ namespace Low {
         return l_ViewInfo.duplicate(p_Name);
       }
 
-      void ViewInfo::serialize(Low::Util::Yaml::Node p_Node) const
+      void ViewInfo::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -1024,18 +1031,19 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
       void ViewInfo::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
       {
         ViewInfo l_ViewInfo = p_Handle.get_id();
         l_ViewInfo.serialize(p_Node);
       }
 
       Low::Util::Handle
-      ViewInfo::deserialize(Low::Util::Yaml::Node p_Node,
+      ViewInfo::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
       {
         ViewInfo l_Handle = ViewInfo::make(N(ViewInfo));
@@ -1076,6 +1084,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -1118,6 +1127,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -1135,6 +1145,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_data_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_data_buffer
 
         return TYPE_SOA(ViewInfo, view_data_buffer, AllocatedBuffer);
@@ -1145,6 +1156,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_data_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_data_buffer
 
         // Set new value
@@ -1152,6 +1164,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_data_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_data_buffer
 
         broadcast_observable(N(view_data_buffer));
@@ -1163,6 +1176,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_buffer
 
         return TYPE_SOA(ViewInfo, directional_light_buffer,
@@ -1175,6 +1189,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_buffer
 
         // Set new value
@@ -1182,6 +1197,7 @@ namespace Low {
                  AllocatedBuffer) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_buffer
 
         broadcast_observable(N(directional_light_buffer));
@@ -1193,6 +1209,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_data_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_view_data_descriptor_set
 
         return TYPE_SOA(ViewInfo, view_data_descriptor_set,
@@ -1205,6 +1222,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_data_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_data_descriptor_set
 
         // Set new value
@@ -1212,6 +1230,7 @@ namespace Low {
                  VkDescriptorSet) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_data_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_view_data_descriptor_set
 
         broadcast_observable(N(view_data_descriptor_set));
@@ -1223,6 +1242,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lighting_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_lighting_descriptor_set
 
         return TYPE_SOA(ViewInfo, lighting_descriptor_set,
@@ -1235,6 +1255,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lighting_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_lighting_descriptor_set
 
         // Set new value
@@ -1242,6 +1263,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lighting_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_lighting_descriptor_set
 
         broadcast_observable(N(lighting_descriptor_set));
@@ -1254,6 +1276,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging_buffers
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_staging_buffers
 
         return TYPE_SOA(ViewInfo, staging_buffers,
@@ -1266,6 +1289,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging_buffers
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging_buffers
 
         // Set new value
@@ -1273,6 +1297,7 @@ namespace Low {
                  Low::Util::List<StagingBuffer>) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging_buffers
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_staging_buffers
 
         broadcast_observable(N(staging_buffers));
@@ -1284,6 +1309,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
         return TYPE_SOA(ViewInfo, initialized, bool);
@@ -1299,12 +1325,14 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
         TYPE_SOA(ViewInfo, initialized, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
 
         broadcast_observable(N(initialized));
@@ -1316,6 +1344,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_descriptor_set
 
         return TYPE_SOA(ViewInfo, gbuffer_descriptor_set,
@@ -1328,6 +1357,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_descriptor_set
 
         // Set new value
@@ -1335,6 +1365,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_descriptor_set
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_descriptor_set
 
         broadcast_observable(N(gbuffer_descriptor_set));
@@ -1346,6 +1377,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_cluster_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_cluster_buffer
 
         return TYPE_SOA(ViewInfo, point_light_cluster_buffer,
@@ -1358,6 +1390,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_cluster_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_cluster_buffer
 
         // Set new value
@@ -1365,6 +1398,7 @@ namespace Low {
                  AllocatedBuffer) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_cluster_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_cluster_buffer
 
         broadcast_observable(N(point_light_cluster_buffer));
@@ -1376,6 +1410,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_point_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_point_light_buffer
 
         return TYPE_SOA(ViewInfo, point_light_buffer,
@@ -1387,6 +1422,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_point_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_point_light_buffer
 
         // Set new value
@@ -1394,6 +1430,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_point_light_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
 
         broadcast_observable(N(point_light_buffer));
@@ -1405,6 +1442,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_light_clusters
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_light_clusters
 
         return TYPE_SOA(ViewInfo, light_clusters,
@@ -1416,6 +1454,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_light_clusters
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_light_clusters
 
         // Set new value
@@ -1423,6 +1462,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_clusters
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_light_clusters
 
         broadcast_observable(N(light_clusters));
@@ -1434,6 +1474,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_light_cluster_count
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_light_cluster_count
 
         return TYPE_SOA(ViewInfo, light_cluster_count, uint32_t);
@@ -1444,12 +1485,14 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_light_cluster_count
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_light_cluster_count
 
         // Set new value
         TYPE_SOA(ViewInfo, light_cluster_count, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_light_cluster_count
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_light_cluster_count
 
         broadcast_observable(N(light_cluster_count));
@@ -1461,6 +1504,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_drawcommand_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_ui_drawcommand_buffer
 
         return TYPE_SOA(ViewInfo, ui_drawcommand_buffer,
@@ -1473,6 +1517,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_drawcommand_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_drawcommand_buffer
 
         // Set new value
@@ -1480,6 +1525,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_drawcommand_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_ui_drawcommand_buffer
 
         broadcast_observable(N(ui_drawcommand_buffer));
@@ -1491,6 +1537,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_debug_geometry_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_debug_geometry_buffer
 
         return TYPE_SOA(ViewInfo, debug_geometry_buffer,
@@ -1503,6 +1550,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_debug_geometry_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_debug_geometry_buffer
 
         // Set new value
@@ -1510,6 +1558,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_debug_geometry_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_debug_geometry_buffer
 
         broadcast_observable(N(debug_geometry_buffer));
@@ -1521,6 +1570,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_id_buffer
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_object_id_buffer
 
         return TYPE_SOA(ViewInfo, object_id_buffer, AllocatedBuffer);
@@ -1531,6 +1581,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_id_buffer
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_object_id_buffer
 
         // Set new value
@@ -1538,6 +1589,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_object_id_buffer
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_object_id_buffer
 
         broadcast_observable(N(object_id_buffer));
@@ -1549,6 +1601,7 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(ViewInfo, name, Low::Util::Name);
@@ -1559,12 +1612,14 @@ namespace Low {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(ViewInfo, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -1574,6 +1629,7 @@ namespace Low {
       {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_current_staging_buffer
+
         return get_staging_buffers()
             [Global::get_current_frame_index()];
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_current_staging_buffer
@@ -1584,6 +1640,7 @@ namespace Low {
       {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_request_current_staging_buffer_space
+
         StagingBuffer &l_StagingBuffer = get_current_staging_buffer();
 
         return l_StagingBuffer.request_space(p_RequestedSize,
@@ -1598,6 +1655,7 @@ namespace Low {
       {
         Low::Util::HandleLock<ViewInfo> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_write_current_staging_buffer
+
         StagingBuffer &l_StagingBuffer = get_current_staging_buffer();
 
         return l_StagingBuffer.write(p_Data, p_DataSize, p_Offset);
@@ -1684,6 +1742,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan

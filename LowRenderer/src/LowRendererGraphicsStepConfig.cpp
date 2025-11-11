@@ -802,6 +802,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -857,7 +858,7 @@ namespace Low {
     }
 
     void
-    GraphicsStepConfig::serialize(Low::Util::Yaml::Node p_Node) const
+    GraphicsStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -878,14 +879,14 @@ namespace Low {
     }
 
     void GraphicsStepConfig::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node p_Node)
+                                       Low::Util::Yaml::Node &p_Node)
     {
       GraphicsStepConfig l_GraphicsStepConfig = p_Handle.get_id();
       l_GraphicsStepConfig.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GraphicsStepConfig::deserialize(Low::Util::Yaml::Node p_Node,
+    GraphicsStepConfig::deserialize(Low::Util::Yaml::Node &p_Node,
                                     Low::Util::Handle p_Creator)
     {
       GraphicsStepConfig l_Handle =
@@ -974,6 +975,7 @@ namespace Low {
                                     Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -1401,7 +1403,7 @@ namespace Low {
 
     GraphicsStepConfig
     GraphicsStepConfig::make(Util::Name p_Name,
-                             Util::Yaml::Node p_Node)
+                             Util::Yaml::Node &p_Node)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 

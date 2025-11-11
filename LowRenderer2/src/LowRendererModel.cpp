@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Model::TYPE_ID = 88;
@@ -95,6 +97,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       ResourceManager::register_asset(l_Handle.get_unique_id(),
                                       l_Handle);
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -109,6 +112,7 @@ namespace Low {
       {
         Low::Util::HandleLock<Model> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -146,6 +150,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity =
@@ -498,6 +503,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -533,6 +539,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -550,7 +557,7 @@ namespace Low {
       return l_Model.duplicate(p_Name);
     }
 
-    void Model::serialize(Low::Util::Yaml::Node p_Node) const
+    void Model::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -562,6 +569,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       if (get_lod0().is_alive()) {
         p_Node["lod0"] =
             Util::hash_to_string(get_lod0().get_unique_id()).c_str();
@@ -582,14 +590,15 @@ namespace Low {
     }
 
     void Model::serialize(Low::Util::Handle p_Handle,
-                          Low::Util::Yaml::Node p_Node)
+                          Low::Util::Yaml::Node &p_Node)
     {
       Model l_Model = p_Handle.get_id();
       l_Model.serialize(p_Node);
     }
 
-    Low::Util::Handle Model::deserialize(Low::Util::Yaml::Node p_Node,
-                                         Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Model::deserialize(Low::Util::Yaml::Node &p_Node,
+                       Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
       if (p_Node["unique_id"]) {
@@ -616,6 +625,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       if (p_Node["lod0"]) {
         l_Handle.set_lod0(ResourceManager::find_asset<Mesh>(
             LOW_SERIALIZATION_GET_HASH(p_Node["lod0"])));
@@ -676,6 +686,7 @@ namespace Low {
                        Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -693,6 +704,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resource
 
       return TYPE_SOA(Model, resource, Low::Renderer::ModelResource);
@@ -703,6 +715,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource
 
       // Set new value
@@ -710,6 +723,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_resource
 
       broadcast_observable(N(resource));
@@ -721,6 +735,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod0
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_lod0
 
       return TYPE_SOA(Model, lod0, Low::Renderer::Mesh);
@@ -731,12 +746,14 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod0
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_lod0
 
       // Set new value
       TYPE_SOA(Model, lod0, Low::Renderer::Mesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod0
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod0
 
       broadcast_observable(N(lod0));
@@ -748,6 +765,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod1
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_lod1
 
       return TYPE_SOA(Model, lod1, Low::Renderer::Mesh);
@@ -758,12 +776,14 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod1
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_lod1
 
       // Set new value
       TYPE_SOA(Model, lod1, Low::Renderer::Mesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod1
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod1
 
       broadcast_observable(N(lod1));
@@ -775,6 +795,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod2
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_lod2
 
       return TYPE_SOA(Model, lod2, Low::Renderer::Mesh);
@@ -785,12 +806,14 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod2
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_lod2
 
       // Set new value
       TYPE_SOA(Model, lod2, Low::Renderer::Mesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod2
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod2
 
       broadcast_observable(N(lod2));
@@ -802,6 +825,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lod3
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_lod3
 
       return TYPE_SOA(Model, lod3, Low::Renderer::Mesh);
@@ -812,12 +836,14 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lod3
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_lod3
 
       // Set new value
       TYPE_SOA(Model, lod3, Low::Renderer::Mesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lod3
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_lod3
 
       broadcast_observable(N(lod3));
@@ -829,6 +855,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Model, unique_id, Low::Util::UniqueId);
@@ -839,12 +866,14 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Model, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
       broadcast_observable(N(unique_id));
@@ -856,6 +885,7 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Model, name, Low::Util::Name);
@@ -866,12 +896,14 @@ namespace Low {
       Low::Util::HandleLock<Model> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Model, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -954,6 +986,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

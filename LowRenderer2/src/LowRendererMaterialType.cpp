@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MaterialType::TYPE_ID = 58;
@@ -84,6 +86,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       {
         l_Handle.get_draw_pipeline_config().vertexShaderPath = "";
         l_Handle.get_draw_pipeline_config().fragmentShaderPath = "";
@@ -108,6 +111,7 @@ namespace Low {
       {
         Low::Util::HandleLock<MaterialType> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -143,6 +147,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -777,6 +782,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -802,6 +808,7 @@ namespace Low {
       l_Handle.set_family(get_family());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -821,7 +828,7 @@ namespace Low {
       return l_MaterialType.duplicate(p_Name);
     }
 
-    void MaterialType::serialize(Low::Util::Yaml::Node p_Node) const
+    void MaterialType::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -836,18 +843,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void MaterialType::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
     {
       MaterialType l_MaterialType = p_Handle.get_id();
       l_MaterialType.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MaterialType::deserialize(Low::Util::Yaml::Node p_Node,
+    MaterialType::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
       MaterialType l_Handle = MaterialType::make(N(MaterialType));
@@ -883,6 +891,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -924,6 +933,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -941,6 +951,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_transparent
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_transparent
 
       return TYPE_SOA(MaterialType, transparent, bool);
@@ -956,12 +967,14 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_transparent
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_transparent
 
       // Set new value
       TYPE_SOA(MaterialType, transparent, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_transparent
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_transparent
 
       broadcast_observable(N(transparent));
@@ -973,6 +986,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_pipeline_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_pipeline_handle
 
       return TYPE_SOA(MaterialType, draw_pipeline_handle, uint64_t);
@@ -983,6 +997,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_draw_pipeline_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_draw_pipeline_handle
 
       // Set new value
@@ -990,6 +1005,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_draw_pipeline_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_draw_pipeline_handle
 
       broadcast_observable(N(draw_pipeline_handle));
@@ -1001,6 +1017,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline_handle
 
       return TYPE_SOA(MaterialType, depth_pipeline_handle, uint64_t);
@@ -1011,6 +1028,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_depth_pipeline_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_depth_pipeline_handle
 
       // Set new value
@@ -1018,6 +1036,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_depth_pipeline_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_depth_pipeline_handle
 
       broadcast_observable(N(depth_pipeline_handle));
@@ -1029,6 +1048,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_inputs
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_inputs
 
       return TYPE_SOA(MaterialType, inputs,
@@ -1041,6 +1061,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
       return TYPE_SOA(MaterialType, initialized, bool);
@@ -1056,12 +1077,14 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
       // Set new value
       TYPE_SOA(MaterialType, initialized, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
 
       broadcast_observable(N(initialized));
@@ -1074,6 +1097,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_pipeline_config
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_pipeline_config
 
       return TYPE_SOA(MaterialType, draw_pipeline_config,
@@ -1087,6 +1111,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_depth_pipeline_config
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_depth_pipeline_config
 
       return TYPE_SOA(MaterialType, depth_pipeline_config,
@@ -1099,6 +1124,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_family
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_family
 
       return TYPE_SOA(MaterialType, family,
@@ -1111,6 +1137,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_family
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_family
 
       // Set new value
@@ -1118,6 +1145,7 @@ namespace Low {
                Low::Renderer::MaterialTypeFamily) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_family
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_family
 
       broadcast_observable(N(family));
@@ -1129,6 +1157,7 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(MaterialType, name, Low::Util::Name);
@@ -1139,12 +1168,14 @@ namespace Low {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MaterialType, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1155,6 +1186,7 @@ namespace Low {
                        Low::Renderer::MaterialTypeFamily p_Family)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       MaterialType l_Handle = make(p_Name);
       l_Handle.set_family(p_Family);
 
@@ -1200,6 +1232,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_calculate_offsets
+
       LOW_ASSERT(!is_initialized(),
                  "Cannot calculate offsets for a material type that "
                  "has already been initialized");
@@ -1267,6 +1300,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input
+
       Util::List<MaterialTypeInput> &l_Inputs = get_inputs();
 
       for (auto it = l_Inputs.begin(); it != l_Inputs.end(); ++it) {
@@ -1283,6 +1317,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_finalize
+
       LOW_ASSERT(!is_initialized(),
                  "Cannot finalize materialtype that has already been "
                  "initialized");
@@ -1300,6 +1335,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_input
+
       LOW_ASSERT(
           !is_initialized(),
           "Cannot add input to materialtype that has already been "
@@ -1316,6 +1352,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_has_input
+
       MaterialTypeInput l_Input;
 
       return get_input(p_Name, &l_Input);
@@ -1326,6 +1363,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input_offset
+
       LOW_ASSERT(is_initialized(),
                  "Cannot fetch offset from materialtype that has not "
                  "been finalized.");
@@ -1344,6 +1382,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_input_type
+
       MaterialTypeInput l_Input;
 
       LOW_ASSERT(get_input(p_Name, &l_Input),
@@ -1358,6 +1397,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_input_names
+
       Util::List<MaterialTypeInput> &l_Inputs = get_inputs();
 
       for (auto it = l_Inputs.begin(); it != l_Inputs.end(); ++it) {
@@ -1373,6 +1413,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_vertex_shader_path
+
       get_draw_pipeline_config().vertexShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_vertex_shader_path
     }
@@ -1382,6 +1423,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_draw_fragment_shader_path
+
       get_draw_pipeline_config().fragmentShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_draw_fragment_shader_path
     }
@@ -1391,6 +1433,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_vertex_shader_path
+
       get_depth_pipeline_config().vertexShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_vertex_shader_path
     }
@@ -1400,6 +1443,7 @@ namespace Low {
     {
       Low::Util::HandleLock<MaterialType> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_depth_fragment_shader_path
+
       get_depth_pipeline_config().fragmentShaderPath = p_Path;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_depth_fragment_shader_path
     }
@@ -1482,6 +1526,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

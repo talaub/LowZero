@@ -666,6 +666,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -716,7 +717,7 @@ namespace Low {
         return l_Context.duplicate(p_Name);
       }
 
-      void Context::serialize(Low::Util::Yaml::Node p_Node) const
+      void Context::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -740,14 +741,14 @@ namespace Low {
       }
 
       void Context::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node p_Node)
+                              Low::Util::Yaml::Node &p_Node)
       {
         Context l_Context = p_Handle.get_id();
         l_Context.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Context::deserialize(Low::Util::Yaml::Node p_Node,
+      Context::deserialize(Low::Util::Yaml::Node &p_Node,
                            Low::Util::Handle p_Creator)
       {
         Context l_Handle = Context::make(N(Context));
@@ -821,6 +822,7 @@ namespace Low {
                            Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 

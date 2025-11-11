@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererGlobals.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t GpuMaterial::TYPE_ID = 87;
@@ -71,6 +73,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.data().resize(MATERIAL_DATA_SIZE);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -84,6 +87,7 @@ namespace Low {
       {
         Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -119,6 +123,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -373,6 +378,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -395,6 +401,7 @@ namespace Low {
       l_Handle.set_dirty(is_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -414,27 +421,29 @@ namespace Low {
       return l_GpuMaterial.duplicate(p_Name);
     }
 
-    void GpuMaterial::serialize(Low::Util::Yaml::Node p_Node) const
+    void GpuMaterial::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void GpuMaterial::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
     {
       GpuMaterial l_GpuMaterial = p_Handle.get_id();
       l_GpuMaterial.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GpuMaterial::deserialize(Low::Util::Yaml::Node p_Node,
+    GpuMaterial::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -475,6 +484,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -492,6 +502,7 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material_handle
 
       return TYPE_SOA(GpuMaterial, material_handle, uint64_t);
@@ -502,12 +513,14 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material_handle
 
       // Set new value
       TYPE_SOA(GpuMaterial, material_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_material_handle
 
       broadcast_observable(N(material_handle));
@@ -519,6 +532,7 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_data
 
       return TYPE_SOA(GpuMaterial, data, Util::List<uint8_t>);
@@ -530,6 +544,7 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
       return TYPE_SOA(GpuMaterial, dirty, bool);
@@ -545,12 +560,14 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
       TYPE_SOA(GpuMaterial, dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
       broadcast_observable(N(dirty));
@@ -561,6 +578,7 @@ namespace Low {
       if (!is_dirty()) {
         TYPE_SOA(GpuMaterial, dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
     }
@@ -571,6 +589,7 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(GpuMaterial, name, Low::Util::Name);
@@ -581,12 +600,14 @@ namespace Low {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(GpuMaterial, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -596,6 +617,7 @@ namespace Low {
     {
       Low::Util::HandleLock<GpuMaterial> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_data
+
       return data().data();
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_data
     }
@@ -672,6 +694,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

@@ -184,11 +184,11 @@ namespace Flode {
       return false;
     }
 
-    virtual void serialize(Low::Util::Yaml::Node p_Node) const
+    virtual void serialize(Low::Util::Yaml::Node& p_Node) const
     {
     }
 
-    virtual void deserialize(Low::Util::Yaml::Node p_Node)
+    virtual void deserialize(Low::Util::Yaml::Node &p_Node)
     {
     }
 

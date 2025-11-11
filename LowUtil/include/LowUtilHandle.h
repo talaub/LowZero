@@ -180,8 +180,8 @@ namespace Low {
         Map<Name, FunctionInfo> functions;
         uint32_t (*get_capacity)();
         bool (*is_alive)(Handle);
-        void (*serialize)(Handle, Yaml::Node);
-        Handle (*deserialize)(Yaml::Node, Handle);
+        void (*serialize)(Handle, Yaml::Node &);
+        Handle (*deserialize)(Yaml::Node &, Handle);
         Handle (*duplicate_default)(Handle, Name);
         Handle (*duplicate_component)(Handle, Handle);
         Handle (*make_default)(Name);

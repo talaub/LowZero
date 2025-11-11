@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererDrawCommand.h"
 #include "LowRendererVkScene.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -19,6 +20,7 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t RenderScene::TYPE_ID = 61;
@@ -76,6 +78,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // TODO: Should be moved somewhere else
       l_Handle.set_data_handle(Vulkan::Scene::make(p_Name));
 
@@ -95,6 +98,7 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderScene> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         for (auto it = get_draw_commands().begin();
              it != get_draw_commands().end(); ++it) {
           if (it->is_alive()) {
@@ -136,6 +140,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -518,6 +523,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -547,6 +553,7 @@ namespace Low {
           get_directional_light_intensity());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -566,27 +573,29 @@ namespace Low {
       return l_RenderScene.duplicate(p_Name);
     }
 
-    void RenderScene::serialize(Low::Util::Yaml::Node p_Node) const
+    void RenderScene::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void RenderScene::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
     {
       RenderScene l_RenderScene = p_Handle.get_id();
       l_RenderScene.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderScene::deserialize(Low::Util::Yaml::Node p_Node,
+    RenderScene::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -627,6 +636,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -645,6 +655,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
       return TYPE_SOA(RenderScene, draw_commands,
@@ -658,6 +669,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_pointlight_deleted_slots
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_pointlight_deleted_slots
 
       return TYPE_SOA(RenderScene, pointlight_deleted_slots,
@@ -670,6 +682,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_pointlight_deleted_slots
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_pointlight_deleted_slots
 
       // Set new value
@@ -677,6 +690,7 @@ namespace Low {
                Low::Util::Set<u32>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_pointlight_deleted_slots
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_pointlight_deleted_slots
 
       broadcast_observable(N(pointlight_deleted_slots));
@@ -688,6 +702,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_data_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_data_handle
 
       return TYPE_SOA(RenderScene, data_handle, uint64_t);
@@ -698,12 +713,14 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_data_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_data_handle
 
       // Set new value
       TYPE_SOA(RenderScene, data_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_data_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_data_handle
 
       broadcast_observable(N(data_handle));
@@ -716,6 +733,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_direction
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_direction
 
       return TYPE_SOA(RenderScene, directional_light_direction,
@@ -757,6 +775,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_direction
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_direction
 
       // Set new value
@@ -764,6 +783,7 @@ namespace Low {
                Low::Math::Vector3) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_direction
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_direction
 
       broadcast_observable(N(directional_light_direction));
@@ -776,6 +796,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_color
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_color
 
       return TYPE_SOA(RenderScene, directional_light_color,
@@ -817,6 +838,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_color
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_color
 
       // Set new value
@@ -824,6 +846,7 @@ namespace Low {
                Low::Math::ColorRGB) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_color
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_color
 
       broadcast_observable(N(directional_light_color));
@@ -835,6 +858,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_directional_light_intensity
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_directional_light_intensity
 
       return TYPE_SOA(RenderScene, directional_light_intensity,
@@ -846,6 +870,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_directional_light_intensity
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_directional_light_intensity
 
       // Set new value
@@ -853,6 +878,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_directional_light_intensity
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_directional_light_intensity
 
       broadcast_observable(N(directional_light_intensity));
@@ -864,6 +890,7 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(RenderScene, name, Low::Util::Name);
@@ -874,12 +901,14 @@ namespace Low {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(RenderScene, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -890,6 +919,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderScene> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_insert_draw_command
+
       _LOW_ASSERT(is_alive());
       _LOW_ASSERT(p_DrawCommand.is_alive());
 
@@ -1008,6 +1038,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t MeshGeometry::TYPE_ID = 66;
@@ -74,6 +76,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -86,6 +89,7 @@ namespace Low {
       {
         Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         for (auto it = get_submeshes().begin();
              it != get_submeshes().end(); ++it) {
           if (it->is_alive()) {
@@ -127,6 +131,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -429,6 +434,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -453,6 +459,7 @@ namespace Low {
       l_Handle.set_bounding_sphere(get_bounding_sphere());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -472,27 +479,29 @@ namespace Low {
       return l_MeshGeometry.duplicate(p_Name);
     }
 
-    void MeshGeometry::serialize(Low::Util::Yaml::Node p_Node) const
+    void MeshGeometry::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void MeshGeometry::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
     {
       MeshGeometry l_MeshGeometry = p_Handle.get_id();
       l_MeshGeometry.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MeshGeometry::deserialize(Low::Util::Yaml::Node p_Node,
+    MeshGeometry::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -533,6 +542,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -550,6 +560,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh_count
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_submesh_count
 
       return TYPE_SOA(MeshGeometry, submesh_count, uint32_t);
@@ -560,12 +571,14 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh_count
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_submesh_count
 
       // Set new value
       TYPE_SOA(MeshGeometry, submesh_count, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh_count
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_submesh_count
 
       broadcast_observable(N(submesh_count));
@@ -578,6 +591,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submeshes
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_submeshes
 
       return TYPE_SOA(MeshGeometry, submeshes,
@@ -590,6 +604,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submeshes
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_submeshes
 
       // Set new value
@@ -597,6 +612,7 @@ namespace Low {
                Low::Util::List<SubmeshGeometry>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submeshes
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_submeshes
 
       broadcast_observable(N(submeshes));
@@ -608,6 +624,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_aabb
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_aabb
 
       return TYPE_SOA(MeshGeometry, aabb, Low::Math::AABB);
@@ -618,12 +635,14 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_aabb
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_aabb
 
       // Set new value
       TYPE_SOA(MeshGeometry, aabb, Low::Math::AABB) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_aabb
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_aabb
 
       broadcast_observable(N(aabb));
@@ -635,6 +654,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bounding_sphere
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_bounding_sphere
 
       return TYPE_SOA(MeshGeometry, bounding_sphere,
@@ -646,6 +666,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bounding_sphere
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_bounding_sphere
 
       // Set new value
@@ -653,6 +674,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bounding_sphere
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_bounding_sphere
 
       broadcast_observable(N(bounding_sphere));
@@ -664,6 +686,7 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(MeshGeometry, name, Low::Util::Name);
@@ -674,12 +697,14 @@ namespace Low {
       Low::Util::HandleLock<MeshGeometry> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(MeshGeometry, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -763,6 +788,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

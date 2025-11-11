@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererUiCanvas.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t UiDrawCommand::TYPE_ID = 70;
@@ -80,6 +82,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_uv_rect(
           Low::Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f));
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -94,6 +97,7 @@ namespace Low {
       {
         Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // TODO: remove from canvas
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
@@ -130,6 +134,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -684,6 +689,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -724,6 +730,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -743,27 +750,29 @@ namespace Low {
       return l_UiDrawCommand.duplicate(p_Name);
     }
 
-    void UiDrawCommand::serialize(Low::Util::Yaml::Node p_Node) const
+    void UiDrawCommand::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void UiDrawCommand::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node p_Node)
+                                  Low::Util::Yaml::Node &p_Node)
     {
       UiDrawCommand l_UiDrawCommand = p_Handle.get_id();
       l_UiDrawCommand.serialize(p_Node);
     }
 
     Low::Util::Handle
-    UiDrawCommand::deserialize(Low::Util::Yaml::Node p_Node,
+    UiDrawCommand::deserialize(Low::Util::Yaml::Node &p_Node,
                                Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       LOW_NOT_IMPLEMENTED;
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -805,6 +814,7 @@ namespace Low {
                                Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -823,6 +833,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
 
       return TYPE_SOA(UiDrawCommand, render_object,
@@ -835,6 +846,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
 
       // Set new value
@@ -842,6 +854,7 @@ namespace Low {
                Low::Renderer::UiRenderObject) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
 
       broadcast_observable(N(render_object));
@@ -853,6 +866,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_canvas_handle
 
       return TYPE_SOA(UiDrawCommand, canvas_handle, uint64_t);
@@ -863,12 +877,14 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas_handle
 
       // Set new value
       TYPE_SOA(UiDrawCommand, canvas_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_canvas_handle
 
       broadcast_observable(N(canvas_handle));
@@ -880,6 +896,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_texture
 
       return TYPE_SOA(UiDrawCommand, texture, Texture);
@@ -890,6 +907,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
       if (get_texture() != p_Value) {
@@ -900,6 +918,7 @@ namespace Low {
         TYPE_SOA(UiDrawCommand, texture, Texture) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_texture
 
         broadcast_observable(N(texture));
@@ -912,6 +931,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_position
 
       return TYPE_SOA(UiDrawCommand, position, Low::Math::Vector3);
@@ -949,6 +969,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
 
       if (get_position() != p_Value) {
@@ -960,6 +981,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_position
 
         broadcast_observable(N(position));
@@ -972,6 +994,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_size
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_size
 
       return TYPE_SOA(UiDrawCommand, size, Low::Math::Vector2);
@@ -1002,6 +1025,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_size
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_size
 
       if (get_size() != p_Value) {
@@ -1012,6 +1036,7 @@ namespace Low {
         TYPE_SOA(UiDrawCommand, size, Low::Math::Vector2) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_size
 
         broadcast_observable(N(size));
@@ -1024,6 +1049,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation2D
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_rotation2D
 
       return TYPE_SOA(UiDrawCommand, rotation2D, float);
@@ -1034,6 +1060,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation2D
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation2D
 
       if (get_rotation2D() != p_Value) {
@@ -1044,6 +1071,7 @@ namespace Low {
         TYPE_SOA(UiDrawCommand, rotation2D, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation2D
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_rotation2D
 
         broadcast_observable(N(rotation2D));
@@ -1056,6 +1084,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
       return TYPE_SOA(UiDrawCommand, color, Low::Math::Color);
@@ -1066,6 +1095,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
       if (get_color() != p_Value) {
@@ -1076,6 +1106,7 @@ namespace Low {
         TYPE_SOA(UiDrawCommand, color, Low::Math::Color) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
 
         broadcast_observable(N(color));
@@ -1088,6 +1119,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uv_rect
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uv_rect
 
       return TYPE_SOA(UiDrawCommand, uv_rect, Low::Math::Vector4);
@@ -1098,6 +1130,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uv_rect
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uv_rect
 
       if (get_uv_rect() != p_Value) {
@@ -1109,6 +1142,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uv_rect
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_uv_rect
 
         broadcast_observable(N(uv_rect));
@@ -1121,6 +1155,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
       return TYPE_SOA(UiDrawCommand, material, Material);
@@ -1131,6 +1166,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
       Material l_OldMaterial = get_material();
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
@@ -1142,6 +1178,7 @@ namespace Low {
         TYPE_SOA(UiDrawCommand, material, Material) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
         if (l_OldMaterial.is_alive()) {
           l_OldMaterial.dereference(get_id());
         }
@@ -1160,6 +1197,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_z_sorting
 
       return TYPE_SOA(UiDrawCommand, z_sorting, uint32_t);
@@ -1170,6 +1208,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_sorting
 
       if (get_z_sorting() != p_Value) {
@@ -1181,6 +1220,7 @@ namespace Low {
         TYPE_SOA(UiDrawCommand, z_sorting, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_sorting
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_z_sorting
 
         broadcast_observable(N(z_sorting));
@@ -1193,6 +1233,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_submesh
 
       return TYPE_SOA(UiDrawCommand, submesh,
@@ -1204,6 +1245,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_submesh
 
       // Set new value
@@ -1211,6 +1253,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_submesh
 
       broadcast_observable(N(submesh));
@@ -1219,12 +1262,14 @@ namespace Low {
     void UiDrawCommand::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
       // LOW_CODEGEN::END::CUSTOM:MARK_dirty
     }
 
     void UiDrawCommand::mark_z_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+
       mark_dirty();
 
       UiCanvas l_Canvas = get_canvas_handle();
@@ -1238,6 +1283,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(UiDrawCommand, name, Low::Util::Name);
@@ -1248,12 +1294,14 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(UiDrawCommand, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1265,6 +1313,7 @@ namespace Low {
                         Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       UiDrawCommand l_DrawCommand =
           UiDrawCommand::make(p_RenderObject.get_name());
 
@@ -1367,6 +1416,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

@@ -686,6 +686,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -735,7 +736,7 @@ namespace Low {
       return l_ComputeStep.duplicate(p_Name);
     }
 
-    void ComputeStep::serialize(Low::Util::Yaml::Node p_Node) const
+    void ComputeStep::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -756,14 +757,14 @@ namespace Low {
     }
 
     void ComputeStep::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
     {
       ComputeStep l_ComputeStep = p_Handle.get_id();
       l_ComputeStep.serialize(p_Node);
     }
 
     Low::Util::Handle
-    ComputeStep::deserialize(Low::Util::Yaml::Node p_Node,
+    ComputeStep::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
       ComputeStep l_Handle = ComputeStep::make(N(ComputeStep));
@@ -837,6 +838,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 

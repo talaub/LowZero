@@ -435,6 +435,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -479,7 +480,7 @@ namespace Low {
       return l_MaterialType.duplicate(p_Name);
     }
 
-    void MaterialType::serialize(Low::Util::Yaml::Node p_Node) const
+    void MaterialType::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -490,14 +491,14 @@ namespace Low {
     }
 
     void MaterialType::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node p_Node)
+                                 Low::Util::Yaml::Node &p_Node)
     {
       MaterialType l_MaterialType = p_Handle.get_id();
       l_MaterialType.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MaterialType::deserialize(Low::Util::Yaml::Node p_Node,
+    MaterialType::deserialize(Low::Util::Yaml::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 
@@ -544,6 +545,7 @@ namespace Low {
                               Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 

@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererUiCanvas.h"
 #include "LowRendererUiDrawCommand.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -19,6 +20,7 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Low::Util::Set<Low::Renderer::UiRenderObject>
         Low::Renderer::UiRenderObject::ms_NeedInitialization;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -84,6 +86,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.mark_dirty();
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -97,6 +100,7 @@ namespace Low {
       {
         Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         if (get_mesh().is_alive()) {
           get_mesh().dereference(get_id());
         }
@@ -139,6 +143,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
@@ -697,6 +702,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -734,6 +740,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -753,27 +760,30 @@ namespace Low {
       return l_UiRenderObject.duplicate(p_Name);
     }
 
-    void UiRenderObject::serialize(Low::Util::Yaml::Node p_Node) const
+    void
+    UiRenderObject::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void UiRenderObject::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node p_Node)
+                                   Low::Util::Yaml::Node &p_Node)
     {
       UiRenderObject l_UiRenderObject = p_Handle.get_id();
       l_UiRenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    UiRenderObject::deserialize(Low::Util::Yaml::Node p_Node,
+    UiRenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
                                 Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       LOW_NOT_IMPLEMENTED;
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -815,6 +825,7 @@ namespace Low {
                                 Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -832,6 +843,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_canvas_handle
 
       return TYPE_SOA(UiRenderObject, canvas_handle, uint64_t);
@@ -842,12 +854,14 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas_handle
 
       // Set new value
       TYPE_SOA(UiRenderObject, canvas_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_canvas_handle
 
       broadcast_observable(N(canvas_handle));
@@ -859,6 +873,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_texture
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_texture
 
       return TYPE_SOA(UiRenderObject, texture, Texture);
@@ -869,6 +884,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_texture
+
       if (get_texture().is_alive()) {
         get_texture().dereference(get_id());
       }
@@ -882,6 +898,7 @@ namespace Low {
         TYPE_SOA(UiRenderObject, texture, Texture) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+
         if (p_Value.is_alive()) {
           p_Value.reference(get_id());
         }
@@ -897,6 +914,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_position
 
       return TYPE_SOA(UiRenderObject, position, Low::Math::Vector3);
@@ -934,6 +952,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
 
       if (get_position() != p_Value) {
@@ -945,6 +964,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_position
 
         broadcast_observable(N(position));
@@ -957,6 +977,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_size
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_size
 
       return TYPE_SOA(UiRenderObject, size, Low::Math::Vector2);
@@ -987,6 +1008,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_size
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_size
 
       if (get_size() != p_Value) {
@@ -997,6 +1019,7 @@ namespace Low {
         TYPE_SOA(UiRenderObject, size, Low::Math::Vector2) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_size
 
         broadcast_observable(N(size));
@@ -1009,6 +1032,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation2D
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_rotation2D
 
       return TYPE_SOA(UiRenderObject, rotation2D, float);
@@ -1019,6 +1043,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation2D
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation2D
 
       if (get_rotation2D() != p_Value) {
@@ -1029,6 +1054,7 @@ namespace Low {
         TYPE_SOA(UiRenderObject, rotation2D, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation2D
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_rotation2D
 
         broadcast_observable(N(rotation2D));
@@ -1041,6 +1067,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
       return TYPE_SOA(UiRenderObject, color, Low::Math::Color);
@@ -1051,6 +1078,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
       if (get_color() != p_Value) {
@@ -1061,6 +1089,7 @@ namespace Low {
         TYPE_SOA(UiRenderObject, color, Low::Math::Color) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
 
         broadcast_observable(N(color));
@@ -1073,6 +1102,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uv_rect
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uv_rect
 
       return TYPE_SOA(UiRenderObject, uv_rect, Low::Math::Vector4);
@@ -1083,6 +1113,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uv_rect
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uv_rect
 
       if (get_uv_rect() != p_Value) {
@@ -1094,6 +1125,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uv_rect
+
         if (get_draw_commands().size() == 1) {
           get_draw_commands()[0].set_uv_rect(p_Value);
         }
@@ -1109,6 +1141,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
       return TYPE_SOA(UiRenderObject, material, Material);
@@ -1119,6 +1152,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
       Material l_OldMaterial = get_material();
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
@@ -1130,6 +1164,7 @@ namespace Low {
         TYPE_SOA(UiRenderObject, material, Material) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
         if (l_OldMaterial.is_alive()) {
           l_OldMaterial.dereference(get_id());
         }
@@ -1148,6 +1183,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_z_sorting
 
       return TYPE_SOA(UiRenderObject, z_sorting, uint32_t);
@@ -1158,6 +1194,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_sorting
 
       if (get_z_sorting() != p_Value) {
@@ -1169,6 +1206,7 @@ namespace Low {
         TYPE_SOA(UiRenderObject, z_sorting, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_sorting
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_z_sorting
 
         broadcast_observable(N(z_sorting));
@@ -1181,6 +1219,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_mesh
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_mesh
 
       return TYPE_SOA(UiRenderObject, mesh, Low::Renderer::Mesh);
@@ -1191,6 +1230,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+
       if (get_mesh().is_alive()) {
         get_mesh().dereference(get_id());
       }
@@ -1200,6 +1240,7 @@ namespace Low {
       TYPE_SOA(UiRenderObject, mesh, Low::Renderer::Mesh) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+
       if (p_Value.is_alive()) {
         p_Value.reference(get_id());
       }
@@ -1215,6 +1256,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
       return TYPE_SOA(UiRenderObject, draw_commands,
@@ -1224,6 +1266,7 @@ namespace Low {
     void UiRenderObject::mark_z_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+
       mark_dirty();
 
       UiCanvas l_Canvas = get_canvas_handle();
@@ -1234,6 +1277,7 @@ namespace Low {
     void UiRenderObject::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
       // LOW_CODEGEN::END::CUSTOM:MARK_dirty
     }
 
@@ -1243,6 +1287,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(UiRenderObject, name, Low::Util::Name);
@@ -1253,12 +1298,14 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(UiRenderObject, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1268,6 +1315,7 @@ namespace Low {
                                         Low::Renderer::Mesh p_Mesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       _LOW_ASSERT(p_Canvas.is_alive());
       _LOW_ASSERT(p_Mesh.is_alive());
 
@@ -1359,6 +1407,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

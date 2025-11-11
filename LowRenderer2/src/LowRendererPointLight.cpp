@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererRenderScene.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Low::Util::Set<Low::Renderer::PointLight>
         Low::Renderer::PointLight::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -72,6 +74,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.mark_dirty();
       l_Handle.set_slot(LOW_UINT32_MAX);
       // LOW_CODEGEN::END::CUSTOM:MAKE
@@ -86,6 +89,7 @@ namespace Low {
       {
         Low::Util::HandleLock<PointLight> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         RenderScene l_RenderScene = get_render_scene_handle();
         if (l_RenderScene.is_alive()) {
           l_RenderScene.get_pointlight_deleted_slots().insert(
@@ -126,6 +130,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -498,6 +503,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -524,6 +530,7 @@ namespace Low {
       l_Handle.set_slot(get_slot());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -543,7 +550,7 @@ namespace Low {
       return l_PointLight.duplicate(p_Name);
     }
 
-    void PointLight::serialize(Low::Util::Yaml::Node p_Node) const
+    void PointLight::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -558,18 +565,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void PointLight::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
     {
       PointLight l_PointLight = p_Handle.get_id();
       l_PointLight.serialize(p_Node);
     }
 
     Low::Util::Handle
-    PointLight::deserialize(Low::Util::Yaml::Node p_Node,
+    PointLight::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
       PointLight l_Handle = PointLight::make(N(PointLight));
@@ -602,6 +610,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -643,6 +652,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -660,6 +670,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_world_position
 
       return TYPE_SOA(PointLight, world_position, Low::Math::Vector3);
@@ -698,6 +709,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_position
 
       if (get_world_position() != p_Value) {
@@ -709,6 +721,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_world_position
 
         broadcast_observable(N(world_position));
@@ -721,6 +734,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
       return TYPE_SOA(PointLight, color, Low::Math::ColorRGB);
@@ -758,6 +772,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
       if (get_color() != p_Value) {
@@ -768,6 +783,7 @@ namespace Low {
         TYPE_SOA(PointLight, color, Low::Math::ColorRGB) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
 
         broadcast_observable(N(color));
@@ -780,6 +796,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_intensity
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_intensity
 
       return TYPE_SOA(PointLight, intensity, float);
@@ -790,6 +807,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_intensity
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_intensity
 
       if (get_intensity() != p_Value) {
@@ -800,6 +818,7 @@ namespace Low {
         TYPE_SOA(PointLight, intensity, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_intensity
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_intensity
 
         broadcast_observable(N(intensity));
@@ -812,6 +831,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_range
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_range
 
       return TYPE_SOA(PointLight, range, float);
@@ -822,6 +842,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_range
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_range
 
       if (get_range() != p_Value) {
@@ -832,6 +853,7 @@ namespace Low {
         TYPE_SOA(PointLight, range, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_range
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_range
 
         broadcast_observable(N(range));
@@ -844,6 +866,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_scene_handle
 
       return TYPE_SOA(PointLight, render_scene_handle, uint64_t);
@@ -854,12 +877,14 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_scene_handle
 
       // Set new value
       TYPE_SOA(PointLight, render_scene_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene_handle
 
       broadcast_observable(N(render_scene_handle));
@@ -871,6 +896,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_slot
 
       return TYPE_SOA(PointLight, slot, uint32_t);
@@ -881,12 +907,14 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
 
       // Set new value
       TYPE_SOA(PointLight, slot, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
 
       broadcast_observable(N(slot));
@@ -895,6 +923,7 @@ namespace Low {
     void PointLight::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
       ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:MARK_dirty
     }
@@ -905,6 +934,7 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(PointLight, name, Low::Util::Name);
@@ -915,12 +945,14 @@ namespace Low {
       Low::Util::HandleLock<PointLight> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(PointLight, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -930,6 +962,7 @@ namespace Low {
     PointLight::make(Low::Renderer::RenderScene p_RenderScene)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       PointLight l_PointLight = PointLight::make(N(PLight));
 
       l_PointLight.set_render_scene_handle(p_RenderScene.get_id());
@@ -1018,6 +1051,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererVkImage.h"
 #include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
@@ -19,6 +20,7 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t Texture::TYPE_ID = 60;
@@ -94,6 +96,7 @@ namespace Low {
                                     l_Handle.get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_state(TextureState::UNLOADED);
 
       ResourceManager::register_asset(l_Handle.get_unique_id(),
@@ -110,6 +113,7 @@ namespace Low {
       {
         Low::Util::HandleLock<Texture> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // TODO: unload of loaded
         if (get_gpu().is_alive()) {
           get_gpu().destroy();
@@ -157,6 +161,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -540,6 +545,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -570,6 +576,7 @@ namespace Low {
       l_Handle.set_state(get_state());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -588,7 +595,7 @@ namespace Low {
       return l_Texture.duplicate(p_Name);
     }
 
-    void Texture::serialize(Low::Util::Yaml::Node p_Node) const
+    void Texture::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -610,18 +617,19 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void Texture::serialize(Low::Util::Handle p_Handle,
-                            Low::Util::Yaml::Node p_Node)
+                            Low::Util::Yaml::Node &p_Node)
     {
       Texture l_Texture = p_Handle.get_id();
       l_Texture.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Texture::deserialize(Low::Util::Yaml::Node p_Node,
+    Texture::deserialize(Low::Util::Yaml::Node &p_Node,
                          Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -666,6 +674,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
       return l_Handle;
@@ -707,6 +716,7 @@ namespace Low {
                          Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -734,6 +744,7 @@ namespace Low {
 
       if (l_OldReferences != l_References) {
         // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+
         if (l_References > 0 &&
             get_state() == TextureState::UNLOADED) {
           ResourceManager::load_texture(get_id());
@@ -758,6 +769,7 @@ namespace Low {
 
       if (l_OldReferences != l_References) {
         // LOW_CODEGEN:BEGIN:CUSTOM:REFERENCE_REMOVED
+
         // LOW_CODEGEN::END::CUSTOM:REFERENCE_REMOVED
       }
     }
@@ -773,6 +785,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gpu
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gpu
 
       return TYPE_SOA(Texture, gpu, GpuTexture);
@@ -783,12 +796,14 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gpu
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gpu
 
       // Set new value
       TYPE_SOA(Texture, gpu, GpuTexture) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gpu
+
       if (p_Value.is_alive()) {
         p_Value.set_texture_handle(get_id());
       }
@@ -803,6 +818,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_resource
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_resource
 
       return TYPE_SOA(Texture, resource, TextureResource);
@@ -813,12 +829,14 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_resource
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_resource
 
       // Set new value
       TYPE_SOA(Texture, resource, TextureResource) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_resource
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_resource
 
       broadcast_observable(N(resource));
@@ -830,6 +848,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_staging
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_staging
 
       return TYPE_SOA(Texture, staging, TextureStaging);
@@ -840,12 +859,14 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_staging
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_staging
 
       // Set new value
       TYPE_SOA(Texture, staging, TextureStaging) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_staging
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_staging
 
       broadcast_observable(N(staging));
@@ -857,6 +878,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_state
 
       return TYPE_SOA(Texture, state, Low::Renderer::TextureState);
@@ -867,12 +889,14 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
 
       // Set new value
       TYPE_SOA(Texture, state, Low::Renderer::TextureState) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+
       if (p_Value == TextureState::LOADED) {
         broadcast_observable(N(TEXTURE_LOADED));
       }
@@ -887,6 +911,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_references
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_references
 
       return TYPE_SOA(Texture, references, Low::Util::Set<u64>);
@@ -898,6 +923,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
       return TYPE_SOA(Texture, unique_id, Low::Util::UniqueId);
@@ -908,12 +934,14 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
       // Set new value
       TYPE_SOA(Texture, unique_id, Low::Util::UniqueId) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
       broadcast_observable(N(unique_id));
@@ -925,6 +953,7 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(Texture, name, Low::Util::Name);
@@ -935,12 +964,14 @@ namespace Low {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(Texture, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -950,6 +981,7 @@ namespace Low {
     Texture::make_gpu_ready(Low::Util::Name p_Name)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_gpu_ready
+
       Texture l_Texture = make(p_Name);
 
       LOW_ASSERT(GpuTexture::living_count() <
@@ -969,6 +1001,7 @@ namespace Low {
     {
       Low::Util::HandleLock<Texture> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_editor_image
+
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_editor_image
     }
@@ -977,6 +1010,7 @@ namespace Low {
         TextureResourceConfig &p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_resource_config
+
       TextureResource l_Resource =
           TextureResource::make_from_config(p_Config);
       Texture l_Texture =
@@ -1070,6 +1104,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

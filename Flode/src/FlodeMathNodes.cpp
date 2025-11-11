@@ -46,13 +46,13 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void AddNode::serialize(Low::Util::Yaml::Node p_Node) const
+    void AddNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void AddNode::deserialize(Low::Util::Yaml::Node p_Node)
+    void AddNode::deserialize(Low::Util::Yaml::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
@@ -136,13 +136,13 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void SubtractNode::serialize(Low::Util::Yaml::Node p_Node) const
+    void SubtractNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void SubtractNode::deserialize(Low::Util::Yaml::Node p_Node)
+    void SubtractNode::deserialize(Low::Util::Yaml::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
@@ -205,13 +205,13 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void MultiplyNode::serialize(Low::Util::Yaml::Node p_Node) const
+    void MultiplyNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void MultiplyNode::deserialize(Low::Util::Yaml::Node p_Node)
+    void MultiplyNode::deserialize(Low::Util::Yaml::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
@@ -271,13 +271,13 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void DivideNode::serialize(Low::Util::Yaml::Node p_Node) const
+    void DivideNode::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void DivideNode::deserialize(Low::Util::Yaml::Node p_Node)
+    void DivideNode::deserialize(Low::Util::Yaml::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(

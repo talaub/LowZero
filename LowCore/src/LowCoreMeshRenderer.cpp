@@ -13,6 +13,7 @@
 
 #include "LowCorePrefabInstance.h"
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererResourceManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -116,6 +117,7 @@ namespace Low {
         {
           Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           LOCK_HANDLE(get_render_object());
           if (get_render_object().is_alive()) {
             get_render_object().destroy();
@@ -533,7 +535,8 @@ namespace Low {
         return l_MeshRenderer.duplicate(l_Entity);
       }
 
-      void MeshRenderer::serialize(Low::Util::Yaml::Node p_Node) const
+      void
+      MeshRenderer::serialize(Low::Util::Yaml::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -541,6 +544,7 @@ namespace Low {
             Low::Util::hash_to_string(get_unique_id()).c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         if (get_mesh().is_alive()) {
           LOW_SERIALIZATION_SET_HASH(p_Node["mesh"],
                                      get_mesh().get_unique_id());
@@ -553,14 +557,14 @@ namespace Low {
       }
 
       void MeshRenderer::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node p_Node)
+                                   Low::Util::Yaml::Node &p_Node)
       {
         MeshRenderer l_MeshRenderer = p_Handle.get_id();
         l_MeshRenderer.serialize(p_Node);
       }
 
       Low::Util::Handle
-      MeshRenderer::deserialize(Low::Util::Yaml::Node p_Node,
+      MeshRenderer::deserialize(Low::Util::Yaml::Node &p_Node,
                                 Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -636,6 +640,7 @@ namespace Low {
                                 Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -664,6 +669,7 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_mesh
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_mesh
 
         if (get_mesh() != p_Value) {
@@ -689,6 +695,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_mesh
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_mesh
 
           broadcast_observable(N(mesh));
@@ -713,6 +720,7 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
         // Set new value
@@ -735,6 +743,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_material
 
         broadcast_observable(N(material));
@@ -747,6 +756,7 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
 
         return TYPE_SOA(MeshRenderer, render_object,
@@ -759,6 +769,7 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
 
         // Set new value
@@ -766,6 +777,7 @@ namespace Low {
                  Low::Renderer::RenderObject) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
 
         broadcast_observable(N(render_object));
@@ -838,6 +850,7 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
         return TYPE_SOA(MeshRenderer, dirty, bool);
@@ -853,12 +866,14 @@ namespace Low {
         Low::Util::HandleLock<MeshRenderer> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
         // Set new value
         TYPE_SOA(MeshRenderer, dirty, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
         broadcast_observable(N(dirty));
@@ -869,6 +884,7 @@ namespace Low {
         if (!is_dirty()) {
           TYPE_SOA(MeshRenderer, dirty, bool) = true;
           // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
           // LOW_CODEGEN::END::CUSTOM:MARK_dirty
         }
       }

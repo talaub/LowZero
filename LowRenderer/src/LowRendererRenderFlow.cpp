@@ -905,6 +905,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -966,7 +967,7 @@ namespace Low {
       return l_RenderFlow.duplicate(p_Name);
     }
 
-    void RenderFlow::serialize(Low::Util::Yaml::Node p_Node) const
+    void RenderFlow::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -999,14 +1000,14 @@ namespace Low {
     }
 
     void RenderFlow::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
     {
       RenderFlow l_RenderFlow = p_Handle.get_id();
       l_RenderFlow.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderFlow::deserialize(Low::Util::Yaml::Node p_Node,
+    RenderFlow::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
       RenderFlow l_Handle = RenderFlow::make(N(RenderFlow));
@@ -1116,6 +1117,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -1651,7 +1653,7 @@ namespace Low {
 
     RenderFlow RenderFlow::make(Util::Name p_Name,
                                 Interface::Context p_Context,
-                                Util::Yaml::Node p_Config)
+                                Util::Yaml::Node &p_Config)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 

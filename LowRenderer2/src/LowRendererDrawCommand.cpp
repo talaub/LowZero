@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererRenderScene.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Low::Util::Set<Low::Renderer::DrawCommand>
         Low::Renderer::DrawCommand::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -83,6 +85,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_uploaded(false);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
@@ -96,6 +99,7 @@ namespace Low {
       {
         Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -131,6 +135,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -600,6 +605,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -634,6 +640,7 @@ namespace Low {
       l_Handle.set_object_id(get_object_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -653,27 +660,29 @@ namespace Low {
       return l_DrawCommand.duplicate(p_Name);
     }
 
-    void DrawCommand::serialize(Low::Util::Yaml::Node p_Node) const
+    void DrawCommand::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void DrawCommand::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node p_Node)
+                                Low::Util::Yaml::Node &p_Node)
     {
       DrawCommand l_DrawCommand = p_Handle.get_id();
       l_DrawCommand.serialize(p_Node);
     }
 
     Low::Util::Handle
-    DrawCommand::deserialize(Low::Util::Yaml::Node p_Node,
+    DrawCommand::deserialize(Low::Util::Yaml::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -714,6 +723,7 @@ namespace Low {
                              Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -731,6 +741,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_world_transform
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_world_transform
 
       return TYPE_SOA(DrawCommand, world_transform,
@@ -743,6 +754,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_world_transform
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_world_transform
 
       // Set new value
@@ -750,6 +762,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_world_transform
+
       if (!get_render_object().is_dirty()) {
         ms_Dirty.insert(get_id());
       }
@@ -764,6 +777,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_submesh
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_submesh
 
       return TYPE_SOA(DrawCommand, submesh,
@@ -775,6 +789,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_submesh
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_submesh
 
       // Set new value
@@ -782,6 +797,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_submesh
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_submesh
 
       broadcast_observable(N(submesh));
@@ -793,6 +809,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_slot
 
       return TYPE_SOA(DrawCommand, slot, uint32_t);
@@ -803,12 +820,14 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
 
       // Set new value
       TYPE_SOA(DrawCommand, slot, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
 
       broadcast_observable(N(slot));
@@ -820,6 +839,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
 
       return TYPE_SOA(DrawCommand, render_object,
@@ -832,6 +852,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
 
       // Set new value
@@ -839,6 +860,7 @@ namespace Low {
                Low::Renderer::RenderObject) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
 
       broadcast_observable(N(render_object));
@@ -850,6 +872,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_material
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_material
 
       return TYPE_SOA(DrawCommand, material, Low::Renderer::Material);
@@ -860,6 +883,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_material
+
       if (get_material().is_alive()) {
         get_material().dereference(get_id());
       }
@@ -870,6 +894,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
       if (!get_render_object().is_dirty()) {
         ms_Dirty.insert(get_id());
       }
@@ -887,6 +912,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
 
       return TYPE_SOA(DrawCommand, uploaded, bool);
@@ -902,12 +928,14 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
 
       // Set new value
       TYPE_SOA(DrawCommand, uploaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
 
       broadcast_observable(N(uploaded));
@@ -919,6 +947,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_scene_handle
 
       return TYPE_SOA(DrawCommand, render_scene_handle, uint64_t);
@@ -929,12 +958,14 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_scene_handle
 
       // Set new value
       TYPE_SOA(DrawCommand, render_scene_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene_handle
 
       broadcast_observable(N(render_scene_handle));
@@ -946,6 +977,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_id
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_object_id
 
       return TYPE_SOA(DrawCommand, object_id, uint32_t);
@@ -956,12 +988,14 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_id
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_object_id
 
       // Set new value
       TYPE_SOA(DrawCommand, object_id, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_object_id
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_object_id
 
       broadcast_observable(N(object_id));
@@ -973,6 +1007,7 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(DrawCommand, name, Low::Util::Name);
@@ -983,12 +1018,14 @@ namespace Low {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(DrawCommand, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1000,6 +1037,7 @@ namespace Low {
                       Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       DrawCommand l_DrawCommand =
           DrawCommand::make(p_RenderObject.get_name());
 
@@ -1025,6 +1063,7 @@ namespace Low {
     {
       Low::Util::HandleLock<DrawCommand> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_sort_index
+
       _LOW_ASSERT(is_alive());
 
       union
@@ -1122,6 +1161,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

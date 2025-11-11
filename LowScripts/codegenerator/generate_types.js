@@ -518,7 +518,7 @@ function generate_header(p_Type) {
   }
   t += line(`static uint32_t get_capacity();`);
   t += empty();
-  t += line(`void serialize(Low::Util::Yaml::Node p_Node) const;`, n);
+  t += line(`void serialize(Low::Util::Yaml::Node &p_Node) const;`, n);
   t += empty();
   if (p_Type.component) {
     t += line(`${p_Type.name} duplicate(Low::Core::Entity p_Entity) const;`, n);
@@ -559,11 +559,11 @@ function generate_header(p_Type) {
   }
 
   t += line(
-    `static void serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node p_Node);`,
+    `static void serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node &p_Node);`,
     n,
   );
   t += line(
-    `static Low::Util::Handle deserialize(Low::Util::Yaml::Node p_Node, Low::Util::Handle p_Creator);`,
+    `static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node, Low::Util::Handle p_Creator);`,
     n,
   );
   t += line("static bool is_alive(Low::Util::Handle p_Handle) {");
@@ -1664,7 +1664,7 @@ function generate_source(p_Type) {
     );
   }
   t += line(
-    `void ${p_Type.name}::serialize(Low::Util::Yaml::Node p_Node) const {`,
+    `void ${p_Type.name}::serialize(Low::Util::Yaml::Node &p_Node) const {`,
     n,
   );
   t += line(`_LOW_ASSERT(is_alive());`);
@@ -1730,7 +1730,7 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
   t += line(
-    `void ${p_Type.name}::serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node p_Node) {`,
+    `void ${p_Type.name}::serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node &p_Node) {`,
     n,
   );
   t += line(`${p_Type.name} l_${p_Type.name} = p_Handle.get_id();`);
@@ -1762,7 +1762,7 @@ function generate_source(p_Type) {
     );
   }
   t += line(
-    `Low::Util::Handle ${p_Type.name}::deserialize(Low::Util::Yaml::Node p_Node, Low::Util::Handle p_Creator) {`,
+    `Low::Util::Handle ${p_Type.name}::deserialize(Low::Util::Yaml::Node &p_Node, Low::Util::Handle p_Creator) {`,
     n,
   );
   if (!p_Type.no_auto_deserialize) {

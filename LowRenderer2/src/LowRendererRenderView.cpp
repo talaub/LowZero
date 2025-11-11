@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererUiCanvas.h"
 #include "LowRendererVkImage.h"
 #include "LowRendererVkViewInfo.h"
@@ -20,6 +21,7 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     const uint16_t RenderView::TYPE_ID = 53;
@@ -114,6 +116,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       l_Handle.set_dimensions(500, 500);
       l_Handle.set_camera_fov(45.0f);
       l_Handle.set_camera_position(0, 0, 0);
@@ -133,6 +136,7 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderView> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         for (auto it = get_steps().begin(); it != get_steps().end();
              ++it) {
           it->teardown(get_id());
@@ -173,6 +177,7 @@ namespace Low {
     {
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -1130,6 +1135,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -1184,6 +1190,7 @@ namespace Low {
       l_Handle.set_dimensions_dirty(is_dimensions_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -1203,27 +1210,29 @@ namespace Low {
       return l_RenderView.duplicate(p_Name);
     }
 
-    void RenderView::serialize(Low::Util::Yaml::Node p_Node) const
+    void RenderView::serialize(Low::Util::Yaml::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
     void RenderView::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node p_Node)
+                               Low::Util::Yaml::Node &p_Node)
     {
       RenderView l_RenderView = p_Handle.get_id();
       l_RenderView.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderView::deserialize(Low::Util::Yaml::Node p_Node,
+    RenderView::deserialize(Low::Util::Yaml::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -1264,6 +1273,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -1281,6 +1291,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_position
 
       return TYPE_SOA(RenderView, camera_position,
@@ -1320,6 +1331,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_position
 
       if (get_camera_position() != p_Value) {
@@ -1331,6 +1343,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_camera_position
 
         broadcast_observable(N(camera_position));
@@ -1343,6 +1356,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_direction
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_direction
 
       return TYPE_SOA(RenderView, camera_direction,
@@ -1382,6 +1396,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_direction
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_direction
 
       if (get_camera_direction() != p_Value) {
@@ -1393,6 +1408,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_direction
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_camera_direction
 
         broadcast_observable(N(camera_direction));
@@ -1405,6 +1421,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_fov
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_fov
 
       return TYPE_SOA(RenderView, camera_fov, float);
@@ -1415,6 +1432,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_fov
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_fov
 
       if (get_camera_fov() != p_Value) {
@@ -1425,6 +1443,7 @@ namespace Low {
         TYPE_SOA(RenderView, camera_fov, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_fov
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_camera_fov
 
         broadcast_observable(N(camera_fov));
@@ -1437,6 +1456,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_target_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_target_handle
 
       return TYPE_SOA(RenderView, render_target_handle, uint64_t);
@@ -1447,12 +1467,14 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_target_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_target_handle
 
       // Set new value
       TYPE_SOA(RenderView, render_target_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_target_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_target_handle
 
       broadcast_observable(N(render_target_handle));
@@ -1464,6 +1486,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_view_info_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_view_info_handle
 
       return TYPE_SOA(RenderView, view_info_handle, uint64_t);
@@ -1474,12 +1497,14 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_view_info_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_view_info_handle
 
       // Set new value
       TYPE_SOA(RenderView, view_info_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_view_info_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_view_info_handle
 
       broadcast_observable(N(view_info_handle));
@@ -1491,6 +1516,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
 
       return TYPE_SOA(RenderView, dimensions, Low::Math::UVector2);
@@ -1522,12 +1548,14 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions
 
       // Set new value
       TYPE_SOA(RenderView, dimensions, Low::Math::UVector2) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
 
       broadcast_observable(N(dimensions));
@@ -1539,6 +1567,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_desired_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_desired_dimensions
 
       return TYPE_SOA(RenderView, desired_dimensions,
@@ -1570,6 +1599,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_desired_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_desired_dimensions
 
       if (get_desired_dimensions() != p_Value) {
@@ -1581,6 +1611,7 @@ namespace Low {
                  Low::Math::UVector2) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_desired_dimensions
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_desired_dimensions
 
         broadcast_observable(N(desired_dimensions));
@@ -1593,6 +1624,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_scene
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_render_scene
 
       return TYPE_SOA(RenderView, render_scene,
@@ -1605,6 +1637,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_scene
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_scene
 
       // Set new value
@@ -1612,6 +1645,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_scene
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_render_scene
 
       broadcast_observable(N(render_scene));
@@ -1623,6 +1657,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_albedo
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_albedo
 
       return TYPE_SOA(RenderView, gbuffer_albedo,
@@ -1635,6 +1670,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_albedo
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_albedo
 
       // Set new value
@@ -1642,6 +1678,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_albedo
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_albedo
 
       broadcast_observable(N(gbuffer_albedo));
@@ -1653,6 +1690,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_normals
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_normals
 
       return TYPE_SOA(RenderView, gbuffer_normals,
@@ -1665,6 +1703,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_normals
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_normals
 
       // Set new value
@@ -1672,6 +1711,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_normals
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_normals
 
       broadcast_observable(N(gbuffer_normals));
@@ -1683,6 +1723,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_depth
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_depth
 
       return TYPE_SOA(RenderView, gbuffer_depth,
@@ -1694,6 +1735,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_depth
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_depth
 
       // Set new value
@@ -1701,6 +1743,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_depth
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_depth
 
       broadcast_observable(N(gbuffer_depth));
@@ -1713,6 +1756,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_gbuffer_viewposition
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_gbuffer_viewposition
 
       return TYPE_SOA(RenderView, gbuffer_viewposition,
@@ -1725,6 +1769,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_gbuffer_viewposition
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_gbuffer_viewposition
 
       // Set new value
@@ -1732,6 +1777,7 @@ namespace Low {
                Low::Renderer::Texture) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_gbuffer_viewposition
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_gbuffer_viewposition
 
       broadcast_observable(N(gbuffer_viewposition));
@@ -1743,6 +1789,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_object_map
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_object_map
 
       return TYPE_SOA(RenderView, object_map, Low::Renderer::Texture);
@@ -1753,6 +1800,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_object_map
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_object_map
 
       // Set new value
@@ -1760,6 +1808,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_object_map
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_object_map
 
       broadcast_observable(N(object_map));
@@ -1771,6 +1820,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_lit_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_lit_image
 
       return TYPE_SOA(RenderView, lit_image, Low::Renderer::Texture);
@@ -1781,6 +1831,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_lit_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_lit_image
 
       // Set new value
@@ -1788,6 +1839,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_lit_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_lit_image
 
       broadcast_observable(N(lit_image));
@@ -1799,6 +1851,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_blurred_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_blurred_image
 
       return TYPE_SOA(RenderView, blurred_image,
@@ -1810,6 +1863,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_blurred_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_blurred_image
 
       // Set new value
@@ -1817,6 +1871,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_blurred_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_blurred_image
 
       broadcast_observable(N(blurred_image));
@@ -1829,6 +1884,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_steps
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_steps
 
       return TYPE_SOA(RenderView, steps,
@@ -1842,6 +1898,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_step_data
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_step_data
 
       return TYPE_SOA(RenderView, step_data,
@@ -1854,6 +1911,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_step_data
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_step_data
 
       // Set new value
@@ -1861,6 +1919,7 @@ namespace Low {
                Low::Util::List<RenderStepDataPtr>) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_step_data
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_step_data
 
       broadcast_observable(N(step_data));
@@ -1873,6 +1932,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_canvases
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ui_canvases
 
       return TYPE_SOA(RenderView, ui_canvases,
@@ -1886,6 +1946,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_debug_geometry
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_debug_geometry
 
       return TYPE_SOA(
@@ -1899,6 +1960,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_camera_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_camera_dirty
 
       return TYPE_SOA(RenderView, camera_dirty, bool);
@@ -1914,12 +1976,14 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_camera_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_camera_dirty
 
       // Set new value
       TYPE_SOA(RenderView, camera_dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_camera_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_camera_dirty
 
       broadcast_observable(N(camera_dirty));
@@ -1930,6 +1994,7 @@ namespace Low {
       if (!is_camera_dirty()) {
         TYPE_SOA(RenderView, camera_dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_camera_dirty
+
         // LOW_CODEGEN::END::CUSTOM:MARK_camera_dirty
       }
     }
@@ -1940,6 +2005,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions_dirty
 
       return TYPE_SOA(RenderView, dimensions_dirty, bool);
@@ -1955,12 +2021,14 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions_dirty
 
       // Set new value
       TYPE_SOA(RenderView, dimensions_dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions_dirty
 
       broadcast_observable(N(dimensions_dirty));
@@ -1971,6 +2039,7 @@ namespace Low {
       if (!is_dimensions_dirty()) {
         TYPE_SOA(RenderView, dimensions_dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dimensions_dirty
+
         // LOW_CODEGEN::END::CUSTOM:MARK_dimensions_dirty
       }
     }
@@ -1981,6 +2050,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(RenderView, name, Low::Util::Name);
@@ -1991,12 +2061,14 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(RenderView, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -2006,6 +2078,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step
+
       get_steps().push_back(p_Step);
       LOW_ASSERT(p_Step.prepare(get_id()),
                  "Failed to add renderstep to renderview");
@@ -2016,6 +2089,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_step_by_name
+
       add_step(RenderStep::find_by_name(p_StepName));
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_step_by_name
     }
@@ -2024,6 +2098,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_ui_canvas
+
       get_ui_canvases().push_back(p_Canvas);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_ui_canvas
     }
@@ -2033,6 +2108,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_add_debug_geometry
+
       get_debug_geometry().push_back(p_DebugGeometryDraw);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_add_debug_geometry
     }
@@ -2042,6 +2118,7 @@ namespace Low {
     {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_read_object_id_px
+
       if (!get_object_map().is_alive() ||
           !get_object_map().get_gpu().is_alive()) {
         return LOW_UINT32_MAX;
@@ -2070,6 +2147,7 @@ namespace Low {
     RenderView::make_default(Low::Util::Name p_Name)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_default
+
       RenderView l_RenderView = make(p_Name);
 
       l_RenderView.add_step_by_name(RENDERSTEP_SOLID_MATERIAL_NAME);
@@ -2163,6 +2241,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer
