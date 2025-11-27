@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t MeshGeometry::TYPE_ID = 66;
+    u16 MeshGeometry::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        MeshGeometry::IDENTIFIER(LOW_NAME(509652687),
+                                 LOW_NAME(123331768));
     uint32_t MeshGeometry::ms_Capacity = 0u;
     uint32_t MeshGeometry::ms_PageSize = 0u;
     Low::Util::SharedMutex MeshGeometry::ms_LivingMutex;
@@ -50,7 +53,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = MeshGeometry::TYPE_ID;
+      l_Handle.m_Data.m_Type = MeshGeometry::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -129,6 +132,9 @@ namespace Low {
 
     void MeshGeometry::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(MeshGeometry));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -155,7 +161,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(MeshGeometry);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MeshGeometry::is_alive;
       l_TypeInfo.destroy = &MeshGeometry::destroy;
@@ -334,7 +340,8 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void MeshGeometry::cleanup()
@@ -369,7 +376,7 @@ namespace Low {
 
       MeshGeometry l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = MeshGeometry::TYPE_ID;
+      l_Handle.m_Data.m_Type = MeshGeometry::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -394,14 +401,14 @@ namespace Low {
       MeshGeometry l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = MeshGeometry::TYPE_ID;
+      l_Handle.m_Data.m_Type = MeshGeometry::ms_TypeId;
 
       return l_Handle;
     }
 
     bool MeshGeometry::is_alive() const
     {
-      if (m_Data.m_Type != MeshGeometry::TYPE_ID) {
+      if (m_Data.m_Type != MeshGeometry::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -413,7 +420,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == MeshGeometry::TYPE_ID &&
+      return m_Data.m_Type == MeshGeometry::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -479,7 +486,8 @@ namespace Low {
       return l_MeshGeometry.duplicate(p_Name);
     }
 
-    void MeshGeometry::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    MeshGeometry::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -489,14 +497,14 @@ namespace Low {
     }
 
     void MeshGeometry::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Serial::Node &p_Node)
     {
       MeshGeometry l_MeshGeometry = p_Handle.get_id();
       l_MeshGeometry.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MeshGeometry::deserialize(Low::Util::Yaml::Node &p_Node,
+    MeshGeometry::deserialize(Low::Util::Serial::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 

@@ -8,10 +8,9 @@ namespace Flode {
   namespace HandleNodes {
     ImU32 g_HandleColor = IM_COL32(76, 131, 195, 255);
 
-    TypeIdNode::TypeIdNode(u16 p_TypeId)
+    TypeIdNode::TypeIdNode(u16 p_TypeId):
+        m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
-
       m_CachedName = m_TypeMetadata.friendlyName + " type id";
     }
 
@@ -39,9 +38,8 @@ namespace Flode {
     }
 
     InstanceCountNode::InstanceCountNode(u16 p_TypeId)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
-
       m_CachedName = m_TypeMetadata.friendlyName + " instance count";
     }
 
@@ -70,9 +68,8 @@ namespace Flode {
     }
 
     GetInstanceByIndexNode::GetInstanceByIndexNode(u16 p_TypeId)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
-
       m_CachedName = Low::Util::String("Get instance by index");
     }
 
@@ -112,10 +109,8 @@ namespace Flode {
       p_Builder.append("]");
     }
 
-    FindByNameNode::FindByNameNode(u16 p_TypeId)
+    FindByNameNode::FindByNameNode(u16 p_TypeId) : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
-
       m_CachedName = Low::Util::String("Find by name");
     }
 
@@ -157,9 +152,8 @@ namespace Flode {
     }
 
     DestroyNode::DestroyNode(u16 p_TypeId)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
-
       m_CachedName = Low::Util::String("Destroy");
     }
 
@@ -197,8 +191,8 @@ namespace Flode {
     }
 
     GetNode::GetNode(u16 p_TypeId, Low::Util::Name p_PropertyName)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
       m_PropertyMetadata =
           m_TypeMetadata.find_property_base_by_name(p_PropertyName);
 
@@ -244,8 +238,8 @@ namespace Flode {
     }
 
     SetNode::SetNode(u16 p_TypeId, Low::Util::Name p_PropertyName)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
       m_PropertyMetadata =
           m_TypeMetadata.find_property_base_by_name(p_PropertyName);
 
@@ -297,8 +291,8 @@ namespace Flode {
 
     FunctionNode::FunctionNode(u16 p_TypeId,
                                Low::Util::Name p_FunctionName)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
       bool l_Found = false;
       for (auto it = m_TypeMetadata.functions.begin();
            it != m_TypeMetadata.functions.end(); ++it) {
@@ -430,9 +424,8 @@ namespace Flode {
     }
 
     ForEachInstanceNode::ForEachInstanceNode(u16 p_TypeId)
+        : m_TypeMetadata(Low::Editor::get_type_metadata(p_TypeId))
     {
-      m_TypeMetadata = Low::Editor::get_type_metadata(p_TypeId);
-
       m_CachedName = Low::Util::String("For each instance");
     }
 

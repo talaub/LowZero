@@ -407,7 +407,7 @@ namespace Low {
 
             for (uint32_t i = 0u; i < p_TypeInfo.get_living_count();
                  ++i) {
-              char *i_DisplayName = "Object";
+              Util::String i_DisplayName = "Object";
               if (l_HasNameProperty) {
                 Util::Name i_Name;
                 l_NameProperty.get(l_Handles[i], &i_Name);
@@ -415,10 +415,10 @@ namespace Low {
               }
 
               if (strlen(l_SearchBuffer) > 0 &&
-                  !strstr(i_DisplayName, l_SearchBuffer)) {
+                  !strstr(i_DisplayName.c_str(), l_SearchBuffer)) {
                 continue;
               }
-              if (ImGui::Selectable(i_DisplayName)) {
+              if (ImGui::Selectable(i_DisplayName.c_str())) {
                 l_SearchBuffer[0] = '\0';
                 *p_HandleId = l_Handles[i].get_id();
                 l_Changed = true;

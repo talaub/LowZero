@@ -15,6 +15,7 @@
 
 #include "LowRendererRenderScene.h"
 #include "LowRendererDrawCommand.h"
+#include "LowRendererVulkan.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -25,7 +26,10 @@ namespace Low {
         Low::Renderer::RenderObject::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t RenderObject::TYPE_ID = 52;
+    u16 RenderObject::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        RenderObject::IDENTIFIER(LOW_NAME(509652687),
+                                 LOW_NAME(3112746057));
     uint32_t RenderObject::ms_Capacity = 0u;
     uint32_t RenderObject::ms_PageSize = 0u;
     Low::Util::SharedMutex RenderObject::ms_LivingMutex;
@@ -54,7 +58,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = RenderObject::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderObject::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -104,7 +108,7 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
+        const u32 l_DrawCommandCount = get_draw_commands().size();
         for (auto it = get_draw_commands().begin();
              it != get_draw_commands().end(); ++it) {
           if (it->is_alive()) {
@@ -114,6 +118,14 @@ namespace Low {
 
         if (get_mesh().is_alive()) {
           get_mesh().dereference(get_id());
+        }
+        if (get_material().is_alive()) {
+          get_material().dereference(get_id());
+        }
+
+        if (is_uploaded()) {
+          Vulkan::Global::get_drawcommand_buffer().free(
+              get_slot(), get_draw_commands().size());
         }
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
@@ -148,6 +160,9 @@ namespace Low {
 
     void RenderObject::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(RenderObject));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -174,7 +189,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderObject);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderObject::is_alive;
       l_TypeInfo.destroy = &RenderObject::destroy;
@@ -235,7 +250,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
@@ -353,7 +368,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Material::TYPE_ID;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Material::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
@@ -506,13 +522,13 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = RenderObject::TYPE_ID;
+        l_FunctionInfo.handleType = RenderObject::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_RenderScene);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = RenderScene::TYPE_ID;
+          l_ParameterInfo.handleType = RenderScene::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -520,13 +536,14 @@ namespace Low {
           l_ParameterInfo.name = N(p_Mesh);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+          l_ParameterInfo.handleType = Low::Renderer::Mesh::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void RenderObject::cleanup()
@@ -561,7 +578,7 @@ namespace Low {
 
       RenderObject l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = RenderObject::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderObject::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -586,14 +603,14 @@ namespace Low {
       RenderObject l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = RenderObject::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderObject::ms_TypeId;
 
       return l_Handle;
     }
 
     bool RenderObject::is_alive() const
     {
-      if (m_Data.m_Type != RenderObject::TYPE_ID) {
+      if (m_Data.m_Type != RenderObject::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -605,7 +622,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == RenderObject::TYPE_ID &&
+      return m_Data.m_Type == RenderObject::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -679,7 +696,8 @@ namespace Low {
       return l_RenderObject.duplicate(p_Name);
     }
 
-    void RenderObject::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    RenderObject::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -689,14 +707,14 @@ namespace Low {
     }
 
     void RenderObject::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Serial::Node &p_Node)
     {
       RenderObject l_RenderObject = p_Handle.get_id();
       l_RenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderObject::deserialize(Low::Util::Serial::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 

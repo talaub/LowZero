@@ -22,7 +22,9 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Font::TYPE_ID = 77;
+    u16 Font::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Font::IDENTIFIER(LOW_NAME(509652687), LOW_NAME(1889970156));
     uint32_t Font::ms_Capacity = 0u;
     uint32_t Font::ms_PageSize = 0u;
     Low::Util::SharedMutex Font::ms_LivingMutex;
@@ -55,7 +57,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Font::TYPE_ID;
+      l_Handle.m_Data.m_Type = Font::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -152,6 +154,9 @@ namespace Low {
 
     void Font::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(Font));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -178,7 +183,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Font);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Font::is_alive;
       l_TypeInfo.destroy = &Font::destroy;
@@ -204,7 +209,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
@@ -236,7 +241,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Font::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::FontResource::TYPE_ID;
+            Low::Renderer::FontResource::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
@@ -415,7 +420,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make_from_resource_config);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Font::TYPE_ID;
+        l_FunctionInfo.handleType = Font::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Config);
@@ -432,11 +437,12 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_editor_image);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = EditorImage::TYPE_ID;
+        l_FunctionInfo.handleType = EditorImage::type_id();
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_editor_image
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Font::cleanup()
@@ -471,7 +477,7 @@ namespace Low {
 
       Font l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Font::TYPE_ID;
+      l_Handle.m_Data.m_Type = Font::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -496,14 +502,14 @@ namespace Low {
       Font l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Font::TYPE_ID;
+      l_Handle.m_Data.m_Type = Font::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Font::is_alive() const
     {
-      if (m_Data.m_Type != Font::TYPE_ID) {
+      if (m_Data.m_Type != Font::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -515,7 +521,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Font::TYPE_ID &&
+      return m_Data.m_Type == Font::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -582,7 +588,7 @@ namespace Low {
       return l_Font.duplicate(p_Name);
     }
 
-    void Font::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Font::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -593,8 +599,7 @@ namespace Low {
         get_resource().serialize(p_Node["resource"]);
       }
       p_Node["sidecar_loaded"] = is_sidecar_loaded();
-      p_Node["_unique_id"] =
-          Low::Util::hash_to_string(get_unique_id()).c_str();
+      p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -603,21 +608,22 @@ namespace Low {
     }
 
     void Font::serialize(Low::Util::Handle p_Handle,
-                         Low::Util::Yaml::Node &p_Node)
+                         Low::Util::Serial::Node &p_Node)
     {
       Font l_Font = p_Handle.get_id();
       l_Font.serialize(p_Node);
     }
 
-    Low::Util::Handle Font::deserialize(Low::Util::Yaml::Node &p_Node,
-                                        Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Font::deserialize(Low::Util::Serial::Node &p_Node,
+                      Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
       if (p_Node["unique_id"]) {
         l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
       } else if (p_Node["_unique_id"]) {
         l_HandleUniqueId = Low::Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+            p_Node["_unique_id"].as<Low::Util::String>());
       }
 
       Font l_Handle = Font::make(N(Font), l_HandleUniqueId);
@@ -646,7 +652,7 @@ namespace Low {
             p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

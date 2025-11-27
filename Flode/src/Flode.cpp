@@ -1886,18 +1886,18 @@ namespace Flode {
     }
   }
 
-  u64 Graph::deserialize_node(Low::Util::Yaml::Node &p_Yaml,
+  u64 Graph::deserialize_node(Low::Util::Serial::Node & p_Serial,
                               Node **p_Node, u64 p_IdStartValue,
                               bool p_UseIds)
   {
-    Low::Util::Name l_NodeTypeName = LOW_YAML_AS_NAME(p_Yaml["type"]);
+    Low::Util::Name l_NodeTypeName = p_Serial["type"].as<Low::Util::Name>();
 
     u64 l_IdsAdded = 0;
 
     *p_Node = spawn_node_of_type(l_NodeTypeName);
     Node *l_Node = *p_Node;
     if (p_UseIds) {
-      l_Node->id = p_Yaml["id"].as<u64>();
+      l_Node->id = p_Serial["id"].as<u64>();
     } else {
       l_Node->id = p_IdStartValue + l_IdsAdded;
       l_IdsAdded++;
@@ -1905,27 +1905,27 @@ namespace Flode {
     l_Node->graph = this;
     l_Node->initialize();
 
-    if (p_Yaml["node_data"]) {
-      l_Node->deserialize(p_Yaml["node_data"]);
+    if (p_Serial["node_data"]) {
+      l_Node->deserialize(p_Serial["node_data"]);
     }
 
     l_Node->setup_default_pins();
 
     for (u32 i = 0; i < l_Node->pins.size(); ++i) {
-      if (p_UseIds && p_Yaml["pins"].size() > i) {
-        l_Node->pins[i]->id = p_Yaml["pins"][i]["id"].as<u64>();
+      if (p_UseIds && p_Serial["pins"].size() > i) {
+        l_Node->pins[i]->id = p_Serial["pins"][i]["id"].as<u64>();
       } else {
         l_Node->pins[i]->id = p_IdStartValue + l_IdsAdded;
         l_IdsAdded++;
       }
-      if (p_Yaml["pins"][i]["default_value"]) {
+      if (p_Serial["pins"][i]["default_value"]) {
         l_Node->pins[i]->defaultValue =
-            Low::Util::Serialization::deserialize_variant(
-                p_Yaml["pins"][i]["default_value"]);
+            Low::Util::Serial::deserialize_variant(
+                p_Serial["pins"][i]["default_value"]);
       }
-      if (p_Yaml["pins"][i]["default_string_value"]) {
-        l_Node->pins[i]->defaultStringValue = LOW_YAML_AS_STRING(
-            p_Yaml["pins"][i]["default_string_value"]);
+      if (p_Serial["pins"][i]["default_string_value"]) {
+        l_Node->pins[i]->defaultStringValue = 
+            p_Serial["pins"][i]["default_string_value"].as<Low::Util::String>();
 
         if (l_Node->pins[i]->stringType == PinStringType::Name) {
           // In case the pin is actually a name convert the read
@@ -1938,8 +1938,7 @@ namespace Flode {
     }
 
     Low::Math::Vector2 l_Position =
-        Low::Util::Serialization::deserialize_vector2(
-            p_Yaml["position"]);
+            p_Serial["position"].as<Low::Math::Vector2>();
     NodeEd::SetNodePosition(l_Node->id,
                             ImVec2(l_Position.x, l_Position.y));
 
@@ -1947,26 +1946,26 @@ namespace Flode {
   }
 
   void Graph::serialize_node(const Node *p_Node,
-                             Low::Util::Yaml::Node &p_Yaml,
+                             Low::Util::Serial::Node &p_Serial,
                              bool p_StoreNodePositions) const
   {
-    p_Yaml["type"] = p_Node->typeName.c_str();
-    p_Yaml["id"] = p_Node->id.Get();
+    p_Serial["type"] = p_Node->typeName.c_str();
+    p_Serial["id"] = p_Node->id.Get();
 
     for (Pin *i_Pin : p_Node->pins) {
-      Low::Util::Yaml::Node i_PinYaml;
-      i_PinYaml["id"] = i_Pin->id.Get();
-      i_PinYaml["direction"] =
+      Low::Util::Serial::Node i_PinNode;
+      i_PinNode["id"] = i_Pin->id.Get();
+      i_PinNode["direction"] =
           pin_direction_to_string(i_Pin->direction).c_str();
-      i_PinYaml["type"] = pin_type_to_string(i_Pin->type).c_str();
-      i_PinYaml["type_id"] = i_Pin->typeId;
+      i_PinNode["type"] = pin_type_to_string(i_Pin->type).c_str();
+      i_PinNode["type_id"] = i_Pin->typeId;
 
       if (i_Pin->type == PinType::String) {
         if (i_Pin->stringType == PinStringType::Name) {
           Low::Util::Name i_NameContent = i_Pin->defaultValue;
-          i_PinYaml["default_string_value"] = i_NameContent.c_str();
+          i_PinNode["default_string_value"] = i_NameContent.c_str();
         } else {
-          i_PinYaml["default_string_value"] =
+          i_PinNode["default_string_value"] =
               i_Pin->defaultStringValue.c_str();
         }
       } else {
@@ -1974,12 +1973,12 @@ namespace Flode {
                 Low::Util::VariantType::String &&
             i_Pin->defaultValue.m_Type !=
                 Low::Util::VariantType::Handle) {
-          Low::Util::Serialization::serialize_variant(
-              i_PinYaml["default_value"], i_Pin->defaultValue);
+          Low::Util::Serial::serialize_variant(
+              i_PinNode["default_value"], i_Pin->defaultValue);
         }
       }
 
-      p_Yaml["pins"].push_back(i_PinYaml);
+      p_Serial["pins"].push_back(i_PinNode);
     }
 
     Low::Math::Vector2 l_Position;
@@ -1992,20 +1991,19 @@ namespace Flode {
       l_Position.y = 0.0f;
     }
 
-    Low::Util::Serialization::serialize(p_Yaml["position"],
-                                        l_Position);
+    p_Serial["position"] = l_Position;
 
-    p_Node->serialize(p_Yaml["node_data"]);
+    p_Node->serialize(p_Serial["node_data"]);
   }
 
-  void Graph::serialize(Low::Util::Yaml::Node &p_Node,
+  void Graph::serialize(Low::Util::Serial::Node &p_Node,
                         bool p_StoreNodePositions) const
   {
     p_Node["name"] = m_Name.c_str();
     p_Node["idcounter"] = m_IdCounter;
     p_Node["internal"] = m_Internal;
 
-    Low::Util::Serialization::serialize_handle(
+    Low::Util::Serial::serialize_handle(
         p_Node["contexthandle"], m_ContextHandle);
 
     for (auto it = m_Namespace.begin(); it != m_Namespace.end();
@@ -2015,39 +2013,39 @@ namespace Flode {
     }
 
     for (const Variable *i_Variable : m_Variables) {
-      Low::Util::Yaml::Node i_Yaml;
+      Low::Util::Serial::Node i_Serial;
 
-      i_Yaml["name"] = i_Variable->name.c_str();
-      i_Yaml["type"] = pin_type_to_string(i_Variable->type).c_str();
-      i_Yaml["type_id"] = i_Variable->typeId;
+      i_Serial["name"] = i_Variable->name;
+      i_Serial["type"] = pin_type_to_string(i_Variable->type).c_str();
+      i_Serial["type_id"] = i_Variable->typeId;
 
-      p_Node["variables"].push_back(i_Yaml);
+      p_Node["variables"].push_back(i_Serial);
     }
 
     for (const Node *i_Node : m_Nodes) {
-      Low::Util::Yaml::Node i_Yaml;
+      Low::Util::Serial::Node i_Serial;
 
-      serialize_node(i_Node, i_Yaml, p_StoreNodePositions);
+      serialize_node(i_Node, i_Serial, p_StoreNodePositions);
 
-      p_Node["nodes"].push_back(i_Yaml);
+      p_Node["nodes"].push_back(i_Serial);
     }
 
     for (const Link *i_Link : m_Links) {
-      Low::Util::Yaml::Node i_LinkYaml;
-      i_LinkYaml["id"] = i_Link->id.Get();
-      i_LinkYaml["input"] = i_Link->inputPinId.Get();
-      i_LinkYaml["output"] = i_Link->outputPinId.Get();
+      Low::Util::Serial::Node i_LinkNode;
+      i_LinkNode["id"] = i_Link->id.Get();
+      i_LinkNode["input"] = i_Link->inputPinId.Get();
+      i_LinkNode["output"] = i_Link->outputPinId.Get();
 
-      p_Node["links"].push_back(i_LinkYaml);
+      p_Node["links"].push_back(i_LinkNode);
     }
   }
 
-  void Graph::deserialize(Low::Util::Yaml::Node &p_Node)
+  void Graph::deserialize(Low::Util::Serial::Node &p_Node)
   {
-    m_Name = LOW_YAML_AS_NAME(p_Node["name"]);
+    m_Name = p_Node["name"].as<Low::Util::Name>();
 
     if (p_Node["contexthandle"]) {
-      m_ContextHandle = Low::Util::Serialization::deserialize_handle(
+      m_ContextHandle = Low::Util::Serial::deserialize_handle(
           p_Node["contexthandle"]);
     }
 
@@ -2056,10 +2054,8 @@ namespace Flode {
     u32 l_IdsAdded = 0;
 
     if (p_Node[l_NamespaceName]) {
-      for (auto it = p_Node[l_NamespaceName].begin();
-           it != p_Node[l_NamespaceName].end(); ++it) {
-        Low::Util::Yaml::Node i_Node = *it;
-        m_Namespace.push_back(LOW_YAML_AS_NAME(i_Node));
+      for (auto [_, i_Node] : p_Node[l_NamespaceName]){
+        m_Namespace.push_back(i_Node.as<Low::Util::Name>());
       }
     }
 
@@ -2068,14 +2064,11 @@ namespace Flode {
     }
 
     if (p_Node["variables"]) {
-      for (auto it = p_Node["variables"].begin();
-           it != p_Node["variables"].end(); ++it) {
-        Low::Util::Yaml::Node i_VariableNode = *it;
-
+      for (auto [_, i_VariableNode] : p_Node["variables"]){
         Variable *i_Variable = new Variable;
-        i_Variable->name = LOW_YAML_AS_STRING(i_VariableNode["name"]);
+        i_Variable->name = i_VariableNode["name"].as<Low::Util::String>();
         i_Variable->type = string_to_pin_type(
-            LOW_YAML_AS_STRING(i_VariableNode["type"]));
+            i_VariableNode["type"].as<Low::Util::String>());
         if (i_VariableNode["type_id"]) {
           i_Variable->typeId = i_VariableNode["type_id"].as<u16>();
         } else {
@@ -2087,10 +2080,7 @@ namespace Flode {
     }
 
     if (p_Node["nodes"]) {
-      for (auto it = p_Node["nodes"].begin();
-           it != p_Node["nodes"].end(); ++it) {
-        Low::Util::Yaml::Node i_NodeNode = *it;
-
+      for (auto [_, i_NodeNode] : p_Node["nodes"]){
         Node *i_Node = nullptr;
         l_IdsAdded += deserialize_node(
             i_NodeNode, &i_Node,
@@ -2104,10 +2094,7 @@ namespace Flode {
     }
 
     if (p_Node["links"]) {
-      for (auto it = p_Node["links"].begin();
-           it != p_Node["links"].end(); ++it) {
-        Low::Util::Yaml::Node i_LinkNode = *it;
-
+      for (auto [_, i_LinkNode] : p_Node["links"]){
         Link *i_Link = create_link(i_LinkNode["input"].as<u64>(),
                                    i_LinkNode["output"].as<u64>());
 

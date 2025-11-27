@@ -25,7 +25,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t GraphicsStepConfig::TYPE_ID = 12;
+    u16 GraphicsStepConfig::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        GraphicsStepConfig::IDENTIFIER(LOW_NAME(1849087878),
+                                       LOW_NAME(4198546539));
     uint32_t GraphicsStepConfig::ms_Capacity = 0u;
     uint32_t GraphicsStepConfig::ms_PageSize = 0u;
     Low::Util::SharedMutex GraphicsStepConfig::ms_LivingMutex;
@@ -57,7 +60,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
+      l_Handle.m_Data.m_Type = GraphicsStepConfig::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -156,6 +159,9 @@ namespace Low {
 
     void GraphicsStepConfig::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer), N(GraphicsStepConfig));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -183,7 +189,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(GraphicsStepConfig);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &GraphicsStepConfig::is_alive;
       l_TypeInfo.destroy = &GraphicsStepConfig::destroy;
@@ -678,7 +684,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = GraphicsStepConfig::TYPE_ID;
+        l_FunctionInfo.handleType = GraphicsStepConfig::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -697,7 +703,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void GraphicsStepConfig::cleanup()
@@ -735,7 +742,7 @@ namespace Low {
 
       GraphicsStepConfig l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
+      l_Handle.m_Data.m_Type = GraphicsStepConfig::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -761,14 +768,14 @@ namespace Low {
       GraphicsStepConfig l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = GraphicsStepConfig::TYPE_ID;
+      l_Handle.m_Data.m_Type = GraphicsStepConfig::ms_TypeId;
 
       return l_Handle;
     }
 
     bool GraphicsStepConfig::is_alive() const
     {
-      if (m_Data.m_Type != GraphicsStepConfig::TYPE_ID) {
+      if (m_Data.m_Type != GraphicsStepConfig::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -780,7 +787,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == GraphicsStepConfig::TYPE_ID &&
+      return m_Data.m_Type == GraphicsStepConfig::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -857,14 +864,13 @@ namespace Low {
       return l_GraphicsStepConfig.duplicate(p_Name);
     }
 
-    void
-    GraphicsStepConfig::serialize(Low::Util::Yaml::Node &p_Node) const
+    void GraphicsStepConfig::serialize(
+        Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::Serialization::serialize(
-          p_Node["rendertargets_clearcolor"],
-          get_rendertargets_clearcolor());
+      p_Node["rendertargets_clearcolor"] =
+          get_rendertargets_clearcolor();
       p_Node["use_depth"] = is_use_depth();
       p_Node["depth_clear"] = is_depth_clear();
       p_Node["depth_test"] = is_depth_test();
@@ -878,15 +884,16 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
-    void GraphicsStepConfig::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node &p_Node)
+    void
+    GraphicsStepConfig::serialize(Low::Util::Handle p_Handle,
+                                  Low::Util::Serial::Node &p_Node)
     {
       GraphicsStepConfig l_GraphicsStepConfig = p_Handle.get_id();
       l_GraphicsStepConfig.serialize(p_Node);
     }
 
     Low::Util::Handle
-    GraphicsStepConfig::deserialize(Low::Util::Yaml::Node &p_Node,
+    GraphicsStepConfig::deserialize(Low::Util::Serial::Node &p_Node,
                                     Low::Util::Handle p_Creator)
     {
       GraphicsStepConfig l_Handle =
@@ -904,8 +911,7 @@ namespace Low {
       }
       if (p_Node["rendertargets_clearcolor"]) {
         l_Handle.set_rendertargets_clearcolor(
-            Low::Util::Serialization::deserialize_vector4(
-                p_Node["rendertargets_clearcolor"]));
+            p_Node["rendertargets_clearcolor"].as<Math::Color>());
       }
       if (p_Node["depth_rendertarget"]) {
       }
@@ -928,7 +934,7 @@ namespace Low {
       if (p_Node["output_image"]) {
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

@@ -27,8 +27,8 @@ namespace Flode {
                          NodeEd::PinId p_PinId) const override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node &p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
+      serialize(Low::Util::Serial::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Serial::Node &p_Node) override;
 
       virtual void on_pin_connected(Pin *p_Pin) override;
 
@@ -60,8 +60,8 @@ namespace Flode {
                          NodeEd::PinId p_PinId) const override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node &p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
+      serialize(Low::Util::Serial::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Serial::Node &p_Node) override;
 
       virtual void on_pin_connected(Pin *p_Pin) override;
 
@@ -93,8 +93,8 @@ namespace Flode {
                          NodeEd::PinId p_PinId) const override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node &p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
+      serialize(Low::Util::Serial::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Serial::Node &p_Node) override;
 
       virtual void on_pin_connected(Pin *p_Pin) override;
 
@@ -126,8 +126,8 @@ namespace Flode {
                          NodeEd::PinId p_PinId) const override;
 
       virtual void
-      serialize(Low::Util::Yaml::Node &p_Node) const override;
-      virtual void deserialize(Low::Util::Yaml::Node &p_Node) override;
+      serialize(Low::Util::Serial::Node &p_Node) const override;
+      virtual void deserialize(Low::Util::Serial::Node &p_Node) override;
 
       virtual void on_pin_connected(Pin *p_Pin) override;
 

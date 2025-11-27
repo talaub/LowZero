@@ -159,10 +159,10 @@ namespace Low {
               p_Metadata.typeInfo.properties[l_EntityName].get(
                   p_Handle, &i_Entity);
               if (i_Entity.has_component(
-                      Core::Component::PrefabInstance::TYPE_ID)) {
+                      Core::Component::PrefabInstance::type_id())) {
                 Core::Component::PrefabInstance i_Instance =
                     i_Entity.get_component(
-                        Core::Component::PrefabInstance::TYPE_ID);
+                        Core::Component::PrefabInstance::type_id());
                 if (i_Instance.get_prefab().is_alive()) {
                   if (i_Instance.get_overrides().find(
                           p_Metadata.typeId) !=

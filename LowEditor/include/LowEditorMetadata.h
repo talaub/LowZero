@@ -66,6 +66,10 @@ namespace Low {
 
     struct TypeMetadata
     {
+      TypeMetadata(const Util::TypeIdentifier p_Identifier)
+          : identifier(p_Identifier)
+      {
+      }
       Util::Name name;
       Util::String module;
       Util::List<Util::String> namespaces;
@@ -79,6 +83,8 @@ namespace Low {
       bool scriptingExpose;
       Util::List<FunctionMetadata> functions;
       bool hasTypeInfo;
+
+      Util::TypeIdentifier identifier;
 
       Util::String friendlyName;
 

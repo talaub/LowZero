@@ -359,7 +359,7 @@ namespace Low {
                 *(Util::UniqueId *)i_UserData);
 
             if (i_Handle.get_type() !=
-                Component::Rigidbody::TYPE_ID) {
+                Component::Rigidbody::type_id()) {
               continue;
             }
 

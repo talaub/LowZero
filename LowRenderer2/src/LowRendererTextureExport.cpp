@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t TextureExport::TYPE_ID = 80;
+    u16 TextureExport::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        TextureExport::IDENTIFIER(LOW_NAME(509652687),
+                                  LOW_NAME(3034076957));
     uint32_t TextureExport::ms_Capacity = 0u;
     uint32_t TextureExport::ms_PageSize = 0u;
     Low::Util::SharedMutex TextureExport::ms_LivingMutex;
@@ -50,7 +53,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = TextureExport::TYPE_ID;
+      l_Handle.m_Data.m_Type = TextureExport::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -128,6 +131,9 @@ namespace Low {
 
     void TextureExport::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(TextureExport));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -154,7 +160,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(TextureExport);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &TextureExport::is_alive;
       l_TypeInfo.destroy = &TextureExport::destroy;
@@ -212,7 +218,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureExport::Data, texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TextureExport l_Handle = p_Handle.get_id();
@@ -378,7 +384,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: finish
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void TextureExport::cleanup()
@@ -413,7 +420,7 @@ namespace Low {
 
       TextureExport l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = TextureExport::TYPE_ID;
+      l_Handle.m_Data.m_Type = TextureExport::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -438,14 +445,14 @@ namespace Low {
       TextureExport l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = TextureExport::TYPE_ID;
+      l_Handle.m_Data.m_Type = TextureExport::ms_TypeId;
 
       return l_Handle;
     }
 
     bool TextureExport::is_alive() const
     {
-      if (m_Data.m_Type != TextureExport::TYPE_ID) {
+      if (m_Data.m_Type != TextureExport::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -457,7 +464,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == TextureExport::TYPE_ID &&
+      return m_Data.m_Type == TextureExport::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -527,7 +534,8 @@ namespace Low {
       return l_TextureExport.duplicate(p_Name);
     }
 
-    void TextureExport::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    TextureExport::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -544,20 +552,20 @@ namespace Low {
     }
 
     void TextureExport::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node &p_Node)
+                                  Low::Util::Serial::Node &p_Node)
     {
       TextureExport l_TextureExport = p_Handle.get_id();
       l_TextureExport.serialize(p_Node);
     }
 
     Low::Util::Handle
-    TextureExport::deserialize(Low::Util::Yaml::Node &p_Node,
+    TextureExport::deserialize(Low::Util::Serial::Node &p_Node,
                                Low::Util::Handle p_Creator)
     {
       TextureExport l_Handle = TextureExport::make(N(TextureExport));
 
       if (p_Node["path"]) {
-        l_Handle.set_path(LOW_YAML_AS_STRING(p_Node["path"]));
+        l_Handle.set_path(p_Node["path"].as<Low::Util::String>());
       }
       if (p_Node["texture"]) {
         l_Handle.set_texture(Low::Renderer::Texture::deserialize(
@@ -573,7 +581,7 @@ namespace Low {
             p_Node["data_handle"].as<uint64_t>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

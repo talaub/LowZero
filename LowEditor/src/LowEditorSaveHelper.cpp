@@ -2,6 +2,7 @@
 
 #include "LowUtil.h"
 #include "LowUtilLogger.h"
+#include "LowUtilHashing.h"
 
 namespace Low {
   namespace Editor {
@@ -9,25 +10,23 @@ namespace Low {
       void save_region(Core::Region p_Region, bool p_ShowMessage)
       {
         {
-          Util::Yaml::Node l_Node;
+          Util::Serial::Node l_Node;
           p_Region.serialize(l_Node);
           Util::String l_Path =
               Util::get_project().dataPath + "/assets/regions/" +
-              Util::String(
-                  std::to_string(p_Region.get_unique_id()).c_str()) +
+              Util::hash_to_string(p_Region.get_unique_id()) +
               ".region.yaml";
-          Util::Yaml::write_file(l_Path.c_str(), l_Node);
+          Util::Serial::write_yaml_file(l_Path.c_str(), l_Node);
         }
 
         if (p_Region.is_loaded()) {
-          Util::Yaml::Node l_Node;
+          Util::Serial::Node l_Node;
           p_Region.serialize_entities(l_Node);
           Util::String l_Path =
               Util::get_project().dataPath + "/assets/regions/" +
-              Util::String(
-                  std::to_string(p_Region.get_unique_id()).c_str()) +
+              Util::hash_to_string(p_Region.get_unique_id()) +
               ".entities.yaml";
-          Util::Yaml::write_file(l_Path.c_str(), l_Node);
+          Util::Serial::write_yaml_file(l_Path.c_str(), l_Node);
         }
 
         if (p_ShowMessage) {
@@ -38,14 +37,13 @@ namespace Low {
 
       void save_scene(Core::Scene p_Scene, bool p_ShowMessage)
       {
-        Util::Yaml::Node l_Node;
+        Util::Serial::Node l_Node;
         p_Scene.serialize(l_Node);
         Util::String l_Path =
             Util::get_project().dataPath + "/assets/scenes/" +
-            Util::String(
-                std::to_string(p_Scene.get_unique_id()).c_str()) +
+            Util::hash_to_string(p_Scene.get_unique_id()) +
             ".scene.yaml";
-        Util::Yaml::write_file(l_Path.c_str(), l_Node);
+        Util::Serial::write_yaml_file(l_Path.c_str(), l_Node);
 
         for (auto it = p_Scene.get_regions().begin();
              it != p_Scene.get_regions().end(); ++it) {
@@ -61,5 +59,5 @@ namespace Low {
         }
       }
     } // namespace SaveHelper
-  }   // namespace Editor
+  } // namespace Editor
 } // namespace Low

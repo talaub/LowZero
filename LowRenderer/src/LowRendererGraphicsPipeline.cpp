@@ -24,7 +24,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t GraphicsPipeline::TYPE_ID = 5;
+      u16 GraphicsPipeline::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          GraphicsPipeline::IDENTIFIER(LOW_NAME(1849087878),
+                                       LOW_NAME(760326898));
       uint32_t GraphicsPipeline::ms_Capacity = 0u;
       uint32_t GraphicsPipeline::ms_PageSize = 0u;
       Low::Util::SharedMutex GraphicsPipeline::ms_LivingMutex;
@@ -55,7 +58,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = GraphicsPipeline::TYPE_ID;
+        l_Handle.m_Data.m_Type = GraphicsPipeline::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -126,6 +129,9 @@ namespace Low {
 
       void GraphicsPipeline::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowRenderer), N(GraphicsPipeline));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -153,7 +159,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(GraphicsPipeline);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &GraphicsPipeline::is_alive;
         l_TypeInfo.destroy = &GraphicsPipeline::destroy;
@@ -242,7 +248,7 @@ namespace Low {
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_FunctionInfo.handleType = GraphicsPipeline::TYPE_ID;
+          l_FunctionInfo.handleType = GraphicsPipeline::type_id();
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
             l_ParameterInfo.name = N(p_Name);
@@ -271,7 +277,8 @@ namespace Low {
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: bind
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void GraphicsPipeline::cleanup()
@@ -309,7 +316,7 @@ namespace Low {
 
         GraphicsPipeline l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = GraphicsPipeline::TYPE_ID;
+        l_Handle.m_Data.m_Type = GraphicsPipeline::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -335,14 +342,14 @@ namespace Low {
         GraphicsPipeline l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = GraphicsPipeline::TYPE_ID;
+        l_Handle.m_Data.m_Type = GraphicsPipeline::ms_TypeId;
 
         return l_Handle;
       }
 
       bool GraphicsPipeline::is_alive() const
       {
-        if (m_Data.m_Type != GraphicsPipeline::TYPE_ID) {
+        if (m_Data.m_Type != GraphicsPipeline::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -354,7 +361,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == GraphicsPipeline::TYPE_ID &&
+        return m_Data.m_Type == GraphicsPipeline::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -419,8 +426,8 @@ namespace Low {
         return l_GraphicsPipeline.duplicate(p_Name);
       }
 
-      void
-      GraphicsPipeline::serialize(Low::Util::Yaml::Node &p_Node) const
+      void GraphicsPipeline::serialize(
+          Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -431,15 +438,16 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
-      void GraphicsPipeline::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node &p_Node)
+      void
+      GraphicsPipeline::serialize(Low::Util::Handle p_Handle,
+                                  Low::Util::Serial::Node &p_Node)
       {
         GraphicsPipeline l_GraphicsPipeline = p_Handle.get_id();
         l_GraphicsPipeline.serialize(p_Node);
       }
 
       Low::Util::Handle
-      GraphicsPipeline::deserialize(Low::Util::Yaml::Node &p_Node,
+      GraphicsPipeline::deserialize(Low::Util::Serial::Node &p_Node,
                                     Low::Util::Handle p_Creator)
       {
         GraphicsPipeline l_Handle =
@@ -448,7 +456,7 @@ namespace Low {
         if (p_Node["pipeline"]) {
         }
         if (p_Node["name"]) {
-          l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+          l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

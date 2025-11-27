@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t TexturePixels::TYPE_ID = 73;
+    u16 TexturePixels::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        TexturePixels::IDENTIFIER(LOW_NAME(509652687),
+                                  LOW_NAME(944078146));
     uint32_t TexturePixels::ms_Capacity = 0u;
     uint32_t TexturePixels::ms_PageSize = 0u;
     Low::Util::SharedMutex TexturePixels::ms_LivingMutex;
@@ -50,7 +53,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = TexturePixels::TYPE_ID;
+      l_Handle.m_Data.m_Type = TexturePixels::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -125,6 +128,9 @@ namespace Low {
 
     void TexturePixels::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(TexturePixels));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -151,7 +157,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(TexturePixels);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &TexturePixels::is_alive;
       l_TypeInfo.destroy = &TexturePixels::destroy;
@@ -398,7 +404,8 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void TexturePixels::cleanup()
@@ -433,7 +440,7 @@ namespace Low {
 
       TexturePixels l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = TexturePixels::TYPE_ID;
+      l_Handle.m_Data.m_Type = TexturePixels::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -458,14 +465,14 @@ namespace Low {
       TexturePixels l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = TexturePixels::TYPE_ID;
+      l_Handle.m_Data.m_Type = TexturePixels::ms_TypeId;
 
       return l_Handle;
     }
 
     bool TexturePixels::is_alive() const
     {
-      if (m_Data.m_Type != TexturePixels::TYPE_ID) {
+      if (m_Data.m_Type != TexturePixels::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -477,7 +484,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == TexturePixels::TYPE_ID &&
+      return m_Data.m_Type == TexturePixels::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -546,13 +553,14 @@ namespace Low {
       return l_TexturePixels.duplicate(p_Name);
     }
 
-    void TexturePixels::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    TexturePixels::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       p_Node["channels"] = get_channels();
       p_Node["data_size"] = get_data_size();
-      Low::Util::Serialization::serialize_enum(
+      Low::Util::Serial::serialize_enum(
           p_Node["state"],
           Low::Renderer::TextureStateEnumHelper::get_enum_id(),
           static_cast<uint8_t>(get_state()));
@@ -564,14 +572,14 @@ namespace Low {
     }
 
     void TexturePixels::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node &p_Node)
+                                  Low::Util::Serial::Node &p_Node)
     {
       TexturePixels l_TexturePixels = p_Handle.get_id();
       l_TexturePixels.serialize(p_Node);
     }
 
     Low::Util::Handle
-    TexturePixels::deserialize(Low::Util::Yaml::Node &p_Node,
+    TexturePixels::deserialize(Low::Util::Serial::Node &p_Node,
                                Low::Util::Handle p_Creator)
     {
       TexturePixels l_Handle = TexturePixels::make(N(TexturePixels));
@@ -590,11 +598,10 @@ namespace Low {
       }
       if (p_Node["state"]) {
         l_Handle.set_state(static_cast<Low::Renderer::TextureState>(
-            Low::Util::Serialization::deserialize_enum(
-                p_Node["state"])));
+            Low::Util::Serial::deserialize_enum(p_Node["state"])));
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

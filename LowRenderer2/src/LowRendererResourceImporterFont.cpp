@@ -28,7 +28,6 @@
 #include "LowMath.h"
 #include "LowUtilAssert.h"
 #include "LowUtil.h"
-#include "LowUtilYaml.h"
 #include "LowUtilHashing.h"
 #include "LowUtilSerialization.h"
 
@@ -68,7 +67,7 @@ namespace Low {
       static bool populate_sidecar_info(
           FT_Face p_Face, const Math::UVector2 p_AtlasDimensions,
           std::vector<msdf_atlas::GlyphGeometry> p_Glyphs,
-          Util::Yaml::Node &p_Node)
+          Util::Serial::Node &p_Node)
       {
         p_Node["version"] = 1;
         p_Node["name"] = p_Face->family_name;
@@ -78,7 +77,7 @@ namespace Low {
         {
           for (auto it = p_Glyphs.begin(); it != p_Glyphs.end();
                ++it) {
-            Util::Yaml::Node i_Glyph;
+            Util::Serial::Node i_Glyph;
             i_Glyph["codepoint"] = it->getCodepoint();
 
             double ax0, ay0, ax1, ay1; // atlas-space (in *pixels*)
@@ -111,12 +110,11 @@ namespace Low {
 
             i_Glyph["advance"] = l_Advance;
 
-            Util::Serialization::serialize(i_Glyph["bearing"],
-                                           l_Bearing);
-            Util::Serialization::serialize(i_Glyph["size"], l_Size);
+            i_Glyph["bearing"] = l_Bearing;
+            i_Glyph["size"] = l_Size;
+            i_Glyph["uv_min"] = uvMin;
+            i_Glyph["uv_max"] = uvMax;
 
-            Util::Serialization::serialize(i_Glyph["uv_min"], uvMin);
-            Util::Serialization::serialize(i_Glyph["uv_max"], uvMax);
             i_Glyph["codepoint_char"] = i_CodePointString.c_str();
 
             p_Node["glyphs"].push_back(i_Glyph);
@@ -261,7 +259,7 @@ namespace Low {
           const Util::String l_SidecarPath =
               l_BaseAssetPath + ".font.yaml";
 
-          Util::Yaml::Node l_Sidecar;
+          Util::Serial::Node l_Sidecar;
           LOW_ASSERT_ERROR_RETURN_FALSE(
               populate_sidecar_info(face,
                                     {bitmap.width, bitmap.height},
@@ -283,7 +281,7 @@ namespace Low {
           const Util::String l_FileName = p_OutputPath.substr(
               p_OutputPath.find_last_of("/\\") + 1);
 
-          Util::Yaml::Node l_ResourceNode;
+          Util::Serial::Node l_ResourceNode;
           {
             l_ResourceNode["version"] = 1;
             l_ResourceNode["font_id"] =
@@ -298,9 +296,10 @@ namespace Low {
               Util::get_project().dataPath + "\\" + p_OutputPath +
               ".fontresource.yaml";
 
-          Util::Yaml::write_file(l_SidecarPath.c_str(), l_Sidecar);
-          Util::Yaml::write_file(l_ResourcePath.c_str(),
-                                 l_ResourceNode);
+          Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
+                                        l_Sidecar);
+          Util::Serial::write_yaml_file(l_ResourcePath.c_str(),
+                                        l_ResourceNode);
 
           // Cleanup
           msdfgen::destroyFont(font);

@@ -974,8 +974,9 @@ static void register_lowcore_entity()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(), Low::Core::Entity,
       uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::Entity, uint16_t, TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(), Low::Core::Entity,
+      uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::Entity, bool, is_alive);
   CflatStructAddStaticMethodReturn(
@@ -1046,9 +1047,9 @@ static void register_lowcore_transform()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(),
       Low::Core::Component::Transform, uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::Component::Transform,
-                             uint16_t, TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::Component::Transform, uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::Component::Transform, bool,
                              is_alive);
@@ -1154,9 +1155,9 @@ static void register_lowcore_camera()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(),
       Low::Core::Component::Camera, uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::Component::Camera, uint16_t,
-                             TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::Component::Camera, uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::Component::Camera, bool,
                              is_alive);
@@ -1224,9 +1225,9 @@ static void register_lowcore_element()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(), Low::Core::UI::Element,
       uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::UI::Element, uint16_t,
-                             TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::Element,
+      uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Element, bool, is_alive);
   CflatStructAddStaticMethodReturn(
@@ -1311,8 +1312,9 @@ static void register_lowcore_view()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(), Low::Core::UI::View,
       uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::UI::View, uint16_t, TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(), Low::Core::UI::View,
+      uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::View, bool, is_alive);
   CflatStructAddStaticMethodReturn(
@@ -1401,9 +1403,9 @@ static void register_lowcore_display()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(),
       Low::Core::UI::Component::Display, uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::UI::Component::Display,
-                             uint16_t, TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Display, uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Component::Display, bool,
                              is_alive);
@@ -1520,9 +1522,9 @@ static void register_lowcore_text()
   CflatStructAddConstructorParams1(
       Low::Core::Scripting::get_environment(),
       Low::Core::UI::Component::Text, uint64_t);
-  CflatStructAddStaticMember(Low::Core::Scripting::get_environment(),
-                             Low::Core::UI::Component::Text, uint16_t,
-                             TYPE_ID);
+  CflatStructAddStaticMethodReturn(
+      Low::Core::Scripting::get_environment(),
+      Low::Core::UI::Component::Text, uint16_t, type_id);
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Component::Text, bool,
                              is_alive);

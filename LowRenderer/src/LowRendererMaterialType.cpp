@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t MaterialType::TYPE_ID = 16;
+    u16 MaterialType::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        MaterialType::IDENTIFIER(LOW_NAME(1849087878),
+                                 LOW_NAME(3482068707));
     uint32_t MaterialType::ms_Capacity = 0u;
     uint32_t MaterialType::ms_PageSize = 0u;
     Low::Util::SharedMutex MaterialType::ms_LivingMutex;
@@ -50,7 +53,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+      l_Handle.m_Data.m_Type = MaterialType::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -126,6 +129,9 @@ namespace Low {
 
     void MaterialType::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer), N(MaterialType));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -152,7 +158,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(MaterialType);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MaterialType::is_alive;
       l_TypeInfo.destroy = &MaterialType::destroy;
@@ -335,7 +341,8 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void MaterialType::cleanup()
@@ -370,7 +377,7 @@ namespace Low {
 
       MaterialType l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+      l_Handle.m_Data.m_Type = MaterialType::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -395,14 +402,14 @@ namespace Low {
       MaterialType l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = MaterialType::TYPE_ID;
+      l_Handle.m_Data.m_Type = MaterialType::ms_TypeId;
 
       return l_Handle;
     }
 
     bool MaterialType::is_alive() const
     {
-      if (m_Data.m_Type != MaterialType::TYPE_ID) {
+      if (m_Data.m_Type != MaterialType::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -414,7 +421,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == MaterialType::TYPE_ID &&
+      return m_Data.m_Type == MaterialType::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -480,7 +487,8 @@ namespace Low {
       return l_MaterialType.duplicate(p_Name);
     }
 
-    void MaterialType::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    MaterialType::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -491,14 +499,14 @@ namespace Low {
     }
 
     void MaterialType::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Serial::Node &p_Node)
     {
       MaterialType l_MaterialType = p_Handle.get_id();
       l_MaterialType.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MaterialType::deserialize(Low::Util::Yaml::Node &p_Node,
+    MaterialType::deserialize(Low::Util::Serial::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 

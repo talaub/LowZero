@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t EditorImageStaging::TYPE_ID = 83;
+    u16 EditorImageStaging::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        EditorImageStaging::IDENTIFIER(LOW_NAME(509652687),
+                                       LOW_NAME(375354600));
     uint32_t EditorImageStaging::ms_Capacity = 0u;
     uint32_t EditorImageStaging::ms_PageSize = 0u;
     Low::Util::SharedMutex EditorImageStaging::ms_LivingMutex;
@@ -53,7 +56,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = EditorImageStaging::TYPE_ID;
+      l_Handle.m_Data.m_Type = EditorImageStaging::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -125,6 +128,9 @@ namespace Low {
 
     void EditorImageStaging::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(EditorImageStaging));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -152,7 +158,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(EditorImageStaging);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &EditorImageStaging::is_alive;
       l_TypeInfo.destroy = &EditorImageStaging::destroy;
@@ -377,7 +383,8 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void EditorImageStaging::cleanup()
@@ -415,7 +422,7 @@ namespace Low {
 
       EditorImageStaging l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = EditorImageStaging::TYPE_ID;
+      l_Handle.m_Data.m_Type = EditorImageStaging::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -441,14 +448,14 @@ namespace Low {
       EditorImageStaging l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = EditorImageStaging::TYPE_ID;
+      l_Handle.m_Data.m_Type = EditorImageStaging::ms_TypeId;
 
       return l_Handle;
     }
 
     bool EditorImageStaging::is_alive() const
     {
-      if (m_Data.m_Type != EditorImageStaging::TYPE_ID) {
+      if (m_Data.m_Type != EditorImageStaging::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -460,7 +467,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == EditorImageStaging::TYPE_ID &&
+      return m_Data.m_Type == EditorImageStaging::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -530,8 +537,8 @@ namespace Low {
       return l_EditorImageStaging.duplicate(p_Name);
     }
 
-    void
-    EditorImageStaging::serialize(Low::Util::Yaml::Node &p_Node) const
+    void EditorImageStaging::serialize(
+        Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -544,15 +551,16 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
-    void EditorImageStaging::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node &p_Node)
+    void
+    EditorImageStaging::serialize(Low::Util::Handle p_Handle,
+                                  Low::Util::Serial::Node &p_Node)
     {
       EditorImageStaging l_EditorImageStaging = p_Handle.get_id();
       l_EditorImageStaging.serialize(p_Node);
     }
 
     Low::Util::Handle
-    EditorImageStaging::deserialize(Low::Util::Yaml::Node &p_Node,
+    EditorImageStaging::deserialize(Low::Util::Serial::Node &p_Node,
                                     Low::Util::Handle p_Creator)
     {
       EditorImageStaging l_Handle =
@@ -571,7 +579,7 @@ namespace Low {
         l_Handle.set_data_size(p_Node["data_size"].as<uint64_t>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

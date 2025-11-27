@@ -7,6 +7,7 @@
 #include "LowUtilMemory.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilFileSystem.h"
+#include "SDL_video.h"
 
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
@@ -69,6 +70,11 @@ namespace Low {
           }
           if (e.window.event == SDL_WINDOWEVENT_RESTORED) {
             g_MainWindow.minimized = false;
+          }
+          if (e.window.event == SDL_WINDOWEVENT_CLOSE &&
+              e.window.windowID ==
+                  SDL_GetWindowID(g_MainWindow.sdlwindow)) {
+            g_MainWindow.shouldClose = true;
           }
         }
 

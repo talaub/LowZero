@@ -126,7 +126,9 @@ static void setup_scene()
 {
   Low::Core::Scene l_Scene =
       Low::Core::Scene::find_by_name(N(TestScene));
-  l_Scene.load();
+  if (l_Scene.is_alive()) {
+    l_Scene.load();
+  }
 };
 
 int load_module_lib(ModuleType type, const Low::Util::String &path)
@@ -208,11 +210,11 @@ void load_module(Low::Util::String p_ProjectPath,
   LOW_LOG_INFO << "Load module: " << p_Path << LOW_LOG_END;
 
   Util::String l_ModuleConfigPath = p_Path + "/module.yaml";
-  Util::Yaml::Node l_ConfigNode =
-      Util::Yaml::load_file(l_ModuleConfigPath.c_str());
+  Util::Serial::Node l_ConfigNode =
+      Util::Serial::load_yaml_file(l_ModuleConfigPath.c_str());
 
   ModuleType l_ModuleType =
-      parse_module_type(LOW_YAML_AS_STRING(l_ConfigNode["type"]));
+      parse_module_type(l_ConfigNode["type"].as<Low::Util::String>());
 
   Util::String l_DllPath = p_ProjectPath + "/bin";
 
@@ -261,8 +263,12 @@ for (int i = 0; i < l_FilePaths.size(); ++i) {
   load_module(p_ProjectPath, "./modules/Gameplay");
   load_module(p_ProjectPath, "./modules/Editor");
 #else
-  load_module(p_ProjectPath, "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Gameplay");
-  load_module(p_ProjectPath, "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Editor");
+  load_module(
+      p_ProjectPath,
+      "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Gameplay");
+  load_module(
+      p_ProjectPath,
+      "C:/Users/tlaub/Documents/LowEngine/misteda/modules/Editor");
 #endif
 }
 

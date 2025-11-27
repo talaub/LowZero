@@ -50,10 +50,10 @@ namespace Low {
       // Contains the name of the type in lowercase
       Util::String l_SavePath = get_asset_path(p_Handle, p_TypeInfo);
 
-      Util::Yaml::Node l_Node;
+      Util::Serial::Node l_Node;
       p_TypeInfo.serialize(p_Handle, l_Node);
 
-      Util::Yaml::write_file(l_SavePath.c_str(), l_Node);
+      Util::Serial::write_yaml_file(l_SavePath.c_str(), l_Node);
 
       LOW_LOG_INFO << "Saved " << p_TypeInfo.name << LOW_LOG_END;
 

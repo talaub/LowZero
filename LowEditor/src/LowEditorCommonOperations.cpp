@@ -50,7 +50,7 @@ namespace Low {
         Util::RTTI::TypeInfo &l_TypeInfo =
             Util::Handle::get_type_info(p_Handle.get_type());
 
-        if (p_Handle.get_type() == Core::Entity::TYPE_ID) {
+        if (p_Handle.get_type() == Core::Entity::type_id()) {
           Core::Entity l_Entity = p_Handle.get_id();
           l_Entity.serialize_hierarchy(m_SerializedHandle, true);
         } else {
@@ -59,14 +59,14 @@ namespace Low {
       }
 
       HandleCreateOperation::HandleCreateOperation(
-          Util::Handle p_Handle, Util::Yaml::Node &p_SerializedHandle)
+          Util::Handle p_Handle, Util::Serial::Node &p_SerializedHandle)
           : m_Handle(p_Handle), m_SerializedHandle(p_SerializedHandle)
       {
       }
 
       static void
-      create_mappings_from_entity_yaml(ChangeList &p_ChangeList,
-                                       Util::Yaml::Node p_Node)
+      create_mappings_from_entity_node(ChangeList &p_ChangeList,
+                                       Util::Serial::Node p_Node)
       {
         p_ChangeList.set_mapping(p_Node["handle"].as<uint64_t>(),
                                  p_Node["_handle"].as<uint64_t>());
@@ -85,7 +85,7 @@ namespace Low {
 
         if (p_Node["children"]) {
           for (uint32_t i = 0; i < p_Node["children"].size(); ++i) {
-            create_mappings_from_entity_yaml(p_ChangeList,
+            create_mappings_from_entity_node(p_ChangeList,
                                              p_Node["children"][i]);
           }
         }
@@ -99,11 +99,11 @@ namespace Low {
 
         Util::Handle l_NewHandle = 0;
 
-        if (m_Handle.get_type() == Core::Entity::TYPE_ID) {
+        if (m_Handle.get_type() == Core::Entity::type_id()) {
           l_NewHandle = Core::Entity::deserialize_hierarchy(
               m_SerializedHandle, 0);
 
-          create_mappings_from_entity_yaml(p_ChangeList,
+          create_mappings_from_entity_node(p_ChangeList,
                                            m_SerializedHandle);
           p_ChangeList.set_mapping(m_Handle, l_NewHandle);
         } else {
@@ -131,7 +131,7 @@ namespace Low {
         Util::RTTI::TypeInfo &l_TypeInfo =
             Util::Handle::get_type_info(p_Handle.get_type());
 
-        if (p_Handle.get_type() == Core::Entity::TYPE_ID) {
+        if (p_Handle.get_type() == Core::Entity::type_id()) {
           Core::Entity l_Entity = p_Handle.get_id();
           l_Entity.serialize_hierarchy(m_SerializedHandle, true);
         } else {

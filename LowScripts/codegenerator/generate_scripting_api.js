@@ -196,7 +196,7 @@ function generate_scripting_api(p_Type) {
   );
 
   t += line(
-    `CflatStructAddStaticMember(Low::Core::Scripting::get_environment(), ${l_TypeString}, uint16_t, TYPE_ID);`,
+    `CflatStructAddStaticMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, uint16_t, type_id);`,
   );
   t += line(
     `CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(), ${l_TypeString}, bool, is_alive);`,

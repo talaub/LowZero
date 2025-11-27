@@ -25,7 +25,10 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-        const uint16_t Display::TYPE_ID = 39;
+        u16 Display::ms_TypeId = 0;
+        const Low::Util::TypeIdentifier
+            Display::IDENTIFIER(LOW_NAME(1181529166),
+                                LOW_NAME(3278654271));
         uint32_t Display::ms_Capacity = 0u;
         uint32_t Display::ms_PageSize = 0u;
         Low::Util::SharedMutex Display::ms_LivingMutex;
@@ -63,7 +66,7 @@ namespace Low {
           l_Handle.m_Data.m_Index = l_Index;
           l_Handle.m_Data.m_Generation =
               ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-          l_Handle.m_Data.m_Type = Display::TYPE_ID;
+          l_Handle.m_Data.m_Type = Display::ms_TypeId;
 
           l_PageLock.unlock();
 
@@ -159,6 +162,9 @@ namespace Low {
 
         void Display::initialize()
         {
+          const Low::Util::TypeIdentifier l_IdentifierNames(
+              N(LowCore), N(Display));
+
           LOCK_PAGES_WRITE(l_PagesLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -185,7 +191,7 @@ namespace Low {
 
           Low::Util::RTTI::TypeInfo l_TypeInfo;
           l_TypeInfo.name = N(Display);
-          l_TypeInfo.typeId = TYPE_ID;
+          l_TypeInfo.typeId = ms_TypeId;
           l_TypeInfo.get_capacity = &get_capacity;
           l_TypeInfo.is_alive = &Display::is_alive;
           l_TypeInfo.destroy = &Display::destroy;
@@ -631,7 +637,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Core::UI::Element::TYPE_ID;
+                Low::Core::UI::Element::type_id();
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
@@ -790,7 +796,8 @@ namespace Low {
                 l_FunctionInfo;
             // End function: point_is_in_bounding_box
           }
-          Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+          ms_TypeId = Low::Util::Handle::register_type_info(
+              IDENTIFIER, l_TypeInfo);
         }
 
         void Display::cleanup()
@@ -825,7 +832,7 @@ namespace Low {
 
           Display l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
-          l_Handle.m_Data.m_Type = Display::TYPE_ID;
+          l_Handle.m_Data.m_Type = Display::ms_TypeId;
 
           u32 l_PageIndex = 0;
           u32 l_SlotIndex = 0;
@@ -851,14 +858,14 @@ namespace Low {
           Display l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
           l_Handle.m_Data.m_Generation = 0;
-          l_Handle.m_Data.m_Type = Display::TYPE_ID;
+          l_Handle.m_Data.m_Type = Display::ms_TypeId;
 
           return l_Handle;
         }
 
         bool Display::is_alive() const
         {
-          if (m_Data.m_Type != Display::TYPE_ID) {
+          if (m_Data.m_Type != Display::ms_TypeId) {
             return false;
           }
           u32 l_PageIndex = 0;
@@ -870,7 +877,7 @@ namespace Low {
           Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
           Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
               l_Page->mutex);
-          return m_Data.m_Type == Display::TYPE_ID &&
+          return m_Data.m_Type == Display::ms_TypeId &&
                  l_Page->slots[l_SlotIndex].m_Occupied &&
                  l_Page->slots[l_SlotIndex].m_Generation ==
                      m_Data.m_Generation;
@@ -917,19 +924,16 @@ namespace Low {
           return l_Display.duplicate(l_Element);
         }
 
-        void Display::serialize(Low::Util::Yaml::Node &p_Node) const
+        void Display::serialize(Low::Util::Serial::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
-          Low::Util::Serialization::serialize(
-              p_Node["pixel_position"], pixel_position());
+          p_Node["pixel_position"] = pixel_position();
           p_Node["rotation"] = rotation();
-          Low::Util::Serialization::serialize(p_Node["pixel_scale"],
-                                              pixel_scale());
+          p_Node["pixel_scale"] = pixel_scale();
           p_Node["layer"] = layer();
           p_Node["parent_uid"] = get_parent_uid();
-          p_Node["_unique_id"] =
-              Low::Util::hash_to_string(get_unique_id()).c_str();
+          p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -937,14 +941,14 @@ namespace Low {
         }
 
         void Display::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Serial::Node &p_Node)
         {
           Display l_Display = p_Handle.get_id();
           l_Display.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Display::deserialize(Low::Util::Yaml::Node &p_Node,
+        Display::deserialize(Low::Util::Serial::Node &p_Node,
                              Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -952,7 +956,7 @@ namespace Low {
             l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
           } else if (p_Node["_unique_id"]) {
             l_HandleUniqueId = Low::Util::string_to_hash(
-                LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+                p_Node["_unique_id"].as<Low::Util::String>());
           }
 
           Display l_Handle =
@@ -960,16 +964,14 @@ namespace Low {
 
           if (p_Node["pixel_position"]) {
             l_Handle.pixel_position(
-                Low::Util::Serialization::deserialize_vector2(
-                    p_Node["pixel_position"]));
+                p_Node["pixel_position"].as<Low::Math::Vector2>());
           }
           if (p_Node["rotation"]) {
             l_Handle.rotation(p_Node["rotation"].as<float>());
           }
           if (p_Node["pixel_scale"]) {
             l_Handle.pixel_scale(
-                Low::Util::Serialization::deserialize_vector2(
-                    p_Node["pixel_scale"]));
+                p_Node["pixel_scale"].as<Low::Math::Vector2>());
           }
           if (p_Node["layer"]) {
             l_Handle.layer(p_Node["layer"].as<uint32_t>());

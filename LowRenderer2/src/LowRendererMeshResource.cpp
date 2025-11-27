@@ -22,7 +22,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t MeshResource::TYPE_ID = 47;
+    u16 MeshResource::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        MeshResource::IDENTIFIER(LOW_NAME(509652687),
+                                 LOW_NAME(781852165));
     uint32_t MeshResource::ms_Capacity = 0u;
     uint32_t MeshResource::ms_PageSize = 0u;
     Low::Util::SharedMutex MeshResource::ms_LivingMutex;
@@ -51,7 +54,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = MeshResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = MeshResource::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -116,6 +119,9 @@ namespace Low {
 
     void MeshResource::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(MeshResource));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -142,7 +148,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(MeshResource);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MeshResource::is_alive;
       l_TypeInfo.destroy = &MeshResource::destroy;
@@ -365,7 +371,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = MeshResource::TYPE_ID;
+        l_FunctionInfo.handleType = MeshResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Path);
@@ -382,7 +388,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make_from_config);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = MeshResource::TYPE_ID;
+        l_FunctionInfo.handleType = MeshResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Config);
@@ -399,7 +405,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(find_by_path);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = MeshResource::TYPE_ID;
+        l_FunctionInfo.handleType = MeshResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Path);
@@ -411,7 +417,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: find_by_path
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void MeshResource::cleanup()
@@ -446,7 +453,7 @@ namespace Low {
 
       MeshResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = MeshResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = MeshResource::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -471,14 +478,14 @@ namespace Low {
       MeshResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = MeshResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = MeshResource::ms_TypeId;
 
       return l_Handle;
     }
 
     bool MeshResource::is_alive() const
     {
-      if (m_Data.m_Type != MeshResource::TYPE_ID) {
+      if (m_Data.m_Type != MeshResource::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -490,7 +497,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == MeshResource::TYPE_ID &&
+      return m_Data.m_Type == MeshResource::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -558,7 +565,8 @@ namespace Low {
       return l_MeshResource.duplicate(p_Name);
     }
 
-    void MeshResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    MeshResource::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -568,14 +576,14 @@ namespace Low {
     }
 
     void MeshResource::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Serial::Node &p_Node)
     {
       MeshResource l_MeshResource = p_Handle.get_id();
       l_MeshResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MeshResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    MeshResource::deserialize(Low::Util::Serial::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 

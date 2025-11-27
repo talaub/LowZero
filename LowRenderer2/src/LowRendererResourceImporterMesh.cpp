@@ -146,13 +146,13 @@ namespace Low {
 
         bool populate_sidecar_info(const aiScene *p_Scene,
                                    Util::String p_Name,
-                                   Util::Yaml::Node &p_Node)
+                                   Util::Serial::Node &p_Node)
         {
           using namespace Low::Math;
           using namespace Low::Util;
 
           p_Node["version"] = 1;
-          p_Node["mesh_name"] = p_Name.c_str();
+          p_Node["mesh_name"] = p_Name;
           p_Node["scene_name"] = p_Scene->mName.C_Str();
 
           Math::AABB l_AABB;
@@ -164,7 +164,7 @@ namespace Low {
           for (u32 i = 0; i < p_Scene->mNumMeshes; ++i) {
             aiMesh *i_Submesh = p_Scene->mMeshes[i];
 
-            Yaml::Node i_Node;
+            Serial::Node i_Node;
             i_Node["name"] = i_Submesh->mName.C_Str();
 
             Math::AABB i_AABB;
@@ -182,9 +182,8 @@ namespace Low {
             l_AABB.bounds.max =
                 glm::max(l_AABB.bounds.max, i_AABB.bounds.max);
 
-            Serialization::serialize(i_Node["aabb"], i_AABB);
-            Serialization::serialize(i_Node["bounding_sphere"],
-                                     i_BoundingSphere);
+            i_Node["aabb"] = i_AABB;
+            i_Node["bounding_sphere"] = i_BoundingSphere;
 
             p_Node["submeshes"][i_Submesh->mName.C_Str()] = i_Node;
           }
@@ -192,10 +191,9 @@ namespace Low {
           l_AABB.center =
               (l_AABB.bounds.min + l_AABB.bounds.max) * 0.5f;
 
-          Serialization::serialize(p_Node["aabb"], l_AABB);
+          p_Node["aabb"] = l_AABB;
           // TODO: Calculate bounding sphere for whole mesh
-          Serialization::serialize(p_Node["bounding_sphere"],
-                                   l_BoundingSphere);
+          p_Node["bounding_sphere"] = l_BoundingSphere;
           return true;
         }
 
@@ -297,7 +295,7 @@ namespace Low {
 
         bool l_OriginalSceneHasAnimation = l_AiScene->HasAnimations();
 
-        Util::Yaml::Node l_SidecarInfo;
+        Util::Serial::Node l_SidecarInfo;
         populate_sidecar_info(l_AiScene, "Test", l_SidecarInfo);
 
         AdjustTextureCoordinatesPostProcessing *l_TexPP =
@@ -321,15 +319,13 @@ namespace Low {
         Util::String l_FileName =
             p_OutputPath.substr(p_OutputPath.find_last_of("/\\") + 1);
 
-        Util::Yaml::Node l_ResourceNode;
+        Util::Serial::Node l_ResourceNode;
         {
           l_ResourceNode["version"] = 1;
-          l_ResourceNode["mesh_id"] =
-              Util::hash_to_string(l_MeshId).c_str();
-          l_ResourceNode["asset_hash"] =
-              Util::hash_to_string(l_AssetHash).c_str();
-          l_ResourceNode["source_file"] = p_ImportPath.c_str();
-          l_ResourceNode["name"] = l_FileName.c_str();
+          l_ResourceNode["mesh_id"] = Util::U64Id{l_MeshId};
+          l_ResourceNode["asset_hash"] = Util::U64Id{l_AssetHash};
+          l_ResourceNode["source_file"] = p_ImportPath;
+          l_ResourceNode["name"] = l_FileName;
           l_ResourceNode["submesh_count"] =
               l_SidecarInfo["submeshes"].size();
         }
@@ -348,9 +344,10 @@ namespace Low {
 
         l_Importer.FreeScene();
 
-        Util::Yaml::write_file(l_SidecarPath.c_str(), l_SidecarInfo);
-        Util::Yaml::write_file(l_ResourcePath.c_str(),
-                               l_ResourceNode);
+        Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
+                                      l_SidecarInfo);
+        Util::Serial::write_yaml_file(l_ResourcePath.c_str(),
+                                      l_ResourceNode);
 
         // TODO: FIX REIMPORT
         if (!l_Reimport) {

@@ -426,7 +426,7 @@ namespace Low {
       }
 
       if (!get_selected_entity().has_component(
-              Core::Component::Rigidbody::TYPE_ID)) {
+              Core::Component::Rigidbody::type_id())) {
         return;
       }
 
@@ -434,7 +434,7 @@ namespace Low {
           get_selected_entity().get_transform();
       Core::Component::Rigidbody l_Rigidbody =
           get_selected_entity().get_component(
-              Core::Component::Rigidbody::TYPE_ID);
+              Core::Component::Rigidbody::type_id());
 
       Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
 
@@ -458,7 +458,7 @@ namespace Low {
       }
 
       if (!get_selected_entity().has_component(
-              Core::Component::PointLight::TYPE_ID)) {
+              Core::Component::PointLight::type_id())) {
         return;
       }
 
@@ -466,7 +466,7 @@ namespace Low {
           get_selected_entity().get_transform();
       Core::Component::PointLight l_PointLight =
           get_selected_entity().get_component(
-              Core::Component::PointLight::TYPE_ID);
+              Core::Component::PointLight::type_id());
 
       Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
 
@@ -486,7 +486,7 @@ namespace Low {
       }
 
       if (!get_selected_entity().has_component(
-              Core::Component::NavmeshAgent::TYPE_ID)) {
+              Core::Component::NavmeshAgent::type_id())) {
         return;
       }
 
@@ -494,7 +494,7 @@ namespace Low {
           get_selected_entity().get_transform();
       Core::Component::NavmeshAgent l_NavmeshAgent =
           get_selected_entity().get_component(
-              Core::Component::NavmeshAgent::TYPE_ID);
+              Core::Component::NavmeshAgent::type_id());
 
       Math::Color l_DrawColor(0.0f, 1.0f, 0.0f, 1.0f);
 

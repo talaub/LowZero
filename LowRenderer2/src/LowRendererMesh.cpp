@@ -23,7 +23,9 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Mesh::TYPE_ID = 46;
+    u16 Mesh::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Mesh::IDENTIFIER(LOW_NAME(509652687), LOW_NAME(1096652136));
     uint32_t Mesh::ms_Capacity = 0u;
     uint32_t Mesh::ms_PageSize = 0u;
     Low::Util::SharedMutex Mesh::ms_LivingMutex;
@@ -56,7 +58,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Mesh::TYPE_ID;
+      l_Handle.m_Data.m_Type = Mesh::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -162,6 +164,9 @@ namespace Low {
 
     void Mesh::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(Mesh));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -188,7 +193,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Mesh);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Mesh::is_alive;
       l_TypeInfo.destroy = &Mesh::destroy;
@@ -215,7 +220,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::MeshResource::TYPE_ID;
+            Low::Renderer::MeshResource::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
@@ -279,7 +284,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, geometry);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::MeshGeometry::TYPE_ID;
+            Low::Renderer::MeshGeometry::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
@@ -311,7 +316,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Mesh::Data, gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::GpuMesh::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::GpuMesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Mesh l_Handle = p_Handle.get_id();
@@ -476,7 +481,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make_from_resource_config);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Mesh::TYPE_ID;
+        l_FunctionInfo.handleType = Mesh::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Config);
@@ -493,11 +498,12 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_editor_image);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = EditorImage::TYPE_ID;
+        l_FunctionInfo.handleType = EditorImage::type_id();
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_editor_image
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Mesh::cleanup()
@@ -532,7 +538,7 @@ namespace Low {
 
       Mesh l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Mesh::TYPE_ID;
+      l_Handle.m_Data.m_Type = Mesh::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -557,14 +563,14 @@ namespace Low {
       Mesh l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Mesh::TYPE_ID;
+      l_Handle.m_Data.m_Type = Mesh::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Mesh::is_alive() const
     {
-      if (m_Data.m_Type != Mesh::TYPE_ID) {
+      if (m_Data.m_Type != Mesh::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -576,7 +582,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Mesh::TYPE_ID &&
+      return m_Data.m_Type == Mesh::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -647,7 +653,7 @@ namespace Low {
       return l_Mesh.duplicate(p_Name);
     }
 
-    void Mesh::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Mesh::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -657,14 +663,15 @@ namespace Low {
     }
 
     void Mesh::serialize(Low::Util::Handle p_Handle,
-                         Low::Util::Yaml::Node &p_Node)
+                         Low::Util::Serial::Node &p_Node)
     {
       Mesh l_Mesh = p_Handle.get_id();
       l_Mesh.serialize(p_Node);
     }
 
-    Low::Util::Handle Mesh::deserialize(Low::Util::Yaml::Node &p_Node,
-                                        Low::Util::Handle p_Creator)
+    Low::Util::Handle
+    Mesh::deserialize(Low::Util::Serial::Node &p_Node,
+                      Low::Util::Handle p_Creator)
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

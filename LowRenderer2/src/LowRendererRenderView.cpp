@@ -24,7 +24,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t RenderView::TYPE_ID = 53;
+    u16 RenderView::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        RenderView::IDENTIFIER(LOW_NAME(509652687),
+                               LOW_NAME(1453839997));
     uint32_t RenderView::ms_Capacity = 0u;
     uint32_t RenderView::ms_PageSize = 0u;
     Low::Util::SharedMutex RenderView::ms_LivingMutex;
@@ -53,7 +56,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = RenderView::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderView::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -175,6 +178,9 @@ namespace Low {
 
     void RenderView::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(RenderView));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -201,7 +207,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderView);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderView::is_alive;
       l_TypeInfo.destroy = &RenderView::destroy;
@@ -455,7 +461,7 @@ namespace Low {
             offsetof(RenderView::Data, render_scene);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::RenderScene::TYPE_ID;
+            Low::Renderer::RenderScene::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -489,7 +495,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_albedo);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -523,7 +529,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_normals);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -557,7 +563,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -591,7 +597,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_viewposition);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -625,7 +631,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, object_map);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -658,7 +664,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, lit_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -691,7 +697,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, blurred_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -944,7 +950,7 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::RenderStep::TYPE_ID;
+              Low::Renderer::RenderStep::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -978,7 +984,7 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::UiCanvas::TYPE_ID;
+              Low::Renderer::UiCanvas::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -1024,7 +1030,7 @@ namespace Low {
         l_FunctionInfo.name = N(make_default);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_FunctionInfo.handleType =
-            Low::Renderer::RenderView::TYPE_ID;
+            Low::Renderer::RenderView::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -1035,7 +1041,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_default
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void RenderView::cleanup()
@@ -1070,7 +1077,7 @@ namespace Low {
 
       RenderView l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = RenderView::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderView::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -1095,14 +1102,14 @@ namespace Low {
       RenderView l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = RenderView::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderView::ms_TypeId;
 
       return l_Handle;
     }
 
     bool RenderView::is_alive() const
     {
-      if (m_Data.m_Type != RenderView::TYPE_ID) {
+      if (m_Data.m_Type != RenderView::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -1114,7 +1121,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == RenderView::TYPE_ID &&
+      return m_Data.m_Type == RenderView::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -1210,7 +1217,7 @@ namespace Low {
       return l_RenderView.duplicate(p_Name);
     }
 
-    void RenderView::serialize(Low::Util::Yaml::Node &p_Node) const
+    void RenderView::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -1220,14 +1227,14 @@ namespace Low {
     }
 
     void RenderView::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Serial::Node &p_Node)
     {
       RenderView l_RenderView = p_Handle.get_id();
       l_RenderView.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderView::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderView::deserialize(Low::Util::Serial::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
 

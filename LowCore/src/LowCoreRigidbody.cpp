@@ -26,7 +26,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t Rigidbody::TYPE_ID = 31;
+      u16 Rigidbody::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          Rigidbody::IDENTIFIER(LOW_NAME(1181529166),
+                                LOW_NAME(2193485588));
       uint32_t Rigidbody::ms_Capacity = 0u;
       uint32_t Rigidbody::ms_PageSize = 0u;
       Low::Util::SharedMutex Rigidbody::ms_LivingMutex;
@@ -64,7 +67,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+        l_Handle.m_Data.m_Type = Rigidbody::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -171,6 +174,9 @@ namespace Low {
 
       void Rigidbody::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowCore), N(Rigidbody));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -197,7 +203,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Rigidbody);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Rigidbody::is_alive;
         l_TypeInfo.destroy = &Rigidbody::destroy;
@@ -426,7 +432,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::Entity::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();
@@ -478,7 +484,8 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: unique_id
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void Rigidbody::cleanup()
@@ -513,7 +520,7 @@ namespace Low {
 
         Rigidbody l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+        l_Handle.m_Data.m_Type = Rigidbody::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -538,14 +545,14 @@ namespace Low {
         Rigidbody l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = Rigidbody::TYPE_ID;
+        l_Handle.m_Data.m_Type = Rigidbody::ms_TypeId;
 
         return l_Handle;
       }
 
       bool Rigidbody::is_alive() const
       {
-        if (m_Data.m_Type != Rigidbody::TYPE_ID) {
+        if (m_Data.m_Type != Rigidbody::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -557,7 +564,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == Rigidbody::TYPE_ID &&
+        return m_Data.m_Type == Rigidbody::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -601,17 +608,15 @@ namespace Low {
         return l_Rigidbody.duplicate(l_Entity);
       }
 
-      void Rigidbody::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Rigidbody::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
         p_Node["fixed"] = is_fixed();
         p_Node["gravity"] = is_gravity();
         p_Node["mass"] = get_mass();
-        Low::Util::Serialization::serialize(p_Node["shape"],
-                                            get_shape());
-        p_Node["_unique_id"] =
-            Low::Util::hash_to_string(get_unique_id()).c_str();
+        p_Node["shape"] = get_shape();
+        p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -619,14 +624,14 @@ namespace Low {
       }
 
       void Rigidbody::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Serial::Node &p_Node)
       {
         Rigidbody l_Rigidbody = p_Handle.get_id();
         l_Rigidbody.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Rigidbody::deserialize(Low::Util::Yaml::Node &p_Node,
+      Rigidbody::deserialize(Low::Util::Serial::Node &p_Node,
                              Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -634,7 +639,7 @@ namespace Low {
           l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
         } else if (p_Node["_unique_id"]) {
           l_HandleUniqueId = Low::Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+              p_Node["_unique_id"].as<Low::Util::String>());
         }
 
         Rigidbody l_Handle =
@@ -650,9 +655,9 @@ namespace Low {
           l_Handle.set_mass(p_Node["mass"].as<float>());
         }
         if (p_Node["shape"]) {
-          l_Handle.set_shape(
-              Low::Util::Serialization::deserialize_shape(
-                  p_Node["shape"]));
+          Low::Math::Shape l_Shape =
+              p_Node["shape"].as<Math::Shape>();
+          l_Handle.set_shape(l_Shape);
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -745,14 +750,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(fixed),
+                  ms_TypeId, N(fixed),
                   !l_Prefab.compare_property(*this, N(fixed)));
             }
           }
@@ -796,14 +801,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(gravity),
+                  ms_TypeId, N(gravity),
                   !l_Prefab.compare_property(*this, N(gravity)));
             }
           }
@@ -842,14 +847,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(mass),
+                  ms_TypeId, N(mass),
                   !l_Prefab.compare_property(*this, N(mass)));
             }
           }
@@ -948,14 +953,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(shape),
+                  ms_TypeId, N(shape),
                   !l_Prefab.compare_property(*this, N(shape)));
             }
           }

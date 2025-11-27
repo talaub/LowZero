@@ -24,13 +24,13 @@ namespace Low {
       {
         HandleCreateOperation(Util::Handle p_Handle);
         HandleCreateOperation(Util::Handle p_Handle,
-                              Util::Yaml::Node &p_SerializedHandle);
+                              Util::Serial::Node &p_SerializedHandle);
 
         void execute(ChangeList &p_ChangeList, Transaction &p_Transaction);
         Operation *invert(ChangeList &p_ChangeList, Transaction &p_Transaction);
 
         Util::Handle m_Handle;
-        Util::Yaml::Node m_SerializedHandle;
+        Util::Serial::Node m_SerializedHandle;
       };
 
       struct HandleDestroyOperation : public Operation
@@ -41,7 +41,7 @@ namespace Low {
         Operation *invert(ChangeList &p_ChangeList, Transaction &p_Transaction);
 
         Util::Handle m_Handle;
-        Util::Yaml::Node m_SerializedHandle;
+        Util::Serial::Node m_SerializedHandle;
       };
     } // namespace CommonOperations
   }   // namespace Editor

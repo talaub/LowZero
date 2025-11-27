@@ -5,6 +5,7 @@
 #include "LowUtilContainers.h"
 #include "LowUtilName.h"
 #include "LowUtilYaml.h"
+#include "LowUtilSerialization.h"
 #include "LowUtil.h"
 
 #include <string>
@@ -19,19 +20,17 @@ namespace Low {
         String l_FilePath = get_project().dataPath +
                             "/_internal/type_capacities.yaml";
 
-        Yaml::Node l_RootNode = Yaml::load_file(l_FilePath.c_str());
+        Serial::Node l_RootNode = Serial::load_yaml_file(l_FilePath.c_str());
 
-        for (auto it = l_RootNode.begin(); it != l_RootNode.end();
-             ++it) {
+        for (auto [i_Name, i_Value] : l_RootNode) {
           Name i_ModuleName =
-              LOW_NAME(it->first.as<std::string>().c_str());
+              LOW_NAME(i_Name->c_str());
           g_Capacities[i_ModuleName] = Map<Name, uint32_t>();
 
-          for (auto typeIt = it->second.begin();
-               typeIt != it->second.end(); ++typeIt) {
+          for (auto [i_TypeNameString, i_TypeValue] :i_Value){
             Name i_TypeName =
-                LOW_NAME(typeIt->first.as<std::string>().c_str());
-            uint32_t i_Capacity = typeIt->second.as<uint32_t>();
+                LOW_NAME(i_TypeNameString->c_str());
+            const u32 i_Capacity = i_TypeValue.as<u32>();
             g_Capacities[i_ModuleName][i_TypeName] = i_Capacity;
           }
         }

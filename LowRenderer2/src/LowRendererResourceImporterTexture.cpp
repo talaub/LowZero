@@ -89,16 +89,15 @@ namespace Low {
             Util::get_project().dataPath + "\\" + p_OutputPath +
             ".texresource.yaml";
 
-        Util::Yaml::Node l_SidecarInfo;
+        Util::Serial::Node l_SidecarInfo;
         {
           l_SidecarInfo["version"] = 1;
           l_SidecarInfo["name"] = l_FileName.c_str();
-          Util::Serialization::serialize(l_SidecarInfo["dimensions"],
-                                         l_Dimensions);
+          l_SidecarInfo["dimension"] = l_Dimensions;
           l_SidecarInfo["channels"] = l_RequestedChannles;
 
 #if 0
-          Util::Yaml::Node l_Sampler;
+          Util::Serial::Node l_Sampler;
           {
             l_Sampler["filter"] = "LINEAR";
             l_Sampler["address_mode"] = "REPEAT";
@@ -109,7 +108,7 @@ namespace Low {
 #endif
         }
 
-        Util::Yaml::Node l_ResourceNode;
+        Util::Serial::Node l_ResourceNode;
         {
           l_ResourceNode["version"] = 1;
           l_ResourceNode["texture_id"] =
@@ -120,9 +119,10 @@ namespace Low {
           l_ResourceNode["name"] = l_FileName.c_str();
         }
 
-        Util::Yaml::write_file(l_SidecarPath.c_str(), l_SidecarInfo);
-        Util::Yaml::write_file(l_ResourcePath.c_str(),
-                               l_ResourceNode);
+        Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
+                                      l_SidecarInfo);
+        Util::Serial::write_yaml_file(l_ResourcePath.c_str(),
+                                      l_ResourceNode);
 
         gli::save_ktx(l_TextureMipmaps, l_KtxPath.c_str());
 

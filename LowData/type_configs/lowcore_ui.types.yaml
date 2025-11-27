@@ -74,7 +74,7 @@ types:
         constant: true
         parameters:
           - name: node
-            type: Util::Yaml::Node
+            type: Util::Serial::Node
           - name: addHandles
             type: bool
       serialize_hierarchy:
@@ -82,7 +82,7 @@ types:
         constant: true
         parameters:
           - name: node
-            type: Util::Yaml::Node
+            type: Util::Serial::Node
           - name: addHandles
             type: bool
       deserialize_hierarchy:
@@ -91,7 +91,7 @@ types:
         static: true
         parameters:
           - name: node
-            type: Util::Yaml::Node
+            type: Util::Serial::Node
           - name: creator
             type: Util::Handle
             handle: true
@@ -159,7 +159,7 @@ types:
         return_type: void
         parameters:
           - name: node
-            type: Util::Yaml::Node
+            type: Util::Serial::Node
       add_element:
        return_type: void 
        parameters:

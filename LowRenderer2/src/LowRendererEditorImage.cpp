@@ -22,7 +22,10 @@ namespace Low {
     Util::Map<Util::Name, EditorImage> EditorImage::ms_Registry;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t EditorImage::TYPE_ID = 82;
+    u16 EditorImage::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        EditorImage::IDENTIFIER(LOW_NAME(509652687),
+                                LOW_NAME(897860702));
     uint32_t EditorImage::ms_Capacity = 0u;
     uint32_t EditorImage::ms_PageSize = 0u;
     Low::Util::SharedMutex EditorImage::ms_LivingMutex;
@@ -51,7 +54,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = EditorImage::TYPE_ID;
+      l_Handle.m_Data.m_Type = EditorImage::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -129,6 +132,9 @@ namespace Low {
 
     void EditorImage::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(EditorImage));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -155,7 +161,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(EditorImage);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &EditorImage::is_alive;
       l_TypeInfo.destroy = &EditorImage::destroy;
@@ -212,7 +218,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::EditorImageGpu::TYPE_ID;
+            Low::Renderer::EditorImageGpu::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImage l_Handle = p_Handle.get_id();
@@ -246,7 +252,7 @@ namespace Low {
             offsetof(EditorImage::Data, staging);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::EditorImageStaging::TYPE_ID;
+            Low::Renderer::EditorImageStaging::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImage l_Handle = p_Handle.get_id();
@@ -336,7 +342,8 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void EditorImage::cleanup()
@@ -371,7 +378,7 @@ namespace Low {
 
       EditorImage l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = EditorImage::TYPE_ID;
+      l_Handle.m_Data.m_Type = EditorImage::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -396,14 +403,14 @@ namespace Low {
       EditorImage l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = EditorImage::TYPE_ID;
+      l_Handle.m_Data.m_Type = EditorImage::ms_TypeId;
 
       return l_Handle;
     }
 
     bool EditorImage::is_alive() const
     {
-      if (m_Data.m_Type != EditorImage::TYPE_ID) {
+      if (m_Data.m_Type != EditorImage::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -415,7 +422,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == EditorImage::TYPE_ID &&
+      return m_Data.m_Type == EditorImage::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -490,7 +497,7 @@ namespace Low {
       return l_EditorImage.duplicate(p_Name);
     }
 
-    void EditorImage::serialize(Low::Util::Yaml::Node &p_Node) const
+    void EditorImage::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -501,7 +508,7 @@ namespace Low {
       if (get_staging().is_alive()) {
         get_staging().serialize(p_Node["staging"]);
       }
-      Low::Util::Serialization::serialize_enum(
+      Low::Util::Serial::serialize_enum(
           p_Node["state"],
           Low::Renderer::TextureStateEnumHelper::get_enum_id(),
           static_cast<uint8_t>(get_state()));
@@ -513,20 +520,20 @@ namespace Low {
     }
 
     void EditorImage::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Serial::Node &p_Node)
     {
       EditorImage l_EditorImage = p_Handle.get_id();
       l_EditorImage.serialize(p_Node);
     }
 
     Low::Util::Handle
-    EditorImage::deserialize(Low::Util::Yaml::Node &p_Node,
+    EditorImage::deserialize(Low::Util::Serial::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
       EditorImage l_Handle = EditorImage::make(N(EditorImage));
 
       if (p_Node["path"]) {
-        l_Handle.set_path(LOW_YAML_AS_STRING(p_Node["path"]));
+        l_Handle.set_path(p_Node["path"].as<Low::Util::String>());
       }
       if (p_Node["gpu"]) {
         l_Handle.set_gpu(Low::Renderer::EditorImageGpu::deserialize(
@@ -541,11 +548,10 @@ namespace Low {
       }
       if (p_Node["state"]) {
         l_Handle.set_state(static_cast<Low::Renderer::TextureState>(
-            Low::Util::Serialization::deserialize_enum(
-                p_Node["state"])));
+            Low::Util::Serial::deserialize_enum(p_Node["state"])));
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

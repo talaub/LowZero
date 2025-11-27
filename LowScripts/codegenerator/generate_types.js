@@ -2,6 +2,14 @@ const fs = require("fs");
 const os = require("os");
 const exec = require("child_process").execSync;
 const YAML = require("yaml");
+var CRC32 = require("crc-32");
+
+function hash_name(p_String) {
+  var n = CRC32.str(p_String);
+  var uint32 = n >>> 0;
+
+  return uint32;
+}
 
 const {
   read_file,
@@ -45,7 +53,7 @@ function get_deserializer_method_for_math_type(p_Type) {
     l_Type = "Vector3";
   }
 
-  return `Low::Util::Serialization::deserialize_${l_Type.toLowerCase()}`;
+  return `Low::Util::Serial::deserialize_${l_Type.toLowerCase()}`;
 }
 
 function get_property_type(p_Type) {
@@ -310,7 +318,7 @@ function generate_header(p_Type) {
   t += include("LowUtilHandle.h");
   t += include("LowUtilName.h");
   t += include("LowUtilContainers.h");
-  t += include("LowUtilYaml.h");
+  t += include("LowUtilSerialization.h");
   t += empty();
   if (p_Type.component) {
     t += include("LowCoreEntity.h");
@@ -400,6 +408,8 @@ function generate_header(p_Type) {
   t += line("};", --n);
   t += empty();
   t += empty();
+  t += line(`private:`)
+  t += line("static u16 ms_TypeId;", n);
   t += line("public:", --n);
   n++;
   t += line("static Low::Util::SharedMutex ms_LivingMutex;", n);
@@ -409,8 +419,12 @@ function generate_header(p_Type) {
   t += empty();
   t += line(`static Low::Util::List<${p_Type.name}> ms_LivingInstances;`, n);
   t += empty();
-  t += line("const static uint16_t TYPE_ID;", n);
+  t += line("const static Low::Util::TypeIdentifier IDENTIFIER;", n);
 
+  t += empty();
+  t += line(`[[nodiscard]]static u16 type_id() {
+return ms_TypeId;
+}`)
   t += empty();
   //t += line(`${p_Type.name}();`);
   //t += line(`${p_Type.name}(uint64_t p_Id);`);
@@ -518,7 +532,7 @@ function generate_header(p_Type) {
   }
   t += line(`static uint32_t get_capacity();`);
   t += empty();
-  t += line(`void serialize(Low::Util::Yaml::Node &p_Node) const;`, n);
+  t += line(`void serialize(Low::Util::Serial::Node &p_Node) const;`, n);
   t += empty();
   if (p_Type.component) {
     t += line(`${p_Type.name} duplicate(Low::Core::Entity p_Entity) const;`, n);
@@ -559,11 +573,11 @@ function generate_header(p_Type) {
   }
 
   t += line(
-    `static void serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node &p_Node);`,
+    `static void serialize(Low::Util::Handle p_Handle, Low::Util::Serial::Node &p_Node);`,
     n,
   );
   t += line(
-    `static Low::Util::Handle deserialize(Low::Util::Yaml::Node &p_Node, Low::Util::Handle p_Creator);`,
+    `static Low::Util::Handle deserialize(Low::Util::Serial::Node &p_Node, Low::Util::Handle p_Creator);`,
     n,
   );
   t += line("static bool is_alive(Low::Util::Handle p_Handle) {");
@@ -823,7 +837,8 @@ function generate_source(p_Type) {
     t += empty();
   }
 
-  t += line(`const uint16_t ${p_Type.name}::TYPE_ID = ${p_Type.typeId};`, n);
+  t += line(`u16 ${p_Type.name}::ms_TypeId = 0;`, n);
+  t += line(`const Low::Util::TypeIdentifier ${p_Type.name}::IDENTIFIER(LOW_NAME(${hash_name(p_Type.module)}), LOW_NAME(${hash_name(p_Type.name)}));`, n);
   t += line(`uint32_t ${p_Type.name}::ms_Capacity = 0u;`, n);
   t += line(`uint32_t ${p_Type.name}::ms_PageSize = 0u;`, n);
   t += line(`Low::Util::SharedMutex ${p_Type.name}::ms_LivingMutex;`, n);
@@ -924,7 +939,7 @@ function generate_source(p_Type) {
   t += line(`${p_Type.name} l_Handle;`);
   t += line(`l_Handle.m_Data.m_Index = l_Index;`);
   t += line(`l_Handle.m_Data.m_Generation = ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;`);
-  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::TYPE_ID;`);
+  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::ms_TypeId;`);
   t += empty();
   t += line(`l_PageLock.unlock();`)
   t += empty();
@@ -1083,6 +1098,8 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::initialize() {`);
+  t += line(`const Low::Util::TypeIdentifier l_IdentifierNames(N(${p_Type.module}), N(${p_Type.name}));`);
+  t += empty();
   t += line(`LOCK_PAGES_WRITE(l_PagesLock);`);
   if (true) {
     const l_MarkerName = `CUSTOM:PREINITIALIZE`;
@@ -1139,7 +1156,7 @@ function generate_source(p_Type) {
   t += empty();
   t += line(`Low::Util::RTTI::TypeInfo l_TypeInfo;`);
   t += line(`l_TypeInfo.name = N(${p_Type.name});`);
-  t += line(`l_TypeInfo.typeId = TYPE_ID;`);
+  t += line(`l_TypeInfo.typeId = ms_TypeId;`);
   t += line(`l_TypeInfo.get_capacity = &get_capacity;`);
   t += line(`l_TypeInfo.is_alive = &${p_Type.name}::is_alive;`);
   t += line(`l_TypeInfo.destroy = &${p_Type.name}::destroy;`);
@@ -1168,6 +1185,7 @@ function generate_source(p_Type) {
     `l_TypeInfo.get_living_instances = reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(&${p_Type.name}::living_instances);`,
   );
   t += line(`l_TypeInfo.get_living_count = &${p_Type.name}::living_count;`);
+  //t += line(`l_TypeInfo.identifier = IDENTIFIER;`);
   if (p_Type.component) {
     t += line(`l_TypeInfo.component = true;`);
     t += line(`l_TypeInfo.uiComponent = false;`);
@@ -1194,7 +1212,7 @@ function generate_source(p_Type) {
     );
     if (i_Prop.handle) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
-      t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::TYPE_ID;`);
+      t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::type_id();`);
     } else if (i_Prop.enum) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
       t += line(
@@ -1267,7 +1285,7 @@ function generate_source(p_Type) {
           `l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`,
         );
         t += line(
-          `l_PropertyInfo.handleType = ${i_VProp.plain_type}::TYPE_ID;`,
+          `l_PropertyInfo.handleType = ${i_VProp.plain_type}::type_id();`,
         );
       } else if (i_VProp.enum) {
         t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
@@ -1325,7 +1343,7 @@ function generate_source(p_Type) {
           `l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`,
         );
         t += line(
-          `l_FunctionInfo.handleType = ${i_Func.return_type}::TYPE_ID;`,
+          `l_FunctionInfo.handleType = ${i_Func.return_type}::type_id();`,
         );
       } else if (i_Func.return_enum) {
         t += line(`l_FunctionInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
@@ -1351,7 +1369,7 @@ function generate_source(p_Type) {
               t += line(`l_ParameterInfo.handleType = 0;`);
             } else {
               t += line(
-                `l_ParameterInfo.handleType = ${i_Param.type}::TYPE_ID;`,
+                `l_ParameterInfo.handleType = ${i_Param.type}::type_id();`,
               );
             }
           } else if (i_Param.enum) {
@@ -1376,7 +1394,7 @@ function generate_source(p_Type) {
       t += line("}");
     }
   }
-  t += line(`Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);`);
+  t += line(`ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER, l_TypeInfo);`);
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::cleanup() {`);
@@ -1414,7 +1432,7 @@ function generate_source(p_Type) {
   t += empty();
   t += line(`${p_Type.name} l_Handle;`);
   t += line(`l_Handle.m_Data.m_Index = p_Index;`);
-  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::TYPE_ID;`);
+  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::ms_TypeId;`);
   t += empty();
 
   t += line(`u32 l_PageIndex = 0;`)
@@ -1438,21 +1456,21 @@ function generate_source(p_Type) {
   t += line(`${p_Type.name} l_Handle;`);
   t += line(`l_Handle.m_Data.m_Index = p_Index;`);
   t += line(`l_Handle.m_Data.m_Generation = 0;`);
-  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::TYPE_ID;`);
+  t += line(`l_Handle.m_Data.m_Type = ${p_Type.name}::ms_TypeId;`);
   t += empty();
   t += line("return l_Handle;");
   t += line("}");
   t += empty();
 
   t += line(`bool ${p_Type.name}::is_alive() const {`);
-  t += line(`if (m_Data.m_Type != ${p_Type.name}::TYPE_ID) {return false;}`)
+  t += line(`if (m_Data.m_Type != ${p_Type.name}::ms_TypeId) {return false;}`)
   t += line(`u32 l_PageIndex = 0;`)
   t += line(`u32 l_SlotIndex = 0;`)
   t += line(`if (!get_page_for_index(get_index(), l_PageIndex, l_SlotIndex)){return false;}`)
   t += line(`Low::Util::Instances::Page* l_Page = ms_Pages[l_PageIndex];`)
   t += line(`Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(l_Page->mutex);`);
   t += line(
-    `return m_Data.m_Type == ${p_Type.name}::TYPE_ID && l_Page->slots[l_SlotIndex].m_Occupied && l_Page->slots[l_SlotIndex].m_Generation == m_Data.m_Generation;`,
+    `return m_Data.m_Type == ${p_Type.name}::ms_TypeId && l_Page->slots[l_SlotIndex].m_Occupied && l_Page->slots[l_SlotIndex].m_Generation == m_Data.m_Generation;`,
   );
   t += line(`}`);
 
@@ -1664,7 +1682,7 @@ function generate_source(p_Type) {
     );
   }
   t += line(
-    `void ${p_Type.name}::serialize(Low::Util::Yaml::Node &p_Node) const {`,
+    `void ${p_Type.name}::serialize(Low::Util::Serial::Node &p_Node) const {`,
     n,
   );
   t += line(`_LOW_ASSERT(is_alive());`);
@@ -1676,14 +1694,14 @@ function generate_source(p_Type) {
       }
 
       if (i_PropName == "unique_id" && p_Type.unique_id) {
-        t += line(`p_Node["_unique_id"] = Low::Util::hash_to_string(${i_Prop.getter_name}()).c_str();`)
+        t += line(`p_Node["_unique_id"] = Low::Util::U64Id{${i_Prop.getter_name}()};`)
 
         continue;
       }
 
       if (i_Prop.plain_type.endsWith("Variant")) {
         t += line(
-          `Low::Util::Serialization::serialize_variant(p_Node["${i_PropName}"], ${i_Prop.getter_name}());`,
+          `Low::Util::Serial::serialize_variant(p_Node["${i_PropName}"], ${i_Prop.getter_name}());`,
         );
       } else if (
         is_name_type(i_Prop.plain_type) ||
@@ -1697,7 +1715,7 @@ function generate_source(p_Type) {
         i_Prop.plain_type.endsWith("Util::UniqueId")
       ) {
         if (i_Prop.hash) {
-          t += line(`p_Node["${i_PropName}"] = Low::Util::hash_to_string(${i_Prop.getter_name}()).c_str();`)
+          t += line(`p_Node["${i_PropName}"] = Low::Util::U64Id{${i_Prop.getter_name}()};`)
         } else {
           t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
         }
@@ -1706,9 +1724,7 @@ function generate_source(p_Type) {
       } else if (["bool"].includes(i_Prop.plain_type)) {
         t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
       } else if (is_math_type(i_Prop.plain_type)) {
-        t += line(
-          `Low::Util::Serialization::serialize(p_Node["${i_PropName}"], ${i_Prop.getter_name}());`,
-        );
+        t += line(`p_Node["${i_PropName}"] = ${i_Prop.getter_name}();`);
       } else if (i_Prop.handle) {
         t += line(`if (${i_Prop.getter_name}().is_alive()) {`);
         t += line(
@@ -1717,7 +1733,7 @@ function generate_source(p_Type) {
         t += line(`}`);
       } else if (i_Prop.enum) {
         t += line(
-          `Low::Util::Serialization::serialize_enum(p_Node["${i_PropName}"], ${i_Prop.plain_type}EnumHelper::get_enum_id(), static_cast<${g_EnumType}>(${i_Prop.getter_name}()));`,
+          `Low::Util::Serial::serialize_enum(p_Node["${i_PropName}"], ${i_Prop.plain_type}EnumHelper::get_enum_id(), static_cast<${g_EnumType}>(${i_Prop.getter_name}()));`,
         );
       }
     }
@@ -1730,7 +1746,7 @@ function generate_source(p_Type) {
   t += line("}");
   t += empty();
   t += line(
-    `void ${p_Type.name}::serialize(Low::Util::Handle p_Handle, Low::Util::Yaml::Node &p_Node) {`,
+    `void ${p_Type.name}::serialize(Low::Util::Handle p_Handle, Low::Util::Serial::Node &p_Node) {`,
     n,
   );
   t += line(`${p_Type.name} l_${p_Type.name} = p_Handle.get_id();`);
@@ -1762,7 +1778,7 @@ function generate_source(p_Type) {
     );
   }
   t += line(
-    `Low::Util::Handle ${p_Type.name}::deserialize(Low::Util::Yaml::Node &p_Node, Low::Util::Handle p_Creator) {`,
+    `Low::Util::Handle ${p_Type.name}::deserialize(Low::Util::Serial::Node &p_Node, Low::Util::Handle p_Creator) {`,
     n,
   );
   if (!p_Type.no_auto_deserialize) {
@@ -1772,7 +1788,7 @@ function generate_source(p_Type) {
       t += line(`l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();`);
       t += line("}");
       t += line(`else if (p_Node["_unique_id"]) {`);
-      t += line(`l_HandleUniqueId = Low::Util::string_to_hash(LOW_YAML_AS_STRING(p_Node["_unique_id"]));`);
+      t += line(`l_HandleUniqueId = Low::Util::string_to_hash(p_Node["_unique_id"].as<Low::Util::String>());`);
       t += line("}");
       t += empty();
     }
@@ -1821,21 +1837,34 @@ function generate_source(p_Type) {
       t += line(`if (p_Node["${i_PropName}"]) {`);
 
       if (i_Prop.plain_type.endsWith("Variant")) {
+        t += line(`Low::Util::Variant l_Variant = Low::Util::Serial::deserialize_variant(p_Node["${i_PropName}"]);`);
         t += line(
-          `l_Handle.${i_Prop.setter_name}(Low::Util::Serialization::deserialize_variant(p_Node["${i_PropName}"]));`,
+          `l_Handle.${i_Prop.setter_name}(l_Variant);`,
         );
       } else if (is_name_type(i_Prop.plain_type)) {
         t += line(
-          `l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_NAME(p_Node["${i_PropName}"]));`,
+          `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<Low::Util::Name>());`,
         );
       } else if (is_string_type(i_Prop.plain_type)) {
         t += line(
-          `l_Handle.${i_Prop.setter_name}(LOW_YAML_AS_STRING(p_Node["${i_PropName}"]));`,
+          `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<Low::Util::String>());`,
         );
       } else if (is_math_type(i_Prop.plain_type)) {
+        /*
         t += line(
           `l_Handle.${i_Prop.setter_name}(${get_deserializer_method_for_math_type(i_Prop.plain_type)}(p_Node["${i_PropName}"]));`,
         );
+        */
+        if (i_Prop.plain_type.endsWith('Shape')) {
+          t += line(`Low::Math::Shape l_Shape = p_Node["${i_PropName}"].as<${i_Prop.plain_type}>();`);
+          t += line(
+            `l_Handle.${i_Prop.setter_name}(l_Shape);`);
+        }
+        else {
+          t += line(
+            `l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<${i_Prop.plain_type}>());`,
+          );
+        }
       } else if (
         [
           "bool",
@@ -1853,6 +1882,7 @@ function generate_source(p_Type) {
           t += line(
             `l_Handle.${i_Prop.setter_name}(Low::Util::string_to_hash(LOW_YAML_AS_STRING(p_Node["${i_PropName}"])));`,
           );
+          t += line(`l_Handle.${i_Prop.setter_name}(p_Node["${i_PropName}"].as<Low::Util::U64Id>().val);`);
         }
         else {
           t += line(
@@ -1865,7 +1895,7 @@ function generate_source(p_Type) {
         );
       } else if (i_Prop.enum) {
         t += line(
-          `l_Handle.${i_Prop.setter_name}(static_cast<${i_Prop.plain_type}>(Low::Util::Serialization::deserialize_enum(p_Node["${i_PropName}"])));`,
+          `l_Handle.${i_Prop.setter_name}(static_cast<${i_Prop.plain_type}>(Low::Util::Serial::deserialize_enum(p_Node["${i_PropName}"])));`,
         );
       }
       t += line(`}`);
@@ -2251,15 +2281,15 @@ function generate_source(p_Type) {
           t += line("{");
           t += line(`Low::Core::Entity l_Entity = get_entity();`);
           t += line(
-            `if (l_Entity.has_component(Low::Core::Component::PrefabInstance::TYPE_ID)) {`,
+            `if (l_Entity.has_component(Low::Core::Component::PrefabInstance::type_id())) {`,
           );
           t += line(
-            `Low::Core::Component::PrefabInstance l_Instance = l_Entity.get_component(Low::Core::Component::PrefabInstance::TYPE_ID);`,
+            `Low::Core::Component::PrefabInstance l_Instance = l_Entity.get_component(Low::Core::Component::PrefabInstance::type_id());`,
           );
           t += line(`Low::Core::Prefab l_Prefab = l_Instance.get_prefab();`);
           t += line(`if (l_Prefab.is_alive()) {`);
           t += line(
-            `l_Instance.override(TYPE_ID, N(${i_Prop.name}), !l_Prefab.compare_property(*this, N(${i_Prop.name}))); `,
+            `l_Instance.override(ms_TypeId, N(${i_Prop.name}), !l_Prefab.compare_property(*this, N(${i_Prop.name}))); `,
           );
           t += line("}");
           t += line("}");

@@ -24,7 +24,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t TexExport::TYPE_ID = 81;
+      u16 TexExport::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          TexExport::IDENTIFIER(LOW_NAME(509652687),
+                                LOW_NAME(2061076038));
       uint32_t TexExport::ms_Capacity = 0u;
       uint32_t TexExport::ms_PageSize = 0u;
       Low::Util::SharedMutex TexExport::ms_LivingMutex;
@@ -53,7 +56,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = TexExport::TYPE_ID;
+        l_Handle.m_Data.m_Type = TexExport::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -122,6 +125,9 @@ namespace Low {
 
       void TexExport::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowRenderer2), N(TexExport));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -148,7 +154,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(TexExport);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &TexExport::is_alive;
         l_TypeInfo.destroy = &TexExport::destroy;
@@ -261,7 +267,8 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void TexExport::cleanup()
@@ -296,7 +303,7 @@ namespace Low {
 
         TexExport l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = TexExport::TYPE_ID;
+        l_Handle.m_Data.m_Type = TexExport::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -321,14 +328,14 @@ namespace Low {
         TexExport l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = TexExport::TYPE_ID;
+        l_Handle.m_Data.m_Type = TexExport::ms_TypeId;
 
         return l_Handle;
       }
 
       bool TexExport::is_alive() const
       {
-        if (m_Data.m_Type != TexExport::TYPE_ID) {
+        if (m_Data.m_Type != TexExport::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -340,7 +347,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == TexExport::TYPE_ID &&
+        return m_Data.m_Type == TexExport::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -404,7 +411,7 @@ namespace Low {
         return l_TexExport.duplicate(p_Name);
       }
 
-      void TexExport::serialize(Low::Util::Yaml::Node &p_Node) const
+      void TexExport::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -417,14 +424,14 @@ namespace Low {
       }
 
       void TexExport::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Serial::Node &p_Node)
       {
         TexExport l_TexExport = p_Handle.get_id();
         l_TexExport.serialize(p_Node);
       }
 
       Low::Util::Handle
-      TexExport::deserialize(Low::Util::Yaml::Node &p_Node,
+      TexExport::deserialize(Low::Util::Serial::Node &p_Node,
                              Low::Util::Handle p_Creator)
       {
         TexExport l_Handle = TexExport::make(N(TexExport));
@@ -436,7 +443,7 @@ namespace Low {
               p_Node["frame_index"].as<uint32_t>());
         }
         if (p_Node["name"]) {
-          l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+          l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -484,7 +491,7 @@ namespace Low {
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
 
-        if (p_Observed.get_type() == TextureExport::TYPE_ID &&
+        if (p_Observed.get_type() == TextureExport::type_id() &&
             p_Observable == OBSERVABLE_DESTROY) {
           destroy();
         }

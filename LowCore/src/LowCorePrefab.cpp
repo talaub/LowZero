@@ -60,7 +60,10 @@ namespace Low {
     }
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Prefab::TYPE_ID = 33;
+    u16 Prefab::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Prefab::IDENTIFIER(LOW_NAME(1181529166),
+                           LOW_NAME(2712072394));
     uint32_t Prefab::ms_Capacity = 0u;
     uint32_t Prefab::ms_PageSize = 0u;
     Low::Util::SharedMutex Prefab::ms_LivingMutex;
@@ -93,7 +96,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Prefab::TYPE_ID;
+      l_Handle.m_Data.m_Type = Prefab::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -180,6 +183,9 @@ namespace Low {
 
     void Prefab::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(N(LowCore),
+                                                        N(Prefab));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -206,7 +212,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Prefab);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Prefab::is_alive;
       l_TypeInfo.destroy = &Prefab::destroy;
@@ -386,7 +392,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Prefab::TYPE_ID;
+        l_FunctionInfo.handleType = Prefab::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Entity);
@@ -403,13 +409,13 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(spawn);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Entity::TYPE_ID;
+        l_FunctionInfo.handleType = Entity::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Region);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Region::TYPE_ID;
+          l_ParameterInfo.handleType = Region::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -463,7 +469,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: apply
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Prefab::cleanup()
@@ -498,7 +505,7 @@ namespace Low {
 
       Prefab l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Prefab::TYPE_ID;
+      l_Handle.m_Data.m_Type = Prefab::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -523,14 +530,14 @@ namespace Low {
       Prefab l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Prefab::TYPE_ID;
+      l_Handle.m_Data.m_Type = Prefab::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Prefab::is_alive() const
     {
-      if (m_Data.m_Type != Prefab::TYPE_ID) {
+      if (m_Data.m_Type != Prefab::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -542,7 +549,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Prefab::TYPE_ID &&
+      return m_Data.m_Type == Prefab::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -604,16 +611,14 @@ namespace Low {
       return l_Prefab.duplicate(p_Name);
     }
 
-    void Prefab::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Prefab::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["_unique_id"] =
-          Low::Util::hash_to_string(get_unique_id()).c_str();
+      p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
       Prefab l_Parent(get_parent().get_id());
       p_Node["parent"] = 0;
       if (l_Parent.is_alive()) {
@@ -624,10 +629,12 @@ namespace Low {
            cit != get_components().end(); ++cit) {
         for (auto pit = cit->second.begin(); pit != cit->second.end();
              ++pit) {
-          const char *i_TypeIdStr = LOW_TO_STRING(cit->first).c_str();
+          Util::String i_IdentifierString =
+              Handle::identifier(cit->first);
           const char *i_PropertyNameStr = pit->first.c_str();
-          Util::Serialization::serialize_variant(
-              p_Node["components"][i_TypeIdStr][i_PropertyNameStr],
+          Util::Serial::serialize_variant(
+              p_Node["components"][i_IdentifierString]
+                    [i_PropertyNameStr],
               pit->second);
         }
       }
@@ -637,7 +644,7 @@ namespace Low {
         Prefab i_Prefab(cit->get_id());
         LOW_ASSERT(i_Prefab.is_alive(),
                    "Cannot serialize dead prefab (child)");
-        Util::Yaml::Node i_Node;
+        Util::Serial::Node i_Node;
         i_Prefab.serialize(i_Node);
         p_Node["children"].push_back(i_Node);
       }
@@ -645,14 +652,14 @@ namespace Low {
     }
 
     void Prefab::serialize(Low::Util::Handle p_Handle,
-                           Low::Util::Yaml::Node &p_Node)
+                           Low::Util::Serial::Node &p_Node)
     {
       Prefab l_Prefab = p_Handle.get_id();
       l_Prefab.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Prefab::deserialize(Low::Util::Yaml::Node &p_Node,
+    Prefab::deserialize(Low::Util::Serial::Node &p_Node,
                         Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -660,7 +667,7 @@ namespace Low {
         l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
       } else if (p_Node["_unique_id"]) {
         l_HandleUniqueId = Low::Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+            p_Node["_unique_id"].as<Low::Util::String>());
       }
 
       Prefab l_Handle = Prefab::make(N(Prefab), l_HandleUniqueId);
@@ -676,7 +683,7 @@ namespace Low {
             p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
@@ -688,21 +695,20 @@ namespace Low {
       }
 
       if (p_Node["components"]) {
-        for (auto cit = p_Node["components"].begin();
-             cit != p_Node["components"].end(); ++cit) {
-          uint16_t i_TypeId = cit->first.as<uint16_t>();
-          for (auto pit = cit->second.begin();
-               pit != cit->second.end(); ++pit) {
+        for (auto [i_Key, i_Value] : p_Node["components"]) {
+          Util::TypeIdentifier i_Identifier =
+              Util::TypeIdentifier::from_string(*i_Key);
+          const u16 i_TypeId = Util::Handle::type_id(i_Identifier);
+          for (auto [i_PKey, i_PValue] : i_Value) {
             l_Handle.get_components()[i_TypeId]
-                                     [LOW_YAML_AS_NAME(pit->first)] =
-                Util::Serialization::deserialize_variant(pit->second);
+                                     [LOW_NAME(i_PKey->c_str())] =
+                Util::Serial::deserialize_variant(i_PValue);
           }
         }
       }
       if (p_Node["children"]) {
-        for (auto cit = p_Node["children"].begin();
-             cit != p_Node["children"].end(); ++cit) {
-          Prefab::deserialize(*cit, l_Handle);
+        for (auto [i_ChildKey, i_ChildValue] : p_Node["children"]) {
+          Prefab::deserialize(i_ChildValue, l_Handle);
         }
       }
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -939,12 +945,13 @@ namespace Low {
       }
 
       if (!p_Entity.has_component(
-              Component::PrefabInstance::TYPE_ID)) {
+              Component::PrefabInstance::type_id())) {
         Component::PrefabInstance::make(p_Entity);
       }
 
       Component::PrefabInstance l_PrefabInstance =
-          p_Entity.get_component(Component::PrefabInstance::TYPE_ID);
+          p_Entity.get_component(
+              Component::PrefabInstance::type_id());
       l_PrefabInstance.set_prefab(l_Prefab);
 
       return l_Prefab;
@@ -1083,7 +1090,8 @@ namespace Low {
       Entity l_Entity;
       l_TypeInfo.properties[N(entity)].get(p_Component, &l_Entity);
       Component::PrefabInstance l_PrefabInstance =
-          l_Entity.get_component(Component::PrefabInstance::TYPE_ID);
+          l_Entity.get_component(
+              Component::PrefabInstance::type_id());
 
       l_PrefabInstance.override(p_Component.get_type(),
                                 p_PropertyName, false);

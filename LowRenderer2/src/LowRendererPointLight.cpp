@@ -24,7 +24,10 @@ namespace Low {
         Low::Renderer::PointLight::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t PointLight::TYPE_ID = 65;
+    u16 PointLight::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        PointLight::IDENTIFIER(LOW_NAME(509652687),
+                               LOW_NAME(824436570));
     uint32_t PointLight::ms_Capacity = 0u;
     uint32_t PointLight::ms_PageSize = 0u;
     Low::Util::SharedMutex PointLight::ms_LivingMutex;
@@ -53,7 +56,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = PointLight::TYPE_ID;
+      l_Handle.m_Data.m_Type = PointLight::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -128,6 +131,9 @@ namespace Low {
 
     void PointLight::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(PointLight));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -154,7 +160,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(PointLight);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &PointLight::is_alive;
       l_TypeInfo.destroy = &PointLight::destroy;
@@ -390,20 +396,21 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = PointLight::TYPE_ID;
+        l_FunctionInfo.handleType = PointLight::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_RenderScene);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::RenderScene::TYPE_ID;
+              Low::Renderer::RenderScene::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void PointLight::cleanup()
@@ -438,7 +445,7 @@ namespace Low {
 
       PointLight l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = PointLight::TYPE_ID;
+      l_Handle.m_Data.m_Type = PointLight::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -463,14 +470,14 @@ namespace Low {
       PointLight l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = PointLight::TYPE_ID;
+      l_Handle.m_Data.m_Type = PointLight::ms_TypeId;
 
       return l_Handle;
     }
 
     bool PointLight::is_alive() const
     {
-      if (m_Data.m_Type != PointLight::TYPE_ID) {
+      if (m_Data.m_Type != PointLight::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -482,7 +489,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == PointLight::TYPE_ID &&
+      return m_Data.m_Type == PointLight::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -550,14 +557,12 @@ namespace Low {
       return l_PointLight.duplicate(p_Name);
     }
 
-    void PointLight::serialize(Low::Util::Yaml::Node &p_Node) const
+    void PointLight::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
-      Low::Util::Serialization::serialize(p_Node["world_position"],
-                                          get_world_position());
-      Low::Util::Serialization::serialize(p_Node["color"],
-                                          get_color());
+      p_Node["world_position"] = get_world_position();
+      p_Node["color"] = get_color();
       p_Node["intensity"] = get_intensity();
       p_Node["range"] = get_range();
       p_Node["render_scene_handle"] = get_render_scene_handle();
@@ -570,27 +575,24 @@ namespace Low {
     }
 
     void PointLight::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Serial::Node &p_Node)
     {
       PointLight l_PointLight = p_Handle.get_id();
       l_PointLight.serialize(p_Node);
     }
 
     Low::Util::Handle
-    PointLight::deserialize(Low::Util::Yaml::Node &p_Node,
+    PointLight::deserialize(Low::Util::Serial::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
       PointLight l_Handle = PointLight::make(N(PointLight));
 
       if (p_Node["world_position"]) {
         l_Handle.set_world_position(
-            Low::Util::Serialization::deserialize_vector3(
-                p_Node["world_position"]));
+            p_Node["world_position"].as<Low::Math::Vector3>());
       }
       if (p_Node["color"]) {
-        l_Handle.set_color(
-            Low::Util::Serialization::deserialize_vector3(
-                p_Node["color"]));
+        l_Handle.set_color(p_Node["color"].as<Low::Math::ColorRGB>());
       }
       if (p_Node["intensity"]) {
         l_Handle.set_intensity(p_Node["intensity"].as<float>());
@@ -606,7 +608,7 @@ namespace Low {
         l_Handle.set_slot(p_Node["slot"].as<uint32_t>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

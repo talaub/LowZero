@@ -23,7 +23,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t DirectionalLight::TYPE_ID = 27;
+      u16 DirectionalLight::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          DirectionalLight::IDENTIFIER(LOW_NAME(1181529166),
+                                       LOW_NAME(2115370320));
       uint32_t DirectionalLight::ms_Capacity = 0u;
       uint32_t DirectionalLight::ms_PageSize = 0u;
       Low::Util::SharedMutex DirectionalLight::ms_LivingMutex;
@@ -65,7 +68,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = DirectionalLight::TYPE_ID;
+        l_Handle.m_Data.m_Type = DirectionalLight::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -146,6 +149,9 @@ namespace Low {
 
       void DirectionalLight::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowCore), N(DirectionalLight));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -173,7 +179,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(DirectionalLight);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &DirectionalLight::is_alive;
         l_TypeInfo.destroy = &DirectionalLight::destroy;
@@ -268,7 +274,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(DirectionalLight::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::Entity::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             DirectionalLight l_Handle = p_Handle.get_id();
@@ -326,7 +332,8 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: unique_id
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void DirectionalLight::cleanup()
@@ -364,7 +371,7 @@ namespace Low {
 
         DirectionalLight l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = DirectionalLight::TYPE_ID;
+        l_Handle.m_Data.m_Type = DirectionalLight::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -390,14 +397,14 @@ namespace Low {
         DirectionalLight l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = DirectionalLight::TYPE_ID;
+        l_Handle.m_Data.m_Type = DirectionalLight::ms_TypeId;
 
         return l_Handle;
       }
 
       bool DirectionalLight::is_alive() const
       {
-        if (m_Data.m_Type != DirectionalLight::TYPE_ID) {
+        if (m_Data.m_Type != DirectionalLight::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -409,7 +416,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == DirectionalLight::TYPE_ID &&
+        return m_Data.m_Type == DirectionalLight::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -452,31 +459,30 @@ namespace Low {
         return l_DirectionalLight.duplicate(l_Entity);
       }
 
-      void
-      DirectionalLight::serialize(Low::Util::Yaml::Node &p_Node) const
+      void DirectionalLight::serialize(
+          Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
-        Low::Util::Serialization::serialize(p_Node["color"],
-                                            get_color());
+        p_Node["color"] = get_color();
         p_Node["intensity"] = get_intensity();
-        p_Node["_unique_id"] =
-            Low::Util::hash_to_string(get_unique_id()).c_str();
+        p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
-      void DirectionalLight::serialize(Low::Util::Handle p_Handle,
-                                       Low::Util::Yaml::Node &p_Node)
+      void
+      DirectionalLight::serialize(Low::Util::Handle p_Handle,
+                                  Low::Util::Serial::Node &p_Node)
       {
         DirectionalLight l_DirectionalLight = p_Handle.get_id();
         l_DirectionalLight.serialize(p_Node);
       }
 
       Low::Util::Handle
-      DirectionalLight::deserialize(Low::Util::Yaml::Node &p_Node,
+      DirectionalLight::deserialize(Low::Util::Serial::Node &p_Node,
                                     Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -484,7 +490,7 @@ namespace Low {
           l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
         } else if (p_Node["_unique_id"]) {
           l_HandleUniqueId = Low::Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+              p_Node["_unique_id"].as<Low::Util::String>());
         }
 
         DirectionalLight l_Handle = DirectionalLight::make(
@@ -492,8 +498,7 @@ namespace Low {
 
         if (p_Node["color"]) {
           l_Handle.set_color(
-              Low::Util::Serialization::deserialize_vector3(
-                  p_Node["color"]));
+              p_Node["color"].as<Low::Math::ColorRGB>());
         }
         if (p_Node["intensity"]) {
           l_Handle.set_intensity(p_Node["intensity"].as<float>());
@@ -614,14 +619,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(color),
+                  ms_TypeId, N(color),
                   !l_Prefab.compare_property(*this, N(color)));
             }
           }
@@ -659,14 +664,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(intensity),
+                  ms_TypeId, N(intensity),
                   !l_Prefab.compare_property(*this, N(intensity)));
             }
           }

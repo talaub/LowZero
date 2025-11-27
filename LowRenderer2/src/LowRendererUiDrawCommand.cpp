@@ -22,7 +22,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t UiDrawCommand::TYPE_ID = 70;
+    u16 UiDrawCommand::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        UiDrawCommand::IDENTIFIER(LOW_NAME(509652687),
+                                  LOW_NAME(194095849));
     uint32_t UiDrawCommand::ms_Capacity = 0u;
     uint32_t UiDrawCommand::ms_PageSize = 0u;
     Low::Util::SharedMutex UiDrawCommand::ms_LivingMutex;
@@ -51,7 +54,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = UiDrawCommand::TYPE_ID;
+      l_Handle.m_Data.m_Type = UiDrawCommand::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -132,6 +135,9 @@ namespace Low {
 
     void UiDrawCommand::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(UiDrawCommand));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -158,7 +164,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(UiDrawCommand);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &UiDrawCommand::is_alive;
       l_TypeInfo.destroy = &UiDrawCommand::destroy;
@@ -186,7 +192,7 @@ namespace Low {
             offsetof(UiDrawCommand::Data, render_object);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::UiRenderObject::TYPE_ID;
+            Low::Renderer::UiRenderObject::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
@@ -251,7 +257,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Texture::TYPE_ID;
+        l_PropertyInfo.handleType = Texture::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
@@ -437,7 +443,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiDrawCommand::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Material::TYPE_ID;
+        l_PropertyInfo.handleType = Material::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
@@ -500,7 +506,7 @@ namespace Low {
             offsetof(UiDrawCommand::Data, submesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::GpuSubmesh::TYPE_ID;
+            Low::Renderer::GpuSubmesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiDrawCommand l_Handle = p_Handle.get_id();
@@ -558,14 +564,14 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = UiDrawCommand::TYPE_ID;
+        l_FunctionInfo.handleType = UiDrawCommand::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_RenderObject);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::UiRenderObject::TYPE_ID;
+              Low::Renderer::UiRenderObject::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -574,7 +580,7 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::UiCanvas::TYPE_ID;
+              Low::Renderer::UiCanvas::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -583,13 +589,14 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::GpuSubmesh::TYPE_ID;
+              Low::Renderer::GpuSubmesh::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void UiDrawCommand::cleanup()
@@ -624,7 +631,7 @@ namespace Low {
 
       UiDrawCommand l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = UiDrawCommand::TYPE_ID;
+      l_Handle.m_Data.m_Type = UiDrawCommand::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -649,14 +656,14 @@ namespace Low {
       UiDrawCommand l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = UiDrawCommand::TYPE_ID;
+      l_Handle.m_Data.m_Type = UiDrawCommand::ms_TypeId;
 
       return l_Handle;
     }
 
     bool UiDrawCommand::is_alive() const
     {
-      if (m_Data.m_Type != UiDrawCommand::TYPE_ID) {
+      if (m_Data.m_Type != UiDrawCommand::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -668,7 +675,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == UiDrawCommand::TYPE_ID &&
+      return m_Data.m_Type == UiDrawCommand::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -750,7 +757,8 @@ namespace Low {
       return l_UiDrawCommand.duplicate(p_Name);
     }
 
-    void UiDrawCommand::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    UiDrawCommand::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -760,14 +768,14 @@ namespace Low {
     }
 
     void UiDrawCommand::serialize(Low::Util::Handle p_Handle,
-                                  Low::Util::Yaml::Node &p_Node)
+                                  Low::Util::Serial::Node &p_Node)
     {
       UiDrawCommand l_UiDrawCommand = p_Handle.get_id();
       l_UiDrawCommand.serialize(p_Node);
     }
 
     Low::Util::Handle
-    UiDrawCommand::deserialize(Low::Util::Yaml::Node &p_Node,
+    UiDrawCommand::deserialize(Low::Util::Serial::Node &p_Node,
                                Low::Util::Handle p_Creator)
     {
 

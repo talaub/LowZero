@@ -50,6 +50,7 @@
 #include "LowUtilHashing.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilLogger.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 
 #include "imgui_impl_sdl2.h"
@@ -311,7 +312,7 @@ namespace Low {
 
     static bool
     parse_font_resource_config(Util::String p_Path,
-                               Util::Yaml::Node &p_Node,
+                               Util::Serial::Node &p_Node,
                                FontResourceConfig &p_Config)
     {
       LOWR_ASSERT_RETURN(p_Node["version"], "Could not find version");
@@ -320,22 +321,21 @@ namespace Low {
       if (l_Version == 1) {
         LOWR_ASSERT_RETURN(p_Node["name"],
                            "Could not find font name");
-        p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
+        p_Config.name = p_Node["name"].as<Util::Name>();
 
         LOWR_ASSERT_RETURN(p_Node["font_id"],
                            "Could not find font id");
-        p_Config.fontId = Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["font_id"]));
+        p_Config.fontId = p_Node["font_id"].as<Util::U64Id>().val;
 
         LOWR_ASSERT_RETURN(p_Node["asset_hash"],
                            "Could not find asset hash");
-        p_Config.assetHash = Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+        p_Config.assetHash = p_Config.fontId =
+            p_Node["asset_hash"].as<Util::U64Id>().val;
 
         LOWR_ASSERT_RETURN(p_Node["source_file"],
                            "Could not find source file");
         p_Config.sourceFile =
-            LOW_YAML_AS_STRING(p_Node["source_file"]);
+            p_Node["source_file"].as<Util::String>();
 
         p_Config.sidecarPath =
             Util::get_project().assetCachePath + "\\" +
@@ -382,8 +382,8 @@ namespace Low {
 
         for (auto it = l_MeshResources.begin();
              it != l_MeshResources.end(); ++it) {
-          Util::Yaml::Node i_ResourceNode =
-              Util::Yaml::load_file(it->c_str());
+          Util::Serial::Node i_ResourceNode =
+              Util::Serial::load_yaml_file(it->c_str());
           MeshResourceConfig i_ResourceConfig;
 
           LOWR_ASSERT_RETURN(
@@ -405,8 +405,8 @@ namespace Low {
 
         for (auto it = l_TextureResources.begin();
              it != l_TextureResources.end(); ++it) {
-          Util::Yaml::Node i_ResourceNode =
-              Util::Yaml::load_file(it->c_str());
+          Util::Serial::Node i_ResourceNode =
+              Util::Serial::load_yaml_file(it->c_str());
           TextureResourceConfig i_ResourceConfig;
 
           LOWR_ASSERT_RETURN(
@@ -428,8 +428,8 @@ namespace Low {
 
         for (auto it = l_Resources.begin(); it != l_Resources.end();
              ++it) {
-          Util::Yaml::Node i_ResourceNode =
-              Util::Yaml::load_file(it->c_str());
+          Util::Serial::Node i_ResourceNode =
+              Util::Serial::load_yaml_file(it->c_str());
           FontResourceConfig i_ResourceConfig;
 
           LOWR_ASSERT_RETURN(
@@ -451,8 +451,8 @@ namespace Low {
 
         for (auto it = l_Resources.begin(); it != l_Resources.end();
              ++it) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(it->c_str());
+          Util::Serial::Node i_Node =
+              Util::Serial::load_yaml_file(it->c_str());
 
           if (!(i_Node["version"] &&
                 i_Node["version"].as<u32>() >= 2)) {
@@ -476,8 +476,8 @@ namespace Low {
 
         for (auto it = l_Resources.begin(); it != l_Resources.end();
              ++it) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(it->c_str());
+          Util::Serial::Node i_Node =
+              Util::Serial::load_yaml_file(it->c_str());
 
           Model i_Model =
               Model::deserialize(i_Node, Util::Handle::DEAD);

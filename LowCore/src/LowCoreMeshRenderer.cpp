@@ -24,7 +24,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t MeshRenderer::TYPE_ID = 26;
+      u16 MeshRenderer::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          MeshRenderer::IDENTIFIER(LOW_NAME(1181529166),
+                                   LOW_NAME(1670531983));
       uint32_t MeshRenderer::ms_Capacity = 0u;
       uint32_t MeshRenderer::ms_PageSize = 0u;
       Low::Util::SharedMutex MeshRenderer::ms_LivingMutex;
@@ -63,7 +66,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
+        l_Handle.m_Data.m_Type = MeshRenderer::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -157,6 +160,9 @@ namespace Low {
 
       void MeshRenderer::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowCore), N(MeshRenderer));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -183,7 +189,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(MeshRenderer);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &MeshRenderer::is_alive;
         l_TypeInfo.destroy = &MeshRenderer::destroy;
@@ -209,7 +215,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(MeshRenderer::Data, mesh);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
@@ -243,7 +249,7 @@ namespace Low {
               offsetof(MeshRenderer::Data, material);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::Material::TYPE_ID;
+              Low::Renderer::Material::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
@@ -279,7 +285,7 @@ namespace Low {
               offsetof(MeshRenderer::Data, render_object);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::RenderObject::TYPE_ID;
+              Low::Renderer::RenderObject::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
@@ -315,7 +321,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(MeshRenderer::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::Entity::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             MeshRenderer l_Handle = p_Handle.get_id();
@@ -405,7 +411,8 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: dirty
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void MeshRenderer::cleanup()
@@ -441,7 +448,7 @@ namespace Low {
 
         MeshRenderer l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
+        l_Handle.m_Data.m_Type = MeshRenderer::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -466,14 +473,14 @@ namespace Low {
         MeshRenderer l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = MeshRenderer::TYPE_ID;
+        l_Handle.m_Data.m_Type = MeshRenderer::ms_TypeId;
 
         return l_Handle;
       }
 
       bool MeshRenderer::is_alive() const
       {
-        if (m_Data.m_Type != MeshRenderer::TYPE_ID) {
+        if (m_Data.m_Type != MeshRenderer::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -485,7 +492,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == MeshRenderer::TYPE_ID &&
+        return m_Data.m_Type == MeshRenderer::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -536,35 +543,33 @@ namespace Low {
       }
 
       void
-      MeshRenderer::serialize(Low::Util::Yaml::Node &p_Node) const
+      MeshRenderer::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
-        p_Node["_unique_id"] =
-            Low::Util::hash_to_string(get_unique_id()).c_str();
+        p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
         if (get_mesh().is_alive()) {
-          LOW_SERIALIZATION_SET_HASH(p_Node["mesh"],
-                                     get_mesh().get_unique_id());
+          p_Node["mesh"] = Util::U64Id{get_mesh().get_unique_id()};
         }
         if (get_material().is_alive()) {
-          LOW_SERIALIZATION_SET_HASH(p_Node["material"],
-                                     get_material().get_unique_id());
+          p_Node["material"] =
+              Util::U64Id{get_material().get_unique_id()};
         }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
       void MeshRenderer::serialize(Low::Util::Handle p_Handle,
-                                   Low::Util::Yaml::Node &p_Node)
+                                   Low::Util::Serial::Node &p_Node)
       {
         MeshRenderer l_MeshRenderer = p_Handle.get_id();
         l_MeshRenderer.serialize(p_Node);
       }
 
       Low::Util::Handle
-      MeshRenderer::deserialize(Low::Util::Yaml::Node &p_Node,
+      MeshRenderer::deserialize(Low::Util::Serial::Node &p_Node,
                                 Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -572,7 +577,7 @@ namespace Low {
           l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
         } else if (p_Node["_unique_id"]) {
           l_HandleUniqueId = Low::Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+              p_Node["_unique_id"].as<Low::Util::String>());
         }
 
         MeshRenderer l_Handle =
@@ -589,14 +594,14 @@ namespace Low {
         if (p_Node["mesh"]) {
           l_Handle.set_mesh(
               Renderer::ResourceManager::find_asset<Renderer::Mesh>(
-                  LOW_SERIALIZATION_GET_HASH(p_Node["mesh"])));
+                  p_Node["mesh"].as<Util::U64Id>().val));
         }
 
         l_Handle.set_material(0);
         if (p_Node["material"]) {
           l_Handle.set_material(Renderer::ResourceManager::find_asset<
                                 Renderer::Material>(
-              LOW_SERIALIZATION_GET_HASH(p_Node["material"])));
+              p_Node["material"].as<Util::U64Id>().val));
         }
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
@@ -681,14 +686,16 @@ namespace Low {
           {
             Low::Core::Entity l_Entity = get_entity();
             if (l_Entity.has_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                    Low::Core::Component::PrefabInstance::
+                        type_id())) {
               Low::Core::Component::PrefabInstance l_Instance =
                   l_Entity.get_component(
-                      Low::Core::Component::PrefabInstance::TYPE_ID);
+                      Low::Core::Component::PrefabInstance::
+                          type_id());
               Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
               if (l_Prefab.is_alive()) {
                 l_Instance.override(
-                    TYPE_ID, N(mesh),
+                    ms_TypeId, N(mesh),
                     !l_Prefab.compare_property(*this, N(mesh)));
               }
             }
@@ -729,14 +736,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(material),
+                  ms_TypeId, N(material),
                   !l_Prefab.compare_property(*this, N(material)));
             }
           }

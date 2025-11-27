@@ -86,7 +86,7 @@ namespace Flode {
       graph->clean_unconnected_links();
     }
 
-    void FunctionNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void FunctionNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       p_Node["name"] = m_Name.c_str();
       p_Node["editable"] = m_Editable;
@@ -98,10 +98,10 @@ namespace Flode {
       }
       for (auto it = m_Parameters.begin(); it != m_Parameters.end();
            ++it) {
-        Low::Util::Yaml::Node i_ParamNode;
+        Low::Util::Serial::Node i_ParamNode;
 
-        i_ParamNode["name"] = it->name.c_str();
-        i_ParamNode["type"] = pin_type_to_string(it->type).c_str();
+        i_ParamNode["name"] = it->name;
+        i_ParamNode["type"] = pin_type_to_string(it->type);
         i_ParamNode["pin_id"] = it->pinId.Get();
         i_ParamNode["type_id"] = it->typeId;
 
@@ -109,11 +109,11 @@ namespace Flode {
       }
     }
 
-    void FunctionNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void FunctionNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       m_Name = N(def_func);
       if (p_Node["name"]) {
-        m_Name = LOW_YAML_AS_NAME(p_Node["name"]);
+        m_Name = p_Node["name"].as<Low::Util::Name>();
       }
 
       if (p_Node["editable"]) {
@@ -130,21 +130,18 @@ namespace Flode {
       }
       if (p_Node["returntype"]) {
         m_ReturnType = string_to_pin_type(
-            LOW_YAML_AS_STRING(p_Node["returntype"]));
+            p_Node["returntype"].as<Low::Util::String>());
       }
       if (p_Node["returntypeid"]) {
         m_ReturnTypeId = p_Node["returntypeid"].as<u16>();
       }
 
       if (p_Node["parameters"]) {
-        for (auto it = p_Node["parameters"].begin();
-             it != p_Node["parameters"].end(); ++it) {
-          Low::Util::Yaml::Node &i_Node = *it;
-
+        for (auto [_, i_Node] : p_Node["parameters"]){
           FunctionNodeParameter i_Param;
-          i_Param.name = LOW_YAML_AS_NAME(i_Node["name"]);
+          i_Param.name = i_Node["name"].as<Low::Util::Name>();
           i_Param.type =
-              string_to_pin_type(LOW_YAML_AS_STRING(i_Node["type"]));
+              string_to_pin_type(i_Node["type"].as<Low::Util::String>());
           i_Param.pinId = i_Node["pin_id"].as<u64>();
           i_Param.typeId = 0;
           if (i_Node["type_id"]) {
@@ -460,19 +457,19 @@ namespace Flode {
     }
 
     void
-    GetVariableNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    GetVariableNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       if (m_Variable) {
         p_Node["variable"] = m_Variable->name.c_str();
       }
     }
 
-    void GetVariableNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void GetVariableNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       m_Variable = nullptr;
       if (p_Node["variable"]) {
         m_Variable = graph->find_variable(
-            LOW_YAML_AS_STRING(p_Node["variable"]));
+            p_Node["variable"].as<Low::Util::String>());
       }
     }
 
@@ -581,19 +578,19 @@ namespace Flode {
     }
 
     void
-    SetVariableNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    SetVariableNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       if (m_Variable) {
         p_Node["variable"] = m_Variable->name.c_str();
       }
     }
 
-    void SetVariableNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void SetVariableNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       m_Variable = nullptr;
       if (p_Node["variable"]) {
         m_Variable = graph->find_variable(
-            LOW_YAML_AS_STRING(p_Node["variable"]));
+            p_Node["variable"].as<Low::Util::String>());
       }
     }
 

@@ -6,6 +6,7 @@
 
 #include "LowUtilHandle.h"
 #include "LowUtilContainers.h"
+#include "LowUtilSerialization.h"
 
 #include <type_traits>
 
@@ -112,5 +113,14 @@ namespace Low {
     protected:
       void wipe_data();
     };
+
+    static_assert(std::is_copy_assignable_v<Low::Util::Variant>,
+                  "Variant must be copy-assignable");
+    namespace Serial {
+      void LOW_EXPORT serialize_variant(Node &p_Node,
+                                        Low::Util::Variant p_Variant);
+      Low::Util::Variant LOW_EXPORT deserialize_variant(Node &p_Node);
+
+    } // namespace Serial
   } // namespace Util
 } // namespace Low

@@ -541,8 +541,8 @@ namespace Flode {
         delete m_Graph;
       }
 
-      Low::Util::Yaml::Node l_Node =
-          Low::Util::Yaml::load_file(m_LoadPath.c_str());
+      Low::Util::Serial::Node l_Node =
+          Low::Util::Serial::load_yaml_file(m_LoadPath.c_str());
 
       m_Graph = new Graph;
       m_Graph->deserialize(l_Node);
@@ -596,11 +596,11 @@ namespace Flode {
       }
 
       if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_C)) {
-        Low::Util::Yaml::Node l_Node;
+        Low::Util::Serial::Node l_Node;
 
         for (auto it = m_SelectedNodes.begin();
              it != m_SelectedNodes.end(); ++it) {
-          Low::Util::Yaml::Node i_Node;
+          Low::Util::Serial::Node i_Node;
 
           m_Graph->serialize_node(*it, i_Node, true);
 
@@ -637,7 +637,7 @@ namespace Flode {
             }
 
             if (i_InputPinNodePresent && i_OutputPinNodePresent) {
-              Low::Util::Yaml::Node i_Yaml;
+              Low::Util::Serial::Node i_Yaml;
               i_Yaml["inputpinid"] = i_Link->inputPinId.Get();
               i_Yaml["outputpinid"] = i_Link->outputPinId.Get();
 
@@ -646,14 +646,18 @@ namespace Flode {
           }
         }
 
+        Low::Util::Yaml::Node l_YamlNode;
+        l_YamlNode = l_Node;
         Low::Util::Yaml::Emitter l_Emitter;
-        l_Emitter << l_Node;
+        l_Emitter << l_YamlNode;
         ImGui::SetClipboardText(l_Emitter.c_str());
       }
 
       if (ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_V)) {
-        Low::Util::Yaml::Node l_Clipboard =
+        Low::Util::Yaml::Node l_ClipboardYaml =
             Low::Util::Yaml::parse(ImGui::GetClipboardText());
+        Low::Util::Serial::Node l_Clipboard;
+        l_Clipboard = l_ClipboardYaml;
 
         Low::Util::List<Node *> l_Nodes;
         Low::Math::Vector2 l_CenterPos(0.0f, 0.0f);
@@ -662,56 +666,50 @@ namespace Flode {
 
         ImVec2 l_MousePos = ImGui::GetMousePos();
 
-        if (l_Clipboard.IsDefined() && l_Clipboard["nodes"]) {
-          for (auto it = l_Clipboard["nodes"].begin();
-               it != l_Clipboard["nodes"].end(); ++it) {
-            Low::Util::Yaml::Node i_Yaml = *it;
+        if (!l_Clipboard.is_null() && l_Clipboard["nodes"]) {
+          for (auto [_, i_Serial] : l_Clipboard["nodes"]) {
             Node *i_Node = nullptr;
             m_Graph->m_IdCounter += m_Graph->deserialize_node(
-                i_Yaml, &i_Node, m_Graph->m_IdCounter, false);
+                i_Serial, &i_Node, m_Graph->m_IdCounter, false);
 
             if (i_Node) {
               l_Nodes.push_back(i_Node);
               m_Graph->m_Nodes.push_back(i_Node);
 
-              if (i_Yaml["pins"]) {
-                for (int i = 0; i < i_Yaml["pins"].size(); ++i) {
+              if (i_Serial["pins"]) {
+                for (int i = 0; i < i_Serial["pins"].size(); ++i) {
                   if (i_Node->pins.size() > i) {
                     u64 i_OldPinId =
-                        i_Yaml["pins"][i]["id"].as<u64>();
+                        i_Serial["pins"][i]["id"].as<u64>();
                     l_PinMapping[i_OldPinId] =
                         i_Node->pins[i]->id.Get();
                   }
                 }
               }
 
-              i_Yaml["_created_node_id"] = i_Node->id.Get();
+              i_Serial["_created_node_id"] = i_Node->id.Get();
 
-              if (i_Yaml["position"]) {
+              if (i_Serial["position"]) {
                 l_CenterPos +=
-                    Low::Util::Serialization::deserialize_vector2(
-                        i_Yaml["position"]);
+                        i_Serial["position"].as<Low::Math::Vector2>();
               }
             }
           }
 
           l_CenterPos /= l_Nodes.size();
 
-          for (auto it = l_Clipboard["nodes"].begin();
-               it != l_Clipboard["nodes"].end(); ++it) {
-            Low::Util::Yaml::Node i_Yaml = *it;
-            if (!i_Yaml["_created_node_id"]) {
+          for (auto [_, i_Serial]: l_Clipboard["nodes"]){
+            if (!i_Serial["_created_node_id"]) {
               continue;
             }
             Node *i_Node = m_Graph->find_node(
-                i_Yaml["_created_node_id"].as<u64>());
+                i_Serial["_created_node_id"].as<u64>());
 
             if (!i_Node) {
               continue;
             }
             Low::Math::Vector2 i_NodePos =
-                Low::Util::Serialization::deserialize_vector2(
-                    i_Yaml["position"]);
+                    i_Serial["position"].as<Low::Math::Vector2>();
 
             i_NodePos =
                 Low::Math::Vector2(l_MousePos.x, l_MousePos.y) +
@@ -722,11 +720,9 @@ namespace Flode {
           }
 
           if (l_Clipboard["links"]) {
-            for (auto it = l_Clipboard["links"].begin();
-                 it != l_Clipboard["links"].end(); ++it) {
-              Low::Util::Yaml::Node i_Yaml = *it;
-              u64 i_OldInputPinId = i_Yaml["inputpinid"].as<u64>();
-              u64 i_OldOutputPinId = i_Yaml["outputpinid"].as<u64>();
+            for (auto [_, i_LinkNode] : l_Clipboard["links"]) {
+              u64 i_OldInputPinId = i_LinkNode["inputpinid"].as<u64>();
+              u64 i_OldOutputPinId = i_LinkNode["outputpinid"].as<u64>();
 
               auto i_InputPinPos = l_PinMapping.find(i_OldInputPinId);
               auto i_OutputPinPos =
@@ -746,7 +742,7 @@ namespace Flode {
     }
 
     if (l_Save) {
-      Low::Util::Yaml::Node l_Node;
+      Low::Util::Serial::Node l_Node;
       m_Graph->clean_unconnected_links();
       m_Graph->serialize(l_Node);
 
@@ -755,7 +751,7 @@ namespace Flode {
                 Low::Util::String(m_Graph->m_Name.c_str()) +
                 ".flode.yaml";
 
-      Low::Util::Yaml::write_file(l_Path.c_str(), l_Node);
+      Low::Util::Serial::write_yaml_file(l_Path.c_str(), l_Node);
 
       LOW_LOG_INFO << "Saved flode graph '" << m_Graph->m_Name
                    << "' to file." << LOW_LOG_END;

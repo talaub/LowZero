@@ -5,6 +5,7 @@
 #include "LowUtilFileIO.h"
 #include "LowUtilContainers.h"
 #include "LowUtilYaml.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 #include "LowMath.h"
 
@@ -165,7 +166,7 @@ namespace Low {
 
     static Math::Color parse_color(Util::Yaml::Node p_Node)
     {
-      Util::String l_HexString = LOW_YAML_AS_STRING(p_Node);
+      Util::String l_HexString = p_Node.as<std::string>().c_str();
       std::string l_StdHexString = l_HexString.c_str();
       Math::Color l_Color;
 

@@ -23,7 +23,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t RenderScene::TYPE_ID = 61;
+    u16 RenderScene::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        RenderScene::IDENTIFIER(LOW_NAME(509652687),
+                                LOW_NAME(4251260417));
     uint32_t RenderScene::ms_Capacity = 0u;
     uint32_t RenderScene::ms_PageSize = 0u;
     Low::Util::SharedMutex RenderScene::ms_LivingMutex;
@@ -52,7 +55,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = RenderScene::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderScene::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -138,6 +141,9 @@ namespace Low {
 
     void RenderScene::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(RenderScene));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -164,7 +170,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderScene);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderScene::is_alive;
       l_TypeInfo.destroy = &RenderScene::destroy;
@@ -417,13 +423,14 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::DrawCommand::TYPE_ID;
+              Low::Renderer::DrawCommand::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: insert_draw_command
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void RenderScene::cleanup()
@@ -458,7 +465,7 @@ namespace Low {
 
       RenderScene l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = RenderScene::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderScene::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -483,14 +490,14 @@ namespace Low {
       RenderScene l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = RenderScene::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderScene::ms_TypeId;
 
       return l_Handle;
     }
 
     bool RenderScene::is_alive() const
     {
-      if (m_Data.m_Type != RenderScene::TYPE_ID) {
+      if (m_Data.m_Type != RenderScene::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -502,7 +509,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == RenderScene::TYPE_ID &&
+      return m_Data.m_Type == RenderScene::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -573,7 +580,7 @@ namespace Low {
       return l_RenderScene.duplicate(p_Name);
     }
 
-    void RenderScene::serialize(Low::Util::Yaml::Node &p_Node) const
+    void RenderScene::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -583,14 +590,14 @@ namespace Low {
     }
 
     void RenderScene::serialize(Low::Util::Handle p_Handle,
-                                Low::Util::Yaml::Node &p_Node)
+                                Low::Util::Serial::Node &p_Node)
     {
       RenderScene l_RenderScene = p_Handle.get_id();
       l_RenderScene.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderScene::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderScene::deserialize(Low::Util::Serial::Node &p_Node,
                              Low::Util::Handle p_Creator)
     {
 

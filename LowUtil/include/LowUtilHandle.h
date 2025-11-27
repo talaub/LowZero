@@ -11,8 +11,9 @@
 #include "LowUtilName.h"
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
-#include "LowUtilYaml.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilConcurrency.h"
+#include "LowUtilString.h"
 
 // helpers to make a unique identifier
 #define CONCAT_IMPL(a, b) a##b
@@ -72,6 +73,53 @@
 
 namespace Low {
   namespace Util {
+    struct TypeIdentifier
+    {
+      const Name module;
+      const Name name;
+
+      TypeIdentifier()
+      {
+      }
+
+      TypeIdentifier(const u64 p_Id)
+          : module(static_cast<u32>(p_Id >> 32)),
+            name(static_cast<u32>(p_Id))
+      {
+      }
+
+      TypeIdentifier(const Name p_Module, const Name p_Name)
+          : module(p_Module), name(p_Name)
+      {
+      }
+
+      static TypeIdentifier from_string(const String p_String)
+      {
+        List<String> l_Parts;
+        StringHelper::split(p_String, ':', l_Parts);
+        return TypeIdentifier(LOW_NAME(l_Parts[0].c_str()),
+                              LOW_NAME(l_Parts[1].c_str()));
+      }
+
+      operator u64() const
+      {
+        const u64 l_Composite =
+            (static_cast<u64>(module.m_Index) << 32) |
+            static_cast<u64>(name.m_Index);
+
+        return l_Composite;
+      }
+
+      operator String() const
+      {
+        StringBuilder l_Builder;
+        return l_Builder.append(module)
+            .append(":")
+            .append(name)
+            .get();
+      }
+    };
+
     struct Variant;
     typedef uint64_t UniqueId;
     namespace Instances {
@@ -136,8 +184,8 @@ namespace Low {
       struct PropertyInfoBase
       {
         Util::Name name;
-        uint32_t type;
-        uint16_t handleType;
+        u32 type;
+        u16 handleType;
         bool editorProperty;
         void (*get)(Handle, void *);
         void (*set)(Handle, const void *);
@@ -148,7 +196,7 @@ namespace Low {
 
       struct PropertyInfo : public PropertyInfoBase
       {
-        uint32_t dataOffset;
+        u32 dataOffset;
         void const *(*get_return)(Handle);
 
         Variant get_variant(Handle);
@@ -157,31 +205,31 @@ namespace Low {
       struct ParameterInfo
       {
         Name name;
-        uint32_t type;
-        uint16_t handleType;
+        u32 type;
+        u16 handleType;
       };
 
       struct FunctionInfo
       {
         Name name;
-        uint32_t type;
-        uint16_t handleType;
+        u32 type;
+        u16 handleType;
         List<ParameterInfo> parameters;
       };
 
       struct TypeInfo
       {
         Name name;
-        uint16_t typeId;
+        u16 typeId;
         bool component;
         bool uiComponent;
         Map<Name, PropertyInfo> properties;
         Map<Name, VirtualPropertyInfo> virtualProperties;
         Map<Name, FunctionInfo> functions;
-        uint32_t (*get_capacity)();
+        u32 (*get_capacity)();
         bool (*is_alive)(Handle);
-        void (*serialize)(Handle, Yaml::Node &);
-        Handle (*deserialize)(Yaml::Node &, Handle);
+        void (*serialize)(Handle, Serial::Node &);
+        Handle (*deserialize)(Serial::Node &, Handle);
         Handle (*duplicate_default)(Handle, Name);
         Handle (*duplicate_component)(Handle, Handle);
         Handle (*make_default)(Name);
@@ -190,7 +238,7 @@ namespace Low {
         Handle (*find_by_name)(Name);
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
-        uint32_t (*get_living_count)();
+        u32 (*get_living_count)();
         void (*notify)(Handle, Handle, Name);
       };
 
@@ -260,7 +308,9 @@ namespace Low {
       bool is_registered_type() const;
 
       static bool is_registered_type(u16 p_TypeId);
-      static RTTI::TypeInfo &get_type_info(uint16_t p_TypeId);
+      static bool
+      is_registered_type(const TypeIdentifier p_TypeIdentifier);
+      static RTTI::TypeInfo &get_type_info(u16 p_TypeId);
       static List<uint16_t> &get_component_types();
 
       static void
@@ -270,9 +320,14 @@ namespace Low {
 
       const static u64 DEAD;
 
+      [[nodiscard]] static u16
+      type_id(const TypeIdentifier p_Identifier);
+      [[nodiscard]] static TypeIdentifier identifier(const u16 p_Id);
+
     protected:
-      static void register_type_info(uint16_t p_TypeId,
-                                     RTTI::TypeInfo &p_TypeInfo);
+      [[nodiscard]] static u16
+      register_type_info(const TypeIdentifier p_Identifier,
+                         RTTI::TypeInfo &p_TypeInfo);
     };
 
     void LOW_EXPORT register_enum_info(u16 p_EnumId,
@@ -548,5 +603,10 @@ namespace Low {
       return (M *)&(l_Page->buffer[(p_MemberOffset * l_Page->size) +
                                    (l_SlotIndex * sizeof(M))]);
     }
+
+    namespace Serial {
+      void LOW_EXPORT serialize_handle(Node &p_Node, Handle p_Handle);
+      Handle LOW_EXPORT deserialize_handle(Node &p_Node);
+    } // namespace Serial
   } // namespace Util
 } // namespace Low

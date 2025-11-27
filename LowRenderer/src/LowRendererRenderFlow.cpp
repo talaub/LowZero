@@ -24,7 +24,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t RenderFlow::TYPE_ID = 9;
+    u16 RenderFlow::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        RenderFlow::IDENTIFIER(LOW_NAME(1849087878),
+                               LOW_NAME(4204440451));
     uint32_t RenderFlow::ms_Capacity = 0u;
     uint32_t RenderFlow::ms_PageSize = 0u;
     Low::Util::SharedMutex RenderFlow::ms_LivingMutex;
@@ -53,7 +56,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = RenderFlow::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderFlow::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -153,6 +156,9 @@ namespace Low {
 
     void RenderFlow::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer), N(RenderFlow));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -179,7 +185,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(RenderFlow);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &RenderFlow::is_alive;
       l_TypeInfo.destroy = &RenderFlow::destroy;
@@ -206,7 +212,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
+        l_PropertyInfo.handleType = Interface::Context::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
@@ -254,7 +260,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
+        l_PropertyInfo.handleType = Resource::Image::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -344,7 +350,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderFlow::Data, frame_info_buffer);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Resource::Buffer::TYPE_ID;
+        l_PropertyInfo.handleType = Resource::Buffer::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -375,7 +381,7 @@ namespace Low {
             offsetof(RenderFlow::Data, resource_signature);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Interface::PipelineResourceSignature::TYPE_ID;
+            Interface::PipelineResourceSignature::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderFlow l_Handle = p_Handle.get_id();
@@ -709,7 +715,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = RenderFlow::TYPE_ID;
+        l_FunctionInfo.handleType = RenderFlow::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -722,7 +728,7 @@ namespace Low {
           l_ParameterInfo.name = N(p_Context);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Interface::Context::TYPE_ID;
+          l_ParameterInfo.handleType = Interface::Context::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -793,7 +799,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_previous_output_image);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Resource::Image::TYPE_ID;
+        l_FunctionInfo.handleType = Resource::Image::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Step);
@@ -805,7 +811,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_previous_output_image
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void RenderFlow::cleanup()
@@ -840,7 +847,7 @@ namespace Low {
 
       RenderFlow l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = RenderFlow::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderFlow::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -865,14 +872,14 @@ namespace Low {
       RenderFlow l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = RenderFlow::TYPE_ID;
+      l_Handle.m_Data.m_Type = RenderFlow::ms_TypeId;
 
       return l_Handle;
     }
 
     bool RenderFlow::is_alive() const
     {
-      if (m_Data.m_Type != RenderFlow::TYPE_ID) {
+      if (m_Data.m_Type != RenderFlow::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -884,7 +891,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == RenderFlow::TYPE_ID &&
+      return m_Data.m_Type == RenderFlow::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -967,7 +974,7 @@ namespace Low {
       return l_RenderFlow.duplicate(p_Name);
     }
 
-    void RenderFlow::serialize(Low::Util::Yaml::Node &p_Node) const
+    void RenderFlow::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -985,10 +992,8 @@ namespace Low {
         get_resource_signature().serialize(
             p_Node["resource_signature"]);
       }
-      Low::Util::Serialization::serialize(p_Node["camera_position"],
-                                          get_camera_position());
-      Low::Util::Serialization::serialize(p_Node["camera_direction"],
-                                          get_camera_direction());
+      p_Node["camera_position"] = get_camera_position();
+      p_Node["camera_direction"] = get_camera_direction();
       p_Node["camera_fov"] = get_camera_fov();
       p_Node["camera_near_plane"] = get_camera_near_plane();
       p_Node["camera_far_plane"] = get_camera_far_plane();
@@ -1000,14 +1005,14 @@ namespace Low {
     }
 
     void RenderFlow::serialize(Low::Util::Handle p_Handle,
-                               Low::Util::Yaml::Node &p_Node)
+                               Low::Util::Serial::Node &p_Node)
     {
       RenderFlow l_RenderFlow = p_Handle.get_id();
       l_RenderFlow.serialize(p_Node);
     }
 
     Low::Util::Handle
-    RenderFlow::deserialize(Low::Util::Yaml::Node &p_Node,
+    RenderFlow::deserialize(Low::Util::Serial::Node &p_Node,
                             Low::Util::Handle p_Creator)
     {
       RenderFlow l_Handle = RenderFlow::make(N(RenderFlow));
@@ -1043,13 +1048,11 @@ namespace Low {
       }
       if (p_Node["camera_position"]) {
         l_Handle.set_camera_position(
-            Low::Util::Serialization::deserialize_vector3(
-                p_Node["camera_position"]));
+            p_Node["camera_position"].as<Math::Vector3>());
       }
       if (p_Node["camera_direction"]) {
         l_Handle.set_camera_direction(
-            Low::Util::Serialization::deserialize_vector3(
-                p_Node["camera_direction"]));
+            p_Node["camera_direction"].as<Math::Vector3>());
       }
       if (p_Node["camera_fov"]) {
         l_Handle.set_camera_fov(p_Node["camera_fov"].as<float>());
@@ -1071,7 +1074,7 @@ namespace Low {
       if (p_Node["point_lights"]) {
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

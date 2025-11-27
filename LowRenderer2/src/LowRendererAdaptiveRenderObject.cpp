@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t AdaptiveRenderObject::TYPE_ID = 90;
+    u16 AdaptiveRenderObject::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        AdaptiveRenderObject::IDENTIFIER(LOW_NAME(509652687),
+                                         LOW_NAME(1303667019));
     uint32_t AdaptiveRenderObject::ms_Capacity = 0u;
     uint32_t AdaptiveRenderObject::ms_PageSize = 0u;
     Low::Util::SharedMutex AdaptiveRenderObject::ms_LivingMutex;
@@ -53,7 +56,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = AdaptiveRenderObject::TYPE_ID;
+      l_Handle.m_Data.m_Type = AdaptiveRenderObject::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -130,6 +133,9 @@ namespace Low {
 
     void AdaptiveRenderObject::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(AdaptiveRenderObject));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -157,7 +163,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(AdaptiveRenderObject);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &AdaptiveRenderObject::is_alive;
       l_TypeInfo.destroy = &AdaptiveRenderObject::destroy;
@@ -187,7 +193,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(AdaptiveRenderObject::Data, model);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Model::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Model::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           AdaptiveRenderObject l_Handle = p_Handle.get_id();
@@ -285,7 +291,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(AdaptiveRenderObject::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Material::TYPE_ID;
+        l_PropertyInfo.handleType =
+            Low::Renderer::Material::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           AdaptiveRenderObject l_Handle = p_Handle.get_id();
@@ -416,14 +423,14 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = AdaptiveRenderObject::TYPE_ID;
+        l_FunctionInfo.handleType = AdaptiveRenderObject::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Scene);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::RenderScene::TYPE_ID;
+              Low::Renderer::RenderScene::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -431,13 +438,15 @@ namespace Low {
           l_ParameterInfo.name = N(p_Model);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Low::Renderer::Model::TYPE_ID;
+          l_ParameterInfo.handleType =
+              Low::Renderer::Model::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void AdaptiveRenderObject::cleanup()
@@ -475,7 +484,7 @@ namespace Low {
 
       AdaptiveRenderObject l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = AdaptiveRenderObject::TYPE_ID;
+      l_Handle.m_Data.m_Type = AdaptiveRenderObject::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -501,14 +510,14 @@ namespace Low {
       AdaptiveRenderObject l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = AdaptiveRenderObject::TYPE_ID;
+      l_Handle.m_Data.m_Type = AdaptiveRenderObject::ms_TypeId;
 
       return l_Handle;
     }
 
     bool AdaptiveRenderObject::is_alive() const
     {
-      if (m_Data.m_Type != AdaptiveRenderObject::TYPE_ID) {
+      if (m_Data.m_Type != AdaptiveRenderObject::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -520,7 +529,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == AdaptiveRenderObject::TYPE_ID &&
+      return m_Data.m_Type == AdaptiveRenderObject::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -596,7 +605,7 @@ namespace Low {
     }
 
     void AdaptiveRenderObject::serialize(
-        Low::Util::Yaml::Node &p_Node) const
+        Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -617,14 +626,14 @@ namespace Low {
 
     void
     AdaptiveRenderObject::serialize(Low::Util::Handle p_Handle,
-                                    Low::Util::Yaml::Node &p_Node)
+                                    Low::Util::Serial::Node &p_Node)
     {
       AdaptiveRenderObject l_AdaptiveRenderObject = p_Handle.get_id();
       l_AdaptiveRenderObject.serialize(p_Node);
     }
 
     Low::Util::Handle
-    AdaptiveRenderObject::deserialize(Low::Util::Yaml::Node &p_Node,
+    AdaptiveRenderObject::deserialize(Low::Util::Serial::Node &p_Node,
                                       Low::Util::Handle p_Creator)
     {
       AdaptiveRenderObject l_Handle =
@@ -651,7 +660,7 @@ namespace Low {
         l_Handle.set_object_id(p_Node["object_id"].as<uint32_t>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

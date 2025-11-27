@@ -24,7 +24,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t Element::TYPE_ID = 37;
+      u16 Element::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          Element::IDENTIFIER(LOW_NAME(1181529166),
+                              LOW_NAME(2398971813));
       uint32_t Element::ms_Capacity = 0u;
       uint32_t Element::ms_PageSize = 0u;
       Low::Util::SharedMutex Element::ms_LivingMutex;
@@ -58,7 +61,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = Element::TYPE_ID;
+        l_Handle.m_Data.m_Type = Element::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -176,6 +179,9 @@ namespace Low {
 
       void Element::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(N(LowCore),
+                                                          N(Element));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -202,7 +208,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Element);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Element::is_alive;
         l_TypeInfo.destroy = &Element::destroy;
@@ -259,7 +265,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Element::Data, view);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::UI::View::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::UI::View::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
@@ -377,7 +383,7 @@ namespace Low {
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_FunctionInfo.handleType = Element::TYPE_ID;
+          l_FunctionInfo.handleType = Element::type_id();
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
             l_ParameterInfo.name = N(p_Name);
@@ -391,7 +397,8 @@ namespace Low {
             l_ParameterInfo.name = N(p_View);
             l_ParameterInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
-            l_ParameterInfo.handleType = Low::Core::UI::View::TYPE_ID;
+            l_ParameterInfo.handleType =
+                Low::Core::UI::View::type_id();
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -471,7 +478,7 @@ namespace Low {
           l_FunctionInfo.name = N(get_display);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_FunctionInfo.handleType =
-              Low::Core::UI::Component::Display::TYPE_ID;
+              Low::Core::UI::Component::Display::type_id();
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: get_display
         }
@@ -530,7 +537,7 @@ namespace Low {
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(deserialize_hierarchy);
           l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_FunctionInfo.handleType = UI::Element::TYPE_ID;
+          l_FunctionInfo.handleType = UI::Element::type_id();
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
             l_ParameterInfo.name = N(p_Node);
@@ -550,7 +557,8 @@ namespace Low {
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: deserialize_hierarchy
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void Element::cleanup()
@@ -585,7 +593,7 @@ namespace Low {
 
         Element l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = Element::TYPE_ID;
+        l_Handle.m_Data.m_Type = Element::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -610,14 +618,14 @@ namespace Low {
         Element l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = Element::TYPE_ID;
+        l_Handle.m_Data.m_Type = Element::ms_TypeId;
 
         return l_Handle;
       }
 
       bool Element::is_alive() const
       {
-        if (m_Data.m_Type != Element::TYPE_ID) {
+        if (m_Data.m_Type != Element::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -629,7 +637,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == Element::TYPE_ID &&
+        return m_Data.m_Type == Element::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -716,7 +724,7 @@ namespace Low {
         return l_Element.duplicate(p_Name);
       }
 
-      void Element::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Element::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -727,14 +735,14 @@ namespace Low {
       }
 
       void Element::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node)
+                              Low::Util::Serial::Node &p_Node)
       {
         Element l_Element = p_Handle.get_id();
         l_Element.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Element::deserialize(Low::Util::Yaml::Node &p_Node,
+      Element::deserialize(Low::Util::Serial::Node &p_Node,
                            Low::Util::Handle p_Creator)
       {
 
@@ -745,13 +753,13 @@ namespace Low {
         if (!l_View.is_alive()) {
           if (p_Node["view"]) {
             l_View = Util::find_handle_by_unique_id(
-                         p_Node["view"].as<uint64_t>())
+                         p_Node["view"].as<Util::U64Id>())
                          .get_id();
           }
         }
 
         Element l_Element =
-            Element::make(LOW_YAML_AS_NAME(p_Node["name"]));
+            Element::make(p_Node["name"].as<Util::Name>());
 
         p_Node["_handle"] = l_Element.get_id();
 
@@ -759,21 +767,26 @@ namespace Low {
         // to remove the auto generated uid first)
         if (p_Node["unique_id"]) {
           Util::remove_unique_id(l_Element.get_unique_id());
-          l_Element.set_unique_id(p_Node["unique_id"].as<uint64_t>());
+          l_Element.set_unique_id(
+              p_Node["unique_id"].as<Util::U64Id>());
           Util::register_unique_id(l_Element.get_unique_id(),
                                    l_Element);
         }
 
         l_View.add_element(l_Element);
 
-        Util::Yaml::Node l_ComponentsNode = p_Node["components"];
+        Util::Serial::Node l_ComponentsNode = p_Node["components"];
 
-        for (auto it = l_ComponentsNode.begin();
-             it != l_ComponentsNode.end(); ++it) {
-          Util::Yaml::Node i_ComponentNode = *it;
+        for (auto [_, i_ComponentNode] : l_ComponentsNode) {
+          const Util::TypeIdentifier i_ComponentTypeIdentifier =
+              Util::TypeIdentifier::from_string(
+                  i_ComponentNode["type"].as<Util::String>());
+
+          const u16 i_ComponentTypeId =
+              Util::Handle::type_id(i_ComponentTypeIdentifier);
+
           Util::RTTI::TypeInfo &i_TypeInfo =
-              Util::Handle::get_type_info(
-                  i_ComponentNode["type"].as<uint16_t>());
+              Util::Handle::get_type_info(i_ComponentTypeId);
 
           i_ComponentNode["_handle"] =
               i_TypeInfo
@@ -1074,11 +1087,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_display
 
         _LOW_ASSERT(is_alive());
-        return get_component(UI::Component::Display::TYPE_ID);
+        return get_component(UI::Component::Display::type_id());
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_display
       }
 
-      void Element::serialize(Util::Yaml::Node &p_Node,
+      void Element::serialize(Util::Serial::Node &p_Node,
                               bool p_AddHandles) const
       {
         Low::Util::HandleLock<Element> l_Lock(get_id());
@@ -1086,27 +1099,28 @@ namespace Low {
 
         _LOW_ASSERT(is_alive());
 
-        p_Node["name"] = get_name().c_str();
-        p_Node["unique_id"] = get_unique_id();
+        p_Node["name"] = get_name();
+        p_Node["unique_id"] = (Util::U64Id)get_unique_id();
         if (p_AddHandles) {
-          p_Node["handle"] = get_id();
+          p_Node["handle"] = (Util::U64Id)get_id();
         }
         p_Node["view"] = 0;
         if (get_view().is_alive()) {
-          p_Node["view"] = get_view().get_unique_id();
+          p_Node["view"] = (Util::U64Id)get_view().get_unique_id();
         }
 
         for (auto it = get_components().begin();
              it != get_components().end(); ++it) {
-          Util::Yaml::Node i_Node;
-          i_Node["type"] = it->first;
+          Util::Serial::Node i_Node;
+          i_Node["type"] =
+              (Util::String)Util::Handle::identifier(it->first);
           if (p_AddHandles) {
-            i_Node["handle"] = it->second.get_id();
+            i_Node["handle"] = (Util::U64Id)it->second.get_id();
           }
 
           Util::RTTI::TypeInfo &i_TypeInfo =
               Util::Handle::get_type_info(it->first);
-          Util::Yaml::Node i_PropertiesNode;
+          Util::Serial::Node i_PropertiesNode;
           i_TypeInfo.serialize(it->second, i_PropertiesNode);
           i_Node["properties"] = i_PropertiesNode;
           p_Node["components"].push_back(i_Node);
@@ -1114,7 +1128,7 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
       }
 
-      void Element::serialize_hierarchy(Util::Yaml::Node &p_Node,
+      void Element::serialize_hierarchy(Util::Serial::Node &p_Node,
                                         bool p_AddHandles) const
       {
         Low::Util::HandleLock<Element> l_Lock(get_id());
@@ -1128,7 +1142,7 @@ namespace Low {
              it != l_Display.get_children().end(); ++it) {
           Component::Display i_Child = *it;
 
-          Util::Yaml::Node i_Node;
+          Util::Serial::Node i_Node;
           i_Child.get_element().serialize_hierarchy(i_Node,
                                                     p_AddHandles);
 
@@ -1138,7 +1152,7 @@ namespace Low {
       }
 
       UI::Element
-      Element::deserialize_hierarchy(Util::Yaml::Node &p_Node,
+      Element::deserialize_hierarchy(Util::Serial::Node &p_Node,
                                      Util::Handle p_Creator)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy

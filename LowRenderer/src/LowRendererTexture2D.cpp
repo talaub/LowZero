@@ -23,7 +23,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Texture2D::TYPE_ID = 14;
+    u16 Texture2D::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Texture2D::IDENTIFIER(LOW_NAME(1849087878),
+                              LOW_NAME(1011983371));
     uint32_t Texture2D::ms_Capacity = 0u;
     uint32_t Texture2D::ms_PageSize = 0u;
     Low::Util::SharedMutex Texture2D::ms_LivingMutex;
@@ -51,7 +54,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
+      l_Handle.m_Data.m_Type = Texture2D::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -133,6 +136,9 @@ namespace Low {
 
     void Texture2D::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer), N(Texture2D));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -151,7 +157,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Texture2D);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Texture2D::is_alive;
       l_TypeInfo.destroy = &Texture2D::destroy;
@@ -177,7 +183,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Resource::Image::TYPE_ID;
+        l_PropertyInfo.handleType = Resource::Image::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
@@ -205,7 +211,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Texture2D::Data, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Interface::Context::TYPE_ID;
+        l_PropertyInfo.handleType = Interface::Context::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;
@@ -252,7 +258,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Texture2D::TYPE_ID;
+        l_FunctionInfo.handleType = Texture2D::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -265,7 +271,7 @@ namespace Low {
           l_ParameterInfo.name = N(p_Context);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Interface::Context::TYPE_ID;
+          l_ParameterInfo.handleType = Interface::Context::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -290,7 +296,7 @@ namespace Low {
           l_ParameterInfo.name = N(p_Context);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Interface::Context::TYPE_ID;
+          l_ParameterInfo.handleType = Interface::Context::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         {
@@ -304,7 +310,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: assign_image
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Texture2D::cleanup()
@@ -339,7 +346,7 @@ namespace Low {
 
       Texture2D l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
+      l_Handle.m_Data.m_Type = Texture2D::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -364,14 +371,14 @@ namespace Low {
       Texture2D l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Texture2D::TYPE_ID;
+      l_Handle.m_Data.m_Type = Texture2D::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Texture2D::is_alive() const
     {
-      if (m_Data.m_Type != Texture2D::TYPE_ID) {
+      if (m_Data.m_Type != Texture2D::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -383,7 +390,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Texture2D::TYPE_ID &&
+      return m_Data.m_Type == Texture2D::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -450,7 +457,7 @@ namespace Low {
       return l_Texture2D.duplicate(p_Name);
     }
 
-    void Texture2D::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Texture2D::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -468,14 +475,14 @@ namespace Low {
     }
 
     void Texture2D::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node)
+                              Low::Util::Serial::Node &p_Node)
     {
       Texture2D l_Texture2D = p_Handle.get_id();
       l_Texture2D.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Texture2D::deserialize(Low::Util::Yaml::Node &p_Node,
+    Texture2D::deserialize(Low::Util::Serial::Node &p_Node,
                            Low::Util::Handle p_Creator)
     {
       Texture2D l_Handle = Texture2D::make(N(Texture2D));
@@ -491,7 +498,7 @@ namespace Low {
                                  .get_id());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

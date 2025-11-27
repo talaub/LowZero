@@ -3,6 +3,7 @@
 #include "LowRendererEditorImage.h"
 #include "LowRendererResourceManager.h"
 
+#include "LowUtilHandle.h"
 #include "LowUtilJobManager.h"
 #include "LowUtil.h"
 #include "LowUtilProfiler.h"
@@ -134,10 +135,10 @@ namespace Low {
 
     TypeMetadata &get_type_metadata(uint16_t p_TypeId)
     {
-      LOW_ASSERT(g_TypeMetadata.find(p_TypeId) !=
-                     g_TypeMetadata.end(),
+      auto l_Pos = g_TypeMetadata.find(p_TypeId);
+      LOW_ASSERT(l_Pos != g_TypeMetadata.end(),
                  "Could not find type metadata");
-      return g_TypeMetadata[p_TypeId];
+      return l_Pos->second;
     }
 
     EnumMetadata &get_enum_metadata(u16 p_EnumId)
@@ -196,18 +197,21 @@ namespace Low {
       Core::Entity l_Entity = p_Handle.get_id();
       // TODO: Highlight selection
 
-      {
-        HandlePropertiesSection l_Section(l_Entity, true);
-        l_Section.render_footer = nullptr;
-        get_details_widget()->add_section(l_Section);
-      }
-
-      for (auto it = l_Entity.get_components().begin();
-           it != l_Entity.get_components().end(); ++it) {
-        if (it->first == Core::Component::PrefabInstance::TYPE_ID) {
-          continue;
+      if (l_Entity.is_alive()) {
+        {
+          HandlePropertiesSection l_Section(l_Entity, true);
+          l_Section.render_footer = nullptr;
+          get_details_widget()->add_section(l_Section);
         }
-        get_details_widget()->add_section(it->second);
+
+        for (auto it = l_Entity.get_components().begin();
+             it != l_Entity.get_components().end(); ++it) {
+          if (it->first ==
+              Core::Component::PrefabInstance::type_id()) {
+            continue;
+          }
+          get_details_widget()->add_section(it->second);
+        }
       }
     }
 
@@ -235,16 +239,21 @@ namespace Low {
         return;
       }
 
-      Util::Yaml::Node l_Root = Util::Yaml::load_file(l_Path.c_str());
+      Util::Serial::Node l_Root =
+          Util::Serial::load_yaml_file(l_Path.c_str());
 
       Low::Core::Scene l_Scene =
           Low::Core::Scene::find_by_name(N(TestScene));
       if (l_Root["loaded_scene"]) {
         Core::Scene l_LocalScene = Core::Scene::find_by_name(
-            LOW_YAML_AS_NAME(l_Root["loaded_scene"]));
+            l_Root["loaded_scene"].as<Util::Name>());
         if (l_LocalScene.is_alive()) {
           l_Scene = l_LocalScene;
         }
+      }
+
+      if (!l_Scene.is_alive()) {
+        l_Scene = Core::Scene::make(N(Default Scene));
       }
 
       l_Scene.load();
@@ -253,23 +262,22 @@ namespace Low {
         for (uint32_t i = 0; i < l_Root["widgets"].size(); ++i) {
           if (l_Root["widgets"][i]["path"]) {
             set_widget_open(
-                LOW_YAML_AS_STRING(l_Root["widgets"][i]["path"]),
+                l_Root["widgets"][i]["path"].as<Util::String>(),
                 l_Root["widgets"][i]["open"].as<bool>());
           }
         }
       }
 
       if (l_Root["theme"]) {
-        theme_apply(LOW_YAML_AS_NAME(l_Root["theme"]));
+        theme_apply(l_Root["theme"].as<Util::Name>());
       } else if (theme_exists(N(dracula))) {
         theme_apply(N(dracula));
       }
 
       if (l_Root["custom"]) {
-        for (auto it = l_Root["custom"].begin();
-             it != l_Root["custom"].end(); ++it) {
-          g_UserSettings[LOW_YAML_AS_NAME(it->first)] =
-              Util::Serialization::deserialize_variant(it->second);
+        for (auto [i_Key, i_Value] : l_Root["custom"]) {
+          g_UserSettings[LOW_NAME(i_Key->c_str())] =
+              Util::Serial::deserialize_variant(i_Value);
         }
       }
 
@@ -300,7 +308,7 @@ namespace Low {
 
     static void
     parse_editor_type_metadata(TypeEditorMetadata &p_Metadata,
-                               Util::Yaml::Node p_Node)
+                               Util::Serial::Node p_Node)
     {
       p_Metadata.manager = false;
       if (p_Node["manager"]) {
@@ -312,18 +320,18 @@ namespace Low {
       p_Metadata.hasIcon = false;
       if (p_Node["icon"]) {
         p_Metadata.hasIcon = true;
-        p_Metadata.iconName = LOW_YAML_AS_NAME(p_Node["icon"]);
+        p_Metadata.iconName = p_Node["icon"].as<Util::Name>();
         p_Metadata.icon = get_icon_by_name(p_Metadata.iconName);
       }
       p_Metadata.managerWidgetPath = "";
       if (p_Node["manager_widget_path"]) {
         p_Metadata.managerWidgetPath =
-            LOW_YAML_AS_STRING(p_Node["manager_widget_path"]);
+            p_Node["manager_widget_path"].as<Util::String>();
       }
     }
 
     static void parse_property_metadata(PropertyMetadata &p_Metadata,
-                                        Util::Yaml::Node p_Node)
+                                        Util::Serial::Node &p_Node)
     {
       if (p_Node["multiline"]) {
         p_Metadata.multiline = p_Node["multiline"].as<bool>();
@@ -331,17 +339,18 @@ namespace Low {
     }
 
     static void parse_type_metadata(TypeMetadata &p_Metadata,
-                                    Util::Yaml::Node &p_Node)
+                                    Util::Serial::Node &p_Node)
     {
-      if (Util::Handle::is_registered_type(p_Metadata.typeId)) {
+      if (Util::Handle::is_registered_type(p_Metadata.identifier)) {
         p_Metadata.hasTypeInfo = true;
         p_Metadata.typeInfo =
             Util::Handle::get_type_info(p_Metadata.typeId);
       } else {
         p_Metadata.hasTypeInfo = false;
         LOW_LOG_WARN << "Could not find type info for type "
-                     << p_Metadata.name << " (" << p_Metadata.typeId
-                     << ")" << LOW_LOG_END;
+                     << p_Metadata.name << " ("
+                     << (Util::String)p_Metadata.identifier << ")"
+                     << LOW_LOG_END;
       }
 
       {
@@ -378,24 +387,22 @@ namespace Low {
 
           p_Metadata.properties.push_back(l_Metadata);
         }
-        for (auto it = p_Node[l_PropertiesName].begin();
-             it != p_Node[l_PropertiesName].end(); ++it) {
+        for (auto [i_PropName, i_Prop] : p_Node[l_PropertiesName]) {
           PropertyMetadata i_Metadata;
-          i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+          i_Metadata.name = LOW_NAME(i_PropName->c_str());
           i_Metadata.friendlyName = prettify_name(i_Metadata.name);
           i_Metadata.editor = false;
-          if (it->second["editor_editable"]) {
-            i_Metadata.editor =
-                it->second["editor_editable"].as<bool>();
+          if (i_Prop["editor_editable"]) {
+            i_Metadata.editor = i_Prop["editor_editable"].as<bool>();
           }
           i_Metadata.scriptingExpose = false;
-          if (it->second["expose_scripting"]) {
+          if (i_Prop["expose_scripting"]) {
             i_Metadata.scriptingExpose =
-                it->second["expose_scripting"].as<bool>();
+                i_Prop["expose_scripting"].as<bool>();
           }
           i_Metadata.enumType = false;
-          if (it->second["enum"]) {
-            i_Metadata.enumType = it->second["enum"].as<bool>();
+          if (i_Prop["enum"]) {
+            i_Metadata.enumType = i_Prop["enum"].as<bool>();
           }
           i_Metadata.propInfo =
               p_Metadata.typeInfo.properties[i_Metadata.name];
@@ -403,44 +410,42 @@ namespace Low {
           {
             i_Metadata.multiline = false;
           }
-          if (it->second["metadata"]) {
-            parse_property_metadata(i_Metadata,
-                                    it->second["metadata"]);
+          if (i_Prop["metadata"]) {
+            parse_property_metadata(i_Metadata, i_Prop["metadata"]);
           }
 
           {
             i_Metadata.hideFlode = false;
 
-            if (it->second["flode_hide"]) {
-              i_Metadata.hideFlode =
-                  it->second["flode_hide"].as<bool>();
+            if (i_Prop["flode_hide"]) {
+              i_Metadata.hideFlode = i_Prop["flode_hide"].as<bool>();
             }
             i_Metadata.hideGetterFlode = i_Metadata.hideFlode;
             i_Metadata.hideSetterFlode = i_Metadata.hideFlode;
 
             if (!i_Metadata.hideFlode) {
-              if (it->second["flode_hide_setter"]) {
+              if (i_Prop["flode_hide_setter"]) {
                 i_Metadata.hideSetterFlode =
-                    it->second["flode_hide_setter"].as<bool>();
+                    i_Prop["flode_hide_setter"].as<bool>();
               }
-              if (it->second["flode_hide_getter"]) {
+              if (i_Prop["flode_hide_getter"]) {
                 i_Metadata.hideGetterFlode =
-                    it->second["flode_hide_getter"].as<bool>();
+                    i_Prop["flode_hide_getter"].as<bool>();
               }
             }
           }
 
           i_Metadata.getterName = "get_";
           i_Metadata.getterName += i_Metadata.name.c_str();
-          if (it->second["getter_name"]) {
+          if (i_Prop["getter_name"]) {
             i_Metadata.getterName =
-                LOW_YAML_AS_STRING(it->second["getter_name"]);
+                i_Prop["getter_name"].as<Util::String>();
           }
           i_Metadata.setterName = "set_";
           i_Metadata.setterName += i_Metadata.name.c_str();
-          if (it->second["setter_name"]) {
+          if (i_Prop["setter_name"]) {
             i_Metadata.setterName =
-                LOW_YAML_AS_STRING(it->second["setter_name"]);
+                i_Prop["setter_name"].as<Util::String>();
           }
 
           i_Metadata.propInfoBase = i_Metadata.propInfo;
@@ -450,24 +455,24 @@ namespace Low {
       }
 
       if (p_Node[l_VirtualPropertiesName]) {
-        for (auto it = p_Node[l_VirtualPropertiesName].begin();
-             it != p_Node[l_VirtualPropertiesName].end(); ++it) {
+        for (auto [i_VirtPropName, i_VirtProp] :
+             p_Node[l_VirtualPropertiesName]) {
           VirtualPropertyMetadata i_Metadata;
-          i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+          i_Metadata.name = LOW_NAME(i_VirtPropName->c_str());
           i_Metadata.friendlyName = prettify_name(i_Metadata.name);
           i_Metadata.editor = false;
-          if (it->second["editor_editable"]) {
+          if (i_VirtProp["editor_editable"]) {
             i_Metadata.editor =
-                it->second["editor_editable"].as<bool>();
+                i_VirtProp["editor_editable"].as<bool>();
           }
           i_Metadata.scriptingExpose = false;
-          if (it->second["expose_scripting"]) {
+          if (i_VirtProp["expose_scripting"]) {
             i_Metadata.scriptingExpose =
-                it->second["expose_scripting"].as<bool>();
+                i_VirtProp["expose_scripting"].as<bool>();
           }
           i_Metadata.enumType = false;
-          if (it->second["enum"]) {
-            i_Metadata.enumType = it->second["enum"].as<bool>();
+          if (i_VirtProp["enum"]) {
+            i_Metadata.enumType = i_VirtProp["enum"].as<bool>();
           }
           i_Metadata.virtPropInfo =
               p_Metadata.typeInfo.virtualProperties[i_Metadata.name];
@@ -484,15 +489,15 @@ namespace Low {
 
           i_Metadata.getterName = "get_";
           i_Metadata.getterName += i_Metadata.name.c_str();
-          if (it->second["getter_name"]) {
+          if (i_VirtProp["getter_name"]) {
             i_Metadata.getterName =
-                LOW_YAML_AS_STRING(it->second["getter_name"]);
+                i_VirtProp["getter_name"].as<Util::String>();
           }
           i_Metadata.setterName = "set_";
           i_Metadata.setterName += i_Metadata.name.c_str();
-          if (it->second["setter_name"]) {
+          if (i_VirtProp["setter_name"]) {
             i_Metadata.setterName =
-                LOW_YAML_AS_STRING(it->second["setter_name"]);
+                i_VirtProp["setter_name"].as<Util::String>();
           }
 
           i_Metadata.propInfoBase = i_Metadata.virtPropInfo;
@@ -505,41 +510,39 @@ namespace Low {
         const char *l_ParametersName = "parameters";
 
         if (p_Node[l_FunctionsName]) {
-          for (auto it = p_Node[l_FunctionsName].begin();
-               it != p_Node[l_FunctionsName].end(); ++it) {
+          for (auto [i_FuncName, i_FuncNode] :
+               p_Node[l_FunctionsName]) {
             FunctionMetadata i_Func;
-            i_Func.name = LOW_YAML_AS_NAME(it->first);
+            i_Func.name = LOW_NAME(i_FuncName->c_str());
             i_Func.friendlyName = prettify_name(i_Func.name);
             i_Func.functionInfo =
                 p_Metadata.typeInfo.functions[i_Func.name];
 
             i_Func.scriptingExpose = false;
-            if (it->second["expose_scripting"]) {
+            if (i_FuncNode["expose_scripting"]) {
               i_Func.scriptingExpose =
-                  it->second["expose_scripting"].as<bool>();
+                  i_FuncNode["expose_scripting"].as<bool>();
             }
 
             i_Func.hideFlode = false;
-            if (it->second["flode_hide"]) {
-              i_Func.hideFlode = it->second["flode_hide"].as<bool>();
+            if (i_FuncNode["flode_hide"]) {
+              i_Func.hideFlode = i_FuncNode["flode_hide"].as<bool>();
             }
 
             i_Func.isStatic = false;
-            if (it->second["static"]) {
-              i_Func.isStatic = it->second["static"].as<bool>();
+            if (i_FuncNode["static"]) {
+              i_Func.isStatic = i_FuncNode["static"].as<bool>();
             }
 
             i_Func.hasReturnValue = i_Func.functionInfo.type !=
                                     Util::RTTI::PropertyType::VOID;
 
-            if (it->second[l_ParametersName]) {
+            if (i_FuncNode[l_ParametersName]) {
               int i = 0;
-              for (auto pit = it->second[l_ParametersName].begin();
-                   pit != it->second[l_ParametersName].end(); ++pit) {
-                Util::Yaml::Node i_ParamNode = *pit;
-
+              for (auto [_, i_ParamNode] :
+                   i_FuncNode[l_ParametersName]) {
                 ParameterMetadata i_Param;
-                i_Param.name = LOW_YAML_AS_NAME(i_ParamNode["name"]);
+                i_Param.name = i_ParamNode["name"].as<Util::Name>();
                 i_Param.friendlyName = prettify_name(i_Param.name);
 
                 if (p_Metadata.hasTypeInfo) {
@@ -559,20 +562,16 @@ namespace Low {
       }
     }
 
-    static inline void parse_metadata(Util::Yaml::Node &p_Node,
-                                      Util::Yaml::Node &p_TypeIdsNode)
+    static inline void parse_metadata(Util::Serial::Node &p_Node)
     {
       Util::String l_ModuleString =
-          LOW_YAML_AS_STRING(p_Node["module"]);
+          p_Node["module"].as<Util::String>();
 
       Util::String l_NamespaceString;
       Util::List<Util::String> l_Namespaces;
       int i = 0;
-      for (auto it = p_Node["namespace"].begin();
-           it != p_Node["namespace"].end(); ++it) {
-        Util::Yaml::Node i_Node = *it;
-
-        Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
+      for (auto [_, i_Node] : p_Node["namespace"]) {
+        Util::String i_Namespace = i_Node.as<Util::String>();
         l_Namespaces.push_back(i_Namespace);
 
         if (i) {
@@ -582,17 +581,20 @@ namespace Low {
         i++;
       }
 
-      for (auto it = p_Node["types"].begin();
-           it != p_Node["types"].end(); ++it) {
-        Util::String i_TypeName = LOW_YAML_AS_STRING(it->first);
-        TypeMetadata i_Metadata;
+      for (auto [i_TypeName, i_TypeNode] : p_Node["types"]) {
+        const Util::TypeIdentifier i_TypeIdentifier(
+            LOW_NAME(l_ModuleString.c_str()),
+            LOW_NAME(i_TypeName->c_str()));
+        TypeMetadata i_Metadata(i_TypeIdentifier);
 
-        i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+        i_Metadata.name = LOW_NAME(i_TypeName->c_str());
+
         i_Metadata.friendlyName = prettify_name(i_Metadata.name);
         i_Metadata.module = l_ModuleString;
-        i_Metadata.typeId =
-            p_TypeIdsNode[l_ModuleString.c_str()][i_TypeName.c_str()]
-                .as<uint16_t>();
+        if (Util::Handle::is_registered_type(i_Metadata.identifier)) {
+          i_Metadata.typeId =
+              Util::Handle::type_id(i_Metadata.identifier);
+        }
 
         i_Metadata.namespaces = l_Namespaces;
         i_Metadata.namespaceString = l_NamespaceString;
@@ -608,32 +610,30 @@ namespace Low {
         }
 
         i_Metadata.scriptingExpose = false;
-        if (it->second["scripting_expose"]) {
+        if (i_TypeNode["scripting_expose"]) {
           i_Metadata.scriptingExpose =
-              it->second["scripting_expose"].as<bool>();
+              i_TypeNode["scripting_expose"].as<bool>();
         }
 
-        parse_type_metadata(i_Metadata, it->second);
+        parse_type_metadata(i_Metadata, i_TypeNode);
 
-        g_TypeMetadata[i_Metadata.typeId] = i_Metadata;
+        g_TypeMetadata.insert(
+            eastl::make_pair(i_Metadata.typeId, i_Metadata));
       }
     }
 
     static inline void
-    parse_enum_metadata(Util::Yaml::Node p_Node,
-                        Util::Yaml::Node p_EnumIdsNode)
+    parse_enum_metadata(Util::Serial::Node &p_Node,
+                        Util::Serial::Node &p_EnumIdsNode)
     {
       Util::String l_ModuleString =
-          LOW_YAML_AS_STRING(p_Node["module"]);
+          p_Node["module"].as<Util::String>();
 
       Util::String l_NamespaceString;
       Util::List<Util::String> l_Namespaces;
       int i = 0;
-      for (auto it = p_Node["namespace"].begin();
-           it != p_Node["namespace"].end(); ++it) {
-        Util::Yaml::Node i_Node = *it;
-
-        Util::String i_Namespace = LOW_YAML_AS_STRING(i_Node);
+      for (auto [_, i_Node] : p_Node["namespace"]) {
+        Util::String i_Namespace = i_Node.as<Util::String>();
         l_Namespaces.push_back(i_Namespace);
 
         if (i) {
@@ -643,15 +643,13 @@ namespace Low {
         i++;
       }
 
-      for (auto it = p_Node["enums"].begin();
-           it != p_Node["enums"].end(); ++it) {
-        Util::String i_EnumName = LOW_YAML_AS_STRING(it->first);
+      for (auto [i_EnumName, i_Enum] : p_Node["enums"]) {
         EnumMetadata i_Metadata;
-        i_Metadata.name = LOW_YAML_AS_NAME(it->first);
+        i_Metadata.name = LOW_NAME(i_EnumName->c_str());
         i_Metadata.module = l_ModuleString;
 
         i_Metadata.enumId =
-            p_EnumIdsNode[l_ModuleString.c_str()][i_EnumName.c_str()]
+            p_EnumIdsNode[l_ModuleString.c_str()][*i_EnumName]
                 .as<uint16_t>();
 
         i_Metadata.namespaces = l_Namespaces;
@@ -667,12 +665,9 @@ namespace Low {
           i_Metadata.fullTypeString += i_Metadata.name.c_str();
         }
 
-        for (auto oit = it->second["options"].begin();
-             oit != it->second["options"].end(); ++oit) {
-          Util::Yaml::Node i_Node = *oit;
-
+        for (auto [_, i_Node] : i_Enum["options"]) {
           EnumEntryMetadata i_Entry;
-          i_Entry.name = LOW_YAML_AS_NAME(i_Node["name"]);
+          i_Entry.name = i_Node["name"].as<Util::Name>();
 
           i_Metadata.options.push_back(i_Entry);
         }
@@ -686,9 +681,7 @@ namespace Low {
       Util::String l_TypeConfigPath =
           Util::get_project().dataPath + "/_internal/type_configs";
 
-      Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
-          (l_TypeConfigPath + "/typeids.yaml").c_str());
-      Util::Yaml::Node l_EnumIdsNode = Util::Yaml::load_file(
+      Util::Serial::Node l_EnumIdsNode = Util::Serial::load_yaml_file(
           (l_TypeConfigPath + "/enumids.yaml").c_str());
 
       Util::List<Util::String> l_FilePaths;
@@ -701,8 +694,9 @@ namespace Low {
           continue;
         }
 
-        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
-        parse_metadata(i_Node, l_TypeIdsNode);
+        Util::Serial::Node i_Node =
+            Util::Serial::load_yaml_file(it->c_str());
+        parse_metadata(i_Node);
       }
       for (auto it = l_FilePaths.begin(); it != l_FilePaths.end();
            ++it) {
@@ -710,7 +704,8 @@ namespace Low {
           continue;
         }
 
-        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
+        Util::Serial::Node i_Node =
+            Util::Serial::load_yaml_file(it->c_str());
         parse_enum_metadata(i_Node, l_EnumIdsNode);
       }
     }
@@ -719,9 +714,6 @@ namespace Low {
     {
       Util::String l_TypeConfigPath =
           Util::get_project().engineDataPath + "/type_configs";
-
-      Util::Yaml::Node l_TypeIdsNode = Util::Yaml::load_file(
-          (l_TypeConfigPath + "/typeids.yaml").c_str());
 
       Util::List<Util::String> l_FilePaths;
       Util::FileIO::list_directory(l_TypeConfigPath.c_str(),
@@ -733,8 +725,9 @@ namespace Low {
           continue;
         }
 
-        Util::Yaml::Node i_Node = Util::Yaml::load_file(it->c_str());
-        parse_metadata(i_Node, l_TypeIdsNode);
+        Util::Serial::Node i_Node =
+            Util::Serial::load_yaml_file(it->c_str());
+        parse_metadata(i_Node);
       }
     }
 
@@ -883,17 +876,15 @@ namespace Low {
 
     static Core::Entity duplicate_entity(Core::Entity p_Entity)
     {
-      Util::Yaml::Node l_Node;
+      Util::Serial::Node l_Node;
       get_selected_entity().serialize(l_Node);
       l_Node.remove("unique_id");
-      Util::String l_NameString = LOW_YAML_AS_STRING(l_Node["name"]);
+      Util::String l_NameString = l_Node["name"].as<Util::String>();
       l_NameString += " Clone";
       l_Node["name"] = l_NameString.c_str();
 
-      Util::Yaml::Node l_ComponentsNode = l_Node["components"];
-      for (auto it = l_ComponentsNode.begin();
-           it != l_ComponentsNode.end(); ++it) {
-        Util::Yaml::Node i_ComponentNode = *it;
+      Util::Serial::Node l_ComponentsNode = l_Node["components"];
+      for (auto [_, i_ComponentNode] : l_ComponentsNode) {
         i_ComponentNode["properties"].remove("unique_id");
       }
 
@@ -906,7 +897,7 @@ namespace Low {
     {
       Util::Handle l_Handle = 0;
 
-      if (p_Handle.get_type() == Core::Entity::TYPE_ID) {
+      if (p_Handle.get_type() == Core::Entity::type_id()) {
         l_Handle = duplicate_entity(p_Handle.get_id());
       }
 
@@ -985,7 +976,7 @@ namespace Low {
 
     void save_user_settings()
     {
-      Util::Yaml::Node l_Config;
+      Util::Serial::Node l_Config;
       l_Config["loaded_scene"] =
           Core::Scene::get_loaded_scene().get_name().c_str();
 
@@ -993,7 +984,7 @@ namespace Low {
           get_editor_widgets();
 
       for (auto it = l_Widgets.begin(); it != l_Widgets.end(); ++it) {
-        Util::Yaml::Node i_Widget;
+        Util::Serial::Node i_Widget;
         i_Widget["path"] = it->first.c_str();
         i_Widget["open"] = it->second.open;
 
@@ -1001,13 +992,13 @@ namespace Low {
       }
       l_Config["theme"] = theme_get_current_name().c_str();
 
-      Util::Yaml::Node l_CustomSettings;
+      Util::Serial::Node l_CustomSettings;
 
       for (auto it = g_UserSettings.begin();
            it != g_UserSettings.end(); ++it) {
         const char *i_Name = it->first.c_str();
-        Util::Yaml::Node i_Node;
-        Util::Serialization::serialize_variant(i_Node, it->second);
+        Util::Serial::Node i_Node;
+        Util::Serial::serialize_variant(i_Node, it->second);
         l_CustomSettings[i_Name] = i_Node;
       }
 
@@ -1015,7 +1006,7 @@ namespace Low {
 
       Util::String l_Path =
           Util::get_project().rootPath + "/user.yaml";
-      Util::Yaml::write_file(l_Path.c_str(), l_Config);
+      Util::Serial::write_yaml_file(l_Path.c_str(), l_Config);
     }
 
     void set_focused_widget(Widget *p_Widget)

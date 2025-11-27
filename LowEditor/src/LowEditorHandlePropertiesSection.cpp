@@ -46,10 +46,10 @@ namespace Low {
 
       bool l_IsPrefabInstance =
           l_Entity.has_component(
-              Core::Component::PrefabInstance::TYPE_ID) &&
+              Core::Component::PrefabInstance::type_id()) &&
           Core::Component::PrefabInstance(
               l_Entity.get_component(
-                  Core::Component::PrefabInstance::TYPE_ID))
+                  Core::Component::PrefabInstance::type_id()))
               .get_prefab()
               .is_alive();
 
@@ -182,7 +182,7 @@ namespace Low {
         bool l_SkipFooter = false;
 
         ImGui::PushID(m_Handle.get_id());
-        if (m_Handle.get_type() == Renderer::Material::TYPE_ID) {
+        if (m_Handle.get_type() == Core::Entity::type_id()) {
           l_SkipFooter = l_SkipFooter || render_entity(p_Delta);
         } else {
           l_SkipFooter = l_SkipFooter || render_default(p_Delta);
@@ -208,10 +208,10 @@ namespace Low {
 
     HandlePropertiesSection::HandlePropertiesSection(
         const Util::Handle p_Handle, bool p_DefaultOpen)
-        : m_Handle(p_Handle), m_DefaultOpen(p_DefaultOpen)
+        : m_Handle(p_Handle), m_DefaultOpen(p_DefaultOpen),
+          m_Metadata(get_type_metadata(p_Handle.get_type())),
+          m_Open(p_DefaultOpen)
     {
-      m_Metadata = get_type_metadata(p_Handle.get_type());
-      m_Open = p_DefaultOpen;
     }
   } // namespace Editor
 } // namespace Low

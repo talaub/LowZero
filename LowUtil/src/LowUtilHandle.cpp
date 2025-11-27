@@ -14,9 +14,14 @@ namespace Low {
   namespace Util {
     Map<uint16_t, RTTI::EnumInfo> g_EnumInfos;
     List<uint16_t> g_EnumIds;
+    Set<u64> g_RegisteredTypes;
     Map<uint16_t, RTTI::TypeInfo> g_TypeInfos;
     List<uint16_t> g_ComponentTypes;
     Map<UniqueId, Handle> g_UniqueIdRegistry;
+    Map<u64, u16> g_TypeIdentifierToRuntimeId;
+    Map<u16, u64> g_RuntimeIdToIdentifier;
+
+    u16 g_TypeIdCounter = 0;
 
     const u64 Handle::DEAD = 0ull;
 
@@ -187,23 +192,61 @@ namespace Low {
       return Handle::is_registered_type(get_type());
     }
 
-    void Handle::register_type_info(uint16_t p_TypeId,
-                                    RTTI::TypeInfo &p_TypeInfo)
+    u16 Handle::type_id(const TypeIdentifier p_Identifier)
     {
-      LOW_ASSERT(
-          g_TypeInfos.find(p_TypeId) == g_TypeInfos.end(),
-          "Type info for this type id has already been registered");
+      LOW_ASSERT(g_TypeIdentifierToRuntimeId.find(p_Identifier) !=
+                     g_TypeIdentifierToRuntimeId.end(),
+                 "Unknown type identifier.");
+      return g_TypeIdentifierToRuntimeId[p_Identifier];
+    }
 
-      g_TypeInfos[p_TypeId] = p_TypeInfo;
+    TypeIdentifier Handle::identifier(const u16 p_Id)
+    {
+      LOW_ASSERT(g_RuntimeIdToIdentifier.find(p_Id) !=
+                     g_RuntimeIdToIdentifier.end(),
+                 "Unknown type identifier.");
+      return g_RuntimeIdToIdentifier[p_Id];
+    }
+
+    u16 Handle::register_type_info(const TypeIdentifier p_Identifier,
+                                   RTTI::TypeInfo &p_TypeInfo)
+    {
+      LOW_ASSERT(g_RegisteredTypes.find((u64)p_Identifier) ==
+                     g_RegisteredTypes.end(),
+                 "Type already registered.");
+
+      const u16 l_TypeId = ++g_TypeIdCounter;
+
+      /*
+      LOW_LOG_DEBUG << "Registering type: " << (String)p_Identifier
+                    << " with IDENTIFIER " << (u64)p_Identifier
+                    << " TO " << l_TypeId << LOW_LOG_END;
+                    */
+
+      p_TypeInfo.typeId = l_TypeId;
+
+      g_TypeInfos[l_TypeId] = p_TypeInfo;
 
       if (p_TypeInfo.component) {
-        g_ComponentTypes.push_back(p_TypeId);
+        g_ComponentTypes.push_back(l_TypeId);
       }
+
+      g_RegisteredTypes.insert((u64)p_Identifier);
+      g_TypeIdentifierToRuntimeId[(u64)p_Identifier] = l_TypeId;
+      g_RuntimeIdToIdentifier[l_TypeId] = (u64)p_Identifier;
+
+      return l_TypeId;
     }
 
     bool Handle::is_registered_type(uint16_t p_TypeId)
     {
       return g_TypeInfos.find(p_TypeId) != g_TypeInfos.end();
+    }
+
+    bool Handle::is_registered_type(const TypeIdentifier p_Identifier)
+    {
+      return g_RegisteredTypes.find(p_Identifier) !=
+             g_RegisteredTypes.end();
     }
 
     RTTI::TypeInfo &Handle::get_type_info(uint16_t p_TypeId)

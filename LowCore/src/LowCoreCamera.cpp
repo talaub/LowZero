@@ -23,7 +23,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t Camera::TYPE_ID = 44;
+      u16 Camera::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          Camera::IDENTIFIER(LOW_NAME(1181529166),
+                             LOW_NAME(1018227507));
       uint32_t Camera::ms_Capacity = 0u;
       uint32_t Camera::ms_PageSize = 0u;
       Low::Util::SharedMutex Camera::ms_LivingMutex;
@@ -60,7 +63,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = Camera::TYPE_ID;
+        l_Handle.m_Data.m_Type = Camera::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -147,6 +150,9 @@ namespace Low {
 
       void Camera::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(N(LowCore),
+                                                          N(Camera));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -173,7 +179,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(Camera);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &Camera::is_alive;
         l_TypeInfo.destroy = &Camera::destroy;
@@ -257,7 +263,7 @@ namespace Low {
               offsetof(Camera::Data, render_view);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::RenderView::TYPE_ID;
+              Low::Renderer::RenderView::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Camera l_Handle = p_Handle.get_id();
@@ -290,7 +296,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Camera::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::Entity::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Camera l_Handle = p_Handle.get_id();
@@ -351,7 +357,8 @@ namespace Low {
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: activate
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void Camera::cleanup()
@@ -386,7 +393,7 @@ namespace Low {
 
         Camera l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = Camera::TYPE_ID;
+        l_Handle.m_Data.m_Type = Camera::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -411,14 +418,14 @@ namespace Low {
         Camera l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = Camera::TYPE_ID;
+        l_Handle.m_Data.m_Type = Camera::ms_TypeId;
 
         return l_Handle;
       }
 
       bool Camera::is_alive() const
       {
-        if (m_Data.m_Type != Camera::TYPE_ID) {
+        if (m_Data.m_Type != Camera::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -430,7 +437,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == Camera::TYPE_ID &&
+        return m_Data.m_Type == Camera::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -473,7 +480,7 @@ namespace Low {
         return l_Camera.duplicate(l_Entity);
       }
 
-      void Camera::serialize(Low::Util::Yaml::Node &p_Node) const
+      void Camera::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
@@ -482,8 +489,7 @@ namespace Low {
         if (get_render_view().is_alive()) {
           get_render_view().serialize(p_Node["render_view"]);
         }
-        p_Node["_unique_id"] =
-            Low::Util::hash_to_string(get_unique_id()).c_str();
+        p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -491,14 +497,14 @@ namespace Low {
       }
 
       void Camera::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Serial::Node &p_Node)
       {
         Camera l_Camera = p_Handle.get_id();
         l_Camera.serialize(p_Node);
       }
 
       Low::Util::Handle
-      Camera::deserialize(Low::Util::Yaml::Node &p_Node,
+      Camera::deserialize(Low::Util::Serial::Node &p_Node,
                           Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -506,7 +512,7 @@ namespace Low {
           l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
         } else if (p_Node["_unique_id"]) {
           l_HandleUniqueId = Low::Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+              p_Node["_unique_id"].as<Low::Util::String>());
         }
 
         Camera l_Handle =
@@ -644,14 +650,14 @@ namespace Low {
         {
           Low::Core::Entity l_Entity = get_entity();
           if (l_Entity.has_component(
-                  Low::Core::Component::PrefabInstance::TYPE_ID)) {
+                  Low::Core::Component::PrefabInstance::type_id())) {
             Low::Core::Component::PrefabInstance l_Instance =
                 l_Entity.get_component(
-                    Low::Core::Component::PrefabInstance::TYPE_ID);
+                    Low::Core::Component::PrefabInstance::type_id());
             Low::Core::Prefab l_Prefab = l_Instance.get_prefab();
             if (l_Prefab.is_alive()) {
               l_Instance.override(
-                  TYPE_ID, N(fov),
+                  ms_TypeId, N(fov),
                   !l_Prefab.compare_property(*this, N(fov)));
             }
           }

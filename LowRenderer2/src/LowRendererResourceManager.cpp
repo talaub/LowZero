@@ -1,5 +1,6 @@
 #include "LowRendererResourceManager.h"
 
+#include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererEditorImageStaging.h"
 #include "LowRendererMaterialState.h"
@@ -393,26 +394,20 @@ namespace Low {
         Util::JobManager::default_pool().enqueue([l_FontId]() {
           Font l_Font = l_FontId;
 
-          Util::Yaml::Node l_Sidecar = Util::Yaml::load_file(
+          Util::Serial::Node l_Sidecar = Util::Serial::load_yaml_file(
               l_Font.get_resource().get_sidecar_path().c_str());
 
-          Util::Yaml::Node l_Glyphs = l_Sidecar["glyphs"];
+          Util::Serial::Node l_Glyphs = l_Sidecar["glyphs"];
 
-          for (auto it = l_Glyphs.begin(); it != l_Glyphs.end();
-               ++it) {
-            Util::Yaml::Node i_Node = *it;
+          for (auto [k, v] : l_Glyphs) {
+            Util::Serial::Node i_Node = v;
             Glyph i_Glyph;
             char i_Codepoint = i_Node["codepoint"].as<u8>();
-            i_Glyph.uvMin = Util::Serialization::deserialize_vector2(
-                i_Node["uv_min"]);
-            i_Glyph.uvMax = Util::Serialization::deserialize_vector2(
-                i_Node["uv_max"]);
+            i_Glyph.uvMin = i_Node["uv_min"].as<Math::Vector2>();
+            i_Glyph.uvMax = i_Node["uv_max"].as<Math::Vector2>();
 
-            i_Glyph.bearing =
-                Util::Serialization::deserialize_vector2(
-                    i_Node["bearing"]);
-            i_Glyph.size = Util::Serialization::deserialize_vector2(
-                i_Node["size"]);
+            i_Glyph.bearing = i_Node["bearing"].as<Math::Vector2>();
+            i_Glyph.size = i_Node["size"].as<Math::Vector2>();
 
             i_Glyph.advance = i_Node["advance"].as<float>();
 
@@ -563,19 +558,18 @@ namespace Low {
 
           u32 l_SubmeshCount = 0u;
 
-          Util::Yaml::Node l_SidecarNode = Util::Yaml::load_file(
-              l_Mesh.get_resource().get_sidecar_path().c_str());
+          Util::Serial::Node l_SidecarNode =
+              Util::Serial::load_yaml_file(
+                  l_Mesh.get_resource().get_sidecar_path().c_str());
 
-          Util::UnorderedMap<Util::Name, Util::Yaml::Node>
+          Util::UnorderedMap<Util::Name, Util::Serial::Node>
               l_SubmeshNodes;
 
-          Math::AABB l_AABB = Util::Serialization::deserialize_aabb(
-              l_SidecarNode["aabb"]);
+          Math::AABB l_AABB = l_SidecarNode["aabb"].as<Math::AABB>();
           l_MeshGeometry.set_aabb(l_AABB);
           if (l_SidecarNode["bounding_sphere"]) {
             Math::Sphere l_Sphere =
-                Util::Serialization::deserialize_sphere(
-                    l_SidecarNode["bounding_sphere"]);
+                l_SidecarNode["bounding_sphere"].as<Math::Sphere>();
             l_MeshGeometry.set_bounding_sphere(l_Sphere);
           }
 
@@ -596,13 +590,12 @@ namespace Low {
                   i_SubmeshGeometry.get_name().c_str();
 
               Math::AABB i_AABB =
-                  Util::Serialization::deserialize_aabb(
-                      l_SidecarNode["submeshes"][i_NameBuffer]
-                                   ["aabb"]);
+                  l_SidecarNode["submeshes"][i_NameBuffer]["aabb"]
+                      .as<Math::AABB>();
               Math::Sphere i_BoundingSphere =
-                  Util::Serialization::deserialize_sphere(
-                      l_SidecarNode["submeshes"][i_NameBuffer]
-                                   ["bounding_sphere"]);
+                  l_SidecarNode["submeshes"][i_NameBuffer]
+                               ["bounding_sphere"]
+                                   .as<Math::Sphere>();
               i_SubmeshGeometry.set_aabb(i_AABB);
               i_SubmeshGeometry.set_bounding_sphere(i_BoundingSphere);
 
@@ -1452,7 +1445,7 @@ namespace Low {
       }
 
       bool parse_mesh_resource_config(Util::String p_Path,
-                                      Util::Yaml::Node p_Node,
+                                      Util::Serial::Node &p_Node,
                                       MeshResourceConfig &p_Config)
       {
         LOWR_ASSERT_RETURN(p_Node["version"],
@@ -1462,22 +1455,21 @@ namespace Low {
         if (l_Version == 1) {
           LOWR_ASSERT_RETURN(p_Node["name"],
                              "Could not find mesh name");
-          p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
+          p_Config.name = p_Node["name"].as<Util::Name>();
 
           LOWR_ASSERT_RETURN(p_Node["mesh_id"],
                              "Could not find mesh id");
-          p_Config.meshId = Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["mesh_id"]));
+          p_Config.meshId = p_Node["mesh_id"].as<Util::U64Id>().val;
 
           LOWR_ASSERT_RETURN(p_Node["asset_hash"],
                              "Could not find asset hash");
-          p_Config.assetHash = Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+          p_Config.assetHash =
+              p_Node["asset_hash"].as<Util::U64Id>().val;
 
           LOWR_ASSERT_RETURN(p_Node["source_file"],
                              "Could not find source file");
           p_Config.sourceFile =
-              LOW_YAML_AS_STRING(p_Node["source_file"]);
+              p_Node["source_file"].as<Util::String>();
 
           LOWR_ASSERT_RETURN(p_Node["submesh_count"],
                              "Could not find submesh count");
@@ -1498,7 +1490,7 @@ namespace Low {
 
       bool
       parse_texture_resource_config(Util::String p_Path,
-                                    Util::Yaml::Node p_Node,
+                                    Util::Serial::Node &p_Node,
                                     TextureResourceConfig &p_Config)
       {
         LOWR_ASSERT_RETURN(p_Node["version"],
@@ -1508,22 +1500,22 @@ namespace Low {
         if (l_Version == 1) {
           LOWR_ASSERT_RETURN(p_Node["name"],
                              "Could not find texture name");
-          p_Config.name = LOW_YAML_AS_NAME(p_Node["name"]);
+          p_Config.name = p_Node["name"].as<Util::Name>();
 
           LOWR_ASSERT_RETURN(p_Node["texture_id"],
                              "Could not find texture id");
-          p_Config.textureId = Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["texture_id"]));
+          p_Config.textureId =
+              p_Node["texture_id"].as<Util::U64Id>().val;
 
           LOWR_ASSERT_RETURN(p_Node["asset_hash"],
                              "Could not find asset hash");
-          p_Config.assetHash = Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["asset_hash"]));
+          p_Config.assetHash =
+              p_Node["asset_hash"].as<Util::U64Id>().val;
 
           LOWR_ASSERT_RETURN(p_Node["source_file"],
                              "Could not find source file");
           p_Config.sourceFile =
-              LOW_YAML_AS_STRING(p_Node["source_file"]);
+              p_Node["source_file"].as<Util::String>();
 
           p_Config.sidecarPath =
               Util::get_project().assetCachePath + "/" +

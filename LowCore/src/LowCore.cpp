@@ -28,6 +28,7 @@
 
 #include "LowUtil.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilString.h"
 #include "LowUtilLogger.h"
 #include "LowUtilGlobals.h"
@@ -92,7 +93,7 @@ namespace Low {
                 return Util::find_handle_by_unique_id(l_UniqueId);
               },
               l_UpdateTime);
-      g_WatchHandles[Prefab::TYPE_ID] =
+      g_WatchHandles[Prefab::type_id()] =
           g_FilesystemWatchers.prefabAssetDirectory;
     }
 
@@ -153,8 +154,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(i_Path.c_str());
+          Util::Serial::Node i_Node =
+              Util::Serial::load_yaml_file(i_Path.c_str());
           Prefab::deserialize(i_Node, 0);
         } else if (Util::FileIO::is_directory(i_Path.c_str())) {
           load_prefabs_from_directory(i_Path);
@@ -182,8 +183,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(i_Path.c_str());
+          Util::Serial::Node i_Node =
+              Util::Serial::load_yaml_file(i_Path.c_str());
           Region::deserialize(i_Node, 0);
         }
       }
@@ -201,8 +202,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(i_Path.c_str());
+          Util::Serial::Node i_Node =
+              Util::Serial::load_yaml_file(i_Path.c_str());
           Scene::deserialize(i_Node, 0);
         }
       }
@@ -225,8 +226,8 @@ namespace Low {
 
       for (Util::String &i_Path : l_FilePaths) {
         if (Util::StringHelper::ends_with(i_Path, l_Ending)) {
-          Util::Yaml::Node i_Node =
-              Util::Yaml::load_file(i_Path.c_str());
+          Util::Serial::Node i_Node =
+              Util::Serial::load_yaml_file(i_Path.c_str());
           GameMode::deserialize(i_Node, 0);
         }
       }
@@ -323,7 +324,7 @@ namespace Low {
     struct PlaymodeStoredData
     {
       Scene scene;
-      Util::List<Util::Yaml::Node> regions;
+      Util::List<Util::Serial::Node> regions;
       Math::Vector3 cameraPosition;
       Math::Vector3 cameraDirection;
     };

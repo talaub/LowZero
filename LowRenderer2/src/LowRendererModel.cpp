@@ -22,7 +22,9 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Model::TYPE_ID = 88;
+    u16 Model::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Model::IDENTIFIER(LOW_NAME(509652687), LOW_NAME(374627805));
     uint32_t Model::ms_Capacity = 0u;
     uint32_t Model::ms_PageSize = 0u;
     Low::Util::SharedMutex Model::ms_LivingMutex;
@@ -55,7 +57,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Model::TYPE_ID;
+      l_Handle.m_Data.m_Type = Model::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -148,6 +150,9 @@ namespace Low {
 
     void Model::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(Model));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -174,7 +179,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Model);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Model::is_alive;
       l_TypeInfo.destroy = &Model::destroy;
@@ -201,7 +206,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Model::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::ModelResource::TYPE_ID;
+            Low::Renderer::ModelResource::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -234,7 +239,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod0);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -264,7 +269,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod1);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -294,7 +299,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod2);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -324,7 +329,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod3);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::TYPE_ID;
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -404,7 +409,8 @@ namespace Low {
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: name
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Model::cleanup()
@@ -439,7 +445,7 @@ namespace Low {
 
       Model l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Model::TYPE_ID;
+      l_Handle.m_Data.m_Type = Model::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -464,14 +470,14 @@ namespace Low {
       Model l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Model::TYPE_ID;
+      l_Handle.m_Data.m_Type = Model::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Model::is_alive() const
     {
-      if (m_Data.m_Type != Model::TYPE_ID) {
+      if (m_Data.m_Type != Model::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -483,7 +489,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Model::TYPE_ID &&
+      return m_Data.m_Type == Model::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -557,15 +563,14 @@ namespace Low {
       return l_Model.duplicate(p_Name);
     }
 
-    void Model::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Model::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
       if (get_resource().is_alive()) {
         get_resource().serialize(p_Node["resource"]);
       }
-      p_Node["_unique_id"] =
-          Low::Util::hash_to_string(get_unique_id()).c_str();
+      p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -590,14 +595,14 @@ namespace Low {
     }
 
     void Model::serialize(Low::Util::Handle p_Handle,
-                          Low::Util::Yaml::Node &p_Node)
+                          Low::Util::Serial::Node &p_Node)
     {
       Model l_Model = p_Handle.get_id();
       l_Model.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Model::deserialize(Low::Util::Yaml::Node &p_Node,
+    Model::deserialize(Low::Util::Serial::Node &p_Node,
                        Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -605,7 +610,7 @@ namespace Low {
         l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
       } else if (p_Node["_unique_id"]) {
         l_HandleUniqueId = Low::Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+            p_Node["_unique_id"].as<Low::Util::String>());
       }
 
       Model l_Handle = Model::make(N(Model), l_HandleUniqueId);
@@ -621,26 +626,26 @@ namespace Low {
             p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
 
       if (p_Node["lod0"]) {
         l_Handle.set_lod0(ResourceManager::find_asset<Mesh>(
-            LOW_SERIALIZATION_GET_HASH(p_Node["lod0"])));
+            p_Node["lod0"].as<Util::U64Id>().val));
       }
       if (p_Node["lod1"]) {
         l_Handle.set_lod1(ResourceManager::find_asset<Mesh>(
-            LOW_SERIALIZATION_GET_HASH(p_Node["lod1"])));
+            p_Node["lod1"].as<Util::U64Id>().val));
       }
       if (p_Node["lod2"]) {
-        l_Handle.set_lod2(ResourceManager::find_asset<Mesh>(
-            LOW_SERIALIZATION_GET_HASH(p_Node["lod2"])));
+        l_Handle.set_lod3(ResourceManager::find_asset<Mesh>(
+            p_Node["lod2"].as<Util::U64Id>().val));
       }
       if (p_Node["lod3"]) {
         l_Handle.set_lod3(ResourceManager::find_asset<Mesh>(
-            LOW_SERIALIZATION_GET_HASH(p_Node["lod3"])));
+            p_Node["lod3"].as<Util::U64Id>().val));
       }
 
       ResourceManager::register_asset(l_Handle.get_unique_id(),

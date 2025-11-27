@@ -46,17 +46,17 @@ namespace Flode {
     }
 
     void
-    GreaterEqualsNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    GreaterEqualsNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void GreaterEqualsNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void GreaterEqualsNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
-            LOW_YAML_AS_STRING(p_Node["pintype"]));
+            p_Node["pintype"].as<Low::Util::String>());
       }
     }
 
@@ -125,17 +125,17 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void LessEqualsNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void LessEqualsNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void LessEqualsNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void LessEqualsNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
-            LOW_YAML_AS_STRING(p_Node["pintype"]));
+            p_Node["pintype"].as<Low::Util::String>());
       }
     }
 
@@ -203,17 +203,17 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void LessNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void LessNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void LessNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void LessNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
-            LOW_YAML_AS_STRING(p_Node["pintype"]));
+            p_Node["pintype"].as<Low::Util::String>());
       }
     }
 
@@ -282,17 +282,17 @@ namespace Flode {
       p_Builder.append(")");
     }
 
-    void GreaterNode::serialize(Low::Util::Yaml::Node &p_Node) const
+    void GreaterNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       p_Node["pintype"] =
           Flode::pin_type_to_string(m_PinType).c_str();
     }
 
-    void GreaterNode::deserialize(Low::Util::Yaml::Node &p_Node)
+    void GreaterNode::deserialize(Low::Util::Serial::Node &p_Node)
     {
       if (p_Node["pintype"]) {
         m_PinType = Flode::string_to_pin_type(
-            LOW_YAML_AS_STRING(p_Node["pintype"]));
+            p_Node["pintype"].as<Low::Util::String>());
       }
     }
 

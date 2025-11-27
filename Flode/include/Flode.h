@@ -184,11 +184,11 @@ namespace Flode {
       return false;
     }
 
-    virtual void serialize(Low::Util::Yaml::Node& p_Node) const
+    virtual void serialize(Low::Util::Serial::Node& p_Node) const
     {
     }
 
-    virtual void deserialize(Low::Util::Yaml::Node &p_Node)
+    virtual void deserialize(Low::Util::Serial::Node &p_Node)
     {
     }
 
@@ -290,15 +290,15 @@ namespace Flode {
     void delete_node(NodeEd::NodeId p_NodeId);
 
     void serialize_node(const Node *p_Node,
-                        Low::Util::Yaml::Node &p_Yaml,
+                        Low::Util::Serial::Node &p_Serial,
                         bool p_StoreNodePositions = true) const;
 
-    u64 deserialize_node(Low::Util::Yaml::Node &p_Yaml, Node **p_Node,
+    u64 deserialize_node(Low::Util::Serial::Node &p_Serial, Node **p_Node,
                          u64 p_IdStartValue, bool p_UseIds = true);
 
-    void serialize(Low::Util::Yaml::Node &p_Node,
+    void serialize(Low::Util::Serial::Node &p_Node,
                    bool p_StoreNodePositions = true) const;
-    void deserialize(Low::Util::Yaml::Node &p_Node);
+    void deserialize(Low::Util::Serial::Node &p_Node);
 
     Node *create_node(Low::Util::Name p_TypeName,
                       bool p_SetupPins = true);

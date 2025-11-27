@@ -24,7 +24,9 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Entity::TYPE_ID = 18;
+    u16 Entity::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Entity::IDENTIFIER(LOW_NAME(1181529166), LOW_NAME(159662430));
     uint32_t Entity::ms_Capacity = 0u;
     uint32_t Entity::ms_PageSize = 0u;
     Low::Util::SharedMutex Entity::ms_LivingMutex;
@@ -57,7 +59,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Entity::TYPE_ID;
+      l_Handle.m_Data.m_Type = Entity::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -160,6 +162,9 @@ namespace Low {
 
     void Entity::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(N(LowCore),
+                                                        N(Entity));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -186,7 +191,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Entity);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Entity::is_alive;
       l_TypeInfo.destroy = &Entity::destroy;
@@ -242,7 +247,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Entity::Data, region);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Region::TYPE_ID;
+        l_PropertyInfo.handleType = Region::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();
@@ -327,7 +332,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Entity::TYPE_ID;
+        l_FunctionInfo.handleType = Entity::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -340,7 +345,7 @@ namespace Low {
           l_ParameterInfo.name = N(p_Region);
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
-          l_ParameterInfo.handleType = Region::TYPE_ID;
+          l_ParameterInfo.handleType = Region::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -420,7 +425,7 @@ namespace Low {
         l_FunctionInfo.name = N(get_transform);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_FunctionInfo.handleType =
-            Low::Core::Component::Transform::TYPE_ID;
+            Low::Core::Component::Transform::type_id();
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_transform
       }
@@ -477,7 +482,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(deserialize_hierarchy);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Entity::TYPE_ID;
+        l_FunctionInfo.handleType = Entity::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Node);
@@ -497,7 +502,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: deserialize_hierarchy
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Entity::cleanup()
@@ -532,7 +538,7 @@ namespace Low {
 
       Entity l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Entity::TYPE_ID;
+      l_Handle.m_Data.m_Type = Entity::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -557,14 +563,14 @@ namespace Low {
       Entity l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Entity::TYPE_ID;
+      l_Handle.m_Data.m_Type = Entity::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Entity::is_alive() const
     {
-      if (m_Data.m_Type != Entity::TYPE_ID) {
+      if (m_Data.m_Type != Entity::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -576,7 +582,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Entity::TYPE_ID &&
+      return m_Data.m_Type == Entity::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -659,7 +665,7 @@ namespace Low {
       return l_Entity.duplicate(p_Name);
     }
 
-    void Entity::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Entity::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -670,14 +676,14 @@ namespace Low {
     }
 
     void Entity::serialize(Low::Util::Handle p_Handle,
-                           Low::Util::Yaml::Node &p_Node)
+                           Low::Util::Serial::Node &p_Node)
     {
       Entity l_Entity = p_Handle.get_id();
       l_Entity.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Entity::deserialize(Low::Util::Yaml::Node &p_Node,
+    Entity::deserialize(Low::Util::Serial::Node &p_Node,
                         Low::Util::Handle p_Creator)
     {
 
@@ -688,13 +694,12 @@ namespace Low {
       if (!l_Region.is_alive()) {
         if (p_Node["region"]) {
           l_Region = Util::find_handle_by_unique_id(
-                         p_Node["region"].as<uint64_t>())
+                         p_Node["region"].as<Util::U64Id>())
                          .get_id();
         }
       }
 
-      Entity l_Entity =
-          Entity::make(LOW_YAML_AS_NAME(p_Node["name"]));
+      Entity l_Entity = Entity::make(p_Node["name"].as<Util::Name>());
 
       p_Node["_handle"] = l_Entity.get_id();
 
@@ -708,14 +713,19 @@ namespace Low {
 
       l_Region.add_entity(l_Entity);
 
-      Util::Yaml::Node &l_ComponentsNode = p_Node["components"];
+      Util::Serial::Node &l_ComponentsNode = p_Node["components"];
 
-      for (auto it = l_ComponentsNode.begin();
-           it != l_ComponentsNode.end(); ++it) {
-        Util::Yaml::Node &i_ComponentNode = *it;
+      for (auto [k, v] : l_ComponentsNode) {
+        Util::Serial::Node &i_ComponentNode = v;
+        const Util::TypeIdentifier i_ComponentTypeIdentifier =
+            Util::TypeIdentifier::from_string(
+                i_ComponentNode["type"].as<Util::String>());
+
+        const u16 i_ComponentTypeId =
+            Util::Handle::type_id(i_ComponentTypeIdentifier);
+
         Util::RTTI::TypeInfo &i_TypeInfo =
-            Util::Handle::get_type_info(
-                i_ComponentNode["type"].as<uint16_t>());
+            Util::Handle::get_type_info(i_ComponentTypeId);
 
         i_ComponentNode["_handle"] =
             i_TypeInfo
@@ -724,10 +734,10 @@ namespace Low {
       }
 
       if (l_Entity.has_component(
-              Component::PrefabInstance::TYPE_ID)) {
+              Component::PrefabInstance::type_id())) {
         Component::PrefabInstance l_PrefabInstance =
             l_Entity.get_component(
-                Component::PrefabInstance::TYPE_ID);
+                Component::PrefabInstance::type_id());
 
         l_PrefabInstance.update_from_prefab();
       }
@@ -974,11 +984,11 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_transform
 
       _LOW_ASSERT(is_alive());
-      return get_component(Component::Transform::TYPE_ID);
+      return get_component(Component::Transform::type_id());
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_transform
     }
 
-    void Entity::serialize(Low::Util::Yaml::Node &p_Node,
+    void Entity::serialize(Low::Util::Serial::Node &p_Node,
                            bool p_AddHandles) const
     {
       Low::Util::HandleLock<Entity> l_Lock(get_id());
@@ -993,20 +1003,21 @@ namespace Low {
       }
       p_Node["region"] = 0;
       if (get_region().is_alive()) {
-        p_Node["region"] = get_region().get_unique_id();
+        p_Node["region"] = (Util::U64Id)get_region().get_unique_id();
       }
 
       for (auto it = get_components().begin();
            it != get_components().end(); ++it) {
-        Util::Yaml::Node i_Node;
-        i_Node["type"] = it->first;
+        Util::Serial::Node i_Node;
+        i_Node["type"] =
+            (Util::String)Util::Handle::identifier(it->first);
         if (p_AddHandles) {
           i_Node["handle"] = it->second.get_id();
         }
 
         Util::RTTI::TypeInfo &i_TypeInfo =
             Util::Handle::get_type_info(it->first);
-        Util::Yaml::Node i_PropertiesNode;
+        Util::Serial::Node i_PropertiesNode;
         i_TypeInfo.serialize(it->second, i_PropertiesNode);
         i_Node["properties"] = i_PropertiesNode;
         p_Node["components"].push_back(i_Node);
@@ -1014,7 +1025,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize
     }
 
-    void Entity::serialize_hierarchy(Util::Yaml::Node &p_Node,
+    void Entity::serialize_hierarchy(Util::Serial::Node &p_Node,
                                      bool p_AddHandles) const
     {
       Low::Util::HandleLock<Entity> l_Lock(get_id());
@@ -1028,7 +1039,7 @@ namespace Low {
            it != l_Transform.get_children().end(); ++it) {
         Component::Transform i_Child = *it;
 
-        Util::Yaml::Node i_Node;
+        Util::Serial::Node i_Node;
         i_Child.get_entity().serialize_hierarchy(i_Node,
                                                  p_AddHandles);
 
@@ -1037,7 +1048,7 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_serialize_hierarchy
     }
 
-    Entity Entity::deserialize_hierarchy(Util::Yaml::Node &p_Node,
+    Entity Entity::deserialize_hierarchy(Util::Serial::Node &p_Node,
                                          Low::Util::Handle p_Creator)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_deserialize_hierarchy

@@ -10,6 +10,7 @@
 #include <EASTL/queue.h>
 #include <EASTL/span.h>
 #include <EASTL/priority_queue.h>
+#include <EASTL/string_view.h>
 
 #include <EASTL/string.h>
 
@@ -51,6 +52,7 @@ namespace Low {
     template <typename T> using Span = eastl::span<T>;
 
     typedef eastl::string String;
+    typedef eastl::string_view StringView;
 
     template <typename T> using Future = std::future<T>;
     template <typename T> using Function = std::function<T>;

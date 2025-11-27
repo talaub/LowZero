@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t FontResource::TYPE_ID = 78;
+    u16 FontResource::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        FontResource::IDENTIFIER(LOW_NAME(509652687),
+                                 LOW_NAME(620976562));
     uint32_t FontResource::ms_Capacity = 0u;
     uint32_t FontResource::ms_PageSize = 0u;
     Low::Util::SharedMutex FontResource::ms_LivingMutex;
@@ -50,7 +53,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = FontResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = FontResource::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -115,6 +118,9 @@ namespace Low {
 
     void FontResource::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(FontResource));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -141,7 +147,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(FontResource);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &FontResource::is_alive;
       l_TypeInfo.destroy = &FontResource::destroy;
@@ -364,7 +370,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = FontResource::TYPE_ID;
+        l_FunctionInfo.handleType = FontResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Path);
@@ -381,7 +387,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make_from_config);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = FontResource::TYPE_ID;
+        l_FunctionInfo.handleType = FontResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Config);
@@ -393,7 +399,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_from_config
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void FontResource::cleanup()
@@ -428,7 +435,7 @@ namespace Low {
 
       FontResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = FontResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = FontResource::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -453,14 +460,14 @@ namespace Low {
       FontResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = FontResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = FontResource::ms_TypeId;
 
       return l_Handle;
     }
 
     bool FontResource::is_alive() const
     {
-      if (m_Data.m_Type != FontResource::TYPE_ID) {
+      if (m_Data.m_Type != FontResource::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -472,7 +479,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == FontResource::TYPE_ID &&
+      return m_Data.m_Type == FontResource::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -540,7 +547,8 @@ namespace Low {
       return l_FontResource.duplicate(p_Name);
     }
 
-    void FontResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    void
+    FontResource::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -550,14 +558,14 @@ namespace Low {
     }
 
     void FontResource::serialize(Low::Util::Handle p_Handle,
-                                 Low::Util::Yaml::Node &p_Node)
+                                 Low::Util::Serial::Node &p_Node)
     {
       FontResource l_FontResource = p_Handle.get_id();
       l_FontResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    FontResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    FontResource::deserialize(Low::Util::Serial::Node &p_Node,
                               Low::Util::Handle p_Creator)
     {
 

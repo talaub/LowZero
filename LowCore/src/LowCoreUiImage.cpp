@@ -23,7 +23,10 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-        const uint16_t Image::TYPE_ID = 40;
+        u16 Image::ms_TypeId = 0;
+        const Low::Util::TypeIdentifier
+            Image::IDENTIFIER(LOW_NAME(1181529166),
+                              LOW_NAME(83635035));
         uint32_t Image::ms_Capacity = 0u;
         uint32_t Image::ms_PageSize = 0u;
         Low::Util::SharedMutex Image::ms_LivingMutex;
@@ -60,7 +63,7 @@ namespace Low {
           l_Handle.m_Data.m_Index = l_Index;
           l_Handle.m_Data.m_Generation =
               ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-          l_Handle.m_Data.m_Type = Image::TYPE_ID;
+          l_Handle.m_Data.m_Type = Image::ms_TypeId;
 
           l_PageLock.unlock();
 
@@ -144,6 +147,9 @@ namespace Low {
 
         void Image::initialize()
         {
+          const Low::Util::TypeIdentifier l_IdentifierNames(
+              N(LowCore), N(Image));
+
           LOCK_PAGES_WRITE(l_PagesLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -170,7 +176,7 @@ namespace Low {
 
           Low::Util::RTTI::TypeInfo l_TypeInfo;
           l_TypeInfo.name = N(Image);
-          l_TypeInfo.typeId = TYPE_ID;
+          l_TypeInfo.typeId = ms_TypeId;
           l_TypeInfo.get_capacity = &get_capacity;
           l_TypeInfo.is_alive = &Image::is_alive;
           l_TypeInfo.destroy = &Image::destroy;
@@ -198,7 +204,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Renderer::Texture::TYPE_ID;
+                Low::Renderer::Texture::type_id();
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
@@ -233,7 +239,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Renderer::Material::TYPE_ID;
+                Low::Renderer::Material::type_id();
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
@@ -265,7 +271,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Core::UI::Element::TYPE_ID;
+                Low::Core::UI::Element::type_id();
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Image l_Handle = p_Handle.get_id();
@@ -321,7 +327,8 @@ namespace Low {
                 l_PropertyInfo;
             // End property: unique_id
           }
-          Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+          ms_TypeId = Low::Util::Handle::register_type_info(
+              IDENTIFIER, l_TypeInfo);
         }
 
         void Image::cleanup()
@@ -356,7 +363,7 @@ namespace Low {
 
           Image l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
-          l_Handle.m_Data.m_Type = Image::TYPE_ID;
+          l_Handle.m_Data.m_Type = Image::ms_TypeId;
 
           u32 l_PageIndex = 0;
           u32 l_SlotIndex = 0;
@@ -382,14 +389,14 @@ namespace Low {
           Image l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
           l_Handle.m_Data.m_Generation = 0;
-          l_Handle.m_Data.m_Type = Image::TYPE_ID;
+          l_Handle.m_Data.m_Type = Image::ms_TypeId;
 
           return l_Handle;
         }
 
         bool Image::is_alive() const
         {
-          if (m_Data.m_Type != Image::TYPE_ID) {
+          if (m_Data.m_Type != Image::ms_TypeId) {
             return false;
           }
           u32 l_PageIndex = 0;
@@ -401,7 +408,7 @@ namespace Low {
           Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
           Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
               l_Page->mutex);
-          return m_Data.m_Type == Image::TYPE_ID &&
+          return m_Data.m_Type == Image::ms_TypeId &&
                  l_Page->slots[l_SlotIndex].m_Occupied &&
                  l_Page->slots[l_SlotIndex].m_Generation ==
                      m_Data.m_Generation;
@@ -446,12 +453,11 @@ namespace Low {
           return l_Image.duplicate(l_Element);
         }
 
-        void Image::serialize(Low::Util::Yaml::Node &p_Node) const
+        void Image::serialize(Low::Util::Serial::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
-          p_Node["_unique_id"] =
-              Low::Util::hash_to_string(get_unique_id()).c_str();
+          p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -459,14 +465,14 @@ namespace Low {
         }
 
         void Image::serialize(Low::Util::Handle p_Handle,
-                              Low::Util::Yaml::Node &p_Node)
+                              Low::Util::Serial::Node &p_Node)
         {
           Image l_Image = p_Handle.get_id();
           l_Image.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Image::deserialize(Low::Util::Yaml::Node &p_Node,
+        Image::deserialize(Low::Util::Serial::Node &p_Node,
                            Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -474,7 +480,7 @@ namespace Low {
             l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
           } else if (p_Node["_unique_id"]) {
             l_HandleUniqueId = Low::Util::string_to_hash(
-                LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+                p_Node["_unique_id"].as<Low::Util::String>());
           }
 
           Image l_Handle =

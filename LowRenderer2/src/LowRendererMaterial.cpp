@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowUtilVariant.h"
 
 #define SET_GPU_PROPERTY(type)                                       \
   LOCK_HANDLE(get_gpu());                                            \
@@ -37,7 +38,10 @@ namespace Low {
     Util::Mutex Material::ms_PendingTextureBindingsMutex;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t Material::TYPE_ID = 59;
+    u16 Material::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        Material::IDENTIFIER(LOW_NAME(509652687),
+                             LOW_NAME(2244483011));
     uint32_t Material::ms_Capacity = 0u;
     uint32_t Material::ms_PageSize = 0u;
     Low::Util::SharedMutex Material::ms_LivingMutex;
@@ -71,7 +75,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = Material::TYPE_ID;
+      l_Handle.m_Data.m_Type = Material::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -169,6 +173,9 @@ namespace Low {
 
     void Material::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(Material));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -195,7 +202,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(Material);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &Material::is_alive;
       l_TypeInfo.destroy = &Material::destroy;
@@ -253,7 +260,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = MaterialType::TYPE_ID;
+        l_PropertyInfo.handleType = MaterialType::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
@@ -282,7 +289,7 @@ namespace Low {
             offsetof(Material::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::MaterialResource::TYPE_ID;
+            Low::Renderer::MaterialResource::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
@@ -316,7 +323,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Material::Data, gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::GpuMaterial::TYPE_ID;
+            Low::Renderer::GpuMaterial::type_id();
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
@@ -454,7 +461,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Material::TYPE_ID;
+        l_FunctionInfo.handleType = Material::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -468,7 +475,7 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::MaterialType::TYPE_ID;
+              Low::Renderer::MaterialType::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -479,7 +486,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make_gpu_ready);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Material::TYPE_ID;
+        l_FunctionInfo.handleType = Material::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -493,7 +500,7 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::MaterialType::TYPE_ID;
+              Low::Renderer::MaterialType::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -646,7 +653,7 @@ namespace Low {
           l_ParameterInfo.type =
               Low::Util::RTTI::PropertyType::HANDLE;
           l_ParameterInfo.handleType =
-              Low::Renderer::Texture::TYPE_ID;
+              Low::Renderer::Texture::type_id();
           l_FunctionInfo.parameters.push_back(l_ParameterInfo);
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -737,7 +744,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(get_property_texture);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = Low::Renderer::Texture::TYPE_ID;
+        l_FunctionInfo.handleType = Low::Renderer::Texture::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Name);
@@ -748,7 +755,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_property_texture
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void Material::cleanup()
@@ -783,7 +791,7 @@ namespace Low {
 
       Material l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = Material::TYPE_ID;
+      l_Handle.m_Data.m_Type = Material::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -808,14 +816,14 @@ namespace Low {
       Material l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = Material::TYPE_ID;
+      l_Handle.m_Data.m_Type = Material::ms_TypeId;
 
       return l_Handle;
     }
 
     bool Material::is_alive() const
     {
-      if (m_Data.m_Type != Material::TYPE_ID) {
+      if (m_Data.m_Type != Material::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -827,7 +835,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == Material::TYPE_ID &&
+      return m_Data.m_Type == Material::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -897,12 +905,11 @@ namespace Low {
       return l_Material.duplicate(p_Name);
     }
 
-    void Material::serialize(Low::Util::Yaml::Node &p_Node) const
+    void Material::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
-      p_Node["_unique_id"] =
-          Low::Util::hash_to_string(get_unique_id()).c_str();
+      p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -913,26 +920,23 @@ namespace Low {
       Util::List<Util::Name> l_InputNames;
       get_material_type().fill_input_names(l_InputNames);
 
-      Util::Yaml::Node l_PropertiesNode = p_Node["properties"];
+      Util::Serial::Node l_PropertiesNode = p_Node["properties"];
 
       for (u32 i = 0; i < l_InputNames.size(); ++i) {
         Util::Name i_Name = l_InputNames[i];
         const char *i_NameC = i_Name.c_str();
-        Util::Yaml::Node i_Node = l_PropertiesNode[i_NameC];
+        Util::Serial::Node i_Node = l_PropertiesNode[i_NameC];
         MaterialTypeInputType i_Type =
             get_material_type().get_input_type(i_Name);
         switch (i_Type) {
         case MaterialTypeInputType::VECTOR4:
-          Low::Util::Serialization::serialize(
-              i_Node, get_property_vector4(i_Name));
+          i_Node = get_property_vector4(i_Name);
           break;
         case MaterialTypeInputType::VECTOR3:
-          Low::Util::Serialization::serialize(
-              i_Node, get_property_vector3(i_Name));
+          i_Node = get_property_vector3(i_Name);
           break;
         case MaterialTypeInputType::VECTOR2:
-          Low::Util::Serialization::serialize(
-              i_Node, get_property_vector2(i_Name));
+          i_Node = get_property_vector2(i_Name);
           break;
         case MaterialTypeInputType::FLOAT:
           i_Node = get_property_float(i_Name);
@@ -942,9 +946,8 @@ namespace Low {
           i_Node = 0;
           if (i_Texture.is_alive() &&
               i_Texture.get_resource().is_alive()) {
-            i_Node = Util::hash_to_string(
-                         i_Texture.get_resource().get_texture_id())
-                         .c_str();
+            i_Node = Util::U64Id{
+                i_Texture.get_resource().get_texture_id()};
           }
           break;
         }
@@ -957,14 +960,14 @@ namespace Low {
     }
 
     void Material::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Serial::Node &p_Node)
     {
       Material l_Material = p_Handle.get_id();
       l_Material.serialize(p_Node);
     }
 
     Low::Util::Handle
-    Material::deserialize(Low::Util::Yaml::Node &p_Node,
+    Material::deserialize(Low::Util::Serial::Node &p_Node,
                           Low::Util::Handle p_Creator)
     {
       Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -972,7 +975,7 @@ namespace Low {
         l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
       } else if (p_Node["_unique_id"]) {
         l_HandleUniqueId = Low::Util::string_to_hash(
-            LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+            p_Node["_unique_id"].as<Low::Util::String>());
       }
 
       Material l_Handle =
@@ -985,14 +988,14 @@ namespace Low {
             p_Node["unique_id"].as<Low::Util::UniqueId>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
 
       if (p_Node["material_type"]) {
         l_Handle.set_material_type(MaterialType::find_by_name(
-            LOW_YAML_AS_NAME(p_Node["material_type"])));
+            p_Node["material_type"].as<Util::Name>()));
 
         _LOW_ASSERT(l_Handle.get_material_type().is_alive());
       }
@@ -1001,30 +1004,27 @@ namespace Low {
         Util::List<Util::Name> l_InputNames;
         l_Handle.get_material_type().fill_input_names(l_InputNames);
 
-        Util::Yaml::Node l_PropertiesNode = p_Node["properties"];
+        Util::Serial::Node l_PropertiesNode = p_Node["properties"];
 
         for (u32 i = 0; i < l_InputNames.size(); ++i) {
           Util::Name i_Name = l_InputNames[i];
           const char *i_NameC = i_Name.c_str();
-          Util::Yaml::Node i_Node = l_PropertiesNode[i_NameC];
+          Util::Serial::Node i_Node = l_PropertiesNode[i_NameC];
           MaterialTypeInputType i_Type =
               l_Handle.get_material_type().get_input_type(i_Name);
           switch (i_Type) {
           case MaterialTypeInputType::VECTOR4: {
-            Math::Vector4 i_Val =
-                Low::Util::Serialization::deserialize_vector4(i_Node);
+            Math::Vector4 i_Val = i_Node.as<Math::Vector4>();
             l_Handle.set_property_vector4(i_Name, i_Val);
             break;
           }
           case MaterialTypeInputType::VECTOR3: {
-            Math::Vector3 i_Val =
-                Low::Util::Serialization::deserialize_vector3(i_Node);
+            Math::Vector3 i_Val = i_Node.as<Math::Vector3>();
             l_Handle.set_property_vector3(i_Name, i_Val);
             break;
           }
           case MaterialTypeInputType::VECTOR2: {
-            Math::Vector2 i_Val =
-                Low::Util::Serialization::deserialize_vector2(i_Node);
+            Math::Vector2 i_Val = i_Node.as<Math::Vector2>();
             l_Handle.set_property_vector2(i_Name, i_Val);
             break;
           }
@@ -1033,8 +1033,7 @@ namespace Low {
             break;
           }
           case MaterialTypeInputType::TEXTURE: {
-            const u64 l_AssetId =
-                Util::string_to_hash(LOW_YAML_AS_STRING(i_Node));
+            const u64 l_AssetId = i_Node.as<Util::U64Id>().val;
             Texture i_Texture =
                 ResourceManager::find_asset<Texture>(l_AssetId);
 

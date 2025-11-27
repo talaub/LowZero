@@ -21,7 +21,10 @@ namespace Low {
 
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-    const uint16_t MaterialResource::TYPE_ID = 86;
+    u16 MaterialResource::ms_TypeId = 0;
+    const Low::Util::TypeIdentifier
+        MaterialResource::IDENTIFIER(LOW_NAME(509652687),
+                                     LOW_NAME(2534070255));
     uint32_t MaterialResource::ms_Capacity = 0u;
     uint32_t MaterialResource::ms_PageSize = 0u;
     Low::Util::SharedMutex MaterialResource::ms_LivingMutex;
@@ -51,7 +54,7 @@ namespace Low {
       l_Handle.m_Data.m_Index = l_Index;
       l_Handle.m_Data.m_Generation =
           ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-      l_Handle.m_Data.m_Type = MaterialResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = MaterialResource::ms_TypeId;
 
       l_PageLock.unlock();
 
@@ -116,6 +119,9 @@ namespace Low {
 
     void MaterialResource::initialize()
     {
+      const Low::Util::TypeIdentifier l_IdentifierNames(
+          N(LowRenderer2), N(MaterialResource));
+
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -143,7 +149,7 @@ namespace Low {
 
       Low::Util::RTTI::TypeInfo l_TypeInfo;
       l_TypeInfo.name = N(MaterialResource);
-      l_TypeInfo.typeId = TYPE_ID;
+      l_TypeInfo.typeId = ms_TypeId;
       l_TypeInfo.get_capacity = &get_capacity;
       l_TypeInfo.is_alive = &MaterialResource::is_alive;
       l_TypeInfo.destroy = &MaterialResource::destroy;
@@ -230,7 +236,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(make);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = MaterialResource::TYPE_ID;
+        l_FunctionInfo.handleType = MaterialResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Path);
@@ -247,7 +253,7 @@ namespace Low {
         Low::Util::RTTI::FunctionInfo l_FunctionInfo;
         l_FunctionInfo.name = N(find_by_path);
         l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_FunctionInfo.handleType = MaterialResource::TYPE_ID;
+        l_FunctionInfo.handleType = MaterialResource::type_id();
         {
           Low::Util::RTTI::ParameterInfo l_ParameterInfo;
           l_ParameterInfo.name = N(p_Path);
@@ -259,7 +265,8 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: find_by_path
       }
-      Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+      ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                        l_TypeInfo);
     }
 
     void MaterialResource::cleanup()
@@ -296,7 +303,7 @@ namespace Low {
 
       MaterialResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
-      l_Handle.m_Data.m_Type = MaterialResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = MaterialResource::ms_TypeId;
 
       u32 l_PageIndex = 0;
       u32 l_SlotIndex = 0;
@@ -322,14 +329,14 @@ namespace Low {
       MaterialResource l_Handle;
       l_Handle.m_Data.m_Index = p_Index;
       l_Handle.m_Data.m_Generation = 0;
-      l_Handle.m_Data.m_Type = MaterialResource::TYPE_ID;
+      l_Handle.m_Data.m_Type = MaterialResource::ms_TypeId;
 
       return l_Handle;
     }
 
     bool MaterialResource::is_alive() const
     {
-      if (m_Data.m_Type != MaterialResource::TYPE_ID) {
+      if (m_Data.m_Type != MaterialResource::ms_TypeId) {
         return false;
       }
       u32 l_PageIndex = 0;
@@ -341,7 +348,7 @@ namespace Low {
       Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
       Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
           l_Page->mutex);
-      return m_Data.m_Type == MaterialResource::TYPE_ID &&
+      return m_Data.m_Type == MaterialResource::ms_TypeId &&
              l_Page->slots[l_SlotIndex].m_Occupied &&
              l_Page->slots[l_SlotIndex].m_Generation ==
                  m_Data.m_Generation;
@@ -408,7 +415,7 @@ namespace Low {
     }
 
     void
-    MaterialResource::serialize(Low::Util::Yaml::Node &p_Node) const
+    MaterialResource::serialize(Low::Util::Serial::Node &p_Node) const
     {
       _LOW_ASSERT(is_alive());
 
@@ -421,24 +428,24 @@ namespace Low {
     }
 
     void MaterialResource::serialize(Low::Util::Handle p_Handle,
-                                     Low::Util::Yaml::Node &p_Node)
+                                     Low::Util::Serial::Node &p_Node)
     {
       MaterialResource l_MaterialResource = p_Handle.get_id();
       l_MaterialResource.serialize(p_Node);
     }
 
     Low::Util::Handle
-    MaterialResource::deserialize(Low::Util::Yaml::Node &p_Node,
+    MaterialResource::deserialize(Low::Util::Serial::Node &p_Node,
                                   Low::Util::Handle p_Creator)
     {
       MaterialResource l_Handle =
           MaterialResource::make(N(MaterialResource));
 
       if (p_Node["path"]) {
-        l_Handle.set_path(LOW_YAML_AS_STRING(p_Node["path"]));
+        l_Handle.set_path(p_Node["path"].as<Low::Util::String>());
       }
       if (p_Node["name"]) {
-        l_Handle.set_name(LOW_YAML_AS_NAME(p_Node["name"]));
+        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER

@@ -5,6 +5,7 @@
 #include "LowUtilHashing.h"
 #include "LowUtilLogger.h"
 #include "LowUtil.h"
+#include "LowUtilSerialization.h"
 #include "LowUtilYaml.h"
 #include "SDL_mouse.h"
 
@@ -96,12 +97,13 @@ static void save_material(Low::Renderer::Material p_Material)
 
   Renderer::MaterialResource l_Resource = p_Material.get_resource();
 
-  Util::Yaml::Node l_Node;
+  Util::Serial::Node l_Node;
   p_Material.serialize(l_Node);
 
   l_Node["version"] = 2;
 
-  Util::Yaml::write_file(l_Resource.get_path().c_str(), l_Node);
+  Util::Serial::write_yaml_file(l_Resource.get_path().c_str(),
+                                l_Node);
 }
 
 static void save_material(Low::Renderer::Material p_Material,

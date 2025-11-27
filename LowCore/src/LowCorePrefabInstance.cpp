@@ -26,7 +26,10 @@ namespace Low {
 
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      const uint16_t PrefabInstance::TYPE_ID = 34;
+      u16 PrefabInstance::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          PrefabInstance::IDENTIFIER(LOW_NAME(1181529166),
+                                     LOW_NAME(3059545723));
       uint32_t PrefabInstance::ms_Capacity = 0u;
       uint32_t PrefabInstance::ms_PageSize = 0u;
       Low::Util::SharedMutex PrefabInstance::ms_LivingMutex;
@@ -67,7 +70,7 @@ namespace Low {
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = PrefabInstance::TYPE_ID;
+        l_Handle.m_Data.m_Type = PrefabInstance::ms_TypeId;
 
         l_PageLock.unlock();
 
@@ -151,6 +154,9 @@ namespace Low {
 
       void PrefabInstance::initialize()
       {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowCore), N(PrefabInstance));
+
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -178,7 +184,7 @@ namespace Low {
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
         l_TypeInfo.name = N(PrefabInstance);
-        l_TypeInfo.typeId = TYPE_ID;
+        l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
         l_TypeInfo.is_alive = &PrefabInstance::is_alive;
         l_TypeInfo.destroy = &PrefabInstance::destroy;
@@ -204,7 +210,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PrefabInstance::Data, prefab);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Prefab::TYPE_ID;
+          l_PropertyInfo.handleType = Prefab::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
@@ -275,7 +281,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(PrefabInstance::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Entity::TYPE_ID;
+          l_PropertyInfo.handleType = Low::Core::Entity::type_id();
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             PrefabInstance l_Handle = p_Handle.get_id();
@@ -391,7 +397,8 @@ namespace Low {
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: override
         }
-        Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
       }
 
       void PrefabInstance::cleanup()
@@ -428,7 +435,7 @@ namespace Low {
 
         PrefabInstance l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = PrefabInstance::TYPE_ID;
+        l_Handle.m_Data.m_Type = PrefabInstance::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -454,14 +461,14 @@ namespace Low {
         PrefabInstance l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = PrefabInstance::TYPE_ID;
+        l_Handle.m_Data.m_Type = PrefabInstance::ms_TypeId;
 
         return l_Handle;
       }
 
       bool PrefabInstance::is_alive() const
       {
-        if (m_Data.m_Type != PrefabInstance::TYPE_ID) {
+        if (m_Data.m_Type != PrefabInstance::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -473,7 +480,7 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == PrefabInstance::TYPE_ID &&
+        return m_Data.m_Type == PrefabInstance::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
@@ -519,40 +526,42 @@ namespace Low {
       }
 
       void
-      PrefabInstance::serialize(Low::Util::Yaml::Node &p_Node) const
+      PrefabInstance::serialize(Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
-        p_Node["_unique_id"] =
-            Low::Util::hash_to_string(get_unique_id()).c_str();
+        p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
         p_Node["prefab"] = 0;
         if (get_prefab().is_alive()) {
-          p_Node["prefab"] = get_prefab().get_unique_id();
+          p_Node["prefab"] =
+              (Util::U64Id)get_prefab().get_unique_id();
         }
 
         for (auto cit = get_overrides().begin();
              cit != get_overrides().end(); ++cit) {
+          Util::TypeIdentifier i_OverrideCompIdentifier =
+              Util::Handle::identifier(cit->first);
           for (auto pit = cit->second.begin();
                pit != cit->second.end(); ++pit) {
-            p_Node["overrides"][LOW_TO_STRING(cit->first).c_str()]
-                .push_back(pit->c_str());
+            p_Node["overrides"]
+                  [(Util::String)i_OverrideCompIdentifier]
+                      .push_back(pit->c_str());
           }
         }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
       void PrefabInstance::serialize(Low::Util::Handle p_Handle,
-                                     Low::Util::Yaml::Node &p_Node)
+                                     Low::Util::Serial::Node &p_Node)
       {
         PrefabInstance l_PrefabInstance = p_Handle.get_id();
         l_PrefabInstance.serialize(p_Node);
       }
 
       Low::Util::Handle
-      PrefabInstance::deserialize(Low::Util::Yaml::Node &p_Node,
+      PrefabInstance::deserialize(Low::Util::Serial::Node &p_Node,
                                   Low::Util::Handle p_Creator)
       {
         Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -560,7 +569,7 @@ namespace Low {
           l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
         } else if (p_Node["_unique_id"]) {
           l_HandleUniqueId = Low::Util::string_to_hash(
-              LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+              p_Node["_unique_id"].as<Low::Util::String>());
         }
 
         PrefabInstance l_Handle = PrefabInstance::make(
@@ -577,16 +586,17 @@ namespace Low {
 
         if (p_Node["prefab"]) {
           l_Handle.set_prefab(Util::find_handle_by_unique_id(
-                                  p_Node["prefab"].as<uint64_t>())
+                                  p_Node["prefab"].as<Util::U64Id>())
                                   .get_id());
         }
 
         if (p_Node["overrides"]) {
-          for (auto cit = p_Node["overrides"].begin();
-               cit != p_Node["overrides"].end(); ++cit) {
-            for (uint32_t i = 0; i < cit->second.size(); ++i) {
-              l_Handle.get_overrides()[cit->first.as<uint16_t>()]
-                  .push_back(LOW_YAML_AS_NAME(cit->second[i]));
+          for (auto [i_CKey, i_CValue] : p_Node["overrides"]) {
+            const u16 i_TypeId = Util::Handle::type_id(
+                Util::TypeIdentifier::from_string(*i_CKey));
+            for (u32 i = 0; i < i_CValue.size(); ++i) {
+              l_Handle.get_overrides()[i_TypeId].push_back(
+                  i_CValue[i].as<Util::Name>());
             }
           }
         }
@@ -822,7 +832,7 @@ namespace Low {
         Prefab l_Prefab = get_prefab();
 
         if (!l_Prefab.is_alive()) {
-          l_Entity.remove_component(TYPE_ID);
+          l_Entity.remove_component(type_id());
           return;
         }
 
@@ -830,10 +840,10 @@ namespace Low {
 
         for (auto it = l_Entity.get_components().begin();
              it != l_Entity.get_components().end(); ++it) {
-          if (it->first == TYPE_ID) {
+          if (it->first == type_id()) {
             continue;
           }
-          if (it->first == Transform::TYPE_ID &&
+          if (it->first == Transform::type_id() &&
               !l_Parent.is_alive()) {
             continue;
           }

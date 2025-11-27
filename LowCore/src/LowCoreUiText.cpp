@@ -23,7 +23,10 @@ namespace Low {
 
         // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-        const uint16_t Text::TYPE_ID = 42;
+        u16 Text::ms_TypeId = 0;
+        const Low::Util::TypeIdentifier
+            Text::IDENTIFIER(LOW_NAME(1181529166),
+                             LOW_NAME(2612594937));
         uint32_t Text::ms_Capacity = 0u;
         uint32_t Text::ms_PageSize = 0u;
         Low::Util::SharedMutex Text::ms_LivingMutex;
@@ -59,7 +62,7 @@ namespace Low {
           l_Handle.m_Data.m_Index = l_Index;
           l_Handle.m_Data.m_Generation =
               ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-          l_Handle.m_Data.m_Type = Text::TYPE_ID;
+          l_Handle.m_Data.m_Type = Text::ms_TypeId;
 
           l_PageLock.unlock();
 
@@ -144,6 +147,9 @@ namespace Low {
 
         void Text::initialize()
         {
+          const Low::Util::TypeIdentifier l_IdentifierNames(
+              N(LowCore), N(Text));
+
           LOCK_PAGES_WRITE(l_PagesLock);
           // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
 
@@ -170,7 +176,7 @@ namespace Low {
 
           Low::Util::RTTI::TypeInfo l_TypeInfo;
           l_TypeInfo.name = N(Text);
-          l_TypeInfo.typeId = TYPE_ID;
+          l_TypeInfo.typeId = ms_TypeId;
           l_TypeInfo.get_capacity = &get_capacity;
           l_TypeInfo.is_alive = &Text::is_alive;
           l_TypeInfo.destroy = &Text::destroy;
@@ -228,7 +234,8 @@ namespace Low {
             l_PropertyInfo.dataOffset = offsetof(Text::Data, font);
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
-            l_PropertyInfo.handleType = Low::Renderer::Font::TYPE_ID;
+            l_PropertyInfo.handleType =
+                Low::Renderer::Font::type_id();
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -361,7 +368,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Core::UI::Element::TYPE_ID;
+                Low::Core::UI::Element::type_id();
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -417,7 +424,8 @@ namespace Low {
                 l_PropertyInfo;
             // End property: unique_id
           }
-          Low::Util::Handle::register_type_info(TYPE_ID, l_TypeInfo);
+          ms_TypeId = Low::Util::Handle::register_type_info(
+              IDENTIFIER, l_TypeInfo);
         }
 
         void Text::cleanup()
@@ -452,7 +460,7 @@ namespace Low {
 
           Text l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
-          l_Handle.m_Data.m_Type = Text::TYPE_ID;
+          l_Handle.m_Data.m_Type = Text::ms_TypeId;
 
           u32 l_PageIndex = 0;
           u32 l_SlotIndex = 0;
@@ -478,14 +486,14 @@ namespace Low {
           Text l_Handle;
           l_Handle.m_Data.m_Index = p_Index;
           l_Handle.m_Data.m_Generation = 0;
-          l_Handle.m_Data.m_Type = Text::TYPE_ID;
+          l_Handle.m_Data.m_Type = Text::ms_TypeId;
 
           return l_Handle;
         }
 
         bool Text::is_alive() const
         {
-          if (m_Data.m_Type != Text::TYPE_ID) {
+          if (m_Data.m_Type != Text::ms_TypeId) {
             return false;
           }
           u32 l_PageIndex = 0;
@@ -497,7 +505,7 @@ namespace Low {
           Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
           Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
               l_Page->mutex);
-          return m_Data.m_Type == Text::TYPE_ID &&
+          return m_Data.m_Type == Text::ms_TypeId &&
                  l_Page->slots[l_SlotIndex].m_Occupied &&
                  l_Page->slots[l_SlotIndex].m_Generation ==
                      m_Data.m_Generation;
@@ -544,7 +552,7 @@ namespace Low {
           return l_Text.duplicate(l_Element);
         }
 
-        void Text::serialize(Low::Util::Yaml::Node &p_Node) const
+        void Text::serialize(Low::Util::Serial::Node &p_Node) const
         {
           _LOW_ASSERT(is_alive());
 
@@ -552,11 +560,9 @@ namespace Low {
           if (get_font().is_alive()) {
             get_font().serialize(p_Node["font"]);
           }
-          Low::Util::Serialization::serialize(p_Node["color"],
-                                              get_color());
+          p_Node["color"] = get_color();
           p_Node["size"] = get_size();
-          p_Node["_unique_id"] =
-              Low::Util::hash_to_string(get_unique_id()).c_str();
+          p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
 
@@ -564,14 +570,14 @@ namespace Low {
         }
 
         void Text::serialize(Low::Util::Handle p_Handle,
-                             Low::Util::Yaml::Node &p_Node)
+                             Low::Util::Serial::Node &p_Node)
         {
           Text l_Text = p_Handle.get_id();
           l_Text.serialize(p_Node);
         }
 
         Low::Util::Handle
-        Text::deserialize(Low::Util::Yaml::Node &p_Node,
+        Text::deserialize(Low::Util::Serial::Node &p_Node,
                           Low::Util::Handle p_Creator)
         {
           Low::Util::UniqueId l_HandleUniqueId = 0ull;
@@ -579,14 +585,14 @@ namespace Low {
             l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
           } else if (p_Node["_unique_id"]) {
             l_HandleUniqueId = Low::Util::string_to_hash(
-                LOW_YAML_AS_STRING(p_Node["_unique_id"]));
+                p_Node["_unique_id"].as<Low::Util::String>());
           }
 
           Text l_Handle =
               Text::make(p_Creator.get_id(), l_HandleUniqueId);
 
           if (p_Node["text"]) {
-            l_Handle.set_text(LOW_YAML_AS_STRING(p_Node["text"]));
+            l_Handle.set_text(p_Node["text"].as<Low::Util::String>());
           }
           if (p_Node["font"]) {
             l_Handle.set_font(Low::Renderer::Font::deserialize(
@@ -595,8 +601,7 @@ namespace Low {
           }
           if (p_Node["color"]) {
             l_Handle.set_color(
-                Low::Util::Serialization::deserialize_vector4(
-                    p_Node["color"]));
+                p_Node["color"].as<Low::Math::Color>());
           }
           if (p_Node["size"]) {
             l_Handle.set_size(p_Node["size"].as<float>());
