@@ -68,9 +68,6 @@ namespace Low {
       if (p_Entry.module == "lowed") {
         return "EDITOR";
       }
-      if (p_Entry.module == "misteda") {
-        return "GAME";
-      }
       if (p_Entry.module == "scripting") {
         return "SCRIPT";
       }
@@ -78,7 +75,7 @@ namespace Low {
         return "FLODE";
       }
 
-      return "Low";
+      return "GAME";
     }
 
     static void render_log_entry(const Util::Log::LogEntry &p_Entry,
@@ -169,24 +166,19 @@ namespace Low {
 
     static bool apply_filter(const Util::Log::LogEntry &p_Entry)
     {
-      if (p_Entry.module == "lowed") {
-        return true;
-      }
-      if (p_Entry.module == "misteda") {
-        return true;
-      }
-      if (p_Entry.module == "scripting") {
-        return true;
-      }
-      if (p_Entry.module == "flode") {
-        return true;
+      if (p_Entry.module == "lowrenderer" ||
+          p_Entry.module == "lowrenderer2") {
+        return false;
       }
       if (p_Entry.module == "lowcore" &&
-          p_Entry.level != Util::Log::LogLevel::DEBUG) {
-        return true;
+          p_Entry.level == Util::Log::LogLevel::DEBUG) {
+        return false;
+      }
+      if (p_Entry.module == "lowutil") {
+        return false;
       }
 
-      return false;
+      return true;
     }
 
     void log_callback(const Util::Log::LogEntry &p_Entry)

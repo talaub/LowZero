@@ -7,6 +7,7 @@
 
 #include "IconsFontAwesome5.h"
 #include "IconsLucide.h"
+#include "LowUtilHandle.h"
 
 namespace Flode {
   namespace SyntaxNodes {
@@ -86,7 +87,8 @@ namespace Flode {
       graph->clean_unconnected_links();
     }
 
-    void FunctionNode::serialize(Low::Util::Serial::Node &p_Node) const
+    void
+    FunctionNode::serialize(Low::Util::Serial::Node &p_Node) const
     {
       p_Node["name"] = m_Name.c_str();
       p_Node["editable"] = m_Editable;
@@ -103,7 +105,11 @@ namespace Flode {
         i_ParamNode["name"] = it->name;
         i_ParamNode["type"] = pin_type_to_string(it->type);
         i_ParamNode["pin_id"] = it->pinId.Get();
-        i_ParamNode["type_id"] = it->typeId;
+        if (Low::Util::Handle::is_registered_type(it->typeId)) {
+          i_ParamNode["handle_type"] =
+              (Low::Util::String)Low::Util::Handle::identifier(
+                  it->typeId);
+        }
 
         p_Node["parameters"].push_back(i_ParamNode);
       }
@@ -137,15 +143,22 @@ namespace Flode {
       }
 
       if (p_Node["parameters"]) {
-        for (auto [_, i_Node] : p_Node["parameters"]){
+        for (auto [_, i_Node] : p_Node["parameters"]) {
           FunctionNodeParameter i_Param;
           i_Param.name = i_Node["name"].as<Low::Util::Name>();
-          i_Param.type =
-              string_to_pin_type(i_Node["type"].as<Low::Util::String>());
+          i_Param.type = string_to_pin_type(
+              i_Node["type"].as<Low::Util::String>());
           i_Param.pinId = i_Node["pin_id"].as<u64>();
           i_Param.typeId = 0;
+          // TODO: Remove
           if (i_Node["type_id"]) {
-            i_Param.typeId = i_Node["type_id"].as<u16>();
+            i_Param.typeId =
+                Flode::tmp_get_mapping(i_Node["type_id"].as<u16>());
+          }
+          if (i_Node["handle_type"]) {
+            i_Param.typeId = Low::Util::Handle::type_id(
+                Low::Util::TypeIdentifier::from_string(i_Node["handle_type"]
+                    .as<Low::Util::String>()));
           }
 
           m_Parameters.push_back(i_Param);

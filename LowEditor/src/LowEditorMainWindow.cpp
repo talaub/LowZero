@@ -394,7 +394,7 @@ namespace Low {
           render_menu_entry(*it);
         }
 
-        static bool show_metrics = true; // toggle it as you like
+        static bool show_metrics = false;
         static bool show_id_stack = false;
         static bool show_debug_log = false;
 

@@ -18,8 +18,8 @@ namespace Low {
                        float p_MaxWidth = -1.0f);
       Util::String FileExplorer();
 
-      bool spinner(const char *label, float radius, int thickness,
-                   Math::Color p_Color);
+      bool LOW_EDITOR_API spinner(const char *label, float radius,
+                                  int thickness, Math::Color p_Color);
 
       void drag_handle(Util::Handle p_Handle);
 

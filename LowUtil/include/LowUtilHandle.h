@@ -3,6 +3,7 @@
 #include "LowUtilApi.h"
 
 #include <atomic>
+#include <cstring>
 #include <stdint.h>
 #include <chrono>
 #include <type_traits>
@@ -607,6 +608,23 @@ namespace Low {
     namespace Serial {
       void LOW_EXPORT serialize_handle(Node &p_Node, Handle p_Handle);
       Handle LOW_EXPORT deserialize_handle(Node &p_Node);
+
+      template <> struct Converter<TypeIdentifier, void>
+      {
+        static Node encode(const TypeIdentifier &v)
+        {
+          Node n;
+          n = (String)v;
+          return n;
+        }
+        static bool decode(const Node &n, TypeIdentifier &out)
+        {
+          TypeIdentifier l_Ident =
+              TypeIdentifier::from_string(n.as<String>());
+          memcpy(&out, &l_Ident, sizeof(TypeIdentifier));
+          return false;
+        }
+      };
     } // namespace Serial
   } // namespace Util
 } // namespace Low

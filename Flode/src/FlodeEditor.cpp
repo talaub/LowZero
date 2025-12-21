@@ -691,14 +691,14 @@ namespace Flode {
 
               if (i_Serial["position"]) {
                 l_CenterPos +=
-                        i_Serial["position"].as<Low::Math::Vector2>();
+                    i_Serial["position"].as<Low::Math::Vector2>();
               }
             }
           }
 
           l_CenterPos /= l_Nodes.size();
 
-          for (auto [_, i_Serial]: l_Clipboard["nodes"]){
+          for (auto [_, i_Serial] : l_Clipboard["nodes"]) {
             if (!i_Serial["_created_node_id"]) {
               continue;
             }
@@ -709,7 +709,7 @@ namespace Flode {
               continue;
             }
             Low::Math::Vector2 i_NodePos =
-                    i_Serial["position"].as<Low::Math::Vector2>();
+                i_Serial["position"].as<Low::Math::Vector2>();
 
             i_NodePos =
                 Low::Math::Vector2(l_MousePos.x, l_MousePos.y) +
@@ -721,8 +721,10 @@ namespace Flode {
 
           if (l_Clipboard["links"]) {
             for (auto [_, i_LinkNode] : l_Clipboard["links"]) {
-              u64 i_OldInputPinId = i_LinkNode["inputpinid"].as<u64>();
-              u64 i_OldOutputPinId = i_LinkNode["outputpinid"].as<u64>();
+              u64 i_OldInputPinId =
+                  i_LinkNode["inputpinid"].as<u64>();
+              u64 i_OldOutputPinId =
+                  i_LinkNode["outputpinid"].as<u64>();
 
               auto i_InputPinPos = l_PinMapping.find(i_OldInputPinId);
               auto i_OutputPinPos =
@@ -771,7 +773,7 @@ namespace Flode {
 
     // Handle creation action, returns true if editor want to create
     // new object (node or link)
-    if (NodeEd::BeginCreate(ImColor(255, 255, 255), 2.0f)) {
+    if (false && NodeEd::BeginCreate(ImColor(255, 255, 255), 2.0f)) {
 
       auto showLabel = [](const char *label, ImColor color) {
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() -

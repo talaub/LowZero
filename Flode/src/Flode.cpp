@@ -4,6 +4,7 @@
 #include "FlodeHelpers.h"
 
 #include "LowUtil.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilFileIO.h"
@@ -13,13 +14,55 @@
 #include "LowEditorMainWindow.h"
 #include "LowEditorFonts.h"
 
+#include "LowUtilString.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
 #include "utilities/drawing.h"
 #include "utilities/widgets.h"
+#include <string>
 
 namespace Flode {
+
+  Low::Util::Map<u16, u16> tidm;
+  bool init = false;
+
+  void init_interim(Low::Util::Yaml::Node n)
+  {
+    using namespace Low::Util;
+    for (auto it = n.begin(); it != n.end(); ++it) {
+      Yaml::Node c = it->second;
+      String cname = it->first.as<std::string>().c_str();
+      for (auto cit = c.begin(); cit != c.end(); ++cit) {
+        String tname = cit->first.as<std::string>().c_str();
+        u16 tid = cit->second.as<u16>();
+        String fname = cname + ":" + tname;
+        TypeIdentifier ident = TypeIdentifier::from_string(fname);
+        if (Handle::is_registered_type(ident)) {
+          tidm[tid] = Handle::type_id(ident);
+        }
+      }
+    }
+  }
+
+  void tmp_build_mapping()
+  {
+    using namespace Low::Util;
+
+    Yaml::Node mistedanode = Yaml::load_file(
+        "C:/Users/tlaub/Documents/LowEngine/misteda/data/"
+        "_internal/type_configs/typeids.yaml");
+    init_interim(mistedanode);
+    Yaml::Node lownode =
+        Yaml::load_file("C:/Users/tlaub/Documents/LowEngine/"
+                        "LowData/type_configs/typeids.yaml");
+    init_interim(lownode);
+  }
+
+  u16 tmp_get_mapping(u16 val)
+  {
+    return tidm[val];
+  }
 
   ImVec4 g_NodePadding(4, 2, 4, 4);
   int m_PinIconSize = 20;
@@ -357,7 +400,9 @@ namespace Flode {
   void register_nodes_for_type(u16 p_TypeId)
   {
     Low::Util::String l_NodeNamePrefix = "Handle_";
-    l_NodeNamePrefix += LOW_TO_STRING(p_TypeId);
+    Low::Util::TypeIdentifier l_TypeIdentifier =
+        Low::Util::Handle::identifier(p_TypeId);
+    l_NodeNamePrefix += (Low::Util::String)l_TypeIdentifier;
     l_NodeNamePrefix += "_";
 
     Low::Util::RTTI::TypeInfo l_TypeInfo =
@@ -624,6 +669,32 @@ namespace Flode {
 
   Node *spawn_node_of_type(Low::Util::Name p_TypeName)
   {
+    Low::Util::String l_TypeString = p_TypeName.c_str();
+
+    Low::Util::List<Low::Util::String> l_Parts;
+    Low::Util::StringHelper::split(l_TypeString, '_', l_Parts);
+
+    if (l_Parts[0] == "Handle" && l_Parts.size() >= 3) {
+      if (Low::Util::StringHelper::contains(l_Parts[1], ":")) {
+        Node *l_Node = g_NodeTypeNames[p_TypeName]();
+        l_Node->typeName = p_TypeName;
+        return l_Node;
+      } else {
+        u16 l_OldTypeId = std::stoi(l_Parts[1].c_str());
+        u16 l_NewTypeId = tmp_get_mapping(l_OldTypeId);
+        Low::Util::TypeIdentifier l_Identifier =
+            Low::Util::Handle::identifier(l_NewTypeId);
+        Low::Util::StringBuilder l_Builder;
+        l_Builder.append("Handle_");
+        l_Builder.append((Low::Util::String)l_Identifier);
+
+        for (int i = 2; i < l_Parts.size(); ++i){
+          l_Builder.append("_").append(l_Parts[i]);
+        }
+        p_TypeName = LOW_NAME(l_Builder.get().c_str());
+      }
+    }
+
     Node *l_Node = g_NodeTypeNames[p_TypeName]();
     l_Node->typeName = p_TypeName;
 
@@ -1886,11 +1957,12 @@ namespace Flode {
     }
   }
 
-  u64 Graph::deserialize_node(Low::Util::Serial::Node & p_Serial,
+  u64 Graph::deserialize_node(Low::Util::Serial::Node &p_Serial,
                               Node **p_Node, u64 p_IdStartValue,
                               bool p_UseIds)
   {
-    Low::Util::Name l_NodeTypeName = p_Serial["type"].as<Low::Util::Name>();
+    Low::Util::Name l_NodeTypeName =
+        p_Serial["type"].as<Low::Util::Name>();
 
     u64 l_IdsAdded = 0;
 
@@ -1924,8 +1996,9 @@ namespace Flode {
                 p_Serial["pins"][i]["default_value"]);
       }
       if (p_Serial["pins"][i]["default_string_value"]) {
-        l_Node->pins[i]->defaultStringValue = 
-            p_Serial["pins"][i]["default_string_value"].as<Low::Util::String>();
+        l_Node->pins[i]->defaultStringValue =
+            p_Serial["pins"][i]["default_string_value"]
+                .as<Low::Util::String>();
 
         if (l_Node->pins[i]->stringType == PinStringType::Name) {
           // In case the pin is actually a name convert the read
@@ -1938,7 +2011,7 @@ namespace Flode {
     }
 
     Low::Math::Vector2 l_Position =
-            p_Serial["position"].as<Low::Math::Vector2>();
+        p_Serial["position"].as<Low::Math::Vector2>();
     NodeEd::SetNodePosition(l_Node->id,
                             ImVec2(l_Position.x, l_Position.y));
 
@@ -1958,7 +2031,11 @@ namespace Flode {
       i_PinNode["direction"] =
           pin_direction_to_string(i_Pin->direction).c_str();
       i_PinNode["type"] = pin_type_to_string(i_Pin->type).c_str();
-      i_PinNode["type_id"] = i_Pin->typeId;
+      if (Low::Util::Handle::is_registered_type(i_Pin->typeId)) {
+        i_PinNode["handle_type"] =
+            (Low::Util::String)Low::Util::Handle::identifier(
+                i_Pin->typeId);
+      }
 
       if (i_Pin->type == PinType::String) {
         if (i_Pin->stringType == PinStringType::Name) {
@@ -2003,8 +2080,8 @@ namespace Flode {
     p_Node["idcounter"] = m_IdCounter;
     p_Node["internal"] = m_Internal;
 
-    Low::Util::Serial::serialize_handle(
-        p_Node["contexthandle"], m_ContextHandle);
+    Low::Util::Serial::serialize_handle(p_Node["contexthandle"],
+                                        m_ContextHandle);
 
     for (auto it = m_Namespace.begin(); it != m_Namespace.end();
          ++it) {
@@ -2017,7 +2094,11 @@ namespace Flode {
 
       i_Serial["name"] = i_Variable->name;
       i_Serial["type"] = pin_type_to_string(i_Variable->type).c_str();
-      i_Serial["type_id"] = i_Variable->typeId;
+      if (Low::Util::Handle::is_registered_type(i_Variable->typeId)) {
+        i_Serial["handle_type"] =
+            (Low::Util::String)Low::Util::Handle::identifier(
+                i_Variable->typeId);
+      }
 
       p_Node["variables"].push_back(i_Serial);
     }
@@ -2054,7 +2135,7 @@ namespace Flode {
     u32 l_IdsAdded = 0;
 
     if (p_Node[l_NamespaceName]) {
-      for (auto [_, i_Node] : p_Node[l_NamespaceName]){
+      for (auto [_, i_Node] : p_Node[l_NamespaceName]) {
         m_Namespace.push_back(i_Node.as<Low::Util::Name>());
       }
     }
@@ -2064,15 +2145,26 @@ namespace Flode {
     }
 
     if (p_Node["variables"]) {
-      for (auto [_, i_VariableNode] : p_Node["variables"]){
+      for (auto [_, i_VariableNode] : p_Node["variables"]) {
         Variable *i_Variable = new Variable;
-        i_Variable->name = i_VariableNode["name"].as<Low::Util::String>();
+        i_Variable->name =
+            i_VariableNode["name"].as<Low::Util::String>();
         i_Variable->type = string_to_pin_type(
             i_VariableNode["type"].as<Low::Util::String>());
+
+        i_Variable->typeId = 0;
+
+        // TODO: Remove
         if (i_VariableNode["type_id"]) {
-          i_Variable->typeId = i_VariableNode["type_id"].as<u16>();
-        } else {
-          i_Variable->typeId = 0;
+          i_Variable->typeId =
+              tmp_get_mapping(i_VariableNode["type_id"].as<u16>());
+        }
+
+        if (i_VariableNode["handle_type"]) {
+          i_Variable->typeId = Low::Util::Handle::type_id(
+              Low::Util::TypeIdentifier::from_string(
+                  i_VariableNode["handle_type"]
+                      .as<Low::Util::String>()));
         }
 
         m_Variables.push_back(i_Variable);
@@ -2080,7 +2172,7 @@ namespace Flode {
     }
 
     if (p_Node["nodes"]) {
-      for (auto [_, i_NodeNode] : p_Node["nodes"]){
+      for (auto [_, i_NodeNode] : p_Node["nodes"]) {
         Node *i_Node = nullptr;
         l_IdsAdded += deserialize_node(
             i_NodeNode, &i_Node,
@@ -2094,7 +2186,7 @@ namespace Flode {
     }
 
     if (p_Node["links"]) {
-      for (auto [_, i_LinkNode] : p_Node["links"]){
+      for (auto [_, i_LinkNode] : p_Node["links"]) {
         Link *i_Link = create_link(i_LinkNode["input"].as<u64>(),
                                    i_LinkNode["output"].as<u64>());
 

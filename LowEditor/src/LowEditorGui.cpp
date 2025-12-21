@@ -858,7 +858,7 @@ namespace Low {
         ImGui::PopClipRect();
 
         ImGui::SetCursorScreenPos(l_Position);
-        return ImGui::InvisibleButton(p_Label, l_Size);
+        return ImGui::InvisibleButton(p_Label, l_Size) && !p_Disabled;
       }
 
       bool AddButton(bool p_Disabled)

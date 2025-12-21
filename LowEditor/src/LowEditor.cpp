@@ -847,6 +847,12 @@ namespace Low {
     {
       LOW_PROFILE_CPU("Editor", "TICK");
 
+      static bool t = false;
+      if (!t) {
+        t = true;
+        Flode::tmp_build_mapping();
+      }
+
       render_main_window(p_Delta, p_State);
 
       tick_editor_jobs(p_Delta);

@@ -5,6 +5,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilVariant.h"
 #include "LowUtilString.h"
+#include "LowUtilYaml.h"
 
 #include <atomic>
 #include <stdint.h>

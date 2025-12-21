@@ -19,6 +19,7 @@ namespace Low {
       static const Util::Name l_Bulb = N(bulb);
       static const Util::Name l_Cylinder = N(cylinder);
       static const Util::Name l_Floppy = N(floppy);
+      static const Util::Name l_Robot = N(robot);
 
       if (p_IconName == l_Cube) {
         return LOW_EDITOR_ICON_CUBE;
@@ -50,6 +51,8 @@ namespace Low {
         return LOW_EDITOR_ICON_CYLINDER;
       } else if (p_IconName == l_Floppy) {
         return LOW_EDITOR_ICON_FLOPPY;
+      } else if (p_IconName == l_Robot) {
+        return LOW_EDITOR_ICON_ROBOT;
       }
 
       return LOW_EDITOR_ICON_MISSING;

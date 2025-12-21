@@ -73,6 +73,9 @@ namespace Flode {
 
   PinType variant_type_to_pin_type(u8 p_VariantType);
 
+  void FLODE_API tmp_build_mapping();
+  u16 FLODE_API tmp_get_mapping(u16 val);
+
   struct FLODE_API Pin
   {
     NodeEd::PinId id;
@@ -184,7 +187,7 @@ namespace Flode {
       return false;
     }
 
-    virtual void serialize(Low::Util::Serial::Node& p_Node) const
+    virtual void serialize(Low::Util::Serial::Node &p_Node) const
     {
     }
 
@@ -293,8 +296,9 @@ namespace Flode {
                         Low::Util::Serial::Node &p_Serial,
                         bool p_StoreNodePositions = true) const;
 
-    u64 deserialize_node(Low::Util::Serial::Node &p_Serial, Node **p_Node,
-                         u64 p_IdStartValue, bool p_UseIds = true);
+    u64 deserialize_node(Low::Util::Serial::Node &p_Serial,
+                         Node **p_Node, u64 p_IdStartValue,
+                         bool p_UseIds = true);
 
     void serialize(Low::Util::Serial::Node &p_Node,
                    bool p_StoreNodePositions = true) const;
