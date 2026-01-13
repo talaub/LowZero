@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowMath.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -91,6 +92,8 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
       l_Handle.mark_dirty();
+
+      l_Handle.set_uv_rect(Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f));
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;

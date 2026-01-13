@@ -39,12 +39,13 @@ namespace Low {
 
     struct UiDrawCommandUpload
     {
+      Math::Vector4 uvRect;
       Math::Vector2 position;
       Math::Vector2 size;
-      Math::Vector4 uvRect;
       float rotation2D;
       u32 textureIndex;
       u32 materialIndex;
+      u32 padding0;
     };
 
     struct RenderEntry

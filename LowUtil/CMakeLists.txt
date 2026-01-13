@@ -27,6 +27,7 @@ add_dependencies(LowUtil
   assimp
   LowMath
   SDL2
+  inja
 )
 
 MESSAGE("LOWUTILBUILD: ${CMAKE_CURRENT_BINARY_DIR}")
@@ -78,6 +79,7 @@ target_link_libraries(LowUtil PUBLIC
   yaml-cpp
   tlsf
   gli
+  inja
   LowMath
 )
 

@@ -75,9 +75,10 @@ namespace Low {
     LOW_EDITOR_API DirectoryWatchers &get_directory_watchers();
 
     Util::Map<u16, TypeMetadata> &get_type_metadata();
-    TypeMetadata &get_type_metadata(uint16_t p_TypeId);
-    EnumMetadata &get_enum_metadata(Util::Name p_EnumTypeName);
-    EnumMetadata &get_enum_metadata(u16 p_EnumId);
+    LOW_EDITOR_API TypeMetadata &get_type_metadata(uint16_t p_TypeId);
+    LOW_EDITOR_API EnumMetadata &
+    get_enum_metadata(Util::Name p_EnumTypeName);
+    LOW_EDITOR_API EnumMetadata &get_enum_metadata(u16 p_EnumId);
 
     bool LOW_EDITOR_API is_editor_job_in_progress();
     Util::String LOW_EDITOR_API get_active_editor_job_name();

@@ -230,3 +230,11 @@ else()
 endif()
 
 set_target_properties(physx PROPERTIES FOLDER "Dependencies")
+
+add_library(inja INTERFACE)
+
+# inja is header-only; expose its include directory
+target_include_directories(inja INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/inja/third_party/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/inja/include
+)

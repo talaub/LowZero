@@ -1,5 +1,7 @@
 #pragma once
 
+#include "LowEditorApi.h"
+
 #include "LowUtilName.h"
 #include "LowUtilHandle.h"
 #include "LowUtilContainers.h"
@@ -64,7 +66,7 @@ namespace Low {
       Util::String managerWidgetPath;
     };
 
-    struct TypeMetadata
+    struct LOW_EDITOR_API TypeMetadata
     {
       TypeMetadata(const Util::TypeIdentifier p_Identifier)
           : identifier(p_Identifier)
