@@ -11,6 +11,7 @@
 
 #include "LowRendererTexture.h"
 #include "LowRendererMaterial.h"
+#include "LowRendererUiRenderObject.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
@@ -32,8 +33,10 @@ namespace Low {
           public:
             Low::Renderer::Texture texture;
             Low::Renderer::Material material;
+            Low::Renderer::UiRenderObject render_object;
             Low::Core::UI::Element element;
             Low::Util::UniqueId unique_id;
+            bool dirty;
 
             static size_t get_size()
             {
@@ -160,10 +163,19 @@ namespace Low {
 
           Low::Renderer::Material get_material() const;
 
+          Low::Renderer::UiRenderObject get_render_object() const;
+          void
+          set_render_object(Low::Renderer::UiRenderObject p_Value);
+
           Low::Core::UI::Element get_element() const;
           void set_element(Low::Core::UI::Element p_Value);
 
           Low::Util::UniqueId get_unique_id() const;
+
+          bool is_dirty() const;
+          void set_dirty(bool p_Value);
+          void toggle_dirty();
+          void mark_dirty();
 
           static bool get_page_for_index(const u32 p_Index,
                                          u32 &p_PageIndex,

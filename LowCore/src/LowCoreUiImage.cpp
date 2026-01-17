@@ -12,7 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowRenderer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
@@ -75,9 +75,13 @@ namespace Low {
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Image, material,
                                      Low::Renderer::Material))
               Low::Renderer::Material();
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Image, render_object,
+                                     Low::Renderer::UiRenderObject))
+              Low::Renderer::UiRenderObject();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Image, element,
                                      Low::Core::UI::Element))
               Low::Core::UI::Element();
+          ACCESSOR_TYPE_SOA(l_Handle, Image, dirty, bool) = false;
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
@@ -98,7 +102,10 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+          l_Handle.set_material(
+              Low::Renderer::get_default_material_ui());
 
+          l_Handle.set_dirty(true);
           // LOW_CODEGEN::END::CUSTOM:MAKE
 
           return l_Handle;
@@ -262,6 +269,43 @@ namespace Low {
             // End property: material
           }
           {
+            // Property: render_object
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(render_object);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(Image::Data, render_object);
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_PropertyInfo.handleType =
+                Low::Renderer::UiRenderObject::type_id();
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Image l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
+              l_Handle.get_render_object();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Image, render_object,
+                  Low::Renderer::UiRenderObject);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Image l_Handle = p_Handle.get_id();
+              l_Handle.set_render_object(
+                  *(Low::Renderer::UiRenderObject *)p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Image l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
+              *((Low::Renderer::UiRenderObject *)p_Data) =
+                  l_Handle.get_render_object();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: render_object
+          }
+          {
             // Property: element
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(element);
@@ -326,6 +370,37 @@ namespace Low {
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
             // End property: unique_id
+          }
+          {
+            // Property: dirty
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(dirty);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset = offsetof(Image::Data, dirty);
+            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Image l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
+              l_Handle.is_dirty();
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Image,
+                                                dirty, bool);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Image l_Handle = p_Handle.get_id();
+              l_Handle.set_dirty(*(bool *)p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Image l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Image> l_HandleLock(l_Handle);
+              *((bool *)p_Data) = l_Handle.is_dirty();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: dirty
           }
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
@@ -430,6 +505,10 @@ namespace Low {
           if (get_material().is_alive()) {
             l_Handle.set_material(get_material());
           }
+          if (get_render_object().is_alive()) {
+            l_Handle.set_render_object(get_render_object());
+          }
+          l_Handle.set_dirty(is_dirty());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -566,14 +645,20 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_texture
 
-          // Set new value
-          TYPE_SOA(Image, texture, Low::Renderer::Texture) = p_Value;
+          if (get_texture() != p_Value) {
+            // Set dirty flags
+            mark_dirty();
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
+            // Set new value
+            TYPE_SOA(Image, texture, Low::Renderer::Texture) =
+                p_Value;
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_texture
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_texture
 
-          broadcast_observable(N(texture));
+            // LOW_CODEGEN::END::CUSTOM:SETTER_texture
+
+            broadcast_observable(N(texture));
+          }
         }
 
         Low::Renderer::Material Image::get_material() const
@@ -596,15 +681,50 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_material
 
+          if (get_material() != p_Value) {
+            // Set dirty flags
+            mark_dirty();
+
+            // Set new value
+            TYPE_SOA(Image, material, Low::Renderer::Material) =
+                p_Value;
+
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+
+            // LOW_CODEGEN::END::CUSTOM:SETTER_material
+
+            broadcast_observable(N(material));
+          }
+        }
+
+        Low::Renderer::UiRenderObject Image::get_render_object() const
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Image> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+          // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
+
+          return TYPE_SOA(Image, render_object,
+                          Low::Renderer::UiRenderObject);
+        }
+        void Image::set_render_object(
+            Low::Renderer::UiRenderObject p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Image> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
+
           // Set new value
-          TYPE_SOA(Image, material, Low::Renderer::Material) =
-              p_Value;
+          TYPE_SOA(Image, render_object,
+                   Low::Renderer::UiRenderObject) = p_Value;
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_material
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+          // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_material
-
-          broadcast_observable(N(material));
+          broadcast_observable(N(render_object));
         }
 
         Low::Core::UI::Element Image::get_element() const
@@ -665,6 +785,47 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
           broadcast_observable(N(unique_id));
+        }
+
+        bool Image::is_dirty() const
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Image> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+          // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
+
+          return TYPE_SOA(Image, dirty, bool);
+        }
+        void Image::toggle_dirty()
+        {
+          set_dirty(!is_dirty());
+        }
+
+        void Image::set_dirty(bool p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Image> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+
+          // Set new value
+          TYPE_SOA(Image, dirty, bool) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+          // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+          broadcast_observable(N(dirty));
+        }
+
+        void Image::mark_dirty()
+        {
+          if (!is_dirty()) {
+            TYPE_SOA(Image, dirty, bool) = true;
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+            // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+          }
         }
 
         uint32_t Image::create_instance(

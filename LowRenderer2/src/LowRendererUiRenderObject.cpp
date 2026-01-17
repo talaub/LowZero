@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "LowMath.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -24,6 +23,9 @@ namespace Low {
 
     Low::Util::Set<Low::Renderer::UiRenderObject>
         Low::Renderer::UiRenderObject::ms_NeedInitialization;
+
+    Low::Util::Set<Low::Renderer::UiRenderObject>
+        Low::Renderer::UiRenderObject::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 UiRenderObject::ms_TypeId = 0;
@@ -78,6 +80,10 @@ namespace Low {
                                  draw_commands,
                                  Low::Util::List<UiDrawCommand>))
           Low::Util::List<UiDrawCommand>();
+      ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, dirty, bool) =
+          false;
+      ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, z_dirty, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -552,6 +558,72 @@ namespace Low {
         // End property: draw_commands
       }
       {
+        // Property: dirty
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(dirty);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(UiRenderObject::Data, dirty);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          l_Handle.is_dirty();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
+                                            dirty, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_dirty(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          *((bool *)p_Data) = l_Handle.is_dirty();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: dirty
+      }
+      {
+        // Property: z_dirty
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(z_dirty);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(UiRenderObject::Data, z_dirty);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          l_Handle.is_z_dirty();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
+                                            z_dirty, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_z_dirty(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          *((bool *)p_Data) = l_Handle.is_z_dirty();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: z_dirty
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -748,6 +820,8 @@ namespace Low {
       if (get_mesh().is_alive()) {
         l_Handle.set_mesh(get_mesh());
       }
+      l_Handle.set_dirty(is_dirty());
+      l_Handle.set_z_dirty(is_z_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -1273,22 +1347,92 @@ namespace Low {
                       Low::Util::List<UiDrawCommand>);
     }
 
-    void UiRenderObject::mark_z_dirty()
+    bool UiRenderObject::is_dirty() const
     {
-      // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
-      mark_dirty();
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+      // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
-      UiCanvas l_Canvas = get_canvas_handle();
-      l_Canvas.mark_z_dirty();
-      // LOW_CODEGEN::END::CUSTOM:MARK_z_dirty
+      return TYPE_SOA(UiRenderObject, dirty, bool);
+    }
+    void UiRenderObject::toggle_dirty()
+    {
+      set_dirty(!is_dirty());
+    }
+
+    void UiRenderObject::set_dirty(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+
+      // Set new value
+      TYPE_SOA(UiRenderObject, dirty, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+      // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+      broadcast_observable(N(dirty));
     }
 
     void UiRenderObject::mark_dirty()
     {
-      // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+      if (!is_dirty()) {
+        TYPE_SOA(UiRenderObject, dirty, bool) = true;
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+        ms_Dirty.insert(get_id());
+        // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+      }
+    }
 
-      // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+    bool UiRenderObject::is_z_dirty() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_dirty
+      // LOW_CODEGEN::END::CUSTOM:GETTER_z_dirty
+
+      return TYPE_SOA(UiRenderObject, z_dirty, bool);
+    }
+    void UiRenderObject::toggle_z_dirty()
+    {
+      set_z_dirty(!is_z_dirty());
+    }
+
+    void UiRenderObject::set_z_dirty(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_dirty
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_dirty
+
+      // Set new value
+      TYPE_SOA(UiRenderObject, z_dirty, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
+      // LOW_CODEGEN::END::CUSTOM:SETTER_z_dirty
+
+      broadcast_observable(N(z_dirty));
+    }
+
+    void UiRenderObject::mark_z_dirty()
+    {
+      if (!is_z_dirty()) {
+        TYPE_SOA(UiRenderObject, z_dirty, bool) = true;
+        // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+
+        mark_dirty();
+
+        UiCanvas l_Canvas = get_canvas_handle();
+        l_Canvas.mark_z_dirty();
+        // LOW_CODEGEN::END::CUSTOM:MARK_z_dirty
+      }
     }
 
     Low::Util::Name UiRenderObject::get_name() const

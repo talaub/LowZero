@@ -61,6 +61,7 @@ namespace Low {
     Texture LOW_RENDERER2_API get_default_texture();
     Material LOW_RENDERER2_API get_default_material();
     Material LOW_RENDERER2_API get_default_material_texture();
+    Material LOW_RENDERER2_API get_default_material_ui();
 
     RenderView LOW_RENDERER2_API get_game_renderview();
     RenderView LOW_RENDERER2_API get_editor_renderview();

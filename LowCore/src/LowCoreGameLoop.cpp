@@ -25,6 +25,9 @@
 
 #include <chrono>
 
+#include "LowMath.h"
+#include "LowRendererPrimitives.h"
+#include "LowRendererUiRenderObject.h"
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
@@ -32,6 +35,10 @@
 #include "LowUtil.h"
 
 #include "LowRenderer.h"
+
+#include "LowRendererUiCanvas.h"
+#include "LowRendererResourceManager.h"
+#include "LowRendererResourceImporter.h"
 
 namespace Low {
   namespace Core {
@@ -46,6 +53,9 @@ namespace Low {
       uint64_t g_Frames = 0ull;
 
       Util::List<System::TickCallback> g_TickCallbacks;
+
+      // FIX: Remove test code
+      Low::Renderer::UiRenderObject g_FontRenderObject;
 
       static void execute_ticks(float p_Delta)
       {
@@ -516,10 +526,33 @@ namespace Low {
 
         static u64 l_Frames = 0;
 
+        // FIX: Remove test code
+        static bool l_IsInit = false;
+
         test_ui();
 
         while (g_Running) {
           {
+            {
+              // FIX: Remove test code
+              Low::Renderer::Font l_Font =
+                  Low::Renderer::Font::find_by_name(N(roboto));
+              if (!l_IsInit && l_Font.is_alive() &&
+                  l_Font.is_fully_loaded()) {
+                const char l_Char = 'E';
+
+                Math::Vector4 l_UvRect;
+                l_UvRect.x = l_Font.get_glyphs()[l_Char].uvMin.x;
+                l_UvRect.y = l_Font.get_glyphs()[l_Char].uvMin.y;
+                l_UvRect.z = l_Font.get_glyphs()[l_Char].uvMax.x;
+                l_UvRect.w = l_Font.get_glyphs()[l_Char].uvMax.y;
+
+                g_FontRenderObject.set_uv_rect(l_UvRect);
+
+                l_IsInit = true;
+              }
+            }
+
             auto i_Now = steady_clock::now();
             l_Accumulator += i_Now - l_LastTime;
             l_LastTime = i_Now;
@@ -571,6 +604,69 @@ namespace Low {
       void start()
       {
         g_Running = true;
+
+#if 0
+        Low::Renderer::ResourceImporter::import_font(
+            "D:\\Roboto-Regular.ttf", "roboto");
+        return;
+#endif
+
+        {
+          using namespace Low::Renderer;
+
+          MaterialTypes &l_MaterialTypes = get_material_types();
+
+          UiCanvas l_Canvas = UiCanvas::make(N(TestCanvas));
+          get_game_renderview().add_ui_canvas(l_Canvas);
+
+          Material l_UiMaterial =
+              Material::make(N(UiMaterial), l_MaterialTypes.uiBase);
+          Material l_TextMaterial =
+              Material::make(N(TextMaterial), l_MaterialTypes.uiText);
+
+          UI::View l_View = UI::View::make(N(View));
+          l_View.set_canvas(l_Canvas);
+
+          if (1) {
+            UI::Element l_Element = UI::Element::make(N(Img), l_View);
+            UI::Component::Display l_Display =
+                UI::Component::Display::make(l_Element);
+
+            l_Display.pixel_position(120.0f, 100.0f);
+            l_Display.pixel_scale(150, 150);
+            l_Display.rotation(0);
+            l_Display.layer(0);
+
+            UI::Component::Image l_Image =
+                UI::Component::Image::make(l_Element);
+
+            l_Image.set_texture(get_default_texture());
+          }
+
+          if (0) {
+            UiRenderObject l_RenderObject = UiRenderObject::make(
+                l_Canvas, get_primitives().unitQuad);
+
+            l_RenderObject.set_position_x(200.f);
+            l_RenderObject.set_position_y(140.f);
+
+            Font l_Font = Font::find_by_name(N(roboto));
+
+            ResourceManager::load_font(l_Font);
+
+            l_RenderObject.set_texture(l_Font.get_texture());
+
+            l_RenderObject.set_rotation2D(0.f);
+            l_RenderObject.set_z_sorting(1);
+
+            l_RenderObject.set_size(150.0f, 150.0f);
+
+            l_RenderObject.set_material(l_TextMaterial);
+
+            g_FontRenderObject = l_RenderObject;
+          }
+        }
+
         run();
       }
 

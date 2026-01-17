@@ -20,6 +20,8 @@ namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
 
+    Low::Util::Set<Low::Renderer::UiDrawCommand>
+        Low::Renderer::UiDrawCommand::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 UiDrawCommand::ms_TypeId = 0;
@@ -73,6 +75,8 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, UiDrawCommand, submesh,
                                  Low::Renderer::GpuSubmesh))
           Low::Renderer::GpuSubmesh();
+      ACCESSOR_TYPE_SOA(l_Handle, UiDrawCommand, uploaded, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, UiDrawCommand, name,
                         Low::Util::Name) = Low::Util::Name(0u);
 
@@ -88,6 +92,8 @@ namespace Low {
 
       l_Handle.set_uv_rect(
           Low::Math::Vector4(0.0f, 0.0f, 1.0f, 1.0f));
+
+      l_Handle.set_uploaded(false);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -529,6 +535,37 @@ namespace Low {
         // End property: submesh
       }
       {
+        // Property: uploaded
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(uploaded);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(UiDrawCommand::Data, uploaded);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiDrawCommand l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
+          l_Handle.is_uploaded();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
+                                            uploaded, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiDrawCommand l_Handle = p_Handle.get_id();
+          l_Handle.set_uploaded(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiDrawCommand l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
+          *((bool *)p_Data) = l_Handle.is_uploaded();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: uploaded
+      }
+      {
         // Property: name
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(name);
@@ -735,6 +772,7 @@ namespace Low {
       if (get_submesh().is_alive()) {
         l_Handle.set_submesh(get_submesh());
       }
+      l_Handle.set_uploaded(is_uploaded());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -1267,10 +1305,42 @@ namespace Low {
       broadcast_observable(N(submesh));
     }
 
+    bool UiDrawCommand::is_uploaded() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
+
+      return TYPE_SOA(UiDrawCommand, uploaded, bool);
+    }
+    void UiDrawCommand::toggle_uploaded()
+    {
+      set_uploaded(!is_uploaded());
+    }
+
+    void UiDrawCommand::set_uploaded(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
+
+      // Set new value
+      TYPE_SOA(UiDrawCommand, uploaded, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
+
+      broadcast_observable(N(uploaded));
+    }
+
     void UiDrawCommand::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
-
+      ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:MARK_dirty
     }
 

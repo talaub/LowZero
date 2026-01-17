@@ -39,6 +39,7 @@ namespace Low {
         Material material;
         uint32_t z_sorting;
         Low::Renderer::GpuSubmesh submesh;
+        bool uploaded;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -201,6 +202,10 @@ namespace Low {
 
       Low::Renderer::GpuSubmesh get_submesh() const;
 
+      bool is_uploaded() const;
+      void set_uploaded(bool p_Value);
+      void toggle_uploaded();
+
       void mark_dirty();
 
       void mark_z_dirty();
@@ -226,6 +231,8 @@ namespace Low {
       void set_submesh(Low::Renderer::GpuSubmesh p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+    public:
+      static Low::Util::Set<Low::Renderer::UiDrawCommand> ms_Dirty;
 
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };

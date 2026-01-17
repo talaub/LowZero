@@ -71,6 +71,7 @@ namespace Low {
     Texture g_DefaultTexture;
     Material g_DefaultMaterial;
     Material g_DefaultMaterialTexture;
+    Material g_DefaultMaterialUi;
 
     RenderView g_GameRenderView;
     RenderView g_EditorRenderView;
@@ -88,6 +89,10 @@ namespace Low {
     Material get_default_material_texture()
     {
       return g_DefaultMaterialTexture;
+    }
+    Material get_default_material_ui()
+    {
+      return g_DefaultMaterialUi;
     }
 
     MaterialTypes &get_material_types()
@@ -199,6 +204,11 @@ namespace Low {
             N(base_color), Math::ColorRGB(0.8f, 0.8f, 0.8f));
         g_DefaultMaterialTexture.set_property_texture(
             N(albedo), get_default_texture());
+      }
+
+      {
+        g_DefaultMaterialUi = Material::make_gpu_ready(
+            N(DefaultMaterialUi), g_MaterialTypes.uiBase);
       }
       return true;
     }

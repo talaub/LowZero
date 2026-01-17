@@ -134,6 +134,7 @@ types:
     header_imports:
       - LowRendererTexture.h
       - LowRendererMaterial.h
+      - LowRendererUiRenderObject.h
     properties:
       texture:
         editor_editable: true
@@ -141,6 +142,7 @@ types:
         handle: true
         skip_serialization: true
         skip_deserialization: true
+        dirty_flag: dirty
       material:
         editor_editable: false
         type: Low::Renderer::Material
@@ -148,6 +150,13 @@ types:
         skip_serialization: true
         skip_deserialization: true
         private_setter: true
+        dirty_flag: dirty
+      render_object:
+        editor_editable: false
+        type: Low::Renderer::UiRenderObject
+        handle: true
+        skip_deserialization: true
+        skip_serialization: true
 
   Text:
     ui_component: true

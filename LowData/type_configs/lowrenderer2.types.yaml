@@ -458,6 +458,8 @@ types:
         type: Low::Renderer::GpuSubmesh
         handle: true
         private_setter: true
+      uploaded:
+        type: bool
     functions:
       make:
         static: true
@@ -479,11 +481,6 @@ types:
     no_auto_serialize: true
     no_auto_deserialize: true
     private_make: true
-    dirty_flags:
-      z_dirty:
-        no_data: true
-      dirty:
-        no_data: true
     properties:
       canvas_handle:
         type: uint64_t

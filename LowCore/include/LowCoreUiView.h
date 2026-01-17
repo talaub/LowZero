@@ -11,6 +11,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
+#include "LowRendererUiCanvas.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -35,6 +36,7 @@ namespace Low {
           float rotation;
           float scale_multiplier;
           uint32_t layer_offset;
+          Low::Renderer::UiCanvas canvas;
           Low::Util::UniqueId unique_id;
           bool transform_dirty;
           Low::Util::Name name;
@@ -186,6 +188,9 @@ namespace Low {
 
         uint32_t layer_offset() const;
         void layer_offset(uint32_t p_Value);
+
+        Low::Renderer::UiCanvas get_canvas() const;
+        void set_canvas(Low::Renderer::UiCanvas p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
 

@@ -3,6 +3,7 @@
 #include "LowRendererDrawCommand.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererAdaptiveRenderObject.h"
+#include "LowRendererUiDrawCommand.h"
 #include "LowRendererVulkan.h"
 #include "LowRenderer.h"
 
@@ -267,11 +268,120 @@ namespace Low {
         return l_Result;
       }
 
+      static bool update_dirty_ui_drawcommands(float p_Delta)
+      {
+        bool l_Result = true;
+
+        for (auto it = UiDrawCommand::ms_Dirty.begin();
+             it != UiDrawCommand::ms_Dirty.end(); ++it) {
+          UiDrawCommand i_DrawCommand = *it;
+
+          if (!i_DrawCommand.is_alive() ||
+              i_DrawCommand.get_render_object().is_dirty()) {
+            // We will skip dead draw commands as well as ones that
+            // have a dirty renderobject because then they will be
+            // updated later together with their render object
+            continue;
+          }
+
+          size_t l_StagingOffset = 0;
+          const u64 l_FrameUploadSpace =
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .request_space(sizeof(DrawCommandUpload),
+                                 &l_StagingOffset);
+
+          if (l_FrameUploadSpace < sizeof(DrawCommandUpload)) {
+            // We don't have enough space on the staging buffer to
+            // upload this drawcommand
+            l_Result = false;
+            break;
+          }
+
+          bool i_IsFirstTimeUpload = false;
+          if (!i_DrawCommand.is_uploaded()) {
+            LOW_ASSERT(
+                !i_DrawCommand.get_render_object().is_alive(),
+                "UIDrawcommands that are not yet uploaded should "
+                "exist "
+                "on their own and not as part of a renderobject");
+
+            u32 i_Slot = 0;
+            if (!Vulkan::Global::get_drawcommand_buffer().reserve(
+                    1, &i_Slot)) {
+              // Could not reserve space in the draw command buffer
+              // for another entry
+              l_Result = false;
+              break;
+            }
+
+            i_DrawCommand.set_slot(i_Slot);
+            i_DrawCommand.set_uploaded(true);
+            i_IsFirstTimeUpload = true;
+          }
+
+          _LOW_ASSERT(i_DrawCommand.is_uploaded());
+
+          DrawCommandUpload i_Upload;
+          i_Upload.worldTransform =
+              i_DrawCommand.get_world_transform();
+
+          i_Upload.objectId = i_DrawCommand.get_object_id();
+
+          i_Upload.materialIndex = get_default_material().get_index();
+          if (i_DrawCommand.get_material().is_alive() &&
+              i_DrawCommand.get_material().get_state() ==
+                  MaterialState::LOADED) {
+            i_Upload.materialIndex =
+                i_DrawCommand.get_material().get_gpu().get_index();
+          }
+
+          RenderScene i_RenderScene =
+              i_DrawCommand.get_render_scene_handle();
+
+          if (i_IsFirstTimeUpload) {
+            LOW_ASSERT(
+                i_RenderScene.insert_draw_command(i_DrawCommand),
+                "Failed so add draw command to render scene");
+          }
+
+          LOW_ASSERT(
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .write(&i_Upload, sizeof(DrawCommandUpload),
+                         l_StagingOffset),
+              "Failed to write draw command data to staging buffer");
+
+          VkBufferCopy i_CopyRegion;
+          i_CopyRegion.srcOffset = l_StagingOffset;
+          i_CopyRegion.dstOffset =
+              i_DrawCommand.get_slot() * sizeof(DrawCommandUpload);
+          i_CopyRegion.size = l_FrameUploadSpace;
+
+          // TODO: Change to transfer queue command buffer - or leave
+          // this specifically on the graphics queue not sure tbh
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .buffer.buffer,
+              Vulkan::Global::get_drawcommand_buffer()
+                  .m_Buffer.buffer,
+              1, &i_CopyRegion);
+        }
+
+        DrawCommand::ms_Dirty.clear();
+        return l_Result;
+      }
+
       static bool update_drawcommand_buffer(float p_Delta)
       {
         update_dirty_drawcommands(p_Delta);
         update_dirty_renderobjects(p_Delta);
         return true;
+      }
+
+      static bool update_ui_drawcommand_buffer(float p_Delta)
+      {
+        update_dirty_ui_drawcommands(p_Delta);
+        update_dirty_ui_renderobjects(p_Delta);
       }
 
       void tick(float p_Delta)

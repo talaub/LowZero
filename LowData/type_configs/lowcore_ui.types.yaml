@@ -107,6 +107,7 @@ types:
       - LowCoreUiElement.h
       - LowCoreUiDisplay.h
       - LowUtilFileIO.h
+      - LowRendererUiCanvas.h
     properties:
       loaded:
         type: bool
@@ -153,6 +154,11 @@ types:
         getter_name: layer_offset
         setter_name: layer_offset
         dirty_flag: transform_dirty
+      canvas:
+        type: Low::Renderer::UiCanvas
+        handle: true
+        editor_editable: true
+        
 
     functions:
       serialize_elements:

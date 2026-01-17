@@ -39,6 +39,8 @@ namespace Low {
         uint32_t z_sorting;
         Low::Renderer::Mesh mesh;
         Low::Util::List<UiDrawCommand> draw_commands;
+        bool dirty;
+        bool z_dirty;
         Low::Util::Name name;
 
         static size_t get_size()
@@ -199,9 +201,15 @@ namespace Low {
 
       Low::Util::List<UiDrawCommand> &get_draw_commands() const;
 
-      void mark_z_dirty();
-
+      bool is_dirty() const;
+      void set_dirty(bool p_Value);
+      void toggle_dirty();
       void mark_dirty();
+
+      bool is_z_dirty() const;
+      void set_z_dirty(bool p_Value);
+      void toggle_z_dirty();
+      void mark_z_dirty();
 
       Low::Util::Name get_name() const;
       void set_name(Low::Util::Name p_Value);
@@ -227,6 +235,8 @@ namespace Low {
     public:
       static Low::Util::Set<Low::Renderer::UiRenderObject>
           ms_NeedInitialization;
+
+      static Low::Util::Set<Low::Renderer::UiRenderObject> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
