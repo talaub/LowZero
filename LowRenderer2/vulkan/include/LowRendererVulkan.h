@@ -144,6 +144,7 @@ namespace Low {
         DynamicBuffer &get_mesh_index_buffer();
 
         DynamicBuffer &get_drawcommand_buffer();
+        DynamicBuffer &get_ui_drawcommand_buffer();
 
         AllocatedBuffer get_material_data_buffer();
 

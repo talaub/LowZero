@@ -80,6 +80,8 @@ namespace Low {
                                  draw_commands,
                                  Low::Util::List<UiDrawCommand>))
           Low::Util::List<UiDrawCommand>();
+      ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, uploaded, bool) =
+          false;
       ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, dirty, bool) =
           false;
       ACCESSOR_TYPE_SOA(l_Handle, UiRenderObject, z_dirty, bool) =
@@ -558,6 +560,72 @@ namespace Low {
         // End property: draw_commands
       }
       {
+        // Property: uploaded
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(uploaded);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(UiRenderObject::Data, uploaded);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          l_Handle.is_uploaded();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
+                                            uploaded, bool);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_uploaded(*(bool *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          *((bool *)p_Data) = l_Handle.is_uploaded();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: uploaded
+      }
+      {
+        // Property: slot
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(slot);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(UiRenderObject::Data, slot);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          l_Handle.get_slot();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiRenderObject,
+                                            slot, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          l_Handle.set_slot(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiRenderObject l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiRenderObject> l_HandleLock(
+              l_Handle);
+          *((uint32_t *)p_Data) = l_Handle.get_slot();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: slot
+      }
+      {
         // Property: dirty
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(dirty);
@@ -820,6 +888,8 @@ namespace Low {
       if (get_mesh().is_alive()) {
         l_Handle.set_mesh(get_mesh());
       }
+      l_Handle.set_uploaded(is_uploaded());
+      l_Handle.set_slot(get_slot());
       l_Handle.set_dirty(is_dirty());
       l_Handle.set_z_dirty(is_z_dirty());
 
@@ -1347,12 +1417,72 @@ namespace Low {
                       Low::Util::List<UiDrawCommand>);
     }
 
+    bool UiRenderObject::is_uploaded() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
+
+      return TYPE_SOA(UiRenderObject, uploaded, bool);
+    }
+    void UiRenderObject::toggle_uploaded()
+    {
+      set_uploaded(!is_uploaded());
+    }
+
+    void UiRenderObject::set_uploaded(bool p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
+
+      // Set new value
+      TYPE_SOA(UiRenderObject, uploaded, bool) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+      // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
+
+      broadcast_observable(N(uploaded));
+    }
+
+    uint32_t UiRenderObject::get_slot() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+      // LOW_CODEGEN::END::CUSTOM:GETTER_slot
+
+      return TYPE_SOA(UiRenderObject, slot, uint32_t);
+    }
+    void UiRenderObject::set_slot(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
+
+      // Set new value
+      TYPE_SOA(UiRenderObject, slot, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+      // LOW_CODEGEN::END::CUSTOM:SETTER_slot
+
+      broadcast_observable(N(slot));
+    }
+
     bool UiRenderObject::is_dirty() const
     {
       _LOW_ASSERT(is_alive());
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
       return TYPE_SOA(UiRenderObject, dirty, bool);
@@ -1368,12 +1498,14 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
       // Set new value
       TYPE_SOA(UiRenderObject, dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
       broadcast_observable(N(dirty));
@@ -1384,6 +1516,7 @@ namespace Low {
       if (!is_dirty()) {
         TYPE_SOA(UiRenderObject, dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
         ms_Dirty.insert(get_id());
         // LOW_CODEGEN::END::CUSTOM:MARK_dirty
       }
@@ -1395,6 +1528,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_z_dirty
 
       return TYPE_SOA(UiRenderObject, z_dirty, bool);
@@ -1410,12 +1544,14 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_dirty
 
       // Set new value
       TYPE_SOA(UiRenderObject, z_dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_z_dirty
 
       broadcast_observable(N(z_dirty));

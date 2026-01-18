@@ -30,6 +30,7 @@ namespace Low {
       public:
         Low::Renderer::UiRenderObject render_object;
         uint64_t canvas_handle;
+        uint32_t slot;
         Texture texture;
         Low::Math::Vector3 position;
         Low::Math::Vector2 size;
@@ -164,10 +165,12 @@ namespace Low {
       }
 
       Low::Renderer::UiRenderObject get_render_object() const;
-      void set_render_object(Low::Renderer::UiRenderObject p_Value);
 
       uint64_t get_canvas_handle() const;
       void set_canvas_handle(uint64_t p_Value);
+
+      uint32_t get_slot() const;
+      void set_slot(uint32_t p_Value);
 
       Texture get_texture() const;
       void set_texture(Texture p_Value);
@@ -228,9 +231,11 @@ namespace Low {
           u32 &p_PageIndex, u32 &p_SlotIndex,
           Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
       static u32 create_page();
+      void set_render_object(Low::Renderer::UiRenderObject p_Value);
       void set_submesh(Low::Renderer::GpuSubmesh p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
     public:
       static Low::Util::Set<Low::Renderer::UiDrawCommand> ms_Dirty;
 

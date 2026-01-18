@@ -120,6 +120,7 @@ namespace Low {
         DynamicBuffer g_MeshIndexBuffer;
 
         DynamicBuffer g_DrawCommandBuffer;
+        DynamicBuffer g_UiDrawCommandBuffer;
 
         AllocatedBuffer g_MaterialDataBuffer;
 
@@ -289,6 +290,10 @@ namespace Low {
         {
           return g_DrawCommandBuffer;
         }
+        DynamicBuffer &get_ui_drawcommand_buffer()
+        {
+          return g_UiDrawCommandBuffer;
+        }
         AllocatedBuffer get_material_data_buffer()
         {
           return g_MaterialDataBuffer;
@@ -357,6 +362,8 @@ namespace Low {
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
             l_Builder.add_binding(2,
                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+            l_Builder.add_binding(3,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             g_GlobalDescriptorSetLayout = l_Builder.build(
                 Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
@@ -385,6 +392,14 @@ namespace Low {
                 2, get_material_data_buffer().buffer,
                 get_material_data_buffer().info.size, 0,
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.write_buffer(
+                3,
+                Global::get_ui_drawcommand_buffer().m_Buffer.buffer,
+                Global::get_ui_drawcommand_buffer().m_ElementSize *
+                    Global::get_ui_drawcommand_buffer()
+                        .m_ElementCount,
+                0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.update_set(Global::get_device(),
                                 get_global_descriptor_set());
@@ -534,6 +549,16 @@ namespace Low {
                       VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                   VMA_MEMORY_USAGE_GPU_ONLY),
               "Could not initialize draw command buffer");
+
+          LOW_ASSERT_ERROR_RETURN_FALSE(
+              dynamic_buffer_init(
+                  g_UiDrawCommandBuffer, sizeof(UiDrawCommandUpload),
+                  10000,
+                  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                      VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                      VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                  VMA_MEMORY_USAGE_GPU_ONLY),
+              "Could not initialize ui draw command buffer");
 
           g_MaterialDataBuffer = BufferUtil::create_buffer(
               MATERIAL_DATA_SIZE * 1000,
@@ -1029,6 +1054,7 @@ namespace Low {
         static bool buffer_cleanup()
         {
           get_drawcommand_buffer().destroy();
+          get_ui_drawcommand_buffer().destroy();
           BufferUtil::destroy_buffer(get_material_data_buffer());
 
           return true;

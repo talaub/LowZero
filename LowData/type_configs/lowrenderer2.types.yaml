@@ -424,8 +424,11 @@ types:
       render_object:
         type: Low::Renderer::UiRenderObject
         handle: true
+        private_setter: true
       canvas_handle:
         type: uint64_t
+      slot:
+        type: uint32_t
       texture:
         type: Texture
         handle: true
@@ -520,6 +523,10 @@ types:
       draw_commands:
         type: Low::Util::List<UiDrawCommand>
         no_setter: true
+      uploaded:
+        type: bool
+      slot:
+        type: uint32_t
     functions:
       make:
         static: true

@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRenderer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -102,6 +103,7 @@ namespace Low {
                                         l_Handle.get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
           l_Handle.set_material(
               Low::Renderer::get_default_material_ui());
 
@@ -703,6 +705,7 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_render_object
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_render_object
 
           return TYPE_SOA(Image, render_object,
@@ -715,6 +718,7 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_render_object
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_render_object
 
           // Set new value
@@ -722,6 +726,7 @@ namespace Low {
                    Low::Renderer::UiRenderObject) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_render_object
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_render_object
 
           broadcast_observable(N(render_object));
@@ -793,6 +798,7 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
           return TYPE_SOA(Image, dirty, bool);
@@ -808,12 +814,14 @@ namespace Low {
           Low::Util::HandleLock<Image> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
           TYPE_SOA(Image, dirty, bool) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
           broadcast_observable(N(dirty));
@@ -824,6 +832,7 @@ namespace Low {
           if (!is_dirty()) {
             TYPE_SOA(Image, dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
             // LOW_CODEGEN::END::CUSTOM:MARK_dirty
           }
         }

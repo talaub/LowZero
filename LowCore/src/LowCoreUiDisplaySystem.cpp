@@ -16,6 +16,9 @@ namespace Low {
         namespace Display {
           void tick(float p_Delta, Util::EngineState p_State)
           {
+            if (p_State != Util::EngineState::PLAYING) {
+              return; 
+            }
             LOW_PROFILE_CPU("Core", "UiDisplaySystem::TICK");
 
             Component::Display *l_Displays =

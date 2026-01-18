@@ -989,7 +989,7 @@ namespace Low {
         {
           if (!p_ViewInfo.is_initialized()) {
             AllocatedBuffer l_Buffer = BufferUtil::create_buffer(
-                sizeof(UiDrawCommandUpload) * UI_DRAWCOMMAND_COUNT,
+                sizeof(u32) * UI_DRAWCOMMAND_COUNT,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                     VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
@@ -1000,7 +1000,7 @@ namespace Low {
 
             l_Writer.write_buffer(
                 4, p_ViewInfo.get_ui_drawcommand_buffer().buffer,
-                sizeof(UiDrawCommandUpload) * UI_DRAWCOMMAND_COUNT, 0,
+                sizeof(u32) * UI_DRAWCOMMAND_COUNT, 0,
                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
             l_Writer.update_set(

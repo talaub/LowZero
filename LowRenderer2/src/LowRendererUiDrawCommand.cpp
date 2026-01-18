@@ -209,11 +209,7 @@ namespace Low {
               Low::Renderer::UiRenderObject);
         };
         l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                const void *p_Data) -> void {
-          UiDrawCommand l_Handle = p_Handle.get_id();
-          l_Handle.set_render_object(
-              *(Low::Renderer::UiRenderObject *)p_Data);
-        };
+                                const void *p_Data) -> void {};
         l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                 void *p_Data) {
           UiDrawCommand l_Handle = p_Handle.get_id();
@@ -254,6 +250,37 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: canvas_handle
+      }
+      {
+        // Property: slot
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(slot);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(UiDrawCommand::Data, slot);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT32;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          UiDrawCommand l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
+          l_Handle.get_slot();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, UiDrawCommand,
+                                            slot, uint32_t);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          UiDrawCommand l_Handle = p_Handle.get_id();
+          l_Handle.set_slot(*(uint32_t *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          UiDrawCommand l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<UiDrawCommand> l_HandleLock(l_Handle);
+          *((uint32_t *)p_Data) = l_Handle.get_slot();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: slot
       }
       {
         // Property: texture
@@ -757,6 +784,7 @@ namespace Low {
         l_Handle.set_render_object(get_render_object());
       }
       l_Handle.set_canvas_handle(get_canvas_handle());
+      l_Handle.set_slot(get_slot());
       if (get_texture().is_alive()) {
         l_Handle.set_texture(get_texture());
       }
@@ -934,6 +962,33 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_canvas_handle
 
       broadcast_observable(N(canvas_handle));
+    }
+
+    uint32_t UiDrawCommand::get_slot() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+      // LOW_CODEGEN::END::CUSTOM:GETTER_slot
+
+      return TYPE_SOA(UiDrawCommand, slot, uint32_t);
+    }
+    void UiDrawCommand::set_slot(uint32_t p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
+
+      // Set new value
+      TYPE_SOA(UiDrawCommand, slot, uint32_t) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+      // LOW_CODEGEN::END::CUSTOM:SETTER_slot
+
+      broadcast_observable(N(slot));
     }
 
     Texture UiDrawCommand::get_texture() const
@@ -1311,6 +1366,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
 
       return TYPE_SOA(UiDrawCommand, uploaded, bool);
@@ -1326,12 +1382,14 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
 
       // Set new value
       TYPE_SOA(UiDrawCommand, uploaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
 
       broadcast_observable(N(uploaded));
@@ -1340,6 +1398,7 @@ namespace Low {
     void UiDrawCommand::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
       ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:MARK_dirty
     }

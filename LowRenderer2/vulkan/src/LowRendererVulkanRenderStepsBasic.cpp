@@ -1221,6 +1221,7 @@ namespace Low {
           };
 
           Util::List<Entry> l_Entries;
+          Util::List<u32> l_DrawCommandUploads;
 
           ViewInfo l_ViewInfo = p_RenderView.get_view_info_handle();
 
@@ -1232,8 +1233,6 @@ namespace Low {
                        p_Canvas1.get_z_sorting();
               });
 
-          Util::List<UiDrawCommandUpload> l_DrawCommandUploads;
-
           for (auto it = p_RenderView.get_ui_canvases().begin();
                it != p_RenderView.get_ui_canvases().end(); ++it) {
             UiCanvas i_Canvas = it->get_id();
@@ -1242,6 +1241,10 @@ namespace Low {
                           i_Canvas.get_draw_commands().end(),
                           [](UiDrawCommand p_DC0,
                              UiDrawCommand p_DC1) -> bool {
+                            if (!p_DC0.is_alive() ||
+                                !p_DC1.is_alive()) {
+                              return false;
+                            }
                             return p_DC0.get_z_sorting() <
                                    p_DC1.get_z_sorting();
                           });
@@ -1277,30 +1280,8 @@ namespace Low {
                 }
               }
 
-              UiDrawCommandUpload i_Upload;
-              i_Upload.size = i_DrawCommand.get_size();
-              i_Upload.position = i_DrawCommand.get_position();
-              i_Upload.rotation2D =
-                  glm::radians(-i_DrawCommand.get_rotation2D());
-              i_Upload.textureIndex = 0;
-              if (i_DrawCommand.get_texture().is_alive() &&
-                  i_DrawCommand.get_texture().get_state() ==
-                      TextureState::LOADED) {
-                i_Upload.textureIndex =
-                    i_DrawCommand.get_texture().get_gpu().get_index();
-              }
-              i_Upload.materialIndex = 0;
-              if (i_DrawCommand.get_material().is_alive() &&
-                  i_DrawCommand.get_material().get_state() ==
-                      MaterialState::LOADED) {
-                i_Upload.materialIndex = i_DrawCommand.get_material()
-                                             .get_gpu()
-                                             .get_index();
-              }
-
-              i_Upload.uvRect = i_DrawCommand.get_uv_rect();
-
-              l_DrawCommandUploads.push_back(i_Upload);
+              l_DrawCommandUploads.push_back(
+                  i_DrawCommand.get_slot());
 
               ++dit;
             }
@@ -1311,8 +1292,7 @@ namespace Low {
             size_t l_StagingOffset = 0;
 
             const u64 l_DrawCommandSize =
-                sizeof(UiDrawCommandUpload) *
-                l_DrawCommandUploads.size();
+                sizeof(u32) * l_DrawCommandUploads.size();
 
             if (l_DrawCommandSize == 0) {
               return true;
@@ -1328,14 +1308,14 @@ namespace Low {
                                       l_DrawCommandSize,
                                   "Did not have enough staging "
                                   "buffer space to upload "
-                                  "UI draw commands.");
+                                  "UI draw command indices.");
 
             LOWR_VK_ASSERT_RETURN(
                 l_ViewInfo.write_current_staging_buffer(
                     l_DrawCommandUploads.data(), l_FrameUploadSpace,
                     l_StagingOffset),
-                "Failed to write ui draw command "
-                "data to staging buffer");
+                "Failed to write ui draw command indices"
+                " to staging buffer");
 
             VkBufferCopy l_CopyRegion{};
             l_CopyRegion.srcOffset = l_StagingOffset;

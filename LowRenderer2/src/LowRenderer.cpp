@@ -582,35 +582,6 @@ namespace Low {
                  "Failed to cleanup Vulkan renderer");
     }
 
-    static bool initialize_ui_renderobjects(float p_Delta)
-    {
-      for (auto it = UiRenderObject::ms_NeedInitialization.begin();
-           it != UiRenderObject::ms_NeedInitialization.end();) {
-        if (it->get_mesh().get_state() != MeshState::LOADED) {
-          ++it;
-          continue;
-        }
-
-        // Create ui draw commands and assign to canvas
-        {
-          GpuMesh i_GpuMesh = it->get_mesh().get_gpu();
-
-          for (auto sit = i_GpuMesh.get_submeshes().begin();
-               sit != i_GpuMesh.get_submeshes().end(); ++sit) {
-            GpuSubmesh i_GpuSubmesh = *sit;
-
-            UiDrawCommand i_DrawCommand = UiDrawCommand::make(
-                it->get_id(), it->get_canvas_handle(), i_GpuSubmesh);
-
-            it->get_draw_commands().push_back(i_DrawCommand);
-          }
-        }
-        it = UiRenderObject::ms_NeedInitialization.erase(it);
-      }
-
-      return true;
-    }
-
     static bool upload_material(float p_Delta, GpuMaterial p_Gpu)
     {
       LOCK_HANDLE(p_Gpu);
@@ -766,7 +737,6 @@ namespace Low {
 
       ResourceManager::tick(p_Delta);
       RenderObjectSystem::tick(p_Delta);
-      initialize_ui_renderobjects(p_Delta);
       tick_materials(p_Delta);
 
       LOW_ASSERT(Vulkan::tick(p_Delta),

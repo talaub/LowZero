@@ -39,6 +39,8 @@ namespace Low {
         uint32_t z_sorting;
         Low::Renderer::Mesh mesh;
         Low::Util::List<UiDrawCommand> draw_commands;
+        bool uploaded;
+        uint32_t slot;
         bool dirty;
         bool z_dirty;
         Low::Util::Name name;
@@ -200,6 +202,13 @@ namespace Low {
       Low::Renderer::Mesh get_mesh() const;
 
       Low::Util::List<UiDrawCommand> &get_draw_commands() const;
+
+      bool is_uploaded() const;
+      void set_uploaded(bool p_Value);
+      void toggle_uploaded();
+
+      uint32_t get_slot() const;
+      void set_slot(uint32_t p_Value);
 
       bool is_dirty() const;
       void set_dirty(bool p_Value);

@@ -76,6 +76,9 @@ namespace Low {
                 i_Position.y =
                     i_Display.get_absolute_pixel_position().y;
 
+                const Math::Vector2 i_Size =
+                    i_Display.get_absolute_pixel_scale();
+
                 i_Image.get_render_object().set_position(i_Position);
                 i_Image.get_render_object().set_rotation2D(
                     i_Display.get_absolute_rotation());

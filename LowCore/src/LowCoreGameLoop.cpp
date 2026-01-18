@@ -529,7 +529,7 @@ namespace Low {
         // FIX: Remove test code
         static bool l_IsInit = false;
 
-        test_ui();
+        // test_ui();
 
         while (g_Running) {
           {

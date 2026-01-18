@@ -14,6 +14,7 @@
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
 #include "LowUtilFileIO.h"
+#include "LowRendererUiCanvas.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
@@ -78,6 +79,9 @@ namespace Low {
         ACCESSOR_TYPE_SOA(l_Handle, View, rotation, float) = 0.0f;
         ACCESSOR_TYPE_SOA(l_Handle, View, scale_multiplier, float) =
             0.0f;
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, View, canvas,
+                                   Low::Renderer::UiCanvas))
+            Low::Renderer::UiCanvas();
         ACCESSOR_TYPE_SOA(l_Handle, View, transform_dirty, bool) =
             false;
         ACCESSOR_TYPE_SOA(l_Handle, View, name, Low::Util::Name) =
@@ -103,6 +107,8 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
 
         l_Handle.set_internal(false);
+        l_Handle.scale_multiplier(1);
+        l_Handle.set_transform_dirty(false);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -463,6 +469,38 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: layer_offset
+        }
+        {
+          // Property: canvas
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(canvas);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset = offsetof(View::Data, canvas);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Renderer::UiCanvas::type_id();
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
+            l_Handle.get_canvas();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, View, canvas, Low::Renderer::UiCanvas);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            View l_Handle = p_Handle.get_id();
+            l_Handle.set_canvas(*(Low::Renderer::UiCanvas *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            View l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<View> l_HandleLock(l_Handle);
+            *((Low::Renderer::UiCanvas *)p_Data) =
+                l_Handle.get_canvas();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: canvas
         }
         {
           // Property: unique_id
@@ -831,6 +869,9 @@ namespace Low {
         p_Node["rotation"] = rotation();
         p_Node["scale_multiplier"] = scale_multiplier();
         p_Node["layer_offset"] = layer_offset();
+        if (get_canvas().is_alive()) {
+          get_canvas().serialize(p_Node["canvas"]);
+        }
         p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
         p_Node["name"] = get_name().c_str();
 
@@ -878,6 +919,11 @@ namespace Low {
         if (p_Node["layer_offset"]) {
           l_Handle.layer_offset(
               p_Node["layer_offset"].as<uint32_t>());
+        }
+        if (p_Node["canvas"]) {
+          l_Handle.set_canvas(Low::Renderer::UiCanvas::deserialize(
+                                  p_Node["canvas"], l_Handle.get_id())
+                                  .get_id());
         }
         if (p_Node["unique_id"]) {
           l_Handle.set_unique_id(
@@ -1218,6 +1264,33 @@ namespace Low {
 
           broadcast_observable(N(layer_offset));
         }
+      }
+
+      Low::Renderer::UiCanvas View::get_canvas() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas
+        // LOW_CODEGEN::END::CUSTOM:GETTER_canvas
+
+        return TYPE_SOA(View, canvas, Low::Renderer::UiCanvas);
+      }
+      void View::set_canvas(Low::Renderer::UiCanvas p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<View> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas
+
+        // Set new value
+        TYPE_SOA(View, canvas, Low::Renderer::UiCanvas) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas
+        // LOW_CODEGEN::END::CUSTOM:SETTER_canvas
+
+        broadcast_observable(N(canvas));
       }
 
       Low::Util::UniqueId View::get_unique_id() const
