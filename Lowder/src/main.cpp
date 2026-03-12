@@ -3,6 +3,7 @@
 #include "LowMath.h"
 #include "LowMathVectorUtil.h"
 
+#include "LowRendererResourceImporter.h"
 #include "LowUtil.h"
 #include "LowUtilLogger.h"
 #include "LowUtilAssert.h"
@@ -287,6 +288,12 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
 
   Low::Core::GameLoop::register_tick_callback(&Low::Editor::tick);
 
+  if (0) {
+    Low::Renderer::ResourceImporter::import_font("C:\\roboto.ttf",
+                                                 "roboto");
+    Low::Util::cleanup();
+  }
+
   // Mtd::initialize();
 
   for (int i = 0; i < g_RuntimeModuleInitialize.size(); ++i) {
@@ -313,6 +320,8 @@ int run_low(bool p_IsHost, Low::Util::String p_ProjectPath)
   for (int i = 0; i < g_RuntimeModuleCleanup.size(); ++i) {
     g_RuntimeModuleCleanup[i]();
   }
+
+  Low::Editor::cleanup();
 
   Low::Core::cleanup();
 

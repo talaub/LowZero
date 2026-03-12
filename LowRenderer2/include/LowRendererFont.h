@@ -39,6 +39,10 @@ namespace Low {
         Low::Renderer::FontResource resource;
         Low::Util::UnorderedMap<char, Glyph> glyphs;
         bool sidecar_loaded;
+        float ascender;
+        float descender;
+        float line_height;
+        float import_height;
         Low::Util::Set<u64> references;
         Low::Util::UniqueId unique_id;
         Low::Util::Name name;
@@ -179,6 +183,18 @@ namespace Low {
       void set_sidecar_loaded(bool p_Value);
       void toggle_sidecar_loaded();
 
+      float get_ascender() const;
+      void set_ascender(float p_Value);
+
+      float get_descender() const;
+      void set_descender(float p_Value);
+
+      float get_line_height() const;
+      void set_line_height(float p_Value);
+
+      float get_import_height() const;
+      void set_import_height(float p_Value);
+
       Low::Util::UniqueId get_unique_id() const;
 
       Low::Util::Name get_name() const;
@@ -188,6 +204,8 @@ namespace Low {
       static Font
       make_from_resource_config(FontResourceConfig &p_Config);
       EditorImage get_editor_image();
+      Glyph &find_glyph(char p_Glyph);
+      Low::Math::Vector4 find_glyph_uvrect(char p_Glyph);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

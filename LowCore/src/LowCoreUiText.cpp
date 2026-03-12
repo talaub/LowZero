@@ -68,6 +68,10 @@ namespace Low {
 
           Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
 
+          new (ACCESSOR_TYPE_SOA_PTR(
+              l_Handle, Text, draw_commands,
+              Low::Util::List<Low::Renderer::UiDrawCommand>))
+              Low::Util::List<Low::Renderer::UiDrawCommand>();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, font,
                                      Low::Renderer::Font))
               Low::Renderer::Font();
@@ -78,6 +82,8 @@ namespace Low {
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Text, element,
                                      Low::Core::UI::Element))
               Low::Core::UI::Element();
+          ACCESSOR_TYPE_SOA(l_Handle, Text, full_dirty, bool) = false;
+          ACCESSOR_TYPE_SOA(l_Handle, Text, dirty, bool) = false;
 
           l_Handle.set_element(p_Element);
           p_Element.add_component(l_Handle);
@@ -195,6 +201,43 @@ namespace Low {
           l_TypeInfo.component = false;
           l_TypeInfo.uiComponent = true;
           {
+            // Property: draw_commands
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(draw_commands);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(Text::Data, draw_commands);
+            l_PropertyInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Text l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
+              l_Handle.get_draw_commands();
+              return (void *)&ACCESSOR_TYPE_SOA(
+                  p_Handle, Text, draw_commands,
+                  Low::Util::List<Low::Renderer::UiDrawCommand>);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.set_draw_commands(
+                  *(Low::Util::List<Low::Renderer::UiDrawCommand> *)
+                      p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
+              *((Low::Util::List<Low::Renderer::UiDrawCommand> *)
+                    p_Data) = l_Handle.get_draw_commands();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: draw_commands
+          }
+          {
             // Property: text
             Low::Util::RTTI::PropertyInfo l_PropertyInfo;
             l_PropertyInfo.name = N(text);
@@ -266,7 +309,7 @@ namespace Low {
             l_PropertyInfo.editorProperty = true;
             l_PropertyInfo.dataOffset = offsetof(Text::Data, color);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::UNKNOWN;
+                Low::Util::RTTI::PropertyType::COLOR;
             l_PropertyInfo.handleType = 0;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
@@ -424,6 +467,69 @@ namespace Low {
                 l_PropertyInfo;
             // End property: unique_id
           }
+          {
+            // Property: full_dirty
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(full_dirty);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset =
+                offsetof(Text::Data, full_dirty);
+            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Text l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
+              l_Handle.is_full_dirty();
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text,
+                                                full_dirty, bool);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.set_full_dirty(*(bool *)p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
+              *((bool *)p_Data) = l_Handle.is_full_dirty();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: full_dirty
+          }
+          {
+            // Property: dirty
+            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+            l_PropertyInfo.name = N(dirty);
+            l_PropertyInfo.editorProperty = false;
+            l_PropertyInfo.dataOffset = offsetof(Text::Data, dirty);
+            l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+            l_PropertyInfo.handleType = 0;
+            l_PropertyInfo.get_return =
+                [](Low::Util::Handle p_Handle) -> void const * {
+              Text l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
+              l_Handle.is_dirty();
+              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Text, dirty,
+                                                bool);
+            };
+            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                    const void *p_Data) -> void {
+              Text l_Handle = p_Handle.get_id();
+              l_Handle.set_dirty(*(bool *)p_Data);
+            };
+            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                    void *p_Data) {
+              Text l_Handle = p_Handle.get_id();
+              Low::Util::HandleLock<Text> l_HandleLock(l_Handle);
+              *((bool *)p_Data) = l_Handle.is_dirty();
+            };
+            l_TypeInfo.properties[l_PropertyInfo.name] =
+                l_PropertyInfo;
+            // End property: dirty
+          }
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
         }
@@ -521,6 +627,7 @@ namespace Low {
           _LOW_ASSERT(is_alive());
 
           Text l_Handle = make(p_Element);
+          l_Handle.set_draw_commands(get_draw_commands());
           l_Handle.set_text(get_text());
           if (get_font().is_alive()) {
             l_Handle.set_font(get_font());
@@ -529,6 +636,8 @@ namespace Low {
           l_Handle.set_size(get_size());
           l_Handle.set_content_fit_approach(
               get_content_fit_approach());
+          l_Handle.set_full_dirty(is_full_dirty());
+          l_Handle.set_dirty(is_dirty());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -591,6 +700,8 @@ namespace Low {
           Text l_Handle =
               Text::make(p_Creator.get_id(), l_HandleUniqueId);
 
+          if (p_Node["draw_commands"]) {
+          }
           if (p_Node["text"]) {
             l_Handle.set_text(p_Node["text"].as<Low::Util::String>());
           }
@@ -668,6 +779,39 @@ namespace Low {
           l_Text.notify(p_Observed, p_Observable);
         }
 
+        Low::Util::List<Low::Renderer::UiDrawCommand> &
+        Text::get_draw_commands() const
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Text> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
+          // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
+
+          return TYPE_SOA(
+              Text, draw_commands,
+              Low::Util::List<Low::Renderer::UiDrawCommand>);
+        }
+        void Text::set_draw_commands(
+            Low::Util::List<Low::Renderer::UiDrawCommand> &p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Text> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_draw_commands
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_draw_commands
+
+          // Set new value
+          TYPE_SOA(Text, draw_commands,
+                   Low::Util::List<Low::Renderer::UiDrawCommand>) =
+              p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_draw_commands
+          // LOW_CODEGEN::END::CUSTOM:SETTER_draw_commands
+
+          broadcast_observable(N(draw_commands));
+        }
+
         Low::Util::String Text::get_text() const
         {
           _LOW_ASSERT(is_alive());
@@ -694,14 +838,19 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_text
 
-          // Set new value
-          TYPE_SOA(Text, text, Low::Util::String) = p_Value;
+          if (get_text() != p_Value) {
+            // Set dirty flags
+            mark_full_dirty();
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_text
+            // Set new value
+            TYPE_SOA(Text, text, Low::Util::String) = p_Value;
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_text
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_text
 
-          broadcast_observable(N(text));
+            // LOW_CODEGEN::END::CUSTOM:SETTER_text
+
+            broadcast_observable(N(text));
+          }
         }
 
         Low::Renderer::Font Text::get_font() const
@@ -721,17 +870,29 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font
-
+          if (p_Value == get_font()) {
+            return;
+          }
+          if (get_font().is_alive()) {
+            get_font().dereference(get_id());
+          }
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_font
 
-          // Set new value
-          TYPE_SOA(Text, font, Low::Renderer::Font) = p_Value;
+          if (get_font() != p_Value) {
+            // Set dirty flags
+            mark_full_dirty();
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
+            // Set new value
+            TYPE_SOA(Text, font, Low::Renderer::Font) = p_Value;
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_font
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
+            if (p_Value.is_alive()) {
+              p_Value.reference(get_id());
+            }
+            // LOW_CODEGEN::END::CUSTOM:SETTER_font
 
-          broadcast_observable(N(font));
+            broadcast_observable(N(font));
+          }
         }
 
         Low::Math::Color Text::get_color() const
@@ -754,21 +915,26 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
-          // Set new value
-          TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
+          if (get_color() != p_Value) {
+            // Set dirty flags
+            mark_dirty();
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+            // Set new value
+            TYPE_SOA(Text, color, Low::Math::Color) = p_Value;
 
-          if (p_Value.a < 0.0f) {
-            Low::Math::Color l_Color = p_Value;
-            p_Value.a = 0.0f;
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
 
-            TYPE_SOA(Text, color, Low::Math::Color) = l_Color;
+            if (p_Value.a < 0.0f) {
+              Low::Math::Color l_Color = p_Value;
+              p_Value.a = 0.0f;
+
+              TYPE_SOA(Text, color, Low::Math::Color) = l_Color;
+            }
+
+            // LOW_CODEGEN::END::CUSTOM:SETTER_color
+
+            broadcast_observable(N(color));
           }
-
-          // LOW_CODEGEN::END::CUSTOM:SETTER_color
-
-          broadcast_observable(N(color));
         }
 
         float Text::get_size() const
@@ -791,14 +957,19 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_size
 
-          // Set new value
-          TYPE_SOA(Text, size, float) = p_Value;
+          if (get_size() != p_Value) {
+            // Set dirty flags
+            mark_dirty();
 
-          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
+            // Set new value
+            TYPE_SOA(Text, size, float) = p_Value;
 
-          // LOW_CODEGEN::END::CUSTOM:SETTER_size
+            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_size
 
-          broadcast_observable(N(size));
+            // LOW_CODEGEN::END::CUSTOM:SETTER_size
+
+            broadcast_observable(N(size));
+          }
         }
 
         TextContentFitOptions Text::get_content_fit_approach() const
@@ -892,6 +1063,88 @@ namespace Low {
           // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
           broadcast_observable(N(unique_id));
+        }
+
+        bool Text::is_full_dirty() const
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Text> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_full_dirty
+          // LOW_CODEGEN::END::CUSTOM:GETTER_full_dirty
+
+          return TYPE_SOA(Text, full_dirty, bool);
+        }
+        void Text::toggle_full_dirty()
+        {
+          set_full_dirty(!is_full_dirty());
+        }
+
+        void Text::set_full_dirty(bool p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Text> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_full_dirty
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_full_dirty
+
+          // Set new value
+          TYPE_SOA(Text, full_dirty, bool) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_full_dirty
+          // LOW_CODEGEN::END::CUSTOM:SETTER_full_dirty
+
+          broadcast_observable(N(full_dirty));
+        }
+
+        void Text::mark_full_dirty()
+        {
+          if (!is_full_dirty()) {
+            TYPE_SOA(Text, full_dirty, bool) = true;
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_full_dirty
+            // LOW_CODEGEN::END::CUSTOM:MARK_full_dirty
+          }
+        }
+
+        bool Text::is_dirty() const
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Text> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+          // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
+
+          return TYPE_SOA(Text, dirty, bool);
+        }
+        void Text::toggle_dirty()
+        {
+          set_dirty(!is_dirty());
+        }
+
+        void Text::set_dirty(bool p_Value)
+        {
+          _LOW_ASSERT(is_alive());
+          Low::Util::HandleLock<Text> l_Lock(get_id());
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+          // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
+
+          // Set new value
+          TYPE_SOA(Text, dirty, bool) = p_Value;
+
+          // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+          // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
+
+          broadcast_observable(N(dirty));
+        }
+
+        void Text::mark_dirty()
+        {
+          if (!is_dirty()) {
+            TYPE_SOA(Text, dirty, bool) = true;
+            // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+            // LOW_CODEGEN::END::CUSTOM:MARK_dirty
+          }
         }
 
         uint32_t Text::create_instance(

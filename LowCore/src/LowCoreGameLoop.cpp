@@ -533,7 +533,7 @@ namespace Low {
 
         while (g_Running) {
           {
-            {
+            if (0) {
               // FIX: Remove test code
               Low::Renderer::Font l_Font =
                   Low::Renderer::Font::find_by_name(N(roboto));
@@ -628,19 +628,42 @@ namespace Low {
           l_View.set_canvas(l_Canvas);
 
           if (1) {
-            UI::Element l_Element = UI::Element::make(N(Img), l_View);
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_Element);
+            {
+              UI::Element l_Element =
+                  UI::Element::make(N(Img), l_View);
+              UI::Component::Display l_Display =
+                  UI::Component::Display::make(l_Element);
 
-            l_Display.pixel_position(120.0f, 100.0f);
-            l_Display.pixel_scale(150, 150);
-            l_Display.rotation(0);
-            l_Display.layer(0);
+              l_Display.pixel_position(120.0f, 100.0f);
+              l_Display.pixel_scale(150, 150);
+              l_Display.rotation(0);
+              l_Display.layer(0);
 
-            UI::Component::Image l_Image =
-                UI::Component::Image::make(l_Element);
+              UI::Component::Image l_Image =
+                  UI::Component::Image::make(l_Element);
 
-            l_Image.set_texture(get_default_texture());
+              l_Image.set_texture(get_default_texture());
+            }
+
+            if (1) {
+              UI::Element l_Element =
+                  UI::Element::make(N(txt), l_View);
+              UI::Component::Display l_Display =
+                  UI::Component::Display::make(l_Element);
+
+              l_Display.pixel_position(120.0f, 250.0f);
+              l_Display.pixel_scale(300, 150);
+              l_Display.rotation(0);
+              l_Display.layer(0);
+
+              UI::Component::Text l_Text =
+                  UI::Component::Text::make(l_Element);
+              l_Text.set_text("Hello World!");
+              l_Text.set_size(32.0f);
+              Font l_Font = Font::find_by_name(N(roboto));
+              l_Text.set_font(l_Font);
+              l_Text.set_color(Math::Color(1.0f, 1.0f, 1.0f, 1.0f));
+            }
           }
 
           if (0) {

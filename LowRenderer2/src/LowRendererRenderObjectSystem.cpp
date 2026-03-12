@@ -11,6 +11,7 @@
 #include "LowRendererVulkan.h"
 #include "LowRenderer.h"
 #include "LowRendererUiCanvas.h"
+#include "LowUtilLogger.h"
 
 namespace Low {
   namespace Renderer {
@@ -277,12 +278,15 @@ namespace Low {
       {
         bool l_Result = true;
 
+        Util::List<UiDrawCommand> l_RescheduleDrawCommands;
+
         for (auto it = UiDrawCommand::ms_Dirty.begin();
              it != UiDrawCommand::ms_Dirty.end(); ++it) {
           UiDrawCommand i_DrawCommand = *it;
 
           if (!i_DrawCommand.is_alive() ||
-              i_DrawCommand.get_render_object().is_dirty()) {
+              (i_DrawCommand.get_render_object().is_alive() &&
+               i_DrawCommand.get_render_object().is_dirty())) {
             // We will skip dead draw commands as well as ones that
             // have a dirty renderobject because then they will be
             // updated later together with their render object
@@ -331,6 +335,7 @@ namespace Low {
           i_Upload.size = i_DrawCommand.get_size();
           i_Upload.uvRect = i_DrawCommand.get_uv_rect();
           i_Upload.rotation2D = i_DrawCommand.get_rotation2D();
+          i_Upload.color = i_DrawCommand.get_color();
 
           i_Upload.textureIndex =
               get_default_texture().get_gpu().get_index();
@@ -339,6 +344,10 @@ namespace Low {
                   TextureState::LOADED) {
             i_Upload.textureIndex =
                 i_DrawCommand.get_texture().get_gpu().get_index();
+          } else if (i_DrawCommand.get_texture().is_alive() &&
+                     i_DrawCommand.get_texture().get_state() !=
+                         TextureState::LOADED) {
+            l_RescheduleDrawCommands.push_back(i_DrawCommand);
           }
 
           i_Upload.materialIndex =
@@ -375,6 +384,10 @@ namespace Low {
         }
 
         UiDrawCommand::ms_Dirty.clear();
+
+        for (auto i_DrawCommand : l_RescheduleDrawCommands) {
+          i_DrawCommand.mark_dirty();
+        }
         return l_Result;
       }
 
@@ -487,6 +500,7 @@ namespace Low {
             i_Upload.size = i_DrawCommand.get_size();
             i_Upload.uvRect = i_DrawCommand.get_uv_rect();
             i_Upload.rotation2D = i_DrawCommand.get_rotation2D();
+            i_Upload.color = i_DrawCommand.get_color();
 
             i_Upload.textureIndex =
                 get_default_texture().get_gpu().get_index();
@@ -495,6 +509,10 @@ namespace Low {
                     TextureState::LOADED) {
               i_Upload.textureIndex =
                   i_DrawCommand.get_texture().get_gpu().get_index();
+            } else if (i_DrawCommand.get_texture().is_alive() &&
+                       i_DrawCommand.get_texture().get_state() !=
+                           TextureState::LOADED) {
+              i_DrawCommand.mark_dirty();
             }
 
             i_Upload.materialIndex =

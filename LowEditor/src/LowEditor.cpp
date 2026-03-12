@@ -1,6 +1,7 @@
 #include "LowEditor.h"
 
 #include "LowRendererEditorImage.h"
+#include "LowRendererResourceImporter.h"
 #include "LowRendererResourceManager.h"
 
 #include "LowUtilHandle.h"
@@ -41,6 +42,8 @@ namespace Low {
   namespace Editor {
     float g_DirectoryUpdateTimer = 2.0f;
     DirectoryWatchers g_DirectoryWatchers;
+
+    Util::FileSystem::Watcher g_RawAssetWatcher;
 
     ChangeList g_ChangeList;
 
@@ -841,6 +844,19 @@ namespace Low {
 
         register_type_nodes();
       }
+
+      {
+        LOW_ASSERT(
+            g_RawAssetWatcher.start(Util::get_project().dataPath),
+            "Failed to start raw asset file watcher.");
+      }
+    }
+
+    void cleanup()
+    {
+      {
+        g_RawAssetWatcher.stop();
+      }
     }
 
     void tick(float p_Delta, Util::EngineState p_State)
@@ -858,6 +874,34 @@ namespace Low {
       tick_editor_jobs(p_Delta);
 
       render_notifications(p_Delta);
+
+      {
+        auto l_Events = g_RawAssetWatcher.poll();
+
+        for (auto &i_Event : l_Events) {
+          if (i_Event.type ==
+              Util::FileSystem::Watcher::EventType::Overflow) {
+            continue;
+          }
+          continue;
+
+          const bool i_Png = (i_Event.path.extension() == ".png");
+
+          if (i_Png) {
+            const Util::String l_Path = Util::get_project().dataPath +
+                                        "/" +
+                                        i_Event.path.string().c_str();
+            const Util::String l_Output =
+                i_Event.path.replace_extension("").string().c_str();
+            if (!Renderer::ResourceImporter::import_texture(
+                    l_Path, l_Output)) {
+              LOW_LOG_ERROR << "Failed to import texture."
+                            << LOW_LOG_END;
+              continue;
+            }
+          }
+        }
+      }
     }
 
     Util::String prettify_name(Util::String p_String)

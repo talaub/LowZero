@@ -42,6 +42,7 @@
 
 #define CHANNEL_COUNT 3
 #define DESIRED_CHANNEL_COUNT 4
+#define FONT_HEIGHT 48
 struct Pixel
 {
   u8 r;
@@ -73,6 +74,18 @@ namespace Low {
         p_Node["name"] = p_Face->family_name;
         p_Node["style"] = p_Face->style_name;
         p_Node["msdf"] = true;
+
+        const double l_InvEm = 1.0f / float(p_Face->units_per_EM);
+
+        float ascender = float(p_Face->ascender) * l_InvEm;
+        float descender = float(p_Face->descender) * l_InvEm;
+        float line_height = float(p_Face->height) * l_InvEm;
+
+        p_Node["ascender"] = ascender;
+        p_Node["descender"] = descender;
+        p_Node["line_height"] = line_height;
+
+        p_Node["import_height"] = FONT_HEIGHT;
 
         {
           for (auto it = p_Glyphs.begin(); it != p_Glyphs.end();
@@ -144,6 +157,8 @@ namespace Low {
 
           return false;
         }
+
+        FT_Set_Pixel_Sizes(face, 0, FONT_HEIGHT);
 
         if (msdfgen::FontHandle *font =
                 msdfgen::adoptFreetypeFont(face)) {

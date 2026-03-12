@@ -161,6 +161,7 @@ namespace Low {
         {
           UNKNOWN,
           COLORRGB,
+          COLOR,
           VECTOR2,
           VECTOR3,
           QUATERNION,

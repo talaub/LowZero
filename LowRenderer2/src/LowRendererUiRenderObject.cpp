@@ -114,14 +114,9 @@ namespace Low {
       {
         Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
-        if (get_mesh().is_alive()) {
-          get_mesh().dereference(get_id());
+        for (auto i_DrawCommand : get_draw_commands()) {
+          i_DrawCommand.destroy();
         }
-        if (get_texture().is_alive()) {
-          get_texture().dereference(get_id());
-        }
-        // TODO: remove ui draw commands from canvas
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 

@@ -74,6 +74,10 @@ namespace Low {
           SINGLE_ARG(Low::Util::UnorderedMap<char, Glyph>)))
           Low::Util::UnorderedMap<char, Glyph>();
       ACCESSOR_TYPE_SOA(l_Handle, Font, sidecar_loaded, bool) = false;
+      ACCESSOR_TYPE_SOA(l_Handle, Font, ascender, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, Font, descender, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, Font, line_height, float) = 0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, Font, import_height, float) = 0.0f;
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Font, references,
                                  Low::Util::Set<u64>))
           Low::Util::Set<u64>();
@@ -331,6 +335,127 @@ namespace Low {
         // End property: sidecar_loaded
       }
       {
+        // Property: ascender
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ascender);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Font::Data, ascender);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          l_Handle.get_ascender();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, ascender,
+                                            float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.set_ascender(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          *((float *)p_Data) = l_Handle.get_ascender();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ascender
+      }
+      {
+        // Property: descender
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(descender);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Font::Data, descender);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          l_Handle.get_descender();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font, descender,
+                                            float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.set_descender(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          *((float *)p_Data) = l_Handle.get_descender();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: descender
+      }
+      {
+        // Property: line_height
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(line_height);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset = offsetof(Font::Data, line_height);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          l_Handle.get_line_height();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font,
+                                            line_height, float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.set_line_height(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          *((float *)p_Data) = l_Handle.get_line_height();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: line_height
+      }
+      {
+        // Property: import_height
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(import_height);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(Font::Data, import_height);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          l_Handle.get_import_height();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Font,
+                                            import_height, float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          Font l_Handle = p_Handle.get_id();
+          l_Handle.set_import_height(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          Font l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<Font> l_HandleLock(l_Handle);
+          *((float *)p_Data) = l_Handle.get_import_height();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: import_height
+      }
+      {
         // Property: references
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(references);
@@ -440,6 +565,40 @@ namespace Low {
         l_FunctionInfo.handleType = EditorImage::type_id();
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: get_editor_image
+      }
+      {
+        // Function: find_glyph
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(find_glyph);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Glyph);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: find_glyph
+      }
+      {
+        // Function: find_glyph_uvrect
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(find_glyph_uvrect);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_FunctionInfo.handleType = 0;
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Glyph);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: find_glyph_uvrect
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -568,6 +727,10 @@ namespace Low {
       }
       l_Handle.set_glyphs(get_glyphs());
       l_Handle.set_sidecar_loaded(is_sidecar_loaded());
+      l_Handle.set_ascender(get_ascender());
+      l_Handle.set_descender(get_descender());
+      l_Handle.set_line_height(get_line_height());
+      l_Handle.set_import_height(get_import_height());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -599,6 +762,10 @@ namespace Low {
         get_resource().serialize(p_Node["resource"]);
       }
       p_Node["sidecar_loaded"] = is_sidecar_loaded();
+      p_Node["ascender"] = get_ascender();
+      p_Node["descender"] = get_descender();
+      p_Node["line_height"] = get_line_height();
+      p_Node["import_height"] = get_import_height();
       p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
       p_Node["name"] = get_name().c_str();
 
@@ -644,6 +811,19 @@ namespace Low {
       if (p_Node["sidecar_loaded"]) {
         l_Handle.set_sidecar_loaded(
             p_Node["sidecar_loaded"].as<bool>());
+      }
+      if (p_Node["ascender"]) {
+        l_Handle.set_ascender(p_Node["ascender"].as<float>());
+      }
+      if (p_Node["descender"]) {
+        l_Handle.set_descender(p_Node["descender"].as<float>());
+      }
+      if (p_Node["line_height"]) {
+        l_Handle.set_line_height(p_Node["line_height"].as<float>());
+      }
+      if (p_Node["import_height"]) {
+        l_Handle.set_import_height(
+            p_Node["import_height"].as<float>());
       }
       if (p_Node["references"]) {
       }
@@ -894,6 +1074,114 @@ namespace Low {
       broadcast_observable(N(sidecar_loaded));
     }
 
+    float Font::get_ascender() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ascender
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ascender
+
+      return TYPE_SOA(Font, ascender, float);
+    }
+    void Font::set_ascender(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ascender
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ascender
+
+      // Set new value
+      TYPE_SOA(Font, ascender, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ascender
+      // LOW_CODEGEN::END::CUSTOM:SETTER_ascender
+
+      broadcast_observable(N(ascender));
+    }
+
+    float Font::get_descender() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_descender
+      // LOW_CODEGEN::END::CUSTOM:GETTER_descender
+
+      return TYPE_SOA(Font, descender, float);
+    }
+    void Font::set_descender(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_descender
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_descender
+
+      // Set new value
+      TYPE_SOA(Font, descender, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_descender
+      // LOW_CODEGEN::END::CUSTOM:SETTER_descender
+
+      broadcast_observable(N(descender));
+    }
+
+    float Font::get_line_height() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_line_height
+      // LOW_CODEGEN::END::CUSTOM:GETTER_line_height
+
+      return TYPE_SOA(Font, line_height, float);
+    }
+    void Font::set_line_height(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_line_height
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_line_height
+
+      // Set new value
+      TYPE_SOA(Font, line_height, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_line_height
+      // LOW_CODEGEN::END::CUSTOM:SETTER_line_height
+
+      broadcast_observable(N(line_height));
+    }
+
+    float Font::get_import_height() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_import_height
+      // LOW_CODEGEN::END::CUSTOM:GETTER_import_height
+
+      return TYPE_SOA(Font, import_height, float);
+    }
+    void Font::set_import_height(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_import_height
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_import_height
+
+      // Set new value
+      TYPE_SOA(Font, import_height, float) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_import_height
+      // LOW_CODEGEN::END::CUSTOM:SETTER_import_height
+
+      broadcast_observable(N(import_height));
+    }
+
     Low::Util::Set<u64> &Font::get_references() const
     {
       _LOW_ASSERT(is_alive());
@@ -996,6 +1284,8 @@ namespace Low {
       ResourceManager::register_asset(
           l_Font.get_texture().get_unique_id(), l_Font.get_texture());
 
+      LOW_LOG_DEBUG << "Font: " << l_Font.get_name() << LOW_LOG_END;
+
       return l_Font;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_resource_config
     }
@@ -1007,6 +1297,24 @@ namespace Low {
 
       return Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_editor_image
+    }
+
+    Glyph &Font::find_glyph(char p_Glyph)
+    {
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_glyph
+      return get_glyphs()[p_Glyph];
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_glyph
+    }
+
+    Low::Math::Vector4 Font::find_glyph_uvrect(char p_Glyph)
+    {
+      Low::Util::HandleLock<Font> l_Lock(get_id());
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_glyph_uvrect
+      Glyph &l_Glyph = find_glyph(p_Glyph);
+      return Math::Vector4(l_Glyph.uvMin.x, l_Glyph.uvMin.y,
+                           l_Glyph.uvMax.x, l_Glyph.uvMax.y);
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_glyph_uvrect
     }
 
     uint32_t Font::create_instance(

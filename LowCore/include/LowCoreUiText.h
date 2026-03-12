@@ -36,6 +36,8 @@ namespace Low {
           struct Data
           {
           public:
+            Low::Util::List<Low::Renderer::UiDrawCommand>
+                draw_commands;
             Low::Util::String text;
             Low::Renderer::Font font;
             Low::Math::Color color;
@@ -43,6 +45,8 @@ namespace Low {
             TextContentFitOptions content_fit_approach;
             Low::Core::UI::Element element;
             Low::Util::UniqueId unique_id;
+            bool full_dirty;
+            bool dirty;
 
             static size_t get_size()
             {
@@ -164,6 +168,11 @@ namespace Low {
             l_Text.destroy();
           }
 
+          Low::Util::List<Low::Renderer::UiDrawCommand> &
+          get_draw_commands() const;
+          void set_draw_commands(
+              Low::Util::List<Low::Renderer::UiDrawCommand> &p_Value);
+
           Low::Util::String get_text() const;
           void set_text(Low::Util::String p_Value);
           void set_text(const char *p_Value);
@@ -185,6 +194,16 @@ namespace Low {
           void set_element(Low::Core::UI::Element p_Value);
 
           Low::Util::UniqueId get_unique_id() const;
+
+          bool is_full_dirty() const;
+          void set_full_dirty(bool p_Value);
+          void toggle_full_dirty();
+          void mark_full_dirty();
+
+          bool is_dirty() const;
+          void set_dirty(bool p_Value);
+          void toggle_dirty();
+          void mark_dirty();
 
           static bool get_page_for_index(const u32 p_Index,
                                          u32 &p_PageIndex,

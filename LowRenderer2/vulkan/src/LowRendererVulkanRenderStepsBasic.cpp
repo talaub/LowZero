@@ -9,6 +9,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include "LowUtilLogger.h"
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 
@@ -1262,21 +1263,21 @@ namespace Low {
               }
 
               if (l_Entries.empty()) {
-                l_Entries.push_back(
-                    {i_DrawCommand.get_material().get_material_type(),
-                     i_DrawCommand.get_submesh(), 1});
+                l_Entries.emplace_back(
+                    i_DrawCommand.get_material().get_material_type(),
+                    i_DrawCommand.get_submesh(), 1);
               } else {
-                if (l_Entries.end()->materialType ==
+                if (l_Entries.back().materialType ==
                         i_DrawCommand.get_material()
                             .get_material_type() &&
-                    l_Entries.end()->submesh ==
+                    l_Entries.back().submesh ==
                         i_DrawCommand.get_submesh()) {
-                  l_Entries.end()->amount++;
+                  l_Entries.back().amount++;
                 } else {
-                  l_Entries.push_back({i_DrawCommand.get_material()
-                                           .get_material_type(),
-                                       i_DrawCommand.get_submesh(),
-                                       1});
+                  l_Entries.emplace_back(i_DrawCommand.get_material()
+                                             .get_material_type(),
+                                         i_DrawCommand.get_submesh(),
+                                         1);
                 }
               }
 

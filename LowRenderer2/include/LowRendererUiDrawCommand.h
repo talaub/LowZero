@@ -220,6 +220,9 @@ namespace Low {
       make(Low::Renderer::UiRenderObject p_RenderObject,
            Low::Renderer::UiCanvas p_Canvas,
            Low::Renderer::GpuSubmesh p_Submesh);
+      static UiDrawCommand
+      make_standalone(Low::Renderer::UiCanvas p_Canvas,
+                      Low::Renderer::GpuSubmesh p_Submesh);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

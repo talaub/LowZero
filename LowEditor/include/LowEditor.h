@@ -45,6 +45,7 @@ namespace Low {
     void LOW_EDITOR_API set_focused_widget(Widget *p_Widget);
 
     void LOW_EDITOR_API initialize();
+    void LOW_EDITOR_API cleanup();
     void LOW_EDITOR_API tick(float p_Delta,
                              Util::EngineState p_State);
 

@@ -332,7 +332,8 @@ namespace Low {
 
       void collect_files_with_suffix(const char *p_DirectoryPath,
                                      const char *p_Suffix,
-                                     List<String> &p_OutFiles)
+                                     List<String> &p_OutFiles,
+                                     const bool p_Recursive)
       {
         List<String> l_Entries;
         FileIO::list_directory(p_DirectoryPath, l_Entries);
@@ -340,7 +341,8 @@ namespace Low {
         for (auto &l_Entry : l_Entries) {
           String i_FullPath = l_Entry.c_str();
 
-          if (FileIO::is_directory(i_FullPath.c_str())) {
+          if (p_Recursive &&
+              FileIO::is_directory(i_FullPath.c_str())) {
             collect_files_with_suffix(i_FullPath.c_str(), p_Suffix,
                                       p_OutFiles);
           } else {
@@ -358,6 +360,65 @@ namespace Low {
         collect_files_with_suffix(p_DirectoryPath, p_Suffix,
                                   l_Result);
         return l_Result;
+      }
+      namespace fs = std::filesystem;
+
+      static fs::path norm(const fs::path &p)
+      {
+        // weakly_canonical doesn't require the whole path to exist.
+        // It resolves what it can and normalizes ., .. along the way.
+        return fs::weakly_canonical(p);
+      }
+
+      // (2) In base or any subdirectory (i.e., base is a prefix of
+      // candidate)
+      bool is_in_or_under(const fs::path &candidate,
+                          const fs::path &base)
+      {
+        fs::path c = norm(candidate);
+        fs::path b = norm(base);
+
+        // Different roots => can't be related (important on Windows)
+        if (c.root_name() != b.root_name() ||
+            c.root_directory() != b.root_directory())
+          return false;
+
+        auto cb = c.begin(), ce = c.end();
+        for (auto bb = b.begin(), be = b.end(); bb != be;
+             ++bb, ++cb) {
+          if (cb == ce)
+            return false;
+          if (*cb != *bb)
+            return false;
+        }
+        return true;
+      }
+
+      // (1) Directly in this directory (parent is exactly base)
+      bool is_direct_child_of(const fs::path &candidate,
+                              const fs::path &base)
+      {
+        fs::path c = norm(candidate);
+        fs::path b = norm(base);
+
+        // if candidate is itself a directory and ends with /.. etc,
+        // normalize handles it
+
+        // "Directly in base" means: parent_path(candidate) == base
+        // (for a directory candidate like ".../base/subdir", its
+        // parent is ".../base")
+        return c.has_parent_path() && (c.parent_path() == b);
+      }
+
+      bool is_file_in_directory(
+          const std::filesystem::path p_FilePath,
+          const std::filesystem::path p_DirectoryPath,
+          const bool p_IncludeSubdirectories)
+      {
+        if (p_IncludeSubdirectories) {
+          return is_in_or_under(p_FilePath, p_DirectoryPath);
+        }
+        return is_direct_child_of(p_FilePath, p_DirectoryPath);
       }
     } // namespace FileSystem
 

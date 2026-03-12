@@ -60,6 +60,9 @@ function get_property_type(p_Type) {
   if (p_Type.endsWith("Math::ColorRGB")) {
     return "COLORRGB";
   }
+  if (p_Type.endsWith("Math::Color")) {
+    return "COLOR";
+  }
   if (p_Type.endsWith("Math::Shape")) {
     return "SHAPE";
   }

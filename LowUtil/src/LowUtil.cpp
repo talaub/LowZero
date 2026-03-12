@@ -7,6 +7,7 @@
 #include "LowUtilMemory.h"
 #include "LowUtilJobManager.h"
 #include "LowUtilFileSystem.h"
+#include "LowUtilAssetManager.h"
 #include "SDL_video.h"
 
 #define SDL_MAIN_HANDLED
@@ -35,6 +36,7 @@ namespace Low {
       Name::initialize();
       Config::initialize();
       JobManager::initialize();
+      AssetManager::initialize();
 
       {
         SDL_Init(SDL_INIT_VIDEO);
@@ -56,6 +58,7 @@ namespace Low {
     void tick(float p_Delta)
     {
       FileSystem::tick(p_Delta);
+      AssetManager::tick(p_Delta);
 
       SDL_Event e;
 
@@ -96,6 +99,7 @@ namespace Low {
     {
       SDL_DestroyWindow(g_MainWindow.sdlwindow);
 
+      AssetManager::cleanup();
       JobManager::cleanup();
       Name::cleanup();
       Memory::cleanup();

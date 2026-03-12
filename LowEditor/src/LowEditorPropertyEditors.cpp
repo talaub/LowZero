@@ -959,6 +959,14 @@ namespace Low {
             p_PropertyInfoBase.set(p_Handle, &l_ColorValue);
           }
         } else if (p_PropertyInfoBase.type ==
+                   Util::RTTI::PropertyType::COLOR) {
+          Math::Color l_ColorValue;
+          p_PropertyInfoBase.get(p_Handle, &l_ColorValue);
+
+          if (render_color_selector(p_Label, &l_ColorValue)) {
+            p_PropertyInfoBase.set(p_Handle, &l_ColorValue);
+          }
+        } else if (p_PropertyInfoBase.type ==
                    Util::RTTI::PropertyType::BOOL) {
           bool l_BoolValue;
           p_PropertyInfoBase.get(p_Handle, &l_BoolValue);

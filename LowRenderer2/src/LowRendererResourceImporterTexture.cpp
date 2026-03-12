@@ -4,6 +4,7 @@
 #include <gli/generate_mipmaps.hpp>
 
 #include "LowRendererResourceImporter.h"
+#include "LowRendererTextureResource.h"
 
 #include "LowMath.h"
 #include "LowUtil.h"
@@ -12,6 +13,9 @@
 #include "LowUtilYaml.h"
 #include "LowUtilString.h"
 #include "LowUtilSerialization.h"
+#include "LowUtilFileIO.h"
+
+#include <filesystem>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
@@ -20,14 +24,35 @@
 namespace Low {
   namespace Renderer {
     namespace ResourceImporter {
-      static bool is_reimport()
+      static TextureResource
+      get_reimport(const u64 p_AssetHash,
+                   const Util::String p_SourcePath)
       {
-        return false;
+        for (u32 i = 0; i < TextureResource::living_count(); ++i) {
+          TextureResource i_TextureResource =
+              TextureResource::living_instances()[i];
+          if (i_TextureResource.get_source_file() != p_SourcePath) {
+            continue;
+          }
+          return i_TextureResource;
+        }
+
+        return Util::Handle::DEAD;
       }
 
       bool import_texture(Util::String p_ImportPath,
                           Util::String p_OutputPath)
       {
+        LOW_LOG_DEBUG << "IMPORT: '" << p_ImportPath << "'"
+                      << LOW_LOG_END;
+        LOW_LOG_DEBUG << "OUTPUT: '" << p_OutputPath << "'"
+                      << LOW_LOG_END;
+
+        if (!Util::FileIO::file_exists_sync(p_ImportPath.c_str())) {
+          LOW_LOG_ERROR << "File does not exist" << LOW_LOG_END;
+          return false;
+        }
+
         const int l_RequestedChannles = 4;
         int l_Width, l_Height, l_Channels;
 
@@ -35,10 +60,25 @@ namespace Low {
             stbi_load(p_ImportPath.c_str(), &l_Width, &l_Height,
                       &l_Channels, l_RequestedChannles);
 
+        const u64 l_AssetHash =
+            Util::fnv1a_64(l_Data, sizeof(u8) * l_Width * l_Height *
+                                       l_RequestedChannles);
+
+        const TextureResource l_OriginalTextureResource =
+            get_reimport(l_AssetHash, p_ImportPath);
+
+        const bool l_Reimport = l_OriginalTextureResource.is_alive();
+
+        LOW_LOG_DEBUG << "W: '" << l_Width << "'" << ", HEIGHT: '"
+                      << l_Height << "'" << LOW_LOG_END;
+
         Math::UVector2 l_Dimensions(l_Width, l_Height);
 
         Util::String l_FileName =
             Util::PathHelper::get_base_name_no_ext(p_ImportPath);
+
+        LOW_LOG_DEBUG << "FILENAME: '" << l_FileName << "'"
+                      << LOW_LOG_END;
 
         struct Pixel
         {
@@ -69,13 +109,9 @@ namespace Low {
         gli::texture2d l_TextureMipmaps =
             gli::generate_mipmaps(l_Texture, gli::FILTER_LINEAR);
 
-        const bool l_Reimport = is_reimport();
-
-        const u64 l_AssetHash =
-            Util::fnv1a_64(l_Data, sizeof(u8) * l_Width * l_Height *
-                                       l_RequestedChannles);
-        // TODO: Fix reimport
-        const u64 l_TextureId = l_Reimport ? 0 : l_AssetHash;
+        const u64 l_TextureId =
+            l_Reimport ? l_OriginalTextureResource.get_texture_id()
+                       : l_AssetHash;
 
         const Util::String l_BaseAssetPath =
             Util::get_project().assetCachePath + "\\" +

@@ -333,6 +333,9 @@ namespace Low {
       if (type == Util::RTTI::PropertyType::COLORRGB) {
         return Variant(*(Math::Vector3 *)l_Ptr);
       }
+      if (type == Util::RTTI::PropertyType::COLOR) {
+        return Variant(*(Math::Vector4 *)l_Ptr);
+      }
       if (type == Util::RTTI::PropertyType::VECTOR3) {
         return Variant(*(Math::Vector3 *)l_Ptr);
       }

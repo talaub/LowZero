@@ -40,6 +40,7 @@ namespace Low {
     struct UiDrawCommandUpload
     {
       Math::Vector4 uvRect;
+      Math::Color color;
       Math::Vector2 position;
       Math::Vector2 size;
       float rotation2D;

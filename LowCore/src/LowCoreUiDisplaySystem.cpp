@@ -17,7 +17,7 @@ namespace Low {
           void tick(float p_Delta, Util::EngineState p_State)
           {
             if (p_State != Util::EngineState::PLAYING) {
-              return; 
+              return;
             }
             LOW_PROFILE_CPU("Core", "UiDisplaySystem::TICK");
 
@@ -60,7 +60,7 @@ namespace Low {
           }
 
         } // namespace Display
-      }   // namespace System
-    }     // namespace UI
-  }       // namespace Core
+      } // namespace System
+    } // namespace UI
+  } // namespace Core
 } // namespace Low

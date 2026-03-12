@@ -332,6 +332,14 @@ types:
         type: Low::Util::UnorderedMap<char, Glyph>
       sidecar_loaded:
         type: bool
+      ascender:
+        type: float
+      descender:
+        type: float
+      line_height:
+        type: float
+      import_height:
+        type: float
     functions:
       is_fully_loaded:
         return_type: bool
@@ -345,6 +353,18 @@ types:
       get_editor_image:
         return_type: EditorImage
         return_handle: true
+      find_glyph:
+        return_type: Glyph
+        const: true
+        parameters:
+          - name: glyph
+            type: char
+      find_glyph_uvrect:
+        return_type: Low::Math::Vector4
+        const: true
+        parameters:
+          - name: glyph
+            type: char
   FontResource:
     private_make: true
     skip_name_serialization: true

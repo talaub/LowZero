@@ -42,6 +42,7 @@
 #include "LowRendererModelResource.h"
 #include "LowRendererAdaptiveRenderObject.h"
 #include "LowRendererRenderObjectSystem.h"
+#include "LowRendererResourceImporter.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -52,6 +53,7 @@
 #include "LowUtilLogger.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilString.h"
+#include "LowUtilAssetManager.h"
 
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
@@ -72,6 +74,7 @@ namespace Low {
     Material g_DefaultMaterial;
     Material g_DefaultMaterialTexture;
     Material g_DefaultMaterialUi;
+    Material g_DefaultMaterialUiText;
 
     RenderView g_GameRenderView;
     RenderView g_EditorRenderView;
@@ -93,6 +96,10 @@ namespace Low {
     Material get_default_material_ui()
     {
       return g_DefaultMaterialUi;
+    }
+    Material get_default_material_ui_text()
+    {
+      return g_DefaultMaterialUiText;
     }
 
     MaterialTypes &get_material_types()
@@ -209,6 +216,10 @@ namespace Low {
       {
         g_DefaultMaterialUi = Material::make_gpu_ready(
             N(DefaultMaterialUi), g_MaterialTypes.uiBase);
+      }
+      {
+        g_DefaultMaterialUiText = Material::make_gpu_ready(
+            N(DefaultMaterialUiText), g_MaterialTypes.uiText);
       }
       return true;
     }
@@ -407,7 +418,7 @@ namespace Low {
         }
       }
 
-      {
+      if (0) {
         Util::List<Util::String> l_TextureResources;
         Util::FileSystem::collect_files_with_suffix(
             Util::get_project().dataPath.c_str(), ".texresource.yaml",
@@ -428,6 +439,90 @@ namespace Low {
               i_ResourceConfig.textureId,
               Texture::make_from_resource_config(i_ResourceConfig));
         }
+      } else {
+        Util::AssetManager::TypeRegistratorBuilder l_Builder(
+            N(Texture));
+        l_Builder.auto_initialize(true)
+            .initialize_on_startup(true)
+            .add_asset_suffix(".texresource.yaml");
+        l_Builder.add_initialize_directory(
+            Util::get_project().dataPath, true);
+        l_Builder.add_raw_suffix(".png");
+        l_Builder.add_import_direcotry(Util::get_project().dataPath,
+                                       true, true);
+
+        l_Builder
+            .initializer(
+                [](const Util::String p_Path) -> Util::Handle {
+                  Util::Serial::Node i_ResourceNode =
+                      Util::Serial::load_yaml_file(p_Path.c_str());
+                  TextureResourceConfig i_ResourceConfig;
+
+                  LOWR_ASSERT_RETURN(
+                      ResourceManager::parse_texture_resource_config(
+                          p_Path, i_ResourceNode, i_ResourceConfig),
+                      "Failed to parse texture resource config.");
+
+                  ResourceManager::register_asset(
+                      i_ResourceConfig.textureId,
+                      Texture::make_from_resource_config(
+                          i_ResourceConfig));
+                })
+            .importer([](const Util::String p_Path) -> Util::String {
+              std::filesystem::path l_FilePath(
+                  (Util::get_project().dataPath + p_Path).c_str());
+
+              if (Util::FileSystem::is_file_in_directory(
+                      l_FilePath,
+                      std::filesystem::path(
+                          Util::get_project()
+                              .editorImagesPath.c_str()),
+                      true)) {
+                return "";
+              }
+              const Util::String l_Path =
+                  Util::get_project().dataPath + "/" + p_Path;
+              const Util::String l_Output =
+                  l_FilePath.replace_extension("").string().c_str();
+              if (!ResourceImporter::import_texture(l_Path,
+                                                    l_Output)) {
+                LOW_LOG_ERROR << "Failed to import texture."
+                              << LOW_LOG_END;
+                return "";
+              }
+
+              return Util::get_project().dataPath + "/" + l_Output +
+                     ".texresource.yaml";
+            });
+
+        l_Builder.raw_deleter([](const Util::String p_Path) {
+          std::filesystem::path l_FilePath(p_Path.c_str());
+
+          if (Util::FileSystem::is_file_in_directory(
+                  l_FilePath,
+                  std::filesystem::path(
+                      Util::get_project().editorImagesPath.c_str()),
+                  true)) {
+            return;
+          }
+
+          for (u32 i = 0; i < TextureResource::living_count(); ++i) {
+            TextureResource i_Resource =
+                TextureResource::living_instances()[i];
+
+            if (i_Resource.get_source_file() == p_Path) {
+              Util::FileIO::delete_sync(
+                  i_Resource.get_path().c_str());
+              break;
+            }
+          }
+        });
+
+        l_Builder.deleter([](const Util::String p_Path) {
+          std::filesystem::path l_FilePath(p_Path.c_str());
+        });
+
+        Util::AssetManager::register_asset_type(l_Builder.build());
       }
 
       {
@@ -435,6 +530,8 @@ namespace Low {
         Util::FileSystem::collect_files_with_suffix(
             Util::get_project().dataPath.c_str(),
             ".fontresource.yaml", l_Resources);
+
+        LOW_LOG_DEBUG << "Loading fonts" << LOW_LOG_END;
 
         for (auto it = l_Resources.begin(); it != l_Resources.end();
              ++it) {

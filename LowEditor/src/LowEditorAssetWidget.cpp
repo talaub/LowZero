@@ -361,6 +361,10 @@ namespace Low {
 
       for (auto it = p_DirectoryWatcher.files.begin();
            it != p_DirectoryWatcher.files.end(); ++it) {
+        if (!Util::FileSystem::file_watcher_exists(*it)) {
+            // TODO: New files never get watched
+          continue;
+        }
         const Util::FileSystem::FileWatcher &i_FileWatcher =
             Util::FileSystem::get_file_watcher(*it);
         if (i_FileWatcher.hidden) {

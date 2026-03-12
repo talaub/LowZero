@@ -159,8 +159,12 @@ namespace Low {
           return false;
         }
 
-        register_asset(p_Texture.get_resource().get_texture_id(),
-                       p_Texture);
+        const u64 l_TextureId =
+            p_Texture.get_resource().get_texture_id();
+
+        if (l_TextureId != 0) {
+          register_asset(l_TextureId, p_Texture);
+        }
 
         p_Texture.set_state(TextureState::SCHEDULEDTOLOAD);
 
@@ -399,6 +403,14 @@ namespace Low {
 
           Util::Serial::Node l_Glyphs = l_Sidecar["glyphs"];
 
+          l_Font.set_ascender(l_Sidecar["ascender"].as<float>());
+          l_Font.set_descender(l_Sidecar["descender"].as<float>());
+          l_Font.set_line_height(
+              l_Sidecar["line_height"].as<float>());
+
+          l_Font.set_import_height(
+              l_Sidecar["import_height"].as<float>());
+
           for (auto [k, v] : l_Glyphs) {
             Util::Serial::Node i_Node = v;
             Glyph i_Glyph;
@@ -418,6 +430,8 @@ namespace Low {
 
           if (l_Font.get_texture().get_state() ==
               TextureState::UNLOADED) {
+            LOW_LOG_DEBUG << "LOAD FONT TEX: " << l_Font.get_name()
+                          << LOW_LOG_END;
             load_texture(l_Font.get_texture());
           }
         });
@@ -1534,6 +1548,14 @@ namespace Low {
       void register_asset_id(const u64 p_AssetId,
                              const u64 p_AssetHandleId)
       {
+        if (p_AssetId == 0) {
+          LOW_LOG_WARN << "Tried to register asset with asset id 0. "
+                          "Asset will therefore not be registered "
+                          "with the renderer's ResourceManager."
+                       << LOW_LOG_END;
+          return;
+        }
+
         auto l_Pos = g_AssetRegistry.find(p_AssetId);
         LOW_ASSERT(l_Pos == g_AssetRegistry.end() ||
                        l_Pos->second == p_AssetHandleId,

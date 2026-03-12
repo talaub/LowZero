@@ -478,6 +478,17 @@ types:
           - name: submesh
             type: Low::Renderer::GpuSubmesh
             handle: true
+      make_standalone:
+        static: true
+        return_type: UiDrawCommand
+        return_handle: true
+        parameters:
+          - name: canvas
+            type: Low::Renderer::UiCanvas
+            handle: true
+          - name: submesh
+            type: Low::Renderer::GpuSubmesh
+            handle: true
   UiRenderObject:
     skip_name_serialization: true
     skip_name_deserialization: true

@@ -165,22 +165,30 @@ types:
       - LowRendererFont.h
       - LowRenderer.h
     properties:
+      draw_commands:
+        editor_editable: false
+        type: Low::Util::List<Low::Renderer::UiDrawCommand>
+        expose_scripting: false
       text:
         editor_editable: true
         type: Low::Util::String
         expose_scripting: true
+        dirty_flag: full_dirty
       font:
         editor_editable: true
         type: Low::Renderer::Font
         handle: true
+        dirty_flag: full_dirty
       color:
         editor_editable: true
         type: Low::Math::Color
         expose_scripting: true
+        dirty_flag: dirty
       size:
         editor_editable: true
         type: float
         expose_scripting: true
+        dirty_flag: dirty
       content_fit_approach:
         type: TextContentFitOptions
         no_ref: true

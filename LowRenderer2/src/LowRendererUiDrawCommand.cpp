@@ -107,7 +107,6 @@ namespace Low {
         Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
-        // TODO: remove from canvas
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -658,6 +657,33 @@ namespace Low {
         }
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make
+      }
+      {
+        // Function: make_standalone
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(make_standalone);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = UiDrawCommand::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Canvas);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::UiCanvas::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Submesh);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::HANDLE;
+          l_ParameterInfo.handleType =
+              Low::Renderer::GpuSubmesh::type_id();
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: make_standalone
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
@@ -1450,7 +1476,6 @@ namespace Low {
                         Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
-
       UiDrawCommand l_DrawCommand =
           UiDrawCommand::make(p_RenderObject.get_name());
 
@@ -1473,6 +1498,28 @@ namespace Low {
 
       return l_DrawCommand;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
+    }
+
+    UiDrawCommand UiDrawCommand::make_standalone(
+        Low::Renderer::UiCanvas p_Canvas,
+        Low::Renderer::GpuSubmesh p_Submesh)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_standalone
+      UiDrawCommand l_DrawCommand =
+          UiDrawCommand::make(N(StandaloneUIDC));
+
+      _LOW_ASSERT(p_Canvas.is_alive());
+
+      l_DrawCommand.set_render_object(Util::Handle::DEAD);
+      l_DrawCommand.set_submesh(p_Submesh);
+      l_DrawCommand.set_canvas_handle(p_Canvas.get_id());
+
+      l_DrawCommand.mark_z_dirty();
+
+      p_Canvas.get_draw_commands().push_back(l_DrawCommand);
+
+      return l_DrawCommand;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_standalone
     }
 
     uint32_t UiDrawCommand::create_instance(

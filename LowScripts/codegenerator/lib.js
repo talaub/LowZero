@@ -709,6 +709,7 @@ function is_reference_type(t) {
     ![
       "void",
       "int",
+      "char",
       "float",
       "Name",
       "Low::Util::Name",
