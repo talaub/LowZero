@@ -1,5 +1,6 @@
 #include "LowRenderer.h"
 
+#include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
 #include "LowRendererEditorImageStaging.h"
 #include "LowRendererVulkanRenderer.h"
@@ -43,6 +44,9 @@
 #include "LowRendererAdaptiveRenderObject.h"
 #include "LowRendererRenderObjectSystem.h"
 #include "LowRendererResourceImporter.h"
+#include "LowRendererSS2DDrawCommand.h"
+#include "LowRendererSS2DCanvas.h"
+#include "LowRendererBuffer.h"
 
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
@@ -57,6 +61,7 @@
 
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_vulkan.h"
+#include <imgui.h>
 #include <vulkan/vulkan_core.h>
 
 namespace Low {
@@ -80,6 +85,8 @@ namespace Low {
     RenderView g_EditorRenderView;
 
     RenderScene g_GlobalScene;
+
+    SS2DCanvas g_SS2DCanvas;
 
     Texture get_default_texture()
     {
@@ -121,6 +128,7 @@ namespace Low {
 
     static void initialize_types()
     {
+      Buffer::initialize();
       MaterialType::initialize();
       RenderScene::initialize();
       RenderView::initialize();
@@ -154,10 +162,14 @@ namespace Low {
       Model::initialize();
       ModelResource::initialize();
       AdaptiveRenderObject::initialize();
+      SS2DCanvas::initialize();
+      SS2DDrawCommand::initialize();
     }
 
     static void cleanup_types()
     {
+      SS2DDrawCommand::cleanup();
+      SS2DCanvas::cleanup();
       AdaptiveRenderObject::cleanup();
       ModelResource::cleanup();
       Model::cleanup();
@@ -191,6 +203,7 @@ namespace Low {
       GpuTexture::cleanup();
       Texture::cleanup();
       MaterialType::cleanup();
+      Buffer::cleanup();
     }
 
     static bool initialize_default_materials()
@@ -771,6 +784,39 @@ namespace Low {
           LOW_ASSERT(RenderStep::living_instances()[i].setup(),
                      "Failed to setup renderstep.");
         }
+
+        {
+          SS2DCanvas l_Canvas = SS2DCanvas::make(N(Test));
+          l_Canvas.set_dimensions(1024, 1024);
+
+          {
+            SS2DDrawCommand l_DC = SS2DDrawCommand::make(
+                N(Rect1), l_Canvas, SS2DType::Rect);
+            l_DC.set_position(100.0f, 100.0f);
+            l_DC.set_half_extents(20, 30);
+            l_DC.set_color(Math::Color(1.0f, 0.0f, 0.0f, 1.0f));
+          }
+
+          {
+            SS2DDrawCommand l_DC = SS2DDrawCommand::make(
+                N(Circle1), l_Canvas, SS2DType::Circle);
+            l_DC.set_position(500.0f, 100.0f);
+            l_DC.set_radius(20.0f);
+            l_DC.set_color(Math::Color(0.0f, 1.0f, 0.0f, 1.0f));
+          }
+
+          {
+            SS2DDrawCommand l_DC = SS2DDrawCommand::make(
+                N(RoundRect1), l_Canvas, SS2DType::RoundedRect);
+            l_DC.set_position(100.0f, 300.0f);
+            l_DC.set_half_extents(30.0f, 20.0f);
+            l_DC.set_color(Math::Color(0.0f, 0.0f, 1.0f, 1.0f));
+            l_DC.set_corner_radius(
+                Math::Vector4(0, 12.0f, 12.0f, 22.0f));
+          }
+
+          g_SS2DCanvas = l_Canvas;
+        }
         l_Initialized = true;
       }
     }
@@ -831,6 +877,17 @@ namespace Low {
 
     void tick(float p_Delta)
     {
+
+      if (g_SS2DCanvas.is_alive() &&
+          g_SS2DCanvas.get_out_image().is_alive() &&
+          g_SS2DCanvas.get_out_image().get_gpu().is_alive()) {
+        ImGui::Begin("TestOutput");
+        ImGui::Image(g_SS2DCanvas.get_out_image()
+                         .get_gpu()
+                         .get_imgui_texture_id(),
+                     ImVec2(1024, 1024));
+        ImGui::End();
+      }
 
       ResourceManager::tick(p_Delta);
       RenderObjectSystem::tick(p_Delta);

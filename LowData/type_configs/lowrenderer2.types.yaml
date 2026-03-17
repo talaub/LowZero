@@ -611,3 +611,99 @@ types:
           - name: model
             type: Low::Renderer::Model
             handle: true
+  SS2DDrawCommand:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    dynamic_increase: false
+    private_make: true
+    dirty_flags:
+      dirty:
+        no_data: true
+      z_dirty:
+        no_data: true
+    properties:
+      type:
+        type: SS2DType
+        private_setter: true
+      position:
+        type: Low::Math::Vector2
+        dirty_flag: dirty
+      half_extents:
+        type: Low::Math::Vector2
+        dirty_flag: dirty
+      rotation:
+        type: float
+        dirty_flag: dirty
+      color:
+        type: Low::Math::Color
+        dirty_flag: dirty
+      corner_radius:
+        type: Low::Math::Vector4
+        dirty_flag: dirty
+      uv_rect:
+        type: Low::Math::Vector4
+        dirty_flag: dirty
+      z_sorting:
+        type: uint32_t
+        dirty_flag:
+          - dirty
+          - z_dirty
+      uploaded:
+        type: bool
+      canvas_handle:
+        type: uint64_t
+        private_setter: true
+    functions:
+      make:
+        static: true
+        return_handle: true
+        return_type: SS2DDrawCommand
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: canvas
+            type: SS2DCanvas
+            handle: true
+          - name: type
+            type: SS2DType
+            no_ref: true
+    virtual_properties:
+      radius:
+        type: float
+
+  SS2DCanvas:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    dirty_flags:
+      - z_dirty
+    properties:
+      draw_commands:
+        type: Low::Util::List<SS2DDrawCommand>
+        no_setter: true
+      out_image:
+        type: Low::Renderer::Texture
+        handle: true
+      dimensions:
+        type: Low::Math::UVector2
+        setter_name: set_actual_dimensions
+      desired_dimensions:
+        type: Low::Math::UVector2
+        dirty_flag: dimensions_dirty
+        setter_name: set_dimensions
+      drawcommand_index_buffer:
+        type: Low::Renderer::Buffer
+        handle: true
+      backend_handle:
+        type: uint64_t
+  Buffer:
+    skip_name_serialization: true
+    skip_name_deserialization: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    properties:
+      data_handle:
+        type: uint64_t

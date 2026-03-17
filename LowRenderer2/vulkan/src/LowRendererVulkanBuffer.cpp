@@ -4,8 +4,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       namespace BufferUtil {
-        AllocatedBuffer create_buffer(
-                                      size_t p_AllocSize,
+        AllocatedBuffer create_buffer(size_t p_AllocSize,
                                       VkBufferUsageFlags p_Usage,
                                       VmaMemoryUsage p_MemoryUsage)
         {
@@ -29,13 +28,24 @@ namespace Low {
           return l_NewBuffer;
         }
 
-        void destroy_buffer(
-                            const AllocatedBuffer &p_Buffer)
+        BufferHolder
+        create_buffer_holder(size_t p_AllocSize,
+                             VkBufferUsageFlags p_Usage,
+                             VmaMemoryUsage p_MemoryUsage)
+        {
+
+          BufferHolder l_Holder = BufferHolder::make(N(Buffer));
+          l_Holder.set_bf(
+              create_buffer(p_AllocSize, p_Usage, p_MemoryUsage));
+          return l_Holder;
+        }
+
+        void destroy_buffer(const AllocatedBuffer &p_Buffer)
         {
           vmaDestroyBuffer(Global::get_allocator(), p_Buffer.buffer,
                            p_Buffer.allocation);
         }
       } // namespace BufferUtil
-    }   // namespace Vulkan
-  }     // namespace Renderer
+    } // namespace Vulkan
+  } // namespace Renderer
 } // namespace Low

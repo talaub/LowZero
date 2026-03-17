@@ -1,6 +1,7 @@
 #include "LowEditorHandlePropertiesSection.h"
 
 #include "LowUtilGlobals.h"
+#include "LowUtilLogger.h"
 #include "imgui.h"
 #include "IconsFontAwesome5.h"
 

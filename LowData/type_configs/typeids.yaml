@@ -89,6 +89,12 @@ LowRenderer2:
   Model: 88
   ModelResource: 89
   AdaptiveRenderObject: 90
+  SS2DDrawCommand: 91
+  SS2DCanvas: 92
+  Buffer: 93
+  BufferHolder: 94
+  DataBuffer: 95
+  SS2DCanvasBackend: 96
 LowRendjrer2:
   RenderObject: 56
   RenderView: 57

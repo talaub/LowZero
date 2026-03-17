@@ -53,6 +53,8 @@ namespace Low {
 
     void _set_focused_widget(Widget *p_Widget);
 
+    Widget *_open_widget_for_handle(Util::Handle p_Handle);
+
     namespace Helper {
       struct SphericalBillboardMaterials
       {

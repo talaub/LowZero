@@ -1,5 +1,6 @@
 #include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
+#include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererVulkan.h"
 
 #include "LowRendererVulkanBase.h"
@@ -121,6 +122,8 @@ namespace Low {
 
         DynamicBuffer g_DrawCommandBuffer;
         DynamicBuffer g_UiDrawCommandBuffer;
+
+        AllocatedBuffer g_SS2DDrawcCommandBuffer;
 
         AllocatedBuffer g_MaterialDataBuffer;
 
@@ -297,6 +300,11 @@ namespace Low {
         AllocatedBuffer get_material_data_buffer()
         {
           return g_MaterialDataBuffer;
+        }
+
+        AllocatedBuffer get_ss2d_drawcommand_buffer()
+        {
+          return g_SS2DDrawcCommandBuffer;
         }
 
         VkInstance get_instance()
@@ -562,6 +570,14 @@ namespace Low {
 
           g_MaterialDataBuffer = BufferUtil::create_buffer(
               MATERIAL_DATA_SIZE * 1000,
+              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                  VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+              VMA_MEMORY_USAGE_GPU_ONLY);
+
+          g_SS2DDrawcCommandBuffer = BufferUtil::create_buffer(
+              sizeof(SS2DDrawCommandUpload) *
+                  SS2DDrawCommand::get_capacity(),
               VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                   VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,

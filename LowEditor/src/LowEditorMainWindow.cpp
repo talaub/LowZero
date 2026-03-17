@@ -30,6 +30,7 @@
 #include "LowEditorScriptingErrorWidget.h"
 #include "LowEditorAppearanceWidget.h"
 #include "LowEditorScriptWidget.h"
+#include "LowEditorEditWidget.h"
 #include "LowEditor.h"
 
 #include "LowUtil.h"
@@ -79,6 +80,8 @@ namespace Low {
     DetailsWidget *g_DetailsWidget;
     FlodeWidget *g_FlodeWidget;
     ScriptWidget *g_ScriptWidget;
+
+    Low::Util::Map<Util::Handle, EditWidget *> g_EditWidgets;
 
     Low::Util::Map<Util::String, EditorWidget> g_Widgets;
 
@@ -678,12 +681,43 @@ namespace Low {
         }
       }
 
+      for (auto it = g_EditWidgets.begin(); it != g_EditWidgets.end();
+           ++it) {
+        if (it->second->handle_is_alive()) {
+          it->second->show(p_Delta);
+        }
+      }
+
       if (!g_FocusedWidget ||
           !g_FocusedWidget->handle_shortcuts(p_Delta)) {
         handle_shortcuts(p_Delta);
       }
       ImGui::ShowDemoWindow();
       // ImGui::ShowMetricsWindow();
+    }
+
+    Widget *_open_widget_for_handle(Util::Handle p_Handle)
+    {
+      for (auto it = g_EditWidgets.begin();
+           it != g_EditWidgets.end();) {
+        if (!it->second->handle_is_alive()) {
+          delete it->second;
+
+          it = g_EditWidgets.erase(it);
+          continue;
+        }
+
+        if (it->first == p_Handle) {
+          _set_focused_widget(it->second);
+          return it->second;
+        }
+
+        it++;
+      }
+
+      EditWidget *l_NewWidget = new EditWidget(p_Handle);
+      _set_focused_widget(l_NewWidget);
+      g_EditWidgets[p_Handle] = l_NewWidget;
     }
 
     DetailsWidget *get_details_widget()

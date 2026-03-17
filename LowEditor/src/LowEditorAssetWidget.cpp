@@ -1,6 +1,7 @@
 #include "LowEditorAssetWidget.h"
 
 #include "LowEditorFonts.h"
+#include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
 #include "LowMath.h"
 #include "LowRendererMeshResource.h"
@@ -362,7 +363,7 @@ namespace Low {
       for (auto it = p_DirectoryWatcher.files.begin();
            it != p_DirectoryWatcher.files.end(); ++it) {
         if (!Util::FileSystem::file_watcher_exists(*it)) {
-            // TODO: New files never get watched
+          // TODO: New files never get watched
           continue;
         }
         const Util::FileSystem::FileWatcher &i_FileWatcher =
@@ -381,6 +382,9 @@ namespace Low {
                      i_FileWatcher.extension == "yaml") {
             open_file_in_code_editor(i_FileWatcher.path);
           }
+        }
+        if (i_Result.doubleClicked) {
+          _open_widget_for_handle(i_FileWatcher.handle);
         }
 
         l_Column++;

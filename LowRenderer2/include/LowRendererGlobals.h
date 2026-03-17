@@ -49,6 +49,18 @@ namespace Low {
       u32 padding0;
     };
 
+    struct SS2DDrawCommandUpload
+    {
+      Math::Color color;
+      Math::Vector4 corners;
+      Math::Vector2 position;
+      Math::Vector2 half_extents;
+      u32 type;
+      u32 pad0;
+      u32 pad1;
+      u32 pad2;
+    };
+
     struct RenderEntry
     {
       union

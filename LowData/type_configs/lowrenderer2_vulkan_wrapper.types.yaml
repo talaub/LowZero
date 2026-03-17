@@ -99,3 +99,15 @@ types:
         type: AllocatedBuffer
       frame_index:
         type: uint32_t
+  BufferHolder:
+    properties:
+      bf:
+        type: AllocatedBuffer
+        getter_name: get
+        no_ref: true
+  SS2DCanvasBackend:
+    properties:
+      canvas_data:
+        type: VkDescriptorSet
+        no_ref: true
+

@@ -2,9 +2,13 @@
 
 #include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
+#include "LowRendererSS2DCanvas.h"
+#include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererTextureState.h"
+#include "LowRendererVkBufferHolder.h"
 #include "LowRendererVulkan.h"
 #include "LowRendererVulkanBase.h"
+#include "LowRendererVkSS2DCanvasBackend.h"
 
 #include "LowRendererVulkanPipeline.h"
 #include "LowRendererVulkanImage.h"
@@ -22,6 +26,7 @@
 #include "LowRenderer.h"
 
 #include "LowUtil.h"
+#include "LowUtilLogger.h"
 #include "LowUtilResource.h"
 
 #include <glm/gtc/matrix_access.hpp>
@@ -46,6 +51,7 @@
 
 #define POINTLIGHTS_PER_CLUSTER 32u
 #define LIGHT_CLUSTER_DEPTH 24u
+#define SS2DDRAWCOMMAND_COUNT 128u
 
 // #define STB_IMAGE_WRITE_IMPLEMENTATION
 // #define STB_IMAGE_IMPLEMENTATION
@@ -82,7 +88,13 @@ namespace Low {
         Pipeline solidBasePipeline;
 
         Pipeline lightingPipeline;
+
+        Pipeline ss2d;
+        VkPipelineLayout ss2dLayout;
       } g_Pipelines;
+
+      VkDescriptorSet g_Ss2dGlobalSet;
+      VkDescriptorSetLayout g_Ss2dCanvasDSLayout;
 
       namespace Convert {
         static VkFormat image_format(ImageFormat p_Format)
@@ -182,6 +194,82 @@ namespace Low {
         }
 
         return l_Builder.register_pipeline();
+      }
+
+      static bool ss2d_pipeline_init(Context &p_Context)
+      {
+        Util::String l_VertexShaderPath = "fullscreen_triangle.vert";
+        Util::String l_FragmentShaderPath = "ss2d.frag";
+
+        Util::List<VkDescriptorSetLayout> l_DescriptorSetLayouts;
+
+        VkDescriptorSetLayout l_GlobalDSLayout;
+
+        {
+          DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+          l_Builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+          l_GlobalDSLayout = l_Builder.build(
+              Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+        }
+
+        {
+          DescriptorUtil::DescriptorLayoutBuilder l_Builder;
+          l_Builder.add_binding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+          g_Ss2dCanvasDSLayout = l_Builder.build(
+              Global::get_device(), VK_SHADER_STAGE_ALL_GRAPHICS);
+        }
+
+        l_DescriptorSetLayouts.push_back(l_GlobalDSLayout);
+        l_DescriptorSetLayouts.push_back(g_Ss2dCanvasDSLayout);
+
+        VkPipelineLayoutCreateInfo l_Layout{};
+        l_Layout.sType =
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        l_Layout.pNext = nullptr;
+        l_Layout.pSetLayouts = l_DescriptorSetLayouts.data();
+        l_Layout.setLayoutCount = l_DescriptorSetLayouts.size();
+
+        LOWR_VK_CHECK_RETURN(
+            vkCreatePipelineLayout(Global::get_device(), &l_Layout,
+                                   nullptr, &g_Pipelines.ss2dLayout));
+
+        // Create pipeline
+        PipelineUtil::GraphicsPipelineBuilder l_Builder;
+        l_Builder.pipelineLayout = g_Pipelines.ss2dLayout;
+        l_Builder.set_shaders(l_VertexShaderPath,
+                              l_FragmentShaderPath);
+        l_Builder.set_input_topology(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        l_Builder.set_polygon_mode(VK_POLYGON_MODE_FILL);
+        l_Builder.set_cull_mode(VK_CULL_MODE_BACK_BIT,
+                                VK_FRONT_FACE_CLOCKWISE);
+        l_Builder.set_multismapling_none();
+        l_Builder.disable_blending();
+        l_Builder.disable_depth_test();
+
+        l_Builder.colorAttachmentFormats.clear();
+        l_Builder.colorAttachmentFormats.push_back(
+            VK_FORMAT_R16G16B16A16_SFLOAT);
+
+        l_Builder.set_depth_format(VK_FORMAT_UNDEFINED);
+
+        g_Pipelines.ss2d = l_Builder.register_pipeline();
+
+        g_Ss2dGlobalSet =
+            Global::get_global_descriptor_allocator().allocate(
+                Global::get_device(), l_GlobalDSLayout);
+
+        DescriptorUtil::DescriptorWriter l_Writer;
+        l_Writer.write_buffer(
+            0, Global::get_ss2d_drawcommand_buffer().buffer,
+            Global::get_ss2d_drawcommand_buffer().info.size, 0,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+        l_Writer.update_set(Global::get_device(), g_Ss2dGlobalSet);
+
+        return true;
       }
 
       bool lighting_pipeline_init(Context &p_Context)
@@ -379,6 +467,7 @@ namespace Low {
       {
         bg_pipelines_init(p_Context);
         lighting_pipeline_init(p_Context);
+        ss2d_pipeline_init(p_Context);
         triangle_pipeline_init(p_Context);
         solid_base_pipeline_init(p_Context);
         return true;
@@ -391,10 +480,14 @@ namespace Low {
         TexExport::initialize();
         Scene::initialize();
         ViewInfo::initialize();
+        BufferHolder::initialize();
+        SS2DCanvasBackend::initialize();
       }
 
       static void cleanup_types()
       {
+        SS2DCanvasBackend::cleanup();
+        BufferHolder::cleanup();
         ViewInfo::cleanup();
         Scene::cleanup();
         TexExport::cleanup();
@@ -822,6 +915,62 @@ namespace Low {
               p_ViewInfo.get_current_staging_buffer().buffer.buffer,
               p_ViewInfo.get_directional_light_buffer().buffer, 1,
               &l_CopyRegion);
+        }
+
+        return true;
+      }
+
+      static bool prepare_ss2dcanvas_dimensions(float p_Delta,
+                                                SS2DCanvas p_Canvas)
+      {
+        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
+
+        p_Canvas.set_actual_dimensions(
+            p_Canvas.get_desired_dimensions());
+
+        if (p_Canvas.get_out_image().is_alive()) {
+          Image l_Image =
+              p_Canvas.get_out_image().get_gpu().get_data_handle();
+
+          ImGui_ImplVulkan_RemoveTexture(
+              (VkDescriptorSet)p_Canvas.get_out_image()
+                  .get_gpu()
+                  .get_imgui_texture_id());
+
+          ImageUtil::destroy(l_Image);
+          l_Image.destroy();
+        }
+
+        VkExtent3D l_Extent{p_Canvas.get_dimensions().x,
+                            p_Canvas.get_dimensions().y, 1};
+
+        const VkFormat l_ImageFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+        {
+          if (!p_Canvas.get_out_image().is_alive()) {
+            p_Canvas.set_out_image(Texture::make_gpu_ready(N(Out)));
+          }
+
+          Image l_Image =
+              p_Canvas.get_out_image().get_gpu().get_data_handle();
+
+          if (!l_Image.is_alive()) {
+            l_Image = Image::make(N(Out));
+            p_Canvas.get_out_image().get_gpu().set_data_handle(
+                l_Image.get_id());
+          }
+
+          ImageUtil::create(l_Image, l_Extent, l_ImageFormat,
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                VK_IMAGE_USAGE_STORAGE_BIT |
+                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                VK_IMAGE_USAGE_SAMPLED_BIT,
+                            false);
+
+          ImageUtil::cmd_transition(
+              l_Cmd, l_Image, VK_IMAGE_LAYOUT_UNDEFINED,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
         return true;
@@ -1362,6 +1511,200 @@ namespace Low {
         return true;
       }
 
+      static bool render_ss2d_canvases(const float p_Delta)
+      {
+        VkCommandBuffer l_Cmd = Global::get_current_command_buffer();
+
+        VK_RENDERDOC_SECTION_BEGIN("SS2D Drawing",
+                                   SINGLE_ARG({0.9f, 0.5f, 0.0f}));
+
+        for (u32 i = 0u; i < SS2DCanvas::living_count(); ++i) {
+          SS2DCanvas i_Canvas = SS2DCanvas::living_instances()[i];
+
+          SS2DCanvasBackend i_Backend = i_Canvas.get_backend_handle();
+
+          if (!i_Backend.is_alive()) {
+            i_Backend = SS2DCanvasBackend::make(i_Canvas.get_name());
+
+            i_Backend.set_canvas_data(
+                Global::get_global_descriptor_allocator().allocate(
+                    Global::get_device(), g_Ss2dCanvasDSLayout));
+
+            i_Canvas.set_backend_handle(i_Backend.get_id());
+          }
+
+          if (i_Canvas.is_dimensions_dirty()) {
+
+            if (!prepare_ss2dcanvas_dimensions(p_Delta, i_Canvas)) {
+              return false;
+            }
+
+            i_Canvas.set_dimensions_dirty(false);
+          }
+
+          if (!i_Canvas.get_drawcommand_index_buffer().is_alive()) {
+            i_Canvas.set_drawcommand_index_buffer(
+                Buffer::make(N(DC_Index)));
+          }
+
+          BufferHolder l_Holder =
+              i_Canvas.get_drawcommand_index_buffer()
+                  .get_data_handle();
+
+          if (!l_Holder.is_alive()) {
+            l_Holder = BufferUtil::create_buffer_holder(
+                sizeof(u32) * SS2DDRAWCOMMAND_COUNT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                    VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VMA_MEMORY_USAGE_GPU_ONLY);
+            i_Canvas.get_drawcommand_index_buffer().set_data_handle(
+                l_Holder.get_id());
+
+            DescriptorUtil::DescriptorWriter l_Writer;
+            l_Writer.write_buffer(0, l_Holder.get().buffer,
+                                  l_Holder.get().info.size, 0,
+                                  VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+            l_Writer.update_set(Global::get_device(),
+                                i_Backend.get_canvas_data());
+          }
+
+          VkDescriptorSet i_CanvasDS = i_Backend.get_canvas_data();
+
+          {
+
+            u32 i_DrawCommandIndices[SS2DDRAWCOMMAND_COUNT];
+
+            for (u32 j = 0; j < SS2DDRAWCOMMAND_COUNT; ++j) {
+              i_DrawCommandIndices[j] =
+                  SS2DDrawCommand::get_capacity() + 10;
+            }
+
+            u32 j = 0;
+            for (auto it = i_Canvas.get_draw_commands().begin();
+                 it != i_Canvas.get_draw_commands().end();) {
+              SS2DDrawCommand i_DrawCommand = *it;
+              if (!i_DrawCommand.is_alive()) {
+                it = i_Canvas.get_draw_commands().erase(it);
+                continue;
+              }
+              i_DrawCommandIndices[j] = i_DrawCommand.get_index();
+
+              j++;
+              it++;
+            }
+
+            size_t l_StagingOffset = 0;
+            const u64 l_FrameUploadSpace =
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .request_space(sizeof(u32) *
+                                       SS2DDRAWCOMMAND_COUNT,
+                                   &l_StagingOffset);
+
+            if (l_FrameUploadSpace <
+                sizeof(u32) * SS2DDRAWCOMMAND_COUNT) {
+              // We don't have enough space on the staging buffer to
+              // upload the indices
+              return false;
+            }
+
+            LOW_ASSERT(
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .write(i_DrawCommandIndices,
+                           sizeof(u32) * SS2DDRAWCOMMAND_COUNT,
+                           l_StagingOffset),
+                "Failed to write ss2d canvas DC indices to staging "
+                "buffer");
+
+            VkBufferCopy i_CopyRegion;
+            i_CopyRegion.srcOffset = l_StagingOffset;
+            i_CopyRegion.dstOffset = 0;
+            i_CopyRegion.size = l_FrameUploadSpace;
+
+            // TODO: Change to transfer queue command buffer - or
+            // leave this specifically on the graphics queue not sure
+            // tbh
+            vkCmdCopyBuffer(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .buffer.buffer,
+                l_Holder.get().buffer, 1, &i_CopyRegion);
+          }
+
+          ImageUtil::cmd_transition(
+              l_Cmd,
+              i_Canvas.get_out_image().get_gpu().get_data_handle(),
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+          VkClearValue l_ClearColorValue = {};
+          l_ClearColorValue.color = {{0.2f, 0.2f, 0.2f, 1.0f}};
+
+          Image l_OutImage =
+              i_Canvas.get_out_image().get_gpu().get_data_handle();
+
+          Util::List<VkRenderingAttachmentInfo> l_ColorAttachments;
+          l_ColorAttachments.resize(1);
+          l_ColorAttachments[0] = InitUtil::attachment_info(
+              l_OutImage.get_allocated_image().imageView,
+              &l_ClearColorValue, VK_IMAGE_LAYOUT_GENERAL);
+
+          VkRenderingInfo l_RenderInfo = InitUtil::rendering_info(
+              {i_Canvas.get_dimensions().x,
+               i_Canvas.get_dimensions().y},
+              l_ColorAttachments.data(), l_ColorAttachments.size(),
+              nullptr);
+          vkCmdBeginRendering(l_Cmd, &l_RenderInfo);
+
+          vkCmdBindPipeline(l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            g_Pipelines.ss2d.get_pipeline());
+
+          vkCmdBindDescriptorSets(l_Cmd,
+                                  VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                  g_Pipelines.ss2dLayout, 0, 1,
+                                  &g_Ss2dGlobalSet, 0, nullptr);
+
+          vkCmdBindDescriptorSets(
+              l_Cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+              g_Pipelines.ss2dLayout, 1, 1, &i_CanvasDS, 0, nullptr);
+
+          VkViewport l_Viewport = {};
+          l_Viewport.x = 0;
+          l_Viewport.y = 0;
+          l_Viewport.width =
+              static_cast<float>(i_Canvas.get_dimensions().x);
+          l_Viewport.height =
+              static_cast<float>(i_Canvas.get_dimensions().y);
+          l_Viewport.minDepth = 0.f;
+          l_Viewport.maxDepth = 1.f;
+
+          vkCmdSetViewport(l_Cmd, 0, 1, &l_Viewport);
+
+          VkRect2D l_Scissor = {};
+          l_Scissor.offset.x = 0;
+          l_Scissor.offset.y = 0;
+          l_Scissor.extent.width = i_Canvas.get_dimensions().x;
+          l_Scissor.extent.height = i_Canvas.get_dimensions().y;
+
+          vkCmdSetScissor(l_Cmd, 0, 1, &l_Scissor);
+
+          vkCmdDraw(l_Cmd, 3, 1, 0, 0);
+
+          vkCmdEndRendering(l_Cmd);
+
+          ImageUtil::cmd_transition(
+              l_Cmd,
+              i_Canvas.get_out_image().get_gpu().get_data_handle(),
+              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        VK_RENDERDOC_SECTION_END();
+
+        return true;
+      }
+
       static bool prepare_render_views(float p_Delta)
       {
         for (u32 i = 0u; i < RenderView::living_count(); ++i) {
@@ -1891,6 +2234,8 @@ namespace Low {
         }
 
         prepare_render_views(p_Delta);
+
+        render_ss2d_canvases(p_Delta);
 
         update_dirty_textures(p_Delta);
         update_dirty_editor_images(p_Delta);

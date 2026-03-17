@@ -146,6 +146,8 @@ namespace Low {
         DynamicBuffer &get_drawcommand_buffer();
         DynamicBuffer &get_ui_drawcommand_buffer();
 
+        AllocatedBuffer get_ss2d_drawcommand_buffer();
+
         AllocatedBuffer get_material_data_buffer();
 
         VkFormat get_swapchain_format();

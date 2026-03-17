@@ -13,6 +13,8 @@
 #include "LowRendererUiCanvas.h"
 #include "LowUtilLogger.h"
 
+#include "LowRendererSS2DDrawCommand.h"
+
 namespace Low {
   namespace Renderer {
     namespace RenderObjectSystem {
@@ -564,6 +566,60 @@ namespace Low {
         return l_Result;
       }
 
+      static bool update_ss2d_drawcommand_buffer(float p_Delta)
+      {
+        bool l_Result = true;
+
+        for (auto it = SS2DDrawCommand::ms_Dirty.begin();
+             it != SS2DDrawCommand::ms_Dirty.end(); ++it) {
+          SS2DDrawCommand i_DrawCommand = *it;
+
+          size_t l_StagingOffset = 0;
+          const u64 l_FrameUploadSpace =
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .request_space(sizeof(SS2DDrawCommandUpload),
+                                 &l_StagingOffset);
+
+          if (l_FrameUploadSpace < sizeof(SS2DDrawCommandUpload)) {
+            // We don't have enough space on the staging buffer to
+            // upload this drawcommand
+            l_Result = false;
+            break;
+          }
+
+          SS2DDrawCommandUpload i_Upload;
+          i_Upload.color = i_DrawCommand.get_color();
+          i_Upload.half_extents = i_DrawCommand.get_half_extents();
+          i_Upload.position = i_DrawCommand.get_position();
+          i_Upload.type = (u32)i_DrawCommand.get_type();
+          i_Upload.corners = i_DrawCommand.get_corner_radius();
+
+          LOW_ASSERT(
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .write(&i_Upload, sizeof(SS2DDrawCommandUpload),
+                         l_StagingOffset),
+              "Failed to write draw command data to staging buffer");
+
+          VkBufferCopy i_CopyRegion;
+          i_CopyRegion.srcOffset = l_StagingOffset;
+          i_CopyRegion.dstOffset = i_DrawCommand.get_index() *
+                                   sizeof(SS2DDrawCommandUpload);
+          i_CopyRegion.size = l_FrameUploadSpace;
+
+          // TODO: Change to transfer queue command buffer - or leave
+          // this specifically on the graphics queue not sure tbh
+          vkCmdCopyBuffer(
+              Vulkan::Global::get_current_command_buffer(),
+              Vulkan::Global::get_current_frame_staging_buffer()
+                  .buffer.buffer,
+              Vulkan::Global::get_ss2d_drawcommand_buffer().buffer, 1,
+              &i_CopyRegion);
+        }
+
+        SS2DDrawCommand::ms_Dirty.clear();
+        return l_Result;
+      }
+
       static bool update_drawcommand_buffer(float p_Delta)
       {
         update_dirty_drawcommands(p_Delta);
@@ -582,6 +638,8 @@ namespace Low {
       {
         update_drawcommand_buffer(p_Delta);
         update_ui_drawcommand_buffer(p_Delta);
+
+        update_ss2d_drawcommand_buffer(p_Delta);
       }
     } // namespace RenderObjectSystem
   } // namespace Renderer
