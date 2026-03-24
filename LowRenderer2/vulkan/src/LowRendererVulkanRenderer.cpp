@@ -2,6 +2,7 @@
 
 #include "LowMath.h"
 #include "LowRendererEditorImageGpu.h"
+#include "LowRendererGlobals.h"
 #include "LowRendererSS2DCanvas.h"
 #include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererTextureState.h"
@@ -1493,6 +1494,14 @@ namespace Low {
           l_FrameData.lightClusters.w =
               p_ViewInfo.get_light_cluster_count();
 
+          l_FrameData.textureIndices.x = 0;
+          if (p_RenderView.get_ssao_image().is_alive() &&
+              p_RenderView.get_ssao_image().get_state() ==
+                  TextureState::LOADED) {
+            l_FrameData.textureIndices.x =
+                p_RenderView.get_ssao_image().get_gpu().get_index();
+          }
+
           p_ViewInfo.write_current_staging_buffer(
               &l_FrameData, l_FrameUploadSpace, l_StagingOffset);
 
@@ -1869,6 +1878,60 @@ namespace Low {
           RenderScene i_RenderScene =
               RenderScene::living_instances()[i];
           Vulkan::Scene i_Scene = i_RenderScene.get_data_handle();
+
+          if (!i_Scene.is_initialized()) {
+            i_Scene.set_initialized(true);
+
+            size_t i_StagingOffset = 0;
+            const u64 i_FrameUploadSpace =
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .request_space(sizeof(PointLightInfo) *
+                                       POINTLIGHT_COUNT,
+                                   &i_StagingOffset);
+
+            PointLightInfo i_Info;
+            i_Info.transform.x = 0;
+            i_Info.transform.y = 0;
+            i_Info.transform.z = 0;
+            i_Info.transform.w = 0;
+            i_Info.color.r = 0;
+            i_Info.color.g = 0;
+            i_Info.color.b = 0;
+            i_Info.color.a = 0;
+            i_Info.active = false;
+
+            Util::List<PointLightInfo> i_Infos;
+            i_Infos.resize(POINTLIGHT_COUNT);
+            for (u32 k = 0; k < POINTLIGHT_COUNT; ++k) {
+              i_Infos[k] = i_Info;
+            }
+
+            LOW_ASSERT(
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .write(&i_Info,
+                           sizeof(PointLightInfo) * POINTLIGHT_COUNT,
+                           i_StagingOffset),
+                "Failed to write pointlight data to staging "
+                "buffer");
+
+            VkBufferCopy i_CopyRegion;
+            i_CopyRegion.srcOffset = i_StagingOffset;
+            i_CopyRegion.dstOffset = 0;
+            i_CopyRegion.size = i_FrameUploadSpace;
+
+            // TODO: Change to transfer queue command buffer - or
+            // leave this specifically on the graphics queue not sure
+            // tbh
+            // PERF: First call probably very inefficient, maybe we
+            // can fix that at some point
+            vkCmdCopyBuffer(
+                Vulkan::Global::get_current_command_buffer(),
+                Vulkan::Global::get_current_frame_staging_buffer()
+                    .buffer.buffer,
+                i_Scene.get_point_light_buffer().buffer, 1,
+                &i_CopyRegion);
+          }
+
           for (auto it = i_RenderScene.get_pointlight_deleted_slots()
                              .begin();
                it !=

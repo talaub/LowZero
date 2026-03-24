@@ -12,17 +12,18 @@
 
 #include "LowCorePrefab.h"
 #include "LowCorePrefabInstance.h"
+#include <memory>
 
-#define HANDLE_TYPE_MANAGER_EVENT_METHODS(eventname)                 \
+#define TYPE_MANAGER_HANDLER(eventname)                              \
   void TypeEditor::handle_##eventname(Util::Handle p_Handle,         \
                                       TypeMetadata &p_Metadata)      \
   {                                                                  \
-    auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);            \
-    if (l_Entry != g_TypeEditors.end()) {                            \
+    auto l_Entry = g_EventHandlers.find(p_Metadata.typeId);          \
+    if (l_Entry != g_EventHandlers.end()) {                          \
       l_Entry->second->eventname(p_Handle, p_Metadata);              \
     } else {                                                         \
-      TypeEditor l_Editor;                                           \
-      l_Editor.eventname(p_Handle, p_Metadata);                      \
+      TypeEventHandler l_Handler;                                    \
+      l_Handler.eventname(p_Handle, p_Metadata);                     \
     }                                                                \
   }                                                                  \
   void TypeEditor::handle_##eventname(Util::Handle p_Handle)         \
@@ -34,81 +35,111 @@
 
 namespace Low {
   namespace Editor {
-    Util::Map<u16, TypeEditor *> g_TypeEditors;
+    Util::Map<u16, TypeEditorFactory *> g_Factories;
+    Util::Map<u16, TypeEventHandler *> g_EventHandlers;
 
-    void TypeEditor::register_for_type(u16 p_TypeId,
-                                       TypeEditor *p_Editor)
+    TYPE_MANAGER_HANDLER(after_add)
+    TYPE_MANAGER_HANDLER(before_delete)
+    TYPE_MANAGER_HANDLER(before_save)
+    TYPE_MANAGER_HANDLER(after_save)
+
+    void TypeEditor::register_factory_for_type(
+        u16 p_TypeId, TypeEditorFactory *p_Factory)
     {
-      auto l_Entry = g_TypeEditors.find(p_TypeId);
-      if (l_Entry != g_TypeEditors.end()) {
-        LOW_LOG_WARN
-            << "There is already a type editor registered for "
-            << p_TypeId << LOW_LOG_END;
+      auto l_Entry = g_Factories.find(p_TypeId);
+      if (l_Entry != g_Factories.end()) {
+        LOW_LOG_WARN << "There is already a type editor factory "
+                        "registered for "
+                     << p_TypeId << LOW_LOG_END;
         return;
       }
 
-      g_TypeEditors[p_TypeId] = p_Editor;
+      g_Factories[p_TypeId] = p_Factory;
     }
 
-    void TypeEditor::show_editor(Util::Handle p_Handle,
-                                 TypeMetadata &p_Metadata,
-                                 Util::Name p_PropertyName)
+    void TypeEditor::register_event_handler_for_type(
+        u16 p_TypeId, TypeEventHandler *p_Handler)
     {
-      PropertyEditors::render_editor(p_Handle, p_Metadata,
-                                     p_PropertyName);
+      auto l_Entry = g_EventHandlers.find(p_TypeId);
+      if (l_Entry != g_EventHandlers.end()) {
+        LOW_LOG_WARN << "There is already a type event handler "
+                        "registered for "
+                     << p_TypeId << LOW_LOG_END;
+        return;
+      }
+
+      g_EventHandlers[p_TypeId] = p_Handler;
     }
 
-    void TypeEditor::show_editor(Util::Handle p_Handle,
-                                 Util::Name p_PropertyName)
+    bool TypeEditor::has_factory(u16 p_TypeId)
     {
-      PropertyEditors::render_editor(p_Handle, p_PropertyName);
+      return g_Factories.find(p_TypeId) == g_Factories.end();
+    }
+
+    TypeEditor *TypeEditor::create(Util::Handle p_Handle)
+    {
+      auto l_Entry = g_Factories.find(p_Handle.get_type());
+      if (l_Entry != g_Factories.end()) {
+        return l_Entry->second->create(p_Handle);
+      }
+
+      return new TypeEditor(p_Handle);
+    }
+
+    std::unique_ptr<TypeEditor>
+    TypeEditor::create_unique(Util::Handle p_Handle)
+    {
+      auto l_Entry = g_Factories.find(p_Handle.get_type());
+      if (l_Entry != g_Factories.end()) {
+        return l_Entry->second->create_unique(p_Handle);
+      }
+
+      return std::make_unique<TypeEditor>(p_Handle);
+    }
+
+    void TypeEditor::show_line(const Util::String p_Label,
+                               const Util::String p_Content)
+    {
+      PropertyEditors::render_line(p_Label, [p_Content]() -> bool {
+        ImGui::Text(p_Content.c_str());
+        return false;
+      });
+    }
+
+    void TypeEditor::show_editor(Util::Name p_PropertyName)
+    {
+      PropertyEditors::render_editor(m_Handle, p_PropertyName);
     }
 
     void TypeEditor::cleanup_registered_types()
     {
-      for (auto it : g_TypeEditors) {
+      for (auto it : g_Factories) {
         delete it.second;
       }
 
-      g_TypeEditors.clear();
-    }
+      g_Factories.clear();
 
-    void TypeEditor::show(Util::Handle p_Handle)
-    {
-      TypeMetadata l_Metadata =
-          get_type_metadata(p_Handle.get_type());
-
-      show(p_Handle, l_Metadata);
-    }
-
-    void TypeEditor::show(Util::Handle p_Handle,
-                          TypeMetadata &p_Metadata)
-    {
-      auto l_Entry = g_TypeEditors.find(p_Metadata.typeId);
-
-      if (l_Entry != g_TypeEditors.end()) {
-        l_Entry->second->render(p_Handle, p_Metadata);
-      } else {
-        TypeEditor l_Editor;
-        l_Editor.render(p_Handle, p_Metadata);
+      for (auto it : g_EventHandlers) {
+        delete it.second;
       }
+
+      g_EventHandlers.clear();
     }
 
-    HANDLE_TYPE_MANAGER_EVENT_METHODS(before_save)
-    HANDLE_TYPE_MANAGER_EVENT_METHODS(after_save)
-    HANDLE_TYPE_MANAGER_EVENT_METHODS(before_delete)
-    HANDLE_TYPE_MANAGER_EVENT_METHODS(after_add)
+    void TypeEditor::show()
+    {
+      render();
+    }
 
-    void TypeEditor::render(Util::Handle p_Handle,
-                            TypeMetadata &p_Metadata)
+    void TypeEditor::render()
     {
       uint32_t l_Id = 0;
       static Util::Name l_EntityName = N(entity);
 
-      for (auto it = p_Metadata.properties.begin();
-           it != p_Metadata.properties.end(); ++it) {
+      for (auto it = m_Metadata.properties.begin();
+           it != m_Metadata.properties.end(); ++it) {
         Util::String i_Id =
-            LOW_TO_STRING(l_Id) + LOW_TO_STRING(p_Metadata.typeId);
+            LOW_TO_STRING(l_Id) + LOW_TO_STRING(m_Metadata.typeId);
         ImGui::PushID(std::stoul(i_Id.c_str()));
 
         PropertyMetadata l_PropMetadata = *it;
@@ -116,13 +147,13 @@ namespace Low {
         l_Id++;
 
         Util::RTTI::PropertyInfo &i_PropInfo = it->propInfo;
-#if 1
         if (i_PropInfo.editorProperty) {
-          show_editor(p_Handle, p_Metadata, l_PropMetadata.name);
+          show_editor(l_PropMetadata.name);
         }
         ImGui::PopID();
+        // Saved the code after this continue statement in case we
+        // need it later
         continue;
-#endif
 
         if (i_PropInfo.editorProperty) {
           ImVec2 l_Pos = ImGui::GetCursorScreenPos();
@@ -134,15 +165,15 @@ namespace Low {
           if (it->enumType ||
               i_PropInfo.type == Util::RTTI::PropertyType::ENUM) {
             PropertyEditors::render_enum_selector(l_PropMetadata,
-                                                  p_Handle);
+                                                  m_Handle);
           } else if (i_PropInfo.type ==
                      Util::RTTI::PropertyType::HANDLE) {
             PropertyEditors::render_handle_selector(l_PropMetadata,
-                                                    p_Handle);
+                                                    m_Handle);
           } else {
             PropertyEditors::render_editor(
-                l_PropMetadata, p_Handle,
-                i_PropInfo.get_return(p_Handle));
+                l_PropMetadata, m_Handle,
+                i_PropInfo.get_return(m_Handle));
           }
           ImVec2 l_PosNew = ImGui::GetCursorScreenPos();
 
@@ -154,10 +185,10 @@ namespace Low {
           ImGui::InvisibleButton(i_InvisButtonId.c_str(),
                                  {l_LabelWidth, l_LabelHeight});
           if (ImGui::BeginPopupContextItem(i_InvisButtonId.c_str())) {
-            if (p_Metadata.typeInfo.component) {
+            if (m_Metadata.typeInfo.component) {
               Core::Entity i_Entity;
-              p_Metadata.typeInfo.properties[l_EntityName].get(
-                  p_Handle, &i_Entity);
+              m_Metadata.typeInfo.properties[l_EntityName].get(
+                  m_Handle, &i_Entity);
               if (i_Entity.has_component(
                       Core::Component::PrefabInstance::type_id())) {
                 Core::Component::PrefabInstance i_Instance =
@@ -165,21 +196,21 @@ namespace Low {
                         Core::Component::PrefabInstance::type_id());
                 if (i_Instance.get_prefab().is_alive()) {
                   if (i_Instance.get_overrides().find(
-                          p_Metadata.typeId) !=
+                          m_Metadata.typeId) !=
                       i_Instance.get_overrides().end()) {
                     if (std::find(
                             i_Instance
-                                .get_overrides()[p_Metadata.typeId]
+                                .get_overrides()[m_Metadata.typeId]
                                 .begin(),
                             i_Instance
-                                .get_overrides()[p_Metadata.typeId]
+                                .get_overrides()[m_Metadata.typeId]
                                 .end(),
                             i_PropInfo.name) !=
-                        i_Instance.get_overrides()[p_Metadata.typeId]
+                        i_Instance.get_overrides()[m_Metadata.typeId]
                             .end()) {
                       if (ImGui::MenuItem("Apply to prefab")) {
                         i_Instance.get_prefab().apply(
-                            p_Handle, i_PropInfo.name);
+                            m_Handle, i_PropInfo.name);
                         Core::Prefab i_Prefab =
                             i_Instance.get_prefab();
                         while (Core::Prefab(
@@ -200,10 +231,10 @@ namespace Low {
         }
         ImGui::PopID();
       }
-      for (auto it = p_Metadata.virtualProperties.begin();
-           it != p_Metadata.virtualProperties.end(); ++it) {
+      for (auto it = m_Metadata.virtualProperties.begin();
+           it != m_Metadata.virtualProperties.end(); ++it) {
         Util::String i_Id =
-            LOW_TO_STRING(l_Id) + LOW_TO_STRING(p_Metadata.typeId);
+            LOW_TO_STRING(l_Id) + LOW_TO_STRING(m_Metadata.typeId);
         ImGui::PushID(std::stoul(i_Id.c_str()));
 
         VirtualPropertyMetadata l_PropMetadata = *it;
@@ -211,7 +242,7 @@ namespace Low {
         l_Id++;
 
         if (l_PropMetadata.editor) {
-          show_editor(p_Handle, p_Metadata, l_PropMetadata.name);
+          show_editor(l_PropMetadata.name);
         }
         ImGui::PopID();
       }

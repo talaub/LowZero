@@ -2,6 +2,7 @@
 
 #include "LowEditorWidget.h"
 #include "LowEditorMetadata.h"
+#include "LowEditorTypeEditor.h"
 
 #include "LowUtilHandle.h"
 
@@ -19,6 +20,7 @@ namespace Low {
     private:
       const Util::Handle m_Handle;
       TypeMetadata m_Metadata;
+      TypeEditor *m_TypeEditor;
       bool m_DefaultOpen;
       bool m_Open;
       Util::String m_CurrentlyEditing = "";

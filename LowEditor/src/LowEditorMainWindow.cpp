@@ -101,6 +101,16 @@ namespace Low {
       return g_Widgets;
     }
 
+    void open_editor_widget(Widget *p_Widget)
+    {
+      for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
+        if (it->second.widget == p_Widget) {
+          it->second.open = true;
+        }
+      }
+      save_user_settings();
+    }
+
     void close_editor_widget(Widget *p_Widget)
     {
       for (auto it = g_Widgets.begin(); it != g_Widgets.end(); ++it) {
@@ -108,7 +118,6 @@ namespace Low {
           it->second.open = false;
         }
       }
-
       save_user_settings();
     }
 
@@ -681,10 +690,19 @@ namespace Low {
         }
       }
 
-      for (auto it = g_EditWidgets.begin(); it != g_EditWidgets.end();
-           ++it) {
+      for (auto it = g_EditWidgets.begin();
+           it != g_EditWidgets.end();) {
         if (it->second->handle_is_alive()) {
           it->second->show(p_Delta);
+        }
+        if (it->second->is_open()) {
+          it++;
+        } else {
+          if (g_FocusedWidget == it->second) {
+            _set_focused_widget(nullptr);
+          }
+          delete it->second;
+          it = g_EditWidgets.erase(it);
         }
       }
 

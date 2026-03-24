@@ -109,6 +109,20 @@ namespace Low {
 
               break;
             }
+            case AssetType::Font: {
+              Renderer::FontResource l_Resource =
+                  Renderer::FontResource::find_by_path(
+                      p_Watcher.path);
+              if (l_Resource.is_alive()) {
+                p_Watcher.assetId = l_Resource.get_font_id();
+                l_Handle = Renderer::ResourceManager::find_asset<
+                    Renderer::Font>(l_Resource.get_font_id());
+
+                Renderer::Font l_Font = l_Handle.get_id();
+              }
+
+              break;
+            }
             }
 
             return l_Handle;
@@ -376,15 +390,24 @@ namespace Low {
         AssetType i_AssetType = (AssetType)i_FileWatcher.typeEnum;
 
         if (i_Result.clicked) {
+        }
+        if (i_Result.doubleClicked) {
           if (i_AssetType == AssetType::Script) {
             open_file_in_code_editor(i_FileWatcher.path);
           } else if (i_AssetType == AssetType::File &&
                      i_FileWatcher.extension == "yaml") {
             open_file_in_code_editor(i_FileWatcher.path);
+          } else {
+            if (Util::Handle::is_registered_type(
+                    i_FileWatcher.handle.get_type())) {
+              Util::RTTI::TypeInfo &i_TypeInfo =
+                  Util::Handle::get_type_info(
+                      i_FileWatcher.handle.get_type());
+              if (i_TypeInfo.is_alive(i_FileWatcher.handle)) {
+                _open_widget_for_handle(i_FileWatcher.handle);
+              }
+            }
           }
-        }
-        if (i_Result.doubleClicked) {
-          _open_widget_for_handle(i_FileWatcher.handle);
         }
 
         l_Column++;

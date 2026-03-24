@@ -405,6 +405,13 @@ types:
         parameters:
           - name: config
             type: FontResourceConfig
+      find_by_path:
+        static: true
+        return_type: FontResource
+        return_handle: true
+        parameters:
+          - name: path
+            type: Util::String
 
   EditorImage:
     properties:

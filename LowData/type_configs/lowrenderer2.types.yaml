@@ -174,6 +174,9 @@ types:
       blurred_image:
         type: Low::Renderer::Texture
         handle: true
+      ssao_image:
+        type: Low::Renderer::Texture
+        handle: true
       steps:
         type: Low::Util::List<Low::Renderer::RenderStep>
         no_setter: true

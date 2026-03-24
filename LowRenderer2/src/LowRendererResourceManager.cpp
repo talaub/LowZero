@@ -195,6 +195,8 @@ namespace Low {
       {
         g_LoadSchedules.fonts.insert(p_Font);
 
+        register_asset(p_Font.get_resource().get_font_id(), p_Font);
+
         return true;
       }
 

@@ -26,6 +26,7 @@
 #include "LowEditorNotifications.h"
 #include "LowEditorFonts.h"
 #include "LowEditorScriptWidget.h"
+#include "LowEditorSimpleAssetEditors.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -861,6 +862,15 @@ namespace Low {
             g_RawAssetWatcher.start(Util::get_project().dataPath),
             "Failed to start raw asset file watcher.");
       }
+
+      {
+        TypeEditor::register_type<MeshAssetEditor>(
+            Renderer::Mesh::type_id());
+        TypeEditor::register_type<TextureAssetEditor>(
+            Renderer::Texture::type_id());
+        TypeEditor::register_type<FontAssetEditor>(
+            Renderer::Font::type_id());
+      }
     }
 
     void cleanup()
@@ -1014,6 +1024,7 @@ namespace Low {
     {
       get_script_widget()->show(0.0f);
       get_script_widget()->load_file(p_Path);
+      open_editor_widget(get_script_widget());
       ImGui::SetWindowFocus(ICON_LC_BRACES " Code Editor");
     }
 

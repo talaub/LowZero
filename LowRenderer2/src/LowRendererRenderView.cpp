@@ -88,6 +88,9 @@ namespace Low {
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, blurred_image,
                                  Low::Renderer::Texture))
           Low::Renderer::Texture();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, ssao_image,
+                                 Low::Renderer::Texture))
+          Low::Renderer::Texture();
       new (ACCESSOR_TYPE_SOA_PTR(
           l_Handle, RenderView, steps,
           Low::Util::List<Low::Renderer::RenderStep>))
@@ -724,6 +727,39 @@ namespace Low {
         // End property: blurred_image
       }
       {
+        // Property: ssao_image
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ssao_image);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, ssao_image);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_ssao_image();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            ssao_image,
+                                            Low::Renderer::Texture);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_ssao_image(*(Low::Renderer::Texture *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((Low::Renderer::Texture *)p_Data) =
+              l_Handle.get_ssao_image();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ssao_image
+      }
+      {
         // Property: steps
         Low::Util::RTTI::PropertyInfo l_PropertyInfo;
         l_PropertyInfo.name = N(steps);
@@ -1191,6 +1227,9 @@ namespace Low {
       }
       if (get_blurred_image().is_alive()) {
         l_Handle.set_blurred_image(get_blurred_image());
+      }
+      if (get_ssao_image().is_alive()) {
+        l_Handle.set_ssao_image(get_ssao_image());
       }
       l_Handle.set_step_data(get_step_data());
       l_Handle.set_camera_dirty(is_camera_dirty());
@@ -1882,6 +1921,34 @@ namespace Low {
       // LOW_CODEGEN::END::CUSTOM:SETTER_blurred_image
 
       broadcast_observable(N(blurred_image));
+    }
+
+    Low::Renderer::Texture RenderView::get_ssao_image() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ssao_image
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ssao_image
+
+      return TYPE_SOA(RenderView, ssao_image, Low::Renderer::Texture);
+    }
+    void RenderView::set_ssao_image(Low::Renderer::Texture p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ssao_image
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ssao_image
+
+      // Set new value
+      TYPE_SOA(RenderView, ssao_image, Low::Renderer::Texture) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ssao_image
+      // LOW_CODEGEN::END::CUSTOM:SETTER_ssao_image
+
+      broadcast_observable(N(ssao_image));
     }
 
     Low::Util::List<Low::Renderer::RenderStep> &

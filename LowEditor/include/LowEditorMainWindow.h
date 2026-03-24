@@ -49,6 +49,7 @@ namespace Low {
     bool get_gizmos_dragged();
     void set_gizmos_dragged(bool p_Dragged);
 
+    void open_editor_widget(Widget *p_Widget);
     void close_editor_widget(Widget *p_Widget);
 
     void _set_focused_widget(Widget *p_Widget);

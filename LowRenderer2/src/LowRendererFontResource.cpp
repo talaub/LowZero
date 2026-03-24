@@ -399,6 +399,23 @@ namespace Low {
         l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
         // End function: make_from_config
       }
+      {
+        // Function: find_by_path
+        Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+        l_FunctionInfo.name = N(find_by_path);
+        l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+        l_FunctionInfo.handleType = FontResource::type_id();
+        {
+          Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+          l_ParameterInfo.name = N(p_Path);
+          l_ParameterInfo.type =
+              Low::Util::RTTI::PropertyType::STRING;
+          l_ParameterInfo.handleType = 0;
+          l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+        }
+        l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+        // End function: find_by_path
+      }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
     }
@@ -885,6 +902,7 @@ namespace Low {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_from_config
 
       FontResource l_FontResource = FontResource::make(p_Config.name);
+      LOW_LOG_DEBUG << "CREATING: " << p_Config.path << LOW_LOG_END;
       l_FontResource.set_path(p_Config.path);
       l_FontResource.set_font_id(p_Config.fontId);
       l_FontResource.set_asset_hash(p_Config.assetHash);
@@ -894,6 +912,20 @@ namespace Low {
 
       return l_FontResource;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_make_from_config
+    }
+
+    FontResource FontResource::find_by_path(Util::String p_Path)
+    {
+      // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
+      for (auto it = ms_LivingInstances.begin();
+           it != ms_LivingInstances.end(); ++it) {
+        if (it->get_path() == p_Path) {
+          return *it;
+        }
+      }
+
+      return Util::Handle::DEAD;
+      // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_by_path
     }
 
     uint32_t FontResource::create_instance(

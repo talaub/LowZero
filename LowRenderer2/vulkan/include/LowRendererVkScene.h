@@ -27,6 +27,7 @@ namespace Low {
         public:
           bool *point_light_slots;
           AllocatedBuffer point_light_buffer;
+          bool initialized;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -153,6 +154,10 @@ namespace Low {
 
         AllocatedBuffer &get_point_light_buffer() const;
         void set_point_light_buffer(AllocatedBuffer &p_Value);
+
+        bool is_initialized() const;
+        void set_initialized(bool p_Value);
+        void toggle_initialized();
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

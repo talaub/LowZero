@@ -180,6 +180,7 @@ namespace Low {
       static FontResource make(Util::String p_Path);
       static FontResource
       make_from_config(FontResourceConfig &p_Config);
+      static FontResource find_by_path(Util::String p_Path);
       static bool get_page_for_index(const u32 p_Index,
                                      u32 &p_PageIndex,
                                      u32 &p_SlotIndex);

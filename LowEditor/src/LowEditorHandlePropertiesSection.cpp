@@ -147,7 +147,7 @@ namespace Low {
 
     bool HandlePropertiesSection::render_default(float p_Delta)
     {
-      TypeEditor::show(m_Handle, m_Metadata);
+      m_TypeEditor->show();
       return false;
     }
 
@@ -211,7 +211,8 @@ namespace Low {
         const Util::Handle p_Handle, bool p_DefaultOpen)
         : m_Handle(p_Handle), m_DefaultOpen(p_DefaultOpen),
           m_Metadata(get_type_metadata(p_Handle.get_type())),
-          m_Open(p_DefaultOpen)
+          m_Open(p_DefaultOpen),
+          m_TypeEditor(TypeEditor::create(p_Handle))
     {
     }
   } // namespace Editor

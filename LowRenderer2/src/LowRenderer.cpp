@@ -378,7 +378,7 @@ namespace Low {
             Util::get_project().assetCachePath + "\\" +
             Util::hash_to_string(p_Config.fontId) + ".msdf.ktx";
 
-        p_Config.path = p_Path;
+        p_Config.path = Util::PathHelper::normalize(p_Path);
         return true;
       }
 
@@ -543,8 +543,6 @@ namespace Low {
         Util::FileSystem::collect_files_with_suffix(
             Util::get_project().dataPath.c_str(),
             ".fontresource.yaml", l_Resources);
-
-        LOW_LOG_DEBUG << "Loading fonts" << LOW_LOG_END;
 
         for (auto it = l_Resources.begin(); it != l_Resources.end();
              ++it) {

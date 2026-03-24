@@ -873,6 +873,7 @@ namespace Low {
               l_Data->texture = Texture::make_gpu_ready(N(SsaoOut));
               l_Data->tempBlurTexture =
                   Texture::make_gpu_ready(N(SsaoBlurTemp));
+              p_RenderView.set_ssao_image(l_Data->texture);
               return true;
             });
 

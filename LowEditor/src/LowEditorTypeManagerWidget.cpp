@@ -17,6 +17,7 @@
 #include "LowUtilString.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilGlobals.h"
+#include <memory>
 
 namespace Low {
   namespace Editor {
@@ -183,25 +184,27 @@ namespace Low {
         }
       }
 
-      for (auto it = l_HandlesToDelete.begin();
-           it != l_HandlesToDelete.end();) {
-        Util::Handle i_Handle = *it;
-        if (!i_Handle.is_registered_type()) {
+      if (!l_HandlesToDelete.empty()) {
+        for (auto it = l_HandlesToDelete.begin();
+             it != l_HandlesToDelete.end();) {
+          Util::Handle i_Handle = *it;
+          if (!i_Handle.is_registered_type()) {
+            it = l_HandlesToDelete.erase(it);
+          }
+          Util::RTTI::TypeInfo &i_TypeInfo =
+              Util::Handle::get_type_info(i_Handle.get_type());
+
+          get_global_changelist().add_entry(
+              History::destroy_handle_transaction(i_Handle));
+
+          TypeEditor::handle_before_delete(i_Handle);
+
+          delete_asset(i_Handle, i_TypeInfo);
+
+          i_TypeInfo.destroy(i_Handle);
+
           it = l_HandlesToDelete.erase(it);
         }
-        Util::RTTI::TypeInfo &i_TypeInfo =
-            Util::Handle::get_type_info(i_Handle.get_type());
-
-        get_global_changelist().add_entry(
-            History::destroy_handle_transaction(i_Handle));
-
-        TypeEditor::handle_before_delete(i_Handle);
-
-        delete_asset(i_Handle, i_TypeInfo);
-
-        i_TypeInfo.destroy(i_Handle);
-
-        it = l_HandlesToDelete.erase(it);
       }
     }
 

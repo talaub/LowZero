@@ -62,6 +62,7 @@ namespace Low {
         new (ACCESSOR_TYPE_SOA_PTR(
             l_Handle, Scene, point_light_buffer, AllocatedBuffer))
             AllocatedBuffer();
+        ACCESSOR_TYPE_SOA(l_Handle, Scene, initialized, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, Scene, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -247,6 +248,37 @@ namespace Low {
           // End property: point_light_buffer
         }
         {
+          // Property: initialized
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(initialized);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Scene::Data, initialized);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Scene l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Scene> l_HandleLock(l_Handle);
+            l_Handle.is_initialized();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Scene,
+                                              initialized, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Scene l_Handle = p_Handle.get_id();
+            l_Handle.set_initialized(*(bool *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Scene l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Scene> l_HandleLock(l_Handle);
+            *((bool *)p_Data) = l_Handle.is_initialized();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: initialized
+        }
+        {
           // Property: name
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(name);
@@ -397,6 +429,7 @@ namespace Low {
         Scene l_Handle = make(p_Name);
         l_Handle.set_point_light_slots(get_point_light_slots());
         l_Handle.set_point_light_buffer(get_point_light_buffer());
+        l_Handle.set_initialized(is_initialized());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
 
@@ -421,6 +454,7 @@ namespace Low {
       {
         _LOW_ASSERT(is_alive());
 
+        p_Node["initialized"] = is_initialized();
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
@@ -444,6 +478,9 @@ namespace Low {
         if (p_Node["point_light_slots"]) {
         }
         if (p_Node["point_light_buffer"]) {
+        }
+        if (p_Node["initialized"]) {
+          l_Handle.set_initialized(p_Node["initialized"].as<bool>());
         }
         if (p_Node["name"]) {
           l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
@@ -563,6 +600,38 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_point_light_buffer
 
         broadcast_observable(N(point_light_buffer));
+      }
+
+      bool Scene::is_initialized() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Scene> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
+        // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
+
+        return TYPE_SOA(Scene, initialized, bool);
+      }
+      void Scene::toggle_initialized()
+      {
+        set_initialized(!is_initialized());
+      }
+
+      void Scene::set_initialized(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Scene> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
+
+        // Set new value
+        TYPE_SOA(Scene, initialized, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
+        // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
+
+        broadcast_observable(N(initialized));
       }
 
       Low::Util::Name Scene::get_name() const

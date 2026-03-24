@@ -2,6 +2,7 @@
 
 #include "LowEditorWidget.h"
 #include "LowEditorMetadata.h"
+#include "LowEditorTypeEditor.h"
 
 #include "LowUtilHandle.h"
 
@@ -10,6 +11,7 @@ namespace Low {
     struct EditWidget : public Widget
     {
       EditWidget(Util::Handle p_Handle);
+      ~EditWidget();
 
       void render(float p_Delta) override;
 
@@ -22,6 +24,8 @@ namespace Low {
       Util::Handle m_Handle;
       TypeMetadata m_Metadata;
       Util::String m_Title;
+
+      TypeEditor *m_Editor;
     };
   } // namespace Editor
 } // namespace Low

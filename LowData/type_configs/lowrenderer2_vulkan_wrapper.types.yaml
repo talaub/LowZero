@@ -92,6 +92,8 @@ types:
         private_setter: true
       point_light_buffer:
         type: AllocatedBuffer
+      initialized:
+        type: bool
 
   TexExport:
     properties:

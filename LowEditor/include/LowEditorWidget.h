@@ -21,6 +21,11 @@ namespace Low {
 
       void close();
 
+      bool is_open() const
+      {
+        return m_Open;
+      }
+
     protected:
       bool m_Open;
     };
