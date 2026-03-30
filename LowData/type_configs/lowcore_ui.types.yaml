@@ -6,6 +6,59 @@ namespace:
 dll_macro: LOW_CORE_API
 prefix: LowCoreUi
 types:
+  WidgetAsset:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    name_editable: true
+    post_load: true
+    scripting_expose: true
+    properties:
+      state:
+        type: Low::Core::UI::LoadState
+        no_ref: true
+      content:
+        type: Low::Util::List<Low::Core::UI::ElementDescriptor>
+        expose_scripting: false
+      path:
+        type: Low::Util::String
+        private_setter: true
+    functions:
+      parse_content:
+        private: true
+        return_type: void
+        parameters:
+          - name: node
+            type: Low::Util::Serial::Node
+      parse_element:
+        private: true
+        return_type: void
+        parameters:
+          - name: node
+            type: Low::Util::Serial::Node
+          - name: descriptor
+            type: Low::Core::UI::ElementDescriptor
+      spawn_instance:
+        return_type: WidgetInstance
+        return_handle: true
+        parameters:
+          - name: canvas
+            type: Low::Renderer::UiCanvas
+            handle: true
+
+  WidgetInstance:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    scripting_expose: true
+    properties:
+      root:
+        type: Low::Core::UI::Element
+        handle: true
+      elements:
+        type: Low::Util::List<Low::Core::UI::Element>
+        no_setter: true
+      
   Element:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -13,8 +66,10 @@ types:
     name_editable: true
     scripting_expose: true
     unique_id: true
+    private_make: true
     header_imports:
       - LowCoreUiView.h
+      - LowRendererUiCanvas.h
     source_imports:
       - LowCoreUiDisplay.h
     properties:
@@ -28,6 +83,12 @@ types:
       click_passthrough:
         type: bool
         expose_scripting: true
+      canvas:
+        type: Low::Renderer::UiCanvas
+        handle: true
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
     functions:
       make:
         static: true
@@ -36,8 +97,8 @@ types:
         parameters:
           - name: name
             type: Low::Util::Name
-          - name: view
-            type: Low::Core::UI::View
+          - name: canvas
+            type: Low::Renderer::UiCanvas
             handle: true
       get_component:
         expose_scripting: true
@@ -158,8 +219,6 @@ types:
         type: Low::Renderer::UiCanvas
         handle: true
         editor_editable: true
-        
-
     functions:
       serialize_elements:
         return_type: void

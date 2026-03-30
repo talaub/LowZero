@@ -214,5 +214,13 @@ namespace Low {
 
       return true;
     }
+
+    bool UiViewport::tick(const float p_Delta)
+    {
+      if (!Viewport::tick(p_Delta)) {
+        return false;
+      }
+      return true;
+    }
   } // namespace Editor
 } // namespace Low

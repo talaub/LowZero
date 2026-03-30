@@ -169,6 +169,7 @@ namespace Low {
       l_TypeInfo.deserialize = &MeshGeometry::deserialize;
       l_TypeInfo.find_by_index = &MeshGeometry::_find_by_index;
       l_TypeInfo.notify = &MeshGeometry::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &MeshGeometry::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &MeshGeometry::_make;
@@ -342,6 +343,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void MeshGeometry::cleanup()

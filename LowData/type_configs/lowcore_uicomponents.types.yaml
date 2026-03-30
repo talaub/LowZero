@@ -149,7 +149,6 @@ types:
         handle: true
         skip_serialization: true
         skip_deserialization: true
-        private_setter: true
         dirty_flag: dirty
       render_object:
         editor_editable: false

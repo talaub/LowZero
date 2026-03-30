@@ -220,6 +220,7 @@ namespace Low {
       l_TypeInfo.deserialize = &Prefab::deserialize;
       l_TypeInfo.find_by_index = &Prefab::_find_by_index;
       l_TypeInfo.notify = &Prefab::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &Prefab::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Prefab::_make;
@@ -471,6 +472,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void Prefab::cleanup()

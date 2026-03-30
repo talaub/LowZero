@@ -22,12 +22,14 @@
 #include "LowCoreUiImageSystem.h"
 #include "LowCoreUiTextSystem.h"
 #include "LowCoreUiViewSystem.h"
+#include "LowCoreUiWidgetAsset.h"
 
 #include <chrono>
 
 #include "LowMath.h"
 #include "LowRendererPrimitives.h"
 #include "LowRendererUiRenderObject.h"
+#include "LowUtilEnums.h"
 #include "LowUtilLogger.h"
 #include "LowUtilContainers.h"
 #include "LowUtilJobManager.h"
@@ -47,6 +49,8 @@ namespace Low {
 
       float g_TestCounter = 0.0f;
 
+      float g_DeltaTime = 0.0f;
+
       bool g_Running = false;
       uint32_t g_LastFps = 0u;
 
@@ -60,6 +64,7 @@ namespace Low {
       static void execute_ticks(float p_Delta)
       {
         static bool l_FirstRun = true;
+
         Util::tick(p_Delta);
 
         if (Util::Window::get_main_window().minimized) {
@@ -145,375 +150,6 @@ namespace Low {
         l_FirstRun = false;
       }
 
-      static void create_combat_ui()
-      {
-
-        Util::String l_Path = "arial.ttf";
-        Renderer::Font l_Font =
-            Renderer::Font::find_by_name(N(arial));
-
-        {
-          UI::View l_View = UI::View::make(N(StartCombatView));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(-50.0f, -50.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-
-          {
-            UI::Element l_ResourceElement =
-                UI::Element::make(N(interactortext), l_View);
-            l_ResourceElement.set_click_passthrough(false);
-
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_ResourceElement);
-
-            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
-            l_Display.rotation(0.0f);
-            l_Display.pixel_scale(Math::Vector2(100.0f, 30.0f));
-            l_Display.layer(3);
-
-            UI::Component::Text l_Text =
-                UI::Component::Text::make(l_ResourceElement);
-            l_Text.set_font(l_Font);
-            l_Text.set_text(Util::String("Press F to start combat"));
-            l_Text.set_color(Math::Color(1.0f, 0.2f, 0.2f, 1.0f));
-            l_Text.set_size(0.9f);
-          }
-        }
-
-        {
-          UI::View l_View = UI::View::make(N(EndTurnView));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(50.0f, 50.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-
-          {
-            UI::Element l_ResourceElement =
-                UI::Element::make(N(endturntext), l_View);
-            l_ResourceElement.set_click_passthrough(false);
-
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_ResourceElement);
-
-            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
-            l_Display.rotation(0.0f);
-            l_Display.pixel_scale(Math::Vector2(100.0f, 30.0f));
-            l_Display.layer(3);
-
-            UI::Component::Text l_Text =
-                UI::Component::Text::make(l_ResourceElement);
-            l_Text.set_font(l_Font);
-            l_Text.set_text(Util::String("End turn"));
-            l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
-            l_Text.set_size(0.5f);
-          }
-        }
-
-        {
-          UI::View l_View = UI::View::make(N(InfoView));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(50.0f, 50.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-
-          {
-            UI::Element l_ResourceElement =
-                UI::Element::make(N(infoelement), l_View);
-            l_ResourceElement.set_click_passthrough(false);
-
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_ResourceElement);
-
-            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
-            l_Display.rotation(0.0f);
-            l_Display.pixel_scale(Math::Vector2(100.0f, 30.0f));
-            l_Display.layer(3);
-
-            UI::Component::Text l_Text =
-                UI::Component::Text::make(l_ResourceElement);
-            l_Text.set_font(l_Font);
-            l_Text.set_text(Util::String("Test"));
-            l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
-            l_Text.set_size(1.5f);
-          }
-        }
-
-        {
-          UI::View l_View = UI::View::make(N(NotificationView));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(50.0f, 20.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-        }
-
-        {
-          UI::View l_View = UI::View::make(N(EnemyPlayedView));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(50.0f, 20.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-        }
-
-        {
-          UI::View l_View = UI::View::make(N(Player_HP));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(50.0f, 50.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-
-          {
-            UI::Element l_ResourceElement =
-                UI::Element::make(N(playerhp), l_View);
-            l_ResourceElement.set_click_passthrough(true);
-
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_ResourceElement);
-
-            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
-            l_Display.rotation(0.0f);
-            l_Display.pixel_scale(Math::Vector2(30.0f, 100.0f));
-            l_Display.layer(3);
-
-            UI::Component::Text l_Text =
-                UI::Component::Text::make(l_ResourceElement);
-            l_Text.set_font(l_Font);
-            l_Text.set_text(Util::String("HP: 100"));
-            l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
-            l_Text.set_size(0.7f);
-          }
-
-          {
-            UI::Element l_ResourceElement =
-                UI::Element::make(N(playermana), l_View);
-            l_ResourceElement.set_click_passthrough(true);
-
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_ResourceElement);
-
-            l_Display.pixel_position(Math::Vector2(0.0f, 50.0f));
-            l_Display.rotation(0.0f);
-            l_Display.pixel_scale(Math::Vector2(30.0f, 100.0f));
-            l_Display.layer(3);
-
-            UI::Component::Text l_Text =
-                UI::Component::Text::make(l_ResourceElement);
-            l_Text.set_font(l_Font);
-            l_Text.set_text(Util::String("Mana: 5"));
-            l_Text.set_color(Math::Color(0.2f, 0.2f, 0.5f, 1.0f));
-            l_Text.set_size(0.7f);
-          }
-        }
-
-        {
-          UI::View l_View = UI::View::make(N(Enemy_HP));
-          l_View.set_view_template(false);
-          l_View.load_elements();
-
-          l_View.pixel_position(Math::Vector2(200.0f, 50.0f));
-          l_View.layer_offset(0);
-          l_View.scale_multiplier(1.0f);
-
-          {
-            UI::Element l_ResourceElement =
-                UI::Element::make(N(enemyhp), l_View);
-            l_ResourceElement.set_click_passthrough(true);
-
-            UI::Component::Display l_Display =
-                UI::Component::Display::make(l_ResourceElement);
-
-            l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
-            l_Display.rotation(0.0f);
-            l_Display.pixel_scale(Math::Vector2(30.0f, 100.0f));
-            l_Display.layer(3);
-
-            UI::Component::Text l_Text =
-                UI::Component::Text::make(l_ResourceElement);
-            l_Text.set_font(l_Font);
-            l_Text.set_text(Util::String("Enemy HP: 100"));
-            l_Text.set_color(Math::Color(0.8f, 0.2f, 0.2f, 1.0f));
-            l_Text.set_size(0.7f);
-          }
-        }
-      }
-
-      static void test_ui()
-      {
-        create_combat_ui();
-
-        UI::View l_View = UI::View::make(N(CardTemplateView));
-        l_View.set_view_template(true);
-        l_View.load_elements();
-
-        UI::Element l_Element = UI::Element::make(N(test), l_View);
-        l_Element.set_click_passthrough(false);
-
-        // TODO: fix
-        Util::String l_Path = "arial.ttf";
-        Renderer::Font l_Font = Renderer::Font::make(N(arial));
-
-        // Background
-        {
-          UI::Component::Display l_Display =
-              UI::Component::Display::make(l_Element);
-          l_Display.pixel_position(Math::Vector2(0.0f, 0.0f));
-          l_Display.rotation(0.0f);
-          l_Display.pixel_scale(Math::Vector2(200.0f, 280.0f));
-          l_Display.layer(1);
-
-          UI::Component::Image l_Image =
-              UI::Component::Image::make(l_Element);
-
-          // TODO: Fix
-          Renderer::Texture l_Texture =
-              Renderer::Texture::find_by_name(N(card_bg));
-          l_Image.set_texture(l_Texture);
-        }
-
-        // Background icon
-        {
-          UI::Element l_BgIconElement =
-              UI::Element::make(N(cardbg), l_View);
-          l_BgIconElement.set_click_passthrough(true);
-
-          UI::Component::Display l_Display =
-              UI::Component::Display::make(l_BgIconElement);
-
-          l_Display.pixel_position(Math::Vector2(10.0f, 50.0f));
-          l_Display.rotation(0.0f);
-          l_Display.pixel_scale(Math::Vector2(180.0f, 180.0f));
-          l_Display.layer(2);
-
-          l_Display.set_parent(l_Element.get_display().get_id());
-
-          UI::Component::Image l_Image =
-              UI::Component::Image::make(l_BgIconElement);
-
-          /*
-          Core::Texture2D l_Texture =
-              Core::Texture2D::make(Util::String("magic.ktx"));
-          l_Image.set_texture(l_Texture);
-          */
-        }
-
-        // Resource icon
-        {
-          UI::Element l_ResourceIconElement =
-              UI::Element::make(N(resourcebg), l_View);
-          l_ResourceIconElement.set_click_passthrough(true);
-
-          UI::Component::Display l_Display =
-              UI::Component::Display::make(l_ResourceIconElement);
-
-          l_Display.pixel_position(Math::Vector2(5.0f, 5.0f));
-          l_Display.rotation(0.0f);
-          l_Display.pixel_scale(Math::Vector2(50.0f, 50.0f));
-          l_Display.layer(2);
-
-          l_Display.set_parent(l_Element.get_display().get_id());
-
-          UI::Component::Image l_Image =
-              UI::Component::Image::make(l_ResourceIconElement);
-
-          // TODO: fix
-          Renderer::Texture l_Texture =
-              Renderer::Texture::make(N(crystal));
-          l_Image.set_texture(l_Texture);
-        }
-
-        // ResourceText
-        {
-          UI::Element l_ResourceElement =
-              UI::Element::make(N(resourcetxt), l_View);
-          l_ResourceElement.set_click_passthrough(true);
-
-          UI::Component::Display l_Display =
-              UI::Component::Display::make(l_ResourceElement);
-
-          l_Display.pixel_position(Math::Vector2(20.0f, 15.0f));
-          l_Display.rotation(0.0f);
-          l_Display.pixel_scale(Math::Vector2(30.0f, 40.0f));
-          l_Display.layer(3);
-
-          l_Display.set_parent(l_Element.get_display().get_id());
-
-          UI::Component::Text l_Text =
-              UI::Component::Text::make(l_ResourceElement);
-          l_Text.set_font(l_Font);
-          l_Text.set_text(Util::String("6"));
-          l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
-          l_Text.set_size(0.7f);
-        }
-
-        // Title
-        {
-          UI::Element l_TitleElement =
-              UI::Element::make(N(cardtitle), l_View);
-          l_TitleElement.set_click_passthrough(true);
-
-          UI::Component::Display l_Display =
-              UI::Component::Display::make(l_TitleElement);
-
-          l_Display.pixel_position(Math::Vector2(60.0f, 10.0f));
-          l_Display.rotation(0.0f);
-          l_Display.pixel_scale(Math::Vector2(130.0f, 40.0f));
-          l_Display.layer(3);
-
-          l_Display.set_parent(l_Element.get_display().get_id());
-
-          UI::Component::Text l_Text =
-              UI::Component::Text::make(l_TitleElement);
-          l_Text.set_font(l_Font);
-          l_Text.set_text(Util::String("Nightcrawler"));
-          l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
-          l_Text.set_size(0.45f);
-
-          l_Text.set_content_fit_approach(
-              UI::Component::TextContentFitOptions::Fit);
-        }
-
-        // Description
-        {
-          UI::Element l_DescriptionElement =
-              UI::Element::make(N(carddesc), l_View);
-          l_DescriptionElement.set_click_passthrough(true);
-
-          UI::Component::Display l_Display =
-              UI::Component::Display::make(l_DescriptionElement);
-
-          l_Display.pixel_position(Math::Vector2(10.0f, 60.0f));
-          l_Display.rotation(0.0f);
-          l_Display.pixel_scale(Math::Vector2(180.0f, 170.0f));
-          l_Display.layer(3);
-
-          l_Display.set_parent(l_Element.get_display().get_id());
-
-          UI::Component::Text l_Text =
-              UI::Component::Text::make(l_DescriptionElement);
-          l_Text.set_font(l_Font);
-          l_Text.set_text(
-              Util::String("Send a dark creature out for your "
-                           "opponent dealing 12 shadow damage."));
-          l_Text.set_color(Math::Color(0.2f, 0.2f, 0.2f, 1.0f));
-          l_Text.set_size(0.3f);
-
-          l_Text.set_content_fit_approach(
-              UI::Component::TextContentFitOptions::WordWrap);
-        }
-      }
-
       static void run()
       {
         const auto l_TimeStep = 1'000'000'000ns / 144;
@@ -528,8 +164,6 @@ namespace Low {
 
         // FIX: Remove test code
         static bool l_IsInit = false;
-
-        // test_ui();
 
         while (g_Running) {
           {
@@ -570,8 +204,10 @@ namespace Low {
             l_Fps++;
             l_Frames++;
 
-            float l_DeltaTime =
+            const float l_DeltaTime =
                 duration_cast<duration<float>>(l_Accumulator).count();
+
+            g_DeltaTime = l_DeltaTime;
 
             g_Frames++;
             execute_ticks(l_DeltaTime);
@@ -611,13 +247,14 @@ namespace Low {
         return;
 #endif
 
-        {
+        Renderer::UiCanvas l_Canvas =
+            Renderer::UiCanvas::make(N(TestCanvas));
+        Renderer::get_game_renderview().add_ui_canvas(l_Canvas);
+
+        if (0) {
           using namespace Low::Renderer;
 
           MaterialTypes &l_MaterialTypes = get_material_types();
-
-          UiCanvas l_Canvas = UiCanvas::make(N(TestCanvas));
-          get_game_renderview().add_ui_canvas(l_Canvas);
 
           Material l_UiMaterial =
               Material::make(N(UiMaterial), l_MaterialTypes.uiBase);
@@ -630,7 +267,7 @@ namespace Low {
           if (1) {
             {
               UI::Element l_Element =
-                  UI::Element::make(N(Img), l_View);
+                  UI::Element::make(N(Img), l_Canvas);
               UI::Component::Display l_Display =
                   UI::Component::Display::make(l_Element);
 
@@ -647,7 +284,7 @@ namespace Low {
 
             if (1) {
               UI::Element l_Element =
-                  UI::Element::make(N(txt), l_View);
+                  UI::Element::make(N(txt), l_Canvas);
               UI::Component::Display l_Display =
                   UI::Component::Display::make(l_Element);
 
@@ -710,6 +347,11 @@ namespace Low {
       uint32_t get_fps()
       {
         return g_LastFps;
+      }
+
+      float get_delta_time()
+      {
+        return g_DeltaTime;
       }
     } // namespace GameLoop
   } // namespace Core

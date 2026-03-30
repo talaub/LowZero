@@ -13,6 +13,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
 
+#include "LowUtilAssetManager.h"
 #include "LowRenderer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -193,6 +194,7 @@ namespace Low {
           l_TypeInfo.deserialize = &Image::deserialize;
           l_TypeInfo.find_by_index = &Image::_find_by_index;
           l_TypeInfo.notify = &Image::_notify;
+          l_TypeInfo.post_load = nullptr;
           l_TypeInfo.make_default = nullptr;
           l_TypeInfo.make_component = &Image::_make;
           l_TypeInfo.duplicate_default = nullptr;
@@ -258,7 +260,11 @@ namespace Low {
                   p_Handle, Image, material, Low::Renderer::Material);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                    const void *p_Data) -> void {};
+                                    const void *p_Data) -> void {
+              Image l_Handle = p_Handle.get_id();
+              l_Handle.set_material(
+                  *(Low::Renderer::Material *)p_Data);
+            };
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Image l_Handle = p_Handle.get_id();
@@ -406,6 +412,8 @@ namespace Low {
           }
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
+          // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+          // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
         }
 
         void Image::cleanup()
@@ -541,7 +549,14 @@ namespace Low {
           p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
+          if (get_texture().is_alive()) {
+            p_Node["texture"] =
+                Util::U64Id{get_texture().get_unique_id()};
+          }
+          if (get_material().is_alive()) {
+            p_Node["material"] =
+                Util::U64Id{get_material().get_unique_id()};
+          }
           // LOW_CODEGEN::END::CUSTOM:SERIALIZER
         }
 
@@ -573,7 +588,14 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
+          if (p_Node["texture"]) {
+            l_Handle.set_texture(Util::find_handle_by_unique_id(
+                p_Node["texture"].as<Util::U64Id>().val));
+          }
+          if (p_Node["material"]) {
+            l_Handle.set_material(Util::find_handle_by_unique_id(
+                p_Node["material"].as<Util::U64Id>().val));
+          }
           // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
           return l_Handle;

@@ -80,6 +80,7 @@ namespace Low {
     Material g_DefaultMaterialTexture;
     Material g_DefaultMaterialUi;
     Material g_DefaultMaterialUiText;
+    Material g_DefaultMaterialUiOutline;
 
     RenderView g_GameRenderView;
     RenderView g_EditorRenderView;
@@ -107,6 +108,10 @@ namespace Low {
     Material get_default_material_ui_text()
     {
       return g_DefaultMaterialUiText;
+    }
+    Material get_default_material_ui_outline()
+    {
+      return g_DefaultMaterialUiOutline;
     }
 
     MaterialTypes &get_material_types()
@@ -234,6 +239,10 @@ namespace Low {
         g_DefaultMaterialUiText = Material::make_gpu_ready(
             N(DefaultMaterialUiText), g_MaterialTypes.uiText);
       }
+      {
+        g_DefaultMaterialUiOutline = Material::make_gpu_ready(
+            N(DefaultMaterialUiOutline), g_MaterialTypes.uiOutline);
+      }
       return true;
     }
 
@@ -339,6 +348,16 @@ namespace Low {
         l_MT.set_draw_fragment_shader_path("ui_text.frag");
 
         g_MaterialTypes.uiText = l_MT;
+      }
+      {
+        MaterialType l_MT = Low::Renderer::MaterialType::make(
+            N(ui_text), Low::Renderer::MaterialTypeFamily::UI);
+        l_MT.finalize();
+
+        l_MT.set_draw_vertex_shader_path("base_ui.vert");
+        l_MT.set_draw_fragment_shader_path("ui_outline.frag");
+
+        g_MaterialTypes.uiOutline = l_MT;
       }
 
       return true;
@@ -454,14 +473,14 @@ namespace Low {
         }
       } else {
         Util::AssetManager::TypeRegistratorBuilder l_Builder(
-            N(Texture));
+            N(Texture), Renderer::Texture::IDENTIFIER);
         l_Builder.auto_initialize(true)
             .initialize_on_startup(true)
             .add_asset_suffix(".texresource.yaml");
         l_Builder.add_initialize_directory(
             Util::get_project().dataPath, true);
         l_Builder.add_raw_suffix(".png");
-        l_Builder.add_import_direcotry(Util::get_project().dataPath,
+        l_Builder.add_import_directory(Util::get_project().dataPath,
                                        true, true);
 
         l_Builder
@@ -481,6 +500,7 @@ namespace Low {
                       Texture::make_from_resource_config(
                           i_ResourceConfig));
                 })
+            .no_saving()
             .importer([](const Util::String p_Path) -> Util::String {
               std::filesystem::path l_FilePath(
                   (Util::get_project().dataPath + p_Path).c_str());

@@ -1,5 +1,6 @@
 #include "LowEditorAssetWidget.h"
 
+#include "LowCoreUiWidgetAsset.h"
 #include "LowEditorFonts.h"
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
@@ -14,6 +15,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "IconsLucide.h"
+#include "LowUtilAssetManager.h"
 
 #include "LowEditor.h"
 #include "LowCorePrefab.h"
@@ -76,6 +78,8 @@ namespace Low {
               l_AssetType = AssetType::Font;
             } else if (p_Watcher.subtype == "flode") {
               l_AssetType = AssetType::Flode;
+            } else if (p_Watcher.subtype == "uiwidget") {
+              l_AssetType = AssetType::UiWidget;
             } else if (p_Watcher.extension == "cpp") {
               l_AssetType = AssetType::Script;
             }
@@ -121,6 +125,11 @@ namespace Low {
                 Renderer::Font l_Font = l_Handle.get_id();
               }
 
+              break;
+            }
+            case AssetType::UiWidget: {
+              l_Handle =
+                  Util::AssetManager::_find_by_path(p_Watcher.path);
               break;
             }
             }
@@ -463,6 +472,19 @@ namespace Low {
                         ImVec2(ImGui::GetContentRegionAvail().x,
                                ImGui::GetContentRegionAvail().y),
                         true);
+
+      if (ImGui::BeginPopupContextWindow("WINDOWCONTEXT")) {
+        // TODO: Change this. Asset creation options should be
+        // registered from outside and not harcoded here.
+        if (ImGui::MenuItem("New UI-Widget")) {
+          using namespace Low::Util::FileSystem;
+          DirectoryWatcher &l_Watcher =
+              get_directory_watcher(m_SelectedDirectory);
+          Util::AssetManager::create<Core::UI::WidgetAsset>(
+              N(Testwidget), l_Watcher.path);
+        }
+        ImGui::EndPopup();
+      }
       render_directory_content(
           Util::FileSystem::get_directory_watcher(
               m_SelectedDirectory));

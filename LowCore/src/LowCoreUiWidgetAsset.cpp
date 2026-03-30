@@ -1,0 +1,935 @@
+#include "LowCoreUiWidgetAsset.h"
+
+#include <algorithm>
+
+#include "LowCoreUiDisplay.h"
+#include "LowUtil.h"
+#include "LowUtilAssert.h"
+#include "LowUtilLogger.h"
+#include "LowUtilProfiler.h"
+#include "LowUtilConfig.h"
+#include "LowUtilHashing.h"
+#include "LowUtilSerialization.h"
+#include "LowUtilObserverManager.h"
+
+// LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+#include "LowUtilAssetManager.h"
+#include "LowUtilString.h"
+// LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
+
+namespace Low {
+  namespace Core {
+    namespace UI {
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
+
+      u16 WidgetAsset::ms_TypeId = 0;
+      const Low::Util::TypeIdentifier
+          WidgetAsset::IDENTIFIER(LOW_NAME(1181529166),
+                                  LOW_NAME(2149613867));
+      uint32_t WidgetAsset::ms_Capacity = 0u;
+      uint32_t WidgetAsset::ms_PageSize = 0u;
+      Low::Util::SharedMutex WidgetAsset::ms_LivingMutex;
+      Low::Util::SharedMutex WidgetAsset::ms_PagesMutex;
+      Low::Util::UniqueLock<Low::Util::SharedMutex>
+          WidgetAsset::ms_PagesLock(WidgetAsset::ms_PagesMutex,
+                                    std::defer_lock);
+      Low::Util::List<WidgetAsset> WidgetAsset::ms_LivingInstances;
+      Low::Util::List<Low::Util::Instances::Page *>
+          WidgetAsset::ms_Pages;
+
+      Low::Util::Handle WidgetAsset::_make(Low::Util::Name p_Name)
+      {
+        return make(p_Name).get_id();
+      }
+
+      WidgetAsset WidgetAsset::make(Low::Util::Name p_Name)
+      {
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+        uint32_t l_Index =
+            create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
+
+        WidgetAsset l_Handle;
+        l_Handle.m_Data.m_Index = l_Index;
+        l_Handle.m_Data.m_Generation =
+            ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
+        l_Handle.m_Data.m_Type = WidgetAsset::ms_TypeId;
+
+        l_PageLock.unlock();
+
+        Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetAsset, state,
+                                   Low::Core::UI::LoadState))
+            Low::Core::UI::LoadState();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, WidgetAsset, content,
+            Low::Util::List<Low::Core::UI::ElementDescriptor>))
+            Low::Util::List<Low::Core::UI::ElementDescriptor>();
+        ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset, name,
+                          Low::Util::Name) = Low::Util::Name(0u);
+
+        l_Handle.set_name(p_Name);
+
+        {
+          Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+              ms_LivingMutex);
+          ms_LivingInstances.push_back(l_Handle);
+        }
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+        l_Handle.set_state(LoadState::Unloaded);
+        // LOW_CODEGEN::END::CUSTOM:MAKE
+
+        return l_Handle;
+      }
+
+      void WidgetAsset::destroy()
+      {
+        LOW_ASSERT(is_alive(), "Cannot destroy dead object");
+
+        {
+          Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+          // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+          // LOW_CODEGEN::END::CUSTOM:DESTROY
+        }
+
+        broadcast_observable(OBSERVABLE_DESTROY);
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        _LOW_ASSERT(get_page_for_index(get_index(), l_PageIndex,
+                                       l_SlotIndex));
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Page->slots[l_SlotIndex].m_Occupied = false;
+        l_Page->slots[l_SlotIndex].m_Generation++;
+
+        ms_PagesLock.lock();
+        Low::Util::UniqueLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end();) {
+          if (it->get_id() == get_id()) {
+            it = ms_LivingInstances.erase(it);
+          } else {
+            it++;
+          }
+        }
+        ms_PagesLock.unlock();
+        l_LivingLock.unlock();
+      }
+
+      void WidgetAsset::initialize()
+      {
+        const Low::Util::TypeIdentifier l_IdentifierNames(
+            N(LowCore), N(WidgetAsset));
+
+        LOCK_PAGES_WRITE(l_PagesLock);
+        // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
+
+        ms_Capacity = Low::Util::Config::get_capacity(N(LowCore),
+                                                      N(WidgetAsset));
+
+        ms_PageSize = Low::Math::Util::clamp(
+            Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
+        {
+          u32 l_Capacity = 0u;
+          while (l_Capacity < ms_Capacity) {
+            Low::Util::Instances::Page *i_Page =
+                new Low::Util::Instances::Page;
+            Low::Util::Instances::initialize_page(
+                i_Page, WidgetAsset::Data::get_size(), ms_PageSize);
+            ms_Pages.push_back(i_Page);
+            l_Capacity += ms_PageSize;
+          }
+          ms_Capacity = l_Capacity;
+        }
+        LOCK_UNLOCK(l_PagesLock);
+
+        Low::Util::RTTI::TypeInfo l_TypeInfo;
+        l_TypeInfo.name = N(WidgetAsset);
+        l_TypeInfo.typeId = ms_TypeId;
+        l_TypeInfo.get_capacity = &get_capacity;
+        l_TypeInfo.is_alive = &WidgetAsset::is_alive;
+        l_TypeInfo.destroy = &WidgetAsset::destroy;
+        l_TypeInfo.serialize = &WidgetAsset::serialize;
+        l_TypeInfo.deserialize = &WidgetAsset::deserialize;
+        l_TypeInfo.find_by_index = &WidgetAsset::_find_by_index;
+        l_TypeInfo.notify = &WidgetAsset::_notify;
+        l_TypeInfo.post_load = &WidgetAsset::_post_load;
+        l_TypeInfo.find_by_name = &WidgetAsset::_find_by_name;
+        l_TypeInfo.make_component = nullptr;
+        l_TypeInfo.make_default = &WidgetAsset::_make;
+        l_TypeInfo.duplicate_default = &WidgetAsset::_duplicate;
+        l_TypeInfo.duplicate_component = nullptr;
+        l_TypeInfo.get_living_instances =
+            reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
+                &WidgetAsset::living_instances);
+        l_TypeInfo.get_living_count = &WidgetAsset::living_count;
+        l_TypeInfo.component = false;
+        l_TypeInfo.uiComponent = false;
+        {
+          // Property: state
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(state);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, state);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.get_state();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, state,
+                Low::Core::UI::LoadState);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.set_state(*(Low::Core::UI::LoadState *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((Low::Core::UI::LoadState *)p_Data) =
+                l_Handle.get_state();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: state
+        }
+        {
+          // Property: content
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(content);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, content);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.get_content();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, content,
+                Low::Util::List<Low::Core::UI::ElementDescriptor>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.set_content(
+                *(Low::Util::List<Low::Core::UI::ElementDescriptor> *)
+                    p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((Low::Util::List<Low::Core::UI::ElementDescriptor> *)
+                  p_Data) = l_Handle.get_content();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: content
+        }
+        {
+          // Property: path
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(path);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, path);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::STRING;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.get_path();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, path, Low::Util::String);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((Low::Util::String *)p_Data) = l_Handle.get_path();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: path
+        }
+        {
+          // Property: name
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(name);
+          l_PropertyInfo.editorProperty = true;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, name);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.get_name();
+            return (void *)&ACCESSOR_TYPE_SOA(p_Handle, WidgetAsset,
+                                              name, Low::Util::Name);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.set_name(*(Low::Util::Name *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((Low::Util::Name *)p_Data) = l_Handle.get_name();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: name
+        }
+        {
+          // Function: parse_content
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(parse_content);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Node);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: parse_content
+        }
+        {
+          // Function: parse_element
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(parse_element);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Node);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Descriptor);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::UNKNOWN;
+            l_ParameterInfo.handleType = 0;
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: parse_element
+        }
+        {
+          // Function: spawn_instance
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(spawn_instance);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_FunctionInfo.handleType = WidgetInstance::type_id();
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Canvas);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType =
+                Low::Renderer::UiCanvas::type_id();
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: spawn_instance
+        }
+        ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
+                                                          l_TypeInfo);
+        // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+        {
+          Util::AssetManager::TypeRegistratorBuilder l_Builder(
+              N(UiWidget), IDENTIFIER);
+          l_Builder.auto_initialize(true)
+              .initialize_on_startup(true)
+              .add_asset_suffix(".uiwidget.yaml");
+          l_Builder
+              .add_initialize_directory(Util::get_project().dataPath,
+                                        true)
+              .supports_loading(true)
+              .is_loadable([](Util::Handle p_Handle) -> bool {
+                WidgetAsset l_Asset = p_Handle.get_id();
+                return l_Asset.is_alive() &&
+                       l_Asset.get_state() == LoadState::Unloaded;
+              })
+              .load_path_property_name(N(path));
+          l_Builder
+              .initializer([](const Util::String p_Path)
+                               -> Util::Handle {
+                const Util::String l_FileName =
+                    Util::PathHelper::get_base_name_no_ext(p_Path);
+                WidgetAsset l_Asset =
+                    WidgetAsset::make(LOW_NAME(l_FileName.c_str()));
+                l_Asset.set_path(p_Path);
+                return l_Asset.get_id();
+              })
+              .creatable()
+              .creator([](const Util::Name p_Name,
+                          const Util::String p_Path) -> Util::Handle {
+                WidgetAsset l_Asset = WidgetAsset::make(p_Name);
+                l_Asset.set_path(p_Path);
+
+                return l_Asset.get_id();
+              });
+
+          Util::AssetManager::register_asset_type(l_Builder.build());
+        }
+        // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
+      }
+
+      void WidgetAsset::cleanup()
+      {
+        Low::Util::List<WidgetAsset> l_Instances = ms_LivingInstances;
+        for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
+          l_Instances[i].destroy();
+        }
+        ms_PagesLock.lock();
+        for (auto it = ms_Pages.begin(); it != ms_Pages.end();) {
+          Low::Util::Instances::Page *i_Page = *it;
+          free(i_Page->buffer);
+          free(i_Page->slots);
+          free(i_Page->lockWords);
+          delete i_Page;
+          it = ms_Pages.erase(it);
+        }
+
+        ms_Capacity = 0;
+
+        ms_PagesLock.unlock();
+      }
+
+      Low::Util::Handle WidgetAsset::_find_by_index(uint32_t p_Index)
+      {
+        return find_by_index(p_Index).get_id();
+      }
+
+      WidgetAsset WidgetAsset::find_by_index(uint32_t p_Index)
+      {
+        LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
+
+        WidgetAsset l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Type = WidgetAsset::ms_TypeId;
+
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(p_Index, l_PageIndex, l_SlotIndex)) {
+          l_Handle.m_Data.m_Generation = 0;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        l_Handle.m_Data.m_Generation =
+            l_Page->slots[l_SlotIndex].m_Generation;
+
+        return l_Handle;
+      }
+
+      WidgetAsset WidgetAsset::create_handle_by_index(u32 p_Index)
+      {
+        if (p_Index < get_capacity()) {
+          return find_by_index(p_Index);
+        }
+
+        WidgetAsset l_Handle;
+        l_Handle.m_Data.m_Index = p_Index;
+        l_Handle.m_Data.m_Generation = 0;
+        l_Handle.m_Data.m_Type = WidgetAsset::ms_TypeId;
+
+        return l_Handle;
+      }
+
+      bool WidgetAsset::is_alive() const
+      {
+        if (m_Data.m_Type != WidgetAsset::ms_TypeId) {
+          return false;
+        }
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        if (!get_page_for_index(get_index(), l_PageIndex,
+                                l_SlotIndex)) {
+          return false;
+        }
+        Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
+            l_Page->mutex);
+        return m_Data.m_Type == WidgetAsset::ms_TypeId &&
+               l_Page->slots[l_SlotIndex].m_Occupied &&
+               l_Page->slots[l_SlotIndex].m_Generation ==
+                   m_Data.m_Generation;
+      }
+
+      uint32_t WidgetAsset::get_capacity()
+      {
+        return ms_Capacity;
+      }
+
+      Low::Util::Handle
+      WidgetAsset::_find_by_name(Low::Util::Name p_Name)
+      {
+        return find_by_name(p_Name).get_id();
+      }
+
+      WidgetAsset WidgetAsset::find_by_name(Low::Util::Name p_Name)
+      {
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+        // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
+
+        Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
+            ms_LivingMutex);
+        for (auto it = ms_LivingInstances.begin();
+             it != ms_LivingInstances.end(); ++it) {
+          if (it->get_name() == p_Name) {
+            return *it;
+          }
+        }
+        return Low::Util::Handle::DEAD;
+      }
+
+      WidgetAsset WidgetAsset::duplicate(Low::Util::Name p_Name) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+        LOW_ASSERT_WARN(false, "Not implemented");
+        return 0;
+        // LOW_CODEGEN::END::CUSTOM:DUPLICATE
+      }
+
+      WidgetAsset WidgetAsset::duplicate(WidgetAsset p_Handle,
+                                         Low::Util::Name p_Name)
+      {
+        return p_Handle.duplicate(p_Name);
+      }
+
+      Low::Util::Handle
+      WidgetAsset::_duplicate(Low::Util::Handle p_Handle,
+                              Low::Util::Name p_Name)
+      {
+        WidgetAsset l_WidgetAsset = p_Handle.get_id();
+        return l_WidgetAsset.duplicate(p_Name);
+      }
+
+      void
+      WidgetAsset::serialize(Low::Util::Serial::Node &p_Node) const
+      {
+        _LOW_ASSERT(is_alive());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+        p_Node["name"] = get_name();
+        Util::Serial::Node &l_ContentNode =
+            p_Node["content"]["elements"];
+
+        for (ElementDescriptor &i_Element : get_content()) {
+          Util::Serial::Node i_ElementNode;
+          i_ElementNode["name"] = i_Element.name;
+          Util::Serial::Node &i_ComponentsNode =
+              i_ElementNode["components"];
+          for (ComponentDescriptor &i_Component :
+               i_Element.components) {
+            Util::Serial::Node i_ComponentNode;
+            i_ComponentNode["type"] =
+                Util::Handle::identifier(i_Component.typeId);
+            i_ComponentNode["data"] = i_Component.data;
+
+            i_ComponentsNode.push_back(i_ComponentNode);
+          }
+
+          l_ContentNode.push_back(i_ElementNode);
+        }
+        // LOW_CODEGEN::END::CUSTOM:SERIALIZER
+      }
+
+      void WidgetAsset::serialize(Low::Util::Handle p_Handle,
+                                  Low::Util::Serial::Node &p_Node)
+      {
+        WidgetAsset l_WidgetAsset = p_Handle.get_id();
+        l_WidgetAsset.serialize(p_Node);
+      }
+
+      Low::Util::Handle
+      WidgetAsset::deserialize(Low::Util::Serial::Node &p_Node,
+                               Low::Util::Handle p_Creator)
+      {
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+        return Low::Util::Handle::DEAD;
+        // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
+      }
+
+      void WidgetAsset::broadcast_observable(
+          Low::Util::Name p_Observable) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        Low::Util::notify(l_Key);
+      }
+
+      u64
+      WidgetAsset::observe(Low::Util::Name p_Observable,
+                           Low::Util::Function<void(Low::Util::Handle,
+                                                    Low::Util::Name)>
+                               p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      u64 WidgetAsset::observe(Low::Util::Name p_Observable,
+                               Low::Util::Handle p_Observer) const
+      {
+        Low::Util::ObserverKey l_Key;
+        l_Key.handleId = get_id();
+        l_Key.observableName = p_Observable.m_Index;
+
+        return Low::Util::observe(l_Key, p_Observer);
+      }
+
+      void WidgetAsset::notify(Low::Util::Handle p_Observed,
+                               Low::Util::Name p_Observable)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+        // LOW_CODEGEN::END::CUSTOM:NOTIFY
+      }
+
+      void WidgetAsset::_notify(Low::Util::Handle p_Observer,
+                                Low::Util::Handle p_Observed,
+                                Low::Util::Name p_Observable)
+      {
+        WidgetAsset l_WidgetAsset = p_Observer.get_id();
+        l_WidgetAsset.notify(p_Observed, p_Observable);
+      }
+
+      void WidgetAsset::post_load(Low::Util::Serial::Node &p_Node)
+      {
+        // LOW_CODEGEN:BEGIN:CUSTOM:POST_LOAD
+        set_state(LoadState::Loaded);
+
+        get_content().clear();
+        if (p_Node["content"]) {
+          parse_content(p_Node["content"]);
+        }
+
+        // LOW_CODEGEN::END::CUSTOM:POST_LOAD
+      }
+
+      Low::Core::UI::LoadState WidgetAsset::get_state() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_state
+        // LOW_CODEGEN::END::CUSTOM:GETTER_state
+
+        return TYPE_SOA(WidgetAsset, state, Low::Core::UI::LoadState);
+      }
+      void WidgetAsset::set_state(Low::Core::UI::LoadState p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_state
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_state
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, state, Low::Core::UI::LoadState) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_state
+        // LOW_CODEGEN::END::CUSTOM:SETTER_state
+
+        broadcast_observable(N(state));
+      }
+
+      Low::Util::List<Low::Core::UI::ElementDescriptor> &
+      WidgetAsset::get_content() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_content
+        // LOW_CODEGEN::END::CUSTOM:GETTER_content
+
+        return TYPE_SOA(
+            WidgetAsset, content,
+            Low::Util::List<Low::Core::UI::ElementDescriptor>);
+      }
+      void WidgetAsset::set_content(
+          Low::Util::List<Low::Core::UI::ElementDescriptor> &p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_content
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_content
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, content,
+                 Low::Util::List<Low::Core::UI::ElementDescriptor>) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_content
+        // LOW_CODEGEN::END::CUSTOM:SETTER_content
+
+        broadcast_observable(N(content));
+      }
+
+      Low::Util::String WidgetAsset::get_path() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_path
+        // LOW_CODEGEN::END::CUSTOM:GETTER_path
+
+        return TYPE_SOA(WidgetAsset, path, Low::Util::String);
+      }
+      void WidgetAsset::set_path(const char *p_Value)
+      {
+        Low::Util::String l_Val(p_Value);
+        set_path(l_Val);
+      }
+
+      void WidgetAsset::set_path(Low::Util::String p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_path
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_path
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, path, Low::Util::String) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_path
+        // LOW_CODEGEN::END::CUSTOM:SETTER_path
+
+        broadcast_observable(N(path));
+      }
+
+      Low::Util::Name WidgetAsset::get_name() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+        // LOW_CODEGEN::END::CUSTOM:GETTER_name
+
+        return TYPE_SOA(WidgetAsset, name, Low::Util::Name);
+      }
+      void WidgetAsset::set_name(Low::Util::Name p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, name, Low::Util::Name) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+        // LOW_CODEGEN::END::CUSTOM:SETTER_name
+
+        broadcast_observable(N(name));
+      }
+
+      void WidgetAsset::parse_content(Low::Util::Serial::Node &p_Node)
+      {
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_parse_content
+        Util::Serial::Node &l_ElementsNode = p_Node["elements"];
+        if (l_ElementsNode) {
+          LOW_LOG_DEBUG << "SIZE: " << l_ElementsNode.size()
+                        << LOW_LOG_END;
+          for (u32 i = 0; i < l_ElementsNode.size(); ++i) {
+            LOW_LOG_DEBUG << "Elem: " << i << LOW_LOG_END;
+            ElementDescriptor i_Descriptor;
+            parse_element(l_ElementsNode[i], i_Descriptor);
+
+            get_content().push_back(i_Descriptor);
+          }
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_parse_content
+      }
+
+      void WidgetAsset::parse_element(
+          Low::Util::Serial::Node &p_Node,
+          Low::Core::UI::ElementDescriptor &p_Descriptor)
+      {
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_parse_element
+        p_Descriptor.name = p_Node["name"].as<Util::Name>();
+
+        Util::Serial::Node &l_ComponentsNode = p_Node["components"];
+        if (l_ComponentsNode) {
+          for (u32 i = 0; i < l_ComponentsNode.size(); ++i) {
+            ComponentDescriptor i_Descriptor;
+            i_Descriptor.typeId = Util::Handle::type_id(
+                Util::TypeIdentifier::from_string(
+                    l_ComponentsNode[i]["type"].as<Util::String>()));
+            i_Descriptor.data = l_ComponentsNode[i]["data"];
+
+            p_Descriptor.components.push_back(i_Descriptor);
+          }
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_parse_element
+      }
+
+      WidgetInstance
+      WidgetAsset::spawn_instance(Low::Renderer::UiCanvas p_Canvas)
+      {
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
+        WidgetInstance l_Instance = WidgetInstance::make(get_name());
+
+        Element l_RootElement = Element::make(N(root), p_Canvas);
+        Component::Display l_RootDisplay =
+            Component::Display::make(l_RootElement);
+
+        l_Instance.set_root(l_RootElement);
+
+        for (ElementDescriptor &i_ElementDescriptor : get_content()) {
+          Element i_Element =
+              Element::make(i_ElementDescriptor.name, p_Canvas);
+          for (ComponentDescriptor &i_ComponentDescriptor :
+               i_ElementDescriptor.components) {
+            Util::RTTI::TypeInfo &i_ComponentType =
+                Handle::get_type_info(i_ComponentDescriptor.typeId);
+
+            Util::Handle i_Component = i_ComponentType.deserialize(
+                i_ComponentDescriptor.data, i_Element);
+
+            if (i_Component.get_type() ==
+                Component::Display::type_id()) {
+              Component::Display i_Display = i_Component;
+              i_Display.set_parent(l_RootDisplay.get_id());
+            }
+          }
+          l_Instance.get_elements().push_back(i_Element);
+        }
+
+        return l_Instance;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_instance
+      }
+
+      uint32_t WidgetAsset::create_instance(
+          u32 &p_PageIndex, u32 &p_SlotIndex,
+          Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
+      {
+        LOCK_PAGES_WRITE(l_PagesLock);
+        u32 l_Index = 0;
+        u32 l_PageIndex = 0;
+        u32 l_SlotIndex = 0;
+        bool l_FoundIndex = false;
+        Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock;
+
+        for (; !l_FoundIndex && l_PageIndex < ms_Pages.size();
+             ++l_PageIndex) {
+          Low::Util::UniqueLock<Low::Util::Mutex> i_PageLock(
+              ms_Pages[l_PageIndex]->mutex);
+          for (l_SlotIndex = 0;
+               l_SlotIndex < ms_Pages[l_PageIndex]->size;
+               ++l_SlotIndex) {
+            if (!ms_Pages[l_PageIndex]
+                     ->slots[l_SlotIndex]
+                     .m_Occupied) {
+              l_FoundIndex = true;
+              l_PageLock = std::move(i_PageLock);
+              break;
+            }
+            l_Index++;
+          }
+          if (l_FoundIndex) {
+            break;
+          }
+        }
+        if (!l_FoundIndex) {
+          l_SlotIndex = 0;
+          l_PageIndex = create_page();
+          Low::Util::UniqueLock<Low::Util::Mutex> l_NewLock(
+              ms_Pages[l_PageIndex]->mutex);
+          l_PageLock = std::move(l_NewLock);
+        }
+        ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Occupied = true;
+        p_PageIndex = l_PageIndex;
+        p_SlotIndex = l_SlotIndex;
+        p_PageLock = std::move(l_PageLock);
+        LOCK_UNLOCK(l_PagesLock);
+        return l_Index;
+      }
+
+      u32 WidgetAsset::create_page()
+      {
+        const u32 l_Capacity = get_capacity();
+        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+                   "Could not increase capacity for WidgetAsset.");
+
+        Low::Util::Instances::Page *l_Page =
+            new Low::Util::Instances::Page;
+        Low::Util::Instances::initialize_page(
+            l_Page, WidgetAsset::Data::get_size(), ms_PageSize);
+        ms_Pages.push_back(l_Page);
+
+        ms_Capacity = l_Capacity + l_Page->size;
+        return ms_Pages.size() - 1;
+      }
+
+      bool WidgetAsset::get_page_for_index(const u32 p_Index,
+                                           u32 &p_PageIndex,
+                                           u32 &p_SlotIndex)
+      {
+        if (p_Index >= get_capacity()) {
+          p_PageIndex = LOW_UINT32_MAX;
+          p_SlotIndex = LOW_UINT32_MAX;
+          return false;
+        }
+        p_PageIndex = p_Index / ms_PageSize;
+        if (p_PageIndex > (ms_Pages.size() - 1)) {
+          return false;
+        }
+        p_SlotIndex = p_Index - (ms_PageSize * p_PageIndex);
+        return true;
+      }
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
+    } // namespace UI
+  } // namespace Core
+} // namespace Low

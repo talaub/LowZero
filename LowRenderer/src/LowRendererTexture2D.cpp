@@ -165,6 +165,7 @@ namespace Low {
       l_TypeInfo.deserialize = &Texture2D::deserialize;
       l_TypeInfo.find_by_index = &Texture2D::_find_by_index;
       l_TypeInfo.notify = &Texture2D::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &Texture2D::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Texture2D::_make;
@@ -312,6 +313,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void Texture2D::cleanup()

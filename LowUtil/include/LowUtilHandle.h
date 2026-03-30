@@ -239,6 +239,7 @@ namespace Low {
         Handle (*make_component)(Handle);
         Handle (*find_by_index)(u32);
         Handle (*find_by_name)(Name);
+        void (*post_load)(Handle, Serial::Node &);
         void (*destroy)(Handle);
         LivingInstancesGetter get_living_instances;
         u32 (*get_living_count)();
@@ -314,6 +315,8 @@ namespace Low {
       static bool
       is_registered_type(const TypeIdentifier p_TypeIdentifier);
       static RTTI::TypeInfo &get_type_info(u16 p_TypeId);
+      static RTTI::TypeInfo &
+      get_type_info(const TypeIdentifier p_TypeIdentifier);
       static List<uint16_t> &get_component_types();
 
       static void

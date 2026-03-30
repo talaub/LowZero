@@ -23,10 +23,13 @@
 #include "LowCoreUiDisplay.h"
 #include "LowCoreUiImage.h"
 #include "LowCoreUiText.h"
+#include "LowCoreUiWidgetAsset.h"
+#include "LowCoreUiWidgetInstance.h"
 
 #include "LowRenderer.h"
 
 #include "LowUtil.h"
+#include "LowUtilAssetManager.h"
 #include "LowUtilFileIO.h"
 #include "LowUtilSerialization.h"
 #include "LowUtilString.h"
@@ -133,6 +136,8 @@ namespace Low {
     {
       UI::Element::initialize();
       UI::View::initialize();
+      UI::WidgetAsset::initialize();
+      UI::WidgetInstance::initialize();
 
       initialize_ui_component_types();
     }
@@ -259,6 +264,14 @@ namespace Low {
       load_scenes();
 
       load_gamemodes();
+
+      {
+        // TODO: remove
+        UI::WidgetAsset l_Asset =
+            UI::WidgetAsset::living_instances()[0];
+        Util::AssetManager::load(
+            l_Asset, Util::AssetManager::LoadPriority::High);
+      }
     }
 
     static void cleanup_asset_types()
@@ -297,8 +310,10 @@ namespace Low {
     {
       cleanup_ui_component_types();
 
+      UI::WidgetInstance::cleanup();
       UI::View::cleanup();
       UI::Element::cleanup();
+      UI::WidgetAsset::cleanup();
     }
 
     static void cleanup_types()
@@ -396,6 +411,11 @@ namespace Low {
       }
 
       return g_GameModes.top();
+    }
+
+    float get_delta_time()
+    {
+      return GameLoop::get_delta_time();
     }
   } // namespace Core
 } // namespace Low

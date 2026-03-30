@@ -1047,6 +1047,208 @@ namespace Low {
         return l_Changed;
       }
 
+      namespace TB {
+
+        static void PushToolbarStyle()
+        {
+          ImGuiStyle &style = ImGui::GetStyle();
+
+          style.FrameRounding = 6.0f;
+          style.PopupRounding = 6.0f;
+          style.GrabRounding = 6.0f;
+          style.WindowRounding = 0.0f;
+          style.FrameBorderSize = 0.0f;
+          style.ItemSpacing = ImVec2(6.0f, 6.0f);
+          style.FramePadding = ImVec2(10.0f, 8.0f);
+
+          ImGui::PushStyleColor(ImGuiCol_MenuBarBg,
+                                ImVec4(0.10f, 0.11f, 0.13f, 1.00f));
+          ImGui::PushStyleColor(ImGuiCol_Button,
+                                ImVec4(0.18f, 0.20f, 0.24f, 1.00f));
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                                ImVec4(0.24f, 0.27f, 0.32f, 1.00f));
+          ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                                ImVec4(0.14f, 0.45f, 0.78f, 1.00f));
+          ImGui::PushStyleColor(ImGuiCol_Separator,
+                                ImVec4(0.24f, 0.26f, 0.30f, 1.00f));
+          ImGui::PushStyleColor(ImGuiCol_Text,
+                                ImVec4(0.90f, 0.92f, 0.95f, 1.00f));
+          ImGui::PushStyleColor(ImGuiCol_TextDisabled,
+                                ImVec4(0.55f, 0.58f, 0.62f, 1.00f));
+        }
+
+        static void PopToolbarStyle()
+        {
+          ImGui::PopStyleColor(7);
+        }
+
+        static bool ToolbarButton(const char *label,
+                                  bool active = false,
+                                  const ImVec2 &size = ImVec2(0, 0))
+        {
+          if (active) {
+            ImGui::PushStyleColor(ImGuiCol_Button,
+                                  ImVec4(0.16f, 0.42f, 0.72f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                                  ImVec4(0.20f, 0.49f, 0.82f, 1.00f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,
+                                  ImVec4(0.12f, 0.35f, 0.62f, 1.00f));
+          }
+
+          bool pressed = ImGui::Button(label, size);
+
+          if (active)
+            ImGui::PopStyleColor(3);
+
+          return pressed;
+        }
+
+        static void SectionSeparator(float padX = 8.0f)
+        {
+          ImGui::Dummy(ImVec2(padX, 0.0f));
+          ImGui::SameLine();
+          ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+          ImGui::SameLine();
+          ImGui::Dummy(ImVec2(padX, 0.0f));
+          ImGui::SameLine();
+        }
+
+        static void DrawStatusPill(const char *text, ImVec4 color)
+        {
+          ImGui::PushStyleColor(ImGuiCol_Button, color);
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
+          ImGui::PushStyleColor(ImGuiCol_ButtonActive, color);
+          ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 999.0f);
+
+          ImGui::Button(text);
+
+          ImGui::PopStyleVar();
+          ImGui::PopStyleColor(3);
+        }
+      } // namespace TB
+      void Toolbar(ToolbarState &state)
+      {
+        TB::PushToolbarStyle();
+
+        if (ImGui::BeginMainMenuBar()) {
+          const float toolbarHeight = ImGui::GetFrameHeight();
+
+          // Left: blueprint name / editor context
+          ImGui::AlignTextToFramePadding();
+          ImGui::TextDisabled("Blueprint");
+          ImGui::SameLine();
+
+          ImGui::PushStyleColor(ImGuiCol_Text,
+                                ImVec4(0.98f, 0.98f, 0.99f, 1.0f));
+          ImGui::TextUnformatted(state.BlueprintName.c_str());
+          ImGui::PopStyleColor();
+
+          if (state.HasUnsavedChanges) {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.95f, 0.72f, 0.20f, 1.0f),
+                               "• Modified");
+          }
+
+          ImGui::SameLine();
+          TB::SectionSeparator();
+
+          // File-ish actions
+          if (TB::ToolbarButton("Save")) {
+            state.HasUnsavedChanges = false;
+            // Save blueprint...
+          }
+          ImGui::SameLine();
+
+          if (TB::ToolbarButton("Find")) {
+            // Open find dialog...
+          }
+          ImGui::SameLine();
+
+          if (TB::ToolbarButton("Class Settings")) {
+            // Open class settings...
+          }
+
+          ImGui::SameLine();
+          TB::SectionSeparator();
+
+          // Build / run actions
+          if (TB::ToolbarButton("Compile", !state.CompileSuccess)) {
+            // Compile blueprint...
+            state.CompileSuccess = true;
+            state.HasUnsavedChanges = false;
+          }
+          ImGui::SameLine();
+
+          if (TB::ToolbarButton(state.Simulating ? "Stop" : "Play",
+                                state.Simulating)) {
+            state.Simulating = !state.Simulating;
+          }
+          ImGui::SameLine();
+
+          if (TB::ToolbarButton("Debug")) {
+            // Open debug options...
+          }
+
+          ImGui::SameLine();
+          TB::SectionSeparator();
+
+          // Editing tools
+          if (TB::ToolbarButton("Add")) {
+            // Add node / menu...
+          }
+          ImGui::SameLine();
+
+          if (TB::ToolbarButton("Blueprint Props")) {
+            // Open blueprint properties...
+          }
+
+          // Right-aligned area
+          float rightBlockWidth = 330.0f;
+          float avail = ImGui::GetContentRegionAvail().x;
+          if (avail > rightBlockWidth) {
+            ImGui::SameLine(ImGui::GetCursorPosX() + avail -
+                            rightBlockWidth);
+          } else {
+            ImGui::SameLine();
+          }
+
+          // Compile status
+          if (state.CompileSuccess)
+            TB::DrawStatusPill("Compiled",
+                               ImVec4(0.16f, 0.50f, 0.24f, 1.0f));
+          else
+            TB::DrawStatusPill("Compile Error",
+                               ImVec4(0.70f, 0.20f, 0.20f, 1.0f));
+
+          ImGui::SameLine();
+
+          // Zoom display
+          ImGui::PushItemWidth(120.0f);
+          ImGui::SliderFloat("##Zoom", &state.ZoomAmount, 0.25f,
+                             2.00f, "Zoom %.2fx");
+          ImGui::PopItemWidth();
+
+          ImGui::SameLine();
+
+          if (TB::ToolbarButton("⋮", false,
+                                ImVec2(toolbarHeight, 0.0f))) {
+            ImGui::OpenPopup("ToolbarOverflow");
+          }
+
+          if (ImGui::BeginPopup("ToolbarOverflow")) {
+            ImGui::MenuItem("Refresh Nodes");
+            ImGui::MenuItem("Validate Blueprint");
+            ImGui::MenuItem("Show References");
+            ImGui::Separator();
+            ImGui::MenuItem("Developer Tools");
+            ImGui::EndPopup();
+          }
+
+          ImGui::EndMainMenuBar();
+        }
+
+        TB::PopToolbarStyle();
+      }
     } // namespace Gui
   } // namespace Editor
 } // namespace Low

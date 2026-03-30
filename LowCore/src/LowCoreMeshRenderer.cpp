@@ -197,6 +197,7 @@ namespace Low {
         l_TypeInfo.deserialize = &MeshRenderer::deserialize;
         l_TypeInfo.find_by_index = &MeshRenderer::_find_by_index;
         l_TypeInfo.notify = &MeshRenderer::_notify;
+        l_TypeInfo.post_load = nullptr;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &MeshRenderer::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -413,6 +414,8 @@ namespace Low {
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
+        // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
       void MeshRenderer::cleanup()

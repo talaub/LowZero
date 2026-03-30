@@ -159,6 +159,7 @@ namespace Low {
       l_TypeInfo.deserialize = &Skeleton::deserialize;
       l_TypeInfo.find_by_index = &Skeleton::_find_by_index;
       l_TypeInfo.notify = &Skeleton::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &Skeleton::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Skeleton::_make;
@@ -294,6 +295,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void Skeleton::cleanup()

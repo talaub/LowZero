@@ -19,6 +19,7 @@ namespace Low {
       MaterialType solidBase;
       MaterialType uiBase;
       MaterialType uiText;
+      MaterialType uiOutline;
       MaterialType debugGeometry;
       MaterialType debugGeometryNoDepth;
 
@@ -63,6 +64,7 @@ namespace Low {
     Material LOW_RENDERER2_API get_default_material_texture();
     Material LOW_RENDERER2_API get_default_material_ui();
     Material LOW_RENDERER2_API get_default_material_ui_text();
+    Material LOW_RENDERER2_API get_default_material_ui_outline();
 
     RenderView LOW_RENDERER2_API get_game_renderview();
     RenderView LOW_RENDERER2_API get_editor_renderview();

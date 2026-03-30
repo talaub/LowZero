@@ -78,6 +78,17 @@ namespace Low {
                                     char *p_Text, int p_Length,
                                     ImGuiInputTextFlags p_Flags = 0);
 
+      struct ToolbarState
+      {
+        bool CompileSuccess = true;
+        bool Simulating = false;
+        bool HasUnsavedChanges = false;
+
+        float ZoomAmount = 1.0f;
+        std::string BlueprintName = "BP_PlayerController";
+      };
+      void Toolbar(ToolbarState &p_State);
+
     } // namespace Gui
   } // namespace Editor
 } // namespace Low

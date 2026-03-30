@@ -165,6 +165,7 @@ namespace Low {
         l_TypeInfo.deserialize = &ComputePipeline::deserialize;
         l_TypeInfo.find_by_index = &ComputePipeline::_find_by_index;
         l_TypeInfo.notify = &ComputePipeline::_notify;
+        l_TypeInfo.post_load = nullptr;
         l_TypeInfo.find_by_name = &ComputePipeline::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &ComputePipeline::_make;
@@ -302,6 +303,8 @@ namespace Low {
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
+        // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
       void ComputePipeline::cleanup()

@@ -9,10 +9,22 @@ namespace Low {
 
     namespace AssetManager {
 
+      enum class LoadPriority
+      {
+        Low,
+        Medium,
+        High
+      };
+
+      typedef Low::Util::Handle (*Creator)(
+          const Low::Util::Name, const Low::Util::String p_Path);
       typedef Low::Util::Handle (*Initializer)(
           const Low::Util::String);
       typedef Low::Util::String (*Importer)(const Low::Util::String);
       typedef void (*Deleter)(const Low::Util::String);
+
+      typedef void (*Loader)(Low::Util::Handle);
+      typedef bool (*SimpleCheck)(Low::Util::Handle);
 
       struct ImportDirectory
       {
@@ -27,10 +39,17 @@ namespace Low {
         bool recursive;
       };
 
+      struct StoreSettings
+      {
+        Util::Name pathPropertyName;
+      };
+
       struct TypeRegistrator
       {
         Name name;
+        u16 typeId;
         Initializer initializer;
+        Creator creator;
         Importer importer;
         Deleter rawDeleter;
         Deleter deleter;
@@ -38,8 +57,14 @@ namespace Low {
         List<Directory> initializeDirectories;
         bool autoInitialize;
         bool initializeOnStartup;
+        bool creatable;
         List<String> assetSuffixes;
         List<String> rawSuffixes;
+        Loader loader;
+        bool supportsLoading;
+        bool supportsSaving;
+        SimpleCheck isLoadable;
+        StoreSettings storeSettings;
       };
 
       struct TypeRegistratorBuilder
@@ -48,15 +73,27 @@ namespace Low {
         TypeRegistrator m_Registrator;
 
       public:
-        TypeRegistratorBuilder(const Name p_Name)
+        TypeRegistratorBuilder(const Name p_Name,
+                               const TypeIdentifier p_TypeIdentifier)
         {
           m_Registrator.name = p_Name;
+          m_Registrator.supportsLoading = true;
+          m_Registrator.supportsSaving = true;
+          m_Registrator.typeId = Handle::type_id(p_TypeIdentifier);
+          m_Registrator.loader = nullptr;
+          m_Registrator.creatable = false;
         }
 
         TypeRegistratorBuilder &
         initializer(const Initializer p_Initializer)
         {
           m_Registrator.initializer = p_Initializer;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &creator(const Creator p_Creator)
+        {
+          m_Registrator.creator = p_Creator;
           return *this;
         }
 
@@ -78,9 +115,52 @@ namespace Low {
           return *this;
         }
 
+        TypeRegistratorBuilder &loader(const Loader p_Loader)
+        {
+          m_Registrator.loader = p_Loader;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &is_loadable(const SimpleCheck p_Check)
+        {
+          m_Registrator.isLoadable = p_Check;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &creatable(const bool p_Value = true)
+        {
+          m_Registrator.creatable = p_Value;
+          return *this;
+        }
+
         TypeRegistratorBuilder &auto_initialize(const bool p_Value)
         {
           m_Registrator.autoInitialize = p_Value;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &supports_loading(const bool p_Value)
+        {
+          m_Registrator.supportsLoading = p_Value;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &supports_saving(const bool p_Value)
+        {
+          m_Registrator.supportsSaving = p_Value;
+          return *this;
+        }
+
+        TypeRegistratorBuilder &no_saving()
+        {
+          return supports_saving(false);
+        }
+
+        TypeRegistratorBuilder &
+        load_path_property_name(const Name p_Propertyname)
+        {
+          m_Registrator.storeSettings.pathPropertyName =
+              p_Propertyname;
           return *this;
         }
 
@@ -102,7 +182,7 @@ namespace Low {
         }
 
         TypeRegistratorBuilder &
-        add_import_direcotry(const String p_Path,
+        add_import_directory(const String p_Path,
                              const bool p_Recursive = false,
                              const bool p_Autoscan = true)
         {
@@ -139,7 +219,42 @@ namespace Low {
       void initialize();
       void tick(const float p_Delta);
       void cleanup();
-    }; // namespace AssetManager
+
+      void LOW_EXPORT _load(Util::Handle p_Handle,
+                            const LoadPriority p_Priority);
+
+      void LOW_EXPORT _save(Util::Handle p_Handle);
+
+      Util::Handle LOW_EXPORT _create(const u16 p_TypeId,
+                                      const Name p_Name,
+                                      const String p_Path);
+
+      template <typename T>
+      void load(T p_Handle,
+                const LoadPriority p_Priority = LoadPriority::Medium)
+      {
+        _load(p_Handle.get_id(), p_Priority);
+      }
+
+      template <typename T> void save(T p_Handle)
+      {
+        _save(p_Handle.get_id());
+      }
+
+      template <typename T>
+      T create(const Low::Util::Name p_Name,
+               const Low::Util::String p_Path)
+      {
+        return _create(T::type_id(), p_Name, p_Path).get_id();
+      }
+
+      Handle LOW_EXPORT _find_by_path(const String p_Path);
+      template <typename T> T find_by_path(const String p_Path)
+      {
+        return _find_by_path(p_Path).get_id();
+      }
+
+    } // namespace AssetManager
 
   } // namespace Util
 } // namespace Low

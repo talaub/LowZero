@@ -10,7 +10,7 @@ namespace Low {
       MeshAssetEditor(Util::Handle p_Handle);
       ~MeshAssetEditor();
 
-      void render();
+      void render() override;
 
       virtual Math::UVector2 get_edit_widget_dimensions() override
       {
@@ -27,7 +27,7 @@ namespace Low {
       {
       }
 
-      void render();
+      void render() override;
 
       virtual Math::UVector2 get_edit_widget_dimensions() override
       {
@@ -41,7 +41,7 @@ namespace Low {
       {
       }
 
-      void render();
+      void render() override;
 
       virtual Math::UVector2 get_edit_widget_dimensions() override
       {

@@ -594,6 +594,15 @@ return ms_TypeId;
   t += line(`l_${p_Type.name}.destroy();`);
   t += line("}");
   t += empty();
+  if (p_Type.post_load){
+    t += line("void post_load(Low::Util::Serial::Node &p_Node);");
+    t += line("static void _post_load(Low::Util::Handle p_Handle, Low::Util::Serial::Node &p_Node){");
+    t += line("_LOW_ASSERT(is_alive(p_Handle));")
+    t += line(`${p_Type.name} l_${p_Type.name} = p_Handle.get_id();`);
+    t += line(`l_${p_Type.name}.post_load(p_Node);`);
+    t += line("}");
+    t += empty();
+  }
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     if (i_Prop.static) {
@@ -1167,6 +1176,12 @@ function generate_source(p_Type) {
   t += line(`l_TypeInfo.deserialize = &${p_Type.name}::deserialize;`);
   t += line(`l_TypeInfo.find_by_index = &${p_Type.name}::_find_by_index;`);
   t += line(`l_TypeInfo.notify = &${p_Type.name}::_notify;`);
+  if (p_Type.post_load){
+    t += line(`l_TypeInfo.post_load = &${p_Type.name}::_post_load;`);
+  }
+  else {
+    t += line(`l_TypeInfo.post_load = nullptr;`);
+  }
   if (p_Type.component) {
     t += line(`l_TypeInfo.make_default = nullptr;`);
     t += line(`l_TypeInfo.make_component = &${p_Type.name}::_make;`);
@@ -1398,6 +1413,26 @@ function generate_source(p_Type) {
     }
   }
   t += line(`ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER, l_TypeInfo);`);
+  if (true) {
+    const l_MarkerName = `CUSTOM:POSTINITIALIZE`;
+
+    const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+    const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+    const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+    let l_CustomCode = "";
+
+    if (l_BeginMarkerIndex >= 0) {
+      const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+      l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+    }
+    t += line(l_CustomBeginMarker);
+    t += l_CustomCode;
+    t += line(l_CustomEndMarker);
+    t += empty();
+  }
   t += line("}");
   t += empty();
   t += line(`void ${p_Type.name}::cleanup() {`);
@@ -1996,6 +2031,31 @@ function generate_source(p_Type) {
   t += line(`l_${p_Type.name}.notify(p_Observed, p_Observable);`);
   t += line("}");
   t += empty();
+  if (p_Type.post_load) {
+    t += line(`void ${p_Type.name}::post_load(Low::Util::Serial::Node &p_Node) {`);
+    if (true) {
+      const l_MarkerName = `CUSTOM:POST_LOAD`;
+
+      const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+      const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+      const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+      let l_CustomCode = "";
+
+      if (l_BeginMarkerIndex >= 0) {
+        const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+        l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+      }
+      t += line(l_CustomBeginMarker);
+      t += l_CustomCode;
+      t += line(l_CustomEndMarker);
+      t += empty();
+    }
+    t += line("}");
+    t += empty();
+  }
 
   if (p_Type.reference_counted) {
     t += line(`void ${p_Type.name}::reference(const u64 p_Id) {`);

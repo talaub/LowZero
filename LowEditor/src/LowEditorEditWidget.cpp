@@ -1,8 +1,12 @@
 #include "LowEditorEditWidget.h"
 
+#include "LowCoreUiWidgetAsset.h"
 #include "LowEditor.h"
 #include "LowMath.h"
+#include "LowUtilLogger.h"
 #include <imgui.h>
+
+#include "LowRendererTexture.h"
 
 namespace Low {
   namespace Editor {

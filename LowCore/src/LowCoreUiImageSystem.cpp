@@ -2,6 +2,7 @@
 
 #include "LowRenderer.h"
 #include "LowRendererPrimitives.h"
+#include "LowRendererUiCanvas.h"
 #include "LowRendererUiRenderObject.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -23,10 +24,6 @@ namespace Low {
         namespace Image {
           void tick(float p_Delta, Util::EngineState p_State)
           {
-            if (p_State != Util::EngineState::PLAYING) {
-              return;
-            }
-
             Component::Image *l_Images =
                 Component::Image::living_instances();
 
@@ -34,7 +31,8 @@ namespace Low {
                  i < Component::Image::living_count(); ++i) {
               Component::Image i_Image = l_Images[i];
 
-              if (i_Image.get_element()
+              if (i_Image.get_element().get_view().is_alive() &&
+                  i_Image.get_element()
                       .get_view()
                       .is_view_template()) {
                 continue;
@@ -56,9 +54,12 @@ namespace Low {
                   i_Image.get_texture().is_alive() &&
                   !i_Image.get_render_object().is_alive()) {
 
+                Renderer::UiCanvas i_Canvas =
+                    i_Image.get_element().get_canvas();
+
                 Renderer::UiRenderObject i_RenderObject =
                     Renderer::UiRenderObject::make(
-                        i_Image.get_element().get_view().get_canvas(),
+                        i_Canvas,
                         Renderer::get_primitives().unitQuad);
 
                 i_RenderObject.set_material(i_Image.get_material());

@@ -271,6 +271,7 @@ namespace Low {
 
       LogStream &LogStream::operator<<(Handle p_Message)
       {
+        if (Handle::is_registered_type(p_Message.get_type())){
         RTTI::TypeInfo &l_TypeInfo =
             Handle::get_type_info(p_Message.get_type());
         return *this << l_TypeInfo.name
@@ -278,6 +279,13 @@ namespace Low {
                      << ", Generation: " << p_Message.get_generation()
                      << ", Alive: " << l_TypeInfo.is_alive(p_Message)
                      << ")";
+        } else {
+          return *this << "Handle"
+                     << "(Index: " << p_Message.get_index()
+                     << ", Generation: " << p_Message.get_generation()
+                       << ", Type: " << p_Message.get_type()
+                     << ")";
+        }
       }
 
       LogStream &LogStream::operator<<(int p_Message)

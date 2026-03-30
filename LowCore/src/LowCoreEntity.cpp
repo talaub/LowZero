@@ -199,6 +199,7 @@ namespace Low {
       l_TypeInfo.deserialize = &Entity::deserialize;
       l_TypeInfo.find_by_index = &Entity::_find_by_index;
       l_TypeInfo.notify = &Entity::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &Entity::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Entity::_make;
@@ -504,6 +505,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void Entity::cleanup()

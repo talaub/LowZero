@@ -14,6 +14,7 @@
 #include "LowUtilSerialization.h"
 
 #include "LowCorePrefabInstance.h"
+#include "LowCoreUiWidgetAsset.h"
 
 #include "LowEditorMainWindow.h"
 #include "LowEditorThemes.h"
@@ -27,6 +28,7 @@
 #include "LowEditorFonts.h"
 #include "LowEditorScriptWidget.h"
 #include "LowEditorSimpleAssetEditors.h"
+#include "LowEditorUiWidgetEditor.h"
 
 #include "Flode.h"
 #include "FlodeEditor.h"
@@ -820,6 +822,8 @@ namespace Low {
         g_AssetTypeColor[AssetType::Flode] =
             color_from_hex("#424ebc");
         g_AssetTypeColor[AssetType::File] = color_from_hex("#b2b2b2");
+        g_AssetTypeColor[AssetType::UiWidget] =
+            color_from_hex("#4bb3bb");
 
         g_AssetTypeName[AssetType::File] = "File";
         g_AssetTypeName[AssetType::Texture] = "Texture";
@@ -829,6 +833,7 @@ namespace Low {
         g_AssetTypeName[AssetType::Flode] = "Flode";
         g_AssetTypeName[AssetType::Mesh] = "Mesh";
         g_AssetTypeName[AssetType::Model] = "Model";
+        g_AssetTypeName[AssetType::UiWidget] = "UI-Widget";
 
         g_AssetTypeEditorImage[AssetType::File] =
             Renderer::EditorImage::find_by_name(N(filetype_file));
@@ -870,6 +875,8 @@ namespace Low {
             Renderer::Texture::type_id());
         TypeEditor::register_type<FontAssetEditor>(
             Renderer::Font::type_id());
+        TypeEditor::register_type<UiWidgetEditor>(
+            Core::UI::WidgetAsset::type_id());
       }
     }
 

@@ -15,7 +15,10 @@ namespace Low {
 
       uint32_t LOW_CORE_API get_fps();
 
-      void LOW_CORE_API register_tick_callback(System::TickCallback p_Callback);
+      void LOW_CORE_API
+      register_tick_callback(System::TickCallback p_Callback);
+
+      [[nodiscard]] inline float LOW_CORE_API get_delta_time();
     } // namespace GameLoop
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

@@ -8,6 +8,8 @@
 #include "LowUtilEnums.h"
 #include "LowUtilFileSystem.h"
 
+#define LOW_DELTA_TIME Low::Core::get_delta_time()
+
 namespace Low {
   namespace Core {
     LOW_CORE_API void initialize();
@@ -38,5 +40,7 @@ namespace Low {
     LOW_CORE_API FileSystemWatchers &get_filesystem_watchers();
     LOW_CORE_API Util::FileSystem::WatchHandle
     get_filesystem_watcher(uint16_t p_Type);
+
+    [[nodiscard]] inline float LOW_CORE_API get_delta_time();
   } // namespace Core
 } // namespace Low

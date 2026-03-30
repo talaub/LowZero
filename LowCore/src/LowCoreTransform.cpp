@@ -194,6 +194,7 @@ namespace Low {
         l_TypeInfo.deserialize = &Transform::deserialize;
         l_TypeInfo.find_by_index = &Transform::_find_by_index;
         l_TypeInfo.notify = &Transform::_notify;
+        l_TypeInfo.post_load = nullptr;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &Transform::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -677,6 +678,8 @@ namespace Low {
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
+        // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
       void Transform::cleanup()

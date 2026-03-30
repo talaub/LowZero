@@ -182,6 +182,7 @@ namespace Low {
       l_TypeInfo.deserialize = &Region::deserialize;
       l_TypeInfo.find_by_index = &Region::_find_by_index;
       l_TypeInfo.notify = &Region::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &Region::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &Region::_make;
@@ -494,6 +495,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void Region::cleanup()

@@ -29,7 +29,8 @@ namespace Low {
       Script,
       Flode,
       Texture,
-      Font
+      Font,
+      UiWidget
     };
 
     struct DirectoryWatchers

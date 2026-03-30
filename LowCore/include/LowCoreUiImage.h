@@ -162,6 +162,7 @@ namespace Low {
           void set_texture(Low::Renderer::Texture p_Value);
 
           Low::Renderer::Material get_material() const;
+          void set_material(Low::Renderer::Material p_Value);
 
           Low::Renderer::UiRenderObject get_render_object() const;
           void
@@ -188,7 +189,6 @@ namespace Low {
               u32 &p_PageIndex, u32 &p_SlotIndex,
               Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
           static u32 create_page();
-          void set_material(Low::Renderer::Material p_Value);
           void set_unique_id(Low::Util::UniqueId p_Value);
 
           // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE

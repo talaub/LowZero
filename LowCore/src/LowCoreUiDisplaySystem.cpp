@@ -16,9 +16,6 @@ namespace Low {
         namespace Display {
           void tick(float p_Delta, Util::EngineState p_State)
           {
-            if (p_State != Util::EngineState::PLAYING) {
-              return;
-            }
             LOW_PROFILE_CPU("Core", "UiDisplaySystem::TICK");
 
             Component::Display *l_Displays =
@@ -35,9 +32,10 @@ namespace Low {
 
               i_Display.set_world_updated(false);
 
-              if (!i_Display.get_element()
-                       .get_view()
-                       .is_view_template() &&
+              View i_View = i_Display.get_element().get_view();
+
+              if ((!i_View.is_alive() ||
+                   !i_View.is_view_template()) &&
                   !i_Display.get_element().is_click_passthrough()) {
 
                 if (i_Display.point_is_in_bounding_box(

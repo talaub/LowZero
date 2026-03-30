@@ -7,34 +7,42 @@
 #include "LowUtilContainers.h"
 #include "LowUtilSerialization.h"
 
-#include "LowCoreUiView.h"
-#include "LowRendererUiCanvas.h"
-
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-
+#include "LowCoreUiWidgetInstance.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
-      namespace Component {
-        struct Display;
-      }
+      struct ComponentDescriptor
+      {
+        u16 typeId;
+        Util::Serial::Node data;
+      };
+      struct ElementDescriptor
+      {
+        Util::Name name;
+        Util::List<ComponentDescriptor> components;
+      };
+      enum class LoadState
+      {
+        Undefined,
+        Unloaded,
+        Loaded,
+        Loading
+      };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API Element : public Low::Util::Handle
+      struct LOW_CORE_API WidgetAsset : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          Util::Map<uint16_t, Util::Handle> components;
-          Low::Core::UI::View view;
-          bool click_passthrough;
-          Low::Renderer::UiCanvas canvas;
-          Low::Util::UniqueId unique_id;
+          Low::Core::UI::LoadState state;
+          Low::Util::List<Low::Core::UI::ElementDescriptor> content;
+          Low::Util::String path;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -53,7 +61,7 @@ namespace Low {
         static Low::Util::SharedMutex ms_PagesMutex;
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<Element> ms_LivingInstances;
+        static Low::Util::List<WidgetAsset> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -62,14 +70,9 @@ namespace Low {
           return ms_TypeId;
         }
 
-      private:
-        static Element make(Low::Util::Name p_Name);
+        static WidgetAsset make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
-        static Element make(Low::Util::Name p_Name,
-                            Low::Util::UniqueId p_UniqueId);
-
-      public:
-        explicit Element(const Element &p_Copy)
+        explicit WidgetAsset(const WidgetAsset &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -79,21 +82,21 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        Element(u64 p_Id) : Low::Util::Handle(p_Id)
+        WidgetAsset(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        Element() : Low::Util::Handle()
+        WidgetAsset() : Low::Util::Handle()
         {
         }
-        Element(Low::Util::Handle p_Handle)
+        WidgetAsset(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        Element &operator=(const Element &) = default;
-        Element &operator=(Element &&) noexcept = default;
+        WidgetAsset &operator=(const WidgetAsset &) = default;
+        WidgetAsset &operator=(WidgetAsset &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -101,16 +104,16 @@ namespace Low {
               ms_LivingMutex);
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static Element *living_instances()
+        static WidgetAsset *living_instances()
         {
           Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
               ms_LivingMutex);
           return ms_LivingInstances.data();
         }
 
-        static Element create_handle_by_index(u32 p_Index);
+        static WidgetAsset create_handle_by_index(u32 p_Index);
 
-        static Element find_by_index(uint32_t p_Index);
+        static WidgetAsset find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -133,14 +136,14 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        Element duplicate(Low::Util::Name p_Name) const;
-        static Element duplicate(Element p_Handle,
-                                 Low::Util::Name p_Name);
+        WidgetAsset duplicate(Low::Util::Name p_Name) const;
+        static WidgetAsset duplicate(WidgetAsset p_Handle,
+                                     Low::Util::Name p_Name);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
                    Low::Util::Name p_Name);
 
-        static Element find_by_name(Low::Util::Name p_Name);
+        static WidgetAsset find_by_name(Low::Util::Name p_Name);
         static Low::Util::Handle
         _find_by_name(Low::Util::Name p_Name);
 
@@ -151,47 +154,42 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          Element l_Handle = p_Handle.get_id();
+          WidgetAsset l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          Element l_Element = p_Handle.get_id();
-          l_Element.destroy();
+          WidgetAsset l_WidgetAsset = p_Handle.get_id();
+          l_WidgetAsset.destroy();
         }
 
-        Util::Map<uint16_t, Util::Handle> &get_components() const;
+        void post_load(Low::Util::Serial::Node &p_Node);
+        static void _post_load(Low::Util::Handle p_Handle,
+                               Low::Util::Serial::Node &p_Node)
+        {
+          _LOW_ASSERT(is_alive(p_Handle));
+          WidgetAsset l_WidgetAsset = p_Handle.get_id();
+          l_WidgetAsset.post_load(p_Node);
+        }
 
-        Low::Core::UI::View get_view() const;
-        void set_view(Low::Core::UI::View p_Value);
+        Low::Core::UI::LoadState get_state() const;
+        void set_state(Low::Core::UI::LoadState p_Value);
 
-        bool is_click_passthrough() const;
-        void set_click_passthrough(bool p_Value);
-        void toggle_click_passthrough();
+        Low::Util::List<Low::Core::UI::ElementDescriptor> &
+        get_content() const;
+        void
+        set_content(Low::Util::List<Low::Core::UI::ElementDescriptor>
+                        &p_Value);
 
-        Low::Renderer::UiCanvas get_canvas() const;
-
-        Low::Util::UniqueId get_unique_id() const;
+        Low::Util::String get_path() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        static Element make(Low::Util::Name p_Name,
-                            Low::Renderer::UiCanvas p_Canvas);
-        uint64_t get_component(uint16_t p_TypeId) const;
-        void add_component(Low::Util::Handle &p_Component);
-        void remove_component(uint16_t p_ComponentType);
-        bool has_component(uint16_t p_ComponentType);
-        Low::Core::UI::Component::Display get_display() const;
-        void serialize(Util::Serial::Node &p_Node,
-                       bool p_AddHandles) const;
-        void serialize_hierarchy(Util::Serial::Node &p_Node,
-                                 bool p_AddHandles) const;
-        static UI::Element
-        deserialize_hierarchy(Util::Serial::Node &p_Node,
-                              Util::Handle p_Creator);
+        WidgetInstance
+        spawn_instance(Low::Renderer::UiCanvas p_Canvas);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -203,16 +201,19 @@ namespace Low {
             u32 &p_PageIndex, u32 &p_SlotIndex,
             Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
         static u32 create_page();
-        void set_canvas(Low::Renderer::UiCanvas p_Value);
-        void set_unique_id(Low::Util::UniqueId p_Value);
+        void set_path(Low::Util::String p_Value);
+        void set_path(const char *p_Value);
+        void parse_content(Low::Util::Serial::Node &p_Node);
+
+        void
+        parse_element(Low::Util::Serial::Node &p_Node,
+                      Low::Core::UI::ElementDescriptor &p_Descriptor);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI

@@ -1,5 +1,6 @@
 #include "LowEditorSimpleAssetEditors.h"
 
+#include "LowCore.h"
 #include "LowEditor.h"
 #include "LowEditorFonts.h"
 
@@ -123,7 +124,7 @@ namespace Low {
 
       const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
 
-      m_MeshViewer->tick(0.2f);
+      m_MeshViewer->tick(LOW_DELTA_TIME);
 
       m_MeshViewer->set_dimensions(l_Avail.x, l_Avail.y);
     }

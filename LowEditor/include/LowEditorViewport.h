@@ -3,9 +3,11 @@
 #include "LowEditorApi.h"
 
 #include "LowMath.h"
+#include "LowRendererRenderStep.h"
 #include "LowRendererRenderView.h"
 #include "LowRendererRenderObject.h"
 #include "LowRendererRenderScene.h"
+#include "LowRendererUiCanvas.h"
 
 namespace Low {
   namespace Editor {
@@ -87,6 +89,27 @@ namespace Low {
     private:
       bool m_InitialCameraSetup;
       float m_CameraOrbitDistance;
+    };
+
+    struct LOW_EDITOR_API UiViewport : public Viewport
+    {
+      UiViewport(const Math::UVector2 p_Dimensions)
+          : Viewport(p_Dimensions)
+      {
+        m_RenderView.add_step_by_name(RENDERSTEP_UI_NAME);
+        m_Canvas = Renderer::UiCanvas::make(N(Viewport Canvas));
+        m_RenderView.add_ui_canvas(m_Canvas);
+      }
+
+      virtual bool tick(const float p_Delta) override;
+
+      Renderer::UiCanvas get_canvas() const
+      {
+        return m_Canvas;
+      }
+
+    protected:
+      Renderer::UiCanvas m_Canvas;
     };
   } // namespace Editor
 } // namespace Low

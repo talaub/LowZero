@@ -250,6 +250,12 @@ namespace Low {
              g_RegisteredTypes.end();
     }
 
+    RTTI::TypeInfo &
+    Handle::get_type_info(const TypeIdentifier p_TypeIdentifier)
+    {
+      return get_type_info(type_id(p_TypeIdentifier));
+    }
+
     RTTI::TypeInfo &Handle::get_type_info(uint16_t p_TypeId)
     {
       LOW_ASSERT(g_TypeInfos.find(p_TypeId) != g_TypeInfos.end(),

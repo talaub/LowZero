@@ -199,6 +199,7 @@ namespace Low {
           l_TypeInfo.deserialize = &Display::deserialize;
           l_TypeInfo.find_by_index = &Display::_find_by_index;
           l_TypeInfo.notify = &Display::_notify;
+          l_TypeInfo.post_load = nullptr;
           l_TypeInfo.make_default = nullptr;
           l_TypeInfo.make_component = &Display::_make;
           l_TypeInfo.duplicate_default = nullptr;
@@ -798,6 +799,8 @@ namespace Low {
           }
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
+          // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+          // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
         }
 
         void Display::cleanup()
@@ -1766,7 +1769,9 @@ namespace Low {
           Low::Math::Matrix4x4 l_LocalMatrix(1.0f);
 
           if (l_Parent.is_alive()) {
-            l_Position *= l_Element.get_view().scale_multiplier();
+            if (l_Element.get_view().is_alive()) {
+              l_Position *= l_Element.get_view().scale_multiplier();
+            }
             if (l_Parent.is_world_dirty()) {
               l_Parent.recalculate_world_transform();
             }
@@ -1785,13 +1790,15 @@ namespace Low {
             // on display to scale everything while keeping
             // dimensions l_Scale *= l_ParentScale;
             l_Layer += l_ParentLayer;
-          } else {
+          } else if (l_Element.get_view().is_alive()) {
             l_Position += l_Element.get_view().pixel_position();
             l_Rotation += l_Element.get_view().rotation();
             l_Layer += l_Element.get_view().layer_offset();
           }
 
-          l_Scale *= l_Element.get_view().scale_multiplier();
+          if (l_Element.get_view().is_alive()) {
+            l_Scale *= l_Element.get_view().scale_multiplier();
+          }
 
           set_absolute_pixel_position(l_Position);
           set_absolute_rotation(l_Rotation);

@@ -187,6 +187,7 @@ namespace Low {
         l_TypeInfo.deserialize = &DirectionalLight::deserialize;
         l_TypeInfo.find_by_index = &DirectionalLight::_find_by_index;
         l_TypeInfo.notify = &DirectionalLight::_notify;
+        l_TypeInfo.post_load = nullptr;
         l_TypeInfo.make_default = nullptr;
         l_TypeInfo.make_component = &DirectionalLight::_make;
         l_TypeInfo.duplicate_default = nullptr;
@@ -334,6 +335,8 @@ namespace Low {
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
+        // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
       void DirectionalLight::cleanup()

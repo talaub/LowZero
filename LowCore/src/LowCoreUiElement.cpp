@@ -76,6 +76,9 @@ namespace Low {
             Low::Core::UI::View();
         ACCESSOR_TYPE_SOA(l_Handle, Element, click_passthrough,
                           bool) = false;
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Element, canvas,
+                                   Low::Renderer::UiCanvas))
+            Low::Renderer::UiCanvas();
         ACCESSOR_TYPE_SOA(l_Handle, Element, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -216,6 +219,7 @@ namespace Low {
         l_TypeInfo.deserialize = &Element::deserialize;
         l_TypeInfo.find_by_index = &Element::_find_by_index;
         l_TypeInfo.notify = &Element::_notify;
+        l_TypeInfo.post_load = nullptr;
         l_TypeInfo.find_by_name = &Element::_find_by_name;
         l_TypeInfo.make_component = nullptr;
         l_TypeInfo.make_default = &Element::_make;
@@ -320,6 +324,35 @@ namespace Low {
           // End property: click_passthrough
         }
         {
+          // Property: canvas
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(canvas);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset = offsetof(Element::Data, canvas);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Renderer::UiCanvas::type_id();
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Element l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Element> l_HandleLock(l_Handle);
+            l_Handle.get_canvas();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Element, canvas, Low::Renderer::UiCanvas);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Element l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Element> l_HandleLock(l_Handle);
+            *((Low::Renderer::UiCanvas *)p_Data) =
+                l_Handle.get_canvas();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: canvas
+        }
+        {
           // Property: unique_id
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(unique_id);
@@ -394,11 +427,11 @@ namespace Low {
           }
           {
             Low::Util::RTTI::ParameterInfo l_ParameterInfo;
-            l_ParameterInfo.name = N(p_View);
+            l_ParameterInfo.name = N(p_Canvas);
             l_ParameterInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_ParameterInfo.handleType =
-                Low::Core::UI::View::type_id();
+                Low::Renderer::UiCanvas::type_id();
             l_FunctionInfo.parameters.push_back(l_ParameterInfo);
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
@@ -559,6 +592,8 @@ namespace Low {
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
+        // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+        // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
       void Element::cleanup()
@@ -937,6 +972,33 @@ namespace Low {
         broadcast_observable(N(click_passthrough));
       }
 
+      Low::Renderer::UiCanvas Element::get_canvas() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas
+        // LOW_CODEGEN::END::CUSTOM:GETTER_canvas
+
+        return TYPE_SOA(Element, canvas, Low::Renderer::UiCanvas);
+      }
+      void Element::set_canvas(Low::Renderer::UiCanvas p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas
+
+        // Set new value
+        TYPE_SOA(Element, canvas, Low::Renderer::UiCanvas) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas
+        // LOW_CODEGEN::END::CUSTOM:SETTER_canvas
+
+        broadcast_observable(N(canvas));
+      }
+
       Low::Util::UniqueId Element::get_unique_id() const
       {
         _LOW_ASSERT(is_alive());
@@ -998,12 +1060,12 @@ namespace Low {
       }
 
       Element Element::make(Low::Util::Name p_Name,
-                            Low::Core::UI::View p_View)
+                            Low::Renderer::UiCanvas p_Canvas)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
 
         Element l_Element = Element::make(p_Name);
-        p_View.add_element(l_Element);
+        l_Element.set_canvas(p_Canvas);
         return l_Element;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
       }

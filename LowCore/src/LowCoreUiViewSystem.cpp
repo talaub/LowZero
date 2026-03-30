@@ -27,7 +27,7 @@ namespace Low {
             }
           }
         } // namespace View
-      }   // namespace System
-    }     // namespace UI
-  }       // namespace Core
+      } // namespace System
+    } // namespace UI
+  } // namespace Core
 } // namespace Low

@@ -185,6 +185,7 @@ namespace Low {
       l_TypeInfo.deserialize = &SubmeshGeometry::deserialize;
       l_TypeInfo.find_by_index = &SubmeshGeometry::_find_by_index;
       l_TypeInfo.notify = &SubmeshGeometry::_notify;
+      l_TypeInfo.post_load = nullptr;
       l_TypeInfo.find_by_name = &SubmeshGeometry::_find_by_name;
       l_TypeInfo.make_component = nullptr;
       l_TypeInfo.make_default = &SubmeshGeometry::_make;
@@ -577,6 +578,8 @@ namespace Low {
       }
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
+      // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+      // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
     void SubmeshGeometry::cleanup()
