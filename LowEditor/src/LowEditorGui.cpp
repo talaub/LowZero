@@ -878,6 +878,11 @@ namespace Low {
         return Button("Edit", p_Disabled, ICON_LC_PENCIL,
                       theme_get_current().edit);
       }
+      bool EditButton(const char *p_Label, bool p_Disabled)
+      {
+        return Button(p_Label, p_Disabled, ICON_LC_PENCIL,
+                      theme_get_current().edit);
+      }
 
       bool SaveButton(bool p_Disabled)
       {
@@ -1248,6 +1253,73 @@ namespace Low {
         }
 
         TB::PopToolbarStyle();
+      }
+
+      static Util::String g_RenamingId = "";
+      static Util::Handle g_RenamingHandle = Util::Handle::DEAD;
+      static Util::RTTI::TypeInfo g_RenameType;
+      static bool g_RenameActive = false;
+
+      void Rename(const char *p_Id, Util::Handle p_Handle)
+      {
+        if (g_RenameActive) {
+          return;
+        }
+
+        if (!p_Handle.is_registered_type()) {
+          return;
+        }
+        g_RenameType =
+            Util::Handle::get_type_info(p_Handle.get_type());
+
+        g_RenamingHandle = p_Handle;
+        g_RenamingId = p_Id;
+        g_RenameActive = true;
+
+        ImGui::OpenPopup(p_Id);
+      }
+
+      bool RenamePopup(const char *p_Id)
+      {
+        bool l_Accepted = false;
+        if (ImGui::BeginPopupModal(p_Id)) {
+          if (!g_RenameActive) {
+            ImGui::EndPopup();
+            return false;
+          }
+          static char l_NameBuffer[255];
+          Gui::InputText("##name", l_NameBuffer, 255);
+          ImGui::Dummy({0.0f, 3.0f});
+
+          ImGui::Separator();
+          if (Gui::Button("Cancel")) {
+            g_RenameActive = false;
+            g_RenamingHandle = Util::Handle::DEAD;
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            return false;
+          }
+
+          bool l_IsEnter = ImGui::IsKeyPressed(ImGuiKey_Enter);
+
+          ImGui::SameLine();
+
+          if (Gui::EditButton("Rename") || l_IsEnter) {
+            Util::Name l_Name = LOW_NAME(l_NameBuffer);
+
+            bool l_Ok = true;
+
+            if (l_Ok) {
+              g_RenameType.properties["name"].set(g_RenamingHandle,
+                                                  &l_Name);
+              l_Accepted = true;
+            }
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::EndPopup();
+        }
+
+        return l_Accepted;
       }
     } // namespace Gui
   } // namespace Editor

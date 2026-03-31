@@ -24,6 +24,7 @@ namespace Low {
       {
         Util::Name name;
         Util::List<ComponentDescriptor> components;
+        Util::List<ElementDescriptor> children;
       };
       enum class LoadState
       {
@@ -190,6 +191,8 @@ namespace Low {
 
         WidgetInstance
         spawn_instance(Low::Renderer::UiCanvas p_Canvas);
+        void fill_content_from_instance(
+            Low::Core::UI::WidgetInstance p_Instance);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);

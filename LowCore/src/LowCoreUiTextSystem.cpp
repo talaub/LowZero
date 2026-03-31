@@ -50,8 +50,7 @@ namespace Low {
             }
 
             UI::Element l_Element = p_Text.get_element();
-            UI::View l_View = l_Element.get_view();
-            Renderer::UiCanvas l_Canvas = l_View.get_canvas();
+            Renderer::UiCanvas l_Canvas = l_Element.get_canvas();
 
             Renderer::Material l_Material =
                 Renderer::get_default_material_ui_text();
@@ -167,10 +166,6 @@ namespace Low {
 
           void tick(float p_Delta, Util::EngineState p_State)
           {
-            if (p_State != Util::EngineState::PLAYING) {
-              return;
-            }
-
             Component::Text *l_Texts =
                 Component::Text::living_instances();
 
@@ -179,10 +174,6 @@ namespace Low {
               Component::Text i_Text = l_Texts[i];
               Element i_Element = i_Text.get_element();
               Component::Display i_Display = i_Element.get_display();
-
-              if (i_Element.get_view().is_view_template()) {
-                continue;
-              }
 
               if (i_Text.get_draw_commands().empty() ||
                   i_Text.is_full_dirty()) {

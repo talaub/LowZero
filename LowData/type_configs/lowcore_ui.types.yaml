@@ -45,6 +45,12 @@ types:
           - name: canvas
             type: Low::Renderer::UiCanvas
             handle: true
+      fill_content_from_instance:
+        return_type: void
+        parameters:
+          - name: instance
+            type: Low::Core::UI::WidgetInstance
+            handle: true
 
   WidgetInstance:
     no_auto_serialize: true

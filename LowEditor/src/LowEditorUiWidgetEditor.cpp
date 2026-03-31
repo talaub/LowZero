@@ -1,8 +1,10 @@
 #include "LowEditorUiWidgetEditor.h"
 #include "LowCore.h"
+#include "LowCoreUiText.h"
 #include "LowCoreUiWidgetAsset.h"
 #include "LowEditorGui.h"
 #include "LowEditorTypeEditor.h"
+#include "LowEditorIcons.h"
 #include "LowEditorUiWidget.h"
 
 #include "LowCoreUiElement.h"
@@ -10,17 +12,29 @@
 #include "LowCoreUiImage.h"
 #include "LowMath.h"
 #include "LowRenderer.h"
+#include "LowRendererFont.h"
 #include "LowRendererPrimitives.h"
 #include "LowRendererTexture.h"
+#include "LowRendererUiCanvas.h"
 #include "LowRendererUiDrawCommand.h"
 #include "LowUtilAssetManager.h"
 #include "LowUtilHandle.h"
+#include "LowUtilString.h"
+#include <corecrt_io.h>
 #include <imgui.h>
 
 #define SEARCH_LENGTH 300
 
 namespace Low {
   namespace Editor {
+    enum class ElementAction
+    {
+      None,
+      Rename,
+      Delete,
+      DeleteHierarchy
+    };
+
     UiWidgetEditor::UiWidgetEditor(Util::Handle p_Handle)
         : TypeEditor(p_Handle), m_LeftPaneWidth(280.0f),
           m_TopPaneHeight(400.0f), m_Test(false),
@@ -44,6 +58,24 @@ namespace Low {
       delete m_Viewport;
     }
 
+    static Core::UI::Element
+    create_element(const Util::Name p_Name,
+                   Renderer::UiCanvas p_Canvas,
+                   Core::UI::Element p_Parent)
+    {
+
+      Core::UI::Element l_Element =
+          Core::UI::Element::make(p_Name, p_Canvas);
+      Core::UI::Component::Display l_Display =
+          Core::UI::Component::Display::make(l_Element);
+
+      l_Display.pixel_scale(100, 100);
+
+      l_Display.set_parent(p_Parent.get_display());
+
+      return l_Element;
+    }
+
     void
     UiWidgetEditor::draw_list_element(Core::UI::Element p_Element)
     {
@@ -62,13 +94,42 @@ namespace Low {
                        ImGuiTreeNodeFlags_NoTreePushOnOpen;
       }
 
-      ImGui::PushID(l_Display.get_id());
+      if (m_SelectedElement == p_Element) {
+        l_BaseFlags |= ImGuiTreeNodeFlags_Selected;
+      }
 
-      const bool l_Open = ImGui::TreeNodeEx(
-          "##row", l_BaseFlags, "%s", p_Element.get_name().c_str());
+      Util::StringBuilder l_IdBuilder;
+      l_IdBuilder.append("##row_").append(p_Element.get_id());
+
+      const bool l_Open =
+          ImGui::TreeNodeEx(l_IdBuilder.get().c_str(), l_BaseFlags,
+                            "%s", p_Element.get_name().c_str());
 
       if (ImGui::IsItemClicked()) {
         set_selected_element(p_Element);
+      }
+
+      l_IdBuilder.append("element_context_menu");
+
+      ElementAction l_Action = ElementAction::None;
+
+      if (ImGui::BeginPopupContextItem(l_IdBuilder.get().c_str())) {
+        set_selected_element(p_Element);
+
+        if (ImGui::MenuItem("Rename")) {
+          l_Action = ElementAction::Rename;
+        }
+        if (ImGui::MenuItem("Delete")) {
+          l_Action = ElementAction::Delete;
+        }
+        if (ImGui::MenuItem("Delete hierarchy")) {
+          l_Action = ElementAction::DeleteHierarchy;
+        }
+        ImGui::EndPopup();
+      }
+      if (l_Action == ElementAction::Rename) {
+        Gui::Rename("Rename element", p_Element.get_id());
+      } else if (l_Action == ElementAction::Delete) {
       }
 
       if (!l_Leaf && l_Open) {
@@ -78,8 +139,6 @@ namespace Low {
         }
         ImGui::TreePop();
       }
-
-      ImGui::PopID();
     }
 
     void UiWidgetEditor::render()
@@ -103,38 +162,10 @@ namespace Low {
             Math::Color(1.0f, 0.0f, 0.0f, 0.0f));
       }
 
-#if 0 
-      m_Test = true;
-      if (!m_Test) {
-        m_Test = true;
-        Core::UI::ElementDescriptor desc;
-        desc.name = N(main);
-        Core::UI::Element e = Core::UI::Element::make(N(main));
-        Core::UI::Component::Display d =
-            Core::UI::Component::Display::make(e);
-        d.pixel_position(20, 50);
-        d.pixel_scale(120, 80);
-        Core::UI::ComponentDescriptor dd;
-        dd.typeId = Core::UI::Component::Display::type_id();
-        d.serialize(dd.data);
-
-        Core::UI::Component::Image i =
-            Core::UI::Component::Image::make(e);
-        i.set_texture(
-            Renderer::Texture::find_by_name(N(emperor_icon)));
-        i.set_material(Renderer::get_default_material_ui());
-        Core::UI::ComponentDescriptor id;
-        id.typeId = Core::UI::Component::Image::type_id();
-        i.serialize(id.data);
-
-        desc.components.push_back(dd);
-        desc.components.push_back(id);
-
-        l_Asset.get_content().push_back(desc);
-
+      if (Gui::SaveButton()) {
+        l_Asset.fill_content_from_instance(m_Viewport->m_Instance);
         Util::AssetManager::save(l_Asset);
       }
-#endif
 
       // ----- Left side -----
       ImGui::BeginChild(
@@ -146,8 +177,42 @@ namespace Low {
                           ImGuiChildFlags_Borders |
                               ImGuiChildFlags_ResizeY);
         {
+          if (ImGui::BeginPopup("create_element_selection_popup")) {
+            if (ImGui::Selectable(LOW_EDITOR_ICON_ELEMENT " Empty")) {
+              Core::UI::Element l_Element =
+                  create_element("Empty", m_Viewport->m_Canvas,
+                                 m_Viewport->m_Instance.get_root());
+              set_selected_element(l_Element);
+            }
+            ImGui::Separator();
+            if (ImGui::Selectable(LOW_EDITOR_ICON_IMAGE " Image")) {
+              Core::UI::Element l_Element =
+                  create_element("Image", m_Viewport->m_Canvas,
+                                 m_Viewport->m_Instance.get_root());
+              Core::UI::Component::Image l_Image =
+                  Core::UI::Component::Image::make(l_Element);
+              l_Image.set_material(
+                  Renderer::get_default_material_ui());
+              l_Image.set_texture(Renderer::get_default_texture());
+              set_selected_element(l_Element);
+            }
+            if (ImGui::Selectable(LOW_EDITOR_ICON_TEXT " Text")) {
+              Core::UI::Element l_Element =
+                  create_element("Text", m_Viewport->m_Canvas,
+                                 m_Viewport->m_Instance.get_root());
+              Core::UI::Component::Text l_Text =
+                  Core::UI::Component::Text::make(l_Element);
+              l_Text.set_font(Renderer::Font::living_instances()[0]);
+              l_Text.set_text("Text");
+              l_Text.set_size(32);
+              l_Text.set_color(Math::Color(1, 1, 1, 1));
+              set_selected_element(l_Element);
+            }
+            ImGui::EndPopup();
+          }
           {
             if (Gui::AddButton()) {
+              ImGui::OpenPopup("create_element_selection_popup");
             }
             ImGui::SameLine();
             if (Gui::SearchField("##searchelementinwidget",
@@ -156,6 +221,9 @@ namespace Low {
             ImGui::Dummy(ImVec2{0, 5});
             ImGui::Separator();
           }
+
+          Gui::RenamePopup("Rename element");
+
           for (Core::UI::Component::Display i_Display :
                m_Viewport->m_Instance.get_root()
                    .get_display()
@@ -184,6 +252,7 @@ namespace Low {
       ImGui::BeginChild("RightPane", ImVec2(0.0f, 0.0f),
                         ImGuiChildFlags_Borders);
       {
+
         render_viewport();
       }
       ImGui::EndChild();
@@ -192,6 +261,16 @@ namespace Low {
     void UiWidgetEditor::render_viewport()
     {
       const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
+
+      if (m_Viewport->m_Instance.is_alive()) {
+        Core::UI::Element l_Root = m_Viewport->m_Instance.get_root();
+        Core::UI::Component::Display l_RootDisplay =
+            l_Root.get_display();
+
+        l_RootDisplay.pixel_position(l_Avail.x / 2.0f,
+                                     l_Avail.y / 2.0f);
+      }
+
       m_Viewport->tick(LOW_DELTA_TIME);
       m_Viewport->set_dimensions(l_Avail.x, l_Avail.y);
     }
@@ -205,7 +284,7 @@ namespace Low {
         return;
       }
 
-      HandlePropertiesSection l_Section(p_Handle, false);
+      HandlePropertiesSection l_Section(p_Handle, true);
       l_Section.render_footer = nullptr;
 
       m_DetailsSections.push_back(l_Section);

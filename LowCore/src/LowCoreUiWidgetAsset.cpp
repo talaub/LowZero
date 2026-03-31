@@ -5,6 +5,7 @@
 #include "LowCoreUiDisplay.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -362,6 +363,24 @@ namespace Low {
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: spawn_instance
+        }
+        {
+          // Function: fill_content_from_instance
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(fill_content_from_instance);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Instance);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType =
+                Low::Core::UI::WidgetInstance::type_id();
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: fill_content_from_instance
         }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
@@ -846,6 +865,43 @@ namespace Low {
 
         return l_Instance;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn_instance
+      }
+
+      void WidgetAsset::fill_content_from_instance(
+          Low::Core::UI::WidgetInstance p_Instance)
+      {
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_fill_content_from_instance
+        get_content().clear();
+
+        Component::Display l_RootDisplay =
+            p_Instance.get_root().get_display();
+
+        Component::Display l_CurrentDisplay = l_RootDisplay;
+
+        for (Component::Display i_Display :
+             l_CurrentDisplay.get_children()) {
+          Element i_Element = i_Display.get_element();
+          ElementDescriptor i_ElementDescriptor;
+          i_ElementDescriptor.name = i_Element.get_name();
+          for (auto &i_ComponentEntry : i_Element.get_components()) {
+            Util::Handle i_Component = i_ComponentEntry.second;
+            Util::RTTI::TypeInfo &i_ComponentType =
+                Util::Handle::get_type_info(i_ComponentEntry.first);
+
+            ComponentDescriptor i_ComponentDescriptor;
+            i_ComponentDescriptor.typeId = i_Component.get_type();
+            i_ComponentType.serialize(i_Component,
+                                      i_ComponentDescriptor.data);
+
+            i_ElementDescriptor.components.push_back(
+                i_ComponentDescriptor);
+          }
+          if (l_CurrentDisplay == l_RootDisplay) {
+            get_content().push_back(i_ElementDescriptor);
+          }
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_fill_content_from_instance
       }
 
       uint32_t WidgetAsset::create_instance(

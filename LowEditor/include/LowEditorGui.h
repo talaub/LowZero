@@ -67,6 +67,8 @@ namespace Low {
       bool LOW_EDITOR_API ClearButton(bool p_Disabled = false);
       bool LOW_EDITOR_API DeleteButton(bool p_Disabled = false);
       bool LOW_EDITOR_API EditButton(bool p_Disabled = false);
+      bool LOW_EDITOR_API EditButton(const char *p_Label,
+                                     bool p_Disabled = false);
 
       bool LOW_EDITOR_API TreeNodeBehavior(
           ImGuiID id, ImGuiTreeNodeFlags flags, const char *label,
@@ -88,6 +90,10 @@ namespace Low {
         std::string BlueprintName = "BP_PlayerController";
       };
       void Toolbar(ToolbarState &p_State);
+
+      void LOW_EDITOR_API Rename(const char *p_Id,
+                                 Util::Handle p_Handle);
+      bool LOW_EDITOR_API RenamePopup(const char *p_Id);
 
     } // namespace Gui
   } // namespace Editor
