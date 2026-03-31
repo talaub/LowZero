@@ -47,6 +47,11 @@ namespace Low {
       spawn_mesh(Renderer::Mesh p_Mesh,
                  Renderer::Material p_Material);
 
+      bool is_hovered() const
+      {
+        return m_ViewportHovered;
+      }
+
     protected:
       Renderer::RenderView m_RenderView;
       Renderer::RenderScene m_RenderScene;

@@ -64,6 +64,8 @@ namespace Low {
 
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, camera_fov, float) =
           0.0f;
+      ACCESSOR_TYPE_SOA(l_Handle, RenderView, ui_camera_zoom, float) =
+          0.0f;
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, render_scene,
                                  Low::Renderer::RenderScene))
           Low::Renderer::RenderScene();
@@ -130,6 +132,8 @@ namespace Low {
       l_Handle.set_camera_dirty(true);
       l_Handle.set_dimensions_dirty(true);
       l_Handle.get_step_data().resize(RenderStep::get_capacity());
+
+      l_Handle.set_ui_camera_zoom(1.0f);
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -327,6 +331,71 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: camera_fov
+      }
+      {
+        // Property: ui_camera_position
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ui_camera_position);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, ui_camera_position);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::VECTOR2;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_ui_camera_position();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            ui_camera_position,
+                                            Low::Math::Vector2);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_ui_camera_position(
+              *(Low::Math::Vector2 *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((Low::Math::Vector2 *)p_Data) =
+              l_Handle.get_ui_camera_position();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ui_camera_position
+      }
+      {
+        // Property: ui_camera_zoom
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ui_camera_zoom);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, ui_camera_zoom);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::FLOAT;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_ui_camera_zoom();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            ui_camera_zoom, float);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_ui_camera_zoom(*(float *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((float *)p_Data) = l_Handle.get_ui_camera_zoom();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ui_camera_zoom
       }
       {
         // Property: render_target_handle
@@ -1203,6 +1272,8 @@ namespace Low {
       l_Handle.set_camera_position(get_camera_position());
       l_Handle.set_camera_direction(get_camera_direction());
       l_Handle.set_camera_fov(get_camera_fov());
+      l_Handle.set_ui_camera_position(get_ui_camera_position());
+      l_Handle.set_ui_camera_zoom(get_ui_camera_zoom());
       l_Handle.set_render_target_handle(get_render_target_handle());
       l_Handle.set_view_info_handle(get_view_info_handle());
       l_Handle.set_actual_dimensions(get_dimensions());
@@ -1496,6 +1567,93 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_camera_fov
 
         broadcast_observable(N(camera_fov));
+      }
+    }
+
+    Low::Math::Vector2 RenderView::get_ui_camera_position() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_camera_position
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ui_camera_position
+
+      return TYPE_SOA(RenderView, ui_camera_position,
+                      Low::Math::Vector2);
+    }
+    void RenderView::set_ui_camera_position(float p_X, float p_Y)
+    {
+      Low::Math::Vector2 l_Val(p_X, p_Y);
+      set_ui_camera_position(l_Val);
+    }
+
+    void RenderView::set_ui_camera_position_x(float p_Value)
+    {
+      Low::Math::Vector2 l_Value = get_ui_camera_position();
+      l_Value.x = p_Value;
+      set_ui_camera_position(l_Value);
+    }
+
+    void RenderView::set_ui_camera_position_y(float p_Value)
+    {
+      Low::Math::Vector2 l_Value = get_ui_camera_position();
+      l_Value.y = p_Value;
+      set_ui_camera_position(l_Value);
+    }
+
+    void
+    RenderView::set_ui_camera_position(Low::Math::Vector2 p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_camera_position
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_camera_position
+
+      if (get_ui_camera_position() != p_Value) {
+        // Set dirty flags
+        mark_camera_dirty();
+
+        // Set new value
+        TYPE_SOA(RenderView, ui_camera_position, Low::Math::Vector2) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_camera_position
+        // LOW_CODEGEN::END::CUSTOM:SETTER_ui_camera_position
+
+        broadcast_observable(N(ui_camera_position));
+      }
+    }
+
+    float RenderView::get_ui_camera_zoom() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_camera_zoom
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ui_camera_zoom
+
+      return TYPE_SOA(RenderView, ui_camera_zoom, float);
+    }
+    void RenderView::set_ui_camera_zoom(float p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_camera_zoom
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_camera_zoom
+
+      if (get_ui_camera_zoom() != p_Value) {
+        // Set dirty flags
+        mark_camera_dirty();
+
+        // Set new value
+        TYPE_SOA(RenderView, ui_camera_zoom, float) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_camera_zoom
+        // LOW_CODEGEN::END::CUSTOM:SETTER_ui_camera_zoom
+
+        broadcast_observable(N(ui_camera_zoom));
       }
     }
 

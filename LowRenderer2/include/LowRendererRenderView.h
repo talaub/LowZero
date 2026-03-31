@@ -45,6 +45,8 @@ namespace Low {
         Low::Math::Vector3 camera_position;
         Low::Math::Vector3 camera_direction;
         float camera_fov;
+        Low::Math::Vector2 ui_camera_position;
+        float ui_camera_zoom;
         uint64_t render_target_handle;
         uint64_t view_info_handle;
         Low::Math::UVector2 dimensions;
@@ -201,6 +203,15 @@ namespace Low {
 
       float get_camera_fov() const;
       void set_camera_fov(float p_Value);
+
+      Low::Math::Vector2 get_ui_camera_position() const;
+      void set_ui_camera_position(Low::Math::Vector2 p_Value);
+      void set_ui_camera_position(float p_X, float p_Y);
+      void set_ui_camera_position_x(float p_Value);
+      void set_ui_camera_position_y(float p_Value);
+
+      float get_ui_camera_zoom() const;
+      void set_ui_camera_zoom(float p_Value);
 
       uint64_t get_render_target_handle() const;
       void set_render_target_handle(uint64_t p_Value);

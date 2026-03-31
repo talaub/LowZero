@@ -81,6 +81,7 @@ namespace Low {
         alignas(16) Math::Matrix4x4 inverseProjectionMatrix;
         alignas(16) Math::Matrix4x4 projectionMatrix;
         alignas(16) Math::Matrix4x4 viewProjectionMatrix;
+        alignas(16) Math::Matrix4x4 uiViewProjectionMatrix;
         alignas(16) Math::UVector4 gbufferIndices;
         alignas(16) Math::UVector4 textureIndices;
         alignas(16) Math::UVector4 lightClusters;

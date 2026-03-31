@@ -1,0 +1,112 @@
+#version 450
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+#include "globals.glsl"
+#include "viewinfo.glsl"
+
+struct PointLight {
+   vec4 transform; 
+   vec4 color;
+   uint valid;
+};
+
+layout(std430, set = 2, binding = 1) readonly buffer PointLightBuffer{
+  PointLight g_PointLights[];
+};
+
+layout(std430, set = 2, binding = 2) buffer PointLightIndices{
+  uint g_PointLightIndices[];
+};
+
+layout(std430, set = 2, binding = 3) buffer PointLightViewBuffer{
+  PointLight g_ViewPointLights[];
+};
+
+
+#define MAX_POINTLIGHTS_PER_CLUSTER 32
+#define MAX_POINTLIGHTS_PER_SCENE 128
+
+vec3 ClusterCorner(uvec3 clusterID, vec3 corner) {
+    // Normalized cluster coords (0..1)
+    vec3 cMin = vec3(clusterID) / g_ViewInfo.lightClusters.xyz;
+    vec3 cMax = vec3(clusterID + uvec3(1)) / g_ViewInfo.lightClusters.xyz;
+
+    // Mix min/max depending on corner (0 or 1 per axis)
+    vec3 c = mix(cMin, cMax, corner);
+
+    // Logarithmic depth
+    float logDepth = mix(log(g_ViewInfo.nearFarPlane.x), log(g_ViewInfo.nearFarPlane.y), c.z);
+    float depth = exp(logDepth);
+
+    // Map NDC XY from 0..1 to -1..1
+    vec4 clipPos = vec4(c.xy * 2.0 - 1.0, depth, 1.0);
+
+    // Convert to view space
+    vec4 viewPos = g_ViewInfo.inverseProjectionMatrix * clipPos;
+    return viewPos.xyz / viewPos.w;
+}
+
+void GetClusterAABB(uvec3 clusterID, out vec3 minBounds, out vec3 maxBounds) {
+    // Compute all 8 corners and find min/max
+    minBounds = vec3(1e9);
+    maxBounds = vec3(-1e9);
+    for (int x = 0; x < 2; ++x) {
+        for (int y = 0; y < 2; ++y) {
+            for (int z = 0; z < 2; ++z) {
+                vec3 corner = ClusterCorner(clusterID, vec3(x, y, z));
+                minBounds = min(minBounds, corner);
+                maxBounds = max(maxBounds, corner);
+            }
+        }
+    }
+}
+
+// Sphere-AABB intersection
+bool SphereAABBIntersect(vec3 sphereCenter, float radius, vec3 minB, vec3 maxB) {
+    vec3 closest = clamp(sphereCenter, minB, maxB);
+    vec3 diff = closest - sphereCenter;
+    return dot(diff, diff) <= radius * radius;
+}
+
+void main() {
+    // Cluster index
+    uvec3 clusterID = gl_GlobalInvocationID;
+    uint clusterIndex = clusterID.x
+                      + clusterID.y * g_ViewInfo.lightClusters.x
+                      + clusterID.z * g_ViewInfo.lightClusters.x * g_ViewInfo.lightClusters.y;
+
+    // Compute cluster bounds
+    vec3 minBounds, maxBounds;
+    GetClusterAABB(clusterID, minBounds, maxBounds);
+
+    // Offset for this cluster's lights in global index list
+    uint baseOffset = clusterIndex * MAX_POINTLIGHTS_PER_CLUSTER;
+    uint lightCount = 0;
+
+    // Test each light
+    for (uint i = 0; i < MAX_POINTLIGHTS_PER_SCENE; ++i) {
+        vec3 lightPos = g_PointLights[i].transform.xyz;
+        vec3 lightPosView = (g_ViewInfo.viewMatrix * vec4(lightPos, 1.0)).xyz;
+        float radius = g_PointLights[i].transform.w;
+
+        if (gl_GlobalInvocationID == vec3(0)){
+            // Copy light data over to the view specific buffer and take care of the view conversion
+            g_ViewPointLights[i]= g_PointLights[i];
+            g_ViewPointLights[i].transform.xyz = lightPosView;
+        }
+        if (g_PointLights[i].valid == 0){
+            continue;
+        }
+        if (SphereAABBIntersect(lightPosView, radius, minBounds, maxBounds)) {
+            if (lightCount < MAX_POINTLIGHTS_PER_CLUSTER) {
+                g_PointLightIndices[baseOffset + lightCount] = i;
+                lightCount++;
+            }
+        }
+    }
+
+    for (uint i = lightCount; i < MAX_POINTLIGHTS_PER_CLUSTER; ++i)
+    {
+        g_PointLightIndices[baseOffset + i] = MAX_POINTLIGHTS_PER_SCENE + 1;
+    }
+}

@@ -139,6 +139,12 @@ types:
       camera_fov:
         type: float
         dirty_flag: camera_dirty
+      ui_camera_position:
+        type: Low::Math::Vector2
+        dirty_flag: camera_dirty
+      ui_camera_zoom:
+        type: float
+        dirty_flag: camera_dirty
       render_target_handle:
         type: uint64_t
       view_info_handle:

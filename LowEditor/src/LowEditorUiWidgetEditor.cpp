@@ -25,6 +25,9 @@
 
 #define SEARCH_LENGTH 300
 
+#define PAN_SPEED 50.0f
+#define ZOOM_SPEED 1.0f
+
 namespace Low {
   namespace Editor {
     enum class ElementAction
@@ -260,6 +263,7 @@ namespace Low {
 
     void UiWidgetEditor::render_viewport()
     {
+      const float l_Delta = LOW_DELTA_TIME;
       const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
 
       if (m_Viewport->m_Instance.is_alive()) {
@@ -269,6 +273,31 @@ namespace Low {
 
         l_RootDisplay.pixel_position(l_Avail.x / 2.0f,
                                      l_Avail.y / 2.0f);
+      }
+
+      ImGuiIO &l_Io = ImGui::GetIO();
+
+      if (m_Viewport->is_hovered()) {
+
+        if (l_Io.MouseWheel != 0.0f) {
+          float l_ZoomLevel =
+              m_Viewport->m_RenderView.get_ui_camera_zoom();
+          l_ZoomLevel += l_Io.MouseWheel * l_Delta * ZOOM_SPEED;
+          m_Viewport->m_RenderView.set_ui_camera_zoom(l_ZoomLevel);
+        }
+
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+          const ImVec2 l_MouseDelta = l_Io.MouseDelta;
+
+          if (l_MouseDelta.x != 0.0f || l_MouseDelta.y != 0.0f) {
+            const ImVec2 l_MoveDelta =
+                l_MouseDelta * PAN_SPEED * l_Delta;
+            Math::Vector2 l_Pan =
+                m_Viewport->m_RenderView.get_ui_camera_position();
+            l_Pan += Math::Vector2(-l_MoveDelta.x, l_MoveDelta.y);
+            m_Viewport->m_RenderView.set_ui_camera_position(l_Pan);
+          }
+        }
       }
 
       m_Viewport->tick(LOW_DELTA_TIME);

@@ -1442,6 +1442,30 @@ namespace Low {
         {
           ViewInfoFrameData l_FrameData;
 
+          {
+
+            const float l_Zoom = p_RenderView.get_ui_camera_zoom();
+            const Math::Vector2 l_Panning =
+                p_RenderView.get_ui_camera_position();
+            const Math::UVector2 l_Dimensions =
+                p_RenderView.get_dimensions();
+
+            Math::Matrix4x4 l_ViewMatrix(1.0f);
+            l_ViewMatrix = glm::scale(
+                l_ViewMatrix, Math::Vector3(l_Zoom, l_Zoom, 1.0f));
+            l_ViewMatrix = glm::translate(
+                l_ViewMatrix, Math::Vector3(-l_Panning, 0.0f));
+
+            Math::Matrix4x4 l_ProjectionMatrix =
+                glm::ortho(0.0f, (float)l_Dimensions.x,
+                           (float)l_Dimensions.y, 0.0f, -1.0f, 1.0f);
+
+            const Math::Matrix4x4 l_ViewProjection =
+                l_ProjectionMatrix * l_ViewMatrix;
+
+            l_FrameData.uiViewProjectionMatrix = l_ViewProjection;
+          }
+
           l_FrameData.dimensions.x = p_RenderView.get_dimensions().x;
           l_FrameData.dimensions.y = p_RenderView.get_dimensions().y;
           l_FrameData.dimensions.z = 1.0f / l_FrameData.dimensions.x;

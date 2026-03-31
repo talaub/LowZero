@@ -461,6 +461,7 @@ namespace Low {
             ImGuiIO &io = ImGui::GetIO();
             (void)io;
             io.IniFilename = "loweditor.ini";
+            io.ConfigWindowsMoveFromTitleBarOnly = true;
             io.ConfigFlags |=
                 ImGuiConfigFlags_DockingEnable; // Enable Docking
             io.ConfigFlags |=
