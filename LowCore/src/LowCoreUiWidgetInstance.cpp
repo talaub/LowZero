@@ -90,8 +90,7 @@ namespace Low {
         {
           Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-          get_root().destroy();
-          // TODO: Destroy hierarchy
+          get_root().destroy_with_hierarchy();
 
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }

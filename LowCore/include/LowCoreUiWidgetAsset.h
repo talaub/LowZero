@@ -191,6 +191,11 @@ namespace Low {
 
         WidgetInstance
         spawn_instance(Low::Renderer::UiCanvas p_Canvas);
+        Low::Core::UI::Element
+        spawn_element(Low::Core::UI::WidgetInstance p_Instance,
+                      Low::Renderer::UiCanvas p_Canvas,
+                      Low::Core::UI::ElementDescriptor &p_Descriptor,
+                      Low::Core::UI::Element p_Parent);
         void fill_content_from_instance(
             Low::Core::UI::WidgetInstance p_Instance);
         static bool get_page_for_index(const u32 p_Index,
@@ -211,6 +216,14 @@ namespace Low {
         void
         parse_element(Low::Util::Serial::Node &p_Node,
                       Low::Core::UI::ElementDescriptor &p_Descriptor);
+
+        void fill_element_descriptor(
+            Low::Core::UI::Element p_Element,
+            Low::Core::UI::ElementDescriptor &p_Descriptor);
+
+        void serialize_element_descriptor(
+            const Low::Core::UI::ElementDescriptor &p_Descriptor,
+            Low::Util::Serial::Node &p_Node) const;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE

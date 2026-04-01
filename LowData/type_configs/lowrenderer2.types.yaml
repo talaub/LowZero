@@ -145,6 +145,10 @@ types:
       ui_camera_zoom:
         type: float
         dirty_flag: camera_dirty
+      ui_projection_matrix:
+        type: Low::Math::Matrix4x4
+      ui_view_matrix:
+        type: Low::Math::Matrix4x4
       render_target_handle:
         type: uint64_t
       view_info_handle:

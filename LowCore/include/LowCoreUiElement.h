@@ -181,6 +181,7 @@ namespace Low {
         static Element make(Low::Util::Name p_Name,
                             Low::Renderer::UiCanvas p_Canvas);
         uint64_t get_component(uint16_t p_TypeId) const;
+        void destroy_with_hierarchy();
         void add_component(Low::Util::Handle &p_Component);
         void remove_component(uint16_t p_ComponentType);
         bool has_component(uint16_t p_ComponentType);

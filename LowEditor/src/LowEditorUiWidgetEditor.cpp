@@ -22,6 +22,8 @@
 #include "LowUtilString.h"
 #include <corecrt_io.h>
 #include <imgui.h>
+#include "ImGuizmo.h"
+#include "glm/matrix.hpp"
 
 #define SEARCH_LENGTH 300
 
@@ -79,7 +81,7 @@ namespace Low {
       return l_Element;
     }
 
-    void
+    bool
     UiWidgetEditor::draw_list_element(Core::UI::Element p_Element)
     {
       ImGuiTreeNodeFlags l_BaseFlags =
@@ -108,6 +110,78 @@ namespace Low {
           ImGui::TreeNodeEx(l_IdBuilder.get().c_str(), l_BaseFlags,
                             "%s", p_Element.get_name().c_str());
 
+      const ImVec2 l_RectMin = ImGui::GetItemRectMin();
+      const ImVec2 l_RectMax = ImGui::GetItemRectMax();
+      const float l_RectHeight = l_RectMax.y - l_RectMin.y;
+
+      if (ImGui::BeginDragDropSource()) {
+        Core::UI::Element l_PayloadElement = p_Element;
+
+        ImGui::SetDragDropPayload("UI_ELEMENT", &l_PayloadElement,
+                                  sizeof(Core::UI::Element));
+
+        ImGui::TextUnformatted(p_Element.get_name().c_str());
+
+        ImGui::EndDragDropSource();
+      }
+
+      if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload *l_Payload =
+                ImGui::AcceptDragDropPayload("UI_ELEMENT")) {
+          LOW_ASSERT(l_Payload->DataSize == sizeof(Core::UI::Element),
+                     "Invalid drag payload size");
+
+          Core::UI::Element l_DraggedElement =
+              *static_cast<const Core::UI::Element *>(
+                  l_Payload->Data);
+
+          if (l_DraggedElement != p_Element) {
+            const ImVec2 l_MousePos = ImGui::GetMousePos();
+
+            enum class DropPosition
+            {
+              Before,
+              On,
+              After
+            };
+
+            DropPosition l_DropPosition = DropPosition::On;
+
+            const float l_UpperThreshold =
+                l_RectMin.y + l_RectHeight * 0.25f;
+            const float l_LowerThreshold =
+                l_RectMax.y - l_RectHeight * 0.25f;
+
+            /*
+            if (l_MousePos.y < l_UpperThreshold) {
+              l_DropPosition = DropPosition::Before;
+            } else if (l_MousePos.y > l_LowerThreshold) {
+              l_DropPosition = DropPosition::After;
+            } else {
+              l_DropPosition = DropPosition::On;
+            }
+
+            switch (l_DropPosition) {
+            case DropPosition::Before:
+              move_element_before(l_DraggedElement, p_Element);
+              break;
+            case DropPosition::On:
+              move_element_as_child(l_DraggedElement, p_Element);
+              break;
+            case DropPosition::After:
+              move_element_after(l_DraggedElement, p_Element);
+              break;
+            }
+            */
+
+            l_DraggedElement.get_display().set_parent(
+                p_Element.get_display());
+          }
+        }
+
+        ImGui::EndDragDropTarget();
+      }
+
       if (ImGui::IsItemClicked()) {
         set_selected_element(p_Element);
       }
@@ -130,18 +204,71 @@ namespace Low {
         }
         ImGui::EndPopup();
       }
+
+      bool l_Destroy = false;
       if (l_Action == ElementAction::Rename) {
         Gui::Rename("Rename element", p_Element.get_id());
+      } else if (l_Action == ElementAction::DeleteHierarchy) {
+        p_Element.destroy_with_hierarchy();
+        l_Destroy = true;
       } else if (l_Action == ElementAction::Delete) {
+        for (Core::UI::Component::Display i_Display :
+             p_Element.get_display().get_children()) {
+          i_Display.set_parent(p_Element.get_display().get_parent());
+        }
+        p_Element.destroy();
+        l_Destroy = true;
       }
 
       if (!l_Leaf && l_Open) {
-        for (Core::UI::Component::Display i_Display :
-             l_Display.get_children()) {
-          draw_list_element(i_Display.get_element());
+        if (!l_Destroy) {
+          for (Core::UI::Component::Display i_Display :
+               l_Display.get_children()) {
+            l_Destroy = draw_list_element(i_Display.get_element());
+          }
         }
         ImGui::TreePop();
       }
+      return l_Destroy;
+    }
+
+    static Math::Matrix4x4
+    build_ui_element_matrix(const Math::Vector2 &p_Position,
+                            float p_RotationRadians,
+                            const Math::Vector2 &p_Size)
+    {
+      Math::Matrix4x4 l_Translation = glm::translate(
+          Math::Matrix4x4(1.0f),
+          Math::Vector3(p_Position.x, p_Position.y, 0.0f));
+
+      Math::Matrix4x4 l_Rotation = glm::toMat4(glm::angleAxis(
+          p_RotationRadians, Math::Vector3(0.0f, 0.0f, 1.0f)));
+
+      Math::Matrix4x4 l_Scale =
+          glm::scale(Math::Matrix4x4(1.0f),
+                     Math::Vector3(p_Size.x, p_Size.y, 1.0f));
+
+      return l_Translation * l_Rotation * l_Scale;
+    }
+
+    static void decompose_ui_element_matrix(
+        const Math::Matrix4x4 &p_Matrix, Math::Vector2 &p_Position,
+        float &p_RotationRadians, Math::Vector2 &p_Size)
+    {
+      Math::Vector3 l_Skew;
+      Math::Vector4 l_Perspective;
+      Math::Vector3 l_Translation;
+      Math::Vector3 l_Scale;
+      Math::Quaternion l_Rotation;
+
+      glm::decompose(p_Matrix, l_Scale, l_Rotation, l_Translation,
+                     l_Skew, l_Perspective);
+
+      p_Position = Math::Vector2(l_Translation.x, l_Translation.y);
+      p_Size = Math::Vector2(l_Scale.x, l_Scale.y);
+
+      Math::Vector3 l_Euler = glm::eulerAngles(l_Rotation);
+      p_RotationRadians = l_Euler.z;
     }
 
     void UiWidgetEditor::render()
@@ -231,7 +358,36 @@ namespace Low {
                m_Viewport->m_Instance.get_root()
                    .get_display()
                    .get_children()) {
-            draw_list_element(i_Display.get_element());
+            if (draw_list_element(i_Display.get_element())) {
+              break;
+            }
+          }
+          // Make the whole remaining content region a drop zone
+          ImVec2 l_CursorScreenPos = ImGui::GetCursorScreenPos();
+          ImVec2 l_Avail = ImGui::GetContentRegionAvail();
+
+          if (l_Avail.y < 20.0f) {
+            l_Avail.y = 20.0f;
+          }
+
+          ImGui::InvisibleButton("##root_drop_target", l_Avail);
+
+          if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload *l_Payload =
+                    ImGui::AcceptDragDropPayload("UI_ELEMENT")) {
+              LOW_ASSERT(l_Payload->DataSize ==
+                             sizeof(Core::UI::Element),
+                         "Invalid drag payload size");
+
+              Core::UI::Element l_DraggedElement =
+                  *static_cast<const Core::UI::Element *>(
+                      l_Payload->Data);
+
+              l_DraggedElement.get_display().set_parent(
+                  m_Viewport->m_Instance.get_root().get_display());
+            }
+
+            ImGui::EndDragDropTarget();
           }
         }
         ImGui::EndChild();
@@ -265,6 +421,7 @@ namespace Low {
     {
       const float l_Delta = LOW_DELTA_TIME;
       const ImVec2 l_Avail = ImGui::GetContentRegionAvail();
+      const ImVec2 l_CursorPos = ImGui::GetCursorScreenPos();
 
       if (m_Viewport->m_Instance.is_alive()) {
         Core::UI::Element l_Root = m_Viewport->m_Instance.get_root();
@@ -302,6 +459,53 @@ namespace Low {
 
       m_Viewport->tick(LOW_DELTA_TIME);
       m_Viewport->set_dimensions(l_Avail.x, l_Avail.y);
+
+      if (m_SelectedElement.is_alive()) {
+        Core::UI::Component::Display l_Display =
+            m_SelectedElement.get_display();
+        Core::UI::Component::Display l_Parent =
+            l_Display.get_parent();
+
+        Math::Matrix4x4 l_ParentModel = build_ui_element_matrix(
+            l_Parent.get_absolute_pixel_position(),
+            l_Parent.get_absolute_rotation(),
+            l_Parent.get_absolute_pixel_scale());
+
+        Math::Matrix4x4 l_Model = build_ui_element_matrix(
+            l_Display.get_absolute_pixel_position(),
+            l_Display.get_absolute_rotation(),
+            l_Display.get_absolute_pixel_scale());
+
+        const Math::Matrix4x4 l_View =
+            m_Viewport->m_RenderView.get_ui_view_matrix();
+        const Math::Matrix4x4 l_Projection =
+            m_Viewport->m_RenderView.get_ui_projection_matrix();
+
+        ImGuizmo::SetOrthographic(true);
+        ImGuizmo::SetDrawlist();
+        ImGuizmo::SetRect(l_CursorPos.x, l_CursorPos.y, l_Avail.x,
+                          l_Avail.y);
+
+        const bool l_Changed = ImGuizmo::Manipulate(
+            &l_View[0][0], &l_Projection[0][0], ImGuizmo::TRANSLATE,
+            ImGuizmo::WORLD, &l_Model[0][0], nullptr, nullptr);
+
+        if (l_Changed) {
+          Math::Vector2 l_Pos;
+          Math::Vector2 l_Size;
+          float l_Rot;
+
+          // l_Model = glm::inverse(l_ParentModel) * l_Model;
+
+          decompose_ui_element_matrix(l_Model, l_Pos, l_Rot, l_Size);
+          l_Pos -= l_Parent.get_absolute_pixel_position();
+          l_Rot -= l_Parent.get_absolute_rotation();
+
+          l_Display.pixel_position(l_Pos);
+          l_Display.pixel_scale(l_Size);
+          l_Display.rotation(l_Rot);
+        }
+      }
     }
 
     void UiWidgetEditor::add_section(Util::Handle p_Handle)

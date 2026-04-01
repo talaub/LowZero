@@ -231,6 +231,8 @@ types:
   Texture:
     reference_counted: true
     unique_id: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
     properties:
       gpu:
         type: GpuTexture
@@ -321,6 +323,8 @@ types:
   Font:
     reference_counted: true
     unique_id: true
+    no_auto_serialize: true
+    no_auto_deserialize: true
     properties:
       texture:
         type: Low::Renderer::Texture

@@ -47,6 +47,8 @@ namespace Low {
         float camera_fov;
         Low::Math::Vector2 ui_camera_position;
         float ui_camera_zoom;
+        Low::Math::Matrix4x4 ui_projection_matrix;
+        Low::Math::Matrix4x4 ui_view_matrix;
         uint64_t render_target_handle;
         uint64_t view_info_handle;
         Low::Math::UVector2 dimensions;
@@ -212,6 +214,12 @@ namespace Low {
 
       float get_ui_camera_zoom() const;
       void set_ui_camera_zoom(float p_Value);
+
+      Low::Math::Matrix4x4 &get_ui_projection_matrix() const;
+      void set_ui_projection_matrix(Low::Math::Matrix4x4 &p_Value);
+
+      Low::Math::Matrix4x4 &get_ui_view_matrix() const;
+      void set_ui_view_matrix(Low::Math::Matrix4x4 &p_Value);
 
       uint64_t get_render_target_handle() const;
       void set_render_target_handle(uint64_t p_Value);

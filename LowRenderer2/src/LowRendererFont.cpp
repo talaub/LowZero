@@ -758,22 +758,8 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      if (get_texture().is_alive()) {
-        get_texture().serialize(p_Node["texture"]);
-      }
-      if (get_resource().is_alive()) {
-        get_resource().serialize(p_Node["resource"]);
-      }
-      p_Node["sidecar_loaded"] = is_sidecar_loaded();
-      p_Node["ascender"] = get_ascender();
-      p_Node["descender"] = get_descender();
-      p_Node["line_height"] = get_line_height();
-      p_Node["import_height"] = get_import_height();
-      p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
-      p_Node["name"] = get_name().c_str();
-
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
+      p_Node = Util::U64Id{get_unique_id()};
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -788,61 +774,11 @@ namespace Low {
     Font::deserialize(Low::Util::Serial::Node &p_Node,
                       Low::Util::Handle p_Creator)
     {
-      Low::Util::UniqueId l_HandleUniqueId = 0ull;
-      if (p_Node["unique_id"]) {
-        l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
-      } else if (p_Node["_unique_id"]) {
-        l_HandleUniqueId = Low::Util::string_to_hash(
-            p_Node["_unique_id"].as<Low::Util::String>());
-      }
-
-      Font l_Handle = Font::make(N(Font), l_HandleUniqueId);
-
-      if (p_Node["texture"]) {
-        l_Handle.set_texture(Low::Renderer::Texture::deserialize(
-                                 p_Node["texture"], l_Handle.get_id())
-                                 .get_id());
-      }
-      if (p_Node["resource"]) {
-        l_Handle.set_resource(
-            Low::Renderer::FontResource::deserialize(
-                p_Node["resource"], l_Handle.get_id())
-                .get_id());
-      }
-      if (p_Node["glyphs"]) {
-      }
-      if (p_Node["sidecar_loaded"]) {
-        l_Handle.set_sidecar_loaded(
-            p_Node["sidecar_loaded"].as<bool>());
-      }
-      if (p_Node["ascender"]) {
-        l_Handle.set_ascender(p_Node["ascender"].as<float>());
-      }
-      if (p_Node["descender"]) {
-        l_Handle.set_descender(p_Node["descender"].as<float>());
-      }
-      if (p_Node["line_height"]) {
-        l_Handle.set_line_height(p_Node["line_height"].as<float>());
-      }
-      if (p_Node["import_height"]) {
-        l_Handle.set_import_height(
-            p_Node["import_height"].as<float>());
-      }
-      if (p_Node["references"]) {
-      }
-      if (p_Node["unique_id"]) {
-        l_Handle.set_unique_id(
-            p_Node["unique_id"].as<Low::Util::UniqueId>());
-      }
-      if (p_Node["name"]) {
-        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
-      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
+      return ResourceManager::find_asset<Font>(
+          p_Node.as<Util::U64Id>());
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
-
-      return l_Handle;
     }
 
     void

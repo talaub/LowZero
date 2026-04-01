@@ -114,6 +114,7 @@ namespace Low {
           Low::Util::HandleLock<Element> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
 
+          /*
           Util::List<Element> l_Children;
           if (get_display().is_alive()) {
             for (Component::Display i_Child :
@@ -125,6 +126,7 @@ namespace Low {
           for (Element i_Child : l_Children) {
             i_Child.destroy();
           }
+          */
 
           Util::List<uint16_t> l_ComponentTypes;
           for (auto it = get_components().begin();
@@ -453,6 +455,15 @@ namespace Low {
           }
           l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
           // End function: get_component
+        }
+        {
+          // Function: destroy_with_hierarchy
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(destroy_with_hierarchy);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: destroy_with_hierarchy
         }
         {
           // Function: add_component
@@ -1081,6 +1092,22 @@ namespace Low {
         }
         return get_components()[p_TypeId].get_id();
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_component
+      }
+
+      void Element::destroy_with_hierarchy()
+      {
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_destroy_with_hierarchy
+        Component::Display l_Display = get_display();
+
+        Util::List<u64> l_Children = l_Display.get_children();
+
+        for (Component::Display i_Display : l_Children) {
+          i_Display.get_element().destroy_with_hierarchy();
+        }
+
+        destroy();
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_destroy_with_hierarchy
       }
 
       void Element::add_component(Low::Util::Handle &p_Component)

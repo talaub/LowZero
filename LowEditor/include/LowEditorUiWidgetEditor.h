@@ -60,7 +60,7 @@ namespace Low {
 
       Renderer::UiDrawCommand m_SelectedMarker;
 
-      void draw_list_element(Core::UI::Element p_Element);
+      bool draw_list_element(Core::UI::Element p_Element);
 
       void add_section(Util::Handle p_Handle);
       Util::List<HandlePropertiesSection> m_DetailsSections;

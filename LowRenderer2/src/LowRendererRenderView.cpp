@@ -66,6 +66,12 @@ namespace Low {
           0.0f;
       ACCESSOR_TYPE_SOA(l_Handle, RenderView, ui_camera_zoom, float) =
           0.0f;
+      new (ACCESSOR_TYPE_SOA_PTR(
+          l_Handle, RenderView, ui_projection_matrix,
+          Low::Math::Matrix4x4)) Low::Math::Matrix4x4();
+      new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, ui_view_matrix,
+                                 Low::Math::Matrix4x4))
+          Low::Math::Matrix4x4();
       new (ACCESSOR_TYPE_SOA_PTR(l_Handle, RenderView, render_scene,
                                  Low::Renderer::RenderScene))
           Low::Renderer::RenderScene();
@@ -396,6 +402,74 @@ namespace Low {
         };
         l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
         // End property: ui_camera_zoom
+      }
+      {
+        // Property: ui_projection_matrix
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ui_projection_matrix);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, ui_projection_matrix);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_ui_projection_matrix();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            ui_projection_matrix,
+                                            Low::Math::Matrix4x4);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_ui_projection_matrix(
+              *(Low::Math::Matrix4x4 *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((Low::Math::Matrix4x4 *)p_Data) =
+              l_Handle.get_ui_projection_matrix();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ui_projection_matrix
+      }
+      {
+        // Property: ui_view_matrix
+        Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+        l_PropertyInfo.name = N(ui_view_matrix);
+        l_PropertyInfo.editorProperty = false;
+        l_PropertyInfo.dataOffset =
+            offsetof(RenderView::Data, ui_view_matrix);
+        l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UNKNOWN;
+        l_PropertyInfo.handleType = 0;
+        l_PropertyInfo.get_return =
+            [](Low::Util::Handle p_Handle) -> void const * {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          l_Handle.get_ui_view_matrix();
+          return (void *)&ACCESSOR_TYPE_SOA(p_Handle, RenderView,
+                                            ui_view_matrix,
+                                            Low::Math::Matrix4x4);
+        };
+        l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                const void *p_Data) -> void {
+          RenderView l_Handle = p_Handle.get_id();
+          l_Handle.set_ui_view_matrix(
+              *(Low::Math::Matrix4x4 *)p_Data);
+        };
+        l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                void *p_Data) {
+          RenderView l_Handle = p_Handle.get_id();
+          Low::Util::HandleLock<RenderView> l_HandleLock(l_Handle);
+          *((Low::Math::Matrix4x4 *)p_Data) =
+              l_Handle.get_ui_view_matrix();
+        };
+        l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+        // End property: ui_view_matrix
       }
       {
         // Property: render_target_handle
@@ -1274,6 +1348,8 @@ namespace Low {
       l_Handle.set_camera_fov(get_camera_fov());
       l_Handle.set_ui_camera_position(get_ui_camera_position());
       l_Handle.set_ui_camera_zoom(get_ui_camera_zoom());
+      l_Handle.set_ui_projection_matrix(get_ui_projection_matrix());
+      l_Handle.set_ui_view_matrix(get_ui_view_matrix());
       l_Handle.set_render_target_handle(get_render_target_handle());
       l_Handle.set_view_info_handle(get_view_info_handle());
       l_Handle.set_actual_dimensions(get_dimensions());
@@ -1655,6 +1731,65 @@ namespace Low {
 
         broadcast_observable(N(ui_camera_zoom));
       }
+    }
+
+    Low::Math::Matrix4x4 &RenderView::get_ui_projection_matrix() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_projection_matrix
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ui_projection_matrix
+
+      return TYPE_SOA(RenderView, ui_projection_matrix,
+                      Low::Math::Matrix4x4);
+    }
+    void RenderView::set_ui_projection_matrix(
+        Low::Math::Matrix4x4 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_projection_matrix
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_projection_matrix
+
+      // Set new value
+      TYPE_SOA(RenderView, ui_projection_matrix,
+               Low::Math::Matrix4x4) = p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_projection_matrix
+      // LOW_CODEGEN::END::CUSTOM:SETTER_ui_projection_matrix
+
+      broadcast_observable(N(ui_projection_matrix));
+    }
+
+    Low::Math::Matrix4x4 &RenderView::get_ui_view_matrix() const
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_view_matrix
+      // LOW_CODEGEN::END::CUSTOM:GETTER_ui_view_matrix
+
+      return TYPE_SOA(RenderView, ui_view_matrix,
+                      Low::Math::Matrix4x4);
+    }
+    void RenderView::set_ui_view_matrix(Low::Math::Matrix4x4 &p_Value)
+    {
+      _LOW_ASSERT(is_alive());
+      Low::Util::HandleLock<RenderView> l_Lock(get_id());
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_view_matrix
+      // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_view_matrix
+
+      // Set new value
+      TYPE_SOA(RenderView, ui_view_matrix, Low::Math::Matrix4x4) =
+          p_Value;
+
+      // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_view_matrix
+      // LOW_CODEGEN::END::CUSTOM:SETTER_ui_view_matrix
+
+      broadcast_observable(N(ui_view_matrix));
     }
 
     uint64_t RenderView::get_render_target_handle() const

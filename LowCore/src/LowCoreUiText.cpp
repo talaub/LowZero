@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowRendererUiDrawCommand.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -117,7 +118,12 @@ namespace Low {
           {
             Low::Util::HandleLock<Text> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
+            for (Renderer::UiDrawCommand i_DrawCommand :
+                 get_draw_commands()) {
+              if (i_DrawCommand.is_alive()) {
+                i_DrawCommand.destroy();
+              }
+            }
             // LOW_CODEGEN::END::CUSTOM:DESTROY
           }
 

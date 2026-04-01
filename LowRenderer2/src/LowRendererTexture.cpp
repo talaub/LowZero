@@ -609,24 +609,8 @@ namespace Low {
     {
       _LOW_ASSERT(is_alive());
 
-      if (get_gpu().is_alive()) {
-        get_gpu().serialize(p_Node["gpu"]);
-      }
-      if (get_resource().is_alive()) {
-        get_resource().serialize(p_Node["resource"]);
-      }
-      if (get_staging().is_alive()) {
-        get_staging().serialize(p_Node["staging"]);
-      }
-      Low::Util::Serial::serialize_enum(
-          p_Node["state"],
-          Low::Renderer::TextureStateEnumHelper::get_enum_id(),
-          static_cast<uint8_t>(get_state()));
-      p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
-      p_Node["name"] = get_name().c_str();
-
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
+      p_Node = Util::U64Id{get_unique_id()};
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -641,51 +625,11 @@ namespace Low {
     Texture::deserialize(Low::Util::Serial::Node &p_Node,
                          Low::Util::Handle p_Creator)
     {
-      Low::Util::UniqueId l_HandleUniqueId = 0ull;
-      if (p_Node["unique_id"]) {
-        l_HandleUniqueId = p_Node["unique_id"].as<uint64_t>();
-      } else if (p_Node["_unique_id"]) {
-        l_HandleUniqueId = Low::Util::string_to_hash(
-            p_Node["_unique_id"].as<Low::Util::String>());
-      }
-
-      Texture l_Handle = Texture::make(N(Texture), l_HandleUniqueId);
-
-      if (p_Node["gpu"]) {
-        l_Handle.set_gpu(
-            GpuTexture::deserialize(p_Node["gpu"], l_Handle.get_id())
-                .get_id());
-      }
-      if (p_Node["resource"]) {
-        l_Handle.set_resource(
-            TextureResource::deserialize(p_Node["resource"],
-                                         l_Handle.get_id())
-                .get_id());
-      }
-      if (p_Node["staging"]) {
-        l_Handle.set_staging(TextureStaging::deserialize(
-                                 p_Node["staging"], l_Handle.get_id())
-                                 .get_id());
-      }
-      if (p_Node["state"]) {
-        l_Handle.set_state(static_cast<Low::Renderer::TextureState>(
-            Low::Util::Serial::deserialize_enum(p_Node["state"])));
-      }
-      if (p_Node["references"]) {
-      }
-      if (p_Node["unique_id"]) {
-        l_Handle.set_unique_id(
-            p_Node["unique_id"].as<Low::Util::UniqueId>());
-      }
-      if (p_Node["name"]) {
-        l_Handle.set_name(p_Node["name"].as<Low::Util::Name>());
-      }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
+      return ResourceManager::find_asset<Texture>(
+          p_Node.as<Util::U64Id>());
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
-
-      return l_Handle;
     }
 
     void

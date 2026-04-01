@@ -1464,6 +1464,9 @@ namespace Low {
                 l_ProjectionMatrix * l_ViewMatrix;
 
             l_FrameData.uiViewProjectionMatrix = l_ViewProjection;
+
+            p_RenderView.set_ui_projection_matrix(l_ProjectionMatrix);
+            p_RenderView.set_ui_view_matrix(l_ViewMatrix);
           }
 
           l_FrameData.dimensions.x = p_RenderView.get_dimensions().x;

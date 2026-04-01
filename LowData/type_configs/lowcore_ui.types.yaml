@@ -45,12 +45,46 @@ types:
           - name: canvas
             type: Low::Renderer::UiCanvas
             handle: true
+      spawn_element:
+        return_type: Low::Core::UI::Element
+        return_handle: true
+        parameters:
+          - name: instance
+            type: Low::Core::UI::WidgetInstance
+            handle: true
+          - name: canvas
+            type: Low::Renderer::UiCanvas
+            handle: true
+          - name: descriptor
+            type: Low::Core::UI::ElementDescriptor
+          - name: parent
+            type: Low::Core::UI::Element
+            handle: true
+      fill_element_descriptor:
+        return_type: void
+        private: true
+        parameters:
+          - name: element
+            type: Low::Core::UI::Element
+            handle: true
+          - name: descriptor
+            type: Low::Core::UI::ElementDescriptor
       fill_content_from_instance:
         return_type: void
         parameters:
           - name: instance
             type: Low::Core::UI::WidgetInstance
             handle: true
+      serialize_element_descriptor:
+        return_type: void
+        private: true
+        constant: true
+        parameters:
+          - name: descriptor
+            type: Low::Core::UI::ElementDescriptor
+            const: true
+          - name: node
+            type: Low::Util::Serial::Node
 
   WidgetInstance:
     no_auto_serialize: true
@@ -113,6 +147,8 @@ types:
         parameters:
           - name: typeId
             type: uint16_t
+      destroy_with_hierarchy:
+        return_type: void
       add_component:
         expose_scripting: true
         return_type: void

@@ -121,7 +121,9 @@ namespace Low {
           {
             Low::Util::HandleLock<Image> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
+            if (get_render_object().is_alive()) {
+              get_render_object().destroy();
+            }
             // LOW_CODEGEN::END::CUSTOM:DESTROY
           }
 
