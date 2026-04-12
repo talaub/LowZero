@@ -12,12 +12,14 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererSS2DCanvas.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     Low::Util::Set<Low::Renderer::SS2DDrawCommand>
         Low::Renderer::SS2DDrawCommand::ms_Dirty;
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
@@ -79,6 +81,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -91,6 +94,7 @@ namespace Low {
       {
         Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -129,6 +133,7 @@ namespace Low {
 
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(
@@ -610,6 +615,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -714,6 +720,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -745,6 +752,7 @@ namespace Low {
       l_Handle.set_canvas_handle(get_canvas_handle());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -771,6 +779,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -787,6 +796,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -827,6 +837,7 @@ namespace Low {
                                  Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -844,6 +855,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_type
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_type
 
       return TYPE_SOA(SS2DDrawCommand, type, SS2DType);
@@ -854,12 +866,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_type
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_type
 
       // Set new value
       TYPE_SOA(SS2DDrawCommand, type, SS2DType) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_type
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_type
 
       broadcast_observable(N(type));
@@ -871,6 +885,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_position
 
       return TYPE_SOA(SS2DDrawCommand, position, Low::Math::Vector2);
@@ -901,6 +916,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_position
 
       if (get_position() != p_Value) {
@@ -912,6 +928,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_position
 
         broadcast_observable(N(position));
@@ -924,6 +941,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_half_extents
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_half_extents
 
       return TYPE_SOA(SS2DDrawCommand, half_extents,
@@ -955,6 +973,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_half_extents
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_half_extents
 
       if (get_half_extents() != p_Value) {
@@ -966,6 +985,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_half_extents
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_half_extents
 
         broadcast_observable(N(half_extents));
@@ -978,6 +998,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_rotation
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_rotation
 
       return TYPE_SOA(SS2DDrawCommand, rotation, float);
@@ -988,6 +1009,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_rotation
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_rotation
 
       if (get_rotation() != p_Value) {
@@ -998,6 +1020,7 @@ namespace Low {
         TYPE_SOA(SS2DDrawCommand, rotation, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_rotation
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_rotation
 
         broadcast_observable(N(rotation));
@@ -1010,6 +1033,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_color
 
       return TYPE_SOA(SS2DDrawCommand, color, Low::Math::Color);
@@ -1020,6 +1044,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_color
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_color
 
       if (get_color() != p_Value) {
@@ -1030,6 +1055,7 @@ namespace Low {
         TYPE_SOA(SS2DDrawCommand, color, Low::Math::Color) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_color
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_color
 
         broadcast_observable(N(color));
@@ -1042,6 +1068,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_corner_radius
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_corner_radius
 
       return TYPE_SOA(SS2DDrawCommand, corner_radius,
@@ -1054,6 +1081,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_corner_radius
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_corner_radius
 
       if (get_corner_radius() != p_Value) {
@@ -1065,6 +1093,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_corner_radius
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_corner_radius
 
         broadcast_observable(N(corner_radius));
@@ -1077,6 +1106,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uv_rect
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uv_rect
 
       return TYPE_SOA(SS2DDrawCommand, uv_rect, Low::Math::Vector4);
@@ -1087,6 +1117,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uv_rect
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uv_rect
 
       if (get_uv_rect() != p_Value) {
@@ -1098,6 +1129,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uv_rect
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_uv_rect
 
         broadcast_observable(N(uv_rect));
@@ -1110,6 +1142,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_sorting
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_z_sorting
 
       return TYPE_SOA(SS2DDrawCommand, z_sorting, uint32_t);
@@ -1120,6 +1153,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_sorting
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_sorting
 
       if (get_z_sorting() != p_Value) {
@@ -1131,6 +1165,7 @@ namespace Low {
         TYPE_SOA(SS2DDrawCommand, z_sorting, uint32_t) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_sorting
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_z_sorting
 
         broadcast_observable(N(z_sorting));
@@ -1143,6 +1178,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
 
       return TYPE_SOA(SS2DDrawCommand, uploaded, bool);
@@ -1158,12 +1194,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
 
       // Set new value
       TYPE_SOA(SS2DDrawCommand, uploaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
 
       broadcast_observable(N(uploaded));
@@ -1175,6 +1213,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_canvas_handle
 
       return TYPE_SOA(SS2DDrawCommand, canvas_handle, uint64_t);
@@ -1185,12 +1224,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas_handle
 
       // Set new value
       TYPE_SOA(SS2DDrawCommand, canvas_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_canvas_handle
 
       broadcast_observable(N(canvas_handle));
@@ -1199,6 +1240,7 @@ namespace Low {
     void SS2DDrawCommand::mark_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
       ms_Dirty.insert(get_id());
       // LOW_CODEGEN::END::CUSTOM:MARK_dirty
     }
@@ -1206,6 +1248,7 @@ namespace Low {
     void SS2DDrawCommand::mark_z_dirty()
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+
       SS2DCanvas l_Canvas = get_canvas_handle();
       l_Canvas.mark_z_dirty();
       // LOW_CODEGEN::END::CUSTOM:MARK_z_dirty
@@ -1217,6 +1260,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(SS2DDrawCommand, name, Low::Util::Name);
@@ -1227,12 +1271,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(SS2DDrawCommand, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1243,6 +1289,7 @@ namespace Low {
                                           SS2DType p_Type)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       SS2DDrawCommand l_DrawCommand = make(p_Name);
 
       l_DrawCommand.set_type(p_Type);
@@ -1258,6 +1305,7 @@ namespace Low {
     {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_radius
+
       return get_half_extents().x;
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_radius
     }
@@ -1266,6 +1314,7 @@ namespace Low {
     {
       Low::Util::HandleLock<SS2DDrawCommand> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_set_radius
+
       set_half_extents_x(p_Value);
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_set_radius
     }
@@ -1343,6 +1392,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

@@ -10,6 +10,7 @@ file(GLOB_RECURSE INCLUDES "include/*.h")
 file(GLOB CFLAT_SOURCES "${CFLAT_PATH}/*.cpp")
 file(GLOB CFLAT_INCLUDES "${CFLAT_PATH}/*.h")
 
+
 add_library(LowCore SHARED
   ${CFLAT_SOURCES}
   ${CFLAT_INCLUDES}
@@ -70,6 +71,7 @@ target_link_libraries(LowCore PRIVATE
   Recast
   Detour
   DetourCrowd
+  angelscript
   #assimp
 )
 function(mark_includes_as_system consumer thirdparty)

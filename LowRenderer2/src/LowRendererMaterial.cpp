@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowUtilVariant.h"
 
 #define SET_GPU_PROPERTY(type)                                       \
@@ -759,6 +760,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 

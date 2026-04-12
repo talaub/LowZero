@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "LowRendererUiDrawCommand.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -118,6 +117,7 @@ namespace Low {
           {
             Low::Util::HandleLock<Text> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
             for (Renderer::UiDrawCommand i_DrawCommand :
                  get_draw_commands()) {
               if (i_DrawCommand.is_alive()) {
@@ -540,6 +540,7 @@ namespace Low {
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
           // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
           // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
         }
 
@@ -795,6 +796,7 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
           return TYPE_SOA(
@@ -808,6 +810,7 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_draw_commands
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_draw_commands
 
           // Set new value
@@ -816,6 +819,7 @@ namespace Low {
               p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_draw_commands
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_draw_commands
 
           broadcast_observable(N(draw_commands));
@@ -879,6 +883,7 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_font
+
           if (p_Value == get_font()) {
             return;
           }
@@ -895,6 +900,7 @@ namespace Low {
             TYPE_SOA(Text, font, Low::Renderer::Font) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_font
+
             if (p_Value.is_alive()) {
               p_Value.reference(get_id());
             }
@@ -1080,6 +1086,7 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_full_dirty
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_full_dirty
 
           return TYPE_SOA(Text, full_dirty, bool);
@@ -1095,12 +1102,14 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_full_dirty
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_full_dirty
 
           // Set new value
           TYPE_SOA(Text, full_dirty, bool) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_full_dirty
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_full_dirty
 
           broadcast_observable(N(full_dirty));
@@ -1111,6 +1120,7 @@ namespace Low {
           if (!is_full_dirty()) {
             TYPE_SOA(Text, full_dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_full_dirty
+
             // LOW_CODEGEN::END::CUSTOM:MARK_full_dirty
           }
         }
@@ -1121,6 +1131,7 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:GETTER_dirty
 
           return TYPE_SOA(Text, dirty, bool);
@@ -1136,12 +1147,14 @@ namespace Low {
           Low::Util::HandleLock<Text> l_Lock(get_id());
 
           // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:PRESETTER_dirty
 
           // Set new value
           TYPE_SOA(Text, dirty, bool) = p_Value;
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dirty
+
           // LOW_CODEGEN::END::CUSTOM:SETTER_dirty
 
           broadcast_observable(N(dirty));
@@ -1152,6 +1165,7 @@ namespace Low {
           if (!is_dirty()) {
             TYPE_SOA(Text, dirty, bool) = true;
             // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dirty
+
             // LOW_CODEGEN::END::CUSTOM:MARK_dirty
           }
         }

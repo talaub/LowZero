@@ -843,6 +843,12 @@ namespace Low {
             Renderer::EditorImage::find_by_name(N(filetype_mesh));
         g_AssetTypeEditorImage[AssetType::Material] =
             Renderer::EditorImage::find_by_name(N(filetype_material));
+        g_AssetTypeEditorImage[AssetType::Script] =
+            Renderer::EditorImage::find_by_name(N(filetype_script));
+        g_AssetTypeEditorImage[AssetType::UiWidget] =
+            Renderer::EditorImage::find_by_name(N(filetype_uiwidget));
+        g_AssetTypeEditorImage[AssetType::Font] =
+            Renderer::EditorImage::find_by_name(N(filetype_font));
 
         // Load all of them
         for (auto it = g_AssetTypeEditorImage.begin();

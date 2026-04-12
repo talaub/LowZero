@@ -1,0 +1,32 @@
+module: LowCore
+namespace:
+  - Low
+  - Core
+  - Scripting
+dll_macro: LOW_CORE_API
+prefix: LowCoreScript
+types:
+  Module:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    scripting_expose: true
+    properties:
+      scripts:
+        type: Low::Util::List<uint64_t>
+        no_setter: true
+      as_module:
+        type: char*
+  Asset:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    scripting_expose: true
+    unique_id: true
+    properties:
+      module:
+        type: Low::Core::Scripting::Module
+        handle: true
+      source_path:
+        type: Low::Util::String
+        private_setter: true

@@ -263,3 +263,6 @@ namespace Low {
     } // namespace UI
   } // namespace Core
 } // namespace Low
+
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+// LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

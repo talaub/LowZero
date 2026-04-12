@@ -760,6 +760,28 @@ return ms_TypeId;
     t += line("}", --n);
   }
 
+  if (true) {
+    t += empty();
+    const l_MarkerName = `CUSTOM:NAMESPACE_AFTER_HEADER_CODE`;
+
+    const l_CustomBeginMarker = get_marker_begin(l_MarkerName);
+    const l_CustomEndMarker = get_marker_end(l_MarkerName);
+
+    const l_BeginMarkerIndex = find_begin_marker_end(l_OldCode, l_MarkerName);
+
+    let l_CustomCode = "";
+
+    if (l_BeginMarkerIndex >= 0) {
+      const l_EndMarkerIndex = find_end_marker_start(l_OldCode, l_MarkerName);
+
+      l_CustomCode = l_OldCode.substring(l_BeginMarkerIndex, l_EndMarkerIndex);
+    }
+    t += line(l_CustomBeginMarker);
+    t += l_CustomCode;
+    t += line(l_CustomEndMarker);
+    t += empty();
+  }
+
   const l_Formatted = format(p_Type.header_file_path, t);
 
   if (l_Formatted !== l_OldCode) {

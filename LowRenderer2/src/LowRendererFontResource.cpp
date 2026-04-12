@@ -420,6 +420,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -920,6 +921,7 @@ namespace Low {
     FontResource FontResource::find_by_path(Util::String p_Path)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_by_path
+
       for (auto it = ms_LivingInstances.begin();
            it != ms_LivingInstances.end(); ++it) {
         if (it->get_path() == p_Path) {

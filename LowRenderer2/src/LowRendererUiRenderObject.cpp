@@ -114,6 +114,7 @@ namespace Low {
       {
         Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         for (auto i_DrawCommand : get_draw_commands()) {
           i_DrawCommand.destroy();
         }
@@ -748,6 +749,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -1421,6 +1423,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_uploaded
 
       return TYPE_SOA(UiRenderObject, uploaded, bool);
@@ -1436,12 +1439,14 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_uploaded
 
       // Set new value
       TYPE_SOA(UiRenderObject, uploaded, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_uploaded
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_uploaded
 
       broadcast_observable(N(uploaded));
@@ -1453,6 +1458,7 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_slot
 
       return TYPE_SOA(UiRenderObject, slot, uint32_t);
@@ -1463,12 +1469,14 @@ namespace Low {
       Low::Util::HandleLock<UiRenderObject> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
 
       // Set new value
       TYPE_SOA(UiRenderObject, slot, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
 
       broadcast_observable(N(slot));

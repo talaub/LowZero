@@ -473,6 +473,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -622,6 +623,7 @@ namespace Low {
       p_Node["name"] = get_name().c_str();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       Prefab l_Parent(get_parent().get_id());
       p_Node["parent"] = 0;
       if (l_Parent.is_alive()) {

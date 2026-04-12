@@ -401,6 +401,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -536,6 +537,7 @@ namespace Low {
         p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         p_Node["prefab"] = 0;
         if (get_prefab().is_alive()) {
           p_Node["prefab"] =

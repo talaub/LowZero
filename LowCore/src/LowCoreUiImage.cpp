@@ -121,6 +121,7 @@ namespace Low {
           {
             Low::Util::HandleLock<Image> l_Lock(get_id());
             // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
             if (get_render_object().is_alive()) {
               get_render_object().destroy();
             }
@@ -415,6 +416,7 @@ namespace Low {
           ms_TypeId = Low::Util::Handle::register_type_info(
               IDENTIFIER, l_TypeInfo);
           // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
           // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
         }
 
@@ -551,6 +553,7 @@ namespace Low {
           p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
           if (get_texture().is_alive()) {
             p_Node["texture"] =
                 Util::U64Id{get_texture().get_unique_id()};
@@ -590,6 +593,7 @@ namespace Low {
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
           if (p_Node["texture"]) {
             l_Handle.set_texture(Util::find_handle_by_unique_id(
                 p_Node["texture"].as<Util::U64Id>().val));

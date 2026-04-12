@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include "LowRendererSS2DDrawCommand.h"
 #include "LowRendererTexture.h"
 #include "LowRendererBuffer.h"
@@ -16,6 +17,7 @@
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     struct LOW_RENDERER2_API SS2DCanvas : public Low::Util::Handle
@@ -202,11 +204,16 @@ namespace Low {
       static u32 create_page();
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer
 } // namespace Low
+
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+// LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

@@ -604,6 +604,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -759,6 +760,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node = Util::U64Id{get_unique_id()};
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -776,6 +778,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return ResourceManager::find_asset<Font>(
           p_Node.as<Util::U64Id>());
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -1019,6 +1022,7 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ascender
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ascender
 
       return TYPE_SOA(Font, ascender, float);
@@ -1029,12 +1033,14 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ascender
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ascender
 
       // Set new value
       TYPE_SOA(Font, ascender, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ascender
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_ascender
 
       broadcast_observable(N(ascender));
@@ -1046,6 +1052,7 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_descender
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_descender
 
       return TYPE_SOA(Font, descender, float);
@@ -1056,12 +1063,14 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_descender
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_descender
 
       // Set new value
       TYPE_SOA(Font, descender, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_descender
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_descender
 
       broadcast_observable(N(descender));
@@ -1073,6 +1082,7 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_line_height
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_line_height
 
       return TYPE_SOA(Font, line_height, float);
@@ -1083,12 +1093,14 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_line_height
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_line_height
 
       // Set new value
       TYPE_SOA(Font, line_height, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_line_height
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_line_height
 
       broadcast_observable(N(line_height));
@@ -1100,6 +1112,7 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_import_height
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_import_height
 
       return TYPE_SOA(Font, import_height, float);
@@ -1110,12 +1123,14 @@ namespace Low {
       Low::Util::HandleLock<Font> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_import_height
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_import_height
 
       // Set new value
       TYPE_SOA(Font, import_height, float) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_import_height
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_import_height
 
       broadcast_observable(N(import_height));
@@ -1242,6 +1257,7 @@ namespace Low {
     {
       Low::Util::HandleLock<Font> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_glyph
+
       return get_glyphs()[p_Glyph];
       // LOW_CODEGEN::END::CUSTOM:FUNCTION_find_glyph
     }
@@ -1250,6 +1266,7 @@ namespace Low {
     {
       Low::Util::HandleLock<Font> l_Lock(get_id());
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_find_glyph_uvrect
+
       Glyph &l_Glyph = find_glyph(p_Glyph);
       return Math::Vector4(l_Glyph.uvMin.x, l_Glyph.uvMin.y,
                            l_Glyph.uvMax.x, l_Glyph.uvMax.y);

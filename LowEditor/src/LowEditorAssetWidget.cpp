@@ -80,7 +80,8 @@ namespace Low {
               l_AssetType = AssetType::Flode;
             } else if (p_Watcher.subtype == "uiwidget") {
               l_AssetType = AssetType::UiWidget;
-            } else if (p_Watcher.extension == "cpp") {
+            } else if (p_Watcher.extension == "cpp" ||
+                       p_Watcher.extension == "as") {
               l_AssetType = AssetType::Script;
             }
 

@@ -13,6 +13,7 @@
 #include "LowCoreCameraSystem.h"
 
 #include "LowCoreInput.h"
+#include "LowCoreScriptAsset.h"
 
 #include "LowCoreUiElement.h"
 #include "LowCoreUiDisplay.h"
@@ -23,6 +24,8 @@
 #include "LowCoreUiTextSystem.h"
 #include "LowCoreUiViewSystem.h"
 #include "LowCoreUiWidgetAsset.h"
+
+#include "LowCoreScripting.h"
 
 #include <chrono>
 
@@ -72,6 +75,11 @@ namespace Low {
         }
 
         Renderer::check_window_resize(p_Delta);
+
+        if (l_FirstRun) {
+          ScriptAsset::initialize();
+          Scripting::initialize_as();
+        }
 
         Renderer::prepare_tick(p_Delta);
         System::Transform::tick(p_Delta, get_engine_state());

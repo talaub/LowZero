@@ -159,7 +159,6 @@ namespace Low {
                     Util::String(p_Event.path.string().c_str()));
 
                 if (!i_ImportedPath.empty()) {
-                  // TODO: Register?
                   Handle i_Handle =
                       i_Type.initializer(i_ImportedPath);
                   g_AssetRecords.emplace_back(

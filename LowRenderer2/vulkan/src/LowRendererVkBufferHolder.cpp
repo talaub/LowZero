@@ -12,6 +12,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowRendererVulkanBuffer.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -19,6 +20,7 @@ namespace Low {
   namespace Renderer {
     namespace Vulkan {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 BufferHolder::ms_TypeId = 0;
@@ -74,6 +76,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -86,6 +89,7 @@ namespace Low {
         {
           Low::Util::HandleLock<BufferHolder> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           BufferUtil::destroy_buffer(get());
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
@@ -125,6 +129,7 @@ namespace Low {
 
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
@@ -238,6 +243,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -339,6 +345,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -361,6 +368,7 @@ namespace Low {
         l_Handle.set_bf(get());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
         return l_Handle;
@@ -388,6 +396,7 @@ namespace Low {
         p_Node["name"] = get_name().c_str();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -411,6 +420,7 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
         return l_Handle;
@@ -453,6 +463,7 @@ namespace Low {
                                 Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -470,6 +481,7 @@ namespace Low {
         Low::Util::HandleLock<BufferHolder> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_bf
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_bf
 
         return TYPE_SOA(BufferHolder, bf, AllocatedBuffer);
@@ -480,12 +492,14 @@ namespace Low {
         Low::Util::HandleLock<BufferHolder> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_bf
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_bf
 
         // Set new value
         TYPE_SOA(BufferHolder, bf, AllocatedBuffer) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_bf
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_bf
 
         broadcast_observable(N(bf));
@@ -497,6 +511,7 @@ namespace Low {
         Low::Util::HandleLock<BufferHolder> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(BufferHolder, name, Low::Util::Name);
@@ -507,12 +522,14 @@ namespace Low {
         Low::Util::HandleLock<BufferHolder> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(BufferHolder, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
@@ -598,6 +615,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Vulkan

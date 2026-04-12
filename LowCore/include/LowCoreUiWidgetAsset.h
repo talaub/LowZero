@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include "LowCoreUiWidgetInstance.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
@@ -15,6 +16,7 @@ namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       struct ComponentDescriptor
       {
         u16 typeId;
@@ -226,12 +228,17 @@ namespace Low {
             Low::Util::Serial::Node &p_Node) const;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
   } // namespace Core
 } // namespace Low
+
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+// LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

@@ -108,6 +108,7 @@ namespace Low {
       {
         Low::Util::HandleLock<RenderObject> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         const u32 l_DrawCommandCount = get_draw_commands().size();
         for (auto it = get_draw_commands().begin();
              it != get_draw_commands().end(); ++it) {
@@ -546,6 +547,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 

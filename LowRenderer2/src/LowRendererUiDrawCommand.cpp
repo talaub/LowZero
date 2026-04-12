@@ -689,6 +689,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -999,6 +1000,7 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_slot
 
       return TYPE_SOA(UiDrawCommand, slot, uint32_t);
@@ -1009,12 +1011,14 @@ namespace Low {
       Low::Util::HandleLock<UiDrawCommand> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_slot
 
       // Set new value
       TYPE_SOA(UiDrawCommand, slot, uint32_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_slot
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_slot
 
       broadcast_observable(N(slot));
@@ -1479,6 +1483,7 @@ namespace Low {
                         Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make
+
       UiDrawCommand l_DrawCommand =
           UiDrawCommand::make(p_RenderObject.get_name());
 
@@ -1508,6 +1513,7 @@ namespace Low {
         Low::Renderer::GpuSubmesh p_Submesh)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_make_standalone
+
       UiDrawCommand l_DrawCommand =
           UiDrawCommand::make(N(StandaloneUIDC));
 

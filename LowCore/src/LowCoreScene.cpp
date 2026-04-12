@@ -339,6 +339,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -507,6 +508,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       Scene l_Scene = Scene::make(p_Node["name"].as<Util::Name>());
       l_Scene.set_unique_id(p_Node["unique_id"].as<Util::U64Id>());
 

@@ -1224,6 +1224,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -1652,6 +1653,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ui_camera_position
 
       return TYPE_SOA(RenderView, ui_camera_position,
@@ -1684,6 +1686,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_camera_position
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_camera_position
 
       if (get_ui_camera_position() != p_Value) {
@@ -1695,6 +1698,7 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_camera_position
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_ui_camera_position
 
         broadcast_observable(N(ui_camera_position));
@@ -1707,6 +1711,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_camera_zoom
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ui_camera_zoom
 
       return TYPE_SOA(RenderView, ui_camera_zoom, float);
@@ -1717,6 +1722,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_camera_zoom
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_camera_zoom
 
       if (get_ui_camera_zoom() != p_Value) {
@@ -1727,6 +1733,7 @@ namespace Low {
         TYPE_SOA(RenderView, ui_camera_zoom, float) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_camera_zoom
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_ui_camera_zoom
 
         broadcast_observable(N(ui_camera_zoom));
@@ -1739,6 +1746,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_projection_matrix
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ui_projection_matrix
 
       return TYPE_SOA(RenderView, ui_projection_matrix,
@@ -1751,6 +1759,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_projection_matrix
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_projection_matrix
 
       // Set new value
@@ -1758,6 +1767,7 @@ namespace Low {
                Low::Math::Matrix4x4) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_projection_matrix
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_ui_projection_matrix
 
       broadcast_observable(N(ui_projection_matrix));
@@ -1769,6 +1779,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ui_view_matrix
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ui_view_matrix
 
       return TYPE_SOA(RenderView, ui_view_matrix,
@@ -1780,6 +1791,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ui_view_matrix
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ui_view_matrix
 
       // Set new value
@@ -1787,6 +1799,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ui_view_matrix
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_ui_view_matrix
 
       broadcast_observable(N(ui_view_matrix));
@@ -2225,6 +2238,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ssao_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_ssao_image
 
       return TYPE_SOA(RenderView, ssao_image, Low::Renderer::Texture);
@@ -2235,6 +2249,7 @@ namespace Low {
       Low::Util::HandleLock<RenderView> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_ssao_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_ssao_image
 
       // Set new value
@@ -2242,6 +2257,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_ssao_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_ssao_image
 
       broadcast_observable(N(ssao_image));

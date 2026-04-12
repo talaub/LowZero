@@ -46,6 +46,11 @@ LowCore:
   Camera: 44
   WidgetAsset: 97
   WidgetInstance: 98
+  ScriptAsset: 99
+  Module: 100
+  ScriptModule: 101
+  Script: 102
+  Asset: 103
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

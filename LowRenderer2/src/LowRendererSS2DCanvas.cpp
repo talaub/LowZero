@@ -12,11 +12,13 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
     u16 SS2DCanvas::ms_TypeId = 0;
@@ -81,6 +83,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
       // LOW_CODEGEN::END::CUSTOM:MAKE
 
       return l_Handle;
@@ -93,6 +96,7 @@ namespace Low {
       {
         Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
         // LOW_CODEGEN::END::CUSTOM:DESTROY
       }
 
@@ -131,6 +135,7 @@ namespace Low {
 
       LOCK_PAGES_WRITE(l_PagesLock);
       // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
       ms_Capacity = Low::Util::Config::get_capacity(N(LowRenderer2),
@@ -463,6 +468,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -563,6 +569,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
       // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
       Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -595,6 +602,7 @@ namespace Low {
       l_Handle.set_dimensions_dirty(is_dimensions_dirty());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
       // LOW_CODEGEN::END::CUSTOM:DUPLICATE
 
       return l_Handle;
@@ -619,6 +627,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
 
@@ -635,6 +644,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return Low::Util::Handle::DEAD;
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
     }
@@ -675,6 +685,7 @@ namespace Low {
                             Low::Util::Name p_Observable)
     {
       // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
       // LOW_CODEGEN::END::CUSTOM:NOTIFY
     }
 
@@ -693,6 +704,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_draw_commands
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_draw_commands
 
       return TYPE_SOA(SS2DCanvas, draw_commands,
@@ -705,6 +717,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_out_image
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_out_image
 
       return TYPE_SOA(SS2DCanvas, out_image, Low::Renderer::Texture);
@@ -715,6 +728,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_out_image
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_out_image
 
       // Set new value
@@ -722,6 +736,7 @@ namespace Low {
           p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_out_image
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_out_image
 
       broadcast_observable(N(out_image));
@@ -733,6 +748,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions
 
       return TYPE_SOA(SS2DCanvas, dimensions, Low::Math::UVector2);
@@ -764,12 +780,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions
 
       // Set new value
       TYPE_SOA(SS2DCanvas, dimensions, Low::Math::UVector2) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions
 
       broadcast_observable(N(dimensions));
@@ -781,6 +799,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_desired_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_desired_dimensions
 
       return TYPE_SOA(SS2DCanvas, desired_dimensions,
@@ -812,6 +831,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_desired_dimensions
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_desired_dimensions
 
       if (get_desired_dimensions() != p_Value) {
@@ -823,6 +843,7 @@ namespace Low {
                  Low::Math::UVector2) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_desired_dimensions
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_desired_dimensions
 
         broadcast_observable(N(desired_dimensions));
@@ -836,6 +857,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_drawcommand_index_buffer
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_drawcommand_index_buffer
 
       return TYPE_SOA(SS2DCanvas, drawcommand_index_buffer,
@@ -848,6 +870,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_drawcommand_index_buffer
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_drawcommand_index_buffer
 
       // Set new value
@@ -855,6 +878,7 @@ namespace Low {
                Low::Renderer::Buffer) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_drawcommand_index_buffer
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_drawcommand_index_buffer
 
       broadcast_observable(N(drawcommand_index_buffer));
@@ -866,6 +890,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_backend_handle
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_backend_handle
 
       return TYPE_SOA(SS2DCanvas, backend_handle, uint64_t);
@@ -876,12 +901,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_backend_handle
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_backend_handle
 
       // Set new value
       TYPE_SOA(SS2DCanvas, backend_handle, uint64_t) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_backend_handle
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_backend_handle
 
       broadcast_observable(N(backend_handle));
@@ -893,6 +920,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_z_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_z_dirty
 
       return TYPE_SOA(SS2DCanvas, z_dirty, bool);
@@ -908,12 +936,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_z_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_z_dirty
 
       // Set new value
       TYPE_SOA(SS2DCanvas, z_dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_z_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_z_dirty
 
       broadcast_observable(N(z_dirty));
@@ -924,6 +954,7 @@ namespace Low {
       if (!is_z_dirty()) {
         TYPE_SOA(SS2DCanvas, z_dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_z_dirty
+
         // LOW_CODEGEN::END::CUSTOM:MARK_z_dirty
       }
     }
@@ -934,6 +965,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_dimensions_dirty
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_dimensions_dirty
 
       return TYPE_SOA(SS2DCanvas, dimensions_dirty, bool);
@@ -949,12 +981,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_dimensions_dirty
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_dimensions_dirty
 
       // Set new value
       TYPE_SOA(SS2DCanvas, dimensions_dirty, bool) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_dimensions_dirty
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_dimensions_dirty
 
       broadcast_observable(N(dimensions_dirty));
@@ -965,6 +999,7 @@ namespace Low {
       if (!is_dimensions_dirty()) {
         TYPE_SOA(SS2DCanvas, dimensions_dirty, bool) = true;
         // LOW_CODEGEN:BEGIN:CUSTOM:MARK_dimensions_dirty
+
         // LOW_CODEGEN::END::CUSTOM:MARK_dimensions_dirty
       }
     }
@@ -975,6 +1010,7 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
       return TYPE_SOA(SS2DCanvas, name, Low::Util::Name);
@@ -985,12 +1021,14 @@ namespace Low {
       Low::Util::HandleLock<SS2DCanvas> l_Lock(get_id());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
       // Set new value
       TYPE_SOA(SS2DCanvas, name, Low::Util::Name) = p_Value;
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
       // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
       broadcast_observable(N(name));
@@ -1074,6 +1112,7 @@ namespace Low {
     }
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
   } // namespace Renderer

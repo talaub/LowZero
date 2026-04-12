@@ -190,3 +190,6 @@ namespace Low {
     } // namespace Interface
   } // namespace Renderer
 } // namespace Low
+
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+// LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

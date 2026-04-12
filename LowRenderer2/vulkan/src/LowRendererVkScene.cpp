@@ -312,6 +312,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -611,6 +612,7 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_initialized
 
         return TYPE_SOA(Scene, initialized, bool);
@@ -626,12 +628,14 @@ namespace Low {
         Low::Util::HandleLock<Scene> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_initialized
 
         // Set new value
         TYPE_SOA(Scene, initialized, bool) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_initialized
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_initialized
 
         broadcast_observable(N(initialized));

@@ -8,11 +8,13 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Renderer {
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
     enum class SS2DType
     {
       Circle,
@@ -226,13 +228,18 @@ namespace Low {
       void set_canvas_handle(uint64_t p_Value);
 
       // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+
     public:
       static Low::Util::Set<Low::Renderer::SS2DDrawCommand> ms_Dirty;
       // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
     };
 
     // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+
     // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
   } // namespace Renderer
 } // namespace Low
+
+// LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+// LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

@@ -15,6 +15,7 @@ set(GLI_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 add_subdirectory(gli)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE) # supported by Assimp
 add_subdirectory(assimp EXCLUDE_FROM_ALL)
+add_subdirectory(angelscript/sdk/angelscript/projects/cmake)
 
 # Make everything PIC by default (safe on non-Windows)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

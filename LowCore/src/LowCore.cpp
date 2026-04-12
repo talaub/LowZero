@@ -3,6 +3,8 @@
 #include "LowCoreScene.h"
 #include "LowCoreRegion.h"
 #include "LowCoreEntity.h"
+#include "LowCoreScriptModule.h"
+#include "LowCoreScripting.h"
 #include "LowCoreTransform.h"
 #include "LowCoreDirectionalLight.h"
 #include "LowCorePointLight.h"
@@ -17,6 +19,8 @@
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreGameMode.h"
 #include "LowCoreCamera.h"
+
+#include "LowCoreScriptAsset.h"
 
 #include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
@@ -142,12 +146,19 @@ namespace Low {
       initialize_ui_component_types();
     }
 
+    static void initialize_scripting_types()
+    {
+      Scripting::Module::initialize();
+      Scripting::Module::make(N(low.misc));
+    }
+
     static void initialize_types()
     {
       initialize_asset_types();
       initialize_base_types();
       initialize_component_types();
       initialize_ui_types();
+      initialize_scripting_types();
     }
 
     static void load_prefabs_from_directory(Util::String p_Path)
@@ -316,16 +327,24 @@ namespace Low {
       UI::WidgetAsset::cleanup();
     }
 
+    static void cleanup_scripting_types()
+    {
+      ScriptAsset::cleanup();
+      Scripting::Module::cleanup();
+    }
+
     static void cleanup_types()
     {
       cleanup_component_types();
       cleanup_base_types();
       cleanup_asset_types();
       cleanup_ui_types();
+      cleanup_scripting_types();
     }
 
     void cleanup()
     {
+      Scripting::cleanup_as();
       Scripting::cleanup();
       GameLoop::cleanup();
       cleanup_types();

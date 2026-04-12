@@ -456,6 +456,7 @@ namespace Low {
       ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                         l_TypeInfo);
       // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
       // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
     }
 
@@ -610,6 +611,7 @@ namespace Low {
       _LOW_ASSERT(is_alive());
 
       // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
       p_Node = Util::U64Id{get_unique_id()};
       // LOW_CODEGEN::END::CUSTOM:SERIALIZER
     }
@@ -627,6 +629,7 @@ namespace Low {
     {
 
       // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
       return ResourceManager::find_asset<Texture>(
           p_Node.as<Util::U64Id>());
       // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
@@ -696,6 +699,7 @@ namespace Low {
 
       if (l_OldReferences != l_References) {
         // LOW_CODEGEN:BEGIN:CUSTOM:NEW_REFERENCE
+
         if (l_References > 0 &&
             get_state() == TextureState::UNLOADED) {
           if (get_name() == N(emperor_icon)) {

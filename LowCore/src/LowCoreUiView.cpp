@@ -699,6 +699,7 @@ namespace Low {
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
@@ -1275,6 +1276,7 @@ namespace Low {
         Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_canvas
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_canvas
 
         return TYPE_SOA(View, canvas, Low::Renderer::UiCanvas);
@@ -1285,12 +1287,14 @@ namespace Low {
         Low::Util::HandleLock<View> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_canvas
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_canvas
 
         // Set new value
         TYPE_SOA(View, canvas, Low::Renderer::UiCanvas) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_canvas
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_canvas
 
         broadcast_observable(N(canvas));
