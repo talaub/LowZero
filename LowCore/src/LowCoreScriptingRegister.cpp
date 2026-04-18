@@ -841,6 +841,22 @@ namespace Low {
         p_Engine->SetDefaultNamespace("");
       }
       // END REGISTER LOGGER
+      // BEGIN REGISTER INTERFACES
+      static void
+      register_ui_controller_interface(asIScriptEngine *p_Engine)
+      {
+        int r = 0;
+
+        r = p_Engine->RegisterInterface("UiController");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register interface UiController");
+
+        r = p_Engine->RegisterInterfaceMethod(
+            "UiController", "void on_click(UI::Element p_Element)");
+        LOW_ASSERT(r >= 0,
+                   "Failed to register UiController::on_click");
+      }
+      // END REGISTER INTERFACES
 
       static void register_base_types(asIScriptEngine *p_Engine)
       {
@@ -855,6 +871,11 @@ namespace Low {
         expose_logger(p_Engine);
         expose_handle(p_Engine);
         expose_runtime(p_Engine);
+      }
+
+      void register_interfaces(asIScriptEngine *p_Engine)
+      {
+        register_ui_controller_interface(p_Engine);
       }
     } // namespace Scripting
   } // namespace Core

@@ -2,10 +2,8 @@
 
 #include <algorithm>
 
-#include "LowCoreScripting.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
-#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -14,8 +12,8 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
 #include "LowUtilAssetManager.h"
+#include "LowCoreScripting.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {

@@ -100,7 +100,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
+        l_Handle.set_widget_instance(Util::Handle::DEAD);
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -353,6 +353,37 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: canvas
+        }
+        {
+          // Property: widget_instance
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(widget_instance);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Element::Data, widget_instance);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Element l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Element> l_HandleLock(l_Handle);
+            l_Handle.get_widget_instance();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Element, widget_instance, uint64_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Element l_Handle = p_Handle.get_id();
+            l_Handle.set_widget_instance(*(uint64_t *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Element l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Element> l_HandleLock(l_Handle);
+            *((uint64_t *)p_Data) = l_Handle.get_widget_instance();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: widget_instance
         }
         {
           // Property: unique_id
@@ -1012,6 +1043,33 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_canvas
 
         broadcast_observable(N(canvas));
+      }
+
+      uint64_t Element::get_widget_instance() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_widget_instance
+        // LOW_CODEGEN::END::CUSTOM:GETTER_widget_instance
+
+        return TYPE_SOA(Element, widget_instance, uint64_t);
+      }
+      void Element::set_widget_instance(uint64_t p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Element> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_widget_instance
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_widget_instance
+
+        // Set new value
+        TYPE_SOA(Element, widget_instance, uint64_t) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_widget_instance
+        // LOW_CODEGEN::END::CUSTOM:SETTER_widget_instance
+
+        broadcast_observable(N(widget_instance));
       }
 
       Low::Util::UniqueId Element::get_unique_id() const

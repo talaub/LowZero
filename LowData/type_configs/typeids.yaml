@@ -51,6 +51,10 @@ LowCore:
   ScriptModule: 101
   Script: 102
   Asset: 103
+  Controller: 104
+  ControllerInstance: 105
+  Class: 106
+  ClassInstance: 107
 LowRenderer2:
   GraphicsPipeline: 32
   Pipeline: 45

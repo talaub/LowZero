@@ -1152,6 +1152,11 @@ static void LowCore_Element_destruct(Low::Core::UI::Element *p_Memory)
   using namespace Low::Core::UI;
   p_Memory->~Element();
 }
+static Low::Core::UI::Element
+LowCore_Element_genfindbyname(Low::Util::Name p_Name)
+{
+  return Low::Core::UI::Element::find_by_name(p_Name);
+}
 static u32 LowCore_Element_living_count()
 {
   return Low::Core::UI::Element::living_count();
@@ -1162,6 +1167,10 @@ static u32 LowCore_Element_living_count()
 static void expose_LowCore_Element(asIScriptEngine *p_Engine)
 {
   int r = 0;
+  r = p_Engine->SetDefaultNamespace("UI");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to set namespace for type Low::Core::UI::Element.");
   r = p_Engine->RegisterObjectType(
       "Element", sizeof(Low::Core::UI::Element),
       asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);
@@ -1237,12 +1246,21 @@ static void expose_LowCore_Element(asIScriptEngine *p_Engine)
   LOW_ASSERT(r >= 0, "Failed to expose property setter for name of "
                      "Low::Core::UI::Element.");
 
-  r = p_Engine->SetDefaultNamespace("Element");
-  LOW_ASSERT(r >= 0,
-             "Failed to set namespace for Low::Core::UI::Element.");
+  r = p_Engine->SetDefaultNamespace("");
+  LOW_ASSERT(
+      r >= 0,
+      "Failed to reset namespace after Low::Core::UI::Element.");
+
+  r = p_Engine->SetDefaultNamespace("UI::Element");
+  r = p_Engine->RegisterGlobalFunction(
+      "Element find_by_name(Name)",
+      asFUNCTION(LowCore_Element_genfindbyname), asCALL_CDECL);
+  LOW_ASSERT(r >= 0, "Failed to expose generic find by name function "
+                     "for Low::Core::UI::Element.");
   r = p_Engine->SetDefaultNamespace("");
   LOW_ASSERT(r >= 0, "Failed to reset default namespace.");
   // LOW_CODEGEN:BEGIN:CUSTOM:LOWCORE:ELEMENT:EXPOSE
+  LOW_LOG_DEBUG << "Registered ELEMENT" << LOW_LOG_END;
   // LOW_CODEGEN::END::CUSTOM:LOWCORE:ELEMENT:EXPOSE
 }
 
@@ -1431,13 +1449,13 @@ static void expose_LowCore_Display(asIScriptEngine *p_Engine)
              "Low::Core::UI::Component::Display.");
 
   r = p_Engine->RegisterObjectMethod(
-      "Display", "Element get_element() const property",
+      "Display", "UI::Element get_element() const property",
       asMETHOD(Low::Core::UI::Component::Display, get_element),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for element "
                      "of Low::Core::UI::Component::Display.");
   r = p_Engine->RegisterObjectMethod(
-      "Display", "void set_element(Element) property",
+      "Display", "void set_element(UI::Element) property",
       asMETHOD(Low::Core::UI::Component::Display, set_element),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for element "
@@ -1569,13 +1587,13 @@ static void expose_LowCore_Text(asIScriptEngine *p_Engine)
                      "Low::Core::UI::Component::Text.");
 
   r = p_Engine->RegisterObjectMethod(
-      "Text", "Element get_element() const property",
+      "Text", "UI::Element get_element() const property",
       asMETHOD(Low::Core::UI::Component::Text, get_element),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property getter for element "
                      "of Low::Core::UI::Component::Text.");
   r = p_Engine->RegisterObjectMethod(
-      "Text", "void set_element(Element) property",
+      "Text", "void set_element(UI::Element) property",
       asMETHOD(Low::Core::UI::Component::Text, set_element),
       asCALL_THISCALL);
   LOW_ASSERT(r >= 0, "Failed to expose property setter for element "

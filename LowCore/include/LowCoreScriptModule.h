@@ -8,7 +8,6 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-struct asIScriptModule;
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -25,6 +24,8 @@ namespace Low {
         public:
           Low::Util::List<uint64_t> scripts;
           char *as_module;
+          Low::Util::List<uint64_t> classes;
+          uint32_t reload_index;
           Low::Util::List<char *> ticking_functions;
           Low::Util::Name name;
 
@@ -153,11 +154,17 @@ namespace Low {
         char *get_as_module() const;
         void set_as_module(char *p_Value);
 
+        Low::Util::List<uint64_t> &get_classes() const;
+
+        uint32_t get_reload_index() const;
+        void set_reload_index(uint32_t p_Value);
+
         Low::Util::List<char *> &get_ticking_functions() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
+        uint64_t find_class_by_name(Low::Util::Name p_Name);
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -182,4 +189,9 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+namespace Low {
+  namespace Core {
+    typedef Scripting::Module ScriptModule;
+  }
+} // namespace Low
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

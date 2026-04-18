@@ -68,6 +68,9 @@ namespace Low {
             l_Handle, WidgetAsset, content,
             Low::Util::List<Low::Core::UI::ElementDescriptor>))
             Low::Util::List<Low::Core::UI::ElementDescriptor>();
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetAsset, controller,
+                                   Low::Core::UI::Controller))
+            Low::Core::UI::Controller();
         ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
@@ -271,6 +274,41 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: path
+        }
+        {
+          // Property: controller
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(controller);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, controller);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
+          l_PropertyInfo.handleType =
+              Low::Core::UI::Controller::type_id();
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.get_controller();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, controller,
+                Low::Core::UI::Controller);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.set_controller(
+                *(Low::Core::UI::Controller *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((Low::Core::UI::Controller *)p_Data) =
+                l_Handle.get_controller();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: controller
         }
         {
           // Property: name
@@ -845,6 +883,36 @@ namespace Low {
         broadcast_observable(N(path));
       }
 
+      Low::Core::UI::Controller WidgetAsset::get_controller() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_controller
+        // LOW_CODEGEN::END::CUSTOM:GETTER_controller
+
+        return TYPE_SOA(WidgetAsset, controller,
+                        Low::Core::UI::Controller);
+      }
+      void
+      WidgetAsset::set_controller(Low::Core::UI::Controller p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, controller, Low::Core::UI::Controller) =
+            p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller
+        // LOW_CODEGEN::END::CUSTOM:SETTER_controller
+
+        broadcast_observable(N(controller));
+      }
+
       Low::Util::Name WidgetAsset::get_name() const
       {
         _LOW_ASSERT(is_alive());
@@ -928,6 +996,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn_instance
         WidgetInstance l_Instance = WidgetInstance::make(get_name());
 
+        if (get_controller().is_alive()) {
+          l_Instance.set_controller_instance(
+              get_controller().spawn_instance());
+        }
+
         Element l_RootElement = Element::make(N(root), p_Canvas);
         Component::Display l_RootDisplay =
             Component::Display::make(l_RootElement);
@@ -935,9 +1008,12 @@ namespace Low {
         l_Instance.set_root(l_RootElement);
 
         for (ElementDescriptor &i_ElementDescriptor : get_content()) {
-          l_Instance.get_elements().push_back(
+          Element i_Element =
               spawn_element(l_Instance, p_Canvas, i_ElementDescriptor,
-                            l_RootElement));
+                            l_RootElement);
+          i_Element.set_widget_instance(l_Instance.get_id());
+
+          l_Instance.get_elements().push_back(i_Element);
         }
 
         return l_Instance;

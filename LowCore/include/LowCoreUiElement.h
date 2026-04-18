@@ -34,6 +34,7 @@ namespace Low {
           Low::Core::UI::View view;
           bool click_passthrough;
           Low::Renderer::UiCanvas canvas;
+          uint64_t widget_instance;
           Low::Util::UniqueId unique_id;
           Low::Util::Name name;
 
@@ -172,6 +173,9 @@ namespace Low {
         void toggle_click_passthrough();
 
         Low::Renderer::UiCanvas get_canvas() const;
+
+        uint64_t get_widget_instance() const;
+        void set_widget_instance(uint64_t p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
 

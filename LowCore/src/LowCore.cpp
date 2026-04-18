@@ -20,7 +20,9 @@
 #include "LowCoreGameMode.h"
 #include "LowCoreCamera.h"
 
+#include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
+#include "LowCoreScriptClassInstance.h"
 
 #include "LowCoreUiView.h"
 #include "LowCoreUiElement.h"
@@ -29,6 +31,8 @@
 #include "LowCoreUiText.h"
 #include "LowCoreUiWidgetAsset.h"
 #include "LowCoreUiWidgetInstance.h"
+#include "LowCoreUiController.h"
+#include "LowCoreUiControllerInstance.h"
 
 #include "LowRenderer.h"
 
@@ -142,6 +146,8 @@ namespace Low {
       UI::View::initialize();
       UI::WidgetAsset::initialize();
       UI::WidgetInstance::initialize();
+      UI::Controller::initialize();
+      UI::ControllerInstance::initialize();
 
       initialize_ui_component_types();
     }
@@ -149,6 +155,8 @@ namespace Low {
     static void initialize_scripting_types()
     {
       Scripting::Module::initialize();
+      ScriptClass::initialize();
+      Scripting::ClassInstance::initialize();
       Scripting::Module::make(N(low.misc));
     }
 
@@ -325,11 +333,16 @@ namespace Low {
       UI::View::cleanup();
       UI::Element::cleanup();
       UI::WidgetAsset::cleanup();
+
+      UI::ControllerInstance::initialize();
+      UI::Controller::initialize();
     }
 
     static void cleanup_scripting_types()
     {
       ScriptAsset::cleanup();
+      Scripting::ClassInstance::cleanup();
+      ScriptClass::cleanup();
       Scripting::Module::cleanup();
     }
 

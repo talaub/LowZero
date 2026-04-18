@@ -293,7 +293,16 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Type.api_file = `${i_Type.module}Api.h`;
     i_Type.scripting_name = i_TypeName;
-    i_Type.scripting_namespace = "";
+    if (!i_Type.scripting_namespace) {
+      i_Type.scripting_namespace = "";
+    }
+
+    i_Type.scripting_static_namespace = i_Type.scripting_namespace;
+    if (i_Type.scripting_namespace.length > 0){
+      i_Type.scripting_static_namespace += "::";
+    }
+    i_Type.scripting_static_namespace += `${i_Type.name}s`
+
     i_Type.identifier = `${i_Type.module}:${i_Type.name}`
 
     i_Type.full_scripting_string = i_Type.scripting_name
@@ -939,7 +948,8 @@ function insert_type_into_db(p_Type, db) {
     component: !!p_Type.component,
     private_make: !!p_Type.private_make,
     ui_component: !!p_Type.ui_component,
-    any_component_type: p_Type.component || p_Type.ui_component
+    any_component_type: p_Type.component || p_Type.ui_component,
+    scripting_static_namespace: p_Type.scripting_static_namespace,
   }
 
   for (let i_Prop of Object.values(p_Type.properties)) {

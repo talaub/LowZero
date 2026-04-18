@@ -1,6 +1,8 @@
 #include "LowCoreTransformSystem.h"
 
+#include "LowCoreUiWidgetInstance.h"
 #include "LowUtilAssert.h"
+#include "LowUtilEnums.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -54,6 +56,21 @@ namespace Low {
               set_hovered_element(l_HoveredDisplay.get_element());
             } else {
               set_hovered_element(0);
+            }
+
+            if (Input::mouse_button_down(Util::MouseButton::LEFT)) {
+              Element l_Element = get_hovered_element();
+              if (l_Element.is_alive()) {
+                WidgetInstance l_WidgetInstance =
+                    l_Element.get_widget_instance();
+                if (l_WidgetInstance.is_alive()) {
+                  ControllerInstance l_ControllerInstance =
+                      l_WidgetInstance.get_controller_instance();
+                  if (l_ControllerInstance.is_alive()) {
+                    l_ControllerInstance.handle_click(l_Element);
+                  }
+                }
+              }
             }
           }
 

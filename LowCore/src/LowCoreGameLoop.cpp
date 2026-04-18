@@ -66,10 +66,8 @@ namespace Low {
 
       static void execute_ticks(float p_Delta)
       {
-        if (g_Frames == 180) {
-          // Scripting::test_as();
-        }
         static bool l_FirstRun = true;
+        static bool l_FirstRunInPlayMode = true;
 
         Util::tick(p_Delta);
 
@@ -78,6 +76,12 @@ namespace Low {
         }
 
         Renderer::check_window_resize(p_Delta);
+
+        if (l_FirstRunInPlayMode &&
+            get_engine_state() == Util::EngineState::PLAYING) {
+          l_FirstRunInPlayMode = false;
+          // UI::WidgetAsset::living_instances()[0].spawn_instance(Renderer::get_game_renderview().get_i)
+        }
 
         if (l_FirstRun) {
           ScriptAsset::initialize();
@@ -263,6 +267,12 @@ namespace Low {
         Renderer::UiCanvas l_Canvas =
             Renderer::UiCanvas::make(N(TestCanvas));
         Renderer::get_game_renderview().add_ui_canvas(l_Canvas);
+
+        if (1) {
+          // TODO: Remove, this is test code
+          UI::WidgetAsset::living_instances()[0].spawn_instance(
+              l_Canvas);
+        }
 
         if (0) {
           using namespace Low::Renderer;

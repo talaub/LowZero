@@ -6,6 +6,69 @@ namespace:
 dll_macro: LOW_CORE_API
 prefix: LowCoreUi
 types:
+  Controller:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    properties:
+      value:
+        type: ControllerValue
+      type:
+        type: ControllerType
+        private_setter: true
+        no_ref: true
+    functions:
+      make_code:
+        static: true
+        return_type: Low::Core::UI::Controller
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+      make_script:
+        static: true
+        return_type: Low::Core::UI::Controller
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: class
+            type: Low::Core::Scripting::Class
+            handle: true
+      spawn_instance:
+        return_type: Low::Core::UI::ControllerInstance
+        return_handle: true
+      find_by_scriptclass:
+        static: true
+        return_type: Low::Core::UI::Controller
+        return_handle: true
+        parameters:
+          - name: scriptClass
+            type: Low::Core::Scripting::Class
+            handle: true
+      is_script_controller:
+        return_type: bool
+        constant: true
+        const: true
+      update_instances:
+        return_type: void
+  ControllerInstance:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    properties:
+      value:
+        type: ControllerInstanceValue
+      controller:
+        type: uint64_t
+    functions:
+      handle_click:
+        return_type: void
+        parameters:
+          - name: element
+            type: Low::Core::UI::Element
+            handle: true
   WidgetAsset:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -23,6 +86,9 @@ types:
       path:
         type: Low::Util::String
         private_setter: true
+      controller:
+        type: Low::Core::UI::Controller
+        handle: true
     functions:
       parse_content:
         private: true
@@ -98,6 +164,9 @@ types:
       elements:
         type: Low::Util::List<Low::Core::UI::Element>
         no_setter: true
+      controller_instance:
+        type: Low::Core::UI::ControllerInstance
+        handle: true
 
   View:
     unique_id: true
@@ -206,6 +275,7 @@ types:
     scripting_expose: true
     unique_id: true
     private_make: true
+    scripting_namespace: UI
     header_imports:
       - LowCoreUiView.h
       - LowRendererUiCanvas.h
@@ -228,6 +298,8 @@ types:
         private_setter: true
         skip_serialization: true
         skip_deserialization: true
+      widget_instance:
+        type: uint64_t
     functions:
       make:
         static: true

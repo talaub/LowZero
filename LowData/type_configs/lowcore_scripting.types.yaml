@@ -17,9 +17,20 @@ types:
         no_setter: true
       as_module:
         type: char*
+      classes:
+        type: Low::Util::List<uint64_t>
+        no_setter: true
+      reload_index:
+        type: uint32_t
       ticking_functions:
         type: Low::Util::List<char*>
         no_setter: true
+    functions:
+      find_class_by_name:
+        return_type: uint64_t
+        parameters:
+          - name: name
+            type: Low::Util::Name
   Asset:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -38,3 +49,56 @@ types:
         return_type: Low::Util::String
         constant: true
         const: true
+  Class:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    properties:
+      module:
+        type: Low::Core::Scripting::Module
+        handle: true
+      as_class:
+        type: char*
+        getter_name: as_class
+      reload_index:
+        type: uint32_t
+    functions:
+      needs_refresh:
+        return_type: bool
+      is_valid:
+        return_type: bool
+      spawn_instance:
+        return_type: Low::Core::Scripting::ClassInstance
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+  ClassInstance:
+    no_auto_serialize: true
+    no_auto_deserialize: true
+    no_auto_duplicate: true
+    private_make: true
+    properties:
+      script_class:
+        type: uint64_t
+      reload_index:
+        type: uint32_t
+      ptr:
+        type: char*
+        getter_name: _ptr
+        private_getter: true
+    functions:
+      needs_refresh:
+        return_type: bool
+      get_ptr:
+        return_type: char*
+      make:
+        static: true
+        return_type: Low::Core::Scripting::ClassInstance
+        return_handle: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+          - name: scriptClass
+            type: Low::Core::Scripting::Class
+            handle: true

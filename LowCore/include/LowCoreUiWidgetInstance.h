@@ -10,6 +10,7 @@
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 
 #include "LowCoreUiElement.h"
+#include "LowCoreUiController.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -27,6 +28,7 @@ namespace Low {
         public:
           Low::Core::UI::Element root;
           Low::Util::List<Low::Core::UI::Element> elements;
+          Low::Core::UI::ControllerInstance controller_instance;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -154,6 +156,11 @@ namespace Low {
         void set_root(Low::Core::UI::Element p_Value);
 
         Low::Util::List<Low::Core::UI::Element> &get_elements() const;
+
+        Low::Core::UI::ControllerInstance
+        get_controller_instance() const;
+        void set_controller_instance(
+            Low::Core::UI::ControllerInstance p_Value);
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

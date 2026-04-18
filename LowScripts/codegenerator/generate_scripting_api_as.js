@@ -65,6 +65,9 @@ function generate_type_api(p_Type, db) {
     t += line(`static ${l_TypeString} ${TYPE_PREFIX}_genmake(Low::Util::Name p_Name){`)
     t += line(`return ${l_TypeString}::make(p_Name);`);
     t += line(`}`)
+  }
+
+  if (!p_Type.any_component_type) {
     t += line(`static ${l_TypeString} ${TYPE_PREFIX}_genfindbyname(Low::Util::Name p_Name){`)
     t += line(`return ${l_TypeString}::find_by_name(p_Name);`);
     t += line(`}`)
@@ -116,6 +119,10 @@ function generate_type_api(p_Type, db) {
 
   t += line(`static void expose_${TYPE_PREFIX}(asIScriptEngine* p_Engine) {`)
   t += line(`int r = 0;`);
+  if (p_Type.scripting_namespace.length > 0){
+    t += line(`r = p_Engine->SetDefaultNamespace("${p_Type.scripting_namespace}");`);
+      t += line(`LOW_ASSERT(r >= 0, "Failed to set namespace for type ${l_TypeString}.");`)
+  }
   t += line(`r = p_Engine->RegisterObjectType("${p_Type.scripting_name}", sizeof(${l_TypeString}), asOBJ_VALUE | asOBJ_APP_CLASS_CDAK);`)
   t += line(`LOW_ASSERT(r >= 0, "Failed to expose ${l_TypeString} type.");`)
   t += empty();
@@ -185,14 +192,19 @@ function generate_type_api(p_Type, db) {
     }
   }
   t += empty();
+  if (p_Type.scripting_namespace.length > 0){
+    t += line(`r = p_Engine->SetDefaultNamespace("");`);
+      t += line(`LOW_ASSERT(r >= 0, "Failed to reset namespace after ${l_TypeString}.");`)
+  }
+  t += empty();
 
   if (p_Type.scripting_namespace.length > 0) {
     t += line(`r = p_Engine->SetDefaultNamespace("${p_Type.full_scripting_string}");`);
   }
   else {
     t += line(`r = p_Engine->SetDefaultNamespace("${p_Type.scripting_name}");`);
+    t += line(`LOW_ASSERT(r >= 0, "Failed to set namespace for ${l_TypeString}.");`)
   }
-  t += line(`LOW_ASSERT(r >= 0, "Failed to set namespace for ${l_TypeString}.");`)
 
   if (p_Type.any_component_type) {
 
@@ -200,6 +212,8 @@ function generate_type_api(p_Type, db) {
     t += line(`r = p_Engine->RegisterGlobalFunction("${p_Type.scripting_name} make(Name)", asFUNCTION(${TYPE_PREFIX}_genmake), asCALL_CDECL);`)
     t += line(`LOW_ASSERT(r >= 0, "Failed to expose generic make function for ${l_TypeString}.");`)
 
+  }
+  if (!p_Type.any_component_type){
     t += line(`r = p_Engine->RegisterGlobalFunction("${p_Type.scripting_name} find_by_name(Name)", asFUNCTION(${TYPE_PREFIX}_genfindbyname), asCALL_CDECL);`)
     t += line(`LOW_ASSERT(r >= 0, "Failed to expose generic find by name function for ${l_TypeString}.");`)
   }

@@ -1,4 +1,4 @@
-#include "LowCoreUiWidgetInstance.h"
+#include "LowCoreUiControllerInstance.h"
 
 #include <algorithm>
 
@@ -12,38 +12,40 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
-
+#include "LowCoreUiElement.h"
+#include "LowCoreUiController.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
 namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      u16 WidgetInstance::ms_TypeId = 0;
+      u16 ControllerInstance::ms_TypeId = 0;
       const Low::Util::TypeIdentifier
-          WidgetInstance::IDENTIFIER(LOW_NAME(1181529166),
-                                     LOW_NAME(205868524));
-      uint32_t WidgetInstance::ms_Capacity = 0u;
-      uint32_t WidgetInstance::ms_PageSize = 0u;
-      Low::Util::SharedMutex WidgetInstance::ms_LivingMutex;
-      Low::Util::SharedMutex WidgetInstance::ms_PagesMutex;
+          ControllerInstance::IDENTIFIER(LOW_NAME(1181529166),
+                                         LOW_NAME(1971304196));
+      uint32_t ControllerInstance::ms_Capacity = 0u;
+      uint32_t ControllerInstance::ms_PageSize = 0u;
+      Low::Util::SharedMutex ControllerInstance::ms_LivingMutex;
+      Low::Util::SharedMutex ControllerInstance::ms_PagesMutex;
       Low::Util::UniqueLock<Low::Util::SharedMutex>
-          WidgetInstance::ms_PagesLock(WidgetInstance::ms_PagesMutex,
-                                       std::defer_lock);
-      Low::Util::List<WidgetInstance>
-          WidgetInstance::ms_LivingInstances;
+          ControllerInstance::ms_PagesLock(
+              ControllerInstance::ms_PagesMutex, std::defer_lock);
+      Low::Util::List<ControllerInstance>
+          ControllerInstance::ms_LivingInstances;
       Low::Util::List<Low::Util::Instances::Page *>
-          WidgetInstance::ms_Pages;
+          ControllerInstance::ms_Pages;
 
-      Low::Util::Handle WidgetInstance::_make(Low::Util::Name p_Name)
+      Low::Util::Handle
+      ControllerInstance::_make(Low::Util::Name p_Name)
       {
         return make(p_Name).get_id();
       }
 
-      WidgetInstance WidgetInstance::make(Low::Util::Name p_Name)
+      ControllerInstance
+      ControllerInstance::make(Low::Util::Name p_Name)
       {
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -51,28 +53,21 @@ namespace Low {
         uint32_t l_Index =
             create_instance(l_PageIndex, l_SlotIndex, l_PageLock);
 
-        WidgetInstance l_Handle;
+        ControllerInstance l_Handle;
         l_Handle.m_Data.m_Index = l_Index;
         l_Handle.m_Data.m_Generation =
             ms_Pages[l_PageIndex]->slots[l_SlotIndex].m_Generation;
-        l_Handle.m_Data.m_Type = WidgetInstance::ms_TypeId;
+        l_Handle.m_Data.m_Type = ControllerInstance::ms_TypeId;
 
         l_PageLock.unlock();
 
-        Low::Util::HandleLock<WidgetInstance> l_HandleLock(l_Handle);
+        Low::Util::HandleLock<ControllerInstance> l_HandleLock(
+            l_Handle);
 
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetInstance, root,
-                                   Low::Core::UI::Element))
-            Low::Core::UI::Element();
-        new (ACCESSOR_TYPE_SOA_PTR(
-            l_Handle, WidgetInstance, elements,
-            Low::Util::List<Low::Core::UI::Element>))
-            Low::Util::List<Low::Core::UI::Element>();
-        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetInstance,
-                                   controller_instance,
-                                   Low::Core::UI::ControllerInstance))
-            Low::Core::UI::ControllerInstance();
-        ACCESSOR_TYPE_SOA(l_Handle, WidgetInstance, name,
+        new (ACCESSOR_TYPE_SOA_PTR(l_Handle, ControllerInstance,
+                                   value, ControllerInstanceValue))
+            ControllerInstanceValue();
+        ACCESSOR_TYPE_SOA(l_Handle, ControllerInstance, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
         l_Handle.set_name(p_Name);
@@ -84,22 +79,18 @@ namespace Low {
         }
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
-
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
       }
 
-      void WidgetInstance::destroy()
+      void ControllerInstance::destroy()
       {
         LOW_ASSERT(is_alive(), "Cannot destroy dead object");
 
         {
-          Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+          Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
-
-          get_root().destroy_with_hierarchy();
-
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -131,18 +122,17 @@ namespace Low {
         l_LivingLock.unlock();
       }
 
-      void WidgetInstance::initialize()
+      void ControllerInstance::initialize()
       {
         const Low::Util::TypeIdentifier l_IdentifierNames(
-            N(LowCore), N(WidgetInstance));
+            N(LowCore), N(ControllerInstance));
 
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
-
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity = Low::Util::Config::get_capacity(
-            N(LowCore), N(WidgetInstance));
+            N(LowCore), N(ControllerInstance));
 
         ms_PageSize = Low::Math::Util::clamp(
             Low::Math::Util::next_power_of_two(ms_Capacity), 8, 32);
@@ -152,7 +142,7 @@ namespace Low {
             Low::Util::Instances::Page *i_Page =
                 new Low::Util::Instances::Page;
             Low::Util::Instances::initialize_page(
-                i_Page, WidgetInstance::Data::get_size(),
+                i_Page, ControllerInstance::Data::get_size(),
                 ms_PageSize);
             ms_Pages.push_back(i_Page);
             l_Capacity += ms_PageSize;
@@ -162,131 +152,98 @@ namespace Low {
         LOCK_UNLOCK(l_PagesLock);
 
         Low::Util::RTTI::TypeInfo l_TypeInfo;
-        l_TypeInfo.name = N(WidgetInstance);
+        l_TypeInfo.name = N(ControllerInstance);
         l_TypeInfo.typeId = ms_TypeId;
         l_TypeInfo.get_capacity = &get_capacity;
-        l_TypeInfo.is_alive = &WidgetInstance::is_alive;
-        l_TypeInfo.destroy = &WidgetInstance::destroy;
-        l_TypeInfo.serialize = &WidgetInstance::serialize;
-        l_TypeInfo.deserialize = &WidgetInstance::deserialize;
-        l_TypeInfo.find_by_index = &WidgetInstance::_find_by_index;
-        l_TypeInfo.notify = &WidgetInstance::_notify;
+        l_TypeInfo.is_alive = &ControllerInstance::is_alive;
+        l_TypeInfo.destroy = &ControllerInstance::destroy;
+        l_TypeInfo.serialize = &ControllerInstance::serialize;
+        l_TypeInfo.deserialize = &ControllerInstance::deserialize;
+        l_TypeInfo.find_by_index =
+            &ControllerInstance::_find_by_index;
+        l_TypeInfo.notify = &ControllerInstance::_notify;
         l_TypeInfo.post_load = nullptr;
-        l_TypeInfo.find_by_name = &WidgetInstance::_find_by_name;
+        l_TypeInfo.find_by_name = &ControllerInstance::_find_by_name;
         l_TypeInfo.make_component = nullptr;
-        l_TypeInfo.make_default = &WidgetInstance::_make;
-        l_TypeInfo.duplicate_default = &WidgetInstance::_duplicate;
+        l_TypeInfo.make_default = &ControllerInstance::_make;
+        l_TypeInfo.duplicate_default =
+            &ControllerInstance::_duplicate;
         l_TypeInfo.duplicate_component = nullptr;
         l_TypeInfo.get_living_instances =
             reinterpret_cast<Low::Util::RTTI::LivingInstancesGetter>(
-                &WidgetInstance::living_instances);
-        l_TypeInfo.get_living_count = &WidgetInstance::living_count;
+                &ControllerInstance::living_instances);
+        l_TypeInfo.get_living_count =
+            &ControllerInstance::living_count;
         l_TypeInfo.component = false;
         l_TypeInfo.uiComponent = false;
         {
-          // Property: root
+          // Property: value
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(root);
+          l_PropertyInfo.name = N(value);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(WidgetInstance::Data, root);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType =
-              Low::Core::UI::Element::type_id();
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
-                l_Handle);
-            l_Handle.get_root();
-            return (void *)&ACCESSOR_TYPE_SOA(p_Handle,
-                                              WidgetInstance, root,
-                                              Low::Core::UI::Element);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            l_Handle.set_root(*(Low::Core::UI::Element *)p_Data);
-          };
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
-                l_Handle);
-            *((Low::Core::UI::Element *)p_Data) = l_Handle.get_root();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: root
-        }
-        {
-          // Property: elements
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(elements);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset =
-              offsetof(WidgetInstance::Data, elements);
+              offsetof(ControllerInstance::Data, value);
           l_PropertyInfo.type =
               Low::Util::RTTI::PropertyType::UNKNOWN;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
+            ControllerInstance l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ControllerInstance> l_HandleLock(
                 l_Handle);
-            l_Handle.get_elements();
+            l_Handle.get_value();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, WidgetInstance, elements,
-                Low::Util::List<Low::Core::UI::Element>);
-          };
-          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                  const void *p_Data) -> void {};
-          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                  void *p_Data) {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
-                l_Handle);
-            *((Low::Util::List<Low::Core::UI::Element> *)p_Data) =
-                l_Handle.get_elements();
-          };
-          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: elements
-        }
-        {
-          // Property: controller_instance
-          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-          l_PropertyInfo.name = N(controller_instance);
-          l_PropertyInfo.editorProperty = false;
-          l_PropertyInfo.dataOffset =
-              offsetof(WidgetInstance::Data, controller_instance);
-          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType =
-              Low::Core::UI::ControllerInstance::type_id();
-          l_PropertyInfo.get_return =
-              [](Low::Util::Handle p_Handle) -> void const * {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
-                l_Handle);
-            l_Handle.get_controller_instance();
-            return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, WidgetInstance, controller_instance,
-                Low::Core::UI::ControllerInstance);
+                p_Handle, ControllerInstance, value,
+                ControllerInstanceValue);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            l_Handle.set_controller_instance(
-                *(Low::Core::UI::ControllerInstance *)p_Data);
+            ControllerInstance l_Handle = p_Handle.get_id();
+            l_Handle.set_value(*(ControllerInstanceValue *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
+            ControllerInstance l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ControllerInstance> l_HandleLock(
                 l_Handle);
-            *((Low::Core::UI::ControllerInstance *)p_Data) =
-                l_Handle.get_controller_instance();
+            *((ControllerInstanceValue *)p_Data) =
+                l_Handle.get_value();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
-          // End property: controller_instance
+          // End property: value
+        }
+        {
+          // Property: controller
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(controller);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(ControllerInstance::Data, controller);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::UINT64;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            ControllerInstance l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ControllerInstance> l_HandleLock(
+                l_Handle);
+            l_Handle.get_controller();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, ControllerInstance, controller, uint64_t);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            ControllerInstance l_Handle = p_Handle.get_id();
+            l_Handle.set_controller(*(uint64_t *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            ControllerInstance l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ControllerInstance> l_HandleLock(
+                l_Handle);
+            *((uint64_t *)p_Data) = l_Handle.get_controller();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: controller
         }
         {
           // Property: name
@@ -294,43 +251,60 @@ namespace Low {
           l_PropertyInfo.name = N(name);
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset =
-              offsetof(WidgetInstance::Data, name);
+              offsetof(ControllerInstance::Data, name);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::NAME;
           l_PropertyInfo.handleType = 0;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
+            ControllerInstance l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ControllerInstance> l_HandleLock(
                 l_Handle);
             l_Handle.get_name();
             return (void *)&ACCESSOR_TYPE_SOA(
-                p_Handle, WidgetInstance, name, Low::Util::Name);
+                p_Handle, ControllerInstance, name, Low::Util::Name);
           };
           l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                   const void *p_Data) -> void {
-            WidgetInstance l_Handle = p_Handle.get_id();
+            ControllerInstance l_Handle = p_Handle.get_id();
             l_Handle.set_name(*(Low::Util::Name *)p_Data);
           };
           l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                   void *p_Data) {
-            WidgetInstance l_Handle = p_Handle.get_id();
-            Low::Util::HandleLock<WidgetInstance> l_HandleLock(
+            ControllerInstance l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<ControllerInstance> l_HandleLock(
                 l_Handle);
             *((Low::Util::Name *)p_Data) = l_Handle.get_name();
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
         }
+        {
+          // Function: handle_click
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(handle_click);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::VOID;
+          l_FunctionInfo.handleType = 0;
+          {
+            Low::Util::RTTI::ParameterInfo l_ParameterInfo;
+            l_ParameterInfo.name = N(p_Element);
+            l_ParameterInfo.type =
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_ParameterInfo.handleType =
+                Low::Core::UI::Element::type_id();
+            l_FunctionInfo.parameters.push_back(l_ParameterInfo);
+          }
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: handle_click
+        }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
-
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
       }
 
-      void WidgetInstance::cleanup()
+      void ControllerInstance::cleanup()
       {
-        Low::Util::List<WidgetInstance> l_Instances =
+        Low::Util::List<ControllerInstance> l_Instances =
             ms_LivingInstances;
         for (uint32_t i = 0u; i < l_Instances.size(); ++i) {
           l_Instances[i].destroy();
@@ -351,18 +325,19 @@ namespace Low {
       }
 
       Low::Util::Handle
-      WidgetInstance::_find_by_index(uint32_t p_Index)
+      ControllerInstance::_find_by_index(uint32_t p_Index)
       {
         return find_by_index(p_Index).get_id();
       }
 
-      WidgetInstance WidgetInstance::find_by_index(uint32_t p_Index)
+      ControllerInstance
+      ControllerInstance::find_by_index(uint32_t p_Index)
       {
         LOW_ASSERT(p_Index < get_capacity(), "Index out of bounds");
 
-        WidgetInstance l_Handle;
+        ControllerInstance l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
-        l_Handle.m_Data.m_Type = WidgetInstance::ms_TypeId;
+        l_Handle.m_Data.m_Type = ControllerInstance::ms_TypeId;
 
         u32 l_PageIndex = 0;
         u32 l_SlotIndex = 0;
@@ -378,24 +353,24 @@ namespace Low {
         return l_Handle;
       }
 
-      WidgetInstance
-      WidgetInstance::create_handle_by_index(u32 p_Index)
+      ControllerInstance
+      ControllerInstance::create_handle_by_index(u32 p_Index)
       {
         if (p_Index < get_capacity()) {
           return find_by_index(p_Index);
         }
 
-        WidgetInstance l_Handle;
+        ControllerInstance l_Handle;
         l_Handle.m_Data.m_Index = p_Index;
         l_Handle.m_Data.m_Generation = 0;
-        l_Handle.m_Data.m_Type = WidgetInstance::ms_TypeId;
+        l_Handle.m_Data.m_Type = ControllerInstance::ms_TypeId;
 
         return l_Handle;
       }
 
-      bool WidgetInstance::is_alive() const
+      bool ControllerInstance::is_alive() const
       {
-        if (m_Data.m_Type != WidgetInstance::ms_TypeId) {
+        if (m_Data.m_Type != ControllerInstance::ms_TypeId) {
           return false;
         }
         u32 l_PageIndex = 0;
@@ -407,29 +382,28 @@ namespace Low {
         Low::Util::Instances::Page *l_Page = ms_Pages[l_PageIndex];
         Low::Util::UniqueLock<Low::Util::Mutex> l_PageLock(
             l_Page->mutex);
-        return m_Data.m_Type == WidgetInstance::ms_TypeId &&
+        return m_Data.m_Type == ControllerInstance::ms_TypeId &&
                l_Page->slots[l_SlotIndex].m_Occupied &&
                l_Page->slots[l_SlotIndex].m_Generation ==
                    m_Data.m_Generation;
       }
 
-      uint32_t WidgetInstance::get_capacity()
+      uint32_t ControllerInstance::get_capacity()
       {
         return ms_Capacity;
       }
 
       Low::Util::Handle
-      WidgetInstance::_find_by_name(Low::Util::Name p_Name)
+      ControllerInstance::_find_by_name(Low::Util::Name p_Name)
       {
         return find_by_name(p_Name).get_id();
       }
 
-      WidgetInstance
-      WidgetInstance::find_by_name(Low::Util::Name p_Name)
+      ControllerInstance
+      ControllerInstance::find_by_name(Low::Util::Name p_Name)
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
-
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -443,62 +417,60 @@ namespace Low {
         return Low::Util::Handle::DEAD;
       }
 
-      WidgetInstance
-      WidgetInstance::duplicate(Low::Util::Name p_Name) const
+      ControllerInstance
+      ControllerInstance::duplicate(Low::Util::Name p_Name) const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
-
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
       }
 
-      WidgetInstance
-      WidgetInstance::duplicate(WidgetInstance p_Handle,
-                                Low::Util::Name p_Name)
+      ControllerInstance
+      ControllerInstance::duplicate(ControllerInstance p_Handle,
+                                    Low::Util::Name p_Name)
       {
         return p_Handle.duplicate(p_Name);
       }
 
       Low::Util::Handle
-      WidgetInstance::_duplicate(Low::Util::Handle p_Handle,
-                                 Low::Util::Name p_Name)
+      ControllerInstance::_duplicate(Low::Util::Handle p_Handle,
+                                     Low::Util::Name p_Name)
       {
-        WidgetInstance l_WidgetInstance = p_Handle.get_id();
-        return l_WidgetInstance.duplicate(p_Name);
+        ControllerInstance l_ControllerInstance = p_Handle.get_id();
+        return l_ControllerInstance.duplicate(p_Name);
       }
 
-      void
-      WidgetInstance::serialize(Low::Util::Serial::Node &p_Node) const
+      void ControllerInstance::serialize(
+          Low::Util::Serial::Node &p_Node) const
       {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
-      void WidgetInstance::serialize(Low::Util::Handle p_Handle,
-                                     Low::Util::Serial::Node &p_Node)
+      void
+      ControllerInstance::serialize(Low::Util::Handle p_Handle,
+                                    Low::Util::Serial::Node &p_Node)
       {
-        WidgetInstance l_WidgetInstance = p_Handle.get_id();
-        l_WidgetInstance.serialize(p_Node);
+        ControllerInstance l_ControllerInstance = p_Handle.get_id();
+        l_ControllerInstance.serialize(p_Node);
       }
 
       Low::Util::Handle
-      WidgetInstance::deserialize(Low::Util::Serial::Node &p_Node,
-                                  Low::Util::Handle p_Creator)
+      ControllerInstance::deserialize(Low::Util::Serial::Node &p_Node,
+                                      Low::Util::Handle p_Creator)
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
-
-        return Low::Util::Handle::DEAD;
+        return Util::Handle::DEAD;
         // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
       }
 
-      void WidgetInstance::broadcast_observable(
+      void ControllerInstance::broadcast_observable(
           Low::Util::Name p_Observable) const
       {
         Low::Util::ObserverKey l_Key;
@@ -508,7 +480,7 @@ namespace Low {
         Low::Util::notify(l_Key);
       }
 
-      u64 WidgetInstance::observe(
+      u64 ControllerInstance::observe(
           Low::Util::Name p_Observable,
           Low::Util::Function<void(Low::Util::Handle,
                                    Low::Util::Name)>
@@ -521,7 +493,8 @@ namespace Low {
         return Low::Util::observe(l_Key, p_Observer);
       }
 
-      u64 WidgetInstance::observe(Low::Util::Name p_Observable,
+      u64
+      ControllerInstance::observe(Low::Util::Name p_Observable,
                                   Low::Util::Handle p_Observer) const
       {
         Low::Util::ObserverKey l_Key;
@@ -531,129 +504,117 @@ namespace Low {
         return Low::Util::observe(l_Key, p_Observer);
       }
 
-      void WidgetInstance::notify(Low::Util::Handle p_Observed,
-                                  Low::Util::Name p_Observable)
+      void ControllerInstance::notify(Low::Util::Handle p_Observed,
+                                      Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
-
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
-      void WidgetInstance::_notify(Low::Util::Handle p_Observer,
-                                   Low::Util::Handle p_Observed,
-                                   Low::Util::Name p_Observable)
+      void ControllerInstance::_notify(Low::Util::Handle p_Observer,
+                                       Low::Util::Handle p_Observed,
+                                       Low::Util::Name p_Observable)
       {
-        WidgetInstance l_WidgetInstance = p_Observer.get_id();
-        l_WidgetInstance.notify(p_Observed, p_Observable);
+        ControllerInstance l_ControllerInstance = p_Observer.get_id();
+        l_ControllerInstance.notify(p_Observed, p_Observable);
       }
 
-      Low::Core::UI::Element WidgetInstance::get_root() const
+      ControllerInstanceValue &ControllerInstance::get_value() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_root
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_value
+        // LOW_CODEGEN::END::CUSTOM:GETTER_value
 
-        // LOW_CODEGEN::END::CUSTOM:GETTER_root
-
-        return TYPE_SOA(WidgetInstance, root, Low::Core::UI::Element);
+        return TYPE_SOA(ControllerInstance, value,
+                        ControllerInstanceValue);
       }
-      void WidgetInstance::set_root(Low::Core::UI::Element p_Value)
+      void
+      ControllerInstance::set_value(ControllerInstanceValue &p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_root
-
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_root
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_value
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_value
 
         // Set new value
-        TYPE_SOA(WidgetInstance, root, Low::Core::UI::Element) =
+        TYPE_SOA(ControllerInstance, value, ControllerInstanceValue) =
             p_Value;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_root
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_value
+        // LOW_CODEGEN::END::CUSTOM:SETTER_value
 
-        // LOW_CODEGEN::END::CUSTOM:SETTER_root
-
-        broadcast_observable(N(root));
+        broadcast_observable(N(value));
       }
 
-      Low::Util::List<Low::Core::UI::Element> &
-      WidgetInstance::get_elements() const
+      uint64_t ControllerInstance::get_controller() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_elements
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_controller
+        // LOW_CODEGEN::END::CUSTOM:GETTER_controller
 
-        // LOW_CODEGEN::END::CUSTOM:GETTER_elements
-
-        return TYPE_SOA(WidgetInstance, elements,
-                        Low::Util::List<Low::Core::UI::Element>);
+        return TYPE_SOA(ControllerInstance, controller, uint64_t);
       }
-
-      Low::Core::UI::ControllerInstance
-      WidgetInstance::get_controller_instance() const
+      void ControllerInstance::set_controller(uint64_t p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_controller_instance
-        // LOW_CODEGEN::END::CUSTOM:GETTER_controller_instance
-
-        return TYPE_SOA(WidgetInstance, controller_instance,
-                        Low::Core::UI::ControllerInstance);
-      }
-      void WidgetInstance::set_controller_instance(
-          Low::Core::UI::ControllerInstance p_Value)
-      {
-        _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
-
-        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller_instance
-        // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller_instance
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_controller
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_controller
 
         // Set new value
-        TYPE_SOA(WidgetInstance, controller_instance,
-                 Low::Core::UI::ControllerInstance) = p_Value;
+        TYPE_SOA(ControllerInstance, controller, uint64_t) = p_Value;
 
-        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller_instance
-        // LOW_CODEGEN::END::CUSTOM:SETTER_controller_instance
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_controller
+        // LOW_CODEGEN::END::CUSTOM:SETTER_controller
 
-        broadcast_observable(N(controller_instance));
+        broadcast_observable(N(controller));
       }
 
-      Low::Util::Name WidgetInstance::get_name() const
+      Low::Util::Name ControllerInstance::get_name() const
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
-
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
-        return TYPE_SOA(WidgetInstance, name, Low::Util::Name);
+        return TYPE_SOA(ControllerInstance, name, Low::Util::Name);
       }
-      void WidgetInstance::set_name(Low::Util::Name p_Value)
+      void ControllerInstance::set_name(Low::Util::Name p_Value)
       {
         _LOW_ASSERT(is_alive());
-        Low::Util::HandleLock<WidgetInstance> l_Lock(get_id());
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
-
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
-        TYPE_SOA(WidgetInstance, name, Low::Util::Name) = p_Value;
+        TYPE_SOA(ControllerInstance, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
-
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
       }
 
-      uint32_t WidgetInstance::create_instance(
+      void ControllerInstance::handle_click(
+          Low::Core::UI::Element p_Element)
+      {
+        Low::Util::HandleLock<ControllerInstance> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_handle_click
+        Controller l_Controller = get_controller();
+        if (l_Controller.is_script_controller()) {
+        }
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_handle_click
+      }
+
+      uint32_t ControllerInstance::create_instance(
           u32 &p_PageIndex, u32 &p_SlotIndex,
           Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock)
       {
@@ -699,25 +660,27 @@ namespace Low {
         return l_Index;
       }
 
-      u32 WidgetInstance::create_page()
+      u32 ControllerInstance::create_page()
       {
         const u32 l_Capacity = get_capacity();
-        LOW_ASSERT((l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
-                   "Could not increase capacity for WidgetInstance.");
+        LOW_ASSERT(
+            (l_Capacity + ms_PageSize) < LOW_UINT32_MAX,
+            "Could not increase capacity for ControllerInstance.");
 
         Low::Util::Instances::Page *l_Page =
             new Low::Util::Instances::Page;
         Low::Util::Instances::initialize_page(
-            l_Page, WidgetInstance::Data::get_size(), ms_PageSize);
+            l_Page, ControllerInstance::Data::get_size(),
+            ms_PageSize);
         ms_Pages.push_back(l_Page);
 
         ms_Capacity = l_Capacity + l_Page->size;
         return ms_Pages.size() - 1;
       }
 
-      bool WidgetInstance::get_page_for_index(const u32 p_Index,
-                                              u32 &p_PageIndex,
-                                              u32 &p_SlotIndex)
+      bool ControllerInstance::get_page_for_index(const u32 p_Index,
+                                                  u32 &p_PageIndex,
+                                                  u32 &p_SlotIndex)
       {
         if (p_Index >= get_capacity()) {
           p_PageIndex = LOW_UINT32_MAX;
@@ -733,7 +696,6 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace UI

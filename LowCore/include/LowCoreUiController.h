@@ -8,45 +8,50 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
-#include "LowCoreUiWidgetInstance.h"
-#include "LowCoreUiController.h"
+#include "LowCoreUiControllerInstance.h"
+#include "LowCoreScriptClass.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
   namespace Core {
     namespace UI {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+      struct CodeController
+      {
+        int x;
+        // TODO: Implement
+      };
+      struct ScriptController
+      {
+        ScriptClass sclass;
+      };
+      struct ControllerValue
+      {
+        ControllerValue()
+        {
+        }
+        union
+        {
+          CodeController code;
+          ScriptController script;
+        };
+      };
 
-      struct ComponentDescriptor
+      enum class ControllerType
       {
-        u16 typeId;
-        Util::Serial::Node data;
-      };
-      struct ElementDescriptor
-      {
-        Util::Name name;
-        Util::List<ComponentDescriptor> components;
-        Util::List<ElementDescriptor> children;
-      };
-      enum class LoadState
-      {
-        Undefined,
-        Unloaded,
-        Loaded,
-        Loading
+        Code,
+        Script
       };
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
-      struct LOW_CORE_API WidgetAsset : public Low::Util::Handle
+      struct LOW_CORE_API Controller : public Low::Util::Handle
       {
       public:
         struct Data
         {
         public:
-          Low::Core::UI::LoadState state;
-          Low::Util::List<Low::Core::UI::ElementDescriptor> content;
-          Low::Util::String path;
-          Low::Core::UI::Controller controller;
+          ControllerValue value;
+          ControllerType type;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -65,7 +70,7 @@ namespace Low {
         static Low::Util::SharedMutex ms_PagesMutex;
         static Low::Util::List<Low::Util::Instances::Page *> ms_Pages;
 
-        static Low::Util::List<WidgetAsset> ms_LivingInstances;
+        static Low::Util::List<Controller> ms_LivingInstances;
 
         const static Low::Util::TypeIdentifier IDENTIFIER;
 
@@ -74,9 +79,12 @@ namespace Low {
           return ms_TypeId;
         }
 
-        static WidgetAsset make(Low::Util::Name p_Name);
+      private:
+        static Controller make(Low::Util::Name p_Name);
         static Low::Util::Handle _make(Low::Util::Name p_Name);
-        explicit WidgetAsset(const WidgetAsset &p_Copy)
+
+      public:
+        explicit Controller(const Controller &p_Copy)
             : Low::Util::Handle(p_Copy.m_Id)
         {
         }
@@ -86,21 +94,21 @@ namespace Low {
         static void initialize();
         static void cleanup();
 
-        WidgetAsset(u64 p_Id) : Low::Util::Handle(p_Id)
+        Controller(u64 p_Id) : Low::Util::Handle(p_Id)
         {
         }
-        WidgetAsset() : Low::Util::Handle()
+        Controller() : Low::Util::Handle()
         {
         }
-        WidgetAsset(Low::Util::Handle p_Handle)
+        Controller(Low::Util::Handle p_Handle)
             : Low::Util::Handle(p_Handle.get_id())
         {
         }
 
         using Handle::operator=;
 
-        WidgetAsset &operator=(const WidgetAsset &) = default;
-        WidgetAsset &operator=(WidgetAsset &&) noexcept = default;
+        Controller &operator=(const Controller &) = default;
+        Controller &operator=(Controller &&) noexcept = default;
 
         static uint32_t living_count()
         {
@@ -108,16 +116,16 @@ namespace Low {
               ms_LivingMutex);
           return static_cast<uint32_t>(ms_LivingInstances.size());
         }
-        static WidgetAsset *living_instances()
+        static Controller *living_instances()
         {
           Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
               ms_LivingMutex);
           return ms_LivingInstances.data();
         }
 
-        static WidgetAsset create_handle_by_index(u32 p_Index);
+        static Controller create_handle_by_index(u32 p_Index);
 
-        static WidgetAsset find_by_index(uint32_t p_Index);
+        static Controller find_by_index(uint32_t p_Index);
         static Low::Util::Handle _find_by_index(uint32_t p_Index);
 
         bool is_alive() const;
@@ -140,14 +148,14 @@ namespace Low {
 
         void serialize(Low::Util::Serial::Node &p_Node) const;
 
-        WidgetAsset duplicate(Low::Util::Name p_Name) const;
-        static WidgetAsset duplicate(WidgetAsset p_Handle,
-                                     Low::Util::Name p_Name);
+        Controller duplicate(Low::Util::Name p_Name) const;
+        static Controller duplicate(Controller p_Handle,
+                                    Low::Util::Name p_Name);
         static Low::Util::Handle
         _duplicate(Low::Util::Handle p_Handle,
                    Low::Util::Name p_Name);
 
-        static WidgetAsset find_by_name(Low::Util::Name p_Name);
+        static Controller find_by_name(Low::Util::Name p_Name);
         static Low::Util::Handle
         _find_by_name(Low::Util::Name p_Name);
 
@@ -158,52 +166,35 @@ namespace Low {
                     Low::Util::Handle p_Creator);
         static bool is_alive(Low::Util::Handle p_Handle)
         {
-          WidgetAsset l_Handle = p_Handle.get_id();
+          Controller l_Handle = p_Handle.get_id();
           return l_Handle.is_alive();
         }
 
         static void destroy(Low::Util::Handle p_Handle)
         {
           _LOW_ASSERT(is_alive(p_Handle));
-          WidgetAsset l_WidgetAsset = p_Handle.get_id();
-          l_WidgetAsset.destroy();
+          Controller l_Controller = p_Handle.get_id();
+          l_Controller.destroy();
         }
 
-        void post_load(Low::Util::Serial::Node &p_Node);
-        static void _post_load(Low::Util::Handle p_Handle,
-                               Low::Util::Serial::Node &p_Node)
-        {
-          _LOW_ASSERT(is_alive(p_Handle));
-          WidgetAsset l_WidgetAsset = p_Handle.get_id();
-          l_WidgetAsset.post_load(p_Node);
-        }
+        ControllerValue &get_value() const;
+        void set_value(ControllerValue &p_Value);
 
-        Low::Core::UI::LoadState get_state() const;
-        void set_state(Low::Core::UI::LoadState p_Value);
-
-        Low::Util::List<Low::Core::UI::ElementDescriptor> &
-        get_content() const;
-        void
-        set_content(Low::Util::List<Low::Core::UI::ElementDescriptor>
-                        &p_Value);
-
-        Low::Util::String get_path() const;
-
-        Low::Core::UI::Controller get_controller() const;
-        void set_controller(Low::Core::UI::Controller p_Value);
+        ControllerType get_type() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
-        WidgetInstance
-        spawn_instance(Low::Renderer::UiCanvas p_Canvas);
-        Low::Core::UI::Element
-        spawn_element(Low::Core::UI::WidgetInstance p_Instance,
-                      Low::Renderer::UiCanvas p_Canvas,
-                      Low::Core::UI::ElementDescriptor &p_Descriptor,
-                      Low::Core::UI::Element p_Parent);
-        void fill_content_from_instance(
-            Low::Core::UI::WidgetInstance p_Instance);
+        static Low::Core::UI::Controller
+        make_code(Low::Util::Name p_Name);
+        static Low::Core::UI::Controller
+        make_script(Low::Util::Name p_Name,
+                    Low::Core::Scripting::Class p_Class);
+        Low::Core::UI::ControllerInstance spawn_instance();
+        static Low::Core::UI::Controller find_by_scriptclass(
+            Low::Core::Scripting::Class p_ScriptClass);
+        bool is_script_controller() const;
+        void update_instances();
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);
@@ -215,29 +206,13 @@ namespace Low {
             u32 &p_PageIndex, u32 &p_SlotIndex,
             Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
         static u32 create_page();
-        void set_path(Low::Util::String p_Value);
-        void set_path(const char *p_Value);
-        void parse_content(Low::Util::Serial::Node &p_Node);
-
-        void
-        parse_element(Low::Util::Serial::Node &p_Node,
-                      Low::Core::UI::ElementDescriptor &p_Descriptor);
-
-        void fill_element_descriptor(
-            Low::Core::UI::Element p_Element,
-            Low::Core::UI::ElementDescriptor &p_Descriptor);
-
-        void serialize_element_descriptor(
-            const Low::Core::UI::ElementDescriptor &p_Descriptor,
-            Low::Util::Serial::Node &p_Node) const;
+        void set_type(ControllerType p_Value);
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
-
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
-
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace UI
