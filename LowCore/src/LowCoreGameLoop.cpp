@@ -66,6 +66,9 @@ namespace Low {
 
       static void execute_ticks(float p_Delta)
       {
+        if (g_Frames == 180) {
+          // Scripting::test_as();
+        }
         static bool l_FirstRun = true;
 
         Util::tick(p_Delta);
@@ -141,6 +144,8 @@ namespace Low {
         System::MeshRenderer::tick(p_Delta, get_engine_state());
         UI::System::Image::tick(p_Delta, get_engine_state());
         UI::System::Text::tick(p_Delta, get_engine_state());
+
+        Scripting::tick_as(p_Delta);
 
         l_FirstRun = false;
       }

@@ -25,6 +25,7 @@ namespace Low {
         public:
           Low::Util::List<uint64_t> scripts;
           char *as_module;
+          Low::Util::List<char *> ticking_functions;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -151,6 +152,8 @@ namespace Low {
 
         char *get_as_module() const;
         void set_as_module(char *p_Value);
+
+        Low::Util::List<char *> &get_ticking_functions() const;
 
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);

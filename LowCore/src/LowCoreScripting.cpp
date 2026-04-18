@@ -4,15 +4,24 @@
 #include "LowCoreScriptModule.h"
 #include "LowUtilAssert.h"
 #include "LowUtilFileIO.h"
+#include "LowUtilLogger.h"
+#include "angelscript.h"
 
 #include <angelscript.h>
+#include <scriptbuilder/scriptbuilder.h>
 
 #include <iostream>
 
 namespace Low {
   namespace Core {
+    void expose_types(asIScriptEngine *p_Engine);
     namespace Scripting {
       static asIScriptEngine *g_Engine = nullptr;
+      static asIScriptContext *g_TickContext = nullptr;
+
+      static bool g_Initialized = false;
+
+      void expose(asIScriptEngine *p_Engine);
 
       static bool load_script_to_file(const char *p_Path,
                                       Util::String &p_Source)
@@ -29,20 +38,84 @@ namespace Low {
                                       "Script file is empty");
 
         p_Source.resize(l_Size);
-        const u32 l_ReadBytes =
-            Low::Util::FileIO::read_sync(l_File, p_Source.data());
+        Low::Util::FileIO::read_sync(l_File, p_Source.data());
 
         Low::Util::FileIO::close(l_File);
-
-        LOW_ASSERT_ERROR_RETURN_FALSE(
-            l_ReadBytes == l_Size,
-            "Failed to read complete script file");
 
         return true;
       }
 
+      static bool has_metadata(CScriptBuilder &p_Builder,
+                               asIScriptFunction *p_Function,
+                               const char *p_Metadata)
+      {
+        auto l_Metadata = p_Builder.GetMetadataForFunc(p_Function);
+
+        for (const auto &i_Metadata : l_Metadata) {
+          if (i_Metadata == p_Metadata) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      static bool is_ticking_signature(asIScriptEngine *p_Engine,
+                                       asIScriptFunction *p_Function)
+      {
+        if (p_Function->GetParamCount() != 0) {
+          return false;
+        }
+
+        if (p_Function->GetReturnTypeId() !=
+            p_Engine->GetTypeIdByDecl("void")) {
+          return false;
+        }
+
+        return true;
+      }
+
+      static void fill_ticking_functions(Module p_Module,
+                                         CScriptBuilder &p_Builder)
+      {
+        p_Module.get_ticking_functions().clear();
+
+        asIScriptModule *l_Module =
+            (asIScriptModule *)p_Module.get_as_module();
+
+        const asUINT l_Count = l_Module->GetFunctionCount();
+        for (asUINT i = 0; i < l_Count; ++i) {
+          asIScriptFunction *l_Function =
+              l_Module->GetFunctionByIndex(i);
+          if (!l_Function) {
+            continue;
+          }
+
+          if (!has_metadata(p_Builder, l_Function, "Ticking")) {
+            continue;
+          }
+
+          if (!is_ticking_signature(g_Engine, l_Function)) {
+            LOW_LOG_WARN
+                << "Ignoring [Ticking] function with wrong "
+                   "signature: "
+                << l_Function->GetDeclaration(true, true, true)
+                << LOW_LOG_END;
+            continue;
+          }
+
+          l_Function->AddRef();
+          p_Module.get_ticking_functions().push_back(
+              (char *)l_Function);
+        }
+      }
+
+      /*
       void build_module(Module p_Module)
       {
+        LOW_LOG_DEBUG << "Building module " << p_Module.get_name()
+                      << LOW_LOG_END;
+
         if (!p_Module.get_as_module()) {
           p_Module.set_as_module((char *)g_Engine->GetModule(
               p_Module.get_name().c_str(), asGM_ALWAYS_CREATE));
@@ -62,7 +135,7 @@ namespace Low {
             continue;
           }
           if (!Util::FileIO::file_exists_sync(
-                  i_Script.get_source_path().c_str())) {
+                  i_Script.get_full_path().c_str())) {
             i_Script.destroy();
             it = p_Module.get_scripts().erase(it);
             continue;
@@ -70,7 +143,7 @@ namespace Low {
 
           Util::String i_SourceCode;
           LOW_ASSERT(
-              load_script_to_file(i_Script.get_source_path().c_str(),
+              load_script_to_file(i_Script.get_full_path().c_str(),
                                   i_SourceCode),
               "Failed to load AngelScript source code.");
 
@@ -89,11 +162,69 @@ namespace Low {
                      << p_Module.get_name() << "'." << LOW_LOG_END;
 
         p_Module.set_as_module((char *)l_AsModule);
-      }
 
-      static int Add(int a, int b)
+        fill_ticking_functions(p_Module);
+      }
+      */
+      void build_module(Module p_Module)
       {
-        return a + b;
+        LOW_LOG_DEBUG << "Building module " << p_Module.get_name()
+                      << LOW_LOG_END;
+
+        CScriptBuilder l_Builder;
+
+        int l_Result = l_Builder.StartNewModule(
+            g_Engine, p_Module.get_name().c_str());
+        LOW_ASSERT(l_Result >= 0,
+                   "Failed to start AngelScript module build.");
+
+        for (auto it = p_Module.get_scripts().begin();
+             it != p_Module.get_scripts().end();) {
+          ScriptAsset i_Script = *it;
+
+          if (!i_Script.is_alive()) {
+            it = p_Module.get_scripts().erase(it);
+            continue;
+          }
+
+          if (!Util::FileIO::file_exists_sync(
+                  i_Script.get_full_path().c_str())) {
+            i_Script.destroy();
+            it = p_Module.get_scripts().erase(it);
+            continue;
+          }
+
+          Util::String i_SourceCode;
+          LOW_ASSERT(
+              load_script_to_file(i_Script.get_full_path().c_str(),
+                                  i_SourceCode),
+              "Failed to load AngelScript source code.");
+
+          l_Result = l_Builder.AddSectionFromMemory(
+              i_Script.get_full_path().c_str(), i_SourceCode.c_str(),
+              static_cast<unsigned int>(i_SourceCode.size()));
+          LOW_ASSERT(
+              l_Result >= 0,
+              "Failed to add script section to CScriptBuilder.");
+
+          ++it;
+        }
+
+        l_Result = l_Builder.BuildModule();
+        LOW_ASSERT(l_Result >= 0,
+                   "Failed to build AngelScript module.");
+
+        asIScriptModule *l_AsModule = l_Builder.GetModule();
+
+        LOW_ASSERT(l_AsModule,
+                   "Failed to get built AngelScript module.");
+
+        p_Module.set_as_module((char *)l_AsModule);
+
+        LOW_LOG_INFO << "Created AngelScript module '"
+                     << p_Module.get_name() << "'." << LOW_LOG_END;
+
+        fill_ticking_functions(p_Module, l_Builder);
       }
 
       static void message_callback(const asSMessageInfo *p_Message,
@@ -135,91 +266,100 @@ namespace Low {
         LOW_ASSERT(l_Result >= 0,
                    "Failed to set AngelScript message callback");
 
+        expose(g_Engine);
+        expose_types(g_Engine);
+
         LOW_ASSERT(init_modules(),
                    "Failed to initialize AngelScript modules.");
 
-#if 0
-        {
-          asIScriptEngine *engine = g_Engine;
-          int r = 0;
+        g_TickContext = g_Engine->CreateContext();
 
-          // Register a single global function
-          r = engine->RegisterGlobalFunction(
-              "int Add(int, int)", asFUNCTION(Add), asCALL_CDECL);
-          if (r < 0) {
-            std::cout << "RegisterGlobalFunction failed\n";
-            engine->ShutDownAndRelease();
-            return;
-          }
+        g_Initialized = true;
+      }
 
-          // Build a tiny script from a string
-          const char *script = "int Test() {          \n"
-                               "  return Add(20, 22); \n"
-                               "}                     \n";
+      void test_as()
+      {
+        asIScriptEngine *engine = g_Engine;
+        asIScriptModule *mod =
+            (asIScriptModule *)Module::find_by_name(N(low.misc))
+                .get_as_module();
 
-          asIScriptModule *mod =
-              engine->GetModule("TestModule", asGM_ALWAYS_CREATE);
-          r = mod->AddScriptSection("inline", script);
-          if (r < 0) {
-            std::cout << "AddScriptSection failed\n";
-            engine->ShutDownAndRelease();
-            return;
-          }
-
-          r = mod->Build();
-          if (r < 0) {
-            std::cout << "Build failed\n";
-            engine->ShutDownAndRelease();
-            return;
-          }
-
-          asIScriptFunction *func =
-              mod->GetFunctionByDecl("int Test()");
-          if (!func) {
-            std::cout << "GetFunctionByDecl failed\n";
-            engine->ShutDownAndRelease();
-            return;
-          }
-
-          asIScriptContext *ctx = engine->CreateContext();
-          if (!ctx) {
-            std::cout << "CreateContext failed\n";
-            engine->ShutDownAndRelease();
-            return;
-          }
-
-          r = ctx->Prepare(func);
-          if (r < 0) {
-            std::cout << "Prepare failed\n";
-            ctx->Release();
-            engine->ShutDownAndRelease();
-            return;
-          }
-
-          r = ctx->Execute();
-          if (r != asEXECUTION_FINISHED) {
-            std::cout << "Execute failed, code = " << r << "\n";
-            if (r == asEXECUTION_EXCEPTION) {
-              std::cout << "Exception: " << ctx->GetExceptionString()
-                        << "\n";
-            }
-            ctx->Release();
-            engine->ShutDownAndRelease();
-            return;
-          }
-
-          int result = (int)ctx->GetReturnDWord();
-          std::cout << "AngelScript test result = " << result
-                    << std::endl;
+        asIScriptFunction *func =
+            mod->GetFunctionByDecl("void test()");
+        if (!func) {
+          std::cout << "GetFunctionByDecl failed\n";
+          engine->ShutDownAndRelease();
+          return;
         }
-#endif
+
+        asIScriptContext *ctx = engine->CreateContext();
+        if (!ctx) {
+          std::cout << "CreateContext failed\n";
+          engine->ShutDownAndRelease();
+          return;
+        }
+
+        int r = ctx->Prepare(func);
+        if (r < 0) {
+          std::cout << "Prepare failed\n";
+          ctx->Release();
+          engine->ShutDownAndRelease();
+          return;
+        }
+
+        r = ctx->Execute();
+        if (r != asEXECUTION_FINISHED) {
+          std::cout << "Execute failed, code = " << r << "\n";
+          if (r == asEXECUTION_EXCEPTION) {
+            std::cout << "Exception: " << ctx->GetExceptionString()
+                      << "\n";
+          }
+          ctx->Release();
+          engine->ShutDownAndRelease();
+          return;
+        }
       }
 
       void cleanup_as()
       {
+        if (g_TickContext) {
+          g_TickContext->Release();
+          g_TickContext = nullptr;
+        }
         if (g_Engine) {
           g_Engine->ShutDownAndRelease();
           g_Engine = nullptr;
+        }
+
+        g_Initialized = false;
+      }
+
+      static void call_ticking_functions(Module p_Module)
+      {
+        for (auto i_Ptr : p_Module.get_ticking_functions()) {
+          asIScriptFunction *i_Function = (asIScriptFunction *)i_Ptr;
+
+          int r = g_TickContext->Prepare(i_Function);
+          LOW_ASSERT(r >= 0, "Prepare failed");
+
+          r = g_TickContext->Execute();
+          LOW_ASSERT(r == asEXECUTION_FINISHED,
+                     "Ticking function execution failed");
+        }
+      }
+
+      void tick_as(const float p_Delta)
+      {
+        if (!g_Initialized) {
+          return;
+        }
+
+        for (u32 i = 0; i < Module::living_count(); ++i) {
+          Module i_Module = Module::living_instances()[i];
+          if (!i_Module.get_as_module()) {
+            continue;
+          }
+          call_ticking_functions(i_Module);
         }
       }
     } // namespace Scripting

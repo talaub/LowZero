@@ -4,6 +4,7 @@ const exec = require("child_process").execSync;
 const YAML = require("yaml");
 const { assert } = require("console");
 const { isArray } = require("util");
+const path = require('path');
 
 const g_Directory = `${__dirname}/../../misteda/data/_internal/type_configs`;
 
@@ -16,6 +17,53 @@ const g_AllEnumIds = [];
 function read_yaml_file(p_FilePath) {
   const l_FileContent = read_file(p_FilePath);
   return YAML.parse(l_FileContent);
+}
+
+function get_scripting_type(p_RawType) {
+  if (p_RawType.endsWith("Math::Vector3")){
+    return "Vector3"
+  }
+  if (p_RawType.endsWith("Math::ColorRGB")){
+    return "Vector3"
+  }
+  if (p_RawType.endsWith("Math::Vector2")){
+    return "Vector2"
+  }
+  if (p_RawType.endsWith("Math::Color")){
+    return "Vector4"
+  }
+  if (p_RawType.endsWith("Math::Vector4")){
+    return "Vector4"
+  }
+  if (p_RawType.endsWith("Math::Quaternion")){
+    return "Quaternion"
+  }
+  if (p_RawType.endsWith("Util::Handle")){
+    return "Handle"
+  }
+  if (p_RawType.endsWith("Util::Name")){
+    return "Name"
+  }
+
+  if (p_RawType == "uint64_t"){
+    return "u64"
+  }
+  if (p_RawType == "uint32_t"){
+    return "u32"
+  }
+  if (p_RawType.endsWith("Util::String")){
+    return "string"
+  }
+  if (p_RawType.endsWith("Util::UniqueId")){
+    return "u64"
+  }
+
+  return p_RawType
+}
+
+function separator() {
+  let t = "// --------------------------\n"
+  return t
 }
 
 function line(l, n = 0) {
@@ -178,7 +226,7 @@ function process_enum_file(p_Path, p_FileName, p_Project) {
     i_Enum.module = l_Config.module;
     i_Enum.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Enum.namespace = l_Config.namespace;
-    i_Enum.scripting_namespace = l_Config.namespace;
+    i_Enum.scripting_namespace = "";
 
     i_Enum.enumId = 0;
     if (g_EnumIdMap[l_Config.module][i_EnumName]) {
@@ -244,6 +292,14 @@ function process_file(p_Path, p_FileName, p_Project = false) {
     i_Type.module = l_Config.module;
     i_Type.prefix = l_Config.prefix ? l_Config.prefix : l_Config.module;
     i_Type.api_file = `${i_Type.module}Api.h`;
+    i_Type.scripting_name = i_TypeName;
+    i_Type.scripting_namespace = "";
+    i_Type.identifier = `${i_Type.module}:${i_Type.name}`
+
+    i_Type.full_scripting_string = i_Type.scripting_name
+    if (i_Type.scripting_namespace) {
+      i_Type.full_scripting_string = `${i_Type.scripting_namespace}::${i_Type.scripting_name}`
+    }
 
     if (!i_Type.observables) {
       i_Type.observables = [];
@@ -255,18 +311,6 @@ function process_file(p_Path, p_FileName, p_Project = false) {
       i_Type.api_file = l_Config.api_file;
     }
     i_Type.namespace = l_Config.namespace;
-    if (l_Config.scripting_namespace) {
-      i_Type.scripting_namespace = l_Config.scripting_namespace;
-    } else {
-      i_Type.scripting_namespace = l_Config.namespace;
-    }
-
-    i_Type.scripting_namespace_string = "";
-    for (const i_Entry of i_Type.scripting_namespace) {
-      i_Type.scripting_namespace_string += `.${i_Entry}`;
-    }
-    i_Type.scripting_namespace_string =
-      i_Type.scripting_namespace_string.substring(1);
 
     i_Type.typeId = 0;
     if (g_TypeIdMap[l_Config.module][i_TypeName]) {
@@ -286,6 +330,7 @@ function process_file(p_Path, p_FileName, p_Project = false) {
         type: "Low::Util::Set<u64>",
         no_setter: true,
         private_getter: true,
+        expose_scripting: false
       };
     }
 
@@ -730,7 +775,7 @@ function is_reference_type(t) {
       "u8",
       "Util::UniqueId",
       "Low::Util::UniqueId",
-    ].includes(t) && !t.includes("*")
+    ].includes(t) && !t.endsWith("*")
   );
 }
 
@@ -834,6 +879,191 @@ function collect_enums_for_low(p_Path) {
   }
 
   return l_Enums;
+}
+
+function path_contains_file(p_Path, p_FileName) {
+  const fullPath = path.join(p_Path, p_FileName);
+  return fs.existsSync(fullPath) && fs.statSync(fullPath).isFile();
+}
+
+function is_plugin(p_Path) {
+  return path_contains_file(p_Path, 'project.yaml') || path_contains_file(p_Path, 'plugin.yaml')
+}
+
+function get_engine_root_for_plugin(p_Path) {
+  if (p_Path.endsWith('/') || p_Path.endsWith('\\')){
+    return `${p_Path}../`
+  }
+  return `${p_Path}/../`
+}
+
+function type_desc(p_Desc, p_Handle) {
+
+  let container = undefined
+  if (p_Desc.startsWith('Low::Util::List') || p_Desc.startsWith('Util::List')){
+    container = 'list'
+  }
+  if (p_Desc.startsWith('Low::Util::Map') || p_Desc.startsWith('Util::Map')){
+    container = 'map'
+  }
+  if (p_Desc.startsWith('Low::Util::Set') || p_Desc.startsWith('Util::Set')){
+    container = 'set'
+  }
+  
+  let l_Desc = {
+    handle: p_Handle,
+    string: p_Desc,
+    container: container
+  }
+
+  return l_Desc;
+}
+
+function insert_type_into_db(p_Type, db) {
+  //console.log(`NAME: ${p_Type.name}, ${p_Type.identifier}`)
+  let l_Type = {
+    id: p_Type.identifier,
+    identifier: p_Type.identifier,
+    name: p_Type.name,
+    namespace: p_Type.namespace,
+    namespace_string: p_Type.namespace_string,
+    full_string: `${p_Type.namespace_string}::${p_Type.name}`,
+    'module':p_Type.module,
+    properties: {},
+    scripting_expose: !!p_Type.scripting_expose,
+    full_scripting_string: p_Type.full_scripting_string,
+    scripting_name: p_Type.scripting_name,
+    scripting_namespace: p_Type.scripting_namespace,
+    header_file_name: p_Type.header_file_name,
+    include_line: `#include "${p_Type.header_file_name}"`,
+    component: !!p_Type.component,
+    private_make: !!p_Type.private_make,
+    ui_component: !!p_Type.ui_component,
+    any_component_type: p_Type.component || p_Type.ui_component
+  }
+
+  for (let i_Prop of Object.values(p_Type.properties)) {
+    l_Type.properties[i_Prop.name] = {
+      name: i_Prop.name,
+      type: type_desc(i_Prop.type, !!i_Prop.handle),
+      getter_name: i_Prop.getter_name,
+      setter_name: i_Prop.setter_name,
+      private_setter: !!i_Prop.private_setter,
+      no_setter: !!i_Prop.no_setter,
+      private_getter: !!i_Prop.private_setter,
+      no_getter: !!i_Prop.no_setter,
+      getter_exposed_scripting: !i_Prop.no_getter && !i_Prop.private_getter,
+      setter_exposed_scripting: !i_Prop.no_setter && !i_Prop.private_setter,
+      expose_scripting: !!i_Prop.expose_scripting,
+    }
+  }
+
+  if (!db.types) {
+    db.types = {}
+  }
+  if (!db.modules) {
+    db.modules = {}
+  }
+  if (!db.modules[l_Type.module]){
+    db.modules[l_Type.module]=[]
+  }
+
+  db.types[l_Type.id]=l_Type;
+
+  db.modules[l_Type.module].push({f: 'type', 'id': l_Type.id})
+}
+
+function get_full_type_description(p_Desc, p_ContextNamespace, db) {
+  let l_Desc = JSON.parse(JSON.stringify(p_Desc));
+
+  let l_IsHandle = p_Desc.handle;
+  if (!l_IsHandle && !p_Desc.container) {
+    const l_Id = db.find_by_type_string(p_Desc.string, p_ContextNamespace)
+    if (l_Id) {
+      l_IsHandle = true
+      l_Desc.handle_id = l_Id;
+    }
+  }
+
+  if (l_IsHandle && !l_Desc.handle_id) {
+    l_Desc.handle_id = db.find_by_type_string(p_Desc.string, p_ContextNamespace)
+    if (!l_Desc.handle_id) {
+      l_IsHandle = false
+      console.log(`WARNING: Expected handle but could not find type for it: '${p_Desc.string}'`)
+    }
+  }
+
+  if (l_IsHandle) {
+    l_Desc.scripting = db.types[l_Desc.handle_id].full_scripting_string
+  }
+  else {
+    l_Desc.scripting = get_scripting_type(l_Desc.string)
+  }
+
+  return l_Desc;
+}
+
+function fill_types(db) {
+  for (let i_Type of Object.values(db.types)) {
+    for (let i_Prop of Object.values(i_Type.properties)) {
+      //console.log(`T: ${i_Type.id} - P: ${i_Prop.name}`)
+      i_Prop.type = get_full_type_description(i_Prop.type, i_Type.namespace, db)    
+    }
+  }
+}
+
+function build_database_for_low(p_Path, db) {
+  const l_Types = collect_types_for_low(p_Path);
+  
+  for (let i_Type of l_Types) {
+    insert_type_into_db(i_Type, db)
+  }
+}
+
+function build_database_for_plugin(p_Path, db){
+}
+
+function build_database_for(p_Path) {
+  const IS_PLUGIN = is_plugin(p_Path);
+
+  let db = {
+    find_by_type_string: function(p_Str, p_CurNamespace) {
+      for (let i_Type of Object.values(db.types)) {
+        if (p_Str == i_Type.full_string) {
+          return i_Type.id
+        }
+        let i_DStr = p_Str;
+        for (let i = p_CurNamespace.length - 1; i >= 0; --i) {
+          i_DStr = `${p_CurNamespace[i]}::${i_DStr}`;
+          if (i_DStr == i_Type.full_string) {
+            return i_Type.id
+          }
+        }
+        let i_Ns = ''
+        for (let i_N of p_CurNamespace) {
+          i_Ns = `${i_Ns}${i_N}::`
+          if (`${i_Ns}${p_Str}` == i_Type.full_string) {
+            return i_Type.id
+          }
+        }
+      }
+
+      return undefined
+    }
+  }
+
+  if (IS_PLUGIN){
+    build_database_for_low(get_engine_root_for_plugin(p_Path), db);
+    build_database_for_plugin(p_Path, db);
+  }
+  else {
+    build_database_for_low(p_Path, db);
+  }
+
+  fill_types(db)
+
+
+  return db
 }
 
 function collect_types_for_low(p_Path) {
@@ -1047,6 +1277,7 @@ module.exports = {
   removeItemOnce,
   format,
   line,
+  separator,
   write,
   include,
   empty,
@@ -1063,4 +1294,6 @@ module.exports = {
   is_name_type,
   is_container_type,
   is_string_type,
+  get_scripting_type,
+  build_database_for
 };

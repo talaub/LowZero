@@ -98,6 +98,105 @@ types:
       elements:
         type: Low::Util::List<Low::Core::UI::Element>
         no_setter: true
+
+  View:
+    unique_id: true
+    name_editable: true
+    no_auto_duplicate: true
+    scripting_expose: true
+    header_imports:
+      - LowMath.h
+    source_imports:
+      - LowCoreUiElement.h
+      - LowCoreUiDisplay.h
+      - LowUtilFileIO.h
+      - LowRendererUiCanvas.h
+    properties:
+      loaded:
+        type: bool
+        skip_serialization: true
+        skip_deserialization: true
+      elements:
+        type: Util::Set<Util::UniqueId>
+        no_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      internal:
+        type: bool
+        private_setter: true
+        skip_serialization: true
+        skip_deserialization: true
+      view_template:
+        type: bool
+        editor_editable: true
+      pixel_position:
+        type: Low::Math::Vector2
+        editor_editable: true
+        expose_scripting: true
+        getter_name: pixel_position
+        setter_name: pixel_position
+        dirty_flag: transform_dirty
+      rotation:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        getter_name: rotation
+        setter_name: rotation
+        dirty_flag: transform_dirty
+      scale_multiplier:
+        type: float
+        editor_editable: true
+        expose_scripting: true
+        getter_name: scale_multiplier
+        setter_name: scale_multiplier
+        dirty_flag: transform_dirty
+      layer_offset:
+        type: uint32_t
+        editor_editable: true
+        expose_scripting: true
+        getter_name: layer_offset
+        setter_name: layer_offset
+        dirty_flag: transform_dirty
+      canvas:
+        type: Low::Renderer::UiCanvas
+        handle: true
+        editor_editable: true
+    functions:
+      serialize_elements:
+        return_type: void
+        parameters:
+          - name: node
+            type: Util::Serial::Node
+      add_element:
+       return_type: void 
+       parameters:
+         - name: element
+           type: Element
+           handle: true
+      remove_element:
+       return_type: void 
+       parameters:
+         - name: element
+           type: Element
+           handle: true
+      load_elements:
+        return_type: void
+      unload_elements:
+        return_type: void
+      spawn_instance:
+        return_type: Low::Core::UI::View
+        return_handle: true
+        expose_scripting: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
+      find_element_by_name:
+        return_type: Low::Core::UI::Element
+        return_handle: true
+        expose_scripting: true
+        parameters:
+          - name: name
+            type: Low::Util::Name
       
   Element:
     no_auto_serialize: true
@@ -199,101 +298,3 @@ types:
             type: Util::Handle
             handle: true
 
-  View:
-    unique_id: true
-    name_editable: true
-    no_auto_duplicate: true
-    scripting_expose: true
-    header_imports:
-      - LowMath.h
-    source_imports:
-      - LowCoreUiElement.h
-      - LowCoreUiDisplay.h
-      - LowUtilFileIO.h
-      - LowRendererUiCanvas.h
-    properties:
-      loaded:
-        type: bool
-        skip_serialization: true
-        skip_deserialization: true
-      elements:
-        type: Util::Set<Util::UniqueId>
-        no_setter: true
-        skip_serialization: true
-        skip_deserialization: true
-      internal:
-        type: bool
-        private_setter: true
-        skip_serialization: true
-        skip_deserialization: true
-      view_template:
-        type: bool
-        editor_editable: true
-      pixel_position:
-        type: Low::Math::Vector2
-        editor_editable: true
-        expose_scripting: true
-        getter_name: pixel_position
-        setter_name: pixel_position
-        dirty_flag: transform_dirty
-      rotation:
-        type: float
-        editor_editable: true
-        expose_scripting: true
-        getter_name: rotation
-        setter_name: rotation
-        dirty_flag: transform_dirty
-      scale_multiplier:
-        type: float
-        editor_editable: true
-        expose_scripting: true
-        getter_name: scale_multiplier
-        setter_name: scale_multiplier
-        dirty_flag: transform_dirty
-      layer_offset:
-        type: uint32_t
-        editor_editable: true
-        expose_scripting: true
-        getter_name: layer_offset
-        setter_name: layer_offset
-        dirty_flag: transform_dirty
-      canvas:
-        type: Low::Renderer::UiCanvas
-        handle: true
-        editor_editable: true
-    functions:
-      serialize_elements:
-        return_type: void
-        parameters:
-          - name: node
-            type: Util::Serial::Node
-      add_element:
-       return_type: void 
-       parameters:
-         - name: element
-           type: Element
-           handle: true
-      remove_element:
-       return_type: void 
-       parameters:
-         - name: element
-           type: Element
-           handle: true
-      load_elements:
-        return_type: void
-      unload_elements:
-        return_type: void
-      spawn_instance:
-        return_type: Low::Core::UI::View
-        return_handle: true
-        expose_scripting: true
-        parameters:
-          - name: name
-            type: Low::Util::Name
-      find_element_by_name:
-        return_type: Low::Core::UI::Element
-        return_handle: true
-        expose_scripting: true
-        parameters:
-          - name: name
-            type: Low::Util::Name

@@ -160,6 +160,7 @@ namespace Low {
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
+        Low::Util::String get_full_path() const;
         static bool get_page_for_index(const u32 p_Index,
                                        u32 &p_PageIndex,
                                        u32 &p_SlotIndex);

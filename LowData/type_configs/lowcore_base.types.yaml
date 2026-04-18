@@ -4,6 +4,64 @@ namespace:
   - Core
 dll_macro: LOW_CORE_API
 types:
+  Region:
+    unique_id: true
+    scripting_expose: true
+    name_editable: true
+    header_imports:
+      - LowMath.h
+      - LowCoreScene.h
+    source_imports:
+      - LowCoreEntity.h
+      - LowUtilFileIO.h
+    properties:
+      loaded:
+        type: bool
+        skip_serialization: true
+        skip_deserialization: true
+      streaming_enabled:
+        type: bool
+        editor_editable: true
+      streaming_position:
+        type: Math::Vector3
+        editor_editable: true
+      streaming_radius:
+        type: float
+        editor_editable: true
+      entities:
+        type: Util::Set<Util::UniqueId>
+        no_setter: true
+        private_getter: true
+        skip_serialization: true
+        skip_deserialization: true
+      scene:
+        type: Scene
+        handle: true
+        skip_serialization: true
+        skip_deserialization: true
+    functions:
+      serialize_entities:
+        return_type: void
+        parameters:
+          - name: node
+            type: Util::Serial::Node
+      add_entity:
+       return_type: void 
+       parameters:
+         - name: entity
+           type: Entity
+           handle: true
+      remove_entity:
+       return_type: void 
+       parameters:
+         - name: entity
+           type: Entity
+           handle: true
+      load_entities:
+        return_type: void
+      unload_entities:
+        return_type: void
+
   Entity:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -25,6 +83,7 @@ types:
       region:
         type: Region
         handle: true
+        expose_scripting: true
     functions:
       make:
         static: true
@@ -93,63 +152,6 @@ types:
           - name: creator
             type: Low::Util::Handle
             handle: true
-
-  Region:
-    unique_id: true
-    name_editable: true
-    header_imports:
-      - LowMath.h
-      - LowCoreScene.h
-    source_imports:
-      - LowCoreEntity.h
-      - LowUtilFileIO.h
-    properties:
-      loaded:
-        type: bool
-        skip_serialization: true
-        skip_deserialization: true
-      streaming_enabled:
-        type: bool
-        editor_editable: true
-      streaming_position:
-        type: Math::Vector3
-        editor_editable: true
-      streaming_radius:
-        type: float
-        editor_editable: true
-      entities:
-        type: Util::Set<Util::UniqueId>
-        no_setter: true
-        private_getter: true
-        skip_serialization: true
-        skip_deserialization: true
-      scene:
-        type: Scene
-        handle: true
-        skip_serialization: true
-        skip_deserialization: true
-    functions:
-      serialize_entities:
-        return_type: void
-        parameters:
-          - name: node
-            type: Util::Serial::Node
-      add_entity:
-       return_type: void 
-       parameters:
-         - name: entity
-           type: Entity
-           handle: true
-      remove_entity:
-       return_type: void 
-       parameters:
-         - name: entity
-           type: Entity
-           handle: true
-      load_entities:
-        return_type: void
-      unload_entities:
-        return_type: void
 
   Scene:
     no_auto_serialize: true

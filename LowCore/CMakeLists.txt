@@ -60,6 +60,16 @@ target_compile_options(LowCore PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
 )
 
+target_include_directories(LowCore PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/angelscript/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on
+)
+
+target_sources(LowCore PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on/scriptstdstring/scriptstdstring.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/../LowDependencies/angelscript/sdk/add_on/scriptbuilder/scriptbuilder.cpp
+)
+
 set(WIN_PLATFORM_STRING "x64")
 
 target_link_libraries(LowCore PRIVATE

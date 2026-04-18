@@ -2,8 +2,10 @@
 
 #include <algorithm>
 
+#include "LowCoreScripting.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
+#include "LowUtilHandle.h"
 #include "LowUtilLogger.h"
 #include "LowUtilProfiler.h"
 #include "LowUtilConfig.h"
@@ -12,6 +14,7 @@
 #include "LowUtilObserverManager.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:SOURCE_CODE
+
 #include "LowUtilAssetManager.h"
 // LOW_CODEGEN::END::CUSTOM:SOURCE_CODE
 
@@ -19,6 +22,7 @@ namespace Low {
   namespace Core {
     namespace Scripting {
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_CODE
 
       u16 Asset::ms_TypeId = 0;
@@ -87,6 +91,7 @@ namespace Low {
                                       l_Handle.get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:MAKE
+
         // LOW_CODEGEN::END::CUSTOM:MAKE
 
         return l_Handle;
@@ -99,6 +104,7 @@ namespace Low {
         {
           Low::Util::HandleLock<Asset> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:DESTROY
+
           // LOW_CODEGEN::END::CUSTOM:DESTROY
         }
 
@@ -139,6 +145,7 @@ namespace Low {
 
         LOCK_PAGES_WRITE(l_PagesLock);
         // LOW_CODEGEN:BEGIN:CUSTOM:PREINITIALIZE
+
         // LOW_CODEGEN::END::CUSTOM:PREINITIALIZE
 
         ms_Capacity =
@@ -304,9 +311,19 @@ namespace Low {
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: name
         }
+        {
+          // Function: get_full_path
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(get_full_path);
+          l_FunctionInfo.type = Low::Util::RTTI::PropertyType::STRING;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: get_full_path
+        }
         ms_TypeId = Low::Util::Handle::register_type_info(IDENTIFIER,
                                                           l_TypeInfo);
         // LOW_CODEGEN:BEGIN:CUSTOM:POSTINITIALIZE
+
         Util::AssetManager::TypeRegistratorBuilder l_Builder(
             N(Script), IDENTIFIER);
         l_Builder.initialize_on_startup(true);
@@ -328,27 +345,44 @@ namespace Low {
         l_Builder.add_raw_suffix(".as");
         l_Builder.add_import_directory(Util::get_project().dataPath,
                                        true, true);
-        l_Builder.importer(
-            [](const Util::String p_Path) -> Util::String {
-              const Util::String l_FileName =
-                  Util::PathHelper::get_base_name_no_ext(p_Path);
-              ScriptAsset l_Asset =
-                  ScriptAsset::make(LOW_NAME(l_FileName.c_str()));
-              l_Asset.set_source_path(p_Path);
-              Util::Serial::Node l_OutNode;
-              l_Asset.serialize(l_OutNode);
-              l_Asset.set_module(Module::find_by_name(N(low.misc)));
+        l_Builder.importer([](const Util::String p_Path)
+                               -> Util::String {
+          ScriptAsset l_Asset = Util::Handle::DEAD;
+          bool l_Reimport = false;
 
-              Util::String l_SidecarPath =
-                  Util::get_project().assetCachePath;
-              l_SidecarPath +=
-                  "/" +
-                  Util::hash_to_string(l_Asset.get_unique_id()) +
-                  ".script.yaml";
-              Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
-                                            l_OutNode);
-              return l_SidecarPath;
-            });
+          for (u32 i = 0; i < ScriptAsset::living_count(); ++i) {
+            ScriptAsset i_Script = ScriptAsset::living_instances()[i];
+            if (i_Script.get_source_path() == p_Path) {
+              l_Asset = i_Script;
+              l_Reimport = true;
+              break;
+            }
+          }
+
+          const Util::String l_FileName =
+              Util::PathHelper::get_base_name_no_ext(p_Path);
+          if (!l_Asset.is_alive()) {
+            l_Asset = ScriptAsset::make(LOW_NAME(l_FileName.c_str()));
+          }
+          Util::String l_SidecarPath =
+              Util::get_project().assetCachePath;
+          l_SidecarPath +=
+              "/" + Util::hash_to_string(l_Asset.get_unique_id()) +
+              ".script.yaml";
+
+          if (l_Reimport) {
+            build_module(l_Asset.get_module());
+          } else {
+            l_Asset.set_source_path(p_Path);
+            Util::Serial::Node l_OutNode;
+            l_Asset.serialize(l_OutNode);
+            l_Asset.set_module(Module::find_by_name(N(low.misc)));
+
+            Util::Serial::write_yaml_file(l_SidecarPath.c_str(),
+                                          l_OutNode);
+          }
+          return l_SidecarPath;
+        });
 
         Util::AssetManager::register_asset_type(l_Builder.build());
         // LOW_CODEGEN::END::CUSTOM:POSTINITIALIZE
@@ -450,6 +484,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:FIND_BY_NAME
+
         // LOW_CODEGEN::END::CUSTOM:FIND_BY_NAME
 
         Low::Util::SharedLock<Low::Util::SharedMutex> l_LivingLock(
@@ -468,6 +503,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DUPLICATE
+
         LOW_ASSERT_WARN(false, "Not implemented");
         return 0;
         // LOW_CODEGEN::END::CUSTOM:DUPLICATE
@@ -490,6 +526,7 @@ namespace Low {
         _LOW_ASSERT(is_alive());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
+
         p_Node["name"] = get_name();
         p_Node["unique_id"] = Util::U64Id{get_unique_id()};
         p_Node["source"] = get_source_path();
@@ -512,6 +549,7 @@ namespace Low {
       {
 
         // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+
         Util::UniqueId l_HandleUniqueId = 0ull;
         if (p_Node["unique_id"]) {
           l_HandleUniqueId = p_Node["unique_id"].as<Util::U64Id>();
@@ -576,6 +614,7 @@ namespace Low {
                          Low::Util::Name p_Observable)
       {
         // LOW_CODEGEN:BEGIN:CUSTOM:NOTIFY
+
         // LOW_CODEGEN::END::CUSTOM:NOTIFY
       }
 
@@ -593,6 +632,7 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_module
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_module
 
         return TYPE_SOA(Asset, module, Low::Core::Scripting::Module);
@@ -603,6 +643,11 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_module
+
+        if (get_module().is_alive()) {
+          // TODO: Use a better way to erase it from the list
+          get_module().get_scripts().erase_first(get_id());
+        }
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_module
 
         // Set new value
@@ -610,6 +655,10 @@ namespace Low {
             p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_module
+
+        if (p_Value.is_alive()) {
+          p_Value.get_scripts().push_back(get_id());
+        }
         // LOW_CODEGEN::END::CUSTOM:SETTER_module
 
         broadcast_observable(N(module));
@@ -621,6 +670,7 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_source_path
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_source_path
 
         return TYPE_SOA(Asset, source_path, Low::Util::String);
@@ -637,12 +687,14 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_source_path
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_source_path
 
         // Set new value
         TYPE_SOA(Asset, source_path, Low::Util::String) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_source_path
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_source_path
 
         broadcast_observable(N(source_path));
@@ -654,6 +706,7 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_unique_id
 
         return TYPE_SOA(Asset, unique_id, Low::Util::UniqueId);
@@ -664,12 +717,14 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_unique_id
 
         // Set new value
         TYPE_SOA(Asset, unique_id, Low::Util::UniqueId) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_unique_id
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_unique_id
 
         broadcast_observable(N(unique_id));
@@ -681,6 +736,7 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:GETTER_name
 
         return TYPE_SOA(Asset, name, Low::Util::Name);
@@ -691,15 +747,28 @@ namespace Low {
         Low::Util::HandleLock<Asset> l_Lock(get_id());
 
         // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:PRESETTER_name
 
         // Set new value
         TYPE_SOA(Asset, name, Low::Util::Name) = p_Value;
 
         // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_name
+
         // LOW_CODEGEN::END::CUSTOM:SETTER_name
 
         broadcast_observable(N(name));
+      }
+
+      Low::Util::String Asset::get_full_path() const
+      {
+        Low::Util::HandleLock<Asset> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_full_path
+
+        Util::String l_Path = Util::get_project().dataPath;
+        l_Path += "/" + get_source_path();
+        return l_Path;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_full_path
       }
 
       uint32_t Asset::create_instance(
@@ -782,6 +851,7 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Scripting

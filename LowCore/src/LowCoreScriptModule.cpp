@@ -60,6 +60,9 @@ namespace Low {
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Module, scripts,
                                    Low::Util::List<uint64_t>))
             Low::Util::List<uint64_t>();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Module, ticking_functions,
+            Low::Util::List<char *>)) Low::Util::List<char *>();
         ACCESSOR_TYPE_SOA(l_Handle, Module, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -226,6 +229,37 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: as_module
+        }
+        {
+          // Property: ticking_functions
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(ticking_functions);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Module::Data, ticking_functions);
+          l_PropertyInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Module l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
+            l_Handle.get_ticking_functions();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Module, ticking_functions,
+                Low::Util::List<char *>);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {};
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Module l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Module> l_HandleLock(l_Handle);
+            *((Low::Util::List<char *> *)p_Data) =
+                l_Handle.get_ticking_functions();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: ticking_functions
         }
         {
           // Property: name
@@ -503,6 +537,18 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_as_module
 
         broadcast_observable(N(as_module));
+      }
+
+      Low::Util::List<char *> &Module::get_ticking_functions() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Module> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_ticking_functions
+        // LOW_CODEGEN::END::CUSTOM:GETTER_ticking_functions
+
+        return TYPE_SOA(Module, ticking_functions,
+                        Low::Util::List<char *>);
       }
 
       Low::Util::Name Module::get_name() const

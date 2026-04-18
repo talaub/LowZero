@@ -17,6 +17,9 @@ types:
         no_setter: true
       as_module:
         type: char*
+      ticking_functions:
+        type: Low::Util::List<char*>
+        no_setter: true
   Asset:
     no_auto_serialize: true
     no_auto_deserialize: true
@@ -30,3 +33,8 @@ types:
       source_path:
         type: Low::Util::String
         private_setter: true
+    functions:
+      get_full_path:
+        return_type: Low::Util::String
+        constant: true
+        const: true

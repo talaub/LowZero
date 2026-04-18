@@ -313,7 +313,7 @@ namespace Low {
       for (auto it = get_type_metadata().begin();
            it != get_type_metadata().end(); ++it) {
         if (it->second.scriptingExpose) {
-          Flode::register_nodes_for_type(it->second.typeId);
+          //Flode::register_nodes_for_type(it->second.typeId);
         }
       }
     }
