@@ -1,4 +1,5 @@
 #include "LowCoreUi.h"
+#include "LowUtilLogger.h"
 
 namespace Low {
   namespace Core {
@@ -15,5 +16,5 @@ namespace Low {
         return g_HoveredElement;
       }
     } // namespace UI
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

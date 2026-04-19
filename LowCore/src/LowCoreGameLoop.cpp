@@ -80,6 +80,24 @@ namespace Low {
         if (l_FirstRunInPlayMode &&
             get_engine_state() == Util::EngineState::PLAYING) {
           l_FirstRunInPlayMode = false;
+
+          Renderer::UiCanvas l_Canvas =
+              Renderer::UiCanvas::make(N(TestCanvas));
+          Renderer::get_game_renderview().add_ui_canvas(l_Canvas);
+
+          if (1) {
+            // TODO: Remove, this is test code
+            LOW_LOG_DEBUG << "Doing stuff" << LOW_LOG_END;
+            UI::WidgetAsset l_Asset =
+                UI::WidgetAsset::living_instances()[0];
+            l_Asset.set_controller(
+                UI::Controller::find_by_name(N(EviController)));
+            UI::WidgetInstance l_Instance =
+                l_Asset.spawn_instance(l_Canvas);
+            UI::Element l_Root = l_Instance.get_root();
+            UI::Component::Display l_Display = l_Root.get_display();
+            l_Display.pixel_position(100, 100);
+          }
           // UI::WidgetAsset::living_instances()[0].spawn_instance(Renderer::get_game_renderview().get_i)
         }
 
@@ -267,12 +285,6 @@ namespace Low {
         Renderer::UiCanvas l_Canvas =
             Renderer::UiCanvas::make(N(TestCanvas));
         Renderer::get_game_renderview().add_ui_canvas(l_Canvas);
-
-        if (1) {
-          // TODO: Remove, this is test code
-          UI::WidgetAsset::living_instances()[0].spawn_instance(
-              l_Canvas);
-        }
 
         if (0) {
           using namespace Low::Renderer;

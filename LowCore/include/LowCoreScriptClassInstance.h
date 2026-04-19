@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+#include <type_traits>
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -179,12 +180,141 @@ namespace Low {
             Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
         static u32 create_page();
         char *_ptr() const;
+        char *spawn();
 
         // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
+      public:
+        template <typename... TArgs>
+        bool call_method(const char *p_Declaration,
+                         TArgs &&...p_Args);
+
+      private:
+        bool call_method_internal(const char *p_Declaration,
+                                  const void *const *p_Args,
+                                  const char *const *p_TypeKeys,
+                                  uint32_t p_ArgCount);
         // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
       };
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
+      namespace Detail {
+        template <typename T> struct ScriptArgTraits
+        {
+          static const char *key()
+          {
+            return "object";
+          }
+        };
+
+        template <> struct ScriptArgTraits<bool>
+        {
+          static const char *key()
+          {
+            return "bool";
+          }
+        };
+
+        template <> struct ScriptArgTraits<int8_t>
+        {
+          static const char *key()
+          {
+            return "int8";
+          }
+        };
+
+        template <> struct ScriptArgTraits<uint8_t>
+        {
+          static const char *key()
+          {
+            return "uint8";
+          }
+        };
+
+        template <> struct ScriptArgTraits<int16_t>
+        {
+          static const char *key()
+          {
+            return "int16";
+          }
+        };
+
+        template <> struct ScriptArgTraits<uint16_t>
+        {
+          static const char *key()
+          {
+            return "uint16";
+          }
+        };
+
+        template <> struct ScriptArgTraits<int32_t>
+        {
+          static const char *key()
+          {
+            return "int32";
+          }
+        };
+
+        template <> struct ScriptArgTraits<uint32_t>
+        {
+          static const char *key()
+          {
+            return "uint32";
+          }
+        };
+
+        template <> struct ScriptArgTraits<int64_t>
+        {
+          static const char *key()
+          {
+            return "int64";
+          }
+        };
+
+        template <> struct ScriptArgTraits<uint64_t>
+        {
+          static const char *key()
+          {
+            return "uint64";
+          }
+        };
+
+        template <> struct ScriptArgTraits<float>
+        {
+          static const char *key()
+          {
+            return "float";
+          }
+        };
+
+        template <> struct ScriptArgTraits<double>
+        {
+          static const char *key()
+          {
+            return "double";
+          }
+        };
+
+        template <typename T> struct ScriptArgTraits<T *>
+        {
+          static const char *key()
+          {
+            return "pointer";
+          }
+        };
+      } // namespace Detail
+
+      template <typename... TArgs>
+      bool ClassInstance::call_method(const char *p_Declaration,
+                                      TArgs &&...p_Args)
+      {
+        const void *l_Args[] = {(const void *)&p_Args...};
+        const char *l_TypeKeys[] = {
+            Detail::ScriptArgTraits<std::remove_cv_t<
+                std::remove_reference_t<TArgs>>>::key()...};
+
+        return call_method_internal(p_Declaration, l_Args, l_TypeKeys,
+                                    sizeof...(TArgs));
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_STRUCT_CODE
 
     } // namespace Scripting

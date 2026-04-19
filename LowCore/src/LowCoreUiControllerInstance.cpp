@@ -610,6 +610,11 @@ namespace Low {
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_handle_click
         Controller l_Controller = get_controller();
         if (l_Controller.is_script_controller()) {
+          Scripting::ClassInstance l_ClassInstance =
+              get_value().script.instance;
+
+          l_ClassInstance.call_method("void on_click(UI::Element)",
+                                      p_Element);
         }
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_handle_click
       }

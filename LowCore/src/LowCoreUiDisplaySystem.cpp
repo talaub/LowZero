@@ -57,7 +57,6 @@ namespace Low {
             } else {
               set_hovered_element(0);
             }
-
             if (Input::mouse_button_down(Util::MouseButton::LEFT)) {
               Element l_Element = get_hovered_element();
               if (l_Element.is_alive()) {

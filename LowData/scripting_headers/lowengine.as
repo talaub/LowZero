@@ -56,3 +56,7 @@ namespace Runtime {
 interface GameplaySystem {
     void tick(const float deltaTime);
 };
+
+interface UiController {
+    void on_click(UI::Element element);
+};

@@ -1004,6 +1004,7 @@ namespace Low {
         Element l_RootElement = Element::make(N(root), p_Canvas);
         Component::Display l_RootDisplay =
             Component::Display::make(l_RootElement);
+        l_RootElement.set_click_passthrough(true);
 
         l_Instance.set_root(l_RootElement);
 

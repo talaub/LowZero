@@ -24,6 +24,9 @@ namespace Low {
       mouse_button_pressed(Util::MouseButton p_Button);
 
       void late_tick(float p_Delta);
+
+      void initialize();
+      void cleanup();
     } // namespace Input
-  }   // namespace Core
+  } // namespace Core
 } // namespace Low

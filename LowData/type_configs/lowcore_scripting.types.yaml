@@ -92,6 +92,9 @@ types:
         return_type: bool
       get_ptr:
         return_type: char*
+      spawn:
+        private: true
+        return_type: char*
       make:
         static: true
         return_type: Low::Core::Scripting::ClassInstance

@@ -19,6 +19,7 @@
 #include "LowCoreNavmeshAgent.h"
 #include "LowCoreGameMode.h"
 #include "LowCoreCamera.h"
+#include "LowCoreInput.h"
 
 #include "LowCoreScriptClass.h"
 #include "LowCoreScriptAsset.h"
@@ -276,6 +277,7 @@ namespace Low {
       DebugGeometry::initialize();
       GameLoop::initialize();
       Scripting::initialize();
+      Input::initialize();
 
       load_assets();
 
@@ -357,6 +359,7 @@ namespace Low {
 
     void cleanup()
     {
+      Input::cleanup();
       Scripting::cleanup_as();
       Scripting::cleanup();
       GameLoop::cleanup();

@@ -312,6 +312,16 @@ namespace Low {
           // End function: get_ptr
         }
         {
+          // Function: spawn
+          Low::Util::RTTI::FunctionInfo l_FunctionInfo;
+          l_FunctionInfo.name = N(spawn);
+          l_FunctionInfo.type =
+              Low::Util::RTTI::PropertyType::UNKNOWN;
+          l_FunctionInfo.handleType = 0;
+          l_TypeInfo.functions[l_FunctionInfo.name] = l_FunctionInfo;
+          // End function: spawn
+        }
+        {
           // Function: make
           Low::Util::RTTI::FunctionInfo l_FunctionInfo;
           l_FunctionInfo.name = N(make);
@@ -680,11 +690,41 @@ namespace Low {
       {
         Low::Util::HandleLock<ClassInstance> l_Lock(get_id());
         // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_get_ptr
-        LOW_ASSERT(!needs_refresh(),
-                   "Class instance needs reload, implement me.");
+        if (needs_refresh()) {
+          asIScriptObject *l_OldPtr = (asIScriptObject *)_ptr();
+          if (l_OldPtr) {
+            l_OldPtr->Release();
+          }
+          set_ptr(spawn());
+        }
 
         return _ptr();
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_get_ptr
+      }
+
+      char *ClassInstance::spawn()
+      {
+        Low::Util::HandleLock<ClassInstance> l_Lock(get_id());
+        // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_spawn
+        ScriptClass l_Class = get_script_class();
+        LOW_ASSERT(l_Class.is_valid(),
+                   "Can't spawn instance of class that is invalid.");
+
+        asITypeInfo *l_Type = (asITypeInfo *)l_Class.as_class();
+        asIScriptEngine *l_Engine = l_Type->GetEngine();
+
+        void *l_ObjRaw = l_Engine->CreateScriptObject(l_Type);
+        LOW_ASSERT(l_ObjRaw,
+                   "Failed to create script class instance.");
+
+        set_reload_index(l_Class.get_reload_index());
+
+        // TODO: Kinda unnecessary
+        asIScriptObject *l_Object =
+            reinterpret_cast<asIScriptObject *>(l_ObjRaw);
+
+        return (char *)l_Object;
+        // LOW_CODEGEN::END::CUSTOM:FUNCTION_spawn
       }
 
       Low::Core::Scripting::ClassInstance
@@ -701,17 +741,7 @@ namespace Low {
         l_Instance.set_script_class(p_ScriptClass.get_id());
         l_Instance.set_reload_index(p_ScriptClass.get_reload_index());
 
-        asITypeInfo *l_Type = (asITypeInfo *)p_ScriptClass.as_class();
-        asIScriptEngine *l_Engine = l_Type->GetEngine();
-
-        void *l_ObjRaw = l_Engine->CreateScriptObject(l_Type);
-        LOW_ASSERT(l_ObjRaw,
-                   "Failed to create script class instance.");
-
-        asIScriptObject *l_Object =
-            reinterpret_cast<asIScriptObject *>(l_ObjRaw);
-
-        l_Instance.set_ptr((char *)l_Object);
+        l_Instance.set_ptr(l_Instance.spawn());
 
         return l_Instance;
         // LOW_CODEGEN::END::CUSTOM:FUNCTION_make
@@ -797,6 +827,115 @@ namespace Low {
       }
 
       // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_TYPE_CODE
+      static bool set_arg(asIScriptContext *p_Context, asUINT p_Index,
+                          const void *p_Value, const char *p_TypeKey)
+      {
+        if (strcmp(p_TypeKey, "bool") == 0) {
+          return p_Context->SetArgByte(
+                     p_Index,
+                     static_cast<asBYTE>(
+                         (*(const bool *)p_Value) ? 1 : 0)) >= 0;
+        } else if (strcmp(p_TypeKey, "int8") == 0) {
+          return p_Context->SetArgByte(
+                     p_Index, static_cast<asBYTE>(
+                                  *(const int8_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint8") == 0) {
+          return p_Context->SetArgByte(
+                     p_Index, static_cast<asBYTE>(
+                                  *(const uint8_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "int16") == 0) {
+          return p_Context->SetArgWord(
+                     p_Index, static_cast<asWORD>(
+                                  *(const int16_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint16") == 0) {
+          return p_Context->SetArgWord(
+                     p_Index, static_cast<asWORD>(
+                                  *(const uint16_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "int32") == 0 ||
+                   strcmp(p_TypeKey, "int") == 0) {
+          return p_Context->SetArgDWord(
+                     p_Index, static_cast<asDWORD>(
+                                  *(const int32_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint32") == 0 ||
+                   strcmp(p_TypeKey, "u32") == 0) {
+          return p_Context->SetArgDWord(
+                     p_Index, static_cast<asDWORD>(
+                                  *(const uint32_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "int64") == 0) {
+          return p_Context->SetArgQWord(
+                     p_Index, static_cast<asQWORD>(
+                                  *(const int64_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "uint64") == 0 ||
+                   strcmp(p_TypeKey, "u64") == 0) {
+          return p_Context->SetArgQWord(
+                     p_Index, static_cast<asQWORD>(
+                                  *(const uint64_t *)p_Value)) >= 0;
+        } else if (strcmp(p_TypeKey, "float") == 0) {
+          return p_Context->SetArgFloat(p_Index,
+                                        *(const float *)p_Value) >= 0;
+        } else if (strcmp(p_TypeKey, "double") == 0) {
+          return p_Context->SetArgDouble(
+                     p_Index, *(const double *)p_Value) >= 0;
+        } else if (strcmp(p_TypeKey, "pointer") == 0) {
+          return p_Context->SetArgAddress(
+                     p_Index, const_cast<void *>(p_Value)) >= 0;
+        } else {
+          return p_Context->SetArgObject(
+                     p_Index, const_cast<void *>(p_Value)) >= 0;
+        }
+      }
+
+      bool ClassInstance::call_method_internal(
+          const char *p_Declaration, const void *const *p_Args,
+          const char *const *p_TypeKeys, uint32_t p_ArgCount)
+      {
+        ScriptClass l_Class = get_script_class();
+
+        asITypeInfo *l_Type = (asITypeInfo *)l_Class.as_class();
+        if (!l_Type) {
+          return false;
+        }
+
+        asIScriptObject *l_ScriptObject =
+            (asIScriptObject *)get_ptr();
+        if (!l_ScriptObject) {
+          return false;
+        }
+
+        asIScriptFunction *l_Function =
+            l_Type->GetMethodByDecl(p_Declaration);
+        if (!l_Function) {
+          return false;
+        }
+
+        asIScriptContext *l_Context =
+            l_Type->GetEngine()->RequestContext();
+        if (!l_Context) {
+          return false;
+        }
+
+        if (l_Context->Prepare(l_Function) < 0) {
+          l_Type->GetEngine()->ReturnContext(l_Context);
+          return false;
+        }
+
+        if (l_Context->SetObject(l_ScriptObject) < 0) {
+          l_Type->GetEngine()->ReturnContext(l_Context);
+          return false;
+        }
+
+        for (uint32_t i = 0; i < p_ArgCount; ++i) {
+          if (!set_arg(l_Context, i, p_Args[i], p_TypeKeys[i])) {
+            l_Type->GetEngine()->ReturnContext(l_Context);
+            return false;
+          }
+        }
+
+        const int l_Result = l_Context->Execute();
+        l_Type->GetEngine()->ReturnContext(l_Context);
+
+        return l_Result == asEXECUTION_FINISHED;
+      }
       // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_TYPE_CODE
 
     } // namespace Scripting
