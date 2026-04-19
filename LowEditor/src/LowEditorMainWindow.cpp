@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "LowMath.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 
@@ -32,6 +33,7 @@
 #include "LowEditorScriptWidget.h"
 #include "LowEditorEditWidget.h"
 #include "LowEditor.h"
+#include "LowEditorNodeGraph.h"
 
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
@@ -71,6 +73,8 @@ namespace Low {
   namespace Editor {
     const int g_DockSpaceId = 4785;
     bool g_CentralDockOpen = true;
+
+    NodeGraphCanvas g_TestCanvas;
 
     bool g_GizmosDragged = false;
 
@@ -711,6 +715,11 @@ namespace Low {
         handle_shortcuts(p_Delta);
       }
       ImGui::ShowDemoWindow();
+
+      ImGui::Begin("Visual Scripting");
+      g_TestCanvas.render("Graph", Math::Vector2(0, 0));
+      ImGui::End();
+
       // ImGui::ShowMetricsWindow();
     }
 

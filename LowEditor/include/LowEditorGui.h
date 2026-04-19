@@ -11,6 +11,9 @@
 #define LOW_EDITOR_LABEL_WIDTH_REL 0.27f
 #define LOW_EDITOR_LABEL_HEIGHT_ABS 20.0f
 
+#define TO_VEC2(IV2) Low::Math::Vector2(IV2.x, IV2.y)
+#define FROM_VEC2(LV2) ImVec2(LV2.x, LV2.y)
+
 namespace Low {
   namespace Editor {
     namespace Gui {

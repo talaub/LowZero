@@ -3,6 +3,7 @@
 #include "LowMath.h"
 #include "LowRenderer.h"
 
+#include "LowUtilEnums.h"
 #include "LowUtilGlobals.h"
 #include "LowUtilLogger.h"
 #include "SDL_events.h"
@@ -11,8 +12,11 @@ namespace Low {
   namespace Core {
     namespace Input {
       Util::Map<Util::MouseButton, bool> g_MouseSavedState;
-      // HACK: Temp
+      Util::Map<Util::KeyboardButton, bool> g_KeyboardSavedState;
+
+      // HACK: Remove hardcode test stuff
       bool g_Clicked = false;
+
       Math::Vector2 g_MousePosition;
 
       bool keyboard_button_down(Util::KeyboardButton p_Button)
