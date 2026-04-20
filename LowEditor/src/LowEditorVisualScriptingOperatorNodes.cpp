@@ -19,14 +19,21 @@ namespace Low {
             {
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
               return m_Title;
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Bool";
+            }
+
+            bool is_compact(const Graph &, NodeId) const override
+            {
+              return true;
             }
 
             ImU32 get_color(const Graph &, NodeId) const override
@@ -34,30 +41,38 @@ namespace Low {
               return g_OperatorColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_number_pin_metadata("A"), p_Schema);
+                              make_number_pin_metadata("A"),
+                              p_Schema);
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_number_pin_metadata("B"), p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
+                              make_number_pin_metadata("B"),
+                              p_Schema);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_OutputMetadata = make_bool_pin_metadata("Result");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(m_Operator);
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
@@ -68,6 +83,12 @@ namespace Low {
             GreaterEqualsNodeClass()
                 : ComparisonNodeClassBase("Greater equals", " >= ")
             {
+            }
+
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return ">=";
             }
 
             Util::Name get_name() const override
@@ -83,6 +104,12 @@ namespace Low {
             {
             }
 
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return "<=";
+            }
+
             Util::Name get_name() const override
             {
               return N(vs_operator_less_equals);
@@ -91,9 +118,14 @@ namespace Low {
 
           struct LessNodeClass : public ComparisonNodeClassBase
           {
-            LessNodeClass()
-                : ComparisonNodeClassBase("Less", " < ")
+            LessNodeClass() : ComparisonNodeClassBase("Less", " < ")
             {
+            }
+
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return "<";
             }
 
             Util::Name get_name() const override
@@ -107,6 +139,12 @@ namespace Low {
             GreaterNodeClass()
                 : ComparisonNodeClassBase("Greater", " > ")
             {
+            }
+
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return ">";
             }
 
             Util::Name get_name() const override
@@ -129,7 +167,8 @@ namespace Low {
           p_Graph.register_node_class(g_GreaterNodeClass);
 
           NodeSpawnEntry l_GreaterEqualsEntry;
-          l_GreaterEqualsEntry.id = N(vs_spawn_operator_greater_equals);
+          l_GreaterEqualsEntry.id =
+              N(vs_spawn_operator_greater_equals);
           l_GreaterEqualsEntry.category = "Bool";
           l_GreaterEqualsEntry.title = "Greater equals";
           l_GreaterEqualsEntry.search_text = "greater equals compare";

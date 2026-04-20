@@ -17,8 +17,14 @@
 namespace Low {
   namespace Editor {
     namespace Gui {
+      bool Vector2Edit(Math::Vector2 &p_Vector,
+                       float p_MaxWidth = -1.0f);
       bool Vector3Edit(Math::Vector3 &p_Vector,
                        float p_MaxWidth = -1.0f);
+      bool Vector4Edit(Math::Vector4 &p_Vector,
+                       float p_MaxWidth = -1.0f);
+      bool EulerEdit(Math::Quaternion &p_Quaternion,
+                     float p_MaxWidth = -1.0f);
       Util::String FileExplorer();
 
       bool LOW_EDITOR_API spinner(const char *label, float radius,

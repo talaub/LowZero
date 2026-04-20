@@ -1,5 +1,7 @@
 #include "LowEditorVisualScriptingMathNodes.h"
 
+#include "LowEditorIcons.h"
+
 namespace Low {
   namespace Editor {
     namespace VisualScript {
@@ -24,12 +26,14 @@ namespace Low {
             {
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
               return m_Title;
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Math";
             }
@@ -39,34 +43,34 @@ namespace Low {
               return g_MathColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               const Pin l_InputMetadata =
-                  m_StartDynamic
-                      ? make_dynamic_pin_metadata("A")
-                      : make_number_pin_metadata("A");
+                  m_StartDynamic ? make_dynamic_pin_metadata("A")
+                                 : make_number_pin_metadata("A");
               Pin l_InputBMetadata =
-                  m_StartDynamic
-                      ? make_dynamic_pin_metadata("B")
-                      : make_number_pin_metadata("B");
+                  m_StartDynamic ? make_dynamic_pin_metadata("B")
+                                 : make_number_pin_metadata("B");
               Pin l_OutputMetadata =
-                  m_StartDynamic
-                      ? make_dynamic_pin_metadata("Result")
-                      : make_number_pin_metadata("Result");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+                  m_StartDynamic ? make_dynamic_pin_metadata("Result")
+                                 : make_number_pin_metadata("Result");
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
 
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               l_InputMetadata, p_Schema);
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               l_InputBMetadata, p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            bool can_connect_pin(Graph &, NodeId, PinId,
-                                 const Pin &p_PinMetadata,
-                                 const Pin &p_OtherPinMetadata) const override
+            bool can_connect_pin(
+                Graph &, NodeId, PinId, const Pin &p_PinMetadata,
+                const Pin &p_OtherPinMetadata) const override
             {
               if (m_StartDynamic &&
                   p_PinMetadata.type == PinType::Dynamic) {
@@ -76,7 +80,8 @@ namespace Low {
               return true;
             }
 
-            void on_pin_connected(Graph &p_Graph, NodeId p_NodeId, PinId,
+            void on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
+                                  PinId,
                                   PinId p_OtherPinId) const override
             {
               if (!m_StartDynamic) {
@@ -109,17 +114,20 @@ namespace Low {
               }
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(m_Operator);
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
@@ -141,9 +149,10 @@ namespace Low {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
             {
-              return "+";
+              return ICON_LC_PLUS;
             }
           };
 
@@ -164,9 +173,10 @@ namespace Low {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
             {
-              return "-";
+              return ICON_LC_MINUS;
             }
           };
 
@@ -187,9 +197,10 @@ namespace Low {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
             {
-              return "*";
+              return ICON_LC_X;
             }
           };
 
@@ -210,9 +221,10 @@ namespace Low {
               return true;
             }
 
-            Util::String get_compact_title(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
             {
-              return "/";
+              return ICON_LC_DIVIDE;
             }
           };
 
@@ -223,12 +235,14 @@ namespace Low {
               return N(vs_random_percent_chance);
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
               return "Percent chance";
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Random";
             }
@@ -238,25 +252,32 @@ namespace Low {
               return g_RandomColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_number_pin_metadata("Percent"), p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
-              Pin l_OutputMetadata = make_bool_pin_metadata("Success");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+                              make_number_pin_metadata("Percent"),
+                              p_Schema);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
+              Pin l_OutputMetadata =
+                  make_bool_pin_metadata("Success");
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append(
                   "Low::Math::Util::random_percent((uint8_t)");
               compile_input_pin(
                   p_Graph, p_NodeId,
-                  p_Graph.find_input_pin_checked(p_NodeId, "Percent")->pin,
+                  p_Graph.find_input_pin_checked(p_NodeId, "Percent")
+                      ->pin,
                   p_CompileContext);
               p_CompileContext.main_code.append(")");
             }

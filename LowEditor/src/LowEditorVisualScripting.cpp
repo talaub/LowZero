@@ -240,10 +240,18 @@ namespace Low {
               return;
             }
           case PinType::String: {
-            p_CompileContext.main_code.append("\"");
-            p_CompileContext.main_code.append(escape_script_string(
-                p_PinMetadata.default_value.as_string()));
-            p_CompileContext.main_code.append("\"");
+            if (p_PinMetadata.string_subtype == StringSubtype::Name) {
+              p_CompileContext.main_code.append(
+                  "Low::Util::Name::from_string(\"");
+              p_CompileContext.main_code.append(escape_script_string(
+                  p_PinMetadata.default_value.as_string()));
+              p_CompileContext.main_code.append("\")");
+            } else {
+              p_CompileContext.main_code.append("\"");
+              p_CompileContext.main_code.append(escape_script_string(
+                  p_PinMetadata.default_value.as_string()));
+              p_CompileContext.main_code.append("\"");
+            }
             return;
           }
           default:
@@ -280,8 +288,9 @@ namespace Low {
           return true;
         }
 
-        static Util::String get_variable_name_from_spawn_id(
-            Util::Name p_Id, const char *p_Prefix)
+        static Util::String
+        get_variable_name_from_spawn_id(Util::Name p_Id,
+                                        const char *p_Prefix)
         {
           const char *l_Value = p_Id.c_str();
           if (!string_starts_with(l_Value, p_Prefix)) {
@@ -892,6 +901,39 @@ namespace Low {
             return;
           }
 
+          const Pin *l_ConnectedPinMetadata =
+              find_pin(l_ConnectedPinId);
+          if (l_ConnectedPinMetadata &&
+              l_InputPinMetadata->type == PinType::String &&
+              l_ConnectedPinMetadata->type == PinType::String &&
+              l_InputPinMetadata->string_subtype !=
+                  l_ConnectedPinMetadata->string_subtype) {
+            if (l_InputPinMetadata->string_subtype ==
+                    StringSubtype::String &&
+                l_ConnectedPinMetadata->string_subtype ==
+                    StringSubtype::Name) {
+              p_CompileContext.main_code.append("Low::Util::String(");
+              l_ConnectedNodeClass->compile_output_pin(
+                  *const_cast<Graph *>(this), l_ConnectedPin->node,
+                  l_ConnectedPinId, p_CompileContext);
+              p_CompileContext.main_code.append(".c_str())");
+              return;
+            }
+
+            if (l_InputPinMetadata->string_subtype ==
+                    StringSubtype::Name &&
+                l_ConnectedPinMetadata->string_subtype ==
+                    StringSubtype::String) {
+              p_CompileContext.main_code.append(
+                  "Low::Util::Name::from_string(");
+              l_ConnectedNodeClass->compile_output_pin(
+                  *const_cast<Graph *>(this), l_ConnectedPin->node,
+                  l_ConnectedPinId, p_CompileContext);
+              p_CompileContext.main_code.append(")");
+              return;
+            }
+          }
+
           l_ConnectedNodeClass->compile_output_pin(
               *const_cast<Graph *>(this), l_ConnectedPin->node,
               l_ConnectedPinId, p_CompileContext);
@@ -1221,7 +1263,7 @@ namespace Low {
                                     l_CompactText.c_str());
           const float l_TagPaddingX = 7.0f * l_Zoom;
           const float l_TagPaddingY = 3.0f * l_Zoom;
-          const float l_CompactTabInset = 10.0f * l_Zoom;
+          const float l_CompactTabInset = 7.0f * l_Zoom;
           const ImVec2 l_CompactBadgeMin = ImVec2(
               p_ScreenMin.x + l_CompactTabInset,
               p_ScreenMin.y -
@@ -1593,8 +1635,7 @@ namespace Low {
             const float l_ClusterTop =
                 ((l_ContentTop + l_ContentBottom) * 0.5f) -
                 (l_ClusterHeight * 0.5f);
-            l_Y = l_ClusterTop +
-                  l_CompactStep * (float)l_SideIndex;
+            l_Y = l_ClusterTop + l_CompactStep * (float)l_SideIndex;
           }
         } else {
           const float l_Step = (l_ContentBottom - l_ContentTop) /
@@ -1670,16 +1711,15 @@ namespace Low {
             }
 
             NodeGraphSpawnEntry l_Entry;
-            l_Entry.id = LOW_NAME(
-                (Util::String(g_GetVariableSpawnPrefix) +
-                 i_Variable.name)
-                    .c_str());
+            l_Entry.id =
+                LOW_NAME((Util::String(g_GetVariableSpawnPrefix) +
+                          i_Variable.name)
+                             .c_str());
             l_Entry.category = "Syntax";
-            l_Entry.title =
-                Util::String("Get ") + i_Variable.name;
+            l_Entry.title = Util::String("Get ") + i_Variable.name;
             l_Entry.subtitle = "Variable";
-            l_Entry.search_text = Util::String("get variable ") +
-                                  i_Variable.name;
+            l_Entry.search_text =
+                Util::String("get variable ") + i_Variable.name;
             l_Entries.push_back(l_Entry);
           }
         }
@@ -1691,16 +1731,15 @@ namespace Low {
             }
 
             NodeGraphSpawnEntry l_Entry;
-            l_Entry.id = LOW_NAME(
-                (Util::String(g_SetVariableSpawnPrefix) +
-                 i_Variable.name)
-                    .c_str());
+            l_Entry.id =
+                LOW_NAME((Util::String(g_SetVariableSpawnPrefix) +
+                          i_Variable.name)
+                             .c_str());
             l_Entry.category = "Syntax";
-            l_Entry.title =
-                Util::String("Set ") + i_Variable.name;
+            l_Entry.title = Util::String("Set ") + i_Variable.name;
             l_Entry.subtitle = "Variable";
-            l_Entry.search_text = Util::String("set variable ") +
-                                  i_Variable.name;
+            l_Entry.search_text =
+                Util::String("set variable ") + i_Variable.name;
             l_Entries.push_back(l_Entry);
           }
         }
@@ -1717,8 +1756,8 @@ namespace Low {
         }
 
         Util::String l_GetVariableName =
-            get_variable_name_from_spawn_id(
-                p_EntryId, g_GetVariableSpawnPrefix);
+            get_variable_name_from_spawn_id(p_EntryId,
+                                            g_GetVariableSpawnPrefix);
         if (!l_GetVariableName.empty()) {
           Editor::Node l_Node;
           l_Node.id = graph->allocate_node_id();
@@ -1728,8 +1767,7 @@ namespace Low {
           l_Metadata.node = l_Node.id;
           l_Metadata.node_class = N(vs_syntax_get_variable);
           l_Metadata.variable_name = l_GetVariableName;
-          l_Metadata.title =
-              Util::String("Get ") + l_GetVariableName;
+          l_Metadata.title = Util::String("Get ") + l_GetVariableName;
           l_Metadata.subtitle = "Variable";
           l_Metadata.category = "Syntax";
 
@@ -1749,8 +1787,8 @@ namespace Low {
         }
 
         Util::String l_SetVariableName =
-            get_variable_name_from_spawn_id(
-                p_EntryId, g_SetVariableSpawnPrefix);
+            get_variable_name_from_spawn_id(p_EntryId,
+                                            g_SetVariableSpawnPrefix);
         if (!l_SetVariableName.empty()) {
           Editor::Node l_Node;
           l_Node.id = graph->allocate_node_id();
@@ -1760,8 +1798,7 @@ namespace Low {
           l_Metadata.node = l_Node.id;
           l_Metadata.node_class = N(vs_syntax_set_variable);
           l_Metadata.variable_name = l_SetVariableName;
-          l_Metadata.title =
-              Util::String("Set ") + l_SetVariableName;
+          l_Metadata.title = Util::String("Set ") + l_SetVariableName;
           l_Metadata.subtitle = "Variable";
           l_Metadata.category = "Syntax";
 

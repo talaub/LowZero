@@ -85,6 +85,8 @@ namespace Low {
         Util::String subtitle;
         Util::String category;
         Util::String variable_name;
+        Util::TypeIdentifier handle_type;
+        Util::Name member_name;
 
         bool is_valid() const
         {

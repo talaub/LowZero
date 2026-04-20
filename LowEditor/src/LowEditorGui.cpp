@@ -5,6 +5,7 @@
 #include "LowCoreEntity.h"
 
 #include "LowEditorThemes.h"
+#include "LowMathVectorUtil.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -241,6 +242,34 @@ namespace Low {
             p_Label, p_Color, p_Value, p_Width, 0.0f, true);
       }
 
+      bool Vector2Edit(Math::Vector2 &p_Vector, float p_MaxWidth)
+      {
+        float l_FullWidth = ImGui::GetContentRegionAvail().x;
+        if (p_MaxWidth > 0.0f) {
+          l_FullWidth = p_MaxWidth;
+        }
+
+        const float l_Spacing = LOW_EDITOR_SPACING;
+        const float l_Width = (l_FullWidth - l_Spacing) / 2.0f;
+
+        bool l_Changed = false;
+        Theme &l_Theme = theme_get_current();
+
+        ImGui::BeginGroup();
+
+        l_Changed |= draw_single_coefficient_editor(
+            "X", color_to_imcolor(l_Theme.coords0), &p_Vector.x,
+            l_Width, l_Spacing, false);
+
+        l_Changed |= draw_single_coefficient_editor(
+            "Y", color_to_imcolor(l_Theme.coords1), &p_Vector.y,
+            l_Width, 0.0f, true);
+
+        ImGui::EndGroup();
+
+        return l_Changed;
+      }
+
       bool Vector3Edit(Math::Vector3 &p_Vector, float p_MaxWidth)
       {
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
@@ -280,25 +309,49 @@ namespace Low {
         return l_Changed;
       }
 
-      bool Vector2Edit(Math::Vector2 &p_Vector)
+      bool Vector4Edit(Math::Vector4 &p_Vector, float p_MaxWidth)
       {
         float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        float l_Spacing = LOW_EDITOR_SPACING;
-        float l_Width = (l_FullWidth - (l_Spacing * 2.0f)) / 2.0f;
-        bool l_Changed = false;
+        if (p_MaxWidth > 0.0f) {
+          l_FullWidth = p_MaxWidth;
+        }
 
-        if (draw_single_coefficient_editor(
-                "X", IM_COL32(204, 42, 54, 255), &p_Vector.x, l_Width,
-                l_Spacing)) {
-          l_Changed = true;
-        }
-        if (draw_single_coefficient_editor("Y",
-                                           IM_COL32(42, 204, 54, 255),
-                                           &p_Vector.y, l_Width)) {
-          l_Changed = true;
-        }
+        const float l_Spacing = LOW_EDITOR_SPACING;
+        const float l_Width =
+            (l_FullWidth - (l_Spacing * 3.0f)) / 4.0f;
+        bool l_Changed = false;
+        Theme &l_Theme = theme_get_current();
+
+        ImGui::BeginGroup();
+
+        l_Changed |= draw_single_coefficient_editor(
+            "X", color_to_imcolor(l_Theme.coords0), &p_Vector.x,
+            l_Width, l_Spacing, false);
+        l_Changed |= draw_single_coefficient_editor(
+            "Y", color_to_imcolor(l_Theme.coords1), &p_Vector.y,
+            l_Width, l_Spacing, false);
+        l_Changed |= draw_single_coefficient_editor(
+            "Z", color_to_imcolor(l_Theme.coords2), &p_Vector.z,
+            l_Width, l_Spacing, false);
+        l_Changed |= draw_single_coefficient_editor(
+            "W", IM_COL32(173, 118, 255, 255), &p_Vector.w, l_Width,
+            0.0f, true);
+
+        ImGui::EndGroup();
 
         return l_Changed;
+      }
+
+      bool EulerEdit(Math::Quaternion &p_Quaternion, float p_MaxWidth)
+      {
+        Math::Vector3 l_EulerAngles =
+            Math::VectorUtil::to_euler(p_Quaternion);
+        if (!Vector3Edit(l_EulerAngles, p_MaxWidth)) {
+          return false;
+        }
+
+        p_Quaternion = Math::VectorUtil::from_euler(l_EulerAngles);
+        return true;
       }
 
       Util::String FileExplorer()
@@ -625,15 +678,15 @@ namespace Low {
         ImGui::BeginGroup();
         ImGui::PushFont(l_Font);
         ImGuiStyle &l_Style = ImGui::GetStyle();
-        ImGui::PushStyleVar(
-            ImGuiStyleVar_FramePadding,
-            ImVec2(l_Style.FramePadding.x * l_Scale,
-                   l_Style.FramePadding.y * l_Scale));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,
+                            ImVec2(l_Style.FramePadding.x * l_Scale,
+                                   l_Style.FramePadding.y * l_Scale));
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,
                             4.0f * l_Scale);
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
-                            ImVec2(l_Style.ItemInnerSpacing.x * l_Scale,
-                                   l_Style.ItemInnerSpacing.y));
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_ItemInnerSpacing,
+            ImVec2(l_Style.ItemInnerSpacing.x * l_Scale,
+                   l_Style.ItemInnerSpacing.y));
 
         bool l_Edited = false;
 
@@ -643,9 +696,8 @@ namespace Low {
 
         // Drag width accounts for two buttons + two inner spacings
         const float l_DragWidth = LOW_MATH_MAX(
-            24.0f * l_Scale,
-            l_FullWidth - (l_ButtonWidth * 2.0f) -
-                (l_Spacing * 2.0f));
+            24.0f * l_Scale, l_FullWidth - (l_ButtonWidth * 2.0f) -
+                                 (l_Spacing * 2.0f));
 
         ImGui::PushID(label);
 

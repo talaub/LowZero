@@ -37,6 +37,7 @@
 #include "LowEditor.h"
 #include "LowEditorNodeGraph.h"
 #include "LowEditorVisualScripting.h"
+#include "LowEditorVisualScriptingHandleNodes.h"
 #include "LowEditorVisualScriptEditor.h"
 #include "LowEditorVisualScriptingBoolNodes.h"
 #include "LowEditorVisualScriptingCastNodes.h"
@@ -240,6 +241,7 @@ namespace Low {
         VisualScript::BoolNodes::register_nodes(p_Graph);
         VisualScript::CastNodes::register_nodes(p_Graph);
         VisualScript::DebugNodes::register_nodes(p_Graph);
+        VisualScript::HandleNodes::register_nodes(p_Graph);
         VisualScript::MathNodes::register_nodes(p_Graph);
         VisualScript::OperatorNodes::register_nodes(p_Graph);
         VisualScript::SyntaxNodes::register_nodes(p_Graph);

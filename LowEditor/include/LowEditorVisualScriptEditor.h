@@ -30,6 +30,13 @@ namespace Low {
         float sidebar_width = 260.0f;
         float min_sidebar_width = 160.0f;
         float max_sidebar_width = 480.0f;
+        char new_variable_name[128] = "";
+        PinType new_variable_type = PinType::Number;
+        NumberSubtype new_variable_number_subtype =
+            NumberSubtype::Float;
+        StringSubtype new_variable_string_subtype =
+            StringSubtype::String;
+        Util::TypeIdentifier new_variable_handle_type;
 
         Editor() = default;
         Editor(Document &p_Document) : document(&p_Document)

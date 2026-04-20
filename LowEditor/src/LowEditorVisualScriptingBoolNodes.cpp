@@ -1,12 +1,13 @@
 #include "LowEditorVisualScriptingBoolNodes.h"
 
+#include "IconsFontAwesome5.h"
+
 namespace Low {
   namespace Editor {
     namespace VisualScript {
       namespace BoolNodes {
         namespace {
-          static const ImU32 g_BoolColor =
-              IM_COL32(220, 48, 48, 255);
+          static const ImU32 g_BoolColor = IM_COL32(220, 48, 48, 255);
 
           struct NotNodeClass : public NodeClass
           {
@@ -15,14 +16,27 @@ namespace Low {
               return N(vs_bool_not);
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
               return "NOT";
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Bool";
+            }
+
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return "NOT";
+            }
+
+            bool is_compact(const Graph &, NodeId) const override
+            {
+              return true;
             }
 
             ImU32 get_color(const Graph &, NodeId) const override
@@ -30,24 +44,29 @@ namespace Low {
               return g_BoolColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               make_bool_pin_metadata("A"), p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_OutputMetadata = make_bool_pin_metadata("Result");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(!");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
@@ -59,14 +78,27 @@ namespace Low {
               return N(vs_bool_or);
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
               return "OR";
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return "OR";
+            }
+
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Bool";
+            }
+
+            bool is_compact(const Graph &, NodeId) const override
+            {
+              return true;
             }
 
             ImU32 get_color(const Graph &, NodeId) const override
@@ -74,30 +106,36 @@ namespace Low {
               return g_BoolColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               make_bool_pin_metadata("A"), p_Schema);
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               make_bool_pin_metadata("B"), p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_OutputMetadata = make_bool_pin_metadata("Result");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(" || ");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
@@ -109,14 +147,27 @@ namespace Low {
               return N(vs_bool_and);
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
               return "AND";
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return "AND";
+            }
+
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Bool";
+            }
+
+            bool is_compact(const Graph &, NodeId) const override
+            {
+              return true;
             }
 
             ImU32 get_color(const Graph &, NodeId) const override
@@ -124,30 +175,36 @@ namespace Low {
               return g_BoolColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               make_bool_pin_metadata("A"), p_Schema);
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
                               make_bool_pin_metadata("B"), p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_OutputMetadata = make_bool_pin_metadata("Result");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(" && ");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
@@ -159,12 +216,20 @@ namespace Low {
               return N(vs_bool_equals);
             }
 
-            Util::String get_title(const Graph &, NodeId) const override
+            Util::String get_title(const Graph &,
+                                   NodeId) const override
             {
-              return "Equals";
+              return ICON_FA_EQUALS ICON_FA_EQUALS "";
             }
 
-            Util::String get_category(const Graph &, NodeId) const override
+            Util::String get_compact_title(const Graph &,
+                                           NodeId) const override
+            {
+              return "==";
+            }
+
+            Util::String get_category(const Graph &,
+                                      NodeId) const override
             {
               return "Bool";
             }
@@ -174,30 +239,43 @@ namespace Low {
               return g_BoolColor;
             }
 
-            void setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
-                                    const NodeGraphSchema *p_Schema) const override
+            bool is_compact(const Graph &, NodeId) const override
+            {
+              return true;
+            }
+
+            void setup_default_pins(
+                Graph &p_Graph, NodeId p_NodeId,
+                const NodeGraphSchema *p_Schema) const override
             {
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_dynamic_pin_metadata("A"), p_Schema);
+                              make_dynamic_pin_metadata("A"),
+                              p_Schema);
               p_Graph.add_pin(make_input_pin(p_Graph, p_NodeId),
-                              make_dynamic_pin_metadata("B"), p_Schema);
-              Editor::Pin l_Output = make_output_pin(p_Graph, p_NodeId);
+                              make_dynamic_pin_metadata("B"),
+                              p_Schema);
+              Editor::Pin l_Output =
+                  make_output_pin(p_Graph, p_NodeId);
               Pin l_OutputMetadata = make_bool_pin_metadata("Result");
-              l_OutputMetadata.show_default_value_when_unlinked = false;
+              l_OutputMetadata.show_default_value_when_unlinked =
+                  false;
               p_Graph.add_pin(l_Output, l_OutputMetadata, p_Schema);
             }
 
-            void compile_output_pin(Graph &p_Graph, NodeId p_NodeId,
-                                    PinId, CompileContext &p_CompileContext) const override
+            void compile_output_pin(
+                Graph &p_Graph, NodeId p_NodeId, PinId,
+                CompileContext &p_CompileContext) const override
             {
               p_CompileContext.main_code.append("(");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "A")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(" == ");
-              compile_input_pin(p_Graph, p_NodeId,
-                                p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
-                                p_CompileContext);
+              compile_input_pin(
+                  p_Graph, p_NodeId,
+                  p_Graph.find_input_pin_checked(p_NodeId, "B")->pin,
+                  p_CompileContext);
               p_CompileContext.main_code.append(")");
             }
           };
