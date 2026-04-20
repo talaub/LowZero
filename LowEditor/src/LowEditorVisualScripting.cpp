@@ -7,6 +7,7 @@
 #include "LowUtilString.h"
 
 #include <cfloat>
+#include <cstring>
 #include <cstdio>
 #include <imgui.h>
 
@@ -254,6 +255,40 @@ namespace Low {
         static bool variable_is_supported(const Variable &p_Variable)
         {
           return p_Variable.is_valid();
+        }
+
+        static const char *g_GetVariableSpawnPrefix =
+            "vs_spawn_syntax_get_variable_";
+        static const char *g_SetVariableSpawnPrefix =
+            "vs_spawn_syntax_set_variable_";
+
+        static bool string_starts_with(const char *p_Value,
+                                       const char *p_Prefix)
+        {
+          if (!p_Value || !p_Prefix) {
+            return false;
+          }
+
+          while (*p_Prefix) {
+            if (*p_Value != *p_Prefix) {
+              return false;
+            }
+            ++p_Value;
+            ++p_Prefix;
+          }
+
+          return true;
+        }
+
+        static Util::String get_variable_name_from_spawn_id(
+            Util::Name p_Id, const char *p_Prefix)
+        {
+          const char *l_Value = p_Id.c_str();
+          if (!string_starts_with(l_Value, p_Prefix)) {
+            return "";
+          }
+
+          return Util::String(l_Value + strlen(p_Prefix));
         }
       } // namespace
 
@@ -1628,6 +1663,48 @@ namespace Low {
           l_Entries.push_back(l_Entry);
         }
 
+        if (graph->find_node_class(N(vs_syntax_get_variable))) {
+          for (const Variable &i_Variable : graph->variables) {
+            if (!i_Variable.is_valid()) {
+              continue;
+            }
+
+            NodeGraphSpawnEntry l_Entry;
+            l_Entry.id = LOW_NAME(
+                (Util::String(g_GetVariableSpawnPrefix) +
+                 i_Variable.name)
+                    .c_str());
+            l_Entry.category = "Syntax";
+            l_Entry.title =
+                Util::String("Get ") + i_Variable.name;
+            l_Entry.subtitle = "Variable";
+            l_Entry.search_text = Util::String("get variable ") +
+                                  i_Variable.name;
+            l_Entries.push_back(l_Entry);
+          }
+        }
+
+        if (graph->find_node_class(N(vs_syntax_set_variable))) {
+          for (const Variable &i_Variable : graph->variables) {
+            if (!i_Variable.is_valid()) {
+              continue;
+            }
+
+            NodeGraphSpawnEntry l_Entry;
+            l_Entry.id = LOW_NAME(
+                (Util::String(g_SetVariableSpawnPrefix) +
+                 i_Variable.name)
+                    .c_str());
+            l_Entry.category = "Syntax";
+            l_Entry.title =
+                Util::String("Set ") + i_Variable.name;
+            l_Entry.subtitle = "Variable";
+            l_Entry.search_text = Util::String("set variable ") +
+                                  i_Variable.name;
+            l_Entries.push_back(l_Entry);
+          }
+        }
+
         return l_Entries;
       }
 
@@ -1637,6 +1714,70 @@ namespace Low {
       {
         if (!graph) {
           return false;
+        }
+
+        Util::String l_GetVariableName =
+            get_variable_name_from_spawn_id(
+                p_EntryId, g_GetVariableSpawnPrefix);
+        if (!l_GetVariableName.empty()) {
+          Editor::Node l_Node;
+          l_Node.id = graph->allocate_node_id();
+          l_Node.position = p_Position;
+
+          Node l_Metadata;
+          l_Metadata.node = l_Node.id;
+          l_Metadata.node_class = N(vs_syntax_get_variable);
+          l_Metadata.variable_name = l_GetVariableName;
+          l_Metadata.title =
+              Util::String("Get ") + l_GetVariableName;
+          l_Metadata.subtitle = "Variable";
+          l_Metadata.category = "Syntax";
+
+          NodeGraphMutationResult<Editor::Node> l_Result =
+              graph->add_node(l_Node, l_Metadata, p_Context.schema);
+          if (!l_Result.succeeded()) {
+            return false;
+          }
+
+          const NodeClass *l_NodeClass =
+              graph->find_node_class(N(vs_syntax_get_variable));
+          if (l_NodeClass) {
+            l_NodeClass->setup_default_pins(*graph, l_Node.id,
+                                            p_Context.schema);
+          }
+          return true;
+        }
+
+        Util::String l_SetVariableName =
+            get_variable_name_from_spawn_id(
+                p_EntryId, g_SetVariableSpawnPrefix);
+        if (!l_SetVariableName.empty()) {
+          Editor::Node l_Node;
+          l_Node.id = graph->allocate_node_id();
+          l_Node.position = p_Position;
+
+          Node l_Metadata;
+          l_Metadata.node = l_Node.id;
+          l_Metadata.node_class = N(vs_syntax_set_variable);
+          l_Metadata.variable_name = l_SetVariableName;
+          l_Metadata.title =
+              Util::String("Set ") + l_SetVariableName;
+          l_Metadata.subtitle = "Variable";
+          l_Metadata.category = "Syntax";
+
+          NodeGraphMutationResult<Editor::Node> l_Result =
+              graph->add_node(l_Node, l_Metadata, p_Context.schema);
+          if (!l_Result.succeeded()) {
+            return false;
+          }
+
+          const NodeClass *l_NodeClass =
+              graph->find_node_class(N(vs_syntax_set_variable));
+          if (l_NodeClass) {
+            l_NodeClass->setup_default_pins(*graph, l_Node.id,
+                                            p_Context.schema);
+          }
+          return true;
         }
 
         return graph

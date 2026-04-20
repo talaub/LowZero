@@ -808,6 +808,26 @@ namespace Low {
       register_test_visual_script_nodes(
           g_TestVisualScriptDocument.graph);
 
+      {
+        VisualScript::Variable l_HealthVariable;
+        l_HealthVariable.name = "Health";
+        l_HealthVariable.type = VisualScript::PinType::Number;
+        l_HealthVariable.number_subtype =
+            VisualScript::NumberSubtype::Float;
+        l_HealthVariable.default_value = Util::Variant(100.0f);
+        g_TestVisualScriptDocument.graph.add_variable(
+            l_HealthVariable);
+      }
+
+      {
+        VisualScript::Variable l_IsAliveVariable;
+        l_IsAliveVariable.name = "IsAlive";
+        l_IsAliveVariable.type = VisualScript::PinType::Bool;
+        l_IsAliveVariable.default_value = Util::Variant(true);
+        g_TestVisualScriptDocument.graph.add_variable(
+            l_IsAliveVariable);
+      }
+
       auto l_BeginNodeResult =
           g_TestVisualScriptDocument.graph
               .create_node_from_spawn_entry(
