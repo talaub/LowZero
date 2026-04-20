@@ -12,7 +12,7 @@
 
 namespace Low {
   namespace Editor {
-    namespace VisualScripting {
+    namespace VisualScript {
       namespace {
         static bool pin_type_is_execution(PinType p_PinType)
         {
@@ -176,6 +176,85 @@ namespace Low {
           p_DrawList->AddCircle(p_Anchor, l_Radius,
                                 IM_COL32(22, 22, 27, 255), 0, 1.5f);
         }
+
+        static Util::String
+        escape_script_string(const Util::String &p_Value)
+        {
+          Util::String l_Result;
+
+          for (char i_Char : p_Value) {
+            switch (i_Char) {
+            case '\\':
+              l_Result += "\\\\";
+              break;
+            case '\"':
+              l_Result += "\\\"";
+              break;
+            case '\n':
+              l_Result += "\\n";
+              break;
+            case '\r':
+              l_Result += "\\r";
+              break;
+            case '\t':
+              l_Result += "\\t";
+              break;
+            default:
+              l_Result += i_Char;
+              break;
+            }
+          }
+
+          return l_Result;
+        }
+
+        static void append_default_value_expression(
+            const Pin &p_PinMetadata,
+            CompileContext &p_CompileContext)
+        {
+          switch (p_PinMetadata.type) {
+          case PinType::Bool:
+            p_CompileContext.main_code.append(
+                p_PinMetadata.default_value.as_bool() ? "true"
+                                                      : "false");
+            return;
+          case PinType::Number:
+            switch (p_PinMetadata.number_subtype) {
+            case NumberSubtype::Int32:
+              p_CompileContext.main_code.append(
+                  (int)((int32_t)p_PinMetadata.default_value));
+              return;
+            case NumberSubtype::UInt32:
+              p_CompileContext.main_code.append(
+                  p_PinMetadata.default_value.as_u32());
+              return;
+            case NumberSubtype::UInt64:
+              p_CompileContext.main_code.append(
+                  p_PinMetadata.default_value.as_u64());
+              return;
+            case NumberSubtype::Float:
+            default:
+              p_CompileContext.main_code.append(
+                  p_PinMetadata.default_value.as_float());
+              return;
+            }
+          case PinType::String: {
+            p_CompileContext.main_code.append("\"");
+            p_CompileContext.main_code.append(escape_script_string(
+                p_PinMetadata.default_value.as_string()));
+            p_CompileContext.main_code.append("\"");
+            return;
+          }
+          default:
+            p_CompileContext.main_code.append("0");
+            return;
+          }
+        }
+
+        static bool variable_is_supported(const Variable &p_Variable)
+        {
+          return p_Variable.is_valid();
+        }
       } // namespace
 
       NodeGraphMutationResult<Editor::Node>
@@ -284,6 +363,20 @@ namespace Low {
         return it != node_metadata.end() ? &it->second : nullptr;
       }
 
+      Node *Graph::find_node_checked(NodeId p_NodeId)
+      {
+        Node *l_Node = find_node(p_NodeId);
+        LOW_ASSERT(l_Node, "Could not find visual scripting node by id");
+        return l_Node;
+      }
+
+      const Node *Graph::find_node_checked(NodeId p_NodeId) const
+      {
+        const Node *l_Node = find_node(p_NodeId);
+        LOW_ASSERT(l_Node, "Could not find visual scripting node by id");
+        return l_Node;
+      }
+
       Pin *Graph::find_pin(PinId p_PinId)
       {
         auto it = pin_metadata.find(p_PinId);
@@ -294,6 +387,158 @@ namespace Low {
       {
         auto it = pin_metadata.find(p_PinId);
         return it != pin_metadata.end() ? &it->second : nullptr;
+      }
+
+      Pin *Graph::find_pin_checked(PinId p_PinId)
+      {
+        Pin *l_Pin = find_pin(p_PinId);
+        LOW_ASSERT(l_Pin, "Could not find visual scripting pin by id");
+        return l_Pin;
+      }
+
+      const Pin *Graph::find_pin_checked(PinId p_PinId) const
+      {
+        const Pin *l_Pin = find_pin(p_PinId);
+        LOW_ASSERT(l_Pin, "Could not find visual scripting pin by id");
+        return l_Pin;
+      }
+
+      Pin *Graph::find_input_pin(NodeId p_NodeId,
+                                 const Util::String &p_DisplayName)
+      {
+        for (Editor::Pin *i_Pin : graph.get_input_pins(p_NodeId)) {
+          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata &&
+              l_PinMetadata->display_name == p_DisplayName) {
+            return l_PinMetadata;
+          }
+        }
+
+        return nullptr;
+      }
+
+      const Pin *
+      Graph::find_input_pin(NodeId p_NodeId,
+                            const Util::String &p_DisplayName) const
+      {
+        for (const Editor::Pin *i_Pin :
+             graph.get_input_pins(p_NodeId)) {
+          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata &&
+              l_PinMetadata->display_name == p_DisplayName) {
+            return l_PinMetadata;
+          }
+        }
+
+        return nullptr;
+      }
+
+      Pin *Graph::find_output_pin(NodeId p_NodeId,
+                                  const Util::String &p_DisplayName)
+      {
+        for (Editor::Pin *i_Pin : graph.get_output_pins(p_NodeId)) {
+          Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata &&
+              l_PinMetadata->display_name == p_DisplayName) {
+            return l_PinMetadata;
+          }
+        }
+
+        return nullptr;
+      }
+
+      const Pin *
+      Graph::find_output_pin(NodeId p_NodeId,
+                             const Util::String &p_DisplayName) const
+      {
+        for (const Editor::Pin *i_Pin :
+             graph.get_output_pins(p_NodeId)) {
+          const Pin *l_PinMetadata = find_pin(i_Pin->id);
+          if (l_PinMetadata &&
+              l_PinMetadata->display_name == p_DisplayName) {
+            return l_PinMetadata;
+          }
+        }
+
+        return nullptr;
+      }
+
+      Pin *Graph::find_input_pin_checked(
+          NodeId p_NodeId, const Util::String &p_DisplayName)
+      {
+        Pin *l_Pin = find_input_pin(p_NodeId, p_DisplayName);
+        LOW_ASSERT(l_Pin, "Could not find visual scripting input pin");
+        return l_Pin;
+      }
+
+      const Pin *Graph::find_input_pin_checked(
+          NodeId p_NodeId, const Util::String &p_DisplayName) const
+      {
+        const Pin *l_Pin = find_input_pin(p_NodeId, p_DisplayName);
+        LOW_ASSERT(l_Pin, "Could not find visual scripting input pin");
+        return l_Pin;
+      }
+
+      Pin *Graph::find_output_pin_checked(
+          NodeId p_NodeId, const Util::String &p_DisplayName)
+      {
+        Pin *l_Pin = find_output_pin(p_NodeId, p_DisplayName);
+        LOW_ASSERT(l_Pin, "Could not find visual scripting output pin");
+        return l_Pin;
+      }
+
+      const Pin *Graph::find_output_pin_checked(
+          NodeId p_NodeId, const Util::String &p_DisplayName) const
+      {
+        const Pin *l_Pin = find_output_pin(p_NodeId, p_DisplayName);
+        LOW_ASSERT(l_Pin, "Could not find visual scripting output pin");
+        return l_Pin;
+      }
+
+      bool Graph::add_variable(const Variable &p_Variable)
+      {
+        if (!variable_is_supported(p_Variable) ||
+            find_variable(p_Variable.name)) {
+          return false;
+        }
+
+        variables.push_back(p_Variable);
+        return true;
+      }
+
+      bool Graph::remove_variable(const Util::String &p_Name)
+      {
+        for (auto it = variables.begin(); it != variables.end(); ++it) {
+          if (it->name == p_Name) {
+            variables.erase(it);
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      Variable *Graph::find_variable(const Util::String &p_Name)
+      {
+        for (Variable &i_Variable : variables) {
+          if (i_Variable.name == p_Name) {
+            return &i_Variable;
+          }
+        }
+
+        return nullptr;
+      }
+
+      const Variable *
+      Graph::find_variable(const Util::String &p_Name) const
+      {
+        for (const Variable &i_Variable : variables) {
+          if (i_Variable.name == p_Name) {
+            return &i_Variable;
+          }
+        }
+
+        return nullptr;
       }
 
       void Graph::register_node_class(NodeClass &p_NodeClass)
@@ -439,6 +684,141 @@ namespace Low {
         return l_Result;
       }
 
+      bool Graph::is_pin_connected(PinId p_PinId) const
+      {
+        for (const Editor::Link &i_Link : graph.links) {
+          if (i_Link.start_pin == p_PinId ||
+              i_Link.end_pin == p_PinId) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      PinId Graph::get_connected_pin(PinId p_PinId) const
+      {
+        for (const Editor::Link &i_Link : graph.links) {
+          if (i_Link.start_pin == p_PinId) {
+            return i_Link.end_pin;
+          }
+          if (i_Link.end_pin == p_PinId) {
+            return i_Link.start_pin;
+          }
+        }
+
+        return {};
+      }
+
+      Util::List<PinId> Graph::get_connected_pins(PinId p_PinId) const
+      {
+        Util::List<PinId> l_Result;
+
+        for (const Editor::Link &i_Link : graph.links) {
+          if (i_Link.start_pin == p_PinId) {
+            l_Result.push_back(i_Link.end_pin);
+          } else if (i_Link.end_pin == p_PinId) {
+            l_Result.push_back(i_Link.start_pin);
+          }
+        }
+
+        return l_Result;
+      }
+
+      void Graph::compile_node(
+          NodeId p_NodeId, CompileContext &p_CompileContext) const
+      {
+        const Node *l_NodeMetadata = find_node(p_NodeId);
+        if (!l_NodeMetadata) {
+          return;
+        }
+
+        const NodeClass *l_NodeClass =
+            find_node_class(l_NodeMetadata->node_class);
+        if (!l_NodeClass) {
+          return;
+        }
+
+        l_NodeClass->compile(*const_cast<Graph *>(this), p_NodeId,
+                             p_CompileContext);
+      }
+
+      void Graph::continue_compilation(
+          PinId p_ExecutionOutputPinId,
+          CompileContext &p_CompileContext) const
+      {
+        const Editor::Pin *l_OutputPin =
+            graph.find_pin(p_ExecutionOutputPinId);
+        const Pin *l_OutputPinMetadata =
+            find_pin(p_ExecutionOutputPinId);
+
+        if (!l_OutputPin || !l_OutputPinMetadata ||
+            l_OutputPin->direction != PinDirection::Output ||
+            l_OutputPinMetadata->type != PinType::Execution) {
+          return;
+        }
+
+        for (PinId i_ConnectedPinId :
+             get_connected_pins(p_ExecutionOutputPinId)) {
+          const Editor::Pin *l_ConnectedPin =
+              graph.find_pin(i_ConnectedPinId);
+          if (!l_ConnectedPin) {
+            continue;
+          }
+
+          compile_node(l_ConnectedPin->node, p_CompileContext);
+        }
+      }
+
+      void Graph::compile_input_pin(
+          PinId p_InputPinId, CompileContext &p_CompileContext) const
+      {
+        const Editor::Pin *l_InputPin = graph.find_pin(p_InputPinId);
+        const Pin *l_InputPinMetadata = find_pin(p_InputPinId);
+
+        if (!l_InputPin || !l_InputPinMetadata ||
+            l_InputPin->direction != PinDirection::Input) {
+          return;
+        }
+
+        if (is_pin_connected(p_InputPinId)) {
+          const PinId l_ConnectedPinId =
+              get_connected_pin(p_InputPinId);
+          const Editor::Pin *l_ConnectedPin =
+              graph.find_pin(l_ConnectedPinId);
+
+          if (!l_ConnectedPin) {
+            append_default_value_expression(*l_InputPinMetadata,
+                                            p_CompileContext);
+            return;
+          }
+
+          const Node *l_ConnectedNodeMetadata =
+              find_node(l_ConnectedPin->node);
+          if (!l_ConnectedNodeMetadata) {
+            append_default_value_expression(*l_InputPinMetadata,
+                                            p_CompileContext);
+            return;
+          }
+
+          const NodeClass *l_ConnectedNodeClass =
+              find_node_class(l_ConnectedNodeMetadata->node_class);
+          if (!l_ConnectedNodeClass) {
+            append_default_value_expression(*l_InputPinMetadata,
+                                            p_CompileContext);
+            return;
+          }
+
+          l_ConnectedNodeClass->compile_output_pin(
+              *const_cast<Graph *>(this), l_ConnectedPin->node,
+              l_ConnectedPinId, p_CompileContext);
+          return;
+        }
+
+        append_default_value_expression(*l_InputPinMetadata,
+                                        p_CompileContext);
+      }
+
       NodeId Graph::allocate_node_id()
       {
         return NodeId{id_counter++};
@@ -487,6 +867,14 @@ namespace Low {
         (void)p_Graph;
         (void)p_NodeId;
         return IM_COL32(92, 96, 112, 255);
+      }
+
+      void NodeClass::compile_input_pin(
+          Graph &p_Graph, NodeId p_NodeId, PinId p_PinId,
+          CompileContext &p_CompileContext) const
+      {
+        (void)p_NodeId;
+        p_Graph.compile_input_pin(p_PinId, p_CompileContext);
       }
 
       NodeGraphValidationResult
@@ -1270,6 +1658,6 @@ namespace Low {
         l_Pin.default_value = default_value_for_pin(l_Pin);
         return l_Pin;
       }
-    } // namespace VisualScripting
+    } // namespace VisualScript
   } // namespace Editor
 } // namespace Low

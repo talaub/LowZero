@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LowMath.h"
+#include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
 #include "LowUtilName.h"
 #include <imgui.h>
@@ -214,6 +215,20 @@ namespace Low {
         return nullptr;
       }
 
+      Node *find_node_checked(NodeId p_Id)
+      {
+        Node *l_Node = find_node(p_Id);
+        LOW_ASSERT(l_Node, "Could not find node by id");
+        return l_Node;
+      }
+
+      const Node *find_node_checked(NodeId p_Id) const
+      {
+        const Node *l_Node = find_node(p_Id);
+        LOW_ASSERT(l_Node, "Could not find node by id");
+        return l_Node;
+      }
+
       Pin *find_pin(PinId p_Id)
       {
         for (Pin &i_Pin : pins) {
@@ -232,6 +247,20 @@ namespace Low {
           }
         }
         return nullptr;
+      }
+
+      Pin *find_pin_checked(PinId p_Id)
+      {
+        Pin *l_Pin = find_pin(p_Id);
+        LOW_ASSERT(l_Pin, "Could not find pin by id");
+        return l_Pin;
+      }
+
+      const Pin *find_pin_checked(PinId p_Id) const
+      {
+        const Pin *l_Pin = find_pin(p_Id);
+        LOW_ASSERT(l_Pin, "Could not find pin by id");
+        return l_Pin;
       }
 
       Link *find_link(LinkId p_Id)
@@ -254,6 +283,20 @@ namespace Low {
         return nullptr;
       }
 
+      Link *find_link_checked(LinkId p_Id)
+      {
+        Link *l_Link = find_link(p_Id);
+        LOW_ASSERT(l_Link, "Could not find link by id");
+        return l_Link;
+      }
+
+      const Link *find_link_checked(LinkId p_Id) const
+      {
+        const Link *l_Link = find_link(p_Id);
+        LOW_ASSERT(l_Link, "Could not find link by id");
+        return l_Link;
+      }
+
       Util::List<Pin *> get_node_pins(NodeId p_NodeId)
       {
         Util::List<Pin *> l_Result;
@@ -273,6 +316,62 @@ namespace Low {
 
         for (const Pin &i_Pin : pins) {
           if (i_Pin.node == p_NodeId) {
+            l_Result.push_back(&i_Pin);
+          }
+        }
+
+        return l_Result;
+      }
+
+      Util::List<Pin *> get_input_pins(NodeId p_NodeId)
+      {
+        Util::List<Pin *> l_Result;
+
+        for (Pin &i_Pin : pins) {
+          if (i_Pin.node == p_NodeId &&
+              i_Pin.direction == PinDirection::Input) {
+            l_Result.push_back(&i_Pin);
+          }
+        }
+
+        return l_Result;
+      }
+
+      Util::List<const Pin *> get_input_pins(NodeId p_NodeId) const
+      {
+        Util::List<const Pin *> l_Result;
+
+        for (const Pin &i_Pin : pins) {
+          if (i_Pin.node == p_NodeId &&
+              i_Pin.direction == PinDirection::Input) {
+            l_Result.push_back(&i_Pin);
+          }
+        }
+
+        return l_Result;
+      }
+
+      Util::List<Pin *> get_output_pins(NodeId p_NodeId)
+      {
+        Util::List<Pin *> l_Result;
+
+        for (Pin &i_Pin : pins) {
+          if (i_Pin.node == p_NodeId &&
+              i_Pin.direction == PinDirection::Output) {
+            l_Result.push_back(&i_Pin);
+          }
+        }
+
+        return l_Result;
+      }
+
+      Util::List<const Pin *> get_output_pins(NodeId p_NodeId) const
+      {
+        Util::List<const Pin *> l_Result;
+
+        for (const Pin &i_Pin : pins) {
+          if (i_Pin.node == p_NodeId &&
+              i_Pin.direction == PinDirection::Output) {
             l_Result.push_back(&i_Pin);
           }
         }
