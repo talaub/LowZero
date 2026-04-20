@@ -79,6 +79,7 @@ namespace Low {
       {
         NodeId node;
         Util::Name node_class;
+        Util::Name spawn_entry;
         Util::String title;
         Util::String subtitle;
         Util::String category;
@@ -86,6 +87,22 @@ namespace Low {
         bool is_valid() const
         {
           return node.is_valid();
+        }
+      };
+
+      struct LOW_EDITOR_API NodeSpawnEntry
+      {
+        Util::Name id;
+        Util::String category;
+        Util::String title;
+        Util::String subtitle;
+        Util::String search_text;
+        Util::Name node_class;
+        std::function<void(Graph &, Node &)> initialize_node;
+
+        bool is_valid() const
+        {
+          return id.is_valid() && node_class.is_valid();
         }
       };
 
@@ -126,6 +143,7 @@ namespace Low {
         Util::Map<NodeId, Node> node_metadata;
         Util::Map<PinId, Pin> pin_metadata;
         Util::Map<Util::Name, NodeClass *> node_classes;
+        Util::Map<Util::Name, NodeSpawnEntry> spawn_entries;
         u64 id_counter = 1;
 
         NodeGraphMutationResult<Editor::Node>
@@ -155,10 +173,22 @@ namespace Low {
         const NodeClass *
         find_node_class(Util::Name p_NodeClass) const;
 
+        void register_spawn_entry(const NodeSpawnEntry &p_SpawnEntry);
+        NodeSpawnEntry *find_spawn_entry(Util::Name p_SpawnEntryId);
+        const NodeSpawnEntry *
+        find_spawn_entry(Util::Name p_SpawnEntryId) const;
+        Util::List<const NodeSpawnEntry *> get_spawn_entries() const;
+
         NodeGraphMutationResult<Editor::Node>
         create_node(Util::Name p_NodeClass,
                     const Math::Vector2 &p_Position,
                     const NodeGraphSchema *p_Schema = nullptr);
+
+        NodeGraphMutationResult<Editor::Node>
+        create_node_from_spawn_entry(
+            Util::Name p_SpawnEntryId,
+            const Math::Vector2 &p_Position,
+            const NodeGraphSchema *p_Schema = nullptr);
 
         NodeId allocate_node_id();
         PinId allocate_pin_id();
@@ -235,24 +265,43 @@ namespace Low {
       struct LOW_EDITOR_API GraphRenderer
           : public NodeGraphEditorRenderer
       {
+        struct SpawnAdapter : public NodeGraphSpawner
+        {
+          Graph *graph = nullptr;
+
+          virtual Util::List<NodeGraphSpawnEntry>
+          get_spawn_entries(
+              NodeGraphEditorContext &p_Context) const override;
+
+          virtual bool spawn_entry(NodeGraphEditorContext &p_Context,
+                                   Util::Name p_EntryId,
+                                   const Math::Vector2 &p_Position) override;
+        };
+
         Graph *graph = nullptr;
         NodeRenderer node_renderer;
+        SpawnAdapter spawn_adapter;
 
         GraphRenderer() = default;
         GraphRenderer(Graph &p_Graph)
             : graph(&p_Graph), node_renderer(p_Graph)
         {
+          spawn_adapter.graph = &p_Graph;
         }
 
         void set_graph(Graph &p_Graph)
         {
           graph = &p_Graph;
           node_renderer.set_graph(p_Graph);
+          spawn_adapter.graph = &p_Graph;
         }
 
         virtual NodeGraphNodeRenderer *
         get_node_renderer(NodeGraphEditorContext &p_Context,
                           Editor::Node &p_Node) override;
+
+        virtual NodeGraphSpawner *
+        get_spawner(NodeGraphEditorContext &p_Context) override;
       };
 
       LOW_EDITOR_API const char *pin_type_to_string(PinType p_Type);

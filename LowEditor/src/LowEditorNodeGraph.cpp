@@ -1,6 +1,7 @@
 #include "LowEditorNodeGraph.h"
 #include "LowEditorGui.h"
 #include "LowMath.h"
+#include "LowUtilString.h"
 
 #include <algorithm>
 #include <cfloat>
@@ -286,6 +287,11 @@ namespace Low {
         }
       }
 
+      if (l_State) {
+        l_State->hovered_node = l_HoveredNodeId;
+        l_State->hovered_pin = l_HoveredPinId;
+      }
+
       render_background(p_Context);
       render_links(p_Context);
 
@@ -316,9 +322,6 @@ namespace Low {
       render_foreground(p_Context);
 
       if (l_State) {
-        l_State->hovered_node = l_HoveredNodeId;
-        l_State->hovered_pin = l_HoveredPinId;
-
         const bool l_BlockCanvasInteraction =
             l_State->interacting_with_widget;
 
@@ -396,7 +399,136 @@ namespace Low {
 
           l_State->link_drag_start_pin = PinId{};
         }
+
+        if (!l_BlockCanvasInteraction &&
+            (ImGui::IsKeyPressed(ImGuiKey_Delete) ||
+             ImGui::IsKeyPressed(ImGuiKey_Backspace)) &&
+            !l_State->selected_nodes.empty()) {
+          Util::List<NodeId> l_NodesToDelete =
+              l_State->selected_nodes;
+
+          l_State->clear_selection();
+          l_State->dragging_nodes = false;
+          l_State->hovered_node = NodeId{};
+          l_State->hovered_pin = PinId{};
+
+          for (NodeId i_NodeId : l_NodesToDelete) {
+            p_Context.graph.remove_node(i_NodeId);
+          }
+        }
       }
+    }
+
+    void NodeGraphEditorRenderer::render_foreground(
+        NodeGraphEditorContext &p_Context)
+    {
+      NodeGraphSpawner *l_Spawner = get_spawner(p_Context);
+      if (!l_Spawner || !p_Context.state) {
+        return;
+      }
+
+      const ImVec2 l_MousePosition = ImGui::GetIO().MousePos;
+      const bool l_MouseInCanvas =
+          l_MousePosition.x >= p_Context.canvas_min.x &&
+          l_MousePosition.x <= p_Context.canvas_max.x &&
+          l_MousePosition.y >= p_Context.canvas_min.y &&
+          l_MousePosition.y <= p_Context.canvas_max.y;
+      const bool l_HoveringGraphElement =
+          p_Context.state->hovered_node.is_valid() ||
+          p_Context.state->hovered_pin.is_valid();
+
+      if (!p_Context.state->interacting_with_widget && l_MouseInCanvas &&
+          !l_HoveringGraphElement &&
+          ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+        m_CreateNodePosition = TO_VEC2(p_Context.canvas.screen_to_canvas(
+            l_MousePosition, p_Context.canvas_origin));
+        m_CreateNodePopupJustOpened = true;
+        m_CreateNodeSearch[0] = '\0';
+        ImGui::OpenPopup("NodeGraphCreateNode");
+      }
+
+      ImGui::SetNextWindowSize(ImVec2(320.0f, 260.0f),
+                               ImGuiCond_Appearing);
+      if (!ImGui::BeginPopup("NodeGraphCreateNode")) {
+        return;
+      }
+
+      if (m_CreateNodePopupJustOpened) {
+        ImGui::SetKeyboardFocusHere();
+        m_CreateNodePopupJustOpened = false;
+      }
+
+      Gui::SearchField("##nodegraph_create_node_search",
+                       m_CreateNodeSearch,
+                       IM_ARRAYSIZE(m_CreateNodeSearch),
+                       ImVec2(0.0f, 3.0f));
+      ImGui::Separator();
+
+      Util::String l_Search = m_CreateNodeSearch;
+      l_Search.make_lower();
+      Util::Map<Util::String, Util::List<NodeGraphSpawnEntry>>
+          l_CategorizedEntries;
+
+      for (const NodeGraphSpawnEntry &i_Entry :
+           l_Spawner->get_spawn_entries(p_Context)) {
+        if (!i_Entry.is_valid()) {
+          continue;
+        }
+
+        if (!l_Search.empty()) {
+          Util::String l_FilterText = i_Entry.title;
+          l_FilterText += " ";
+          l_FilterText += i_Entry.subtitle;
+          l_FilterText += " ";
+          l_FilterText += i_Entry.category;
+          l_FilterText += " ";
+          l_FilterText += i_Entry.search_text;
+          l_FilterText.make_lower();
+
+          if (!Util::StringHelper::contains(l_FilterText, l_Search)) {
+            continue;
+          }
+        }
+
+        l_CategorizedEntries[i_Entry.category].push_back(i_Entry);
+      }
+
+      if (l_CategorizedEntries.empty()) {
+        ImGui::TextDisabled("No nodes found");
+        ImGui::EndPopup();
+        return;
+      }
+
+      for (auto it = l_CategorizedEntries.begin();
+           it != l_CategorizedEntries.end(); ++it) {
+        if (!ImGui::TreeNode(it->first.c_str())) {
+          continue;
+        }
+
+        for (const NodeGraphSpawnEntry &i_Entry : it->second) {
+          Util::String l_Label = i_Entry.title;
+          if (!i_Entry.subtitle.empty()) {
+            l_Label += "##";
+            l_Label += i_Entry.id.c_str();
+          }
+
+          if (ImGui::MenuItem(l_Label.c_str())) {
+            l_Spawner->spawn_entry(p_Context, i_Entry.id,
+                                   m_CreateNodePosition);
+            ImGui::CloseCurrentPopup();
+          }
+
+          if (!i_Entry.subtitle.empty() &&
+              ImGui::IsItemHovered(
+                  ImGuiHoveredFlags_AllowWhenDisabled)) {
+            ImGui::SetTooltip("%s", i_Entry.subtitle.c_str());
+          }
+        }
+
+        ImGui::TreePop();
+      }
+
+      ImGui::EndPopup();
     }
 
     void NodeGraphEditorRenderer::render_links(

@@ -4,6 +4,7 @@
 #include "LowEditorGui.h"
 #include "LowEditorIcons.h"
 #include "LowUtilLogger.h"
+#include "LowUtilString.h"
 
 #include <cfloat>
 #include <cstdio>
@@ -300,6 +301,12 @@ namespace Low {
         node_classes[p_NodeClass.get_name()] = &p_NodeClass;
       }
 
+      void
+      Graph::register_spawn_entry(const NodeSpawnEntry &p_SpawnEntry)
+      {
+        spawn_entries[p_SpawnEntry.id] = p_SpawnEntry;
+      }
+
       NodeClass *Graph::find_node_class(Util::Name p_NodeClass)
       {
         auto it = node_classes.find(p_NodeClass);
@@ -311,6 +318,33 @@ namespace Low {
       {
         auto it = node_classes.find(p_NodeClass);
         return it != node_classes.end() ? it->second : nullptr;
+      }
+
+      NodeSpawnEntry *
+      Graph::find_spawn_entry(Util::Name p_SpawnEntryId)
+      {
+        auto it = spawn_entries.find(p_SpawnEntryId);
+        return it != spawn_entries.end() ? &it->second : nullptr;
+      }
+
+      const NodeSpawnEntry *
+      Graph::find_spawn_entry(Util::Name p_SpawnEntryId) const
+      {
+        auto it = spawn_entries.find(p_SpawnEntryId);
+        return it != spawn_entries.end() ? &it->second : nullptr;
+      }
+
+      Util::List<const NodeSpawnEntry *>
+      Graph::get_spawn_entries() const
+      {
+        Util::List<const NodeSpawnEntry *> l_Entries;
+
+        for (auto it = spawn_entries.begin();
+             it != spawn_entries.end(); ++it) {
+          l_Entries.push_back(&it->second);
+        }
+
+        return l_Entries;
       }
 
       NodeGraphMutationResult<Editor::Node>
@@ -339,6 +373,63 @@ namespace Low {
             l_NodeClass->get_subtitle(*this, l_Node.id);
         l_Metadata.category =
             l_NodeClass->get_category(*this, l_Node.id);
+
+        l_Result = add_node(l_Node, l_Metadata, p_Schema);
+        if (l_Result.succeeded()) {
+          l_NodeClass->setup_default_pins(*this, l_Node.id, p_Schema);
+        }
+
+        return l_Result;
+      }
+
+      NodeGraphMutationResult<Editor::Node>
+      Graph::create_node_from_spawn_entry(
+          Util::Name p_SpawnEntryId, const Math::Vector2 &p_Position,
+          const NodeGraphSchema *p_Schema)
+      {
+        NodeGraphMutationResult<Editor::Node> l_Result;
+        const NodeSpawnEntry *l_SpawnEntry =
+            find_spawn_entry(p_SpawnEntryId);
+
+        if (!l_SpawnEntry || !l_SpawnEntry->is_valid()) {
+          l_Result.validation_result =
+              NodeGraphValidationResult::InvalidNode;
+          return l_Result;
+        }
+
+        const NodeClass *l_NodeClass =
+            find_node_class(l_SpawnEntry->node_class);
+
+        if (!l_NodeClass) {
+          l_Result.validation_result =
+              NodeGraphValidationResult::InvalidNode;
+          return l_Result;
+        }
+
+        Editor::Node l_Node;
+        l_Node.id = allocate_node_id();
+        l_Node.position = p_Position;
+
+        Node l_Metadata;
+        l_Metadata.node = l_Node.id;
+        l_Metadata.node_class = l_SpawnEntry->node_class;
+        l_Metadata.spawn_entry = l_SpawnEntry->id;
+        l_Metadata.title =
+            !l_SpawnEntry->title.empty()
+                ? l_SpawnEntry->title
+                : l_NodeClass->get_title(*this, l_Node.id);
+        l_Metadata.subtitle =
+            !l_SpawnEntry->subtitle.empty()
+                ? l_SpawnEntry->subtitle
+                : l_NodeClass->get_subtitle(*this, l_Node.id);
+        l_Metadata.category =
+            !l_SpawnEntry->category.empty()
+                ? l_SpawnEntry->category
+                : l_NodeClass->get_category(*this, l_Node.id);
+
+        if (l_SpawnEntry->initialize_node) {
+          l_SpawnEntry->initialize_node(*this, l_Metadata);
+        }
 
         l_Result = add_node(l_Node, l_Metadata, p_Schema);
         if (l_Result.succeeded()) {
@@ -884,6 +975,55 @@ namespace Low {
         (void)p_Context;
         (void)p_Node;
         return graph ? &node_renderer : nullptr;
+      }
+
+      NodeGraphSpawner *
+      GraphRenderer::get_spawner(NodeGraphEditorContext &p_Context)
+      {
+        (void)p_Context;
+        return graph ? &spawn_adapter : nullptr;
+      }
+
+      Util::List<NodeGraphSpawnEntry>
+      GraphRenderer::SpawnAdapter::get_spawn_entries(
+          NodeGraphEditorContext &p_Context) const
+      {
+        (void)p_Context;
+
+        Util::List<NodeGraphSpawnEntry> l_Entries;
+        if (!graph) {
+          return l_Entries;
+        }
+
+        for (const NodeSpawnEntry *i_Entry : graph->get_spawn_entries()) {
+          if (!i_Entry || !i_Entry->is_valid()) {
+            continue;
+          }
+
+          NodeGraphSpawnEntry l_Entry;
+          l_Entry.id = i_Entry->id;
+          l_Entry.category = i_Entry->category;
+          l_Entry.title = i_Entry->title;
+          l_Entry.subtitle = i_Entry->subtitle;
+          l_Entry.search_text = i_Entry->search_text;
+          l_Entries.push_back(l_Entry);
+        }
+
+        return l_Entries;
+      }
+
+      bool GraphRenderer::SpawnAdapter::spawn_entry(
+          NodeGraphEditorContext &p_Context, Util::Name p_EntryId,
+          const Math::Vector2 &p_Position)
+      {
+        if (!graph) {
+          return false;
+        }
+
+        return graph
+            ->create_node_from_spawn_entry(p_EntryId, p_Position,
+                                           p_Context.schema)
+            .succeeded();
       }
 
       const char *pin_type_to_string(PinType p_Type)

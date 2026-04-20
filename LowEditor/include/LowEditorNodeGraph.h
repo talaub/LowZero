@@ -2,6 +2,7 @@
 
 #include "LowMath.h"
 #include "LowUtilContainers.h"
+#include "LowUtilName.h"
 #include <imgui.h>
 
 namespace Low {
@@ -824,6 +825,32 @@ namespace Low {
       }
     };
 
+    struct NodeGraphSpawnEntry
+    {
+      Util::Name id;
+      Util::String category;
+      Util::String title;
+      Util::String subtitle;
+      Util::String search_text;
+
+      bool is_valid() const
+      {
+        return id.is_valid();
+      }
+    };
+
+    struct NodeGraphSpawner
+    {
+      virtual ~NodeGraphSpawner() = default;
+
+      virtual Util::List<NodeGraphSpawnEntry>
+      get_spawn_entries(NodeGraphEditorContext &p_Context) const = 0;
+
+      virtual bool spawn_entry(NodeGraphEditorContext &p_Context,
+                               Util::Name p_EntryId,
+                               const Math::Vector2 &p_Position) = 0;
+    };
+
     struct NodeGraphNodeRenderer
     {
       virtual ~NodeGraphNodeRenderer() = default;
@@ -892,15 +919,25 @@ namespace Low {
       get_node_renderer(NodeGraphEditorContext &p_Context,
                         Node &p_Node) = 0;
 
-      virtual void
-      render_foreground(NodeGraphEditorContext &p_Context)
+      virtual NodeGraphSpawner *
+      get_spawner(NodeGraphEditorContext &p_Context)
       {
         (void)p_Context;
+        return nullptr;
       }
+
+      virtual void
+      render_foreground(NodeGraphEditorContext &p_Context)
+      ;
 
       virtual void render(NodeGraphEditorContext &p_Context);
 
     protected:
+      char m_CreateNodeSearch[256] = {};
+      Math::Vector2 m_CreateNodePosition =
+          Math::Vector2(0.0f, 0.0f);
+      bool m_CreateNodePopupJustOpened = false;
+
       bool get_pin_anchor(NodeGraphEditorContext &p_Context,
                           const Pin &p_Pin, ImVec2 &p_Anchor);
       bool get_link_endpoints(NodeGraphEditorContext &p_Context,

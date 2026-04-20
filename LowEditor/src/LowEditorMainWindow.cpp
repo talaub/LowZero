@@ -224,6 +224,33 @@ namespace Low {
 
       BeginEventNodeClass g_BeginEventNodeClass;
       PrintStringNodeClass g_PrintStringNodeClass;
+
+      static void register_test_visual_script_nodes(
+          VisualScripting::Graph &p_Graph)
+      {
+        p_Graph.register_node_class(g_BeginEventNodeClass);
+        p_Graph.register_node_class(g_PrintStringNodeClass);
+
+        VisualScripting::NodeSpawnEntry l_BeginEventEntry;
+        l_BeginEventEntry.id = N(vs_spawn_begin_event);
+        l_BeginEventEntry.category = "Events";
+        l_BeginEventEntry.title = "On Begin";
+        l_BeginEventEntry.subtitle = "Event";
+        l_BeginEventEntry.search_text = "on begin event start";
+        l_BeginEventEntry.node_class =
+            g_BeginEventNodeClass.get_name();
+        p_Graph.register_spawn_entry(l_BeginEventEntry);
+
+        VisualScripting::NodeSpawnEntry l_PrintStringEntry;
+        l_PrintStringEntry.id = N(vs_spawn_print_string);
+        l_PrintStringEntry.category = "Debug";
+        l_PrintStringEntry.title = "Print String";
+        l_PrintStringEntry.subtitle = "Debug";
+        l_PrintStringEntry.search_text = "print string debug log";
+        l_PrintStringEntry.node_class =
+            g_PrintStringNodeClass.get_name();
+        p_Graph.register_spawn_entry(l_PrintStringEntry);
+      }
     } // namespace
 
     const int g_DockSpaceId = 4785;
@@ -764,19 +791,18 @@ namespace Low {
         return;
       }
 
-      g_TestVisualScriptGraph.register_node_class(
-          g_BeginEventNodeClass);
-      g_TestVisualScriptGraph.register_node_class(
-          g_PrintStringNodeClass);
+      register_test_visual_script_nodes(g_TestVisualScriptGraph);
       g_TestVisualScriptSchema.set_graph(g_TestVisualScriptGraph);
       g_TestVisualScriptRenderer.set_graph(g_TestVisualScriptGraph);
 
-      auto l_BeginNodeResult = g_TestVisualScriptGraph.create_node(
-          g_BeginEventNodeClass.get_name(),
-          Math::Vector2(120.0f, 120.0f), &g_TestVisualScriptSchema);
-      auto l_PrintNodeResult = g_TestVisualScriptGraph.create_node(
-          g_PrintStringNodeClass.get_name(),
-          Math::Vector2(460.0f, 220.0f), &g_TestVisualScriptSchema);
+      auto l_BeginNodeResult =
+          g_TestVisualScriptGraph.create_node_from_spawn_entry(
+              N(vs_spawn_begin_event), Math::Vector2(120.0f, 120.0f),
+              &g_TestVisualScriptSchema);
+      auto l_PrintNodeResult =
+          g_TestVisualScriptGraph.create_node_from_spawn_entry(
+              N(vs_spawn_print_string), Math::Vector2(460.0f, 220.0f),
+              &g_TestVisualScriptSchema);
 
       if (!l_BeginNodeResult.succeeded() ||
           !l_PrintNodeResult.succeeded()) {
