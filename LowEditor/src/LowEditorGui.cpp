@@ -479,7 +479,7 @@ namespace Low {
         return changed;
       }
 
-      bool Checkbox(const char *label, bool *v)
+      bool Checkbox(const char *label, bool *v, float p_Scale)
       {
         using namespace ImGui;
 
@@ -487,14 +487,16 @@ namespace Low {
         if (window->SkipItems)
           return false;
 
+        const float l_Scale = LOW_MATH_MAX(0.75f, p_Scale);
         ImGuiContext &g = *GImGui;
         const ImGuiStyle &style = g.Style;
         const ImGuiID id = window->GetID(label);
         const ImVec2 label_size = CalcTextSize(label, NULL, true);
         const float check_sz =
             label_size.y > 0.0f
-                ? (label_size.y + style.FramePadding.y * 0.5f)
-                : GetFrameHeight();
+                ? (label_size.y +
+                   style.FramePadding.y * 0.5f * l_Scale)
+                : (GetFrameHeight() * l_Scale);
 
         const ImRect check_bb(window->DC.CursorPos,
                               window->DC.CursorPos +
@@ -529,7 +531,7 @@ namespace Low {
                                     ? ImGuiCol_FrameBgActive
                                 : hovered ? ImGuiCol_FrameBgHovered
                                           : ImGuiCol_FrameBg),
-                    true, style.FrameRounding);
+                    true, style.FrameRounding * l_Scale);
         if (*v) {
           const float check_sz =
               ImMin(check_bb.GetWidth(), check_bb.GetHeight());
@@ -544,7 +546,8 @@ namespace Low {
                      check_bb.Max.y - pad * 1.5f},
               ImVec2{check_bb.Max.x - pad, check_bb.Min.y + pad}};
           window->DrawList->AddPolyline(
-              pts, 3, GetColorU32(ImGuiCol_CheckMark), false, 2.0f);
+              pts, 3, GetColorU32(ImGuiCol_CheckMark), false,
+              2.0f * l_Scale);
         }
 
         if (label_size.x > 0.0f)
@@ -994,18 +997,22 @@ namespace Low {
       }
 
       bool InputText(Util::String p_Label, char *p_Text, int p_Length,
-                     ImGuiInputTextFlags p_Flags)
+                     ImGuiInputTextFlags p_Flags, float p_Scale)
       {
         Theme &l_Theme = theme_get_current();
+        const float l_Scale = LOW_MATH_MAX(0.75f, p_Scale);
 
         // Target visual height similar to your original (27px).
         // We adapt padding so the final frame height approximates
         // this.
-        const float l_TargetFrameHeight = 27.0f;
-        const float l_Rounding = 4.0f;
+        const float l_TargetFrameHeight = 27.0f * l_Scale;
+        const float l_Rounding = 4.0f * l_Scale;
         const float l_BorderSize = 1.0f;
+        ImFont *l_Font =
+            Fonts::UI(19.0f * l_Scale, Fonts::Weight::Regular);
 
         ImGui::BeginGroup();
+        ImGui::PushFont(l_Font);
 
         // Width honors current layout context (columns, tables, etc.)
         const float l_FullWidth = ImGui::CalcItemWidth();
@@ -1049,6 +1056,7 @@ namespace Low {
 
         ImGui::PopStyleColor(4);
         ImGui::PopStyleVar(3);
+        ImGui::PopFont();
 
         ImGui::EndGroup();
         return l_Changed;

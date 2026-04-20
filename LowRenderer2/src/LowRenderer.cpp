@@ -896,6 +896,7 @@ namespace Low {
     void tick(float p_Delta)
     {
 
+      /*
       if (g_SS2DCanvas.is_alive() &&
           g_SS2DCanvas.get_out_image().is_alive() &&
           g_SS2DCanvas.get_out_image().get_gpu().is_alive()) {
@@ -906,6 +907,7 @@ namespace Low {
                      ImVec2(1024, 1024));
         ImGui::End();
       }
+      */
 
       ResourceManager::tick(p_Delta);
       RenderObjectSystem::tick(p_Delta);

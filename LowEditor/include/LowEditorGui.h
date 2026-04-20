@@ -32,7 +32,8 @@ namespace Low {
           Util::String p_Label, char *p_SearchString, int p_Length,
           ImVec2 p_IconOffset = ImVec2(0.0f, 0.0f));
 
-      bool LOW_EDITOR_API Checkbox(const char *label, bool *v);
+      bool LOW_EDITOR_API Checkbox(const char *label, bool *v,
+                                   float p_Scale = 1.0f);
 
       bool LOW_EDITOR_API DragFloatWithButtons(
           const char *label, float *value, float speed = 1.0f,
@@ -81,7 +82,8 @@ namespace Low {
 
       bool LOW_EDITOR_API InputText(Util::String p_Label,
                                     char *p_Text, int p_Length,
-                                    ImGuiInputTextFlags p_Flags = 0);
+                                    ImGuiInputTextFlags p_Flags = 0,
+                                    float p_Scale = 1.0f);
 
       struct ToolbarState
       {

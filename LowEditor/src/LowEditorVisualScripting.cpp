@@ -549,18 +549,18 @@ namespace Low {
 
         const float l_Zoom = p_Context.canvas.m_Zoom;
         const float l_HeaderHeight =
-            title_height * l_Zoom + 12.0f * l_Zoom;
+            title_height * l_Zoom + 24.0f * l_Zoom;
         const float l_AccentHeight = 7.0f * l_Zoom;
-        const float l_IconBoxSize = 28.0f * l_Zoom;
-        const float l_HeaderPaddingX = 12.0f * l_Zoom;
-        const float l_HeaderPaddingY = 12.0f * l_Zoom;
+        const float l_IconBoxSize = 36.0f * l_Zoom;
+        const float l_HeaderPaddingX = 14.0f * l_Zoom;
+        const float l_HeaderPaddingY = 14.0f * l_Zoom;
         const float l_PinTextOffset = 18.0f * l_Zoom;
         const float l_DefaultValueWidth = 78.0f * l_Zoom;
         const float l_TitleFontSize = 18.0f * l_Zoom;
         const float l_SubtitleFontSize = 13.0f * l_Zoom;
         const float l_PinFontSize = 17.0f * l_Zoom;
         const float l_DefaultFontSize = 15.0f * l_Zoom;
-        const float l_IconFontSize = 22.0f * l_Zoom;
+        const float l_IconFontSize = 30.0f * l_Zoom;
         ImFont *l_TitleFont =
             Fonts::UI(18.0f * l_Zoom, Fonts::Weight::Medium);
         ImFont *l_SubtitleFont =
@@ -611,18 +611,18 @@ namespace Low {
 
         const ImVec2 l_IconBoxMin =
             ImVec2(p_ScreenMin.x + l_HeaderPaddingX,
-                   p_ScreenMin.y + l_HeaderPaddingY + 2.0f * l_Zoom);
+                   p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
         const ImVec2 l_HeaderTextPos =
             ImVec2(p_ScreenMin.x + l_HeaderPaddingX +
                        (l_IconString.empty()
                             ? 0.0f
                             : (l_IconBoxSize + 10.0f * l_Zoom)),
-                   p_ScreenMin.y + l_HeaderPaddingY - 1.0f * l_Zoom);
+                   p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
 
         if (!l_IconString.empty()) {
           add_scaled_text(
               p_Context.draw_list, l_IconFont, l_IconFontSize,
-              ImVec2(l_IconBoxMin.x, l_IconBoxMin.y - 2.0f * l_Zoom),
+              ImVec2(l_IconBoxMin.x, l_IconBoxMin.y + 1.0f * l_Zoom),
               l_TextColor, l_IconString.c_str());
         }
 
@@ -633,7 +633,7 @@ namespace Low {
           add_scaled_text(p_Context.draw_list, l_SubtitleFont,
                           l_SubtitleFontSize,
                           ImVec2(l_HeaderTextPos.x,
-                                 l_HeaderTextPos.y + 18.0f * l_Zoom),
+                                 l_HeaderTextPos.y + 22.0f * l_Zoom),
                           l_SubTextColor, l_SubtitleString.c_str());
         }
 
