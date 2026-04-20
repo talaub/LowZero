@@ -652,8 +652,32 @@ namespace Low {
       float m_MinorGridStep = 16.0f;
       bool m_ShowMinorGrid = true;
 
+      bool begin(const char *p_Label,
+                 const Math::Vector2 &p_Size = Math::Vector2(0, 0));
+      void end();
+
       void render(const char *p_Label,
                   const Math::Vector2 &p_Size = Math::Vector2(0, 0));
+
+      ImDrawList *get_draw_list() const
+      {
+        return m_DrawList;
+      }
+
+      ImVec2 get_canvas_origin() const
+      {
+        return m_CanvasP0;
+      }
+
+      ImVec2 get_canvas_min() const
+      {
+        return m_CanvasP0;
+      }
+
+      ImVec2 get_canvas_max() const
+      {
+        return m_CanvasP1;
+      }
 
       Math::Vector2
       screen_to_canvas(const Math::Vector2 &p_ScreenPos,
@@ -727,6 +751,11 @@ namespace Low {
       }
 
     private:
+      ImDrawList *m_DrawList = nullptr;
+      ImVec2 m_CanvasP0 = ImVec2(0.0f, 0.0f);
+      ImVec2 m_CanvasP1 = ImVec2(0.0f, 0.0f);
+      bool m_Active = false;
+
       void draw_grid(ImDrawList *p_DrawList, const ImVec2 &p_Min,
                      const ImVec2 &p_Max, float p_Step,
                      ImU32 p_Color) const;
@@ -754,6 +783,7 @@ namespace Low {
       LinkId hovered_link;
       PinId link_drag_start_pin;
       bool dragging_nodes = false;
+      bool interacting_with_widget = false;
 
       bool is_node_selected(NodeId p_NodeId) const
       {

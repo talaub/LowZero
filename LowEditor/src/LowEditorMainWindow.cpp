@@ -7,6 +7,7 @@
 #include "imgui_internal.h"
 
 #include "IconsFontAwesome5.h"
+#include "IconsLucide.h"
 
 #include "LowEditorLogWidget.h"
 #include "LowEditorRenderViewWidget.h"
@@ -20,6 +21,7 @@
 #include "LowEditorUiWidget.h"
 #include "LowEditorFlodeWidget.h"
 #include "LowEditorGui.h"
+#include "LowEditorIcons.h"
 #include "LowEditorResourceProcessorImage.h"
 #include "LowEditorResourceProcessorMesh.h"
 #include "LowEditorSaveHelper.h"
@@ -34,6 +36,7 @@
 #include "LowEditorEditWidget.h"
 #include "LowEditor.h"
 #include "LowEditorNodeGraph.h"
+#include "LowEditorVisualScripting.h"
 
 #include "LowUtil.h"
 #include "LowUtilContainers.h"
@@ -71,10 +74,166 @@ void *operator new[](size_t size, size_t alignment,
 
 namespace Low {
   namespace Editor {
+    namespace {
+      struct BeginEventNodeClass : public VisualScripting::NodeClass
+      {
+        virtual Util::Name get_name() const override
+        {
+          return N(vs_begin_event);
+        }
+
+        virtual Util::String
+        get_title(const VisualScripting::Graph &p_Graph,
+                  NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return "On Begin";
+        }
+
+        virtual Util::String
+        get_subtitle(const VisualScripting::Graph &p_Graph,
+                     NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return "Event";
+        }
+
+        virtual Util::String
+        get_category(const VisualScripting::Graph &p_Graph,
+                     NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return "Events";
+        }
+
+        virtual Util::String
+        get_icon(const VisualScripting::Graph &p_Graph,
+                 NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return ICON_LC_PLAY;
+        }
+
+        virtual ImU32 get_color(const VisualScripting::Graph &p_Graph,
+                                NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return IM_COL32(177, 61, 156, 255);
+        }
+
+        virtual void setup_default_pins(
+            VisualScripting::Graph &p_Graph, NodeId p_NodeId,
+            const NodeGraphSchema *p_Schema) const override
+        {
+          Editor::Pin l_ExecOut =
+              VisualScripting::make_output_pin(p_Graph, p_NodeId);
+          VisualScripting::Pin l_ExecOutMetadata =
+              VisualScripting::make_execution_pin_metadata("Exec");
+
+          p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
+        }
+      };
+
+      struct PrintStringNodeClass : public VisualScripting::NodeClass
+      {
+        virtual Util::Name get_name() const override
+        {
+          return N(vs_print_string);
+        }
+
+        virtual Util::String
+        get_title(const VisualScripting::Graph &p_Graph,
+                  NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return "Print String";
+        }
+
+        virtual Util::String
+        get_subtitle(const VisualScripting::Graph &p_Graph,
+                     NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return "Debug";
+        }
+
+        virtual Util::String
+        get_category(const VisualScripting::Graph &p_Graph,
+                     NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return "Debug";
+        }
+
+        virtual Util::String
+        get_icon(const VisualScripting::Graph &p_Graph,
+                 NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return LOW_EDITOR_ICON_TEXT;
+        }
+
+        virtual ImU32 get_color(const VisualScripting::Graph &p_Graph,
+                                NodeId p_NodeId) const override
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return IM_COL32(68, 129, 214, 255);
+        }
+
+        virtual void setup_default_pins(
+            VisualScripting::Graph &p_Graph, NodeId p_NodeId,
+            const NodeGraphSchema *p_Schema) const override
+        {
+          Editor::Pin l_ExecIn =
+              VisualScripting::make_input_pin(p_Graph, p_NodeId);
+          VisualScripting::Pin l_ExecInMetadata =
+              VisualScripting::make_execution_pin_metadata("Exec");
+          p_Graph.add_pin(l_ExecIn, l_ExecInMetadata, p_Schema);
+
+          Editor::Pin l_MessageIn =
+              VisualScripting::make_input_pin(p_Graph, p_NodeId);
+          VisualScripting::Pin l_MessageInMetadata =
+              VisualScripting::make_string_pin_metadata("Message");
+          l_MessageInMetadata.default_value =
+              Util::Variant(Util::String("Hello from LowEditor"));
+          p_Graph.add_pin(l_MessageIn, l_MessageInMetadata, p_Schema);
+
+          Editor::Pin l_EnabledIn =
+              VisualScripting::make_input_pin(p_Graph, p_NodeId);
+          VisualScripting::Pin l_EnabledInMetadata =
+              VisualScripting::make_bool_pin_metadata("Enabled", true);
+          p_Graph.add_pin(l_EnabledIn, l_EnabledInMetadata, p_Schema);
+
+          Editor::Pin l_ExecOut =
+              VisualScripting::make_output_pin(p_Graph, p_NodeId);
+          VisualScripting::Pin l_ExecOutMetadata =
+              VisualScripting::make_execution_pin_metadata("Then");
+          p_Graph.add_pin(l_ExecOut, l_ExecOutMetadata, p_Schema);
+        }
+      };
+
+      BeginEventNodeClass g_BeginEventNodeClass;
+      PrintStringNodeClass g_PrintStringNodeClass;
+    } // namespace
+
     const int g_DockSpaceId = 4785;
     bool g_CentralDockOpen = true;
 
     NodeGraphCanvas g_TestCanvas;
+    VisualScripting::Graph g_TestVisualScriptGraph;
+    VisualScripting::Schema g_TestVisualScriptSchema;
+    VisualScripting::GraphRenderer g_TestVisualScriptRenderer;
+    NodeGraphEditorState g_TestVisualScriptEditorState;
 
     bool g_GizmosDragged = false;
 
@@ -599,11 +758,79 @@ namespace Low {
       initialize_spherical_billboard_materials();
     }
 
+    static void initialize_test_visual_script_graph()
+    {
+      if (!g_TestVisualScriptGraph.graph.nodes.empty()) {
+        return;
+      }
+
+      g_TestVisualScriptGraph.register_node_class(
+          g_BeginEventNodeClass);
+      g_TestVisualScriptGraph.register_node_class(
+          g_PrintStringNodeClass);
+      g_TestVisualScriptSchema.set_graph(g_TestVisualScriptGraph);
+      g_TestVisualScriptRenderer.set_graph(g_TestVisualScriptGraph);
+
+      auto l_BeginNodeResult = g_TestVisualScriptGraph.create_node(
+          g_BeginEventNodeClass.get_name(),
+          Math::Vector2(120.0f, 120.0f), &g_TestVisualScriptSchema);
+      auto l_PrintNodeResult = g_TestVisualScriptGraph.create_node(
+          g_PrintStringNodeClass.get_name(),
+          Math::Vector2(460.0f, 220.0f), &g_TestVisualScriptSchema);
+
+      if (!l_BeginNodeResult.succeeded() ||
+          !l_PrintNodeResult.succeeded()) {
+        return;
+      }
+
+      Util::List<Editor::Pin *> l_BeginPins =
+          g_TestVisualScriptGraph.graph.get_node_pins(
+              l_BeginNodeResult.value->id);
+      Util::List<Editor::Pin *> l_PrintPins =
+          g_TestVisualScriptGraph.graph.get_node_pins(
+              l_PrintNodeResult.value->id);
+
+      PinId l_BeginExecOut;
+      PinId l_PrintExecIn;
+
+      for (Editor::Pin *i_Pin : l_BeginPins) {
+        const VisualScripting::Pin *l_PinMetadata =
+            g_TestVisualScriptGraph.find_pin(i_Pin->id);
+        if (l_PinMetadata &&
+            l_PinMetadata->type ==
+                VisualScripting::PinType::Execution &&
+            i_Pin->direction == PinDirection::Output) {
+          l_BeginExecOut = i_Pin->id;
+        }
+      }
+
+      for (Editor::Pin *i_Pin : l_PrintPins) {
+        const VisualScripting::Pin *l_PinMetadata =
+            g_TestVisualScriptGraph.find_pin(i_Pin->id);
+        if (l_PinMetadata &&
+            l_PinMetadata->type ==
+                VisualScripting::PinType::Execution &&
+            i_Pin->direction == PinDirection::Input) {
+          l_PrintExecIn = i_Pin->id;
+        }
+      }
+
+      if (l_BeginExecOut.is_valid() && l_PrintExecIn.is_valid()) {
+        Editor::Link l_Link;
+        l_Link.id = LinkId{g_TestVisualScriptGraph.id_counter++};
+        l_Link.start_pin = l_BeginExecOut;
+        l_Link.end_pin = l_PrintExecIn;
+        g_TestVisualScriptGraph.add_link(l_Link,
+                                         &g_TestVisualScriptSchema);
+      }
+    }
+
     void initialize_main_window()
     {
       themes_load();
 
       initialize_billboard_materials();
+      initialize_test_visual_script_graph();
 
       LogWidget::initialize();
 
@@ -717,7 +944,17 @@ namespace Low {
       ImGui::ShowDemoWindow();
 
       ImGui::Begin("Visual Scripting");
-      g_TestCanvas.render("Graph", Math::Vector2(0, 0));
+      if (g_TestCanvas.begin("Graph", Math::Vector2(0, 0))) {
+        NodeGraphEditorContext l_GraphContext{
+            g_TestVisualScriptGraph.graph, g_TestCanvas,
+            &g_TestVisualScriptSchema, &g_TestVisualScriptEditorState,
+            g_TestCanvas.get_draw_list(),
+            g_TestCanvas.get_canvas_origin(),
+            g_TestCanvas.get_canvas_min(),
+            g_TestCanvas.get_canvas_max()};
+        g_TestVisualScriptRenderer.render(l_GraphContext);
+        g_TestCanvas.end();
+      }
       ImGui::End();
 
       // ImGui::ShowMetricsWindow();

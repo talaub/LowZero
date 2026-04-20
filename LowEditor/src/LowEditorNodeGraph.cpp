@@ -35,8 +35,8 @@ namespace Low {
       }
     } // namespace
 
-    void NodeGraphCanvas::render(const char *p_Label,
-                                 const Math::Vector2 &p_Size)
+    bool NodeGraphCanvas::begin(const char *p_Label,
+                                const Math::Vector2 &p_Size)
     {
       ImVec2 l_Size = FROM_VEC2(p_Size);
 
@@ -49,26 +49,20 @@ namespace Low {
                             ImGuiWindowFlags_NoScrollbar);
       ImGui::PopStyleVar();
 
-      ImDrawList *l_DrawList = ImGui::GetWindowDrawList();
+      m_DrawList = ImGui::GetWindowDrawList();
 
-      const ImVec2 l_CanvasP0 = ImGui::GetCursorScreenPos();
+      m_CanvasP0 = ImGui::GetCursorScreenPos();
       const ImVec2 l_CanvasSize = ImGui::GetContentRegionAvail();
-      const ImVec2 l_CanvasP1 = ImVec2(l_CanvasP0.x + l_CanvasSize.x,
-                                       l_CanvasP0.y + l_CanvasSize.y);
-
-      // Ensure the child takes up the whole region
-      ImGui::InvisibleButton("canvas_area", l_CanvasSize,
-                             ImGuiButtonFlags_MouseButtonLeft |
-                                 ImGuiButtonFlags_MouseButtonRight |
-                                 ImGuiButtonFlags_MouseButtonMiddle);
-
-      const bool l_Hovered = ImGui::IsItemHovered();
-      const bool l_Active = ImGui::IsItemActive();
-
+      m_CanvasP1 = ImVec2(m_CanvasP0.x + l_CanvasSize.x,
+                          m_CanvasP0.y + l_CanvasSize.y);
+      const ImVec2 l_MousePos = ImGui::GetIO().MousePos;
+      const bool l_Hovered =
+          l_MousePos.x >= m_CanvasP0.x && l_MousePos.x <= m_CanvasP1.x &&
+          l_MousePos.y >= m_CanvasP0.y && l_MousePos.y <= m_CanvasP1.y;
       // Background
-      l_DrawList->AddRectFilled(l_CanvasP0, l_CanvasP1,
+      m_DrawList->AddRectFilled(m_CanvasP0, m_CanvasP1,
                                 IM_COL32(32, 32, 36, 255));
-      l_DrawList->AddRect(l_CanvasP0, l_CanvasP1,
+      m_DrawList->AddRect(m_CanvasP0, m_CanvasP1,
                           IM_COL32(80, 80, 90, 255));
 
       // Panning with middle mouse
@@ -81,33 +75,55 @@ namespace Low {
       if (l_Hovered && ImGui::GetIO().MouseWheel != 0.0f) {
         const ImVec2 l_MousePos = ImGui::GetIO().MousePos;
         const ImVec2 l_CanvasMousePos =
-            screen_to_canvas(l_MousePos, l_CanvasP0);
+            screen_to_canvas(l_MousePos, m_CanvasP0);
 
         m_Zoom += ImGui::GetIO().MouseWheel * m_ZoomStep;
         m_Zoom = std::clamp(m_Zoom, m_MinZoom, m_MaxZoom);
 
         m_Scrolling.x =
-            l_MousePos.x - l_CanvasP0.x - l_CanvasMousePos.x * m_Zoom;
+            l_MousePos.x - m_CanvasP0.x -
+            l_CanvasMousePos.x * m_Zoom;
         m_Scrolling.y =
-            l_MousePos.y - l_CanvasP0.y - l_CanvasMousePos.y * m_Zoom;
+            l_MousePos.y - m_CanvasP0.y -
+            l_CanvasMousePos.y * m_Zoom;
       }
 
-      l_DrawList->PushClipRect(l_CanvasP0, l_CanvasP1, true);
+      m_DrawList->PushClipRect(m_CanvasP0, m_CanvasP1, true);
 
       if (m_ShowMinorGrid) {
-        draw_grid(l_DrawList, l_CanvasP0, l_CanvasP1, m_MinorGridStep,
+        draw_grid(m_DrawList, m_CanvasP0, m_CanvasP1,
+                  m_MinorGridStep,
                   IM_COL32(45, 45, 50, 255));
       }
 
-      draw_grid(l_DrawList, l_CanvasP0, l_CanvasP1, m_GridStep,
+      draw_grid(m_DrawList, m_CanvasP0, m_CanvasP1, m_GridStep,
                 IM_COL32(60, 60, 68, 255));
 
       // Origin cross for orientation
-      draw_origin(l_DrawList, l_CanvasP0, l_CanvasP1);
+      draw_origin(m_DrawList, m_CanvasP0, m_CanvasP1);
 
-      l_DrawList->PopClipRect();
+      m_Active = true;
+      return true;
+    }
 
+    void NodeGraphCanvas::end()
+    {
+      if (!m_Active) {
+        return;
+      }
+
+      m_DrawList->PopClipRect();
       ImGui::EndChild();
+      m_DrawList = nullptr;
+      m_Active = false;
+    }
+
+    void NodeGraphCanvas::render(const char *p_Label,
+                                 const Math::Vector2 &p_Size)
+    {
+      if (begin(p_Label, p_Size)) {
+        end();
+      }
     }
 
     void NodeGraphCanvas::draw_grid(ImDrawList *p_DrawList,
@@ -182,6 +198,10 @@ namespace Low {
           l_MousePosition.y >= p_Context.canvas_min.y &&
           l_MousePosition.y <= p_Context.canvas_max.y;
       float l_BestPinDistanceSquared = FLT_MAX;
+
+      if (l_State) {
+        l_State->interacting_with_widget = false;
+      }
 
       for (auto it = p_Context.graph.nodes.rbegin();
            it != p_Context.graph.nodes.rend(); ++it) {
@@ -266,85 +286,6 @@ namespace Low {
         }
       }
 
-      if (l_State) {
-        l_State->hovered_node = l_HoveredNodeId;
-        l_State->hovered_pin = l_HoveredPinId;
-
-        if (l_MouseInCanvas &&
-            ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-          if (l_HoveredPinId.is_valid()) {
-            l_State->link_drag_start_pin = l_HoveredPinId;
-            l_State->dragging_nodes = false;
-          } else if (l_HoveredNodeId.is_valid()) {
-            const bool l_AdditiveSelection = ImGui::GetIO().KeyCtrl;
-            l_State->select_node(l_HoveredNodeId,
-                                 l_AdditiveSelection);
-
-            if (l_HoveredNodeRenderer) {
-              Node *l_HoveredNode =
-                  p_Context.graph.find_node(l_HoveredNodeId);
-              if (l_HoveredNode &&
-                  l_HoveredNodeRenderer->can_drag_node(
-                      p_Context, *l_HoveredNode)) {
-                l_State->dragging_nodes = true;
-              }
-            }
-          } else {
-            l_State->clear_selection();
-          }
-        }
-
-        if (l_State->dragging_nodes &&
-            !l_State->link_drag_start_pin.is_valid() &&
-            ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-          const ImVec2 l_CanvasDelta =
-              p_Context.canvas.screen_to_canvas_size(
-                  ImGui::GetIO().MouseDelta);
-
-          if (l_CanvasDelta.x != 0.0f ||
-              l_CanvasDelta.y != 0.0f) {
-            for (NodeId i_NodeId : l_State->selected_nodes) {
-              Node *l_Node = p_Context.graph.find_node(i_NodeId);
-              if (l_Node) {
-                l_Node->translate(Math::Vector2(l_CanvasDelta.x,
-                                                l_CanvasDelta.y));
-              }
-            }
-          }
-        }
-
-        if (l_State->dragging_nodes &&
-            ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-          l_State->dragging_nodes = false;
-        }
-
-        if (l_State->link_drag_start_pin.is_valid() &&
-            ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-          const Pin *l_StartPin =
-              p_Context.graph.find_pin(l_State->link_drag_start_pin);
-          const Pin *l_EndPin =
-              p_Context.graph.find_pin(l_HoveredPinId);
-
-          if (l_StartPin && l_EndPin &&
-              l_StartPin->id != l_EndPin->id) {
-            Link l_NewLink;
-            l_NewLink.id = allocate_link_id(p_Context);
-
-            if (l_StartPin->direction == PinDirection::Output) {
-              l_NewLink.start_pin = l_StartPin->id;
-              l_NewLink.end_pin = l_EndPin->id;
-            } else {
-              l_NewLink.start_pin = l_EndPin->id;
-              l_NewLink.end_pin = l_StartPin->id;
-            }
-
-            p_Context.graph.add_link(l_NewLink, p_Context.schema);
-          }
-
-          l_State->link_drag_start_pin = PinId{};
-        }
-      }
-
       render_background(p_Context);
       render_links(p_Context);
 
@@ -373,6 +314,89 @@ namespace Low {
       }
 
       render_foreground(p_Context);
+
+      if (l_State) {
+        l_State->hovered_node = l_HoveredNodeId;
+        l_State->hovered_pin = l_HoveredPinId;
+
+        const bool l_BlockCanvasInteraction =
+            l_State->interacting_with_widget;
+
+        if (!l_BlockCanvasInteraction && l_MouseInCanvas &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+          if (l_HoveredPinId.is_valid()) {
+            l_State->link_drag_start_pin = l_HoveredPinId;
+            l_State->dragging_nodes = false;
+          } else if (l_HoveredNodeId.is_valid()) {
+            const bool l_AdditiveSelection = ImGui::GetIO().KeyCtrl;
+            l_State->select_node(l_HoveredNodeId,
+                                 l_AdditiveSelection);
+
+            if (l_HoveredNodeRenderer) {
+              Node *l_HoveredNode =
+                  p_Context.graph.find_node(l_HoveredNodeId);
+              if (l_HoveredNode &&
+                  l_HoveredNodeRenderer->can_drag_node(
+                      p_Context, *l_HoveredNode)) {
+                l_State->dragging_nodes = true;
+              }
+            }
+          } else {
+            l_State->clear_selection();
+          }
+        }
+
+        if (!l_BlockCanvasInteraction && l_State->dragging_nodes &&
+            !l_State->link_drag_start_pin.is_valid() &&
+            ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+          const ImVec2 l_CanvasDelta =
+              p_Context.canvas.screen_to_canvas_size(
+                  ImGui::GetIO().MouseDelta);
+
+          if (l_CanvasDelta.x != 0.0f ||
+              l_CanvasDelta.y != 0.0f) {
+            for (NodeId i_NodeId : l_State->selected_nodes) {
+              Node *l_Node = p_Context.graph.find_node(i_NodeId);
+              if (l_Node) {
+                l_Node->translate(Math::Vector2(l_CanvasDelta.x,
+                                                l_CanvasDelta.y));
+              }
+            }
+          }
+        }
+
+        if (l_State->dragging_nodes &&
+            ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+          l_State->dragging_nodes = false;
+        }
+
+        if (!l_BlockCanvasInteraction &&
+            l_State->link_drag_start_pin.is_valid() &&
+            ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+          const Pin *l_StartPin =
+              p_Context.graph.find_pin(l_State->link_drag_start_pin);
+          const Pin *l_EndPin =
+              p_Context.graph.find_pin(l_HoveredPinId);
+
+          if (l_StartPin && l_EndPin &&
+              l_StartPin->id != l_EndPin->id) {
+            Link l_NewLink;
+            l_NewLink.id = allocate_link_id(p_Context);
+
+            if (l_StartPin->direction == PinDirection::Output) {
+              l_NewLink.start_pin = l_StartPin->id;
+              l_NewLink.end_pin = l_EndPin->id;
+            } else {
+              l_NewLink.start_pin = l_EndPin->id;
+              l_NewLink.end_pin = l_StartPin->id;
+            }
+
+            p_Context.graph.add_link(l_NewLink, p_Context.schema);
+          }
+
+          l_State->link_drag_start_pin = PinId{};
+        }
+      }
     }
 
     void NodeGraphEditorRenderer::render_links(

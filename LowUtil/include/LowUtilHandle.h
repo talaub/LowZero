@@ -76,9 +76,9 @@ namespace Low {
   namespace Util {
     struct TypeIdentifier
     {
-      const Name module;
+      Name module;
 
-      const Name name;
+      Name name;
 
       TypeIdentifier()
       {
