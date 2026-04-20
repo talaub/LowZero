@@ -1025,6 +1025,13 @@ namespace Low {
         return nullptr;
       }
 
+      virtual NodeGraphMutationResult<Link>
+      create_link(NodeGraphEditorContext &p_Context,
+                  const Link &p_Link)
+      {
+        return p_Context.graph.add_link(p_Link, p_Context.schema);
+      }
+
       virtual void
       render_foreground(NodeGraphEditorContext &p_Context)
       ;

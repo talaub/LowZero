@@ -317,7 +317,44 @@ namespace Low {
       Graph::add_link(const Editor::Link &p_Link,
                       const NodeGraphSchema *p_Schema)
       {
-        return graph.add_link(p_Link, p_Schema);
+        NodeGraphMutationResult<Editor::Link> l_Result =
+            graph.add_link(p_Link, p_Schema);
+
+        if (!l_Result.succeeded()) {
+          return l_Result;
+        }
+
+        const Editor::Pin *l_StartPin =
+            graph.find_pin(p_Link.start_pin);
+        const Editor::Pin *l_EndPin = graph.find_pin(p_Link.end_pin);
+
+        if (l_StartPin) {
+          const Node *l_NodeMetadata = find_node(l_StartPin->node);
+          const NodeClass *l_NodeClass =
+              l_NodeMetadata
+                  ? find_node_class(l_NodeMetadata->node_class)
+                  : nullptr;
+          if (l_NodeClass) {
+            l_NodeClass->on_pin_connected(*this, l_StartPin->node,
+                                          l_StartPin->id,
+                                          p_Link.end_pin);
+          }
+        }
+
+        if (l_EndPin) {
+          const Node *l_NodeMetadata = find_node(l_EndPin->node);
+          const NodeClass *l_NodeClass =
+              l_NodeMetadata
+                  ? find_node_class(l_NodeMetadata->node_class)
+                  : nullptr;
+          if (l_NodeClass) {
+            l_NodeClass->on_pin_connected(*this, l_EndPin->node,
+                                          l_EndPin->id,
+                                          p_Link.start_pin);
+          }
+        }
+
+        return l_Result;
       }
 
       bool Graph::remove_node(NodeId p_NodeId)
@@ -366,14 +403,16 @@ namespace Low {
       Node *Graph::find_node_checked(NodeId p_NodeId)
       {
         Node *l_Node = find_node(p_NodeId);
-        LOW_ASSERT(l_Node, "Could not find visual scripting node by id");
+        LOW_ASSERT(l_Node,
+                   "Could not find visual scripting node by id");
         return l_Node;
       }
 
       const Node *Graph::find_node_checked(NodeId p_NodeId) const
       {
         const Node *l_Node = find_node(p_NodeId);
-        LOW_ASSERT(l_Node, "Could not find visual scripting node by id");
+        LOW_ASSERT(l_Node,
+                   "Could not find visual scripting node by id");
         return l_Node;
       }
 
@@ -392,14 +431,16 @@ namespace Low {
       Pin *Graph::find_pin_checked(PinId p_PinId)
       {
         Pin *l_Pin = find_pin(p_PinId);
-        LOW_ASSERT(l_Pin, "Could not find visual scripting pin by id");
+        LOW_ASSERT(l_Pin,
+                   "Could not find visual scripting pin by id");
         return l_Pin;
       }
 
       const Pin *Graph::find_pin_checked(PinId p_PinId) const
       {
         const Pin *l_Pin = find_pin(p_PinId);
-        LOW_ASSERT(l_Pin, "Could not find visual scripting pin by id");
+        LOW_ASSERT(l_Pin,
+                   "Could not find visual scripting pin by id");
         return l_Pin;
       }
 
@@ -463,11 +504,13 @@ namespace Low {
         return nullptr;
       }
 
-      Pin *Graph::find_input_pin_checked(
-          NodeId p_NodeId, const Util::String &p_DisplayName)
+      Pin *
+      Graph::find_input_pin_checked(NodeId p_NodeId,
+                                    const Util::String &p_DisplayName)
       {
         Pin *l_Pin = find_input_pin(p_NodeId, p_DisplayName);
-        LOW_ASSERT(l_Pin, "Could not find visual scripting input pin");
+        LOW_ASSERT(l_Pin,
+                   "Could not find visual scripting input pin");
         return l_Pin;
       }
 
@@ -475,7 +518,8 @@ namespace Low {
           NodeId p_NodeId, const Util::String &p_DisplayName) const
       {
         const Pin *l_Pin = find_input_pin(p_NodeId, p_DisplayName);
-        LOW_ASSERT(l_Pin, "Could not find visual scripting input pin");
+        LOW_ASSERT(l_Pin,
+                   "Could not find visual scripting input pin");
         return l_Pin;
       }
 
@@ -483,7 +527,8 @@ namespace Low {
           NodeId p_NodeId, const Util::String &p_DisplayName)
       {
         Pin *l_Pin = find_output_pin(p_NodeId, p_DisplayName);
-        LOW_ASSERT(l_Pin, "Could not find visual scripting output pin");
+        LOW_ASSERT(l_Pin,
+                   "Could not find visual scripting output pin");
         return l_Pin;
       }
 
@@ -491,7 +536,8 @@ namespace Low {
           NodeId p_NodeId, const Util::String &p_DisplayName) const
       {
         const Pin *l_Pin = find_output_pin(p_NodeId, p_DisplayName);
-        LOW_ASSERT(l_Pin, "Could not find visual scripting output pin");
+        LOW_ASSERT(l_Pin,
+                   "Could not find visual scripting output pin");
         return l_Pin;
       }
 
@@ -508,7 +554,8 @@ namespace Low {
 
       bool Graph::remove_variable(const Util::String &p_Name)
       {
-        for (auto it = variables.begin(); it != variables.end(); ++it) {
+        for (auto it = variables.begin(); it != variables.end();
+             ++it) {
           if (it->name == p_Name) {
             variables.erase(it);
             return true;
@@ -725,8 +772,8 @@ namespace Low {
         return l_Result;
       }
 
-      void Graph::compile_node(
-          NodeId p_NodeId, CompileContext &p_CompileContext) const
+      void Graph::compile_node(NodeId p_NodeId,
+                               CompileContext &p_CompileContext) const
       {
         const Node *l_NodeMetadata = find_node(p_NodeId);
         if (!l_NodeMetadata) {
@@ -770,8 +817,9 @@ namespace Low {
         }
       }
 
-      void Graph::compile_input_pin(
-          PinId p_InputPinId, CompileContext &p_CompileContext) const
+      void
+      Graph::compile_input_pin(PinId p_InputPinId,
+                               CompileContext &p_CompileContext) const
       {
         const Editor::Pin *l_InputPin = graph.find_pin(p_InputPinId);
         const Pin *l_InputPinMetadata = find_pin(p_InputPinId);
@@ -918,6 +966,35 @@ namespace Low {
           return NodeGraphValidationResult::CustomRejected;
         }
 
+        const Node *l_StartNodeMetadata =
+            l_Graph->find_node(p_StartPin.node);
+        const Node *l_EndNodeMetadata =
+            l_Graph->find_node(p_EndPin.node);
+        const NodeClass *l_StartNodeClass =
+            l_StartNodeMetadata ? l_Graph->find_node_class(
+                                      l_StartNodeMetadata->node_class)
+                                : nullptr;
+        const NodeClass *l_EndNodeClass =
+            l_EndNodeMetadata ? l_Graph->find_node_class(
+                                    l_EndNodeMetadata->node_class)
+                              : nullptr;
+
+        if (l_StartNodeClass &&
+            !l_StartNodeClass->can_connect_pin(
+                *const_cast<Graph *>(l_Graph), p_StartPin.node,
+                p_StartPin.id, *l_StartPinMetadata,
+                *l_EndPinMetadata)) {
+          return NodeGraphValidationResult::CustomRejected;
+        }
+
+        if (l_EndNodeClass &&
+            !l_EndNodeClass->can_connect_pin(
+                *const_cast<Graph *>(l_Graph), p_EndPin.node,
+                p_EndPin.id, *l_EndPinMetadata,
+                *l_StartPinMetadata)) {
+          return NodeGraphValidationResult::CustomRejected;
+        }
+
         return NodeGraphValidationResult::Allowed;
       }
 
@@ -985,6 +1062,17 @@ namespace Low {
 
         const u32 l_MaxPins =
             LOW_MATH_MAX(l_InputCount, l_OutputCount);
+        const Node *l_Metadata =
+            graph ? graph->find_node(p_Node.id) : nullptr;
+        const NodeClass *l_NodeClass =
+            graph && l_Metadata
+                ? graph->find_node_class(l_Metadata->node_class)
+                : nullptr;
+        if (l_NodeClass &&
+            l_NodeClass->is_compact(*graph, p_Node.id)) {
+          return Math::Vector2(
+              196.0f, LOW_MATH_MAX(60.0f, 10.0f + l_MaxPins * 34.0f));
+        }
         return Math::Vector2(default_node_size.x,
                              LOW_MATH_MAX(default_node_size.y,
                                           82.0f + l_MaxPins * 32.0f));
@@ -1025,14 +1113,20 @@ namespace Low {
         const ImU32 l_SubTextColor = IM_COL32(171, 173, 187, 255);
         const ImU32 l_ValueBackgroundColor =
             IM_COL32(52, 49, 80, 255);
+        const bool l_Compact =
+            l_NodeClass && l_NodeClass->is_compact(*graph, p_Node.id);
 
         const float l_Zoom = p_Context.canvas.m_Zoom;
         const float l_HeaderHeight =
-            title_height * l_Zoom + 24.0f * l_Zoom;
-        const float l_AccentHeight = 7.0f * l_Zoom;
+            l_Compact ? 8.0f * l_Zoom
+                      : title_height * l_Zoom + 24.0f * l_Zoom;
+        const float l_AccentHeight =
+            l_Compact ? 4.0f * l_Zoom : 7.0f * l_Zoom;
         const float l_IconBoxSize = 36.0f * l_Zoom;
-        const float l_HeaderPaddingX = 14.0f * l_Zoom;
-        const float l_HeaderPaddingY = 14.0f * l_Zoom;
+        const float l_HeaderPaddingX =
+            l_Compact ? 8.0f * l_Zoom : 14.0f * l_Zoom;
+        const float l_HeaderPaddingY =
+            l_Compact ? 8.0f * l_Zoom : 14.0f * l_Zoom;
         const float l_PinTextOffset = 18.0f * l_Zoom;
         const float l_DefaultValueWidth = 78.0f * l_Zoom;
         const float l_TitleFontSize = 18.0f * l_Zoom;
@@ -1051,27 +1145,6 @@ namespace Low {
         ImFont *l_IconFont =
             Fonts::UI(22.0f * l_Zoom, Fonts::Weight::Regular);
 
-        p_Context.draw_list->AddRectFilled(p_ScreenMin, p_ScreenMax,
-                                           l_BackgroundColor,
-                                           border_rounding);
-        p_Context.draw_list->AddRectFilled(
-            p_ScreenMin,
-            ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight),
-            l_HeaderBackgroundColor, border_rounding,
-            ImDrawFlags_RoundCornersTop);
-        p_Context.draw_list->AddRectFilled(
-            p_ScreenMin,
-            ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_AccentHeight),
-            l_NodeColor, border_rounding,
-            ImDrawFlags_RoundCornersTop);
-        p_Context.draw_list->AddLine(
-            ImVec2(p_ScreenMin.x, p_ScreenMin.y + l_HeaderHeight),
-            ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight),
-            l_HeaderDividerColor, 1.0f);
-        p_Context.draw_list->AddRect(p_ScreenMin, p_ScreenMax,
-                                     l_BorderColor, border_rounding,
-                                     0, l_Selected ? 2.0f : 1.0f);
-
         Util::String l_TitleString =
             l_Metadata && !l_Metadata->title.empty()
                 ? l_Metadata->title
@@ -1088,32 +1161,114 @@ namespace Low {
             l_NodeClass ? l_NodeClass->get_icon(*graph, p_Node.id)
                         : Util::String("");
 
-        const ImVec2 l_IconBoxMin =
-            ImVec2(p_ScreenMin.x + l_HeaderPaddingX,
-                   p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
-        const ImVec2 l_HeaderTextPos =
-            ImVec2(p_ScreenMin.x + l_HeaderPaddingX +
-                       (l_IconString.empty()
-                            ? 0.0f
-                            : (l_IconBoxSize + 10.0f * l_Zoom)),
-                   p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
+        if (l_Compact) {
+          p_Context.draw_list->AddRectFilled(p_ScreenMin, p_ScreenMax,
+                                             l_BackgroundColor,
+                                             border_rounding);
+          p_Context.draw_list->AddRectFilled(
+              p_ScreenMin,
+              ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_AccentHeight),
+              l_NodeColor, border_rounding,
+              ImDrawFlags_RoundCornersTop);
+          p_Context.draw_list->AddRect(p_ScreenMin, p_ScreenMax,
+                                       l_BorderColor, border_rounding,
+                                       0, l_Selected ? 2.0f : 1.0f);
 
-        if (!l_IconString.empty()) {
+          const Util::String l_CompactText =
+              l_NodeClass
+                  ? l_NodeClass->get_compact_title(*graph, p_Node.id)
+                  : l_TitleString;
+          ImFont *l_CompactFont =
+              Fonts::UI(19.0f * l_Zoom, Fonts::Weight::Medium);
+          const float l_CompactFontSize = 19.0f * l_Zoom;
+          const ImVec2 l_CompactTextSize =
+              calc_scaled_text_size(l_CompactFont, l_CompactFontSize,
+                                    l_CompactText.c_str());
+          const float l_TagPaddingX = 7.0f * l_Zoom;
+          const float l_TagPaddingY = 3.0f * l_Zoom;
+          const float l_CompactTabInset = 10.0f * l_Zoom;
+          const ImVec2 l_CompactBadgeMin = ImVec2(
+              p_ScreenMin.x + l_CompactTabInset,
+              p_ScreenMin.y -
+                  (l_CompactTextSize.y + l_TagPaddingY * 2.0f) +
+                  l_AccentHeight + 1.0f * l_Zoom);
+          const ImVec2 l_CompactBadgeMax =
+              ImVec2(l_CompactBadgeMin.x + l_CompactTextSize.x +
+                         l_TagPaddingX * 2.0f,
+                     p_ScreenMin.y + l_AccentHeight - 2);
+          const float l_CompactBadgeRounding = 8.0f * l_Zoom;
+          const ImU32 l_CompactBadgeBackground = l_NodeColor;
+
+          p_Context.draw_list->AddRectFilled(
+              l_CompactBadgeMin, l_CompactBadgeMax,
+              l_CompactBadgeBackground, l_CompactBadgeRounding,
+              ImDrawFlags_RoundCornersTop);
+          /*
+          p_Context.draw_list->AddRect(
+              l_CompactBadgeMin, l_CompactBadgeMax, l_BorderColor,
+              l_CompactBadgeRounding, 0, 1.0f);
+              */
+          p_Context.draw_list->AddLine(
+              ImVec2(l_CompactBadgeMin.x + 1.0f * l_Zoom,
+                     l_CompactBadgeMax.y),
+              ImVec2(l_CompactBadgeMax.x - 1.0f * l_Zoom,
+                     l_CompactBadgeMax.y),
+              l_NodeColor, 2.0f);
           add_scaled_text(
-              p_Context.draw_list, l_IconFont, l_IconFontSize,
-              ImVec2(l_IconBoxMin.x, l_IconBoxMin.y + 1.0f * l_Zoom),
-              l_TextColor, l_IconString.c_str());
-        }
+              p_Context.draw_list, l_CompactFont, l_CompactFontSize,
+              ImVec2(l_CompactBadgeMin.x + l_TagPaddingX,
+                     l_CompactBadgeMin.y + l_TagPaddingY),
+              IM_COL32(232, 233, 239, 220), l_CompactText.c_str());
+        } else {
+          p_Context.draw_list->AddRectFilled(p_ScreenMin, p_ScreenMax,
+                                             l_BackgroundColor,
+                                             border_rounding);
+          const ImVec2 l_IconBoxMin = ImVec2(
+              p_ScreenMin.x + l_HeaderPaddingX,
+              p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
+          p_Context.draw_list->AddRectFilled(
+              p_ScreenMin,
+              ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight),
+              l_HeaderBackgroundColor, border_rounding,
+              ImDrawFlags_RoundCornersTop);
+          p_Context.draw_list->AddRectFilled(
+              p_ScreenMin,
+              ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_AccentHeight),
+              l_NodeColor, border_rounding,
+              ImDrawFlags_RoundCornersTop);
+          p_Context.draw_list->AddLine(
+              ImVec2(p_ScreenMin.x, p_ScreenMin.y + l_HeaderHeight),
+              ImVec2(p_ScreenMax.x, p_ScreenMin.y + l_HeaderHeight),
+              l_HeaderDividerColor, 1.0f);
+          p_Context.draw_list->AddRect(p_ScreenMin, p_ScreenMax,
+                                       l_BorderColor, border_rounding,
+                                       0, l_Selected ? 2.0f : 1.0f);
+          const ImVec2 l_HeaderTextPos = ImVec2(
+              p_ScreenMin.x + l_HeaderPaddingX +
+                  (l_IconString.empty()
+                       ? 0.0f
+                       : (l_IconBoxSize + 10.0f * l_Zoom)),
+              p_ScreenMin.y + l_HeaderPaddingY + 1.0f * l_Zoom);
 
-        add_scaled_text(p_Context.draw_list, l_TitleFont,
-                        l_TitleFontSize, l_HeaderTextPos, l_TextColor,
-                        l_TitleString.c_str());
-        if (!l_SubtitleString.empty()) {
-          add_scaled_text(p_Context.draw_list, l_SubtitleFont,
-                          l_SubtitleFontSize,
-                          ImVec2(l_HeaderTextPos.x,
-                                 l_HeaderTextPos.y + 22.0f * l_Zoom),
-                          l_SubTextColor, l_SubtitleString.c_str());
+          if (!l_IconString.empty()) {
+            add_scaled_text(p_Context.draw_list, l_IconFont,
+                            l_IconFontSize,
+                            ImVec2(l_IconBoxMin.x,
+                                   l_IconBoxMin.y + 1.0f * l_Zoom),
+                            l_TextColor, l_IconString.c_str());
+          }
+
+          add_scaled_text(p_Context.draw_list, l_TitleFont,
+                          l_TitleFontSize, l_HeaderTextPos,
+                          l_TextColor, l_TitleString.c_str());
+          if (!l_SubtitleString.empty()) {
+            add_scaled_text(
+                p_Context.draw_list, l_SubtitleFont,
+                l_SubtitleFontSize,
+                ImVec2(l_HeaderTextPos.x,
+                       l_HeaderTextPos.y + 22.0f * l_Zoom),
+                l_SubTextColor, l_SubtitleString.c_str());
+          }
         }
 
         Util::List<Editor::Pin *> l_NodePins =
@@ -1164,7 +1319,7 @@ namespace Low {
                                l_LabelSize.x,
                            l_PinAnchor.y - l_LabelSize.y * 0.5f);
 
-          if (!l_PinLabelString.empty()) {
+          if (!l_Compact && !l_PinLabelString.empty()) {
             add_scaled_text(p_Context.draw_list, l_PinFont,
                             l_PinFontSize, l_TextPos, l_TextColor,
                             l_PinLabelString.c_str());
@@ -1174,7 +1329,8 @@ namespace Low {
               l_PinMetadata->show_default_value_when_unlinked &&
               i_Pin->direction == PinDirection::Input &&
               p_Context.graph.get_link_count(i_Pin->id) == 0 &&
-              l_PinMetadata->type != PinType::Execution) {
+              l_PinMetadata->type != PinType::Execution &&
+              l_PinMetadata->type != PinType::Dynamic) {
             char l_DefaultValue[128];
             l_DefaultValue[0] = '\0';
 
@@ -1234,10 +1390,20 @@ namespace Low {
             const ImVec2 l_ValueSize = calc_scaled_text_size(
                 l_DefaultFont, l_DefaultFontSize, l_DefaultValue);
             const float l_WidgetStartX =
-                l_TextPos.x + l_LabelSize.x + 16.0f * l_Zoom;
-            const float l_WidgetEndX = p_ScreenMax.x - 16.0f * l_Zoom;
-            const float l_WidgetWidth = LOW_MATH_MAX(
-                44.0f * l_Zoom, l_WidgetEndX - l_WidgetStartX);
+                l_Compact
+                    ? p_ScreenMin.x + 28.0f * l_Zoom
+                    : l_TextPos.x + l_LabelSize.x + 16.0f * l_Zoom;
+            const float l_WidgetEndX =
+                l_Compact ? p_ScreenMax.x - 22.0f * l_Zoom
+                          : p_ScreenMax.x - 16.0f * l_Zoom;
+            const float l_WidgetWidth =
+                l_Compact
+                    ? LOW_MATH_MAX(
+                          38.0f * l_Zoom,
+                          LOW_MATH_MIN(104.0f * l_Zoom,
+                                       l_WidgetEndX - l_WidgetStartX))
+                    : LOW_MATH_MAX(44.0f * l_Zoom,
+                                   l_WidgetEndX - l_WidgetStartX);
             const ImVec2 l_ValueMin = ImVec2(
                 l_WidgetStartX, l_PinAnchor.y - 11.0f * l_Zoom);
             const ImVec2 l_ValueMax =
@@ -1282,19 +1448,44 @@ namespace Low {
               }
               l_RenderedWidget = true;
             }
-            ImGui::PopID();
+
+            else if (l_PinMetadata->type == PinType::Number) {
+              ImGui::SetCursorScreenPos(ImVec2(
+                  l_ValueMin.x,
+                  l_PinAnchor.y - (l_Compact ? 10.0f : 13.0f)));
+              ImGui::PushItemWidth(l_ValueMax.x - l_ValueMin.x);
+              float l_Value = l_PinMetadata->default_value.as_float();
+
+              if (Gui::DragFloatWithButtons(
+                      "defaultvalue", &l_Value, 1.0f, 0.0f, 0.0f,
+                      "%.3f", l_Compact ? l_Zoom * 0.82f : l_Zoom)) {
+                l_PinMetadata->default_value = l_Value;
+              }
+              if (p_Context.state &&
+                  (ImGui::IsItemHovered() || ImGui::IsItemActive())) {
+                p_Context.state->interacting_with_widget = true;
+              }
+              ImGui::PopItemWidth();
+              l_RenderedWidget = true;
+            }
 
             if (!l_RenderedWidget) {
               p_Context.draw_list->AddRectFilled(
                   l_ValueMin, l_ValueMax, l_ValueBackgroundColor,
-                  4.0f * l_Zoom);
-              add_scaled_text(
-                  p_Context.draw_list, l_DefaultFont,
-                  l_DefaultFontSize,
+                  5.0f * l_Zoom);
+              p_Context.draw_list->AddRect(l_ValueMin, l_ValueMax,
+                                           IM_COL32(71, 67, 104, 255),
+                                           5.0f * l_Zoom);
+
+              const ImVec2 l_ValueTextPos =
                   ImVec2(l_ValueMin.x + 8.0f * l_Zoom,
-                         l_PinAnchor.y - l_ValueSize.y * 0.5f),
-                  l_SubTextColor, l_DefaultValue);
+                         l_PinAnchor.y - l_ValueSize.y * 0.5f);
+              add_scaled_text(p_Context.draw_list, l_DefaultFont,
+                              l_DefaultFontSize, l_ValueTextPos,
+                              IM_COL32(214, 216, 229, 255),
+                              l_DefaultValue);
             }
+            ImGui::PopID();
           }
         }
       }
@@ -1305,11 +1496,18 @@ namespace Low {
           const ImVec2 &p_ScreenMin, const ImVec2 &p_ScreenMax,
           ImVec2 &p_Anchor) const
       {
-        (void)p_Node;
-
         if (!graph) {
           return false;
         }
+
+        const Node *l_Metadata =
+            graph ? graph->find_node(p_Node.id) : nullptr;
+        const NodeClass *l_NodeClass =
+            graph && l_Metadata
+                ? graph->find_node_class(l_Metadata->node_class)
+                : nullptr;
+        const bool l_Compact =
+            l_NodeClass && l_NodeClass->is_compact(*graph, p_Node.id);
 
         Util::List<Editor::Pin *> l_NodePins =
             graph->graph.get_node_pins(p_Pin.node);
@@ -1339,17 +1537,35 @@ namespace Low {
         }
 
         const float l_HeaderHeight =
-            title_height * p_Context.canvas.m_Zoom +
-            12.0f * p_Context.canvas.m_Zoom;
-        const float l_ContentTop =
-            p_ScreenMin.y + l_HeaderHeight + 4.0f;
-        const float l_ContentBottom = p_ScreenMax.y - 14.0f;
+            l_Compact ? 8.0f * p_Context.canvas.m_Zoom
+                      : title_height * p_Context.canvas.m_Zoom +
+                            12.0f * p_Context.canvas.m_Zoom;
+        const float l_ContentTop = p_ScreenMin.y + l_HeaderHeight +
+                                   (l_Compact ? 14.0f : 4.0f);
+        const float l_ContentBottom =
+            p_ScreenMax.y - (l_Compact ? 14.0f : 14.0f);
         const u32 l_RowCount =
             LOW_MATH_MAX(l_InputCount, l_OutputCount);
-        const float l_Step = (l_ContentBottom - l_ContentTop) /
-                             (float)(l_RowCount + 1);
-        const float l_Y =
-            l_ContentTop + l_Step * (float)(l_SideIndex + 1);
+        float l_Y = (l_ContentTop + l_ContentBottom) * 0.5f;
+        if (l_Compact) {
+          if (l_SideCount == 1) {
+            l_Y = (l_ContentTop + l_ContentBottom) * 0.5f;
+          } else {
+            const float l_CompactStep =
+                20.0f * p_Context.canvas.m_Zoom;
+            const float l_ClusterHeight =
+                l_CompactStep * (float)(l_SideCount - 1);
+            const float l_ClusterTop =
+                ((l_ContentTop + l_ContentBottom) * 0.5f) -
+                (l_ClusterHeight * 0.5f);
+            l_Y = l_ClusterTop +
+                  l_CompactStep * (float)l_SideIndex;
+          }
+        } else {
+          const float l_Step = (l_ContentBottom - l_ContentTop) /
+                               (float)(l_RowCount + 1);
+          l_Y = l_ContentTop + l_Step * (float)(l_SideIndex + 1);
+        }
         const float l_X =
             p_Pin.is_input() ? p_ScreenMin.x : p_ScreenMax.x;
 
@@ -1372,6 +1588,20 @@ namespace Low {
         return graph ? &spawn_adapter : nullptr;
       }
 
+      NodeGraphMutationResult<Editor::Link>
+      GraphRenderer::create_link(NodeGraphEditorContext &p_Context,
+                                 const Editor::Link &p_Link)
+      {
+        if (!graph) {
+          NodeGraphMutationResult<Editor::Link> l_Result;
+          l_Result.validation_result =
+              NodeGraphValidationResult::InvalidLink;
+          return l_Result;
+        }
+
+        return graph->add_link(p_Link, p_Context.schema);
+      }
+
       Util::List<NodeGraphSpawnEntry>
       GraphRenderer::SpawnAdapter::get_spawn_entries(
           NodeGraphEditorContext &p_Context) const
@@ -1383,7 +1613,8 @@ namespace Low {
           return l_Entries;
         }
 
-        for (const NodeSpawnEntry *i_Entry : graph->get_spawn_entries()) {
+        for (const NodeSpawnEntry *i_Entry :
+             graph->get_spawn_entries()) {
           if (!i_Entry || !i_Entry->is_valid()) {
             continue;
           }

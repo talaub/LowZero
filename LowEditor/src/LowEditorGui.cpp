@@ -616,20 +616,36 @@ namespace Low {
 
       bool DragFloatWithButtons(const char *label, float *value,
                                 float speed, float min, float max,
-                                const char *format)
+                                const char *format, float p_Scale)
       {
+        const float l_Scale = LOW_MATH_MAX(0.75f, p_Scale);
+        ImFont *l_Font =
+            Fonts::UI(19.0f * l_Scale, Fonts::Weight::Regular);
+
         ImGui::BeginGroup();
+        ImGui::PushFont(l_Font);
+        ImGuiStyle &l_Style = ImGui::GetStyle();
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_FramePadding,
+            ImVec2(l_Style.FramePadding.x * l_Scale,
+                   l_Style.FramePadding.y * l_Scale));
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding,
+                            4.0f * l_Scale);
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing,
+                            ImVec2(l_Style.ItemInnerSpacing.x * l_Scale,
+                                   l_Style.ItemInnerSpacing.y));
 
         bool l_Edited = false;
 
-        const float l_FullWidth = ImGui::GetContentRegionAvail().x;
-        const float l_ButtonWidth =
-            DRAG_BUTTON_WIDTH; // your constant
+        const float l_FullWidth = ImGui::CalcItemWidth();
+        const float l_ButtonWidth = DRAG_BUTTON_WIDTH * l_Scale;
         const float l_Spacing = ImGui::GetStyle().ItemInnerSpacing.x;
 
         // Drag width accounts for two buttons + two inner spacings
-        const float l_DragWidth =
-            l_FullWidth - (l_ButtonWidth * 2.0f) - (l_Spacing * 2.0f);
+        const float l_DragWidth = LOW_MATH_MAX(
+            24.0f * l_Scale,
+            l_FullWidth - (l_ButtonWidth * 2.0f) -
+                (l_Spacing * 2.0f));
 
         ImGui::PushID(label);
 
@@ -667,6 +683,8 @@ namespace Low {
         ImGui::PopItemFlag();
 
         ImGui::PopID();
+        ImGui::PopStyleVar(3);
+        ImGui::PopFont();
         ImGui::EndGroup();
 
         return l_Edited;

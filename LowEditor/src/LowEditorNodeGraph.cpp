@@ -394,7 +394,7 @@ namespace Low {
               l_NewLink.end_pin = l_StartPin->id;
             }
 
-            p_Context.graph.add_link(l_NewLink, p_Context.schema);
+            create_link(p_Context, l_NewLink);
           }
 
           l_State->link_drag_start_pin = PinId{};

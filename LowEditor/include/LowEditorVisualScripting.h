@@ -151,6 +151,20 @@ namespace Low {
         virtual ImU32 get_color(const Graph &p_Graph,
                                 NodeId p_NodeId) const;
 
+        virtual bool is_compact(const Graph &p_Graph,
+                                NodeId p_NodeId) const
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          return false;
+        }
+
+        virtual Util::String get_compact_title(
+            const Graph &p_Graph, NodeId p_NodeId) const
+        {
+          return get_title(p_Graph, p_NodeId);
+        }
+
         virtual void
         setup_default_pins(Graph &p_Graph, NodeId p_NodeId,
                            const NodeGraphSchema *p_Schema) const
@@ -175,6 +189,29 @@ namespace Low {
                            PinId p_PinId,
                            CompileContext &p_CompileContext) const
         {
+        }
+
+        virtual bool can_connect_pin(Graph &p_Graph, NodeId p_NodeId,
+                                     PinId p_PinId,
+                                     const Pin &p_PinMetadata,
+                                     const Pin &p_OtherPinMetadata) const
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          (void)p_PinId;
+          (void)p_PinMetadata;
+          (void)p_OtherPinMetadata;
+          return true;
+        }
+
+        virtual void on_pin_connected(Graph &p_Graph, NodeId p_NodeId,
+                                      PinId p_PinId,
+                                      PinId p_OtherPinId) const
+        {
+          (void)p_Graph;
+          (void)p_NodeId;
+          (void)p_PinId;
+          (void)p_OtherPinId;
         }
 
         virtual void serialize(Graph &p_Graph, NodeId p_NodeId,
@@ -397,6 +434,10 @@ namespace Low {
 
         virtual NodeGraphSpawner *
         get_spawner(NodeGraphEditorContext &p_Context) override;
+
+        virtual NodeGraphMutationResult<Editor::Link>
+        create_link(NodeGraphEditorContext &p_Context,
+                    const Editor::Link &p_Link) override;
       };
 
       LOW_EDITOR_API const char *pin_type_to_string(PinType p_Type);
