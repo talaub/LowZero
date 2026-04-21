@@ -162,8 +162,8 @@ namespace Low {
           return false;
         }
 
-        virtual Util::String get_compact_title(
-            const Graph &p_Graph, NodeId p_NodeId) const
+        virtual Util::String get_compact_title(const Graph &p_Graph,
+                                               NodeId p_NodeId) const
         {
           return get_title(p_Graph, p_NodeId);
         }
@@ -194,10 +194,10 @@ namespace Low {
         {
         }
 
-        virtual bool can_connect_pin(Graph &p_Graph, NodeId p_NodeId,
-                                     PinId p_PinId,
-                                     const Pin &p_PinMetadata,
-                                     const Pin &p_OtherPinMetadata) const
+        virtual bool
+        can_connect_pin(Graph &p_Graph, NodeId p_NodeId,
+                        PinId p_PinId, const Pin &p_PinMetadata,
+                        const Pin &p_OtherPinMetadata) const
         {
           (void)p_Graph;
           (void)p_NodeId;
@@ -275,21 +275,22 @@ namespace Low {
         find_output_pin(NodeId p_NodeId,
                         const Util::String &p_DisplayName) const;
 
-        Pin *find_input_pin_checked(
-            NodeId p_NodeId, const Util::String &p_DisplayName);
+        Pin *
+        find_input_pin_checked(NodeId p_NodeId,
+                               const Util::String &p_DisplayName);
         const Pin *find_input_pin_checked(
-            NodeId p_NodeId,
-            const Util::String &p_DisplayName) const;
-        Pin *find_output_pin_checked(
-            NodeId p_NodeId, const Util::String &p_DisplayName);
+            NodeId p_NodeId, const Util::String &p_DisplayName) const;
+        Pin *
+        find_output_pin_checked(NodeId p_NodeId,
+                                const Util::String &p_DisplayName);
         const Pin *find_output_pin_checked(
-            NodeId p_NodeId,
-            const Util::String &p_DisplayName) const;
+            NodeId p_NodeId, const Util::String &p_DisplayName) const;
 
         bool add_variable(const Variable &p_Variable);
         bool remove_variable(const Util::String &p_Name);
         Variable *find_variable(const Util::String &p_Name);
-        const Variable *find_variable(const Util::String &p_Name) const;
+        const Variable *
+        find_variable(const Util::String &p_Name) const;
 
         void register_node_class(NodeClass &p_NodeClass);
         NodeClass *find_node_class(Util::Name p_NodeClass);
@@ -319,11 +320,12 @@ namespace Low {
 
         void compile_node(NodeId p_NodeId,
                           CompileContext &p_CompileContext) const;
-        void continue_compilation(
-            PinId p_ExecutionOutputPinId,
-            CompileContext &p_CompileContext) const;
-        void compile_input_pin(PinId p_InputPinId,
-                               CompileContext &p_CompileContext) const;
+        void
+        continue_compilation(PinId p_ExecutionOutputPinId,
+                             CompileContext &p_CompileContext) const;
+        void
+        compile_input_pin(PinId p_InputPinId,
+                          CompileContext &p_CompileContext) const;
 
         NodeId allocate_node_id();
         PinId allocate_pin_id();
@@ -441,6 +443,14 @@ namespace Low {
         virtual NodeGraphMutationResult<Editor::Link>
         create_link(NodeGraphEditorContext &p_Context,
                     const Editor::Link &p_Link) override;
+
+        virtual void
+        render_pin_context_menu(NodeGraphEditorContext &p_Context,
+                                Editor::Pin &p_Pin) override;
+
+        virtual void
+        render_node_context_menu(NodeGraphEditorContext &p_Context,
+                                 Editor::Node &p_Node) override;
       };
 
       LOW_EDITOR_API const char *pin_type_to_string(PinType p_Type);

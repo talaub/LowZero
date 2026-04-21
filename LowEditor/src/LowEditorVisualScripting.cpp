@@ -1823,6 +1823,51 @@ namespace Low {
             .succeeded();
       }
 
+      void GraphRenderer::render_node_context_menu(
+          NodeGraphEditorContext &p_Context, Editor::Node &p_Node)
+      {
+        (void)p_Context;
+
+        const Node *l_NodeMetadata =
+            graph ? graph->find_node(p_Node.id) : nullptr;
+        Util::String l_Title =
+            l_NodeMetadata && !l_NodeMetadata->title.empty()
+                ? l_NodeMetadata->title
+                : Util::String("Node");
+
+        ImGui::TextDisabled("%s", l_Title.c_str());
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Sample Node Action")) {
+          LOW_LOG_DEBUG << "VisualScript node context action on "
+                        << l_Title.c_str() << LOW_LOG_END;
+        }
+      }
+
+      void GraphRenderer::render_pin_context_menu(
+          NodeGraphEditorContext &p_Context, Editor::Pin &p_Pin)
+      {
+        (void)p_Context;
+
+        const Pin *l_PinMetadata =
+            graph ? graph->find_pin(p_Pin.id) : nullptr;
+        Util::String l_Label =
+            l_PinMetadata && !l_PinMetadata->display_name.empty()
+                ? l_PinMetadata->display_name
+                : Util::String("Pin");
+
+        ImGui::TextDisabled("%s", l_Label.c_str());
+        ImGui::Separator();
+
+        const bool l_PinHasLinks =
+            graph->graph.get_link_count(p_Pin.id) > 0;
+
+        if (ImGui::MenuItem("Break all links", NULL, false,
+                            l_PinHasLinks)) {
+          graph->graph.clear_links_for_pin(p_Pin.id);
+        }
+      }
+
       const char *pin_type_to_string(PinType p_Type)
       {
         switch (p_Type) {

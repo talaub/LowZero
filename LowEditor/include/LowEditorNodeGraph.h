@@ -397,6 +397,20 @@ namespace Low {
         return false;
       }
 
+      void clear_links_for_pin(PinId p_PinId)
+      {
+
+        for (auto it = links.begin(); it != links.end();) {
+          const Link &i_Link = *it;
+          if (i_Link.start_pin == p_PinId ||
+              i_Link.end_pin == p_PinId) {
+            it = links.erase(it);
+          } else {
+            ++it;
+          }
+        }
+      }
+
       u32 get_link_count(PinId p_PinId) const
       {
         u32 l_Count = 0;
@@ -881,6 +895,8 @@ namespace Low {
       NodeId hovered_node;
       PinId hovered_pin;
       LinkId hovered_link;
+      NodeId context_menu_node;
+      PinId context_menu_pin;
       PinId link_drag_start_pin;
       bool dragging_nodes = false;
       bool interacting_with_widget = false;
@@ -963,11 +979,11 @@ namespace Low {
                                const ImVec2 &p_ScreenMin,
                                const ImVec2 &p_ScreenMax) = 0;
 
-      virtual bool hit_test_node(
-          const NodeGraphEditorContext &p_Context,
-          const Node &p_Node, const ImVec2 &p_ScreenMin,
-          const ImVec2 &p_ScreenMax,
-          const ImVec2 &p_ScreenPosition) const
+      virtual bool
+      hit_test_node(const NodeGraphEditorContext &p_Context,
+                    const Node &p_Node, const ImVec2 &p_ScreenMin,
+                    const ImVec2 &p_ScreenMax,
+                    const ImVec2 &p_ScreenPosition) const
       {
         (void)p_Context;
         (void)p_Node;
@@ -977,19 +993,18 @@ namespace Low {
                p_ScreenPosition.y <= p_ScreenMax.y;
       }
 
-      virtual bool can_drag_node(
-          const NodeGraphEditorContext &p_Context,
-          const Node &p_Node) const
+      virtual bool
+      can_drag_node(const NodeGraphEditorContext &p_Context,
+                    const Node &p_Node) const
       {
         (void)p_Context;
         return p_Node.is_valid();
       }
 
       virtual bool get_pin_anchor(
-          const NodeGraphEditorContext &p_Context,
-          const Node &p_Node, const Pin &p_Pin,
-          const ImVec2 &p_ScreenMin, const ImVec2 &p_ScreenMax,
-          ImVec2 &p_Anchor) const
+          const NodeGraphEditorContext &p_Context, const Node &p_Node,
+          const Pin &p_Pin, const ImVec2 &p_ScreenMin,
+          const ImVec2 &p_ScreenMax, ImVec2 &p_Anchor) const
       {
         (void)p_Context;
         (void)p_Node;
@@ -1011,8 +1026,7 @@ namespace Low {
         (void)p_Context;
       }
 
-      virtual void render_links(NodeGraphEditorContext &p_Context)
-      ;
+      virtual void render_links(NodeGraphEditorContext &p_Context);
 
       virtual NodeGraphNodeRenderer *
       get_node_renderer(NodeGraphEditorContext &p_Context,
@@ -1033,15 +1047,29 @@ namespace Low {
       }
 
       virtual void
-      render_foreground(NodeGraphEditorContext &p_Context)
-      ;
+      render_node_context_menu(NodeGraphEditorContext &p_Context,
+                               Node &p_Node)
+      {
+        (void)p_Context;
+        (void)p_Node;
+      }
+
+      virtual void
+      render_pin_context_menu(NodeGraphEditorContext &p_Context,
+                              Pin &p_Pin)
+      {
+        (void)p_Context;
+        (void)p_Pin;
+      }
+
+      virtual void
+      render_foreground(NodeGraphEditorContext &p_Context);
 
       virtual void render(NodeGraphEditorContext &p_Context);
 
     protected:
       char m_CreateNodeSearch[256] = {};
-      Math::Vector2 m_CreateNodePosition =
-          Math::Vector2(0.0f, 0.0f);
+      Math::Vector2 m_CreateNodePosition = Math::Vector2(0.0f, 0.0f);
       bool m_CreateNodePopupJustOpened = false;
 
       bool get_pin_anchor(NodeGraphEditorContext &p_Context,
@@ -1081,10 +1109,9 @@ namespace Low {
                                const ImVec2 &p_ScreenMax) override;
 
       virtual bool get_pin_anchor(
-          const NodeGraphEditorContext &p_Context,
-          const Node &p_Node, const Pin &p_Pin,
-          const ImVec2 &p_ScreenMin, const ImVec2 &p_ScreenMax,
-          ImVec2 &p_Anchor) const override;
+          const NodeGraphEditorContext &p_Context, const Node &p_Node,
+          const Pin &p_Pin, const ImVec2 &p_ScreenMin,
+          const ImVec2 &p_ScreenMax, ImVec2 &p_Anchor) const override;
     };
 
     struct NodeGraphBoxRenderer : public NodeGraphEditorRenderer

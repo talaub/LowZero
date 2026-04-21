@@ -326,6 +326,20 @@ namespace Low {
             l_State->interacting_with_widget;
 
         if (!l_BlockCanvasInteraction && l_MouseInCanvas &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+          if (l_HoveredPinId.is_valid()) {
+            l_State->context_menu_pin = l_HoveredPinId;
+            l_State->context_menu_node = NodeId{};
+            ImGui::OpenPopup("NodeGraphPinContextMenu");
+          } else if (l_HoveredNodeId.is_valid()) {
+            l_State->context_menu_node = l_HoveredNodeId;
+            l_State->context_menu_pin = PinId{};
+            l_State->select_node(l_HoveredNodeId, false);
+            ImGui::OpenPopup("NodeGraphNodeContextMenu");
+          }
+        }
+
+        if (!l_BlockCanvasInteraction && l_MouseInCanvas &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
           if (l_HoveredPinId.is_valid()) {
             l_State->link_drag_start_pin = l_HoveredPinId;
@@ -449,86 +463,102 @@ namespace Low {
 
       ImGui::SetNextWindowSize(ImVec2(320.0f, 260.0f),
                                ImGuiCond_Appearing);
-      if (!ImGui::BeginPopup("NodeGraphCreateNode")) {
-        return;
-      }
-
-      if (m_CreateNodePopupJustOpened) {
-        ImGui::SetKeyboardFocusHere();
-        m_CreateNodePopupJustOpened = false;
-      }
-
-      Gui::SearchField("##nodegraph_create_node_search",
-                       m_CreateNodeSearch,
-                       IM_ARRAYSIZE(m_CreateNodeSearch),
-                       ImVec2(0.0f, 3.0f));
-      ImGui::Separator();
-
-      Util::String l_Search = m_CreateNodeSearch;
-      l_Search.make_lower();
-      Util::Map<Util::String, Util::List<NodeGraphSpawnEntry>>
-          l_CategorizedEntries;
-
-      for (const NodeGraphSpawnEntry &i_Entry :
-           l_Spawner->get_spawn_entries(p_Context)) {
-        if (!i_Entry.is_valid()) {
-          continue;
+      if (ImGui::BeginPopup("NodeGraphCreateNode")) {
+        if (m_CreateNodePopupJustOpened) {
+          ImGui::SetKeyboardFocusHere();
+          m_CreateNodePopupJustOpened = false;
         }
 
-        if (!l_Search.empty()) {
-          Util::String l_FilterText = i_Entry.title;
-          l_FilterText += " ";
-          l_FilterText += i_Entry.subtitle;
-          l_FilterText += " ";
-          l_FilterText += i_Entry.category;
-          l_FilterText += " ";
-          l_FilterText += i_Entry.search_text;
-          l_FilterText.make_lower();
+        Gui::SearchField("##nodegraph_create_node_search",
+                         m_CreateNodeSearch,
+                         IM_ARRAYSIZE(m_CreateNodeSearch),
+                         ImVec2(0.0f, 3.0f));
+        ImGui::Separator();
 
-          if (!Util::StringHelper::contains(l_FilterText, l_Search)) {
+        Util::String l_Search = m_CreateNodeSearch;
+        l_Search.make_lower();
+        Util::Map<Util::String, Util::List<NodeGraphSpawnEntry>>
+            l_CategorizedEntries;
+
+        for (const NodeGraphSpawnEntry &i_Entry :
+             l_Spawner->get_spawn_entries(p_Context)) {
+          if (!i_Entry.is_valid()) {
             continue;
           }
+
+          if (!l_Search.empty()) {
+            Util::String l_FilterText = i_Entry.title;
+            l_FilterText += " ";
+            l_FilterText += i_Entry.subtitle;
+            l_FilterText += " ";
+            l_FilterText += i_Entry.category;
+            l_FilterText += " ";
+            l_FilterText += i_Entry.search_text;
+            l_FilterText.make_lower();
+
+            if (!Util::StringHelper::contains(l_FilterText, l_Search)) {
+              continue;
+            }
+          }
+
+          l_CategorizedEntries[i_Entry.category].push_back(i_Entry);
         }
 
-        l_CategorizedEntries[i_Entry.category].push_back(i_Entry);
-      }
+        if (l_CategorizedEntries.empty()) {
+          ImGui::TextDisabled("No nodes found");
+        } else {
+          for (auto it = l_CategorizedEntries.begin();
+               it != l_CategorizedEntries.end(); ++it) {
+            if (!ImGui::TreeNode(it->first.c_str())) {
+              continue;
+            }
 
-      if (l_CategorizedEntries.empty()) {
-        ImGui::TextDisabled("No nodes found");
+            for (const NodeGraphSpawnEntry &i_Entry : it->second) {
+              Util::String l_Label = i_Entry.title;
+              if (!i_Entry.subtitle.empty()) {
+                l_Label += "##";
+                l_Label += i_Entry.id.c_str();
+              }
+
+              if (ImGui::MenuItem(l_Label.c_str())) {
+                l_Spawner->spawn_entry(p_Context, i_Entry.id,
+                                       m_CreateNodePosition);
+                ImGui::CloseCurrentPopup();
+              }
+
+              if (!i_Entry.subtitle.empty() &&
+                  ImGui::IsItemHovered(
+                      ImGuiHoveredFlags_AllowWhenDisabled)) {
+                ImGui::SetTooltip("%s", i_Entry.subtitle.c_str());
+              }
+            }
+
+            ImGui::TreePop();
+          }
+        }
+
         ImGui::EndPopup();
-        return;
       }
 
-      for (auto it = l_CategorizedEntries.begin();
-           it != l_CategorizedEntries.end(); ++it) {
-        if (!ImGui::TreeNode(it->first.c_str())) {
-          continue;
+      if (p_Context.state &&
+          ImGui::BeginPopup("NodeGraphNodeContextMenu")) {
+        Node *l_Node =
+            p_Context.graph.find_node(p_Context.state->context_menu_node);
+        if (l_Node) {
+          render_node_context_menu(p_Context, *l_Node);
         }
-
-        for (const NodeGraphSpawnEntry &i_Entry : it->second) {
-          Util::String l_Label = i_Entry.title;
-          if (!i_Entry.subtitle.empty()) {
-            l_Label += "##";
-            l_Label += i_Entry.id.c_str();
-          }
-
-          if (ImGui::MenuItem(l_Label.c_str())) {
-            l_Spawner->spawn_entry(p_Context, i_Entry.id,
-                                   m_CreateNodePosition);
-            ImGui::CloseCurrentPopup();
-          }
-
-          if (!i_Entry.subtitle.empty() &&
-              ImGui::IsItemHovered(
-                  ImGuiHoveredFlags_AllowWhenDisabled)) {
-            ImGui::SetTooltip("%s", i_Entry.subtitle.c_str());
-          }
-        }
-
-        ImGui::TreePop();
+        ImGui::EndPopup();
       }
 
-      ImGui::EndPopup();
+      if (p_Context.state &&
+          ImGui::BeginPopup("NodeGraphPinContextMenu")) {
+        Pin *l_Pin =
+            p_Context.graph.find_pin(p_Context.state->context_menu_pin);
+        if (l_Pin) {
+          render_pin_context_menu(p_Context, *l_Pin);
+        }
+        ImGui::EndPopup();
+      }
     }
 
     void NodeGraphEditorRenderer::render_links(
