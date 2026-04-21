@@ -298,10 +298,10 @@ namespace Low {
           size_t l_StagingOffset = 0;
           const u64 l_FrameUploadSpace =
               Vulkan::Global::get_current_frame_staging_buffer()
-                  .request_space(sizeof(DrawCommandUpload),
+                  .request_space(sizeof(UiDrawCommandUpload),
                                  &l_StagingOffset);
 
-          if (l_FrameUploadSpace < sizeof(DrawCommandUpload)) {
+          if (l_FrameUploadSpace < sizeof(UiDrawCommandUpload)) {
             // We don't have enough space on the staging buffer to
             // upload this drawcommand
             l_Result = false;
@@ -532,7 +532,8 @@ namespace Low {
           LOW_ASSERT(
               Vulkan::Global::get_current_frame_staging_buffer()
                   .write(i_Uploads.data(),
-                         sizeof(DrawCommandUpload) * i_Uploads.size(),
+                         sizeof(UiDrawCommandUpload) *
+                             i_Uploads.size(),
                          l_StagingOffset),
               "Failed to write draw command data to staging buffer");
 

@@ -1838,9 +1838,8 @@ namespace Low {
         ImGui::TextDisabled("%s", l_Title.c_str());
         ImGui::Separator();
 
-        if (ImGui::MenuItem("Sample Node Action")) {
-          LOW_LOG_DEBUG << "VisualScript node context action on "
-                        << l_Title.c_str() << LOW_LOG_END;
+        if (ImGui::MenuItem("Delete")) {
+          graph->remove_node(p_Node.id);
         }
       }
 

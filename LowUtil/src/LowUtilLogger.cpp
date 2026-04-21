@@ -271,20 +271,20 @@ namespace Low {
 
       LogStream &LogStream::operator<<(Handle p_Message)
       {
-        if (Handle::is_registered_type(p_Message.get_type())){
-        RTTI::TypeInfo &l_TypeInfo =
-            Handle::get_type_info(p_Message.get_type());
-        return *this << l_TypeInfo.name
-                     << "(Index: " << p_Message.get_index()
-                     << ", Generation: " << p_Message.get_generation()
-                     << ", Alive: " << l_TypeInfo.is_alive(p_Message)
-                     << ")";
+        if (Handle::is_registered_type(p_Message.get_type())) {
+          RTTI::TypeInfo &l_TypeInfo =
+              Handle::get_type_info(p_Message.get_type());
+          return *this << l_TypeInfo.name
+                       << "(Index: " << p_Message.get_index()
+                       << ", Generation: "
+                       << p_Message.get_generation() << ", Alive: "
+                       << l_TypeInfo.is_alive(p_Message) << ")";
         } else {
           return *this << "Handle"
-                     << "(Index: " << p_Message.get_index()
-                     << ", Generation: " << p_Message.get_generation()
-                       << ", Type: " << p_Message.get_type()
-                     << ")";
+                       << "(Index: " << p_Message.get_index()
+                       << ", Generation: "
+                       << p_Message.get_generation()
+                       << ", Type: " << p_Message.get_type() << ")";
         }
       }
 
@@ -317,37 +317,37 @@ namespace Low {
         }
       }
 
-      LogStream &LogStream::operator<<(Math::Vector2 &p_Vec)
+      LogStream &LogStream::operator<<(Math::Vector2 p_Vec)
       {
         return *this << "Vector2(" << p_Vec.x << ", " << p_Vec.y
                      << ")";
       }
 
-      LogStream &LogStream::operator<<(Math::Vector3 &p_Vec)
+      LogStream &LogStream::operator<<(Math::Vector3 p_Vec)
       {
         return *this << "Vector3(" << p_Vec.x << ", " << p_Vec.y
                      << ", " << p_Vec.z << ")";
       }
 
-      LogStream &LogStream::operator<<(Math::Vector4 &p_Vec)
+      LogStream &LogStream::operator<<(Math::Vector4 p_Vec)
       {
         return *this << "Vector4(" << p_Vec.x << ", " << p_Vec.y
                      << ", " << p_Vec.z << ", " << p_Vec.w << ")";
       }
 
-      LogStream &LogStream::operator<<(Math::Quaternion &p_Quat)
+      LogStream &LogStream::operator<<(Math::Quaternion p_Quat)
       {
         return *this << "Quaternion(" << p_Quat.x << ", " << p_Quat.y
                      << ", " << p_Quat.z << ", " << p_Quat.w << ")";
       }
 
-      LogStream &LogStream::operator<<(Math::UVector2 &p_Vec)
+      LogStream &LogStream::operator<<(Math::UVector2 p_Vec)
       {
         return *this << "UVector2(" << p_Vec.x << ", " << p_Vec.y
                      << ")";
       }
 
-      LogStream &LogStream::operator<<(Math::UVector3 &p_Vec)
+      LogStream &LogStream::operator<<(Math::UVector3 p_Vec)
       {
         return *this << "UVector3(" << p_Vec.x << ", " << p_Vec.y
                      << ", " << p_Vec.z << ")";
