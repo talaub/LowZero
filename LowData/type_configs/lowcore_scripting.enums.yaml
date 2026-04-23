@@ -1,0 +1,12 @@
+module: LowCore
+prefix: LowCoreScript
+namespace:
+  - Low
+  - Core
+  - Scripting
+dll_macro: LOW_CORE_API
+enums:
+  AssetGenerator:
+    options:
+      - name: UserAuthored
+      - name: VisualScript

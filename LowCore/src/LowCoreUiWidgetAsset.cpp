@@ -71,6 +71,8 @@ namespace Low {
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, WidgetAsset, controller,
                                    Low::Core::UI::Controller))
             Low::Core::UI::Controller();
+        ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset,
+                          has_custom_controller, bool) = false;
         ACCESSOR_TYPE_SOA(l_Handle, WidgetAsset, name,
                           Low::Util::Name) = Low::Util::Name(0u);
 
@@ -279,12 +281,12 @@ namespace Low {
           // Property: controller
           Low::Util::RTTI::PropertyInfo l_PropertyInfo;
           l_PropertyInfo.name = N(controller);
-          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.editorProperty = true;
           l_PropertyInfo.dataOffset =
               offsetof(WidgetAsset::Data, controller);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Core::UI::Controller::type_id();
+              Low::Core::UI::Controller::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             WidgetAsset l_Handle = p_Handle.get_id();
@@ -309,6 +311,37 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: controller
+        }
+        {
+          // Property: has_custom_controller
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(has_custom_controller);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(WidgetAsset::Data, has_custom_controller);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::BOOL;
+          l_PropertyInfo.handleType = 0;
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            l_Handle.has_custom_controller();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, WidgetAsset, has_custom_controller, bool);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            l_Handle.has_custom_controller(*(bool *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            WidgetAsset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<WidgetAsset> l_HandleLock(l_Handle);
+            *((bool *)p_Data) = l_Handle.has_custom_controller();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: has_custom_controller
         }
         {
           // Property: name
@@ -708,6 +741,10 @@ namespace Low {
 
           l_ContentNode.push_back(i_ElementNode);
         }
+
+        if (get_controller().is_alive()) {
+          p_Node["controller"] = get_controller().get_name();
+        }
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -784,6 +821,19 @@ namespace Low {
         get_content().clear();
         if (p_Node["content"]) {
           parse_content(p_Node["content"]);
+        }
+
+        if (p_Node["controller"]) {
+          Util::Name l_ControllerName =
+              p_Node["controller"].as<Util::Name>();
+          Controller l_Controller =
+              Controller::find_by_name(l_ControllerName);
+          if (l_Controller.is_alive()) {
+            set_controller(l_Controller);
+          } else {
+            Util::resolve_handle_reference_by_name(
+                get_id(), N(controller), l_ControllerName);
+          }
         }
 
         // LOW_CODEGEN::END::CUSTOM:POST_LOAD
@@ -911,6 +961,38 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_controller
 
         broadcast_observable(N(controller));
+      }
+
+      bool WidgetAsset::has_custom_controller() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_has_custom_controller
+        // LOW_CODEGEN::END::CUSTOM:GETTER_has_custom_controller
+
+        return TYPE_SOA(WidgetAsset, has_custom_controller, bool);
+      }
+      void WidgetAsset::toggle_has_custom_controller()
+      {
+        has_custom_controller(!has_custom_controller());
+      }
+
+      void WidgetAsset::has_custom_controller(bool p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<WidgetAsset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_has_custom_controller
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_has_custom_controller
+
+        // Set new value
+        TYPE_SOA(WidgetAsset, has_custom_controller, bool) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_has_custom_controller
+        // LOW_CODEGEN::END::CUSTOM:SETTER_has_custom_controller
+
+        broadcast_observable(N(has_custom_controller));
       }
 
       Low::Util::Name WidgetAsset::get_name() const

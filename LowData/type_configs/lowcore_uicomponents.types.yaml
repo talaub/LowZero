@@ -10,6 +10,7 @@ types:
   Display:
     ui_component: true
     scripting_expose: true
+    delay_data_define: true
     header_imports:
       - LowMath.h
     source_imports:
@@ -52,18 +53,12 @@ types:
           - dirty
           - world_dirty
       parent:
-        type: uint64_t
+        type: Display
         expose_scripting: true
         skip_serialization: true
         skip_deserialization: true
         skip_duplication: true
-        dirty_flag:
-          - dirty
-          - world_dirty
-      parent_uid:
-        type: uint64_t
-        private_setter: true
-        skip_duplication: true
+        handle: true
         dirty_flag:
           - dirty
           - world_dirty

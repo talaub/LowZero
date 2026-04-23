@@ -74,6 +74,13 @@
 
 namespace Low {
   namespace Util {
+    void LOW_EXPORT resolve_handle_reference_by_unique_id(
+        Handle p_Referencer, const Name p_PropertyName,
+        const u64 p_UniqueId);
+    void LOW_EXPORT resolve_handle_reference_by_name(
+        Handle p_Referencer, const Name p_PropertyName,
+        const Name p_ReferencedName);
+
     struct TypeIdentifier
     {
       Name module;
@@ -188,7 +195,7 @@ namespace Low {
       {
         Util::Name name;
         u32 type;
-        u16 handleType;
+        TypeIdentifier handleType;
         bool editorProperty;
         void (*get)(Handle, void *);
         void (*set)(Handle, const void *);

@@ -1,5 +1,6 @@
 #include "LowUtilHandle.h"
 
+#include "LowMath.h"
 #include "LowUtilAssert.h"
 #include "LowUtilContainers.h"
 #include "LowUtilLogger.h"
@@ -36,6 +37,145 @@ namespace Low {
         uint16_t randomComponent;
       } data;
     };
+
+    enum class HandleReferenceResolverType
+    {
+      Uid,
+      Name
+    };
+
+    struct HandleReferenceResolver
+    {
+      Handle referencer;
+      Name property;
+      HandleReferenceResolverType type;
+      union
+      {
+        u64 uid;
+        Name name;
+      };
+      RTTI::TypeInfo typeInfo;
+      RTTI::TypeInfo referencedTypeInfo;
+
+      HandleReferenceResolver(const HandleReferenceResolver &p_Other)
+          : referencer(p_Other.referencer),
+            property(p_Other.property), type(p_Other.type),
+            typeInfo(p_Other.typeInfo),
+            referencedTypeInfo(p_Other.referencedTypeInfo)
+      {
+        copy_union_value(p_Other);
+      }
+
+      HandleReferenceResolver &
+      operator=(const HandleReferenceResolver &p_Other)
+      {
+        if (this != &p_Other) {
+          referencer = p_Other.referencer;
+          property = p_Other.property;
+          type = p_Other.type;
+          typeInfo = p_Other.typeInfo;
+          referencedTypeInfo = p_Other.referencedTypeInfo;
+          copy_union_value(p_Other);
+        }
+
+        return *this;
+      }
+
+      HandleReferenceResolver(Handle p_Referencer,
+                              Name p_PropertyName,
+                              HandleReferenceResolverType p_Type,
+                              u64 p_Uid)
+          : referencer(p_Referencer), property(p_PropertyName),
+            type(p_Type)
+      {
+        uid = p_Uid;
+        fill();
+      }
+
+      HandleReferenceResolver(Handle p_Referencer,
+                              Name p_PropertyName,
+                              HandleReferenceResolverType p_Type,
+                              Name p_Name)
+          : referencer(p_Referencer), property(p_PropertyName),
+            type(p_Type)
+      {
+        name = p_Name;
+        fill();
+      }
+
+      void fill()
+      {
+
+        typeInfo = Handle::get_type_info(referencer.get_type());
+        referencedTypeInfo = Handle::get_type_info(
+            typeInfo.properties[property].handleType);
+      }
+
+    private:
+      void copy_union_value(const HandleReferenceResolver &p_Other)
+      {
+        if (type == HandleReferenceResolverType::Uid) {
+          uid = p_Other.uid;
+        } else {
+          name = p_Other.name;
+        }
+      }
+    };
+
+    List<HandleReferenceResolver> g_ActiveReferenceResolvers;
+
+    void
+    resolve_handle_reference_by_unique_id(Handle p_Referencer,
+                                          const Name p_PropertyName,
+                                          const u64 p_UniqueId)
+    {
+      g_ActiveReferenceResolvers.emplace_back(
+          p_Referencer, p_PropertyName,
+          HandleReferenceResolverType::Uid, p_UniqueId);
+    }
+
+    void resolve_handle_reference_by_name(Handle p_Referencer,
+                                          const Name p_PropertyName,
+                                          const Name p_ReferencedName)
+    {
+      g_ActiveReferenceResolvers.emplace_back(
+          p_Referencer, p_PropertyName,
+          HandleReferenceResolverType::Name, p_ReferencedName);
+    }
+
+    void tick_handle_reference_resolvers(const float p_Delta)
+    {
+      for (auto it = g_ActiveReferenceResolvers.begin();
+           it != g_ActiveReferenceResolvers.end();) {
+        HandleReferenceResolver &i_Resolver = *it;
+        if (!i_Resolver.typeInfo.is_alive(i_Resolver.referencer)) {
+          it = g_ActiveReferenceResolvers.erase(it);
+          continue;
+        }
+
+        Handle i_Handle = Handle::DEAD;
+
+        if (i_Resolver.type == HandleReferenceResolverType::Uid) {
+          i_Handle = find_handle_by_unique_id(i_Resolver.uid);
+        } else if (i_Resolver.type ==
+                   HandleReferenceResolverType::Name) {
+          i_Handle = i_Resolver.referencedTypeInfo.find_by_name(
+              i_Resolver.name);
+        } else {
+          LOW_ASSERT(false, "Unsupported resolver type");
+        }
+
+        if (i_Resolver.referencedTypeInfo.is_alive(i_Handle)) {
+          i_Resolver.typeInfo.properties[i_Resolver.property].set(
+              i_Resolver.referencer, &i_Handle);
+          LOW_LOG_DEBUG << "Resolved reference successfully."
+                        << LOW_LOG_END;
+          it = g_ActiveReferenceResolvers.erase(it);
+        } else {
+          ++it;
+        }
+      }
+    }
 
     void register_enum_info(u16 p_EnumId, RTTI::EnumInfo &p_EnumInfo)
     {

@@ -262,7 +262,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Material::Data, material_type);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = MaterialType::type_id();
+        l_PropertyInfo.handleType = MaterialType::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
@@ -291,7 +291,7 @@ namespace Low {
             offsetof(Material::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::MaterialResource::type_id();
+            Low::Renderer::MaterialResource::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();
@@ -325,7 +325,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Material::Data, gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::GpuMaterial::type_id();
+            Low::Renderer::GpuMaterial::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Material l_Handle = p_Handle.get_id();

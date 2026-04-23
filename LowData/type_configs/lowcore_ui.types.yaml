@@ -89,6 +89,11 @@ types:
       controller:
         type: Low::Core::UI::Controller
         handle: true
+        editor_editable: true
+      has_custom_controller:
+        type: bool
+        setter_name: has_custom_controller
+        getter_name: has_custom_controller
     functions:
       parse_content:
         private: true

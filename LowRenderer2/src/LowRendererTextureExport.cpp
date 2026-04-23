@@ -219,7 +219,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(TextureExport::Data, texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TextureExport l_Handle = p_Handle.get_id();

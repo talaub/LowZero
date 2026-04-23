@@ -343,6 +343,16 @@ namespace Low {
       } else {
         l_Theme.edit = l_Theme.warning;
       }
+      if (p_Node["controller"]) {
+        l_Theme.controller = parse_color(p_Node["controller"]);
+      } else {
+        l_Theme.controller = l_Theme.success;
+      }
+      if (p_Node["play"]) {
+        l_Theme.play = parse_color(p_Node["play"]);
+      } else {
+        l_Theme.play = l_Theme.text;
+      }
 
       g_Themes[l_Name] = l_Theme;
     }

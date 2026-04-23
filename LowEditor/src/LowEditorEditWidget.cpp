@@ -38,7 +38,7 @@ namespace Low {
                                ImGuiCond_FirstUseEver);
       ImGui::Begin(m_Title.c_str(), &m_Open,
                    ImGuiWindowFlags_NoSavedSettings);
-      m_Editor->render();
+      m_Editor->render(p_Delta);
       ImGui::End();
     }
   } // namespace Editor

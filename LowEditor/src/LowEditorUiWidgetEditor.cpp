@@ -3,6 +3,7 @@
 #include "LowCoreUiText.h"
 #include "LowCoreUiWidgetAsset.h"
 #include "LowEditorGui.h"
+#include "LowEditorThemes.h"
 #include "LowEditorTypeEditor.h"
 #include "LowEditorIcons.h"
 #include "LowEditorUiWidget.h"
@@ -19,7 +20,9 @@
 #include "LowRendererUiDrawCommand.h"
 #include "LowUtilAssetManager.h"
 #include "LowUtilHandle.h"
+#include "LowUtilLogger.h"
 #include "LowUtilString.h"
+#include <IconsCodicons.h>
 #include <corecrt_io.h>
 #include <imgui.h>
 #include "ImGuizmo.h"
@@ -45,6 +48,7 @@ namespace Low {
           m_TopPaneHeight(400.0f), m_Test(false),
           m_ElementSearch((char *)calloc(SEARCH_LENGTH, sizeof(char)))
     {
+      LOW_LOG_DEBUG << "Handle: " << p_Handle << LOW_LOG_END;
       m_Viewport = new UiWidgetInteractiveViewport(
           p_Handle, Math::UVector2(500, 500));
 
@@ -271,7 +275,7 @@ namespace Low {
       p_RotationRadians = l_Euler.z;
     }
 
-    void UiWidgetEditor::render()
+    void UiWidgetEditor::render(const float p_Delta)
     {
       Core::UI::WidgetAsset l_Asset = m_Handle.get_id();
 
@@ -295,6 +299,38 @@ namespace Low {
       if (Gui::SaveButton()) {
         l_Asset.fill_content_from_instance(m_Viewport->m_Instance);
         Util::AssetManager::save(l_Asset);
+      }
+
+      if (m_Mode == Mode::Widget) {
+        if (l_Asset.get_controller().is_alive() &&
+            l_Asset.get_controller().is_script_controller()) {
+          ImGui::SameLine();
+          Gui::VerticalSeparator();
+          ImGui::SameLine();
+          if (l_Asset.has_custom_controller()) {
+            if (Gui::Button("Controller", false,
+                            LOW_EDITOR_ICON_CONTROLLER,
+                            theme_get_current().controller)) {
+              m_Mode = Mode::Controller;
+            }
+          } else {
+            if (Gui::Button("Open controller", false,
+                            LOW_EDITOR_ICON_CONTROLLER,
+                            theme_get_current().controller)) {
+              // TODO: Don't switch type, just open controller in new
+              // window
+              m_Mode = Mode::Controller;
+            }
+          }
+        }
+      } else {
+        ImGui::SameLine();
+        Gui::VerticalSeparator();
+        ImGui::SameLine();
+        if (Gui::Button("Widget", false, LOW_EDITOR_ICON_ELEMENT,
+                        theme_get_current().info)) {
+          m_Mode = Mode::Widget;
+        }
       }
 
       // ----- Left side -----
@@ -396,9 +432,21 @@ namespace Low {
         ImGui::BeginChild("LeftBottom", ImVec2(0.0f, 0.0f),
                           ImGuiChildFlags_Borders);
         {
-          for (auto it = m_DetailsSections.begin();
-               it != m_DetailsSections.end(); ++it) {
-            it->render(LOW_DELTA_TIME);
+          if (m_DetailsSections.empty()) {
+            if (!l_Asset.has_custom_controller() &&
+                !l_Asset.get_controller().is_alive()) {
+              show_editor(N(controller));
+              ImGui::Dummy(ImVec2(0, 10.0f));
+              if (Gui::Button("Create controller", false,
+                              LOW_EDITOR_ICON_CONTROLLER,
+                              theme_get_current().controller)) {
+              }
+            }
+          } else {
+            for (auto it = m_DetailsSections.begin();
+                 it != m_DetailsSections.end(); ++it) {
+              it->render(LOW_DELTA_TIME);
+            }
           }
         }
         ImGui::EndChild();

@@ -384,6 +384,7 @@ function generate_header(p_Type) {
     t += empty();
   }
 
+  let l_DataContent = "";
 
   t += line(
     `struct ${p_Type.dll_macro} ${p_Type.name}: public Low::Util::Handle`,
@@ -391,24 +392,30 @@ function generate_header(p_Type) {
   );
   t += line("{", n++);
   t += line('public:');
-  t += line(`struct Data`, n);
-  t += line("{", n++);
-  t += line('public:');
+  l_DataContent += line("{", n++);
+  l_DataContent += line('public:');
 
   for (let [i_PropName, i_Prop] of Object.entries(p_Type.properties)) {
     if (!i_Prop.static && !i_Prop.no_data) {
-      t += line(`${i_Prop.plain_type} ${i_PropName};`, n);
+      l_DataContent += line(`${i_Prop.plain_type} ${i_PropName};`, n);
     }
   }
 
-  t += empty();
+  l_DataContent += empty();
 
-  t += line(`static size_t get_size()`, n);
-  t += line("{", n++);
-  t += line(`return sizeof(Data);`, n);
-  t += line("}", --n);
+  l_DataContent += line(`static size_t get_size()`, n);
+  l_DataContent += line("{", n++);
+  l_DataContent += line(`return sizeof(Data);`, n);
+  l_DataContent += line("}", --n);
 
-  t += line("};", --n);
+  l_DataContent += line("};", --n);
+  if (p_Type.delay_data_define){
+    t += line(`struct Data;`, n);
+  }
+  else {
+    t += line(`struct Data`, n);
+    t += l_DataContent;
+  }
   t += empty();
   t += empty();
   t += line(`private:`)
@@ -733,6 +740,13 @@ return ms_TypeId;
   }
 
   t += line("};", --n);
+
+  if (p_Type.delay_data_define){
+    t += empty()
+    t += line(`struct ${p_Type.name}::Data`, n);
+    t += l_DataContent;
+    t += empty()
+  }
 
   if (true) {
     t += empty();
@@ -1252,7 +1266,7 @@ function generate_source(p_Type) {
     );
     if (i_Prop.handle) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;`);
-      t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::type_id();`);
+      t += line(`l_PropertyInfo.handleType = ${i_Prop.plain_type}::IDENTIFIER;`);
     } else if (i_Prop.enum) {
       t += line(`l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;`);
       t += line(

@@ -248,7 +248,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Entity::Data, region);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Region::type_id();
+        l_PropertyInfo.handleType = Region::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Entity l_Handle = p_Handle.get_id();

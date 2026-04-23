@@ -37,7 +37,13 @@ namespace Low {
       UiWidgetEditor(Util::Handle p_Handle);
       ~UiWidgetEditor();
 
-      void render() override;
+      enum class Mode
+      {
+        Widget,
+        Controller
+      };
+
+      void render(const float p_Delta) override;
 
       virtual Math::UVector2 get_edit_widget_dimensions() override
       {
@@ -53,6 +59,8 @@ namespace Low {
       float m_LeftPaneWidth;
       float m_TopPaneHeight;
       bool m_Test;
+
+      Mode m_Mode = Mode::Widget;
 
       char *m_ElementSearch;
 

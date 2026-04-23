@@ -74,6 +74,8 @@ namespace Low {
 
           ACCESSOR_TYPE_SOA(l_Handle, Display, rotation, float) =
               0.0f;
+          new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, parent,
+                                     Display)) Display();
           new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Display, children,
                                      Low::Util::List<uint64_t>))
               Low::Util::List<uint64_t>();
@@ -126,7 +128,7 @@ namespace Low {
 
             // Doing this to remove the transform from the list of
             // children
-            set_parent(0);
+            set_parent(Util::Handle::DEAD);
             // LOW_CODEGEN::END::CUSTOM:DESTROY
           }
 
@@ -353,60 +355,30 @@ namespace Low {
             l_PropertyInfo.dataOffset =
                 offsetof(Display::Data, parent);
             l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::UINT64;
-            l_PropertyInfo.handleType = 0;
+                Low::Util::RTTI::PropertyType::HANDLE;
+            l_PropertyInfo.handleType = Display::IDENTIFIER;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
               l_Handle.get_parent();
               return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
-                                                parent, uint64_t);
+                                                parent, Display);
             };
             l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
                                     const void *p_Data) -> void {
               Display l_Handle = p_Handle.get_id();
-              l_Handle.set_parent(*(uint64_t *)p_Data);
+              l_Handle.set_parent(*(Display *)p_Data);
             };
             l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
                                     void *p_Data) {
               Display l_Handle = p_Handle.get_id();
               Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
-              *((uint64_t *)p_Data) = l_Handle.get_parent();
+              *((Display *)p_Data) = l_Handle.get_parent();
             };
             l_TypeInfo.properties[l_PropertyInfo.name] =
                 l_PropertyInfo;
             // End property: parent
-          }
-          {
-            // Property: parent_uid
-            Low::Util::RTTI::PropertyInfo l_PropertyInfo;
-            l_PropertyInfo.name = N(parent_uid);
-            l_PropertyInfo.editorProperty = false;
-            l_PropertyInfo.dataOffset =
-                offsetof(Display::Data, parent_uid);
-            l_PropertyInfo.type =
-                Low::Util::RTTI::PropertyType::UINT64;
-            l_PropertyInfo.handleType = 0;
-            l_PropertyInfo.get_return =
-                [](Low::Util::Handle p_Handle) -> void const * {
-              Display l_Handle = p_Handle.get_id();
-              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
-              l_Handle.get_parent_uid();
-              return (void *)&ACCESSOR_TYPE_SOA(p_Handle, Display,
-                                                parent_uid, uint64_t);
-            };
-            l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
-                                    const void *p_Data) -> void {};
-            l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
-                                    void *p_Data) {
-              Display l_Handle = p_Handle.get_id();
-              Low::Util::HandleLock<Display> l_HandleLock(l_Handle);
-              *((uint64_t *)p_Data) = l_Handle.get_parent_uid();
-            };
-            l_TypeInfo.properties[l_PropertyInfo.name] =
-                l_PropertyInfo;
-            // End property: parent_uid
           }
           {
             // Property: children
@@ -638,7 +610,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Core::UI::Element::type_id();
+                Low::Core::UI::Element::IDENTIFIER;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Display l_Handle = p_Handle.get_id();
@@ -936,11 +908,13 @@ namespace Low {
           p_Node["rotation"] = rotation();
           p_Node["pixel_scale"] = pixel_scale();
           p_Node["layer"] = layer();
-          p_Node["parent_uid"] = get_parent_uid();
           p_Node["_unique_id"] = Low::Util::U64Id{get_unique_id()};
 
           // LOW_CODEGEN:BEGIN:CUSTOM:SERIALIZER
-
+          if (get_parent().is_alive()) {
+            p_Node["parent"] =
+                Util::U64Id{get_parent().get_unique_id()};
+          }
           // LOW_CODEGEN::END::CUSTOM:SERIALIZER
         }
 
@@ -980,16 +954,25 @@ namespace Low {
           if (p_Node["layer"]) {
             l_Handle.layer(p_Node["layer"].as<uint32_t>());
           }
-          if (p_Node["parent_uid"]) {
-            l_Handle.set_parent_uid(
-                p_Node["parent_uid"].as<uint64_t>());
-          }
           if (p_Node["unique_id"]) {
             l_Handle.set_unique_id(
                 p_Node["unique_id"].as<Low::Util::UniqueId>());
           }
 
           // LOW_CODEGEN:BEGIN:CUSTOM:DESERIALIZER
+          if (p_Node["parent"]) {
+            const u64 l_ParentUid =
+                p_Node["parent"].as<Util::U64Id>();
+
+            Display l_ParentDisplay =
+                Util::find_handle_by_unique_id(l_ParentUid);
+            if (l_ParentDisplay.is_alive()) {
+              l_Handle.set_parent(l_ParentDisplay);
+            } else {
+              Util::resolve_handle_reference_by_unique_id(
+                  l_Handle.get_id(), N(parent), l_ParentUid);
+            }
+          }
 
           // LOW_CODEGEN::END::CUSTOM:DESERIALIZER
 
@@ -1232,7 +1215,7 @@ namespace Low {
           }
         }
 
-        uint64_t Display::get_parent() const
+        Display Display::get_parent() const
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1241,9 +1224,9 @@ namespace Low {
 
           // LOW_CODEGEN::END::CUSTOM:GETTER_parent
 
-          return TYPE_SOA(Display, parent, uint64_t);
+          return TYPE_SOA(Display, parent, Display);
         }
-        void Display::set_parent(uint64_t p_Value)
+        void Display::set_parent(Display p_Value)
         {
           _LOW_ASSERT(is_alive());
           Low::Util::HandleLock<Display> l_Lock(get_id());
@@ -1269,56 +1252,17 @@ namespace Low {
             mark_world_dirty();
 
             // Set new value
-            TYPE_SOA(Display, parent, uint64_t) = p_Value;
+            TYPE_SOA(Display, parent, Display) = p_Value;
 
             // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent
 
             Display l_Parent(p_Value);
             if (l_Parent.is_alive()) {
-              set_parent_uid(l_Parent.get_unique_id());
               l_Parent.get_children().push_back(get_id());
-            } else {
-              set_parent_uid(0);
             }
             // LOW_CODEGEN::END::CUSTOM:SETTER_parent
 
             broadcast_observable(N(parent));
-          }
-        }
-
-        uint64_t Display::get_parent_uid() const
-        {
-          _LOW_ASSERT(is_alive());
-          Low::Util::HandleLock<Display> l_Lock(get_id());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_parent_uid
-
-          // LOW_CODEGEN::END::CUSTOM:GETTER_parent_uid
-
-          return TYPE_SOA(Display, parent_uid, uint64_t);
-        }
-        void Display::set_parent_uid(uint64_t p_Value)
-        {
-          _LOW_ASSERT(is_alive());
-          Low::Util::HandleLock<Display> l_Lock(get_id());
-
-          // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_parent_uid
-
-          // LOW_CODEGEN::END::CUSTOM:PRESETTER_parent_uid
-
-          if (get_parent_uid() != p_Value) {
-            // Set dirty flags
-            mark_dirty();
-            mark_world_dirty();
-
-            // Set new value
-            TYPE_SOA(Display, parent_uid, uint64_t) = p_Value;
-
-            // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_parent_uid
-
-            // LOW_CODEGEN::END::CUSTOM:SETTER_parent_uid
-
-            broadcast_observable(N(parent_uid));
           }
         }
 
@@ -1752,13 +1696,6 @@ namespace Low {
             return;
           }
 
-          if (!Display(get_parent()).is_alive() &&
-              get_parent_uid() != 0) {
-            set_parent(
-                Util::find_handle_by_unique_id(get_parent_uid())
-                    .get_id());
-          }
-
           Element l_Element = get_element();
           Math::Vector2 l_Position = pixel_position();
           float l_Rotation = rotation();
@@ -1839,19 +1776,25 @@ namespace Low {
         {
           Low::Util::HandleLock<Display> l_Lock(get_id());
           // LOW_CODEGEN:BEGIN:CUSTOM:FUNCTION_point_is_in_bounding_box
+          const Math::Vector2 l_Center =
+              get_absolute_pixel_position();
+          const Math::Vector2 l_HalfExtents(
+              Low::Math::Util::abs(get_absolute_pixel_scale().x) *
+                  0.5f,
+              Low::Math::Util::abs(get_absolute_pixel_scale().y) *
+                  0.5f);
+          const Math::Vector2 l_Min = l_Center - l_HalfExtents;
+          const Math::Vector2 l_Max = l_Center + l_HalfExtents;
 
-          Math::Vector2 l_Position = get_absolute_pixel_position();
-          Math::Vector2 l_Size = get_absolute_pixel_scale();
-
-          if (p_Point.x < l_Position.x || p_Point.y < l_Position.y) {
+          if (p_Point.x < l_Min.x || p_Point.y < l_Min.y) {
             return false;
           }
 
-          if (p_Point.x > (l_Position.x + l_Size.x)) {
+          if (p_Point.x > l_Max.x) {
             return false;
           }
 
-          if (p_Point.y > (l_Position.y + l_Size.y)) {
+          if (p_Point.y > l_Max.y) {
             return false;
           }
 

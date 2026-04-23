@@ -10,6 +10,7 @@
 #include "LowUtil.h"
 #include "LowUtilString.h"
 
+#include "LowCore.h"
 #include "LowCorePrefab.h"
 #include "LowCorePrefabInstance.h"
 #include <memory>
@@ -128,10 +129,10 @@ namespace Low {
 
     void TypeEditor::show()
     {
-      render();
+      render(LOW_DELTA_TIME);
     }
 
-    void TypeEditor::render()
+    void TypeEditor::render(const float p_Delta)
     {
       uint32_t l_Id = 0;
       static Util::Name l_EntityName = N(entity);

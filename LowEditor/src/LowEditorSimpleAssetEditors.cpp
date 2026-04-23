@@ -104,7 +104,7 @@ namespace Low {
       delete m_MeshViewer;
     }
 
-    void MeshAssetEditor::render()
+    void MeshAssetEditor::render(const float p_Delta)
     {
       Renderer::Mesh l_Mesh = m_Handle.get_id();
 
@@ -129,7 +129,7 @@ namespace Low {
       m_MeshViewer->set_dimensions(l_Avail.x, l_Avail.y);
     }
 
-    void TextureAssetEditor::render()
+    void TextureAssetEditor::render(const float p_Delta)
     {
       Renderer::Texture l_Texture = m_Handle.get_id();
 
@@ -159,7 +159,7 @@ namespace Low {
       }
     }
 
-    void FontAssetEditor::render()
+    void FontAssetEditor::render(const float p_Delta)
     {
       Renderer::Font l_Font = m_Handle.get_id();
 

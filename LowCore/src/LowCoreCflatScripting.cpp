@@ -1459,13 +1459,6 @@ static void register_lowcore_display()
 
   CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
                              Low::Core::UI::Component::Display,
-                             uint64_t, get_parent);
-  CflatStructAddMethodVoidParams1(
-      Low::Core::Scripting::get_environment(),
-      Low::Core::UI::Component::Display, void, set_parent, uint64_t);
-
-  CflatStructAddMethodReturn(Low::Core::Scripting::get_environment(),
-                             Low::Core::UI::Component::Display,
                              Low::Util::List<uint64_t> &,
                              get_children);
 

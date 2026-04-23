@@ -238,7 +238,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Texture::type_id();
+        l_PropertyInfo.handleType = Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
@@ -436,7 +436,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Material::type_id();
+        l_PropertyInfo.handleType = Material::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();
@@ -502,7 +502,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(UiRenderObject::Data, mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           UiRenderObject l_Handle = p_Handle.get_id();

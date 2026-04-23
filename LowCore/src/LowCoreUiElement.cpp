@@ -271,7 +271,7 @@ namespace Low {
           l_PropertyInfo.editorProperty = false;
           l_PropertyInfo.dataOffset = offsetof(Element::Data, view);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::UI::View::type_id();
+          l_PropertyInfo.handleType = Low::Core::UI::View::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();
@@ -333,7 +333,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(Element::Data, canvas);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::UiCanvas::type_id();
+              Low::Renderer::UiCanvas::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Element l_Handle = p_Handle.get_id();

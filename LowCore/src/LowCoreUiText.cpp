@@ -285,7 +285,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Renderer::Font::type_id();
+                Low::Renderer::Font::IDENTIFIER;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();
@@ -418,7 +418,7 @@ namespace Low {
             l_PropertyInfo.type =
                 Low::Util::RTTI::PropertyType::HANDLE;
             l_PropertyInfo.handleType =
-                Low::Core::UI::Element::type_id();
+                Low::Core::UI::Element::IDENTIFIER;
             l_PropertyInfo.get_return =
                 [](Low::Util::Handle p_Handle) -> void const * {
               Text l_Handle = p_Handle.get_id();

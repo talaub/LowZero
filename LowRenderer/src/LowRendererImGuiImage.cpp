@@ -214,7 +214,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(ImGuiImage::Data, image);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Resource::Image::type_id();
+          l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             ImGuiImage l_Handle = p_Handle.get_id();

@@ -258,7 +258,7 @@ namespace Low {
               offsetof(Context::Data, global_signature);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              PipelineResourceSignature::type_id();
+              PipelineResourceSignature::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
@@ -288,7 +288,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, frame_info_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Resource::Buffer::type_id();
+          l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();
@@ -318,7 +318,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Context::Data, material_data_buffer);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Resource::Buffer::type_id();
+          l_PropertyInfo.handleType = Resource::Buffer::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Context l_Handle = p_Handle.get_id();

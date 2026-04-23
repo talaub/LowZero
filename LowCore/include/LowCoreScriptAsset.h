@@ -9,6 +9,7 @@
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
 #include "LowCoreScriptModule.h"
+#include "LowCoreScriptAssetGenerator.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
 
 namespace Low {
@@ -25,6 +26,7 @@ namespace Low {
         public:
           Low::Core::Scripting::Module module;
           Low::Util::String source_path;
+          Low::Core::Scripting::AssetGenerator generator;
           Low::Util::UniqueId unique_id;
           Low::Util::Name name;
 
@@ -154,6 +156,10 @@ namespace Low {
         void set_module(Low::Core::Scripting::Module p_Value);
 
         Low::Util::String get_source_path() const;
+
+        Low::Core::Scripting::AssetGenerator get_generator() const;
+        void
+        set_generator(Low::Core::Scripting::AssetGenerator p_Value);
 
         Low::Util::UniqueId get_unique_id() const;
 

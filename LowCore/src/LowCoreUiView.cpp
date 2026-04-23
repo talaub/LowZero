@@ -479,7 +479,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(View::Data, canvas);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Renderer::UiCanvas::type_id();
+              Low::Renderer::UiCanvas::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             View l_Handle = p_Handle.get_id();

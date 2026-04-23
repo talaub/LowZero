@@ -55,10 +55,13 @@ namespace Low {
       LOW_LOG_INFO << "Util initialized" << LOW_LOG_END;
     }
 
+    void tick_handle_reference_resolvers(const float p_Delta);
+
     void tick(float p_Delta)
     {
       FileSystem::tick(p_Delta);
       AssetManager::tick(p_Delta);
+      tick_handle_reference_resolvers(p_Delta);
 
       SDL_Event e;
 

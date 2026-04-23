@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "LowCoreScriptAssetGenerator.h"
 #include "LowUtil.h"
 #include "LowUtilAssert.h"
 #include "LowUtilLogger.h"
@@ -68,6 +69,10 @@ namespace Low {
         new (ACCESSOR_TYPE_SOA_PTR(l_Handle, Asset, module,
                                    Low::Core::Scripting::Module))
             Low::Core::Scripting::Module();
+        new (ACCESSOR_TYPE_SOA_PTR(
+            l_Handle, Asset, generator,
+            Low::Core::Scripting::AssetGenerator))
+            Low::Core::Scripting::AssetGenerator();
         ACCESSOR_TYPE_SOA(l_Handle, Asset, name, Low::Util::Name) =
             Low::Util::Name(0u);
 
@@ -195,7 +200,7 @@ namespace Low {
           l_PropertyInfo.dataOffset = offsetof(Asset::Data, module);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Core::Scripting::Module::type_id();
+              Low::Core::Scripting::Module::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Asset l_Handle = p_Handle.get_id();
@@ -249,6 +254,41 @@ namespace Low {
           };
           l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
           // End property: source_path
+        }
+        {
+          // Property: generator
+          Low::Util::RTTI::PropertyInfo l_PropertyInfo;
+          l_PropertyInfo.name = N(generator);
+          l_PropertyInfo.editorProperty = false;
+          l_PropertyInfo.dataOffset =
+              offsetof(Asset::Data, generator);
+          l_PropertyInfo.type = Low::Util::RTTI::PropertyType::ENUM;
+          l_PropertyInfo.handleType = Low::Core::Scripting::
+              AssetGeneratorEnumHelper::get_enum_id();
+          l_PropertyInfo.get_return =
+              [](Low::Util::Handle p_Handle) -> void const * {
+            Asset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Asset> l_HandleLock(l_Handle);
+            l_Handle.get_generator();
+            return (void *)&ACCESSOR_TYPE_SOA(
+                p_Handle, Asset, generator,
+                Low::Core::Scripting::AssetGenerator);
+          };
+          l_PropertyInfo.set = [](Low::Util::Handle p_Handle,
+                                  const void *p_Data) -> void {
+            Asset l_Handle = p_Handle.get_id();
+            l_Handle.set_generator(
+                *(Low::Core::Scripting::AssetGenerator *)p_Data);
+          };
+          l_PropertyInfo.get = [](Low::Util::Handle p_Handle,
+                                  void *p_Data) {
+            Asset l_Handle = p_Handle.get_id();
+            Low::Util::HandleLock<Asset> l_HandleLock(l_Handle);
+            *((Low::Core::Scripting::AssetGenerator *)p_Data) =
+                l_Handle.get_generator();
+          };
+          l_TypeInfo.properties[l_PropertyInfo.name] = l_PropertyInfo;
+          // End property: generator
         }
         {
           // Property: unique_id
@@ -361,6 +401,7 @@ namespace Low {
               Util::PathHelper::get_base_name_no_ext(p_Path);
           if (!l_Asset.is_alive()) {
             l_Asset = ScriptAsset::make(LOW_NAME(l_FileName.c_str()));
+            l_Asset.set_generator(AssetGenerator::USERAUTHORED);
           }
           Util::String l_SidecarPath =
               Util::get_project().assetCachePath;
@@ -531,6 +572,10 @@ namespace Low {
         if (get_module().is_alive()) {
           p_Node["module"] = get_module().get_name();
         }
+        Util::Serial::serialize_enum(
+            p_Node["generator"],
+            AssetGeneratorEnumHelper::get_enum_id(),
+            (u8)get_generator());
         // LOW_CODEGEN::END::CUSTOM:SERIALIZER
       }
 
@@ -565,6 +610,13 @@ namespace Low {
         if (p_Node["module"]) {
           l_Module =
               Module::find_by_name(p_Node["module"].as<Util::Name>());
+        }
+
+        AssetGenerator l_Generator = AssetGenerator::USERAUTHORED;
+        if (p_Node["generator"]) {
+          l_Generator =
+              (AssetGenerator)Util::Serial::deserialize_enum(
+                  p_Node["generator"]);
         }
 
         if (!l_Module.is_alive()) {
@@ -696,6 +748,37 @@ namespace Low {
         // LOW_CODEGEN::END::CUSTOM:SETTER_source_path
 
         broadcast_observable(N(source_path));
+      }
+
+      Low::Core::Scripting::AssetGenerator
+      Asset::get_generator() const
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Asset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:GETTER_generator
+        // LOW_CODEGEN::END::CUSTOM:GETTER_generator
+
+        return TYPE_SOA(Asset, generator,
+                        Low::Core::Scripting::AssetGenerator);
+      }
+      void Asset::set_generator(
+          Low::Core::Scripting::AssetGenerator p_Value)
+      {
+        _LOW_ASSERT(is_alive());
+        Low::Util::HandleLock<Asset> l_Lock(get_id());
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:PRESETTER_generator
+        // LOW_CODEGEN::END::CUSTOM:PRESETTER_generator
+
+        // Set new value
+        TYPE_SOA(Asset, generator,
+                 Low::Core::Scripting::AssetGenerator) = p_Value;
+
+        // LOW_CODEGEN:BEGIN:CUSTOM:SETTER_generator
+        // LOW_CODEGEN::END::CUSTOM:SETTER_generator
+
+        broadcast_observable(N(generator));
       }
 
       Low::Util::UniqueId Asset::get_unique_id() const

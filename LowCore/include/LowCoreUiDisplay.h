@@ -26,32 +26,7 @@ namespace Low {
         struct LOW_CORE_API Display : public Low::Util::Handle
         {
         public:
-          struct Data
-          {
-          public:
-            Low::Math::Vector2 pixel_position;
-            float rotation;
-            Low::Math::Vector2 pixel_scale;
-            uint32_t layer;
-            uint64_t parent;
-            uint64_t parent_uid;
-            Low::Util::List<uint64_t> children;
-            Low::Math::Vector2 absolute_pixel_position;
-            float absolute_rotation;
-            Low::Math::Vector2 absolute_pixel_scale;
-            uint32_t absolute_layer;
-            Low::Math::Matrix4x4 world_matrix;
-            bool world_updated;
-            Low::Core::UI::Element element;
-            Low::Util::UniqueId unique_id;
-            bool dirty;
-            bool world_dirty;
-
-            static size_t get_size()
-            {
-              return sizeof(Data);
-            }
-          };
+          struct Data;
 
         private:
           static u16 ms_TypeId;
@@ -185,10 +160,8 @@ namespace Low {
           uint32_t layer() const;
           void layer(uint32_t p_Value);
 
-          uint64_t get_parent() const;
-          void set_parent(uint64_t p_Value);
-
-          uint64_t get_parent_uid() const;
+          Display get_parent() const;
+          void set_parent(Display p_Value);
 
           Low::Util::List<uint64_t> &get_children() const;
 
@@ -235,7 +208,6 @@ namespace Low {
               u32 &p_PageIndex, u32 &p_SlotIndex,
               Low::Util::UniqueLock<Low::Util::Mutex> &p_PageLock);
           static u32 create_page();
-          void set_parent_uid(uint64_t p_Value);
           void
           set_absolute_pixel_position(Low::Math::Vector2 p_Value);
           void set_absolute_pixel_position(float p_X, float p_Y);
@@ -253,6 +225,32 @@ namespace Low {
           // LOW_CODEGEN:BEGIN:CUSTOM:STRUCT_END_CODE
 
           // LOW_CODEGEN::END::CUSTOM:STRUCT_END_CODE
+        };
+
+        struct Display::Data
+        {
+        public:
+          Low::Math::Vector2 pixel_position;
+          float rotation;
+          Low::Math::Vector2 pixel_scale;
+          uint32_t layer;
+          Display parent;
+          Low::Util::List<uint64_t> children;
+          Low::Math::Vector2 absolute_pixel_position;
+          float absolute_rotation;
+          Low::Math::Vector2 absolute_pixel_scale;
+          uint32_t absolute_layer;
+          Low::Math::Matrix4x4 world_matrix;
+          bool world_updated;
+          Low::Core::UI::Element element;
+          Low::Util::UniqueId unique_id;
+          bool dirty;
+          bool world_dirty;
+
+          static size_t get_size()
+          {
+            return sizeof(Data);
+          }
         };
 
         // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_STRUCT_CODE

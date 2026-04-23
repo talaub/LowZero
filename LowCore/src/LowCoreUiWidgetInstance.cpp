@@ -192,7 +192,7 @@ namespace Low {
               offsetof(WidgetInstance::Data, root);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Core::UI::Element::type_id();
+              Low::Core::UI::Element::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             WidgetInstance l_Handle = p_Handle.get_id();
@@ -260,7 +260,7 @@ namespace Low {
               offsetof(WidgetInstance::Data, controller_instance);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
           l_PropertyInfo.handleType =
-              Low::Core::UI::ControllerInstance::type_id();
+              Low::Core::UI::ControllerInstance::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             WidgetInstance l_Handle = p_Handle.get_id();

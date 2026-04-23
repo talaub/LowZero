@@ -258,7 +258,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, config);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = GraphicsStepConfig::type_id();
+        l_PropertyInfo.handleType = GraphicsStepConfig::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStep l_Handle = p_Handle.get_id();
@@ -414,7 +414,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Interface::Context::type_id();
+        l_PropertyInfo.handleType = Interface::Context::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStep l_Handle = p_Handle.get_id();
@@ -517,7 +517,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(GraphicsStep::Data, output_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Resource::Image::type_id();
+        l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           GraphicsStep l_Handle = p_Handle.get_id();

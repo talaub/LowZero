@@ -197,7 +197,7 @@ namespace Low {
             offsetof(TextureStaging::Data, mip0);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::TexturePixels::type_id();
+            Low::Renderer::TexturePixels::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TextureStaging l_Handle = p_Handle.get_id();
@@ -233,7 +233,7 @@ namespace Low {
             offsetof(TextureStaging::Data, mip1);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::TexturePixels::type_id();
+            Low::Renderer::TexturePixels::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TextureStaging l_Handle = p_Handle.get_id();
@@ -269,7 +269,7 @@ namespace Low {
             offsetof(TextureStaging::Data, mip2);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::TexturePixels::type_id();
+            Low::Renderer::TexturePixels::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TextureStaging l_Handle = p_Handle.get_id();
@@ -305,7 +305,7 @@ namespace Low {
             offsetof(TextureStaging::Data, mip3);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::TexturePixels::type_id();
+            Low::Renderer::TexturePixels::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           TextureStaging l_Handle = p_Handle.get_id();

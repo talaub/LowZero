@@ -41,7 +41,7 @@ namespace Low {
       {
       }
 
-      virtual void render();
+      virtual void render(const float p_Delta);
 
       void show();
 

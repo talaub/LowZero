@@ -207,7 +207,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Model::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::ModelResource::type_id();
+            Low::Renderer::ModelResource::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -240,7 +240,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod0);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -270,7 +270,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod1);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -300,7 +300,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod2);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();
@@ -330,7 +330,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Model::Data, lod3);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Model l_Handle = p_Handle.get_id();

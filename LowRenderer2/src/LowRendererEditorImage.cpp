@@ -219,7 +219,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(EditorImage::Data, gpu);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::EditorImageGpu::type_id();
+            Low::Renderer::EditorImageGpu::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImage l_Handle = p_Handle.get_id();
@@ -253,7 +253,7 @@ namespace Low {
             offsetof(EditorImage::Data, staging);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::EditorImageStaging::type_id();
+            Low::Renderer::EditorImageStaging::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           EditorImage l_Handle = p_Handle.get_id();

@@ -608,7 +608,7 @@ namespace Low {
             offsetof(RenderView::Data, render_scene);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::RenderScene::type_id();
+            Low::Renderer::RenderScene::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -642,7 +642,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_albedo);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -676,7 +677,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_normals);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -710,7 +712,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_depth);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -744,7 +747,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, gbuffer_viewposition);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -778,7 +782,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, object_map);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -811,7 +816,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, lit_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -844,7 +850,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, blurred_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();
@@ -878,7 +885,8 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderView::Data, ssao_image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderView l_Handle = p_Handle.get_id();

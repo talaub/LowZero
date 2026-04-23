@@ -228,7 +228,7 @@ namespace Low {
             offsetof(DrawCommand::Data, submesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::GpuSubmesh::type_id();
+            Low::Renderer::GpuSubmesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           DrawCommand l_Handle = p_Handle.get_id();
@@ -289,7 +289,7 @@ namespace Low {
             offsetof(DrawCommand::Data, render_object);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::RenderObject::type_id();
+            Low::Renderer::RenderObject::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           DrawCommand l_Handle = p_Handle.get_id();
@@ -320,7 +320,7 @@ namespace Low {
             offsetof(DrawCommand::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::Material::type_id();
+            Low::Renderer::Material::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           DrawCommand l_Handle = p_Handle.get_id();

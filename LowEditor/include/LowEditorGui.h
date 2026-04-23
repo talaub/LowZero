@@ -70,6 +70,7 @@ namespace Low {
                                  Low::Math::Color p_IconColor =
                                      Low::Math::Color(1.0f, 1.0f,
                                                       1.0f, 1.0f));
+      void LOW_EDITOR_API VerticalSeparator(float p_Padding = 8.0f);
       bool LOW_EDITOR_API AddButton(bool p_Disabled = false);
       bool LOW_EDITOR_API AddButton(const char *p_Label,
                                     bool p_Disabled = false);

@@ -5,6 +5,7 @@
 #include "LowEditorGui.h"
 #include "LowEditorMetadata.h"
 #include "IconsLucide.h"
+#include "LowEditorThemes.h"
 #include "LowMath.h"
 #include "LowUtilLogger.h"
 
@@ -389,7 +390,8 @@ namespace Low {
           }
 
           ImGui::SameLine();
-          if (Gui::Button("Compile", false, ICON_LC_PLAY)) {
+          if (Gui::Button("Compile", false, ICON_LC_PLAY,
+                          theme_get_current().play)) {
             LOW_LOG_DEBUG << "VisualScript compile requested"
                           << LOW_LOG_END;
           }

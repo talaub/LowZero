@@ -214,7 +214,8 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Font::Data, texture);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Texture::type_id();
+        l_PropertyInfo.handleType =
+            Low::Renderer::Texture::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();
@@ -246,7 +247,7 @@ namespace Low {
         l_PropertyInfo.dataOffset = offsetof(Font::Data, resource);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::FontResource::type_id();
+            Low::Renderer::FontResource::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Font l_Handle = p_Handle.get_id();

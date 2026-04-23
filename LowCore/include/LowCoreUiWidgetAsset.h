@@ -8,6 +8,7 @@
 #include "LowUtilSerialization.h"
 
 // LOW_CODEGEN:BEGIN:CUSTOM:HEADER_CODE
+
 #include "LowCoreUiWidgetInstance.h"
 #include "LowCoreUiController.h"
 // LOW_CODEGEN::END::CUSTOM:HEADER_CODE
@@ -47,6 +48,7 @@ namespace Low {
           Low::Util::List<Low::Core::UI::ElementDescriptor> content;
           Low::Util::String path;
           Low::Core::UI::Controller controller;
+          bool has_custom_controller;
           Low::Util::Name name;
 
           static size_t get_size()
@@ -192,6 +194,10 @@ namespace Low {
         Low::Core::UI::Controller get_controller() const;
         void set_controller(Low::Core::UI::Controller p_Value);
 
+        bool has_custom_controller() const;
+        void has_custom_controller(bool p_Value);
+        void toggle_has_custom_controller();
+
         Low::Util::Name get_name() const;
         void set_name(Low::Util::Name p_Value);
 
@@ -245,4 +251,5 @@ namespace Low {
 } // namespace Low
 
 // LOW_CODEGEN:BEGIN:CUSTOM:NAMESPACE_AFTER_HEADER_CODE
+
 // LOW_CODEGEN::END::CUSTOM:NAMESPACE_AFTER_HEADER_CODE

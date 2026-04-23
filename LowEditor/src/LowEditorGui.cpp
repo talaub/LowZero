@@ -936,6 +936,16 @@ namespace Low {
         return ImGui::InvisibleButton(p_Label, l_Size) && !p_Disabled;
       }
 
+      void VerticalSeparator(float p_Padding)
+      {
+        ImGui::Dummy(ImVec2(p_Padding, 0.0f));
+        ImGui::SameLine();
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine();
+        ImGui::Dummy(ImVec2(p_Padding, 0.0f));
+        ImGui::SameLine();
+      }
+
       bool AddButton(bool p_Disabled)
       {
         return Button("Add", p_Disabled, LOW_EDITOR_ICON_ADD,
@@ -1190,12 +1200,7 @@ namespace Low {
 
         static void SectionSeparator(float padX = 8.0f)
         {
-          ImGui::Dummy(ImVec2(padX, 0.0f));
-          ImGui::SameLine();
-          ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
-          ImGui::SameLine();
-          ImGui::Dummy(ImVec2(padX, 0.0f));
-          ImGui::SameLine();
+          Gui::VerticalSeparator(padX);
         }
 
         static void DrawStatusPill(const char *text, ImVec4 color)

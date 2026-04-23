@@ -433,7 +433,7 @@ namespace Low {
           l_PropertyInfo.dataOffset =
               offsetof(Rigidbody::Data, entity);
           l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-          l_PropertyInfo.handleType = Low::Core::Entity::type_id();
+          l_PropertyInfo.handleType = Low::Core::Entity::IDENTIFIER;
           l_PropertyInfo.get_return =
               [](Low::Util::Handle p_Handle) -> void const * {
             Rigidbody l_Handle = p_Handle.get_id();

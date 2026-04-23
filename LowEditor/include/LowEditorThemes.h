@@ -55,6 +55,8 @@ namespace Low {
       Math::Color remove;
       Math::Color clear;
       Math::Color edit;
+      Math::Color controller;
+      Math::Color play;
     };
 
     void themes_load();

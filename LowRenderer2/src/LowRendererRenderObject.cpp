@@ -252,7 +252,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(RenderObject::Data, mesh);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Low::Renderer::Mesh::type_id();
+        l_PropertyInfo.handleType = Low::Renderer::Mesh::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();
@@ -371,7 +371,7 @@ namespace Low {
             offsetof(RenderObject::Data, material);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
         l_PropertyInfo.handleType =
-            Low::Renderer::Material::type_id();
+            Low::Renderer::Material::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           RenderObject l_Handle = p_Handle.get_id();

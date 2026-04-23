@@ -184,7 +184,7 @@ namespace Low {
         l_PropertyInfo.editorProperty = false;
         l_PropertyInfo.dataOffset = offsetof(Texture2D::Data, image);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Resource::Image::type_id();
+        l_PropertyInfo.handleType = Resource::Image::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           Texture2D l_Handle = p_Handle.get_id();
@@ -212,7 +212,7 @@ namespace Low {
         l_PropertyInfo.dataOffset =
             offsetof(Texture2D::Data, context);
         l_PropertyInfo.type = Low::Util::RTTI::PropertyType::HANDLE;
-        l_PropertyInfo.handleType = Interface::Context::type_id();
+        l_PropertyInfo.handleType = Interface::Context::IDENTIFIER;
         l_PropertyInfo.get_return =
             [](Low::Util::Handle p_Handle) -> void const * {
           return nullptr;

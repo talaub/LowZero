@@ -90,8 +90,6 @@ namespace Low {
             LOW_LOG_DEBUG << "Doing stuff" << LOW_LOG_END;
             UI::WidgetAsset l_Asset =
                 UI::WidgetAsset::living_instances()[0];
-            l_Asset.set_controller(
-                UI::Controller::find_by_name(N(EviController)));
             UI::WidgetInstance l_Instance =
                 l_Asset.spawn_instance(l_Canvas);
             UI::Element l_Root = l_Instance.get_root();

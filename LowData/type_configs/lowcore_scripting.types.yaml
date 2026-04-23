@@ -44,6 +44,9 @@ types:
       source_path:
         type: Low::Util::String
         private_setter: true
+      generator:
+        type: Low::Core::Scripting::AssetGenerator
+        enum: true
     functions:
       get_full_path:
         return_type: Low::Util::String
